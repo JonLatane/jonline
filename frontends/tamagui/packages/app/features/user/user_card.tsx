@@ -197,7 +197,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const backgroundSize = postBackgroundSize(media);
   return (
     <Theme /*inverse={isCurrentUser ?? false}*/>
-      <Card theme="dark" elevate size="$4" bordered
+      <Card theme="dark" size="$4" bordered
         animation='standard' {...standardAnimation}
         // scale={0.9}
         borderColor={showServerInfo ? primaryColor : undefined}

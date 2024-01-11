@@ -237,7 +237,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
             <Theme inverse={selectedPostId == previewParent.id}>
-              <Card f={1} theme="dark" elevate size="$1" bordered id={componentKey}
+              <Card f={1} theme="dark" size="$1" bordered id={componentKey}
                 margin='$0'
                 // marginBottom={replyPostIdPath ? '$0' : '$3'}
                 // marginTop={replyPostIdPath ? '$0' : '$3'}
@@ -271,7 +271,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           </XStack>
           : undefined}
         {/* <Theme inverse={selectedPostId == post.id}> */}
-        <Card elevate size="$4" bordered
+        <Card size="$4" bordered
           // theme="dark"
 
           borderColor={showServerInfo ? primaryColor : undefined}

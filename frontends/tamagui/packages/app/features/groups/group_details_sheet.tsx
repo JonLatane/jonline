@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextA
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
-import { useAccountOrServer, useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
+import { useAccountOrServer, useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, actionFailed, deleteGroup, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
@@ -57,7 +57,8 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const { dispatch, accountOrServer } = useFederatedDispatch(infoGroup);
   const { account, server } = accountOrServer;
   // const server = accountOrServer.server;
-  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentServer = useServer();
+  const isPrimaryServer = currentServer?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
 
@@ -226,6 +227,12 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       <Sheet.Frame>
         <Sheet.Handle />
         <XStack space='$4' paddingHorizontal='$3'>
+
+          {showServerInfo
+            ? <XStack my='auto' jc='center'>
+              <ServerNameAndLogo server={server} />
+            </XStack>
+            : undefined}
           <Button
             disabled o={0}
             alignSelf='center'
@@ -244,9 +251,16 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
             icon={ChevronDown}
             onPress={() => setInfoOpen(false)} />
           <XStack f={1} />
+
+          {showServerInfo
+            ? <XStack my='auto' ai='center' jc='center' o={0.5}>
+              <Paragraph size='$1' my='auto' mr='$2'>on</Paragraph>
+              <ServerNameAndLogo server={currentServer} />
+            </XStack>
+            : undefined}
           <Button size='$3' backgroundColor={showSettings ? navColor : undefined}
             hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
-            onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
+            onPress={() => setShowSettings(!showSettings)} circular mr='$2' my='auto'>
             <Cog color={showSettings ? navTextColor : undefined} />
           </Button>
         </XStack>
@@ -306,11 +320,6 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                     {groupNameEmoji}
                   </Heading>
                   : undefined}
-            {showServerInfo
-              ? <XStack my='auto' w={'$4'} h={'$4'} jc='center'>
-                <ServerNameAndLogo server={server} shrinkToSquare />
-              </XStack>
-              : undefined}
             {infoRenderingGroup
               ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
               : undefined}
@@ -344,6 +353,8 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
                   mt='$2'
                   p='$2'
                   backgroundColor='$backgroundHover'
+                  borderColor='$color'
+                  borderWidth={1}
                   borderRadius='$2'
                   // touch={showSettings}
 

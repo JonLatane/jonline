@@ -99,7 +99,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onReauthenticate
 
   return (
     // <Theme inverse={selected}>
-    <Card theme="dark" elevate size="$4" bordered
+    <Card theme="dark" size="$4" bordered
       animation='standard'
       // w={250}
       // h={50}

@@ -70,7 +70,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
 
   return (
     // <Theme inverse={selected}>
-    <Card theme="dark" elevate size="$4" bordered
+    <Card theme="dark" size="$4" bordered
       animation='standard'
       {...standardHorizontalAnimation}
       scale={0.9}

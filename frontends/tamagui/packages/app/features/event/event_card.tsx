@@ -623,7 +623,7 @@ export const EventCard: React.FC<Props> = ({
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
-        <Card theme="dark" elevate size="$4" bordered id={componentKey}
+        <Card theme="dark" size="$4" bordered id={componentKey}
           // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
           animation='standard'
           borderColor={showServerInfo ? primaryColor : undefined}
