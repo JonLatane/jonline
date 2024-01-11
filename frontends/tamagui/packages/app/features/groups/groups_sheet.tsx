@@ -262,7 +262,7 @@ export function GroupsSheet({
                   {/* </Input> */}
                 </XStack>
 
-                <PinnedServerSelector transparent />
+                <PinnedServerSelector show transparent simplified />
               </YStack>
               <Sheet.ScrollView p="$4" space>
                 <YStack maw={600} als='center' width='100%'>

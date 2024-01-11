@@ -17,8 +17,9 @@ export type PinnedServerSelectorProps = {
   transparent?: boolean;
   affectsNavigation?: boolean;
   pagesStatuses?: FederatedPagesStatus[];
+  simplified?: boolean;
 };
-export function PinnedServerSelector({ show, transparent, affectsNavigation, pagesStatuses }: PinnedServerSelectorProps) {
+export function PinnedServerSelector({ show, transparent, affectsNavigation, pagesStatuses, simplified }: PinnedServerSelectorProps) {
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
 
@@ -73,16 +74,18 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   >
     {/* <AnimatePresence> */}
     {show ? <>
-      <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
-        <XStack mr='auto'>
-          <Paragraph my='auto' size='$1'>
-            From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
-          </Paragraph>
-          <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-            <ChevronRight size='$1' />
+      {simplified
+        ? undefined
+        : <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))}>
+          <XStack mr='auto'>
+            <Paragraph my='auto' size='$1'>
+              From {shortServerName} and {pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
+            </Paragraph>
+            <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+              <ChevronRight size='$1' />
+            </XStack>
           </XStack>
-        </XStack>
-      </Button>
+        </Button>}
       {showPinnedServers
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
@@ -91,7 +94,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
                 {availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
                   return <XStack key={serverID(server)} animation='standard' {...standardHorizontalAnimation} mr='$2'>
-                    <PinnableServer {...{ server, pinnedServer }} />
+                    <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
                   </XStack>;
                 })}
 
@@ -158,8 +161,9 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
 export type PinnableServerProps = {
   server: JonlineServer;
   pinnedServer?: PinnedServer;
+  simplified?: boolean;
 };
-export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
+export function PinnableServer({ server, pinnedServer, simplified }: PinnableServerProps) {
   const pinned = !!pinnedServer?.pinned;
   const theme = useTheme();
   const dispatch = useAppDispatch();
@@ -184,40 +188,43 @@ export function PinnableServer({ server, pinnedServer }: PinnableServerProps) {
   const avatarSize = 20;
 
   return <YStack maw={170}>
-    <AddAccountSheet server={server}
-      selectedAccount={pinnedAccount}
-      onAccountSelected={toggleAccountSelect}
-      button={(onPress) =>
-        <Button onPress={onPress} animation='standard' h='auto' px='$2'
-          borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
-          o={pinned ? 1 : 0.5}
-          {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
-          <XStack ai='center' w='100%' space='$2'>
+    {simplified
+      ? undefined
+      : <AddAccountSheet server={server}
+        selectedAccount={pinnedAccount}
+        onAccountSelected={toggleAccountSelect}
+        button={(onPress) =>
+          <Button onPress={onPress} animation='standard' h='auto' px='$2'
+            borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
+            o={pinned ? 1 : 0.5}
+            {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
+            <XStack ai='center' w='100%' space='$2'>
 
-            {(avatarUrl && avatarUrl != '') ?
+              {(avatarUrl && avatarUrl != '') ?
 
-              <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
-                <Image
-                  pos="absolute"
-                  width={avatarSize}
-                  height={avatarSize}
-                  borderRadius={avatarSize / 2}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
-                />
-              </XStack>
-              : undefined}
-            <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse" color={pinned ? navTextColor : undefined} o={pinnedAccount ? 1 : 0.5}>
-              {pinnedAccount
-                ? pinnedAccount?.user.username
-                : 'anonymous'}
-            </Paragraph>
-            <AtSign size='$1' color={pinned ? navTextColor : undefined} />
-          </XStack>
-        </Button>} />
+                <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
+                  <Image
+                    pos="absolute"
+                    width={avatarSize}
+                    height={avatarSize}
+                    borderRadius={avatarSize / 2}
+                    resizeMode="cover"
+                    als="flex-start"
+                    source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
+                  />
+                </XStack>
+                : undefined}
+              <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse" color={pinned ? navTextColor : undefined} o={pinnedAccount ? 1 : 0.5}>
+                {pinnedAccount
+                  ? pinnedAccount?.user.username
+                  : 'anonymous'}
+              </Paragraph>
+              <AtSign size='$1' color={pinned ? navTextColor : undefined} />
+            </XStack>
+          </Button>} />
+    }
     <Button onPress={onPress} animation='standard' h='auto'
-      borderTopLeftRadius={0} borderTopRightRadius={0}
+      borderTopLeftRadius={simplified ? undefined : 0} borderTopRightRadius={simplified ? undefined : 0}
       o={pinned ? 1 : 0.5}
       {...(pinned ? themedButtonBackground(primaryColor, primaryTextColor) : {})}>
       <ServerNameAndLogo server={server} textColor={pinned ? primaryTextColor : undefined} />

@@ -11,6 +11,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post';
 import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
+import { AccountOrServerContextProvider } from 'app/contexts';
 
 const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
@@ -136,27 +137,30 @@ export function EventDetailsScreen() {
           </>
           : <Spinner size='large' color={navColor} scale={2} />
         :
-        <ConversationContextProvider value={conversationContext}>
-          <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
-            <ScrollView w='100%'>
-              <XStack w='100%' paddingHorizontal='$3'>
-                <EventCard key={`event-card-loaded`}
-                  event={subjectEvent}
-                  onEditingChange={editHandler(subjectPost!.id)}
-                  selectedInstance={subjectInstance}
-                  onInstancesUpdated={onEventInstancesUpdated}
-                  {...{ newRsvpMode, setNewRsvpMode }}
-                />
-              </XStack>
-              <ConversationManager post={subjectPost!} />
-            </ScrollView>
+        <AccountOrServerContextProvider value={accountOrServer}>
+
+          <ConversationContextProvider value={conversationContext}>
+            <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+              <ScrollView w='100%'>
+                <XStack w='100%' paddingHorizontal='$3'>
+                  <EventCard key={`event-card-loaded`}
+                    event={subjectEvent}
+                    onEditingChange={editHandler(subjectPost!.id)}
+                    selectedInstance={subjectInstance}
+                    onInstancesUpdated={onEventInstancesUpdated}
+                    {...{ newRsvpMode, setNewRsvpMode }}
+                  />
+                </XStack>
+                <ConversationManager post={subjectPost!} />
+              </ScrollView>
 
 
-            <ReplyArea replyingToPath={replyPostIdPath}
-              onStopReplying={() => postId && setReplyPostIdPath([postId])}
-              hidden={!showReplyArea} />
-          </YStack>
-        </ConversationContextProvider>
+              <ReplyArea replyingToPath={replyPostIdPath}
+                onStopReplying={() => postId && setReplyPostIdPath([postId])}
+                hidden={!showReplyArea} />
+            </YStack>
+          </ConversationContextProvider>
+        </AccountOrServerContextProvider>
       }
     </TabsNavigation >
   )

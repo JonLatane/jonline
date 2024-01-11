@@ -1,9 +1,10 @@
 import { Permission, Post } from '@jonline/api'
-import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useToastController, useWindowDimensions } from '@jonline/ui'
+import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
-import { useCredentialDispatch } from 'app/hooks'
-import { RootState, actionFailed, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
+import { useAccountOrServerContext } from 'app/contexts'
+import { useAccountOrServer, useAppDispatch } from 'app/hooks'
+import { RootState, actionFailed, getServerTheme, replyToPost, selectPostById, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
@@ -18,9 +19,12 @@ interface ReplyAreaProps {
   onStopReplying?: () => void;
 }
 
+// Must be within an AccountOrServerContextProvided
 export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, onStopReplying }) => {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const dispatch = useAppDispatch();
+  const currentAccountOrServer = useAccountOrServer();
+  const accountOrServer = useAccountOrServerContext() ?? currentAccountOrServer;
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server, useTheme());
   const [media, setMedia] = useState([] as MediaRef[]);
   const [embedLink, setEmbedLink] = useState(false);
 
@@ -185,7 +189,8 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
           {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}
-          <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'} />
+          <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'}
+            server={accountOrServer.server} />
         </YStack>}
   </StickyBox>
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />

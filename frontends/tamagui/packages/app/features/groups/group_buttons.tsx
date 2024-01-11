@@ -1,5 +1,5 @@
 import { Group } from '@jonline/api';
-import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, useMedia } from '@jonline/ui';
+import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
 import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, getServerTheme, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
@@ -55,7 +55,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     : group.name;
   const fullAvatarHeight = 48;
 
-  return <XStack w='100%'>
+  return <XStack w='100%' animation="standard" {...standardAnimation}>
     <YStack f={1} borderRadius='$5' borderWidth='$1' borderColor={primaryColor} mb='$2'
       backgroundColor={selected ? navColor : undefined}
     >

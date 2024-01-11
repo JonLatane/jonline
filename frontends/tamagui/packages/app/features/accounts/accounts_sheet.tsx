@@ -119,15 +119,17 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
   async function onAccountAdded() {
     setAddingAccount(false);
 
-    setNewAccountUser('');
-    setNewAccountPass('');
-    setForceDisableAccountButtons(false);
-    setLoginMethod(undefined);
-    setReauthenticating(false);
-
     setTimeout(() => {
       setOpen(false);
       dispatch(clearAccountAlerts());
+
+      setTimeout(() => {
+        setNewAccountUser('');
+        setNewAccountPass('');
+        setForceDisableAccountButtons(false);
+        setLoginMethod(undefined);
+        setReauthenticating(false);
+      }, 600);
     }, 600);
 
     const accountEntities = store.getState().accounts.entities;
@@ -594,7 +596,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                     <Sheet.Overlay />
                     <Sheet.Frame padding="$5">
                       <Sheet.Handle />
-                      <Button
+                      {/* <Button
                         alignSelf='center'
                         size="$3"
                         circular
@@ -602,7 +604,30 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                         onPress={() => {
                           setAddingAccount(false)
                         }}
-                      />
+                      /> */}
+                      <XStack ai='center'
+                        pl={mediaQuery.gtXs ? '$2' : 0}
+                        pr={mediaQuery.gtXs ? '$4' : '$1'}>
+            
+                        <XStack f={1} ai='center'>
+                          <ServerNameAndLogo server={server} />
+                        </XStack>
+                        <Button
+                          alignSelf='center'
+                          size="$6"
+                          circular
+                          icon={ChevronDown}
+                          onPress={() => {
+                            setAddingAccount(false)
+                          }}
+                        />
+                        <XStack f={1} ai='center' o={0}>
+                            <Paragraph ml='auto' size='$1' > via</Paragraph>
+                            <XStack>
+                              <ServerNameAndLogo server={currentServer} />
+                            </XStack>
+                        </XStack>
+                      </XStack>
                       <Heading size="$9">
                         {reauthenticating ? 'Re-Enter Password'
                           : loginMethod === 'login' ? 'Login'
@@ -618,17 +643,35 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                             editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                             autoCapitalize='none'
                             value={newAccountUser}
+                            autoFocus={!loginMethod}
+                            onKeyPress={(e) => {
+                              if (e.nativeEvent.key === 'Enter') {
+                                if (!loginMethod) {
+                                  setLoginMethod(LoginMethod.Login);
+                                  setTimeout(() => passwordRef.current.focus(), 100);
+                                }
+                              }
+                            }}
                             onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
 
                           {loginMethod
                             ? <XStack w='100%' animation="quick" {...standardAnimation}>
                               <Input secureTextEntry w='100%'
                                 ref={passwordRef}
+                                autoFocus
                                 id='accounts-sheet-password-input'
                                 textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                                 placeholder="Password"
                                 editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
-
+                                onKeyPress={(e) => {
+                                  if (e.nativeEvent.key === 'Enter') {
+                                    if (loginMethod == LoginMethod.Login) {
+                                      loginToServer();
+                                    } else {
+                                      createServerAccount();
+                                    }
+                                  }
+                                }}
                                 value={newAccountPass}
                                 onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
                             </XStack>
@@ -681,13 +724,19 @@ to evaluate support options.
                             : <XStack>
                               <Button flex={2}
                                 marginRight='$1'
-                                onPress={() => setLoginMethod(LoginMethod.CreateAccount)}
+                                onPress={() => {
+                                  setLoginMethod(LoginMethod.CreateAccount);
+                                  setTimeout(() => passwordRef.current.focus(), 100);
+                                }}
                                 disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                                Create Account
+                                Sign Up
                               </Button>
                               <Button flex={1}
                                 backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor}
-                                onPress={() => setLoginMethod(LoginMethod.Login)}
+                                onPress={() => {
+                                  setLoginMethod(LoginMethod.Login);
+                                  setTimeout(() => passwordRef.current.focus(), 100);
+                                }}
                                 disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
                                 Login
                               </Button>
