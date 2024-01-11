@@ -38,7 +38,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
       - [GroupPost](#grouppost)
     - [Events](#events)
   - [Documentation](#documentation)
-    - [Micro-Federation](#micro-federation)
+    - [Dumbfederation](#dumbfederation)
     - [Protocol Documentation](#protocol-documentation)
     - [Project Components](#project-components)
       - [Documentation](#documentation-1)
@@ -60,7 +60,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
     - [Securing your deployment](#securing-your-deployment)
     - [Deleting your deployment](#deleting-your-deployment)
   - [Motivations](#motivations)
-    - [Scaling Social Software via Micro-Federation](#scaling-social-software-via-micro-federation)
+    - [Scaling Social Software via Dumbfederation](#scaling-social-software-via-dumbfederation)
   - [Future features](#future-features)
 
 ## What is Jonline?
@@ -104,7 +104,7 @@ The goal of all this is to make it as easy as possible for local businesses to:
 #### Jonline as a protocol vs. ActivityPub
 Jonline is also a protocol, much like ActivityPub. It's worth skimming both the [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/) and the [Jonline Protocol Docs](https://jonline.io/docs/protocol), but this is a brief breakdown.
 
-Notably, while ActivityPub specifies a server-to-server federation protocol, Jonline simply lets servers "recommend" other servers by hostname, with the "federation" done on the client side by communicating with the recommended servers based on user authorization. (Yes, this could barely defined as "federation" at all - but it's cheaper and effectively the same to users. The Jonline protocol simply calls this [Micro-Federation](https://jonline.io/docs/protocol#micro-federation).)
+Notably, while ActivityPub specifies a server-to-server federation protocol, Jonline simply lets servers "recommend" other servers by hostname, with the "federation" done on the client side by communicating with the recommended servers based on user authorization. (Yes, this could barely defined as "federation" at all - but it's cheaper and effectively the same to users. The Jonline protocol simply calls this [Dumbfederation](https://jonline.io/docs/protocol#dumbfederation).)
 
 While ActivityPub is defined using HTTP(S) and JSON, Jonline is defined with gRPC (on port 27707, with optional TLS), using HTTP(S) for media and CDN-based host negotiation only (no JSON, anywhere). Broadly speaking, Jonline may be called "more opinionated" than ActivityPub as a social networking protocol, and covers more things than just social activity (including things like user-facing server configuration data, privacy policy, etc.).
 
@@ -189,7 +189,7 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
 
-### Micro-Federation
+### Dumbfederation
 A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication is via "recommended servers," which will eventually also let admins enable CORS to control where users can see content and user information from their servers.
 
 This approach does not seek to be particular innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/http%3Alocalhost?section=federation) - literally nothing but a list of hosts.
@@ -423,14 +423,14 @@ There isn't an open federated protocol like email for a complete posts+events+me
 
 So, Jonline is a shot at implementing federated, open social media, in a way that is easy for developers to modify and, perhaps most importantly, for *users to understand*.
 
-### Scaling Social Software via Micro-Federation
+### Scaling Social Software via Dumbfederation
 At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power, and leveraging them for any number of rarely-publicly-disclosed purposes (mostly "make money").
 
 But is scaling social media applications in this way *necessary for people to socially interact, sharing pictures and videos with friends and their favorite celebrities and arists*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, and artists/actors/academics/poets/etc., it's not really necessary.
 
 Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
 
-A next step in Jonline's [micro-federation](https://jonline.io/docs/protocol#micro-federation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
+A next step in Jonline's [dumbfederation](https://jonline.io/docs/protocol#dumbfederation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
 
 ## Future features
 Potential future features include:

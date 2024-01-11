@@ -137,7 +137,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
-##### Micro-Federation
+##### Dumbfederation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
 [ServerInfo.recommended_server_hosts](#serverinfo).

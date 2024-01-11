@@ -483,7 +483,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$9' als='center' mt='$3'>Federation</Heading>
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
                   <Paragraph size='$1' mb='$3'>
-                    Jonline servers can federate with each other (via a particular pattern I'm dubbing "micro-federation" that means "no server-to-server needed").
+                    Jonline servers can federate with each other (via a particular pattern I'm dubbing "dumbfederation" that means "no server-to-server needed").
                     This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI. 
                     Jonline as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
                     and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '}
