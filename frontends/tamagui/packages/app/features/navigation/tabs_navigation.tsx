@@ -172,9 +172,9 @@ export function TabsNavigation({
                 <XStack w={5} />
               </XStack>
 
-              <YStack w='100%' backgroundColor='$background'>
+              {/* <YStack w='100%' backgroundColor='$background'>
                 <TabsTutorial />
-              </YStack>
+              </YStack> */}
 
               <XStack w='100%' id='nav-pinned-server-selector'>
                 <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation />

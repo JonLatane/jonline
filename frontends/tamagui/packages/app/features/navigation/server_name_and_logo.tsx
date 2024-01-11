@@ -14,9 +14,16 @@ export type ServerNameAndLogoProps = {
   textColor?: string;
 };
 
+type SplitOnFirstEmojiResult = [string, string | undefined, string | undefined];
+const _splitOnFirstEmojiCache = new Map<string, SplitOnFirstEmojiResult>();
 export function splitOnFirstEmoji(
   text: string, supportPipe?: boolean
-): [string, string | undefined, string | undefined] {
+): SplitOnFirstEmojiResult {
+  const cacheKey = JSON.stringify({ text, supportPipe });
+  if (_splitOnFirstEmojiCache.has(cacheKey)) {
+    return _splitOnFirstEmojiCache.get(cacheKey)!;
+  }
+
   let partBeforeEmoji = text;
   let emoji = undefined as string | undefined;
   let partAfterEmoji = undefined as string | undefined;
@@ -36,8 +43,9 @@ export function splitOnFirstEmoji(
       partAfterEmoji = fullySplitString.slice(fullySplitEmojiIndex + 1).join('');
     }
   }
-
-  return [partBeforeEmoji, emoji, partAfterEmoji];
+  const result: SplitOnFirstEmojiResult = [partBeforeEmoji, emoji, partAfterEmoji];
+  _splitOnFirstEmojiCache.set(cacheKey, result)
+  return result;
 }
 
 export function ServerNameAndLogo({

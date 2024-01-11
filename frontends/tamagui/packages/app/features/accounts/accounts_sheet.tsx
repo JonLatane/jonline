@@ -256,7 +256,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
         {...themedButtonBackground(navColor, navTextColor)}
         // backgroundColor={navColor}
         h='auto'
-        icon={serversDiffer || browsingOnDiffers ? alertTriangle({color: navTextColor}) : undefined}
+        icon={serversDiffer || browsingOnDiffers ? alertTriangle({ color: navTextColor }) : undefined}
         borderBottomLeftRadius={0} borderBottomRightRadius={0}
         px='$2'
         onPress={() => setOpen((x) => !x)}
@@ -300,8 +300,8 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
         <Sheet.Frame>
           <Sheet.Handle />
           <XStack space='$4' paddingHorizontal='$3'>
-            <TutorialToggle onPress={() => setOpen(false)} />
             <DarkModeToggle />
+            <XStack pointerEvents='none' o={0}><TutorialToggle onPress={() => setOpen(false)} /></XStack>
             <XStack f={1} />
             <Button
               alignSelf='center'
