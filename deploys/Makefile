@@ -7,17 +7,24 @@ NAMESPACE ?= jonline
 TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 
 # K8s server deployment targets
-deploy_be_create: deploy_ensure_namespace
-	kubectl create -f k8s/server.yaml --save-config -n $(NAMESPACE)
+deploy_be_create_external: deploy_ensure_namespace
+	kubectl create -f k8s/server_external.yaml --save-config -n $(NAMESPACE)
+	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
+deploy_be_create_internal: deploy_ensure_namespace
+	kubectl create -f k8s/server_internal.yaml --save-config -n $(NAMESPACE)
 	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
 
-deploy_be_update:
-	kubectl apply -f k8s/server.yaml -n $(NAMESPACE)
+deploy_be_update_external:
+	kubectl apply -f k8s/server_external.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
+	$(MAKE) deploy_be_monitor_rollout
+deploy_be_update_internal:
+	kubectl apply -f k8s/server_internal.yaml -n $(NAMESPACE)
 	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
 	$(MAKE) deploy_be_monitor_rollout
 
 deploy_be_delete:
-	kubectl delete -f k8s/server.yaml -n $(NAMESPACE)
+	kubectl delete -f k8s/server_external.yaml -n $(NAMESPACE)
 	kubectl delete -f k8s/preview_generator.yaml -n $(NAMESPACE)
 
 deploy_be_monitor_rollout:

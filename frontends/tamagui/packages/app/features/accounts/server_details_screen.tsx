@@ -1,9 +1,9 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, SeparatorHorizontal, SeparatorVertical, TabletSmartphone } from '@tamagui/lucide-icons';
+import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAccountOrServer, useAppDispatch } from 'app/hooks';
-import { JonlineServer, RootState, getCredentialClient, selectServer, selectServerById, serverID, setAllowServerSelection, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServer, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
@@ -50,16 +50,38 @@ const configurableUserPermissions = [
 
 export function BaseServerDetailsScreen(specificServer?: string) {
   const [requestedServerUrl] = specificServer ? [specificServer] : useParam('id');
-  const requestedServerUrlParts = requestedServerUrl?.split(':')
+  const requestedServerUrlParts = requestedServerUrl?.split(':');
   const requestedServerUrlValid = requestedServerUrlParts?.length == 2
     && ['http', 'https'].includes(requestedServerUrlParts[0]!);
-  // debugger
-  // const linkProps = useLink({ href: '/' })
+  console.log('BaseServerDetailsScreen', {
+    requestedServerUrl,
+    requestedServerUrlParts,
+    requestedServerUrlValid,
+  })
+  const requestedServer: JonlineServer | undefined = requestedServerUrlParts
+    ? {
+      host: requestedServerUrlParts[1]!,
+      secure: requestedServerUrlParts[0]! == 'https',
+    } : undefined;
+  console.log('BaseServerDetailsScreen', {
+    requestedServerUrl,
+    requestedServerUrlParts,
+    requestedServerUrlValid,
+    requestedServer
+  })
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
-  const server: JonlineServer | undefined = useRootSelector((state: RootState) => selectServerById(state.servers, requestedServerUrl!));
-  // const selectedServer = useRootSelector((state: RootState) => state.servers.server);
-  // const account = useRootSelector((state: RootState) => state.accounts.account);
+  const savedServer: JonlineServer | undefined = useRootSelector((state: RootState) =>
+    selectServerById(state.servers, requestedServerUrl!));
+  const unsavedServer: JonlineServer | undefined = requestedServer
+    ? getCachedServerClient(requestedServer)
+    : undefined;
+  useEffect(() => {
+    if (!unsavedServer && requestedServer) getConfiguredServerClient(requestedServer);
+  }, [unsavedServer, requestedServer]);
+
+  const server = savedServer ?? unsavedServer;
+
   const { account, server: selectedServer } = useAccountOrServer();
   const serverIsSelected = server && selectedServer &&
     serverID(server) == serverID(selectedServer);
@@ -262,8 +284,13 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setNewRecommendedHostName('');
   }
 
+
+
   return (
-    <TabsNavigation appSection={AppSection.INFO} onlyShowServer={server}>
+    <TabsNavigation appSection={AppSection.INFO} 
+    //onlyShowServer={server}
+      primaryEntity={server ? { serverHost: server.host } : undefined}
+    >
       <StickyBox offsetTop={tabNavBaseHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
         <XStack w='100%'>
           {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
@@ -279,7 +306,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           <YStack mb='$2' w='100%' jc="center" ai="center" >
             <ScrollView w='100%'>
               <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
-                {serverIsSelected ? undefined : <XStack>
+                {/* {serverIsSelected ? undefined : <XStack>
                   <XStack my='auto'><AlertTriangle /></XStack>
                   <YStack my='auto' f={1}>
                     <Heading mt='$3' size='$3' als='center' ta='center'>Currently browsing on a different server</Heading>
@@ -294,7 +321,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       Switch to&nbsp;<Heading size='$3'>{server.host}</Heading>
                     </Button>
                   </YStack>
-                </XStack>}
+                </XStack>} */}
                 {section === 'about' ? <>
                   <Heading size='$9' als='center' mt='$3'>About {specificServer ? 'Community' : 'Server'}</Heading>
                   <ServerCard server={{ ...server, serverConfiguration: updatedConfiguration }} disableHeightLimit />
@@ -484,7 +511,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$4' mt='$3'>Federated Servers</Heading>
                   <Paragraph size='$1' mb='$3'>
                     Jonline servers can federate with each other (via a particular pattern I'm dubbing "dumbfederation" that means "no server-to-server needed").
-                    This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI. 
+                    This surfaces to users as "recommended servers," "servers" (or "added servers"), and "pinned servers" in the navigation (for pinned servers) and the account section of their UI.
                     Jonline as a protocol is designed so that servers don't really need to talk to each other much; the federation sits mostly on the client-side
                     and is backed by DNS{window.location.toString().startsWith('https') ? ', TLS, ' : ' '}
                     and CORS. (Strict CORS is not yet implemented for Jonline's Tonic/gRPC or Rocket/HTTP servers; this would be{' '}
@@ -687,16 +714,17 @@ export function BaseServerDetailsScreen(specificServer?: string) {
             </ScrollView>
 
           </YStack>
-          : app.allowServerSelection || serverIsSelected ? <>
+          : <YStack>
             <Heading ta="center" fow="800">Server not configured. Add it through your Accounts screen, or autoconfigure it, first.</Heading>
             <Paragraph ta="center" fow="800">{`Server URL: ${requestedServerUrl}`}</Paragraph>
             {requestedServerUrlValid ? <Button theme='active' mt='$2' onPress={() => {
               let [newServerProtocol, newServerHost] = requestedServerUrlParts;
               let newServerSecure = newServerProtocol == 'https';
-              dispatch(upsertServer({
-                host: newServerHost!,
-                secure: newServerSecure,
-              }));
+              // dispatch(upsertServer({
+              //   host: newServerHost!,
+              //   secure: newServerSecure,
+              // }));
+              getServerClient({ host: newServerHost!, secure: newServerSecure }, { skipUpsert: false })
             }}>
               Autoconfigure Server <Heading size='$3'>{requestedServerUrl}</Heading>
             </Button>
@@ -704,17 +732,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                 <Heading color={warningAnchorColor} size='$3' ta={'center'}>Server URL is invalid.</Heading>
                 <Heading color={warningAnchorColor} size='$3' ta={'center'}>Server URL format: [http|https]:valid_hostname</Heading>
               </>}
-          </> :
-            <>
-              <Heading ta="center" fow="800">Enable "Allow Server Selection" in your settings to continue.</Heading>
-              <Paragraph ta="center" fow="800">{`Server URL: ${requestedServerUrl}`}</Paragraph>
-              <Button theme='active' mt='$2' onPress={() => dispatch(setAllowServerSelection(true))}>
-                Enable "Allow Server Selection"
-              </Button>
-            </>}
-        {/* <Button {...linkProps} icon={ChevronLeft}>
-          Go Home
-        </Button> */}
+          </YStack>
+        }
       </YStack>
       {server && isAdmin ?
         isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>

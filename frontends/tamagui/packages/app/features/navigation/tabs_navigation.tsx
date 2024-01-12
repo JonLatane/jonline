@@ -16,7 +16,7 @@ import { TabsTutorial } from "./tabs_tutorial";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
-  onlyShowServer?: JonlineServer;
+  // onlyShowServer?: JonlineServer;
   appSection?: AppSection;
   appSubsection?: AppSubsection;
   selectedGroup?: FederatedGroup;
@@ -33,7 +33,7 @@ export const tabNavBaseHeight = 64;
 
 export function TabsNavigation({
   children,
-  onlyShowServer,
+  // onlyShowServer,
   appSection = AppSection.HOME,
   appSubsection,
   selectedGroup,
@@ -45,7 +45,8 @@ export function TabsNavigation({
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const currentServer = useServer();
-  const primaryServer = onlyShowServer || currentServer;
+  const primaryServer = //onlyShowServer || 
+    currentServer;
   const webUI = currentServer?.serverConfiguration?.serverInfo?.webUserInterface;
   const homeProps = customHomeAction ? { onPress: customHomeAction } : useLink({
     href:
@@ -108,7 +109,8 @@ export function TabsNavigation({
               <XStack space="$1" my='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
-                  <AccountsSheet size='$4' onlyShowServer={onlyShowServer} selectedGroup={selectedGroup} />
+                  <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
+                    selectedGroup={selectedGroup} />
                   <Button //size="$4"
                     id="home-button"
                     py={0}

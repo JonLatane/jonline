@@ -7,12 +7,22 @@ NAMESPACE ?= jonline
 ############################################################################
 # DEPLOYMENT-RELATED TARGETS: More in deploys/Makefile
 ############################################################################
+# Describe your BE deployment in the current namespace.
+deploy_get_all:
+	cd deploys && $(MAKE) deploy_get_all
 
 # Targets for deploying Jonline to your K8s cluster.
-deploy_be_create:
-	cd deploys && $(MAKE) deploy_be_create
-deploy_be_update:
-	cd deploys && $(MAKE) deploy_be_update
+# Internal or external refers to whether the service is exposed to the internet.
+# External is the default, but internal is useful for testing, and could
+# save lots of money if you want to host many servers from a single LoadBalancer/IP.
+deploy_be_create_external:
+	cd deploys && $(MAKE) deploy_be_create_external
+deploy_be_create_internal:
+	cd deploys && $(MAKE) deploy_be_create_internal
+deploy_be_update_external:
+	cd deploys && $(MAKE) deploy_be_update_external
+deploy_be_update_internal:
+	cd deploys && $(MAKE) deploy_be_update_internal
 deploy_be_restart:
 	cd deploys && $(MAKE) deploy_be_restart
 deploy_be_delete:

@@ -33,13 +33,13 @@ Most of the high-level Jonline backend build management lives in `../Makefile`.
 For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.jonline](https://getj.online):
 
 ```bash
-make release_be_cloud deploy_be_update && NAMESPACE=getjonline make deploy_be_update && say 'deploy complete'
+make release_be_cloud deploy_be_update_external && NAMESPACE=getjonline make deploy_be_update_external && say 'deploy complete'
 ```
 
 As an end user, once you've set up per the quick setup, you can simply run this to apply updates:
 
 ```bash
-git pull && make deploy_be_update
+git pull && make deploy_be_update_external
 ```
 
 Until Jonline is fairly complete, I'm not bothering with migrations. Be prepared to reset data until then. To reset your database/minio (if you're using the K8s one and not a managed DB):
@@ -125,7 +125,7 @@ kubernetes         ClusterIP      10.245.0.1       <none>            443/TCP    
 You should be able to `grpcurl 178.128.143.154:27707` list and see both Jonline and the gRPC reflection service (that lets you list services)! You can test against my instance with `grpcurl be.jonline.io:27707`. list
 
 ## Building and Deploying Your Own Image
-If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/server.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/server.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
+If you're interested in building your own version of Jonline, you must fork this repo and have your own Docker registry. The registry can be private as long as your k8s cluster can talk to it. You must update the [`image` in `k8s/server_external.yaml`](https://github.com/JonLatane/jonline/blob/main/backend/k8s/server_external.yaml#L32) and the [`CLOUD_REGISTRY` in `Makefile`](https://github.com/JonLatane/jonline/blob/main/Makefile#L5) to point at your registry.
 
 A Dockerfile for a build server (to build `jonline` Linux x86 server images on whatever desktop you use) lives in `docker/build`. We will use it throughout the following build steps.
 
@@ -146,4 +146,4 @@ A Dockerfile for a build server (to build `jonline` Linux x86 server images on w
     * You can also `make release_be_push_local` and test running the image from your local repo before pushing it to your cloud repo.
 
 #### Deploying your image
-Make sure to update `k8s/server.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.
+Make sure to update `k8s/server_external.yaml` and the `Makefile` to point at your docker registry. As with the local build, you can simply `make deploy_be_create` to launch your forked Jonline.

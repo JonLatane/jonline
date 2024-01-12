@@ -3,7 +3,7 @@
 
 # Configure these when building your own Jonline images. Note that you must update the following to
 # point to your cloud registry rather than docker.io/jonlatane:
-# - deploys/k8s/server.yaml
+# - deploys/k8s/server_external.yaml
 # - deploys/k8s/preview_generator.yaml
 CLOUD_REGISTRY := docker.io/jonlatane
 LOCAL_REGISTRY_DIRECTORY := $(HOME)/Development/registry

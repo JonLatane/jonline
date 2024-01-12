@@ -5,10 +5,10 @@ import { createChannel as createGrpcChannel, createClient as createGrpcClient } 
 import { JonlineDefinition, JonlineClient } from "@jonline/api/generated/jonline";
 import { GetServiceVersionResponse, ServerConfiguration } from "@jonline/api";
 
-type ConfiguredClient = {
+type ConfiguredClient = JonlineServer & {
   client: JonlineClient;
-  serviceVersion: GetServiceVersionResponse;
-  serverConfiguration: ServerConfiguration
+  // serviceVersion: GetServiceVersionResponse;
+  // serverConfiguration: ServerConfiguration
 };
 const clients = new Map<string, ConfiguredClient>();
 const loadingClients = new Set<string>();
@@ -24,8 +24,34 @@ export type JonlineClientCreationArgs = {
   onServerConfigured?: (server: JonlineServer) => void
 };
 
+export function getCachedServerClient(server: JonlineServer): ConfiguredClient | undefined {
+  const serverId = serverID(server);
+  return clients.get(serverId);
+}
+
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
+  const serverId = serverID(server);
+  const configuredClient = await getConfiguredServerClient(server, args);
+  if (!configuredClient) throw "Failed to load client";
+
+  const { client, serviceVersion, serverConfiguration } = configuredClient;
+  const updatedServer = { ...server, serviceVersion, serverConfiguration };
+  const latestServer = store.getState().servers.entities[serverId];
+  if (!args?.skipUpsert && (
+    JSON.stringify(latestServer?.serviceVersion) !== JSON.stringify(serviceVersion) ||
+    JSON.stringify(latestServer?.serverConfiguration) !== JSON.stringify(serverConfiguration)
+  )) {
+    console.log("getServerClient: upserting server", updatedServer);
+    setTimeout(() => store.dispatch(upsertServer(updatedServer)), 1);
+  };
+  args?.onServerConfigured?.(updatedServer);
+
+  return client;
+}
+
+// Creates a client and upserts the server into the store.
+export async function getConfiguredServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<ConfiguredClient> {
   if (!server) {
     console.error("Server is undefined");
     debugger;
@@ -65,19 +91,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
   const configuredClient = clients.get(serverId);
   if (!configuredClient) throw "Failed to load client";
 
-  const { client, serviceVersion, serverConfiguration } = configuredClient;
-  const updatedServer = { ...server, serviceVersion, serverConfiguration };
-  const latestServer = store.getState().servers.entities[serverId];
-  if (!args?.skipUpsert && (
-    JSON.stringify(latestServer?.serviceVersion) !== JSON.stringify(serviceVersion) ||
-    JSON.stringify(latestServer?.serverConfiguration) !== JSON.stringify(serverConfiguration)
-  )) {
-    console.log("getServerClient: upserting server", updatedServer);
-    setTimeout(() => store.dispatch(upsertServer(updatedServer)), 1);
-  };
-  args?.onServerConfigured?.(updatedServer);
-
-  return client;
+  return configuredClient;
 }
 
 async function resolveHostAndCreateClient(server: JonlineServer, port: number, args?: JonlineClientCreationArgs): Promise<JonlineClient | undefined> {
@@ -134,7 +148,7 @@ async function createJonlineGrpcClient(host: string, server: JonlineServer, args
     throw ["Failed to load service version or server configuration", serviceVersion, serverConfiguration];
   }
 
-  clients.set(serverId, { client, serviceVersion, serverConfiguration });
+  clients.set(serverId, { ...server, host, client, serviceVersion, serverConfiguration, });
 
   return client;
 }
