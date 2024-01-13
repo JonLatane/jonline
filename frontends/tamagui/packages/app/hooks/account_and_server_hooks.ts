@@ -25,7 +25,8 @@ export function useCurrentAndPinnedServers(): AccountOrServer[] {
       }))
       .filter(aos => aos.server)
   );
-  return [accountOrServer, ...pinnedServers];
+  const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
+  return excludeCurrentServer ? pinnedServers : [accountOrServer, ...pinnedServers];
 }
 
 export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): AccountOrServer {

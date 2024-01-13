@@ -24,6 +24,7 @@ export interface AccountsState {
   // Allows a user to be primarily signed into the above account,
   // but view data from other servers (and accounts on those servers).
   pinnedServers: PinnedServer[];
+  excludeCurrentServer: boolean;
   ids: EntityId[];
   entities: Dictionary<JonlineAccount>;
 }
@@ -41,6 +42,7 @@ const initialState: AccountsState = {
   status: "unloaded",
   error: undefined,
   pinnedServers: [],
+  excludeCurrentServer: false,
   ...accountsAdapter.getInitialState(),
 };
 
@@ -82,6 +84,9 @@ export const accountsSlice = createSlice({
           });
         }, 1);
       }
+    },
+    setExcludeCurrentServer: (state, action: PayloadAction<boolean>) => {
+      state.excludeCurrentServer = action.payload;
     },
     clearAccountAlerts: (state) => {
       state.errorMessage = undefined;
@@ -237,7 +242,7 @@ export const accountsSlice = createSlice({
 export const { selectAccount, removeAccount, clearAccountAlerts,
   resetAccounts, upsertUserData, notifyUserDeleted,
   moveAccountUp, moveAccountDown,
-  pinServer, pinAccount, unpinAccount } = accountsSlice.actions;
+  pinServer, pinAccount, unpinAccount, setExcludeCurrentServer } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectById: selectAccountById, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;
