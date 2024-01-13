@@ -1,5 +1,5 @@
 import { useIsVisible } from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedPost, deleteEvent, federateId, federatedEntity, getServerTheme, updateEvent } from "app/store";
+import { FederatedEvent, FederatedGroup, FederatedPost, deleteEvent, federateId, federatedEntity, getServerTheme, updateEvent } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
@@ -21,7 +21,7 @@ import { AccountOrServerContextProvider } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
-import { InstanceTime } from "./instance_time";
+import { InstanceTime, useInstanceLink } from "./instance_time";
 import { LocationControl } from "./location_control";
 
 interface Props {
@@ -206,14 +206,21 @@ export const EventCard: React.FC<Props> = ({
         : `/event/${detailsLinkId}`
       : '.'
   });
+
   const authorLink = useLink({
     href: authorName
       ? `/${authorName}`
       : `/user/${authorId}`
   });
-  const createGroupEventViewHref = (group: Group) => primaryInstance
-    ? `/g/${group.shortname}/e/${detailsLinkId}`
-    : `.`;
+  const createGroupEventViewHref = (group: FederatedGroup) => {
+    const groupLinkId = (group.serverHost !== server?.host
+      ? federateId(group.shortname, accountOrServer.server)
+      : group.shortname);
+
+    return primaryInstance
+      ? `/g/${groupLinkId}/e/${detailsLinkId}`
+      : `.`;
+  }
 
   const maxTotalContentHeight = isPreview
     ? (horizontal ? xs ? 225 : 350 : 500)
