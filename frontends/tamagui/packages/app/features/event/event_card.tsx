@@ -21,7 +21,7 @@ import { AccountOrServerContextProvider } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
-import { InstanceTime, useInstanceLink } from "./instance_time";
+import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 
 interface Props {

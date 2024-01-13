@@ -17,18 +17,8 @@ interface Props {
   noAutoScroll?: boolean;
 }
 
-export const createInstanceLink = (event: Event, instance: EventInstance, group?: Group) => ({
-  href: group
-    ? `/g/${group.shortname}/e/${instance!.id}`
-    : `/event/${instance!.id}`
-});
-
-export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false, noAutoScroll }) => {
-  const { startsAt, endsAt } = instance;
+export const useInstanceLink = (event: FederatedEvent, instance: EventInstance, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
-  const theme = useTheme();
-  const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = getServerTheme(server, theme);
-  const group = useGroupContext();
   const showServerInfo = server?.host === useServer()?.host;
   const detailsLinkId = showServerInfo
     ? federateId(instance!.id, server)
@@ -43,6 +33,16 @@ export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance 
         ? `/g/${groupLinkId}/e/${detailsLinkId}`
         : `/event/${detailsLinkId}`
   });
+  return instanceLink;
+}
+
+export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false, noAutoScroll }) => {
+  const { startsAt, endsAt } = instance;
+  const { server } = useFederatedAccountOrServer(event);
+  const theme = useTheme();
+  const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = getServerTheme(server, theme);
+  const group = useGroupContext();
+  const instanceLink = useInstanceLink(event, instance, group);
 
   const mx = linkToInstance ? 'auto' : undefined;
   const lh = 14;
