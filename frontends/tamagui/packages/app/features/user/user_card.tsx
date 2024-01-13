@@ -33,6 +33,7 @@ export function useFullAvatarHeight(): number {
 }
 
 export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
+  // return <></>;
   // const { dispatch, accountOrServer } = useCredentialDispatch();
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
@@ -104,10 +105,10 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </YStack>
     {/* {showServerInfo
       ?  */}
-    <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
+    {/* <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
       o={showServerInfo ? 1 : 0} >
       <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
-    </XStack>
+    </XStack> */}
     {/* : undefined} */}
   </XStack>;
 
@@ -155,13 +156,17 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
             </Button>
           </XStack>
         </YStack> : undefined}
+
       {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack key='follow-button' ac='center' jc='center'>
-        <Button backgroundColor={!following && !followRequested ? primaryColor : undefined}
-          animation='quick' {...standardAnimation}
+        <Button
+          backgroundColor={!following && !followRequested ? primaryColor : undefined}
+          // animation='standard'
+          {...standardAnimation}
           mb='$2'
           p='$3'
           disabled={isLocked} opacity={isLocked ? 0.5 : 1}
-          onPress={onFollowPressed}>
+          onPress={onFollowPressed}
+        >
           <YStack jc='center' ac='center'>
             <Heading jc='center' ta='center' size='$2' color={!following && !followRequested ? primaryTextColor : textColor}>
               {!following && !followRequested ? requiresPermissionToFollow ? 'Follow Request' : 'Follow'

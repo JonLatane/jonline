@@ -142,10 +142,10 @@ export function TabsNavigation({
                   </Button>
                 </YStack>
                 {showServerInfo
-                  ? <XStack my='auto'><ChevronRight color={primaryTextColor} /></XStack>
+                  ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                   : undefined}
                 {!scrollGroupsSheet
-                  ? <XStack space='$2' ml='$1' mr={-3} my='auto' id='main-groups-button'>
+                  ? <XStack space='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
                     <GroupsSheet key='main'
                       selectedGroup={selectedGroup}
                       groupPageForwarder={groupPageForwarder}

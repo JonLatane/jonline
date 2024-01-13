@@ -20,7 +20,7 @@ export function useCurrentAndPinnedServers(): AccountOrServer[] {
     state.accounts.pinnedServers
       .filter(ps => ps.pinned && (!server || ps.serverId !== serverID(server)))
       .map(pinnedServer => ({
-        account: selectAllAccounts(state.accounts).find(a => accountID(a) === pinnedServer.accountId),
+        account: selectAllAccounts(state.accounts).find(a => accountID(a) === pinnedServer.accountId && !a.needsReauthentication),
         server: selectAllServers(state.servers).find(s => serverID(s) === pinnedServer.serverId)
       }))
       .filter(aos => aos.server)

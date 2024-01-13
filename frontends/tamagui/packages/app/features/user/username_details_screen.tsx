@@ -191,7 +191,7 @@ export function UsernameDetailsScreen() {
   //   || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
-    <TabsNavigation appSection={AppSection.PROFILE}>
+    <TabsNavigation appSection={AppSection.PROFILE} primaryEntity={user}>
       <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
         {user ? <>
           <ScrollView w='100%'>

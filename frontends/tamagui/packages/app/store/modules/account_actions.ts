@@ -1,12 +1,9 @@
-import { grpc } from "@improbable-eng/grpc-web";
 import { CreateAccountRequest, LoginRequest } from "@jonline/api";
 import {
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
 import { JonlineAccount, JonlineServer, getServerClient } from "..";
-import { Metadata } from "nice-grpc-web";
 
 export type SkipSelection = { skipSelection?: boolean; }
 export type CreateAccount = JonlineServer & CreateAccountRequest & SkipSelection;

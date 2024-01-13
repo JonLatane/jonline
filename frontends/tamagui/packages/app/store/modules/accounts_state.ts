@@ -8,7 +8,7 @@ import {
   createSlice
 } from "@reduxjs/toolkit";
 import 'react-native-get-random-values';
-import { getCredentialClient, resetAccessTokens, resetCredentialedData, store } from "..";
+import { getCredentialClient, loadUser, loadUsername, loadUsersPage, resetAccessTokens, resetCredentialedData, store } from "..";
 import { PinnedServer } from '../federation';
 import { JonlineAccount, JonlineServer } from "../types";
 import { createAccount, login } from "./account_actions";
@@ -208,6 +208,28 @@ export const accountsSlice = createSlice({
           account.server = action.payload;
         }
       }
+    });
+
+    // TODO: This is where we should be clearing auth tokens when they expire.
+    [loadUsersPage, loadUser, loadUsername].forEach(thunk => {
+      builder.addCase(thunk.rejected, (state, action) => {
+        // debugger;
+        console.log("Accounts error", action.error);
+        // if (!action.meta.arg.account) return;
+
+        // const accountId = accountID(action.meta.arg.account)!;
+        // if (state.currentAccountId === accountId) {
+        //   state.currentAccountId = undefined;
+        // }
+        // for (const pinnedServer of state.pinnedServers) {
+        //   if (pinnedServer.accountId === accountId) {
+        //     pinnedServer.accountId = undefined;
+        //   }
+        // }
+        // const account = selectAccountById(state, accountId);
+        // if (!account) return;
+        // accountsAdapter.upsertOne(state, { ...account, lastSyncFailed: true, needsReauthentication: true });
+      });
     });
   },
 });
