@@ -19,7 +19,7 @@ interface Props {
 
 export const useInstanceLink = (event: FederatedEvent, instance: EventInstance, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
-  const showServerInfo = server?.host === useServer()?.host;
+  const showServerInfo = server?.host !== useServer()?.host;
   const detailsLinkId = showServerInfo
     ? federateId(instance!.id, server)
     : instance!.id;
