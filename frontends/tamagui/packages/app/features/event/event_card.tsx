@@ -194,10 +194,15 @@ export const EventCard: React.FC<Props> = ({
   const detailsLinkId = showServerInfo
     ? federateId(primaryInstanceIdString, accountOrServer.server)
     : primaryInstanceIdString;
+  const groupLinkId = groupContext ?
+    (showServerInfo
+      ? federateId(groupContext.shortname, accountOrServer.server)
+      : groupContext.shortname)
+    : undefined;
   const eventLink: LinkProps = useLink({
     href: primaryInstance ?
       groupContext
-        ? `/g/${groupContext.shortname}/e/${detailsLinkId}`
+        ? `/g/${groupLinkId}/e/${detailsLinkId}`
         : `/event/${detailsLinkId}`
       : '.'
   });
