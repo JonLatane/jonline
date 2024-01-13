@@ -117,6 +117,11 @@ The hope is to build more useful business objects - yes, your boring SalesForce/
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
 
 ### Cost of Operation
+Currently, Jonline's recommended DigitalOcean setup costs $24/mo for the server plus $13/mo per domain (due mostly to the LoadBalancer for each), totaling around $60/mo to run.
+
+It should be possible to bring this down to $24/mo for the server, plus $12/mo for a *single* load balancer, and then 60¢/mo per domain for 1GB Postgres and 5GB MinIO storage. The only thing is, the LB will need to also keep track of certificates in order to read `Host` headers and route traffic. Ideally the Jonline BE instances should still serve their data encrypted as well, simply functioning as `ClusterIP` rather than `LoadBalancer` services.
+
+Contributions and discussion on this topic are welcome! Please [discuss or contribute on the GitHub issue here](https://github.com/JonLatane/jonline/issues/15).
 
 **November 2023 Server Costs:** (3 instances)
 ![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)

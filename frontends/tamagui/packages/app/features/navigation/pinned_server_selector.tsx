@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl, useServer } from "app/hooks";
 
@@ -20,6 +20,7 @@ export type PinnedServerSelectorProps = {
   simplified?: boolean;
 };
 export function PinnedServerSelector({ show, transparent, affectsNavigation, pagesStatuses, simplified }: PinnedServerSelectorProps) {
+  const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
 
@@ -93,7 +94,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
             <XStack ml='auto' space='$2'>
               {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
               <Paragraph my='auto' size='$1'>
-                Exclude{excludeCurrentServer? ` ${shortServerName}` : ''}
+                Exclude{excludeCurrentServer || mediaQuery.gtMd ? ` ${shortServerName}` : ''}
               </Paragraph>
             </XStack>
           </Button>
