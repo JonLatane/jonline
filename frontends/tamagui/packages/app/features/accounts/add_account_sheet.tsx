@@ -53,14 +53,6 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   // const accountsOnPrimaryServer = server ? accounts.filter(a => serverUrl(a.server) == serverUrl(server!)) : [];
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
-  function reauthenticateAccount(account: JonlineAccount) {
-    setReauthenticating(true);
-    setAddingAccount(true);
-    setLoginMethod(LoginMethod.Login);
-    setNewAccountUser(account.user.username);
-    setOpen(true);
-    setTimeout(() => passwordRef.current.focus(), 100);
-  }
   async function onAccountAdded() {
     setAddingAccount(false);
 
@@ -206,10 +198,10 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
               }}
             />
             <XStack f={1} ai='center' o={isCurrentServer ? 0 : 0.5}>
-                <Paragraph ml='auto' size='$1' > via</Paragraph>
-                <XStack>
-                  <ServerNameAndLogo server={currentServer} />
-                </XStack>
+              <Paragraph ml='auto' size='$1' > via</Paragraph>
+              <XStack>
+                <ServerNameAndLogo server={currentServer} />
+              </XStack>
             </XStack>
           </XStack>
           {/* </ZStack> */}
@@ -356,9 +348,7 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                     <YStack key={accountID(account)} mb='$2'>
                       <AccountCard account={account}
                         totalAccounts={accountsOnServer.length}
-                        selectedAccount={selectedAccount}
-                        onPress={onAccountSelected ? () => onAccountSelected(account) : undefined}
-                        onReauthenticate={reauthenticateAccount} />
+                        onPress={onAccountSelected ? () => onAccountSelected(account) : undefined} />
                     </YStack>)}
                 </>
                   : undefined}

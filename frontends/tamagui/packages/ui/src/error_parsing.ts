@@ -33,19 +33,21 @@ export function parseErrorMessage(unparsed: string): ParsedError | undefined {
   }
 }
 
-export function formatError(error: Error): string {
-  let message = error.message;
-  if (!message) message = error.toString();
+export function formatError(error?: { message?: string } | undefined): string {
+  const baseMessage = error?.message ?? error?.toString() ?? 'unknown_error';
+
+  let message = baseMessage;
   const parsedMessage = parseErrorMessage(message);
   if (parsedMessage) {
     message = parsedMessage.message;
   }
   grpcErrorConversions.forEach(({ regex, handler }) => {
-    let matches = message.match(regex);
+    let matches = (message).match(regex);
     if (matches) {
       message = handler(matches);
     }
   });
+  // debugger;
   return message;
 }
 

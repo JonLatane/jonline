@@ -94,7 +94,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
             <XStack ml='auto' space='$2'>
               {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
               <Paragraph my='auto' size='$1'>
-                Exclude{excludeCurrentServer || mediaQuery.gtMd ? ` ${shortServerName}` : ''}
+                Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
               </Paragraph>
             </XStack>
           </Button>

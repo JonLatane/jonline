@@ -132,7 +132,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                   : <ScrollView horizontal w='100%'>
                     <XStack w={eventCardWidth} space='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
                       {paginatedEvents.map((event) =>
-                        <XStack key={`event-preview-${event.id}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
+                        <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
                           <EventCard event={event} isPreview horizontal xs />
                         </XStack>)}
                       <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>

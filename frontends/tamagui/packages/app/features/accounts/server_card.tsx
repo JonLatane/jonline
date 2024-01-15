@@ -1,7 +1,7 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { colorMeta, useAccountOrServer, useAppDispatch, useLocalConfiguration } from "app/hooks";
-import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector } from "app/store";
+import { colorMeta, useAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
+import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
 import React from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -36,6 +36,11 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   }
   const canMoveUp = serversState.ids.indexOf(serverID(server)!) > 0;
   const canMoveDown = serversState.ids.indexOf(serverID(server)!) < serversState.ids.length - 1;
+  const pinnedAccountId = useAppSelector(state =>
+    state.accounts.pinnedServers.find(ps => ps.serverId == serverID(server))?.accountId);
+  const pinnedAccount = useAppSelector(state => pinnedAccountId
+    ? selectAccountById(state.accounts, pinnedAccountId)
+    : undefined);
   function doSelectServer() {
     if (selected) {
       dispatch(selectAccount(undefined));
@@ -46,6 +51,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
       infoLink.onPress();
     }
     dispatch(selectServer(server));
+    if (pinnedAccount) {
+      dispatch(selectAccount(pinnedAccount));
+    }
   }
 
   function doRemoveServer() {

@@ -63,7 +63,7 @@ export function TabsNavigation({
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
-  console.log('primaryColor', primaryColor);
+  // console.log('primaryColor', primaryColor);
   const primaryTextColor = colorMeta(primaryColor).textColor;
 
   const navigationContext: NavigationContextType = useOrCreateNavigationContext();

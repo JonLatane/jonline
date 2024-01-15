@@ -58,22 +58,6 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
 
   const [reauthenticating, setReauthenticating] = useState(false);
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
-  function reauthenticate(account: JonlineAccount) {
-    dispatch(clearAccountAlerts());
-    dispatch(selectServer(account.server));
-    if (account && serverID(account.server) !== serverID(account.server)) {
-      dispatch(selectAccount(undefined));
-    }
-    setAddingAccount(true);
-    setReauthenticating(true);
-    setNewAccountUser(account.user.username);
-    setNewAccountPass('');
-    setForceDisableAccountButtons(false);
-    setLoginMethod(LoginMethod.Login);
-    // (document.querySelector('#accounts-sheet-password-input') as HTMLInputElement)?.focus();
-    setTimeout(() => passwordRef.current.focus(), 100);
-
-  }
   useEffect(() => {
     if (!addingAccount && reauthenticating) {
       setReauthenticating(false);
@@ -608,7 +592,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                       <XStack ai='center'
                         pl={mediaQuery.gtXs ? '$2' : 0}
                         pr={mediaQuery.gtXs ? '$4' : '$1'}>
-            
+
                         <XStack f={1} ai='center'>
                           <ServerNameAndLogo server={server} />
                         </XStack>
@@ -622,10 +606,10 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                           }}
                         />
                         <XStack f={1} ai='center' o={0}>
-                            <Paragraph ml='auto' size='$1' > via</Paragraph>
-                            <XStack>
-                              <ServerNameAndLogo server={currentServer} />
-                            </XStack>
+                          <Paragraph ml='auto' size='$1' > via</Paragraph>
+                          <XStack>
+                            <ServerNameAndLogo server={currentServer} />
+                          </XStack>
                         </XStack>
                       </XStack>
                       <Heading size="$9">
@@ -756,7 +740,6 @@ to evaluate support options.
                     <YStack key={accountID(account)} mb='$2'>
                       <AccountCard
                         account={account}
-                        onReauthenticate={reauthenticate}
                         onProfileOpen={() => setOpen(false)}
                         totalAccounts={accountsOnPrimaryServer.length} />
                     </YStack>)}
@@ -767,7 +750,6 @@ to evaluate support options.
                         <YStack key={accountID(account)} mb='$2'>
                           <AccountCard key={accountID(account)}
                             account={account}
-                            onReauthenticate={reauthenticate}
                             totalAccounts={accountsOnPrimaryServer.length} />
                         </YStack>)}
                     </>
@@ -780,7 +762,6 @@ to evaluate support options.
                     <YStack key={accountID(account)} mb='$2'>
                       <AccountCard key={accountID(account)}
                         account={account}
-                        onReauthenticate={reauthenticate}
                         totalAccounts={displayedAccounts.length} />
                     </YStack>)}
                 </>}

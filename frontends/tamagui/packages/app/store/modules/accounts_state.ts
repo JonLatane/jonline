@@ -142,16 +142,31 @@ export const accountsSlice = createSlice({
       }
     },
     pinAccount: (state, action: PayloadAction<JonlineAccount>) => {
-      const existing = state.pinnedServers.find(s => s.serverId === serverID(action.payload.server));
+      const account = action.payload;
+      const existing = state.pinnedServers.find(s => s.serverId === serverID(account.server));
       if (existing) {
-        existing.accountId = accountID(action.payload);
+        existing.accountId = accountID(account);
         // existing.pinned = ;
       } else {
         state.pinnedServers.push({
-          serverId: serverID(action.payload.server),
-          accountId: accountID(action.payload),
+          serverId: serverID(account.server),
+          accountId: accountID(account),
           pinned: true
         });
+
+
+        setTimeout(async () => {
+          const client = await getCredentialClient({ account, server: account.server })
+          console.log("Loaded client");
+          client.getCurrentUser({}, client.credential).then(user => {
+            console.log("Account is still valid");
+            store.dispatch(accountsSlice.actions.upsertAccount({ ...account, user }));
+          }).catch(() => {
+            console.warn("Failed to load account user data, account may have been deleted.");
+            store.dispatch(accountsSlice.actions.upsertAccount({ ...account, lastSyncFailed: true, needsReauthentication: true }));
+            store.dispatch(accountsSlice.actions.selectAccount(undefined));
+          });
+        }, 1);
       }
     },
     unpinAccount: (state, action: PayloadAction<JonlineAccount>) => {
@@ -218,8 +233,7 @@ export const accountsSlice = createSlice({
     // TODO: This is where we should be clearing auth tokens when they expire.
     [loadUsersPage, loadUser, loadUsername].forEach(thunk => {
       builder.addCase(thunk.rejected, (state, action) => {
-        // debugger;
-        console.log("Accounts error", action.error);
+        console.warn("Accounts error?", action.error);
         // if (!action.meta.arg.account) return;
 
         // const accountId = accountID(action.meta.arg.account)!;
