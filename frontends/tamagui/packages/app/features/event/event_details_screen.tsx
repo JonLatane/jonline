@@ -92,9 +92,10 @@ export function EventDetailsScreen() {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
         // setTimeout(() =>
+        console.log('loadEventByInstance', { ...accountOrServer, instanceId: serverInstanceId });
         dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
           .then((action) => {
-            // setLoadingEvent(false);
+            setTimeout(() => setLoadingEvent(false), 100);
             setLoadedEvent(true);
           });
         // , 100);
@@ -105,7 +106,7 @@ export function EventDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
-  }, [server, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
+  }, [server ? serverID(server) : undefined, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
 
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
