@@ -70,6 +70,7 @@ pub fn default_server_configuration() -> NewServerConfiguration {
         Permission::CreateEvents,
         Permission::PublishEventsLocally,
         Permission::PublishEventsGlobally,
+        Permission::RsvpToEvents,
     ]
     .to_json_permissions();
     return NewServerConfiguration {

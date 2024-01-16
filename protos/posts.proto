@@ -69,12 +69,24 @@ enum PostListingType {
 enum PostContext {
   // "Standard" Post.
   POST = 0;
-  // Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.
+  // Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`.
+  // Does not suport a `link`.
   REPLY = 1;
   // An "Event" Post. The Events table should have a row for this Post.
+  // These Posts' `link` and `title` fields are modifiable.
   EVENT = 2;
   // An "Event Instance" Post. The EventInstances table should have a row for this Post.
+  // These Posts' `link` and `title` fields are modifiable.
   EVENT_INSTANCE = 3;
+
+  // A "Federated" Post. This is a Post that was created on another server. Its `link`
+  // field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`.
+  // This is enforced by the `CreatePost` PRC.
+  FEDERATED_POST = 10;
+
+  // A "Federated" EventInstance. This is an EventInstance that was created on another server. Its `link`
+  // field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`.
+  FEDERATED_EVENT_INSTANCE = 13;
 }
 
 // A `Post` is a message that can be posted to the server. Its `visibility`

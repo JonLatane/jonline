@@ -92,12 +92,12 @@ export function EventDetailsScreen() {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
         setTimeout(() =>
-          dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId! }))
+          dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
             .then((action) => {
               // console.log('loadEventByInstance.then', action.payload)
               setLoadedEvent(true)
-            }));
-      } else if (subjectPost && loadingEvent) {
+            }), 100);
+      } else if (subjectPost && subjectEvent && loadingEvent) {
         setLoadingEvent(false);
       }
       if (subjectPost && (subjectPost.replyCount == 0 || subjectPost.replies.length > 0) && showScrollPreserver) {
