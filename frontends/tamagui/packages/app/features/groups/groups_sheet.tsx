@@ -73,7 +73,7 @@ export function GroupsSheet({
     ? selectAccountById(state.accounts, primaryEntityAccountId)
     : undefined);
 
-  const account = primaryEntityAccount ?? groupAccount;
+  const account = primaryEntity ? primaryEntityAccount : groupAccount;
   const server = primaryEntityServer ?? groupServer;
 
   const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
@@ -140,8 +140,8 @@ export function GroupsSheet({
     <>
       {<YStack>
         {showServerInfo
-          ? <AddAccountSheet server={primaryEntityServer ?? server}
-            selectedAccount={primaryEntityAccount ?? accountOrServer.account}
+          ? <AddAccountSheet server={server}
+            selectedAccount={account}
             onAccountSelected={toggleAccountSelect}
             button={(onPress) =>
               <Button onPress={onPress} animation='standard' h='auto' px='$2'

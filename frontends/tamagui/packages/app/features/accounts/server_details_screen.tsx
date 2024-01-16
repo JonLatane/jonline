@@ -2,7 +2,7 @@ import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo }
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
-import { colorMeta, useAccountOrServer, useAppDispatch } from 'app/hooks';
+import { colorMeta, useAccountOrServer, useAppDispatch, useFederatedAccountOrServer } from 'app/hooks';
 import { JonlineServer, RootState, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServer, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -83,11 +83,15 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   const server = savedServer ?? unsavedServer;
 
-  const { account, server: selectedServer } = useAccountOrServer();
+  const { account, server: selectedServer } = //useAccountOrServer();
+    useFederatedAccountOrServer(server?.host);
+  //useAccountOrServer();
   const serverIsSelected = server && selectedServer &&
     serverID(server) == serverID(selectedServer);
-  const isAdmin = account && server && serverID(account.server) == serverID(server) &&
+  const isAdmin = !!account && !!server &&
+    serverID(account.server) == serverID(server) &&
     hasAdminPermission(account?.user);
+  console.log('isAdmin', isAdmin, account, server);
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [updateError, setUpdateError] = useState('');
@@ -288,8 +292,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
 
   return (
-    <TabsNavigation appSection={AppSection.INFO} 
-    //onlyShowServer={server}
+    <TabsNavigation appSection={AppSection.INFO}
+      //onlyShowServer={server}
       primaryEntity={server ? { serverHost: server.host } : undefined}
     >
       <StickyBox offsetTop={tabNavBaseHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>

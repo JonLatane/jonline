@@ -14,12 +14,12 @@ export function useAccountOrServer(): AccountOrServer {
   };
 }
 
-export function useCurrentAndPinnedServers(): AccountOrServer[] {
+export function useCurrentAndPinnedServers(args?: { includeUnpinned?: boolean; }): AccountOrServer[] {
   const accountOrServer = useAccountOrServer();
   const { server } = accountOrServer;
   const pinnedServers = useAppSelector(state =>
     state.accounts.pinnedServers
-      .filter(ps => ps.pinned && (!server || ps.serverId !== serverID(server)))
+      .filter(ps => (ps.pinned || args?.includeUnpinned) && (!server || ps.serverId !== serverID(server)))
       .map(pinnedServer => ({
         account: selectAllAccounts(state.accounts).find(a => accountID(a) === pinnedServer.accountId && !a.needsReauthentication),
         server: selectAllServers(state.servers).find(s => serverID(s) === pinnedServer.serverId)
@@ -27,11 +27,13 @@ export function useCurrentAndPinnedServers(): AccountOrServer[] {
       .filter(aos => aos.server)
   );
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
-  return excludeCurrentServer ? pinnedServers : [accountOrServer, ...pinnedServers];
+  return excludeCurrentServer && !args?.includeUnpinned
+    ? pinnedServers
+    : [accountOrServer, ...pinnedServers];
 }
 
 export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): AccountOrServer {
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const currentAndPinnedServers = useCurrentAndPinnedServers({includeUnpinned: true});
   const currentAccountOrServer = useAccountOrServer();
   if (!entity) return currentAccountOrServer;
 
@@ -42,6 +44,12 @@ export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: F
   const temporaryServer: JonlineServer = serverClient
     ? { ...serverClient, host, secure: true, }
     : { host, secure: true };
+
+  if (currentAccountOrServer.server?.host === host) {
+    return currentAccountOrServer;
+  }
+
+  // debugger;
 
   return pinnedAccountOrServer ?? { server: temporaryServer };
 }

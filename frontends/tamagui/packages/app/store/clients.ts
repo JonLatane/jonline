@@ -29,6 +29,7 @@ export function getCachedServerClient(server: JonlineServer): ConfiguredClient |
   return clients.get(serverId);
 }
 
+
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
   const serverId = serverID(server);
