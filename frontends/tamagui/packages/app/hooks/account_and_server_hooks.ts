@@ -1,7 +1,8 @@
 import { Post } from '@jonline/api/index';
 import { useAccountOrServerContext } from 'app/contexts';
-import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, selectAccountById, selectAllAccounts, selectAllServers, selectServerById, serverID } from 'app/store';
+import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, getCachedServerClient, selectAccountById, selectAllAccounts, selectAllServers, selectServerById, serverID } from 'app/store';
 import { useAppDispatch, useAppSelector } from "./store_hooks";
+import { server } from '../../../apps/expo/metro.config';
 
 
 export const useAccount = () => useAppSelector(state => state.accounts.currentAccountId ? selectAccountById(state.accounts, state.accounts.currentAccountId) : undefined);
@@ -34,8 +35,15 @@ export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: F
   const currentAccountOrServer = useAccountOrServer();
   if (!entity) return currentAccountOrServer;
 
-  const hostname = typeof entity === 'string' ? entity : entity.serverHost;
-  return currentAndPinnedServers.find(aos => aos.server?.host === hostname) ?? {};
+  const host = typeof entity === 'string' ? entity : entity.serverHost;
+  const pinnedAccountOrServer = currentAndPinnedServers.find(aos => aos.server?.host === host);
+
+  const serverClient = getCachedServerClient({ host, secure: true });
+  const temporaryServer: JonlineServer = serverClient
+    ? { ...serverClient, host, secure: true, }
+    : { host, secure: true };
+
+  return pinnedAccountOrServer ?? { server: temporaryServer };
 }
 
 export type CredentialDispatch = {

@@ -20,15 +20,17 @@ const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortnam
 export function EventDetailsScreen() {
   const [pathInstanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
-  const currentServer = useServer();
-  const { id: serverInstanceId, serverHost } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
-  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
-
   const updateParams = useUpdateParams();
+
+  const currentServer = useServer();
+
+  const { serverHost, id: serverInstanceId } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
+  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
+  const server = accountOrServer.server;
 
   const instanceId = federateId(serverInstanceId, serverHost);
 
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
@@ -85,7 +87,7 @@ export function EventDetailsScreen() {
   }
 
   useEffect(() => {
-    if (instanceId && serverInstanceId) {
+    if (instanceId && serverInstanceId && server) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
@@ -102,7 +104,7 @@ export function EventDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
-  }, [instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
+  }, [server, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
 
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';

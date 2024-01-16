@@ -44,6 +44,7 @@ const configurableUserPermissions = [
   Permission.PUBLISH_POSTS_GLOBALLY,
   Permission.VIEW_EVENTS,
   Permission.CREATE_EVENTS,
+  Permission.RSVP_TO_EVENTS,
   Permission.PUBLISH_EVENTS_LOCALLY,
   Permission.PUBLISH_EVENTS_GLOBALLY,
 ];
