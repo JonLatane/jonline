@@ -91,13 +91,14 @@ export function EventDetailsScreen() {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
-        setTimeout(() =>
-          dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
-            .then((action) => {
-              // console.log('loadEventByInstance.then', action.payload)
-              setLoadedEvent(true)
-            }), 100);
-      } else if (subjectPost && subjectEvent && loadingEvent) {
+        // setTimeout(() =>
+        dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
+          .then((action) => {
+            // setLoadingEvent(false);
+            setLoadedEvent(true);
+          });
+        // , 100);
+      } else if (((subjectPost && subjectEvent) || failedToLoadEvent) && loadingEvent) {
         setLoadingEvent(false);
       }
       if (subjectPost && (subjectPost.replyCount == 0 || subjectPost.replies.length > 0) && showScrollPreserver) {

@@ -124,7 +124,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
 
     builder.addCase(loadEventByInstance.rejected, (state, action) => {
-      state.failedInstanceIds.push(federateId((action.meta.arg as LoadEventByInstance).instanceId, action));
+      if (action.meta.arg.server) {
+        state.failedInstanceIds.push(federateId((action.meta.arg as LoadEventByInstance).instanceId, action));
+      }
     });
 
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
