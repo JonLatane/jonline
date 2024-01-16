@@ -96,11 +96,12 @@ export function EventDetailsScreen() {
         dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
           .then((action) => {
             setTimeout(() => setLoadingEvent(false), 100);
-            setLoadedEvent(true);
+            // setLoadedEvent(true);
           });
         // , 100);
       } else if (((subjectPost && subjectEvent) || failedToLoadEvent) && loadingEvent) {
         setLoadingEvent(false);
+        setLoadedEvent(true);
       }
       if (subjectPost && (subjectPost.replyCount == 0 || subjectPost.replies.length > 0) && showScrollPreserver) {
         dismissScrollPreserver(setShowScrollPreserver);
