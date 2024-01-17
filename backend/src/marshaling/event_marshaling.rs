@@ -94,16 +94,16 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
 }
 
 pub trait ToProtoEventAttendance {
-    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance;
+    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool, media_lookup: Option<&MediaLookup>) -> EventAttendance;
 }
 
 impl ToProtoEventAttendance for (models::EventAttendance, Option<models::Author>) {
-    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool) -> EventAttendance {
+    fn to_proto(&self, include_auth_tokens: bool, include_private_note: bool, media_lookup: Option<&MediaLookup>) -> EventAttendance {
         EventAttendance {
             id: self.0.id.to_proto_id(),
             event_instance_id: self.0.event_instance_id.to_proto_id(),
             attendee: match (&self.1, &self.0.anonymous_attendee) {
-                (Some(author), _) => Some(Attendee::UserAttendee(author.to_proto_user_attendee(None))),
+                (Some(author), _) => Some(Attendee::UserAttendee(author.to_proto_user_attendee(media_lookup))),
                 (_, Some(anonymous_attendee)) => {
                     Some(Attendee::AnonymousAttendee(AnonymousAttendee {
                         name: anonymous_attendee

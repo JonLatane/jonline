@@ -36,14 +36,14 @@ pub fn get_event_attendances(
         .first::<(models::Event, models::Post, models::EventInstance)>(conn)
         .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
 
-    let is_event_owner = user.is_some() && event_post.user_id.is_some() && event_post.user_id.unwrap() == user.map(|u| u.id).unwrap();
+    let is_event_owner = user.is_some()
+        && event_post.user_id.is_some()
+        && event_post.user_id.unwrap() == user.map(|u| u.id).unwrap();
     log::info!("is_event_owner={:?}", is_event_owner);
 
     match (event_post.visibility.to_proto_visibility().unwrap(), user) {
         (Visibility::GlobalPublic, _) => {}
-        (Visibility::ServerPublic, _) => {
-            validate_permission(user, Permission::ViewEvents)?
-        }
+        (Visibility::ServerPublic, _) => validate_permission(user, Permission::ViewEvents)?,
         (Visibility::Limited, Some(user))
             if event_post.user_id.map(|id| id == user.id).unwrap_or(false) => {}
         (Visibility::Private, Some(user))
@@ -85,6 +85,15 @@ pub fn get_event_attendances(
                 Status::new(Code::Internal, "failed_to_load_event_attendances")
             })?;
 
+    let media_ids = attendances
+        .iter()
+        .filter_map(|(_, author)| author.as_ref().map(|a| a.avatar_media_id))
+        .map(|id| id.unwrap_or(0))
+        .collect();
+    let lookup = load_media_lookup(
+        media_ids,
+        conn,
+    );
     Ok(EventAttendances {
         attendances: attendances
             .into_iter()
@@ -93,7 +102,7 @@ pub fn get_event_attendances(
                     request.anonymous_attendee_auth_token.is_some()
                         && a.anonymous_attendee.is_some()
                         && match (a.clone(), attendee.clone())
-                            .to_proto(true, false)
+                            .to_proto(true, false, lookup.as_ref())
                             .attendee
                             .unwrap()
                         {
@@ -113,7 +122,7 @@ pub fn get_event_attendances(
 
                 let include_private_note =
                     is_event_owner || is_current_user_attendee || is_current_anonymous_attendeee;
-                (a, attendee).to_proto(include_private_note, include_private_note)
+                (a, attendee).to_proto(include_private_note, include_private_note, lookup.as_ref())
             })
             .collect(),
     })

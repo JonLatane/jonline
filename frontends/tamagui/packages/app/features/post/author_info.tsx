@@ -18,34 +18,27 @@ export type AuthorInfoProps = {
   detailsMargins?: number;
   disableLink?: boolean;
   isVisible?: boolean;
+  larger?: boolean;
 }
-export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLink = false, detailsMargins = 0, isVisible = true }: AuthorInfoProps) => {
+export const AuthorInfo = ({ post, author = post?.author, disableLink = false, detailsMargins = 0, isVisible = true, larger = false }: AuthorInfoProps) => {
   const { dispatch, accountOrServer } = useProvidedDispatch();
-  if ((!post && !inputAuthor)) {
-    // throw new Error('AuthorInfo requires either a post or an author');
-  }
-  if (post && inputAuthor && post.author?.userId !== inputAuthor.userId) {
-    // throw new Error('Post author and author props do not match');
-  }
-  const author = inputAuthor as Author;
-  const server = useServer();
-  const authorId = federatedIDPair(author.userId, server);
+  // const author = inputAuthor as Author;
+  const server = accountOrServer.server;
+  const authorId = author ? federatedIDPair(author.userId, server) : undefined;
   const serverAuthorId = author?.userId;
-  const federatedAuthorId = serverAuthorId && federateId(serverAuthorId, server);
+  const federatedAuthorId = serverAuthorId ? federateId(serverAuthorId, server) : undefined;
   const authorName = author?.username;
+  const federatedAuthorName = authorName ? federateId(authorName, server) : undefined;
   // const { server, primaryColor, navColor } = useServerTheme();
-  const media = useMedia();
-  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ? selectUserById(state.users, federatedAuthorId) : undefined);
+  const mediaQuery = useMedia();
+  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ? 
+    selectUserById(state.users, federatedAuthorId) : undefined);
   // const authorAvatar = useRootSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useRootSelector((state: RootState) => federatedAuthorId ? state.users.failedUserIds.includes(federatedAuthorId) : false);
 
   const [loadingAuthor, setLoadingAuthor] = useState(false);
   const authorLink = useLink({
-    href: authorName
-      ? `/${authorName}`
-      : author
-        ? `/${author.username}`
-        : `/user/${serverAuthorId}`
+    href: `/${federatedAuthorName}`
   });
   const authorLinkProps = authorLink;
   if (authorLinkProps) {
@@ -55,29 +48,32 @@ export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLi
       authorOnPress?.(event);
     }
   }
-  console.log
+  // console.log("RENDER loading author", federatedAuthorId, authorUser);
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   useEffect(() => {
-    if (serverAuthorId && isVisible) {
+    if (server && serverAuthorId && isVisible) {
       if (!loadingAuthor && !authorUser && !authorLoadFailed) {
-        console.log('loading author')
-        dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer }));
+        // console.log('BEGIN loading author', federatedAuthorId, serverAuthorId, accountOrServer.server?.host, author)
+        dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer })).then((action) => {
+          // setLoadingAuthor(false);
+          // console.log('FINISH loading author', action)
+        });
         setLoadingAuthor(true);
-      } else if (loadingAuthor && author) {
+      } else if (loadingAuthor && authorUser) {
         setLoadingAuthor(false);
       }
     }
-  }, [serverAuthorId, isVisible]);
-  const avatarUrl = useMediaUrl(author?.avatar?.id);
-  const avatarImage = <XStack p={0} w={media.gtXs ? 50 : 26} h={media.gtXs ? 50 : 26}>
+  }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
+  const avatarUrl = useMediaUrl(author?.avatar?.id ?? authorUser?.avatar?.id, accountOrServer);
+  const avatarImage = <XStack p={0} w={mediaQuery.gtXs ? 50 : 26} h={mediaQuery.gtXs ? 50 : 26}>
     <Image
-      width={media.gtXs ? 50 : 26}
-      height={media.gtXs ? 50 : 26}
-      borderRadius={media.gtXs ? 25 : 13}
+      width={mediaQuery.gtXs ? 50 : 26}
+      height={mediaQuery.gtXs ? 50 : 26}
+      borderRadius={mediaQuery.gtXs ? 25 : 13}
       resizeMode="cover"
       als="flex-start"
-      source={{ uri: avatarUrl, width: media.gtXs ? 50 : 26, height: media.gtXs ? 50 : 26 }}
+      source={{ uri: avatarUrl, width: mediaQuery.gtXs ? 50 : 26, height: mediaQuery.gtXs ? 50 : 26 }}
     />
   </XStack>;
 
@@ -93,7 +89,7 @@ export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLi
           :
           // <FadeInView>
           <Anchor {...authorLinkProps}
-            mr={media.gtXs ? '$3' : '$2'}>
+            mr={mediaQuery.gtXs ? '$3' : '$2'}>
             {avatarImage}
           </Anchor>
           // </FadeInView>
@@ -104,12 +100,12 @@ export const AuthorInfo = ({ post, author: inputAuthor = post?.author, disableLi
       <XStack>
         {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
 
-        <Heading size="$1" ml='$1' mr='$2'
+        <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
           marginVertical='auto'>
           {author ?? authorName
             ? disableLink
               ? `${author?.username ?? authorName}`
-              : <Anchor size='$1' {...authorLinkProps}>{author?.username ?? authorName}</Anchor>
+              : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps}>{author?.username ?? authorName}</Anchor>
             : 'anonymous'}
         </Heading>
       </XStack>

@@ -8,7 +8,7 @@ use crate::generate_token;
 use crate::marshaling::*;
 use crate::models::{self, get_author, get_event_attendance, NewEventAttendance};
 use crate::protos::*;
-use crate::schema::{event_attendances, event_instances, events, posts};
+use crate::schema::{event_attendances, event_instances, events, posts, users};
 
 pub fn upsert_event_attendance(
     request: EventAttendance,
@@ -58,6 +58,22 @@ pub fn upsert_event_attendance(
         }
         _ => None,
     };
+    let attendee_avatar_media_id: Option<i64> = attendee_user_id
+        .map(|user_id| {
+            users::table
+                .filter(users::id.eq(user_id))
+                .select(users::avatar_media_id)
+                .first::<Option<i64>>(conn)
+                .map_err(|_e| Status::new(Code::Internal, "failed_to_load_user"))
+        })
+        .map(|r| r.ok())
+        .flatten()
+        .flatten();
+    let lookup_media_ids: Vec<i64> = vec![attendee_avatar_media_id]
+        .iter()
+        .filter_map(|v| v.to_owned())
+        .collect();
+    let lookup: Option<MediaLookup> = load_media_lookup(lookup_media_ids, conn);
     let is_anonymous = attendee_user_id.is_none();
 
     log::info!(
@@ -92,15 +108,17 @@ pub fn upsert_event_attendance(
                     name: attendee.name,
                     contact_methods: attendee.contact_methods,
                     auth_token: Some(match existing_attendance {
-                        Some(ref attendance) => match attendance.to_proto(true, false).attendee {
-                            Some(event_attendance::Attendee::AnonymousAttendee(
-                                AnonymousAttendee {
-                                    auth_token: Some(token),
-                                    ..
-                                },
-                            )) => token,
-                            _ => generate_token!(42),
-                        },
+                        Some(ref attendance) => {
+                            match attendance.to_proto(true, false, None).attendee {
+                                Some(event_attendance::Attendee::AnonymousAttendee(
+                                    AnonymousAttendee {
+                                        auth_token: Some(token),
+                                        ..
+                                    },
+                                )) => token,
+                                _ => generate_token!(42),
+                            }
+                        }
                         None => generate_token!(42),
                     }),
                 })
@@ -171,7 +189,7 @@ pub fn upsert_event_attendance(
                 .execute(conn)
                 .map_err(|_e| Status::new(Code::Internal, "failed_to_update_event_attendance"))?;
 
-            Ok((attendance, author).to_proto(true, true))
+            Ok((attendance, author).to_proto(true, true, lookup.as_ref()))
         }
         None => {
             let authenticated_user_id = &user.map(|u| u.id);
@@ -223,7 +241,7 @@ pub fn upsert_event_attendance(
                 ),
                 _ => None,
             };
-            Ok((attendance, author).to_proto(true, true))
+            Ok((attendance, author).to_proto(true, true, lookup.as_ref()))
         }
     }
 }

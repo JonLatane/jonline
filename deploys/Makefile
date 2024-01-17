@@ -22,18 +22,38 @@ TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 # The Rust code for the LB will basically just be "step 7 from the SA answer".
 # Linking new service accounts will require restarting the LB
 
+LB_CONFIG := jonline-lb-config
 SERVICE_ACCOUNT := jonline-lb
 SERVICE_LINK_ROLE := jonline-lb-$(TARGET_NAMESPACE)-to-$(NAMESPACE)
-deploy_lb_create_service_account:
+
+deploy_lb_create_config:
 	kubectl create sa $(SERVICE_ACCOUNT) -n $(NAMESPACE)
+	kubectl create configmap $(LB_CONFIG) --from-literal=servers=[] -n $(NAMESPACE)
+deploy_lb_delete_config:
+	kubectl delete sa $(SERVICE_ACCOUNT) -n $(NAMESPACE)
+	kubectl delete configmap $(LB_CONFIG) -n $(NAMESPACE)
+
+deploy_lb_get_config:
+	$(eval CURRENT_CONFIG := $(shell kubectl get configmap $(LB_CONFIG) -o jsonpath="{.data.servers}" -n $(NAMESPACE)))
+	@echo '$(CURRENT_CONFIG)'
 
 deploy_lb_link_service_account:
 	kubectl create clusterrole $(SERVICE_LINK_ROLE) --verb get,list --resource secret -n $(NAMESPACE)
 	kubectl create rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE) --serviceaccount $(NAMESPACE):$(SERVICE_ACCOUNT) --clusterrole $(SERVICE_LINK_ROLE)
 
+	$(eval CURRENT_CONFIG := $(shell kubectl get configmap $(LB_CONFIG) -o jsonpath="{.data.servers}" -n $(NAMESPACE)))
+	$(eval UPDATED_CONFIG := $(shell echo '$(CURRENT_CONFIG)' | jq -c -M '. += [{ "namespace": "$(TARGET_NAMESPACE)", "domain": "$(TARGET_NAMESPACE_DOMAIN)" }]'))
+	$(eval UPDATED_CONFIG_WITH_ESCAPED_QUOTES := $(shell echo '$(UPDATED_CONFIG)' | sed 's/"/\\"/g'))
+	kubectl patch configmap $(LB_CONFIG) -p '{"data":{"servers":"$(UPDATED_CONFIG_WITH_ESCAPED_QUOTES)"}}' -n $(NAMESPACE)
+
 deploy_lb_unlink_service_account:
 	kubectl delete rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE)
 	kubectl delete clusterrole $(SERVICE_LINK_ROLE) -n $(NAMESPACE)
+
+	$(eval CURRENT_CONFIG := $(shell kubectl get configmap $(LB_CONFIG) -o jsonpath="{.data.servers}" -n $(NAMESPACE)))
+	$(eval UPDATED_CONFIG := $(shell echo '$(CURRENT_CONFIG)' | jq -c -M 'del(.[] | select(.namespace == "$(TARGET_NAMESPACE)"))'))
+	$(eval UPDATED_CONFIG_WITH_ESCAPED_QUOTES := $(shell echo '$(UPDATED_CONFIG)' | sed 's/"/\\"/g'))
+	kubectl patch configmap $(LB_CONFIG) -p '{"data":{"servers":"$(UPDATED_CONFIG_WITH_ESCAPED_QUOTES)"}}' -n $(NAMESPACE)
 
 deploy_lb_create:
 	kubectl create -f k8s/load_balancer.yaml --save-config -n $(NAMESPACE)

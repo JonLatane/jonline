@@ -1,18 +1,19 @@
-import { useCredentialDispatch } from "app/hooks";
-import { getCredentialClient, useServerTheme } from "app/store";
+import { useFederatedDispatch } from "app/hooks";
+import { FederatedEvent, getCredentialClient, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
-import { AttendanceStatus, Event, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
+import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
 import { Button, Card, Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
 import { Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
+import { AccountOrServerContextProvider } from "app/contexts";
 import { passes } from "app/utils/moderation_utils";
 import { standardAnimation } from '../../../ui/src/animations';
-import { AuthorInfo } from "../post/author_info";
 import { TamaguiMarkdown } from "../../components/tamagui_markdown";
+import { AuthorInfo } from "../post/author_info";
 
 interface Props {
-  event: Event;
+  event: FederatedEvent;
   instance: EventInstance;
   attendance: EventAttendance;
   onPressEdit?: () => void;
@@ -27,7 +28,7 @@ export const RsvpCard: React.FC<Props> = ({
   onModerated,
 }) => {
   const mediaQuery = useMedia();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const { account } = accountOrServer;
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
   // const post = event.post!;
@@ -46,6 +47,7 @@ export const RsvpCard: React.FC<Props> = ({
       .finally(() => setUpserting(false));
   }
 
+  // console.log('attendance.userAttendee', attendance.userAttendee);
   return <Card elevate size="$4" bordered
     animation='standard'
     {...standardAnimation}
@@ -65,9 +67,9 @@ export const RsvpCard: React.FC<Props> = ({
               <Paragraph size='$1'>Anonymous</Paragraph>
               <Heading size='$7'>{anonymousAttendee.name}</Heading>
             </>
-            : <>
-              <AuthorInfo post={Post.create({ author: attendance.userAttendee! })} />
-            </>}
+            : <AccountOrServerContextProvider value={accountOrServer}>
+              <AuthorInfo larger post={Post.create({ author: attendance.userAttendee! })} />
+            </AccountOrServerContextProvider>}
         </YStack>
         <YStack my='auto'>
           <Paragraph size='$2' mx='auto'
