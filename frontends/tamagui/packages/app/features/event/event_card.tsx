@@ -398,9 +398,12 @@ export const EventCard: React.FC<Props> = ({
           </XStack>
         </Anchor>
         {postLinkView}
-        <Anchor key='instance-link' textDecorationLine='none' {...detailsLink}>
-          {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
-        </Anchor>
+        <XStack mr='$2'>
+          <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
+            {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
+          </Anchor>
+          {primaryInstance ? <EventCalendarLink tiny event={event} instance={primaryInstance} /> : undefined}
+        </XStack>
       </>
       : <>
         <XStack key='title'>
