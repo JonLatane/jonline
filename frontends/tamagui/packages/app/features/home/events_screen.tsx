@@ -101,15 +101,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       }} />;
   }
   const renderInColumns = mediaQuery.gtXs;
+  const numberOfColumns = mediaQuery.gtXxl ? 6
+    : mediaQuery.gtXl ? 5
+      : mediaQuery.gtLg ? 4
+        : mediaQuery.gtMd ? 3
+          : 2;
+  console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
   const eventCardWidth = renderInColumns
-    // ? mediaQuery.gtXl
-    //   ? (window.innerWidth - 40) / 5
-    ? mediaQuery.gtLg
-      ? (window.innerWidth - 80) / 4
-      : mediaQuery.gtMd
-        ? (window.innerWidth - 60) / 3
-        : (window.innerWidth - 40) / 2
-    //310
+    ? (window.innerWidth - 80 - (20 * numberOfColumns)) / numberOfColumns
     : undefined;
   const maxWidth = 2000;
   // useEffect(() => { }, [pinnedServersHeight]);
