@@ -22,6 +22,7 @@
     "@tanstack/react-query": "^5.8.4",
     "add": "^2.0.6",
     "burnt": "^0.10.0",
+    "calendar-link": "^2.6.0",
     "expo-constants": "^14.2.1",
     "expo-linking": "^4.0.1",
     "moment": "^2.29.4",

@@ -3,12 +3,12 @@ import { FederatedEvent, FederatedGroup, FederatedPost, deleteEvent, federateId,
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Group, Location } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
-import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { Adapt, Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, Popover, ScrollView, Select, TamaguiElement, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
+import { ArrowRightFromLine, CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, ExternalLink, History, Link, Menu, Repeat, Save, X as XIcon, Calendar } from '@tamagui/lucide-icons';
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
+import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedAccountOrServer, useFederatedDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -17,12 +17,15 @@ import { useLink } from "solito/link";
 // import { PostMediaRenderer } from "../post/post_media_renderer";
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
-import { AccountOrServerContextProvider } from 'app/contexts';
+import { AccountOrServerContextProvider, useGroupContext } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
+import { google, outlook, office365, yahoo, ics, CalendarEvent } from "calendar-link";
+import { EventCalendarLink } from './event_calendar_link';
+
 
 interface Props {
   event: FederatedEvent;
@@ -417,6 +420,7 @@ export const EventCard: React.FC<Props> = ({
                 : undefined}
           </YStack>
           <XStack f={1} />
+          {primaryInstance ? <EventCalendarLink event={event} instance={primaryInstance} /> : undefined}
           {instanceManagementButtons}
         </XStack>
       </>}
@@ -942,6 +946,7 @@ export const EventCard: React.FC<Props> = ({
 };
 
 export default EventCard;
+
 
 
 function useStartAndEndTime(instance: EventInstance | undefined, setInstance: (instance: EventInstance) => void) {

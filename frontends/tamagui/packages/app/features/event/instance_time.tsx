@@ -1,13 +1,13 @@
-import { FederatedEvent, federateId, getServerTheme, useServerTheme } from "app/store";
+import { FederatedEvent, federateId, getServerTheme } from "app/store";
 import React from "react";
 
-import { Event, EventInstance, Group } from "@jonline/api";
+import { EventInstance, Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
-import moment from "moment";
-import { LinkProps, useLink } from "solito/link";
-import { useGroupContext } from "../../contexts/group_context";
-import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useFederatedAccountOrServer, useServer } from "app/hooks";
+import { themedButtonBackground } from "app/utils/themed_button_background";
+import moment from "moment";
+import { useLink } from "solito/link";
+import { useGroupContext } from "../../contexts/group_context";
 
 interface Props {
   event: FederatedEvent;
@@ -30,13 +30,19 @@ export const useInstanceLink = (event: FederatedEvent, instance: EventInstance, 
     : undefined;
   const instanceLink = useLink({
     href: group
-        ? `/g/${groupLinkId}/e/${detailsLinkId}`
-        : `/event/${detailsLinkId}`
+      ? `/g/${groupLinkId}/e/${detailsLinkId}`
+      : `/event/${detailsLinkId}`
   });
   return instanceLink;
 }
 
-export const InstanceTime: React.FC<Props> = ({ event, instance, linkToInstance = false, highlight = false, noAutoScroll }) => {
+export const InstanceTime: React.FC<Props> = ({
+  event,
+  instance,
+  linkToInstance = false,
+  highlight = false,
+  noAutoScroll,
+}) => {
   const { startsAt, endsAt } = instance;
   const { server } = useFederatedAccountOrServer(event);
   const theme = useTheme();

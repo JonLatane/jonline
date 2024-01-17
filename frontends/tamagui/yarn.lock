@@ -7764,6 +7764,7 @@ __metadata:
     "@types/uuid": ^9.0.0
     add: ^2.0.6
     burnt: ^0.10.0
+    calendar-link: ^2.6.0
     expo-constants: ^14.2.1
     expo-linking: ^4.0.1
     moment: ^2.29.4
@@ -8727,6 +8728,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"calendar-link@npm:^2.6.0":
+  version: 2.6.0
+  resolution: "calendar-link@npm:2.6.0"
+  dependencies:
+    dayjs: ^1.9.3
+    query-string: ^6.13.6
+  checksum: 1baed28ffbe2508c0db0c052a8e562564f03a783fb29adaecee008e299c47ecfd3e5f9b27edbf111da2ff5e51058aceeafb8851f2c7c236c98b774a68ff5e19a
+  languageName: node
+  linkType: hard
+
 "call-bind@npm:^1.0.0, call-bind@npm:^1.0.2":
   version: 1.0.2
   resolution: "call-bind@npm:1.0.2"
@@ -9620,6 +9631,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dayjs@npm:^1.9.3":
+  version: 1.11.10
+  resolution: "dayjs@npm:1.11.10"
+  checksum: a6b5a3813b8884f5cd557e2e6b7fa569f4c5d0c97aca9558e38534af4f2d60daafd3ff8c2000fed3435cfcec9e805bcebd99f90130c6d1c5ef524084ced588c4
+  languageName: node
+  linkType: hard
+
 "deasync@npm:^0.1.0":
   version: 0.1.28
   resolution: "deasync@npm:0.1.28"
@@ -9676,7 +9694,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"decode-uri-component@npm:^0.2.2":
+"decode-uri-component@npm:^0.2.0, decode-uri-component@npm:^0.2.2":
   version: 0.2.2
   resolution: "decode-uri-component@npm:0.2.2"
   checksum: 95476a7d28f267292ce745eac3524a9079058bbb35767b76e3ee87d42e34cd0275d2eb19d9d08c3e167f97556e8a2872747f5e65cbebcac8b0c98d83e285f139
@@ -17786,6 +17804,18 @@ __metadata:
     split-on-first: ^1.0.0
     strict-uri-encode: ^2.0.0
   checksum: 91af02dcd9cc9227a052841d5c2eecb80a0d6489d05625df506a097ef1c59037cfb5e907f39b84643cbfd535c955abec3e553d0130a7b510120c37d06e0f4346
+  languageName: node
+  linkType: hard
+
+"query-string@npm:^6.13.6":
+  version: 6.14.1
+  resolution: "query-string@npm:6.14.1"
+  dependencies:
+    decode-uri-component: ^0.2.0
+    filter-obj: ^1.1.0
+    split-on-first: ^1.0.0
+    strict-uri-encode: ^2.0.0
+  checksum: f2c7347578fa0f3fd4eaace506470cb4e9dc52d409a7ddbd613f614b9a594d750877e193b5d5e843c7477b3b295b857ec328903c943957adc41a3efb6c929449
   languageName: node
   linkType: hard
 
