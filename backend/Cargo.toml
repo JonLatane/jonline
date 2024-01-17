@@ -57,6 +57,18 @@ tempfile = "3.5.0"
 percent-encoding = "2.3.0"
 ico = "0.3.0"
 
+# For LoadBalancer only
+# async-tls = "0.12.0"
+# async-std = "1.12.0"
+# futures-lite = "2.2.0"
+# rustls = "0.22.2"
+async-std = "1.11.0"
+async-tls = "0.12.0"
+futures-lite = "1.12.0"
+rustls = "0.20.6"
+rustls-pemfile = "1.0"
+structopt = "0.3.9"
+
 [build-dependencies]
 tonic-build = "0.10.2"
 prost-wkt-build = "0.5.0"

@@ -4,9 +4,56 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
+# Used when configuring the load balancer (deploy_lb_[un]link_service_account).
+TARGET_NAMESPACE ?= jonline
+TARGET_NAMESPACE_DOMAIN ?= invalid.jonline.domain
+
 TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
 
+# K8s Load Balancer deployment targets (WIP)
+# It should be possible to write a minimalist Rust LB that loads the TLS certs
+# from various Jonline namespaces and routes traffic to the appropriate service.
+# Both the LB and the internal service use the same TLS certs for their communication.
+#
+# See hudsucker, the library I should use for this:
+# - https://github.com/omjadas/hudsucker/blob/main/examples/openssl.rs
+# And this StackOverflow answer: https://stackoverflow.com/a/73419051
+#
+# The Rust code for the LB will basically just be "step 7 from the SA answer".
+# Linking new service accounts will require restarting the LB
+
+SERVICE_ACCOUNT := jonline-lb
+SERVICE_LINK_ROLE := jonline-lb-$(TARGET_NAMESPACE)-to-$(NAMESPACE)
+deploy_lb_create_service_account:
+	kubectl create sa $(SERVICE_ACCOUNT) -n $(NAMESPACE)
+
+deploy_lb_link_service_account:
+	kubectl create clusterrole $(SERVICE_LINK_ROLE) --verb get,list --resource secret -n $(NAMESPACE)
+	kubectl create rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE) --serviceaccount $(NAMESPACE):$(SERVICE_ACCOUNT) --clusterrole $(SERVICE_LINK_ROLE)
+
+deploy_lb_unlink_service_account:
+	kubectl delete rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE)
+	kubectl delete clusterrole $(SERVICE_LINK_ROLE) -n $(NAMESPACE)
+
+deploy_lb_create:
+	kubectl create -f k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
+
+deploy_lb_update:
+	kubectl apply -f k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
+
+deploy_lb_delete:
+	kubectl delete -f k8s/load_balancer.yaml -n $(NAMESPACE)
+
+deploy_lb_monitor_rollout:
+	kubectl rollout status deployment/jonline-lb -n $(NAMESPACE)
+
+deploy_lb_restart:
+	kubectl rollout restart deployment jonline-lb -n $(NAMESPACE)
+
 # K8s server deployment targets
+# Use "internal" when deploying with a separate load balancer, and 
+# use deploy_be_link_lb_service_account to link the load balancer to the
+# internal Jonline service.
 deploy_be_create_external: deploy_ensure_namespace
 	kubectl create -f k8s/server_external.yaml --save-config -n $(NAMESPACE)
 	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)

@@ -14,6 +14,7 @@ use crate::web::RocketState;
 use log::info;
 use rocket::fs::NamedFile;
 use rocket::http::ContentType;
+use rocket::http::uri::Host;
 
 use diesel::*;
 use rocket::http::MediaType;
@@ -46,13 +47,15 @@ pub async fn create_media(
     auth_header: Option<AuthHeader<'_>>,
     content_type_header: ContentTypeHeader<'_>,
     filename_header: FilenameHeader<'_>,
+    host: &Host<'_>,
 ) -> Result<String, Status> {
     log::info!("create_media");
     let user = get_media_user(None, auth_header, cookies, state)?;
     let uuid = Uuid::new_v4();
     let minio_path = format!(
-        "user/{}-{}/{}-{}",
+        "user/{}@{}-{}/{}-{}",
         user.id.to_proto_id(),
+        host.domain().to_string(),
         user.username,
         uuid,
         filename_header.0
