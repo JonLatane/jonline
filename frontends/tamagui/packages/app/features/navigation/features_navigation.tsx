@@ -114,9 +114,10 @@ export type FeaturesNavigationProps = {
   appSection?: AppSection;
   appSubsection?: AppSubsection;
   selectedGroup?: FederatedGroup;
+  disabled?: boolean;
 };
 
-export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup }: FeaturesNavigationProps) {
+export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
   const { account, server } = useAccountOrServer();
   const mediaQuery = useMedia();
   const { primaryTextColor, navColor, navTextColor } = useServerTheme();
@@ -271,8 +272,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
               my='auto'
               size="$3"
-              disabled={selected}
-              o={selected ? 0.5 : 1}
+              disabled={selected || disabled}
+              o={selected || disabled ? 0.5 : 1}
               backgroundColor={selected ? navColor : undefined}
               hoverStyle={{ backgroundColor: '$colorTransparent' }}
               {...link}

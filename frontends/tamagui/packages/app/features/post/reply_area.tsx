@@ -12,6 +12,7 @@ import { AddAccountSheet } from '../accounts/add_account_sheet'
 import { MediaRef } from '../media/media_chooser'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
+import { useHideNavigation } from '../navigation/use_hide_navigation'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
@@ -103,7 +104,10 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const canSend = replyText.length > 0 || media.length > 0;
   const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
-  return hidden ? <></> : isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
+
+  const hideNavigation = useHideNavigation();
+  const hide = hidden || hideNavigation;
+  return hide ? <></> : isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canComment
       ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
         {hasReplyTextFocused || media.length > 0

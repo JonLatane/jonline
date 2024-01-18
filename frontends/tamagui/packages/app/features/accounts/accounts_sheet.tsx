@@ -56,13 +56,8 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
   const effectiveServer = onlyShowServer ?? server;
 
-  const [reauthenticating, setReauthenticating] = useState(false);
+  const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
-  useEffect(() => {
-    if (!addingAccount && reauthenticating) {
-      setReauthenticating(false);
-    }
-  }, [addingAccount, reauthenticating])
   const browsingOnDiffers = Platform.OS == 'web' &&
     effectiveServer?.host != browsingOn;
   //   serversState.server && serversState.server.host != browsingOn ||
@@ -112,7 +107,6 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
         setNewAccountPass('');
         setForceDisableAccountButtons(false);
         setLoginMethod(undefined);
-        setReauthenticating(false);
       }, 600);
     }, 600);
 
@@ -563,7 +557,10 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                     icon={Plus}
                     disabled={server === undefined}
                     {...themedButtonBackground(primaryColor, primaryTextColor)}
-                    onPress={() => setAddingAccount((x) => !x)}
+                    onPress={() => {
+                      setAddingAccount(true);
+                      setTimeout(() => usernameRef.current.focus(), 100);
+                    }}
                   >
                     Login/Sign Up
                   </Button>
@@ -613,26 +610,31 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                         </XStack>
                       </XStack>
                       <Heading size="$9">
-                        {reauthenticating ? 'Re-Enter Password'
-                          : loginMethod === 'login' ? 'Login'
-                            : loginMethod === 'create_account' ? 'Sign Up'
-                              : 'Add Account'}
+                        {loginMethod === 'login' ? 'Login'
+                          : loginMethod === 'create_account' ? 'Sign Up'
+                            : 'Add Account'}
                       </Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
                       <Sheet.ScrollView>
-                        <YStack space="$2" pb='$2' maw={600} w='100%' als='center'
-                          pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : 0}>
+                        <YStack space="$2" pb='$2' //pt={loginMethod ? undefined : '$3'}
+                          maw={600} w='100%' als='center'
+                          // pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : '$3'}
+                          pt='$3'
+                          >
                           {/* <Heading size="$10">Add Account</Heading> */}
                           <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                             editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                             autoCapitalize='none'
                             value={newAccountUser}
-                            autoFocus={!loginMethod}
+                            ref={usernameRef}
+                            // autoFocus={!loginMethod}
                             onKeyPress={(e) => {
                               if (e.nativeEvent.key === 'Enter') {
                                 if (!loginMethod) {
                                   setLoginMethod(LoginMethod.Login);
                                   setTimeout(() => passwordRef.current.focus(), 100);
+                                } else {
+                                  passwordRef.current.focus();
                                 }
                               }
                             }}
@@ -642,7 +644,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                             ? <XStack w='100%' animation="quick" {...standardAnimation}>
                               <Input secureTextEntry w='100%'
                                 ref={passwordRef}
-                                autoFocus
+                                // autoFocus
                                 id='accounts-sheet-password-input'
                                 textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
                                 placeholder="Password"
@@ -691,10 +693,11 @@ to evaluate support options.
 
                           {loginMethod
                             ? <XStack>
-                              {reauthenticating ? undefined : <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                              <Button marginRight='$1'
+                                onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
                                 disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                                 Back
-                              </Button>}
+                              </Button>
                               <Button flex={1} backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor} onPress={() => {
                                 if (loginMethod == LoginMethod.Login) {
                                   loginToServer();
@@ -702,10 +705,10 @@ to evaluate support options.
                                   createServerAccount();
                                 }
                               }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                                {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
+                                {loginMethod == LoginMethod.Login ? 'Login' : 'Sign Up'}
                               </Button>
                             </XStack>
-                            : <XStack>
+                            : <XStack mt='$3'>
                               <Button flex={2}
                                 marginRight='$1'
                                 onPress={() => {

@@ -14,27 +14,30 @@ export function useHideNavigation() {
     still: Direction.Still
   })
   const { showPinnedServers } = useLocalConfiguration();
-  const [hide, setHide] = useState(false);
   const [hideLock, setHideLock] = useState(false);
+  const [hide, _setHide] = useState(false);
+  function setHide(value: boolean) {
+    setHideLock(true);
+    _setHide(value);
+    setTimeout(() => setHideLock(false), 1000);
+  }
   const [lastScrollDir, setLastScrollDir] = useState(Direction.Still);
-  // const doHide = mediaQuery.xShort && scrollDir === Direction.Down;
   const dispatch = useAppDispatch();
   useEffect(() => {
     if (!hideLock) {
-      if (!hide && mediaQuery.xShort && scrollDir === Direction.Down && scrollDir !== lastScrollDir) {
-        setHideLock(true);
-        setHide(true);
-        setLastScrollDir(Direction.Down);
-        setTimeout(() => setHideLock(false), 2000);
-      } else if (hide && mediaQuery.xShort && scrollDir === Direction.Up && scrollDir !== lastScrollDir) {
-        console.log('show')
-        setHideLock(true);
+      const atTop = scrollPosition.top === 0;
+      if (scrollDir !== lastScrollDir) {
+        if (!hide && mediaQuery.xShort && scrollDir === Direction.Down) {
+          setHide(true);
+        } else if (hide && (!mediaQuery.xShort || scrollDir === Direction.Up || atTop)) {
+          setHide(false);
+        }
+      } else if (hide && atTop) {
         setHide(false);
-        setLastScrollDir(Direction.Up);
-        setTimeout(() => setHideLock(false), 2000);
       }
     }
-  }, [mediaQuery.xShort, scrollDir, hide, hideLock]);
+    setLastScrollDir(scrollDir);
+  }, [mediaQuery.xShort, scrollDir, lastScrollDir, hide, hideLock, scrollPosition]);
   useEffect(() => {
     if (hide && showPinnedServers) {
       dispatch(setShowPinnedServers(false));

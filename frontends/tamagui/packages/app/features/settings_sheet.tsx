@@ -1,9 +1,10 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
+import { FeaturesNavigation } from './navigation/features_navigation';
 
 
 export type SettingsSheetProps = {
@@ -15,6 +16,7 @@ export type SettingsSheetProps = {
 export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   // const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
+  const { primaryColor } = useServerTheme();
 
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
@@ -59,9 +61,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
             }}
           />
           <Sheet.ScrollView p="$4" space>
-            <YStack maxWidth={800} width='100%' alignSelf='center' space='$3'>
+            <YStack maxWidth={800} width='100%' alignSelf='center' space='$1'>
               <Heading>Settings</Heading>
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
+              <Heading size='$5' mt='$3'>Discussions and Chat</Heading>
               <ToggleRow name='Auto-Refresh Discussion Chat' value={app.autoRefreshDiscussions} setter={setAutoRefreshDiscussions} autoDispatch />
               <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
 
@@ -83,8 +86,20 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </YStack>
               </XStack>
 
-              <Heading size='$4' mt='$3'>Feature Navigation UI</Heading>
-              <Paragraph o={0.5} size='$1'>Posts, Events, People, Latest, etc.</Paragraph>
+              <Heading size='$5' mt='$5'>Navigation</Heading>
+              <ToggleRow name='Auto-Hide Navigation'
+                description='Automatically hide navigation when scrolling down. For short (landscape phone) screens, this is automatically enabled.'
+                value={app.autoHideNavigation}
+                setter={(v) => setAutoHideNavigation(v)} autoDispatch />
+              <XStack flexWrap='wrap' space='$3' ai='center' mt='$2'>
+                <Heading size='$4'>Feature Navigation</Heading>
+                <Paragraph o={0.5} size='$1'>(Posts, Events, People, Latest, Media, etc.)</Paragraph>
+              </XStack>
+              <YStack w='100%' backgroundColor={primaryColor} borderRadius='$3'>
+                <XStack mx='auto' py='$1'>
+                  <FeaturesNavigation disabled />
+                </XStack>
+              </YStack>
               <ToggleRow name='Auto Feature Navigation'
                 description='Automatically enable/disable Inline Feature Navigation based on screen size.'
                 value={app.inlineFeatureNavigation === undefined}
@@ -100,10 +115,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
 
 
-              <Heading size='$3' mt='$3'>Accounts</Heading>
+              <Heading size='$5' mt='$5'>Accounts</Heading>
               <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
 
-              <Heading size='$3' mt='$3'>Testing</Heading>
+              <Heading size='$5' mt='$5'>Testing</Heading>
               <ToggleRow name='Allow Server Selection'
                 description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                 // disabled={serverCount !== 1}
@@ -112,7 +127,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}
-              <Heading size='$3' mt='$3'>Development</Heading>
+              <Heading size='$5' mt='$5'>Development</Heading>
               <ToggleRow name='Browse RSVPs from Event Previews' value={app.browseRsvpsFromPreviews} setter={setBrowseRsvpsFromPreviews} autoDispatch />
               <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
 
@@ -127,7 +142,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 <Dialog>
                   <Dialog.Trigger asChild>
 
-                    <Button f={1} icon={XIcon} iconAfter={AlertTriangle} color='red'>
+                    <Button f={1} icon={XIcon} iconAfter={AlertTriangle} color='red' mt='$5' mb='$3'>
                       Reset ALL Local Data
                     </Button>
                     {/* <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular /> */}

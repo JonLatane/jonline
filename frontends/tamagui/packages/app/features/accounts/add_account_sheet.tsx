@@ -36,6 +36,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   const [newAccountPass, setNewAccountPass] = useState('');
 
 
+  const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
@@ -230,7 +231,10 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
                 transparent={!addingAccount}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-                onPress={() => setAddingAccount(true)}>
+                onPress={() => {
+                  setAddingAccount(true);
+                  setTimeout(() => usernameRef.current.focus(), 100);
+                  }}>
                 <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
               </Button>
               {/* </Tooltip.Trigger>
@@ -249,11 +253,14 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
                     editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                     autoCapitalize='none'
                     value={newAccountUser}
+                    ref={usernameRef}
                     onKeyPress={(e) => {
                       if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
                         if (!loginMethod) {
                           setLoginMethod(LoginMethod.Login);
                           setTimeout(() => passwordRef.current.focus(), 100);
+                        } else {
+                          passwordRef.current.focus();
                         }
                       }
                     }}
