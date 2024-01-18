@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// Ways of listing users.
 class UserListingType extends $pb.ProtobufEnum {
   static const UserListingType EVERYONE = UserListingType._(0, _omitEnumNames ? '' : 'EVERYONE');
   static const UserListingType FOLLOWING = UserListingType._(1, _omitEnumNames ? '' : 'FOLLOWING');

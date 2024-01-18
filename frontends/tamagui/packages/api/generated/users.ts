@@ -14,11 +14,17 @@ import {
 
 export const protobufPackage = "jonline";
 
+/** Ways of listing users. */
 export enum UserListingType {
+  /** EVERYONE - Get all users. */
   EVERYONE = 0,
+  /** FOLLOWING - Get users the current user is following. */
   FOLLOWING = 1,
+  /** FRIENDS - Get users who follow and are followed by the current user. */
   FRIENDS = 2,
+  /** FOLLOWERS - Get users who follow the current user. */
   FOLLOWERS = 3,
+  /** FOLLOW_REQUESTS - Get users who have requested to follow the current user. */
   FOLLOW_REQUESTS = 4,
   UNRECOGNIZED = -1,
 }
@@ -65,18 +71,35 @@ export function userListingTypeToJSON(object: UserListingType): string {
   }
 }
 
+/**
+ * Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
+ * [`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
+ */
 export interface User {
+  /** Permanent string ID for the user. Will never contain a `@` symbol. */
   id: string;
+  /** Impermanent string username for the user. Will never contain a `@` symbol. */
   username: string;
+  /** The user's real name. */
   realName: string;
-  email?: ContactMethod | undefined;
-  phone?: ContactMethod | undefined;
+  /** The user's email address. */
+  email?:
+    | ContactMethod
+    | undefined;
+  /** The user's phone number. */
+  phone?:
+    | ContactMethod
+    | undefined;
+  /** The user's permissions. See [`Permission`](#jonline-Permission) for details. */
   permissions: Permission[];
   /**
-   * Media ID for the user's avatar. Note that its visibility is managed by the User and thus
+   * The user's avatar. Note that its visibility is managed by the User and thus
    * it may not be accessible to the current user.
    */
-  avatar?: MediaReference | undefined;
+  avatar?:
+    | MediaReference
+    | undefined;
+  /** The user's bio. */
   bio: string;
   /**
    * User visibility is a bit different from Post visibility.
@@ -87,13 +110,27 @@ export interface User {
    * users' ability to creep.
    */
   visibility: Visibility;
+  /** The user's moderation status. See [`Moderation`](#jonline-Moderation) for details. */
   moderation: Moderation;
   /** Only PENDING or UNMODERATED are valid. */
   defaultFollowModeration: Moderation;
-  followerCount?: number | undefined;
-  followingCount?: number | undefined;
-  groupCount?: number | undefined;
-  postCount?: number | undefined;
+  /** The number of users following this user. */
+  followerCount?:
+    | number
+    | undefined;
+  /** The number of users this user is following. */
+  followingCount?:
+    | number
+    | undefined;
+  /** The number of groups this user is a member of. */
+  groupCount?:
+    | number
+    | undefined;
+  /** The number of posts this user has made. */
+  postCount?:
+    | number
+    | undefined;
+  /** The number of responses to `Post`s and `Event`s this user has made. */
   responseCount?:
     | number
     | undefined;
@@ -108,9 +145,22 @@ export interface User {
    * Presence indicates this user is following or has
    * a pending follow request for the current user.
    */
-  targetCurrentUserFollow?: Follow | undefined;
-  currentGroupMembership?: Membership | undefined;
-  createdAt: string | undefined;
+  targetCurrentUserFollow?:
+    | Follow
+    | undefined;
+  /**
+   * Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
+   * The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
+   * providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
+   */
+  currentGroupMembership?:
+    | Membership
+    | undefined;
+  /** The time the user was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the user was last updated. */
   updatedAt?: string | undefined;
 }
 
@@ -119,8 +169,13 @@ export interface User {
  * from its own cache (for things like admin/bot icons).
  */
 export interface Author {
+  /** Permanent string ID for the user. Will never contain a `@` symbol. */
   userId: string;
-  username?: string | undefined;
+  /** Impermanent string username for the user. Will never contain a `@` symbol. */
+  username?:
+    | string
+    | undefined;
+  /** The user's avatar. */
   avatar?: MediaReference | undefined;
 }
 
@@ -132,7 +187,11 @@ export interface Follow {
   targetUserId: string;
   /** Tracks whether the target user needs to approve the follow. */
   targetUserModeration: Moderation;
-  createdAt: string | undefined;
+  /** The time the follow was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the follow was last updated. */
   updatedAt?: string | undefined;
 }
 
@@ -146,18 +205,17 @@ export interface Membership {
   userId: string;
   /** The group the membership pertains to. */
   groupId: string;
-  /**
-   * Valid Membership Permissions are:
-   * * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
-   * * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`
-   * * `ADMIN` and `MODERATE_USERS`
-   */
+  /** Valid Membership Permissions are:  `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`, `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`, `ADMIN`, `RUN_BOTS`, and `MODERATE_USERS` */
   permissions: Permission[];
   /** Tracks whether group moderators need to approve the membership. */
   groupModeration: Moderation;
   /** Tracks whether the user needs to approve the membership. */
   userModeration: Moderation;
-  createdAt: string | undefined;
+  /** The time the membership was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the membership was last updated. */
   updatedAt?: string | undefined;
 }
 
@@ -167,7 +225,10 @@ export interface Membership {
  */
 export interface ContactMethod {
   /** Either a `mailto:` or `tel:` URL. */
-  value?: string | undefined;
+  value?:
+    | string
+    | undefined;
+  /** The visibility of the contact method. */
   visibility: Visibility;
   /**
    * Server-side flag indicating whether the server can verify
@@ -186,14 +247,27 @@ export interface ContactMethod {
  * Supported parameters depend on `listing_type`.
  */
 export interface GetUsersRequest {
-  username?: string | undefined;
-  userId?: string | undefined;
-  page?: number | undefined;
+  /** The username to search for. Substrings are supported. */
+  username?:
+    | string
+    | undefined;
+  /** The user ID to search for. */
+  userId?:
+    | string
+    | undefined;
+  /** The page of results to return. Pages are 0-indexed. */
+  page?:
+    | number
+    | undefined;
+  /** The number of results to return per page. */
   listingType: UserListingType;
 }
 
+/** Response to a `GetUsersRequest`. */
 export interface GetUsersResponse {
+  /** The users matching the request. */
   users: User[];
+  /** Whether there are more pages of results. */
   hasNextPage: boolean;
 }
 

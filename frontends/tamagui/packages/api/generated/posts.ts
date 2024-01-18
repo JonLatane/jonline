@@ -94,12 +94,32 @@ export function postListingTypeToJSON(object: PostListingType): string {
 export enum PostContext {
   /** POST - "Standard" Post. */
   POST = 0,
-  /** REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`. */
+  /**
+   * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`.
+   * Does not suport a `link`.
+   */
   REPLY = 1,
-  /** EVENT - An "Event" Post. The Events table should have a row for this Post. */
+  /**
+   * EVENT - An "Event" Post. The Events table should have a row for this Post.
+   * These Posts' `link` and `title` fields are modifiable.
+   */
   EVENT = 2,
-  /** EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post. */
+  /**
+   * EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post.
+   * These Posts' `link` and `title` fields are modifiable.
+   */
   EVENT_INSTANCE = 3,
+  /**
+   * FEDERATED_POST - A "Federated" Post. This is a Post that was created on another server. Its `link`
+   * field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`.
+   * This is enforced by the `CreatePost` PRC.
+   */
+  FEDERATED_POST = 10,
+  /**
+   * FEDERATED_EVENT_INSTANCE - A "Federated" EventInstance. This is an EventInstance that was created on another server. Its `link`
+   * field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`.
+   */
+  FEDERATED_EVENT_INSTANCE = 13,
   UNRECOGNIZED = -1,
 }
 
@@ -117,6 +137,12 @@ export function postContextFromJSON(object: any): PostContext {
     case 3:
     case "EVENT_INSTANCE":
       return PostContext.EVENT_INSTANCE;
+    case 10:
+    case "FEDERATED_POST":
+      return PostContext.FEDERATED_POST;
+    case 13:
+    case "FEDERATED_EVENT_INSTANCE":
+      return PostContext.FEDERATED_EVENT_INSTANCE;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -134,6 +160,10 @@ export function postContextToJSON(object: PostContext): string {
       return "EVENT";
     case PostContext.EVENT_INSTANCE:
       return "EVENT_INSTANCE";
+    case PostContext.FEDERATED_POST:
+      return "FEDERATED_POST";
+    case PostContext.FEDERATED_EVENT_INSTANCE:
+      return "FEDERATED_EVENT_INSTANCE";
     case PostContext.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

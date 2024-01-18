@@ -437,40 +437,44 @@ Request to reset a password.
 <a name="jonline-Permission"></a>
 
 ### Permission
+Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
+(A `Membership` is the link between a [`Group`](#jonline-Group) and a `User`.)
 
+Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
+and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PERMISSION_UNKNOWN | 0 |  |
-| VIEW_USERS | 1 |  |
+| VIEW_USERS | 1 | Allow the user to view profiles with `SERVER_PUBLIC` Visbility. Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission). |
 | PUBLISH_USERS_LOCALLY | 2 | Allow the user to publish profiles with `SERVER_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
 | PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
 | MODERATE_USERS | 4 | Allow the user to grant `VIEW_POSTS`, `CREATE_POSTS`, `VIEW_EVENTS` and `CREATE_EVENTS` permissions to users. |
 | FOLLOW_USERS | 5 | Allow the user to follow other users. |
 | GRANT_BASIC_PERMISSIONS | 6 | Allow the user to grant Basic Permissions to other users. &#34;Basic Permissions&#34; are defined by your `ServerConfiguration`&#39;s `basic_user_permissions`. |
-| VIEW_GROUPS | 10 | Allow the user to view groups with `SERVER_PUBLIC` visibility. |
+| VIEW_GROUPS | 10 | Allow the user to view groups with `SERVER_PUBLIC` visibility. Allow anonymous users to view groups with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
 | CREATE_GROUPS | 11 | Allow the user to create groups. |
 | PUBLISH_GROUPS_LOCALLY | 12 | Allow the user to give groups `SERVER_PUBLIC` visibility. |
 | PUBLISH_GROUPS_GLOBALLY | 13 | Allow the user to give groups `GLOBAL_PUBLIC` visibility. |
 | MODERATE_GROUPS | 14 | The Moderate Groups permission makes a user effectively an admin of *any* group. |
 | JOIN_GROUPS | 15 | Allow the user to (potentially request to) join groups of `SERVER_PUBLIC` or higher visibility. |
 | INVITE_GROUP_MEMBERS | 16 | Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level). |
-| VIEW_POSTS | 20 | In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. |
-| CREATE_POSTS | 21 | In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. In the context of group permissions, allow the user to create `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. |
-| PUBLISH_POSTS_LOCALLY | 22 |  |
-| PUBLISH_POSTS_GLOBALLY | 23 |  |
-| MODERATE_POSTS | 24 |  |
-| REPLY_TO_POSTS | 25 |  |
-| VIEW_EVENTS | 30 |  |
-| CREATE_EVENTS | 31 |  |
-| PUBLISH_EVENTS_LOCALLY | 32 |  |
-| PUBLISH_EVENTS_GLOBALLY | 33 |  |
+| VIEW_POSTS | 20 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility. Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
+| CREATE_POSTS | 21 | As a user permission, allow the user to create `Post`s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create `GroupPost`s for `POST` and `FEDERATED_POST` `PostContext`s.. |
+| PUBLISH_POSTS_LOCALLY | 22 | Allow the user to publish posts with `SERVER_PUBLIC` visibility. |
+| PUBLISH_POSTS_GLOBALLY | 23 | Allow the user to publish posts with `GLOBAL_PUBLIC` visibility. |
+| MODERATE_POSTS | 24 | Allow the user to moderate posts. |
+| REPLY_TO_POSTS | 25 | Allow the user to reply to posts. |
+| VIEW_EVENTS | 30 | As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility. As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility. Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). |
+| CREATE_EVENTS | 31 | As a user permission, allow the user to create `Event`s of `PRIVATE` and `LIMITED` visibility. As a group permission, allow the user to create `GroupPost`s for `EVENT` and `FEDERATED_EVENT_INSTANCE` `PostContext`s.. |
+| PUBLISH_EVENTS_LOCALLY | 32 | Allow the user to publish events with `SERVER_PUBLIC` visibility. |
+| PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
-| RSVP_TO_EVENTS | 35 |  |
-| VIEW_MEDIA | 40 |  |
-| CREATE_MEDIA | 41 |  |
-| PUBLISH_MEDIA_LOCALLY | 42 |  |
-| PUBLISH_MEDIA_GLOBALLY | 43 |  |
+| RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
+| VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
+| CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
+| PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
+| PUBLISH_MEDIA_GLOBALLY | 43 | Allow the user to publish media with `GLOBAL_PUBLIC` visibility. *Not currently enforced.* |
 | MODERATE_MEDIA | 44 | Allow the user to moderate events. |
 | RUN_BOTS | 9999 | Allow the user to run bots. There is no enforcement of this permission (yet), but it lets other users know that the user is allowed to run bots. |
 | ADMIN | 10000 | Marks the user as an admin. In the context of user permissions, allows the user to configure the server, moderate/update visibility/permissions to any `User`, `Group`, `Post` or `Event`. In the context of group permissions, allows the user to configure the group, modify members and member permissions, and moderate `GroupPost`s and `GroupEvent`s. |
@@ -501,9 +505,9 @@ from its own cache (for things like admin/bot icons).
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user_id | [string](#string) |  |  |
-| username | [string](#string) | optional |  |
-| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
+| user_id | [string](#string) |  | Permanent string ID for the user. Will never contain a `@` symbol. |
+| username | [string](#string) | optional | Impermanent string username for the user. Will never contain a `@` symbol. |
+| avatar | [MediaReference](#jonline-MediaReference) | optional | The user&#39;s avatar. |
 
 
 
@@ -520,7 +524,7 @@ but verification RPCs are not yet implemented.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | value | [string](#string) | optional | Either a `mailto:` or `tel:` URL. |
-| visibility | [Visibility](#jonline-Visibility) |  |  |
+| visibility | [Visibility](#jonline-Visibility) |  | The visibility of the contact method. |
 | supported_by_server | [bool](#bool) |  | Server-side flag indicating whether the server can verify (and otherwise interact via) the contact method. |
 | verified | [bool](#bool) |  | Indicates the user has completed verification of the contact method. Verification requires `supported_by_server` to be `true`. |
 
@@ -540,8 +544,8 @@ Model for a user&#39;s follow of another user.
 | user_id | [string](#string) |  | The follower in the relationship. |
 | target_user_id | [string](#string) |  | The user being followed. |
 | target_user_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether the target user needs to approve the follow. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the follow was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the follow was last updated. |
 
 
 
@@ -557,10 +561,10 @@ Supported parameters depend on `listing_type`.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| username | [string](#string) | optional |  |
-| user_id | [string](#string) | optional |  |
-| page | [int32](#int32) | optional |  |
-| listing_type | [UserListingType](#jonline-UserListingType) |  |  |
+| username | [string](#string) | optional | The username to search for. Substrings are supported. |
+| user_id | [string](#string) | optional | The user ID to search for. |
+| page | [int32](#int32) | optional | The page of results to return. Pages are 0-indexed. |
+| listing_type | [UserListingType](#jonline-UserListingType) |  | The number of results to return per page. |
 
 
 
@@ -570,13 +574,13 @@ Supported parameters depend on `listing_type`.
 <a name="jonline-GetUsersResponse"></a>
 
 ### GetUsersResponse
-
+Response to a `GetUsersRequest`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| users | [User](#jonline-User) | repeated |  |
-| has_next_page | [bool](#bool) |  |  |
+| users | [User](#jonline-User) | repeated | The users matching the request. |
+| has_next_page | [bool](#bool) |  | Whether there are more pages of results. |
 
 
 
@@ -595,11 +599,11 @@ to reconcile memberships with groups.
 | ----- | ---- | ----- | ----------- |
 | user_id | [string](#string) |  | The member (or requested/invited member). |
 | group_id | [string](#string) |  | The group the membership pertains to. |
-| permissions | [Permission](#jonline-Permission) | repeated | Valid Membership Permissions are: * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS` * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS` * `ADMIN` and `MODERATE_USERS` |
+| permissions | [Permission](#jonline-Permission) | repeated | Valid Membership Permissions are: `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`, `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`, `ADMIN`, `RUN_BOTS`, and `MODERATE_USERS` |
 | group_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether group moderators need to approve the membership. |
 | user_moderation | [Moderation](#jonline-Moderation) |  | Tracks whether the user needs to approve the membership. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the membership was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the membership was last updated. |
 
 
 
@@ -609,32 +613,33 @@ to reconcile memberships with groups.
 <a name="jonline-User"></a>
 
 ### User
-
+Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
+[`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| username | [string](#string) |  |  |
-| real_name | [string](#string) |  |  |
-| email | [ContactMethod](#jonline-ContactMethod) | optional |  |
-| phone | [ContactMethod](#jonline-ContactMethod) | optional |  |
-| permissions | [Permission](#jonline-Permission) | repeated |  |
-| avatar | [MediaReference](#jonline-MediaReference) | optional | Media ID for the user&#39;s avatar. Note that its visibility is managed by the User and thus it may not be accessible to the current user. |
-| bio | [string](#string) |  |  |
+| id | [string](#string) |  | Permanent string ID for the user. Will never contain a `@` symbol. |
+| username | [string](#string) |  | Impermanent string username for the user. Will never contain a `@` symbol. |
+| real_name | [string](#string) |  | The user&#39;s real name. |
+| email | [ContactMethod](#jonline-ContactMethod) | optional | The user&#39;s email address. |
+| phone | [ContactMethod](#jonline-ContactMethod) | optional | The user&#39;s phone number. |
+| permissions | [Permission](#jonline-Permission) | repeated | The user&#39;s permissions. See [`Permission`](#jonline-Permission) for details. |
+| avatar | [MediaReference](#jonline-MediaReference) | optional | The user&#39;s avatar. Note that its visibility is managed by the User and thus it may not be accessible to the current user. |
+| bio | [string](#string) |  | The user&#39;s bio. |
 | visibility | [Visibility](#jonline-Visibility) |  | User visibility is a bit different from Post visibility. LIMITED means the user can only be seen by users they follow (as opposed to Posts&#39; individualized visibilities). PRIVATE visibility means no one can see the user. See server_configuration.proto for details about PRIVATE users&#39; ability to creep. |
-| moderation | [Moderation](#jonline-Moderation) |  |  |
+| moderation | [Moderation](#jonline-Moderation) |  | The user&#39;s moderation status. See [`Moderation`](#jonline-Moderation) for details. |
 | default_follow_moderation | [Moderation](#jonline-Moderation) |  | Only PENDING or UNMODERATED are valid. |
-| follower_count | [int32](#int32) | optional |  |
-| following_count | [int32](#int32) | optional |  |
-| group_count | [int32](#int32) | optional |  |
-| post_count | [int32](#int32) | optional |  |
-| response_count | [int32](#int32) | optional |  |
+| follower_count | [int32](#int32) | optional | The number of users following this user. |
+| following_count | [int32](#int32) | optional | The number of users this user is following. |
+| group_count | [int32](#int32) | optional | The number of groups this user is a member of. |
+| post_count | [int32](#int32) | optional | The number of posts this user has made. |
+| response_count | [int32](#int32) | optional | The number of responses to `Post`s and `Event`s this user has made. |
 | current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
-| current_group_membership | [Membership](#jonline-Membership) | optional |  |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
 
 
@@ -646,15 +651,15 @@ to reconcile memberships with groups.
 <a name="jonline-UserListingType"></a>
 
 ### UserListingType
-
+Ways of listing users.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| EVERYONE | 0 |  |
-| FOLLOWING | 1 |  |
-| FRIENDS | 2 |  |
-| FOLLOWERS | 3 |  |
-| FOLLOW_REQUESTS | 4 |  |
+| EVERYONE | 0 | Get all users. |
+| FOLLOWING | 1 | Get users the current user is following. |
+| FRIENDS | 2 | Get users who follow and are followed by the current user. |
+| FOLLOWERS | 3 | Get users who follow the current user. |
+| FOLLOW_REQUESTS | 4 | Get users who have requested to follow the current user. |
 
 
  
@@ -1111,9 +1116,11 @@ Differentiates the context of a Post, as in Jonline&#39;s data models, Post is t
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POST | 0 | &#34;Standard&#34; Post. |
-| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`. |
-| EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. |
-| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. |
+| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`. Does not suport a `link`. |
+| EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
+| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
+| FEDERATED_POST | 10 | A &#34;Federated&#34; Post. This is a Post that was created on another server. Its `link` field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`. This is enforced by the `CreatePost` PRC. |
+| FEDERATED_EVENT_INSTANCE | 13 | A &#34;Federated&#34; EventInstance. This is an EventInstance that was created on another server. Its `link` field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`. |
 
 
 

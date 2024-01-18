@@ -42,13 +42,16 @@ const PostContext$json = {
     {'1': 'REPLY', '2': 1},
     {'1': 'EVENT', '2': 2},
     {'1': 'EVENT_INSTANCE', '2': 3},
+    {'1': 'FEDERATED_POST', '2': 10},
+    {'1': 'FEDERATED_EVENT_INSTANCE', '2': 13},
   ],
 };
 
 /// Descriptor for `PostContext`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List postContextDescriptor = $convert.base64Decode(
     'CgtQb3N0Q29udGV4dBIICgRQT1NUEAASCQoFUkVQTFkQARIJCgVFVkVOVBACEhIKDkVWRU5UX0'
-    'lOU1RBTkNFEAM=');
+    'lOU1RBTkNFEAMSEgoORkVERVJBVEVEX1BPU1QQChIcChhGRURFUkFURURfRVZFTlRfSU5TVEFO'
+    'Q0UQDQ==');
 
 @$core.Deprecated('Use getPostsRequestDescriptor instead')
 const GetPostsRequest$json = {

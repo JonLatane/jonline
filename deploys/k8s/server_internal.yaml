@@ -5,8 +5,9 @@ metadata:
   labels:
     app: jonline
 spec:
-  type: ExternalName
-  externalName: ${JONLINE_HOST}
+  type: ClusterIP
+  # type: ExternalName
+  # externalName: ${JONLINE_HOST}
   selector:
     app: jonline
   ports:

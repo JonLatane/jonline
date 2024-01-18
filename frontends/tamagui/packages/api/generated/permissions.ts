@@ -2,8 +2,19 @@
 
 export const protobufPackage = "jonline";
 
+/**
+ * Jonline Permissions are a set of permissions that can be granted directly to [`User`](#jonline-User)s and [`Membership`](#jonline-Membership)s.
+ * (A `Membership` is the link between a [`Group`](#jonline-Group) and a `User`.)
+ *
+ * Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
+ * and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
+ */
 export enum Permission {
   PERMISSION_UNKNOWN = 0,
+  /**
+   * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
+   * Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).
+   */
   VIEW_USERS = 1,
   /**
    * PUBLISH_USERS_LOCALLY - Allow the user to publish profiles with `SERVER_PUBLIC` Visbility.
@@ -27,7 +38,10 @@ export enum Permission {
    * are defined by your `ServerConfiguration`'s `basic_user_permissions`.
    */
   GRANT_BASIC_PERMISSIONS = 6,
-  /** VIEW_GROUPS - Allow the user to view groups with `SERVER_PUBLIC` visibility. */
+  /**
+   * VIEW_GROUPS - Allow the user to view groups with `SERVER_PUBLIC` visibility.
+   * Allow anonymous users to view groups with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
+   */
   VIEW_GROUPS = 10,
   /** CREATE_GROUPS - Allow the user to create groups. */
   CREATE_GROUPS = 11,
@@ -45,31 +59,53 @@ export enum Permission {
   /** INVITE_GROUP_MEMBERS - Allow the user to invite other users to groups. Only applicable as a Group permission (not at the User level). */
   INVITE_GROUP_MEMBERS = 16,
   /**
-   * VIEW_POSTS - In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
-   * or higher visibility. In the context of group permissions, allow the user to view `GroupPost`s whose `Post`s have `LIMITED`
-   * or higher visibility.
+   * VIEW_POSTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
+   * As a group permission, allow the user to view `GroupPost`s whose `Post`s have `LIMITED` or higher visibility.
+   * Allow anonymous users to view posts with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
    */
   VIEW_POSTS = 20,
   /**
-   * CREATE_POSTS - In the context of user permissions, allow the user to view posts with `SERVER_PUBLIC`
-   * or higher visibility. In the context of group permissions, allow the user to create `GroupPost`s whose `Post`s have `LIMITED`
-   * or higher visibility.
+   * CREATE_POSTS - As a user permission, allow the user to create `Post`s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create `GroupPost`s for `POST` and `FEDERATED_POST` `PostContext`s..
    */
   CREATE_POSTS = 21,
+  /** PUBLISH_POSTS_LOCALLY - Allow the user to publish posts with `SERVER_PUBLIC` visibility. */
   PUBLISH_POSTS_LOCALLY = 22,
+  /** PUBLISH_POSTS_GLOBALLY - Allow the user to publish posts with `GLOBAL_PUBLIC` visibility. */
   PUBLISH_POSTS_GLOBALLY = 23,
+  /** MODERATE_POSTS - Allow the user to moderate posts. */
   MODERATE_POSTS = 24,
+  /** REPLY_TO_POSTS - Allow the user to reply to posts. */
   REPLY_TO_POSTS = 25,
+  /**
+   * VIEW_EVENTS - As a user permission, allow the user to view posts with `SERVER_PUBLIC` or higher visibility.
+   * As a group permission, allow the user to view `GroupPost`s whose `Event` `Post`s have `LIMITED` or higher visibility.
+   * Allow anonymous users to view events with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission).
+   */
   VIEW_EVENTS = 30,
+  /**
+   * CREATE_EVENTS - As a user permission, allow the user to create `Event`s of `PRIVATE` and `LIMITED` visibility.
+   * As a group permission, allow the user to create `GroupPost`s for `EVENT` and `FEDERATED_EVENT_INSTANCE` `PostContext`s..
+   */
   CREATE_EVENTS = 31,
+  /** PUBLISH_EVENTS_LOCALLY - Allow the user to publish events with `SERVER_PUBLIC` visibility. */
   PUBLISH_EVENTS_LOCALLY = 32,
+  /** PUBLISH_EVENTS_GLOBALLY - Allow the user to publish events with `GLOBAL_PUBLIC` visibility. */
   PUBLISH_EVENTS_GLOBALLY = 33,
   /** MODERATE_EVENTS - Allow the user to moderate events. */
   MODERATE_EVENTS = 34,
+  /** RSVP_TO_EVENTS - Allow the user to RSVP to events that allow RSVPs. */
   RSVP_TO_EVENTS = 35,
+  /**
+   * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
+   * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
+   */
   VIEW_MEDIA = 40,
+  /** CREATE_MEDIA - Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* */
   CREATE_MEDIA = 41,
+  /** PUBLISH_MEDIA_LOCALLY - Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* */
   PUBLISH_MEDIA_LOCALLY = 42,
+  /** PUBLISH_MEDIA_GLOBALLY - Allow the user to publish media with `GLOBAL_PUBLIC` visibility. *Not currently enforced.* */
   PUBLISH_MEDIA_GLOBALLY = 43,
   /** MODERATE_MEDIA - Allow the user to moderate events. */
   MODERATE_MEDIA = 44,

@@ -10,11 +10,17 @@ import moment from "moment";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../../contexts/group_context";
 
-type Props = { event: FederatedEvent, instance: EventInstance, tiny?: boolean; };
+type Props = {
+  event: FederatedEvent,
+  instance: EventInstance,
+  tiny?: boolean;
+  anonymousRsvpPath?: string;
+};
 export const EventCalendarLink: React.FC<Props> = ({
   event,
   instance,
   tiny = false,
+  anonymousRsvpPath
 }) => {
 
   const accountOrServer = useFederatedAccountOrServer(event);
@@ -36,17 +42,20 @@ export const EventCalendarLink: React.FC<Props> = ({
   const eventLinkPath = groupContext
     ? `/g/${groupLinkId}/e/${detailsLinkId}`
     : `/event/${detailsLinkId}`;
-  const eventLink = `http://${window.location.host}${eventLinkPath}`;
 
+  const eventPath = anonymousRsvpPath ?? eventLinkPath;
+  const eventLink = `http://${window.location.host}${eventPath}`;
 
   const calendarEvent: CalendarEvent = {
     title: event.post?.title ?? 'Title Data Missing',
-    description: `via ${eventLink}:\n${event.post?.content ?? ''}`,
+    description: anonymousRsvpPath
+      ? `${event.post?.content ?? ''}\n\nmanage your RSVP at:\n${eventLink}`
+      : `${event.post?.content ?? ''}\n\nvia: ${eventLink}`,
     url: eventLink,
     location: instance.location?.uniformlyFormattedAddress,
     start: moment(instance.startsAt).toISOString(),
     end: moment(instance.endsAt).toISOString(),
-    duration: [3, "hour"],
+    // duration: [3, "hour"],
   };
 
   const googleLink = useLink({ href: google(calendarEvent) });
@@ -64,8 +73,16 @@ export const EventCalendarLink: React.FC<Props> = ({
 
           <Button h={tiny ? '$3' : 'auto'} icon={Calendar} iconAfter={ArrowRightFromLine} >
             {tiny ? undefined : <YStack ai='center'>
-              <Paragraph lineHeight='$1' size='$3'>Export to</Paragraph>
-              <Paragraph lineHeight='$1' size='$3'>Calendar...</Paragraph>
+              {anonymousRsvpPath
+                ? <>
+                  <Paragraph lineHeight='$1' size='$3'>Export</Paragraph>
+                  <Paragraph lineHeight='$1' size='$3'>Private Link</Paragraph>
+                  <Paragraph lineHeight='$1' size='$3'>to Calendar...</Paragraph>
+                </>
+                : <>
+                  <Paragraph lineHeight='$1' size='$3'>Export to</Paragraph>
+                  <Paragraph lineHeight='$1' size='$3'>Calendar...</Paragraph>
+                </>}
             </YStack>}
           </Button>
           {/* </Tooltip.Trigger>

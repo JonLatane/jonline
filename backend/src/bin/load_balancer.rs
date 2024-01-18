@@ -3,12 +3,16 @@ extern crate async_std;
 extern crate futures_lite;
 extern crate rustls;
 
+use jonline::init_bin_logging;
+
 use async_std::io;
 use async_std::net::{TcpListener, TcpStream};
 use async_std::stream::StreamExt;
 use async_std::task;
 use async_tls::TlsAcceptor;
 use futures_lite::io::AsyncWriteExt;
+use log::info;
+use rustls::server::ResolvesServerCert;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, read_one, Item};
 
@@ -17,19 +21,21 @@ use std::io::BufReader;
 use std::net::ToSocketAddrs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::env;
+use std::vec::*;
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
 struct Options {
     addr: String,
 
-    /// cert file
-    #[structopt(short = "c", long = "cert", parse(from_os_str))]
-    cert: PathBuf,
+    // /// cert file
+    // #[structopt(short = "c", long = "cert", parse(from_os_str))]
+    // cert: PathBuf,
 
-    /// key file
-    #[structopt(short = "k", long = "key", parse(from_os_str))]
-    key: PathBuf,
+    // /// key file
+    // #[structopt(short = "k", long = "key", parse(from_os_str))]
+    // key: PathBuf,
 }
 
 /// Load the passed certificates file
@@ -53,22 +59,46 @@ fn load_key(path: &Path) -> io::Result<PrivateKey> {
     }
 }
 
+// A reference to a K8s namespace containing a `jonline` instance (we will use K8s DNS to route the request)
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Server {
+    host: String,
+    namespace: String
+}
+
+struct ServerResolver {
+    servers: Vec<Server>
+}
+
+impl ResolvesServerCert for ServerResolver {
+    fn resolve(&self, client_hello: rustls::server::ClientHello) -> Option<Arc<rustls::sign::CertifiedKey>> {
+        info!("Resolving client hello: {:?}", client_hello.server_name());
+        todo!()
+    }
+}
+
 /// Configure the server using rusttls
 /// See https://docs.rs/rustls/0.16.0/rustls/struct.ServerConfig.html for details
 ///
 /// A TLS server needs a certificate and a fitting private key
 fn load_config(options: &Options) -> io::Result<ServerConfig> {
-    let certs = load_certs(&options.cert)?;
-    debug_assert_eq!(1, certs.len());
-    let key = load_key(&options.key)?;
+    // let certs = load_certs(&options.cert)?;
+    // debug_assert_eq!(1, certs.len());
+    // let key = load_key(&options.key)?;
 
+    let env_servers = env::var("SERVERS").expect("SERVERS must be set, JSON of the format [");
+    // TODO: 
+    let servers: ServerResolver = ServerResolver { servers: vec![] };
+    let server_arc = Arc::new(servers);
     // we don't use client authentication
     let config = ServerConfig::builder()
         .with_safe_defaults()
         .with_no_client_auth()
+        .with_cert_resolver(server_arc);
         // set this server to use one cert together with the loaded private key
-        .with_single_cert(certs, key)
-        .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+        // .with_single_cert(certs, key)
+        
+        // .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
 
     Ok(config)
 }
@@ -101,6 +131,7 @@ async fn handle_connection(acceptor: &TlsAcceptor, tcp_stream: &mut TcpStream) -
 }
 
 fn main() -> io::Result<()> {
+    init_bin_logging();
     let options = Options::from_args();
 
     let addr = options

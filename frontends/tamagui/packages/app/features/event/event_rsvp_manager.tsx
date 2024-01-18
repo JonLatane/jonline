@@ -12,6 +12,7 @@ import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../../contexts/group_context";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
+import { EventCalendarLink } from "./event_calendar_link";
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
@@ -320,7 +321,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     ? `${rsvpDetailsBaseLink}&anonymousAuthToken=${currentAnonRsvp.anonymousAttendee?.authToken}`
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
-  const anonymousRsvpLink = `/event/${instance.id}?anonymousAuthToken=${anonymousAuthToken}`;
+  const anonymousRsvpPath = `/event/${instance.id}@${event.serverHost}?anonymousAuthToken=${anonymousAuthToken}`;
   const isPast = isPastInstance(instance);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {
@@ -521,9 +522,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               : undefined}
 
             {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
-              ? <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$1' als='center' ta='center'>
-                Save <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
-              </Paragraph>
+              ? <>
+                <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$2' als='center' ta='center'>
+                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later, or:
+                </Paragraph>
+                <XStack mx='auto'>
+                  <EventCalendarLink event={event} instance={instance} anonymousRsvpPath={anonymousRsvpPath} />
+                </XStack>
+              </>
               : undefined}
 
             {/* {isPreview
@@ -639,7 +645,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                         <YStack space>
                           <Dialog.Title>New Anonymous RSVP</Dialog.Title>
                           <Dialog.Description>
-                            Make sure you've saved <Anchor href={anonymousRsvpLink} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
+                            Make sure you've saved <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
                           </Dialog.Description>
 
                           <XStack space="$3" jc="flex-end">

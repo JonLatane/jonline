@@ -21,6 +21,8 @@ import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'users.pbenum.dart';
 
+/// Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
+/// [`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
 class User extends $pb.GeneratedMessage {
   factory User({
     $core.String? id,
@@ -161,6 +163,7 @@ class User extends $pb.GeneratedMessage {
   static User getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<User>(create);
   static User? _defaultInstance;
 
+  /// Permanent string ID for the user. Will never contain a `@` symbol.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -170,6 +173,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
+  /// Impermanent string username for the user. Will never contain a `@` symbol.
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -179,6 +183,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUsername() => clearField(2);
 
+  /// The user's real name.
   @$pb.TagNumber(3)
   $core.String get realName => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -188,6 +193,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearRealName() => clearField(3);
 
+  /// The user's email address.
   @$pb.TagNumber(4)
   ContactMethod get email => $_getN(3);
   @$pb.TagNumber(4)
@@ -199,6 +205,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   ContactMethod ensureEmail() => $_ensure(3);
 
+  /// The user's phone number.
   @$pb.TagNumber(5)
   ContactMethod get phone => $_getN(4);
   @$pb.TagNumber(5)
@@ -210,10 +217,11 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   ContactMethod ensurePhone() => $_ensure(4);
 
+  /// The user's permissions. See [`Permission`](#jonline-Permission) for details.
   @$pb.TagNumber(6)
   $core.List<$11.Permission> get permissions => $_getList(5);
 
-  /// Media ID for the user's avatar. Note that its visibility is managed by the User and thus
+  /// The user's avatar. Note that its visibility is managed by the User and thus
   /// it may not be accessible to the current user.
   @$pb.TagNumber(7)
   $5.MediaReference get avatar => $_getN(6);
@@ -226,6 +234,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $5.MediaReference ensureAvatar() => $_ensure(6);
 
+  /// The user's bio.
   @$pb.TagNumber(8)
   $core.String get bio => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -250,6 +259,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   void clearVisibility() => clearField(20);
 
+  /// The user's moderation status. See [`Moderation`](#jonline-Moderation) for details.
   @$pb.TagNumber(21)
   $10.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
@@ -269,6 +279,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(30)
   void clearDefaultFollowModeration() => clearField(30);
 
+  /// The number of users following this user.
   @$pb.TagNumber(31)
   $core.int get followerCount => $_getIZ(11);
   @$pb.TagNumber(31)
@@ -278,6 +289,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(31)
   void clearFollowerCount() => clearField(31);
 
+  /// The number of users this user is following.
   @$pb.TagNumber(32)
   $core.int get followingCount => $_getIZ(12);
   @$pb.TagNumber(32)
@@ -287,6 +299,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(32)
   void clearFollowingCount() => clearField(32);
 
+  /// The number of groups this user is a member of.
   @$pb.TagNumber(33)
   $core.int get groupCount => $_getIZ(13);
   @$pb.TagNumber(33)
@@ -296,6 +309,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(33)
   void clearGroupCount() => clearField(33);
 
+  /// The number of posts this user has made.
   @$pb.TagNumber(34)
   $core.int get postCount => $_getIZ(14);
   @$pb.TagNumber(34)
@@ -305,6 +319,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(34)
   void clearPostCount() => clearField(34);
 
+  /// The number of responses to `Post`s and `Event`s this user has made.
   @$pb.TagNumber(35)
   $core.int get responseCount => $_getIZ(15);
   @$pb.TagNumber(35)
@@ -340,6 +355,9 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(51)
   Follow ensureTargetCurrentUserFollow() => $_ensure(17);
 
+  /// Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
+  /// The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
+  /// providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
   @$pb.TagNumber(52)
   Membership get currentGroupMembership => $_getN(18);
   @$pb.TagNumber(52)
@@ -351,6 +369,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(52)
   Membership ensureCurrentGroupMembership() => $_ensure(18);
 
+  /// The time the user was created.
   @$pb.TagNumber(100)
   $9.Timestamp get createdAt => $_getN(19);
   @$pb.TagNumber(100)
@@ -362,6 +381,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(100)
   $9.Timestamp ensureCreatedAt() => $_ensure(19);
 
+  /// The time the user was last updated.
   @$pb.TagNumber(101)
   $9.Timestamp get updatedAt => $_getN(20);
   @$pb.TagNumber(101)
@@ -426,6 +446,7 @@ class Author extends $pb.GeneratedMessage {
   static Author getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Author>(create);
   static Author? _defaultInstance;
 
+  /// Permanent string ID for the user. Will never contain a `@` symbol.
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -435,6 +456,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUserId() => clearField(1);
 
+  /// Impermanent string username for the user. Will never contain a `@` symbol.
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -444,6 +466,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUsername() => clearField(2);
 
+  /// The user's avatar.
   @$pb.TagNumber(3)
   $5.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)
@@ -547,6 +570,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearTargetUserModeration() => clearField(3);
 
+  /// The time the follow was created.
   @$pb.TagNumber(4)
   $9.Timestamp get createdAt => $_getN(3);
   @$pb.TagNumber(4)
@@ -558,6 +582,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $9.Timestamp ensureCreatedAt() => $_ensure(3);
 
+  /// The time the follow was last updated.
   @$pb.TagNumber(5)
   $9.Timestamp get updatedAt => $_getN(4);
   @$pb.TagNumber(5)
@@ -663,10 +688,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearGroupId() => clearField(2);
 
-  /// Valid Membership Permissions are:
-  /// * `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`
-  /// * `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`
-  /// * `ADMIN` and `MODERATE_USERS`
+  /// Valid Membership Permissions are:  `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`, `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`, `ADMIN`, `RUN_BOTS`, and `MODERATE_USERS`
   @$pb.TagNumber(3)
   $core.List<$11.Permission> get permissions => $_getList(2);
 
@@ -690,6 +712,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearUserModeration() => clearField(5);
 
+  /// The time the membership was created.
   @$pb.TagNumber(6)
   $9.Timestamp get createdAt => $_getN(5);
   @$pb.TagNumber(6)
@@ -701,6 +724,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $9.Timestamp ensureCreatedAt() => $_ensure(5);
 
+  /// The time the membership was last updated.
   @$pb.TagNumber(7)
   $9.Timestamp get updatedAt => $_getN(6);
   @$pb.TagNumber(7)
@@ -780,6 +804,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearValue() => clearField(1);
 
+  /// The visibility of the contact method.
   @$pb.TagNumber(2)
   $10.Visibility get visibility => $_getN(1);
   @$pb.TagNumber(2)
@@ -869,6 +894,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   static GetUsersRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetUsersRequest>(create);
   static GetUsersRequest? _defaultInstance;
 
+  /// The username to search for. Substrings are supported.
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -878,6 +904,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearUsername() => clearField(1);
 
+  /// The user ID to search for.
   @$pb.TagNumber(2)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -887,6 +914,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => clearField(2);
 
+  /// The page of results to return. Pages are 0-indexed.
   @$pb.TagNumber(99)
   $core.int get page => $_getIZ(2);
   @$pb.TagNumber(99)
@@ -896,6 +924,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(99)
   void clearPage() => clearField(99);
 
+  /// The number of results to return per page.
   @$pb.TagNumber(100)
   UserListingType get listingType => $_getN(3);
   @$pb.TagNumber(100)
@@ -906,6 +935,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   void clearListingType() => clearField(100);
 }
 
+/// Response to a `GetUsersRequest`.
 class GetUsersResponse extends $pb.GeneratedMessage {
   factory GetUsersResponse({
     $core.Iterable<User>? users,
@@ -951,9 +981,11 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   static GetUsersResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetUsersResponse>(create);
   static GetUsersResponse? _defaultInstance;
 
+  /// The users matching the request.
   @$pb.TagNumber(1)
   $core.List<User> get users => $_getList(0);
 
+  /// Whether there are more pages of results.
   @$pb.TagNumber(2)
   $core.bool get hasNextPage => $_getBF(1);
   @$pb.TagNumber(2)

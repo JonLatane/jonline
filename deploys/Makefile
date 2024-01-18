@@ -6,9 +6,9 @@ NAMESPACE ?= jonline
 
 # Used when configuring the load balancer (deploy_lb_[un]link_service_account).
 TARGET_NAMESPACE ?= jonline
-TARGET_NAMESPACE_DOMAIN ?= invalid.jonline.domain
+TARGET_NAMESPACE_HOST ?= invalid.jonline.host
 
-TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_get_external_ip):27707
+TEST_GRPC_TARGET ?= $(shell $(MAKE) deploy_be_external_get_ip):27707
 
 # K8s Load Balancer deployment targets (WIP)
 # It should be possible to write a minimalist Rust LB that loads the TLS certs
@@ -42,7 +42,7 @@ deploy_lb_link_service_account:
 	kubectl create rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE) --serviceaccount $(NAMESPACE):$(SERVICE_ACCOUNT) --clusterrole $(SERVICE_LINK_ROLE)
 
 	$(eval CURRENT_CONFIG := $(shell kubectl get configmap $(LB_CONFIG) -o jsonpath="{.data.servers}" -n $(NAMESPACE)))
-	$(eval UPDATED_CONFIG := $(shell echo '$(CURRENT_CONFIG)' | jq -c -M '. += [{ "namespace": "$(TARGET_NAMESPACE)", "domain": "$(TARGET_NAMESPACE_DOMAIN)" }]'))
+	$(eval UPDATED_CONFIG := $(shell echo '$(CURRENT_CONFIG)' | jq -c -M '. += [{ "namespace": "$(TARGET_NAMESPACE)", "host": "$(TARGET_NAMESPACE_HOST)" }]'))
 	$(eval UPDATED_CONFIG_WITH_ESCAPED_QUOTES := $(shell echo '$(UPDATED_CONFIG)' | sed 's/"/\\"/g'))
 	kubectl patch configmap $(LB_CONFIG) -p '{"data":{"servers":"$(UPDATED_CONFIG_WITH_ESCAPED_QUOTES)"}}' -n $(NAMESPACE)
 
@@ -69,6 +69,10 @@ deploy_lb_monitor_rollout:
 
 deploy_lb_restart:
 	kubectl rollout restart deployment jonline-lb -n $(NAMESPACE)
+
+deploy_lb_get_ip:
+# Suppress echoing this so 'make deploy_lb_get_ip` is easily composable.
+	@kubectl get service jonline-lb -n $(NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
 # K8s server deployment targets
 # Use "internal" when deploying with a separate load balancer, and 
@@ -100,8 +104,8 @@ deploy_be_monitor_rollout:
 deploy_be_restart:
 	kubectl rollout restart deployment jonline -n $(NAMESPACE)
 
-deploy_be_get_external_ip:
-# Suppress echoing this so 'make deploy_be_get_external_ip` is easily composable. 
+deploy_be_external_get_ip:
+# Suppress echoing this so 'make deploy_be_external_get_ip` is easily composable. 
 	@kubectl get service jonline -n $(NAMESPACE) | sed -n 2p | awk '{print $$4}'
 
 deploy_get_all:
