@@ -65,8 +65,11 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading>Settings</Heading>
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
               <Heading size='$5' mt='$3'>Discussions and Chat</Heading>
-              <ToggleRow name='Auto-Refresh Discussion Chat' value={app.autoRefreshDiscussions} setter={setAutoRefreshDiscussions} autoDispatch />
-              <Paragraph size='$1' mb='$1' ta='right' opacity={app.autoRefreshDiscussions ? 1 : 0.5}>Only supported in Chat Mode.</Paragraph>
+              <ToggleRow name='Auto-Refresh Chat' 
+              description='Automatically refresh the discussion chat every few seconds. Only supported in Chat Mode.'
+              value={app.autoRefreshDiscussions} 
+              setter={setAutoRefreshDiscussions} 
+              autoDispatch />
 
               <XStack opacity={app.autoRefreshDiscussions ? 1 : 0.5}>
                 <Slider size="$4" f={1} marginVertical='auto'

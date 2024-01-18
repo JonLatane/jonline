@@ -13,7 +13,8 @@ export function useHideNavigation() {
     scrollDown: Direction.Down,
     still: Direction.Still
   })
-  const { showPinnedServers } = useLocalConfiguration();
+  const { showPinnedServers, autoHideNavigation } = useLocalConfiguration();
+  const autoHide = mediaQuery.xShort || autoHideNavigation;
   const [hideLock, setHideLock] = useState(false);
   const [hide, _setHide] = useState(false);
   function setHide(value: boolean) {
@@ -26,18 +27,18 @@ export function useHideNavigation() {
   useEffect(() => {
     if (!hideLock) {
       const atTop = scrollPosition.top === 0;
-      if (scrollDir !== lastScrollDir) {
-        if (!hide && mediaQuery.xShort && scrollDir === Direction.Down) {
-          setHide(true);
-        } else if (hide && (!mediaQuery.xShort || scrollDir === Direction.Up || atTop)) {
-          setHide(false);
-        }
-      } else if (hide && atTop) {
+      const directionChanged = scrollDir !== lastScrollDir
+      const isUp = scrollDir === Direction.Up;
+      const isDown = scrollDir === Direction.Down;
+
+      if (!hide && autoHide && isDown && directionChanged) {
+        setHide(true);
+      } else if (hide && (!autoHide || isUp || atTop)) {
         setHide(false);
       }
     }
     setLastScrollDir(scrollDir);
-  }, [mediaQuery.xShort, scrollDir, lastScrollDir, hide, hideLock, scrollPosition]);
+  }, [autoHide, scrollDir, lastScrollDir, hide, hideLock, scrollPosition]);
   useEffect(() => {
     if (hide && showPinnedServers) {
       dispatch(setShowPinnedServers(false));
