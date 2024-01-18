@@ -13,6 +13,8 @@ import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigati
 import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { TabsTutorial } from "./tabs_tutorial";
+import useDetectScroll, { Axis, Direction } from '@smakss/react-scroll-direction'
+import { useHideNavigation } from "./use_hide_navigation";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -29,7 +31,7 @@ export type TabsNavigationProps = {
   primaryEntity?: FederatedEntity<any>;
 };
 
-export const tabNavBaseHeight = 64;
+// export const tabNavBaseHeight = 64;
 
 export function TabsNavigation({
   children,
@@ -81,19 +83,31 @@ export function TabsNavigation({
   const scrollGroupsSheet = !inlineFeatureNavigation
     || !mediaQuery.gtXs;
 
-  useEffect(() => {
-    if (selectedGroup && currentServer && recentGroupIds[0] != federatedId(selectedGroup)) {
-      dispatch(markGroupVisit({ group: selectedGroup, server: currentServer }));
-    }
-  }, [selectedGroup?.id]);
-
   const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
 
   const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
     (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
   const shrinkHomeButton = !!selectedGroup || showServerInfo;
-  //const shrinkHomeButton = !!selectedGroup?.serverHost && selectedGroup?.serverHost !== server?.host;
+  const disabled = useHideNavigation();
 
+  useEffect(() => {
+    if (selectedGroup && currentServer && recentGroupIds[0] != federatedId(selectedGroup)) {
+      dispatch(markGroupVisit({ group: selectedGroup, server: currentServer }));
+    }
+  }, [selectedGroup?.id]);
+  useEffect(() => {
+    if (navigationContext) {
+      const navigationHeight = document.querySelector('#nav-main')?.clientHeight ?? 0;
+      navigationContext.setNavigationHeight(navigationHeight);
+    }
+  },
+    [
+      primaryEntity?.serverHost,
+      primaryServer,
+      currentServer,
+      disabled,
+    ]
+  );
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
@@ -104,9 +118,9 @@ export function TabsNavigation({
           w='100%'
           minHeight={window.innerHeight}
         >
-          <StickyBox style={{ zIndex: 10, width: '100%' }} className='blur'>
-            <YStack backgroundColor={primaryColor} opacity={0.92} w='100%'>
-              <XStack space="$1" my='$1' pl='$1' w='100%'>
+          <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
+            <YStack backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} w='100%'>
+              {disabled ? undefined:<XStack id='nav-main' space="$1" my='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
                   <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
@@ -172,7 +186,7 @@ export function TabsNavigation({
                 <XStack f={1} />
                 {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
                 <XStack w={5} />
-              </XStack>
+              </XStack>}
 
               {/* <YStack w='100%' backgroundColor='$background'>
                 <TabsTutorial />

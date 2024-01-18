@@ -524,7 +524,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
               ? <>
                 <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$2' als='center' ta='center'>
-                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later, or:
+                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later, or export the link to your favorite calendar:
                 </Paragraph>
                 <XStack mx='auto'>
                   <EventCalendarLink event={event} instance={instance} anonymousRsvpPath={anonymousRsvpPath} />

@@ -14,10 +14,11 @@ import { MediaRef } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
 import { AppSection } from '../navigation/features_navigation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { TabsNavigation, tabNavBaseHeight } from '../navigation/tabs_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { RecommendedServer } from './recommended_server';
 import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
+import { NavigationContextConsumer, NavigationContextProvider } from 'app/contexts';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -296,16 +297,20 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       //onlyShowServer={server}
       primaryEntity={server ? { serverHost: server.host } : undefined}
     >
-      <StickyBox offsetTop={tabNavBaseHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
-        <XStack w='100%'>
-          {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
-          {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
-          {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
-          {sectionButton('federation', 'Federation', <Network color={section === 'federation' ? navAnchorColor : undefined} />)}
-          {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
-          {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
-        </XStack>
-      </StickyBox>
+      <NavigationContextConsumer>
+        {(navContext) =>
+          <StickyBox offsetTop={navContext?.navigationHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
+            <XStack w='100%'>
+              {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
+              {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
+              {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
+              {sectionButton('federation', 'Federation', <Network color={section === 'federation' ? navAnchorColor : undefined} />)}
+              {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
+              {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
+            </XStack>
+          </StickyBox>
+        }
+      </NavigationContextConsumer>
       <YStack f={1} jc="center" ai="center" space w='100%'>
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >

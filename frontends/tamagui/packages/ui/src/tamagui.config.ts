@@ -113,6 +113,7 @@ export const config = createTamagui({
     xxl: { maxWidth: 1600 },
     gtXxl: { minWidth: 1600 + 1 },
     short: { maxHeight: 820 },
+    xShort: { maxHeight: 410 },
     tall: { minHeight: 820 },
     hoverNone: { hover: 'none' },
     pointerCoarse: { pointer: 'coarse' },

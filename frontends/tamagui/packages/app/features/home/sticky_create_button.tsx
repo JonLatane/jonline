@@ -10,6 +10,7 @@ import { AddAccountSheet } from '../accounts/add_account_sheet';
 // import ServerCard from './server_card';
 import { CreateEventSheet } from '../event/create_event_sheet';
 import { CreatePostSheet } from '../post/create_post_sheet';
+import { useHideNavigation } from '../navigation/use_hide_navigation';
 
 interface StickyCreateButtonProps {
   selectedGroup?: FederatedGroup;
@@ -32,7 +33,9 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
   const doShowPosts = showPosts && canCreatePosts;
   const doShowEvents = showEvents && canCreateEvents;
 
-  return isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
+  const hide = useHideNavigation();
+
+  return hide ? <></> : <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
     {canCreatePosts
       ? <XStack w='100%' p='$2' space='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
         {doShowPosts ? <CreatePostSheet selectedGroup={selectedGroup} /> : undefined}
@@ -49,7 +52,6 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
         : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
           <AddAccountSheet operation='Post' />
         </YStack>}
-  </StickyBox>
-    : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />
+  </StickyBox>;
 
 }

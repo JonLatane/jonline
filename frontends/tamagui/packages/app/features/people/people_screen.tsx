@@ -8,7 +8,7 @@ import StickyBox from "react-sticky-box";
 import { HomeScreenProps } from '../home/home_screen';
 import { PaginationIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
-import { TabsNavigation, tabNavBaseHeight } from '../navigation/tabs_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
 import { NavigationContextConsumer } from 'app/contexts';
 import { X as XIcon } from '@tamagui/lucide-icons';
@@ -73,8 +73,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       withServerPinning
     >
       <NavigationContextConsumer>
-        {(navContext) => <StickyBox key='filters' offsetTop={tabNavBaseHeight + (navContext?.pinnedServersHeight ?? 0)} className='blur' style={{ width: '100%', zIndex: 10 }}>
-          <YStack w='100%' px='$2' key='filter-toolbar'>
+        {(navContext) => <StickyBox key='filters' offsetTop={(navContext?.navigationHeight ?? 0) + (navContext?.pinnedServersHeight ?? 0)} className='blur' style={{ width: '100%', zIndex: 10 }}>
+          <YStack w='100%' px='$2' py='$2' key='filter-toolbar'>
 
             <XStack w='100%' ai='center' space='$2' mx='$2'>
               <Input placeholder='Search'

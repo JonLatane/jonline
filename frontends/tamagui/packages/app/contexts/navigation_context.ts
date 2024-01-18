@@ -1,6 +1,8 @@
 import { createContext, useContext, useState } from "react";
 
 export interface NavigationContextType {
+  navigationHeight: number;
+  setNavigationHeight: (height: number) => void;
   pinnedServersHeight: number;
   setPinnedServersHeight: (height: number) => void;
 }
@@ -13,6 +15,11 @@ export const useNavigationContext = () => useContext(NavigationContext);
 
 export function useOrCreateNavigationContext(): NavigationContextType {
   const [pinnedServersHeight, setPinnedServersHeight] = useState(0);
-  const navigationContext: NavigationContextType = useNavigationContext() ?? { pinnedServersHeight, setPinnedServersHeight };
+  const [navigationHeight, setNavigationHeight] = useState(0);
+  const navigationContext: NavigationContextType = useNavigationContext() ??
+  {
+    pinnedServersHeight, setPinnedServersHeight,
+    navigationHeight, setNavigationHeight
+  };
   return navigationContext;
 }

@@ -2,7 +2,7 @@ import { FederatedEvent, federateId } from "app/store";
 import React from "react";
 
 import { EventInstance } from "@jonline/api";
-import { Button, Paragraph, Popover, Tooltip, YStack } from "@jonline/ui";
+import { Button, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, ExternalLink } from "@tamagui/lucide-icons";
 import { useAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
@@ -19,10 +19,11 @@ type Props = {
 export const EventCalendarLink: React.FC<Props> = ({
   event,
   instance,
-  tiny = false,
+  tiny: inputTiny = false,
   anonymousRsvpPath
 }) => {
-
+  const mediaQuery = useMedia();
+  const tiny = inputTiny || !mediaQuery.gtXs;
   const accountOrServer = useFederatedAccountOrServer(event);
   // const server = accountOrServer.server;
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
@@ -66,7 +67,7 @@ export const EventCalendarLink: React.FC<Props> = ({
 
   return <Tooltip>
     <Tooltip.Trigger>
-      <Popover size="$5" allowFlip placement='left'>
+      <Popover size="$5" allowFlip stayInFrame placement='left'>
         <Popover.Trigger asChild>
           {/* <Tooltip>
         <Tooltip.Trigger> */}

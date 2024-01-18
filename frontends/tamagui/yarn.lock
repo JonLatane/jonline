@@ -5219,6 +5219,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@smakss/react-scroll-direction@npm:^4.0.3":
+  version: 4.0.3
+  resolution: "@smakss/react-scroll-direction@npm:4.0.3"
+  peerDependencies:
+    react: ">=16.8.0"
+  checksum: 8381c48ac553b3fe4d4df0182101f376669647aa2b06a3a49f284409d3f3fbaee0db75380c84ebb9f27d34592e328ee85257ce245b23cf6d9a5311e32a0b6e6f
+  languageName: node
+  linkType: hard
+
 "@swc/helpers@npm:0.5.2":
   version: 0.5.2
   resolution: "@swc/helpers@npm:0.5.2"
@@ -7751,6 +7760,7 @@ __metadata:
     "@jonline/ui": "*"
     "@react-native-async-storage/async-storage": ^1.17.11
     "@reduxjs/toolkit": ^1.9.1
+    "@smakss/react-scroll-direction": ^4.0.3
     "@tamagui/animations-css": latest
     "@tamagui/animations-react-native": latest
     "@tamagui/colors": latest

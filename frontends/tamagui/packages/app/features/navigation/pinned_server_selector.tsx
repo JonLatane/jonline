@@ -10,6 +10,7 @@ import { accountID, setExcludeCurrentServer } from 'app/store';
 import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { useHideNavigation } from "./use_hide_navigation";
 
 
 export type PinnedServerSelectorProps = {
@@ -54,6 +55,8 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
 
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
   const navigationContext = useNavigationContext();
+
+  const disabled = useHideNavigation();
   useEffect(() => {
     if (navigationContext && affectsNavigation) {
       const pinnedServersHeight = document.querySelector('#navigation-pinned-servers')?.clientHeight ?? 0;
@@ -66,7 +69,8 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       currentServer ? serverID(currentServer) : undefined,
       viewingRecommendedServers,
       browsingServers,
-      showPinnedServers
+      showPinnedServers,
+      disabled
     ]
   );
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
@@ -75,7 +79,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
     {/* <AnimatePresence> */}
-    {show ? <>
+    {show && !disabled? <>
       {simplified
         ? undefined
         : <XStack key='pinned-server-toggle-row'>
@@ -99,7 +103,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
             </XStack>
           </Button>
         </XStack>}
-      {showPinnedServers || simplified
+      {showPinnedServers || simplified && !disabled
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
             <XStack m='$3' ai='center' space='$2' key='available-servers'>
