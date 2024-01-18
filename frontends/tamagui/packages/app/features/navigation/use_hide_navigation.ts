@@ -14,7 +14,7 @@ export function useHideNavigation() {
     still: Direction.Still
   })
   const { showPinnedServers } = useLocalConfiguration();
-  const doHide = mediaQuery.xShort && scrollDir === Direction.Down && scrollPosition.top > 100;
+  const doHide = mediaQuery.xShort && scrollDir === Direction.Down;
   const dispatch = useAppDispatch();
   useEffect(() => {
     if (doHide && showPinnedServers) {
