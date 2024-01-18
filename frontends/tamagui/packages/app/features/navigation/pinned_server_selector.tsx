@@ -99,7 +99,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
             </XStack>
           </Button>
         </XStack>}
-      {showPinnedServers
+      {showPinnedServers || simplified
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
             <XStack m='$3' ai='center' space='$2' key='available-servers'>
