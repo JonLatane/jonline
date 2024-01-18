@@ -16,18 +16,22 @@ export function useHideNavigation() {
   const { showPinnedServers } = useLocalConfiguration();
   const [hide, setHide] = useState(false);
   const [hideLock, setHideLock] = useState(false);
+  const [lastScrollDir, setLastScrollDir] = useState(Direction.Still);
   // const doHide = mediaQuery.xShort && scrollDir === Direction.Down;
   const dispatch = useAppDispatch();
   useEffect(() => {
     if (!hideLock) {
-      if (!hide && mediaQuery.xShort && scrollDir === Direction.Down) {
+      if (!hide && mediaQuery.xShort && scrollDir === Direction.Down && scrollDir !== lastScrollDir) {
         setHideLock(true);
         setHide(true);
-        setTimeout(() => setHideLock(false), 1000);
-      } else if (hide && mediaQuery.xShort && scrollDir === Direction.Up) {
+        setLastScrollDir(Direction.Down);
+        setTimeout(() => setHideLock(false), 2000);
+      } else if (hide && mediaQuery.xShort && scrollDir === Direction.Up && scrollDir !== lastScrollDir) {
+        console.log('show')
         setHideLock(true);
         setHide(false);
-        setTimeout(() => setHideLock(false), 1000);
+        setLastScrollDir(Direction.Up);
+        setTimeout(() => setHideLock(false), 2000);
       }
     }
   }, [mediaQuery.xShort, scrollDir, hide, hideLock]);
