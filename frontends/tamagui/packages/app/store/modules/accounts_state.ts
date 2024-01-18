@@ -140,6 +140,11 @@ export const accountsSlice = createSlice({
       } else {
         state.pinnedServers.push(action.payload);
       }
+      setTimeout(() => {
+        if (action.payload.serverId === store.getState().servers.currentServerId) {
+          store.dispatch(accountsSlice.actions.setExcludeCurrentServer(!action.payload.pinned));
+        }
+      }, 1);
     },
     pinAccount: (state, action: PayloadAction<JonlineAccount>) => {
       const account = action.payload;

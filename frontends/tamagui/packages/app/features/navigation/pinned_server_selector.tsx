@@ -28,7 +28,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   const allServers = useAppSelector(state => selectAllServers(state.servers));
   const availableServers = useAppSelector(state =>
     selectAllServers(state.servers)
-      .filter(server => (!currentServer || serverID(server) != serverID(currentServer))
+      .filter(server => simplified || (!currentServer || serverID(server) != serverID(currentServer))
         // && !pinnedServers.some(s => s.serverId === serverID(server))
       ));
   // const [showDataSources, setShowDataSources] = useState(true);
