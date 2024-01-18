@@ -108,7 +108,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           : 2;
   console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
   const eventCardWidth = renderInColumns
-    ? (window.innerWidth - 80 - (20 * numberOfColumns)) / numberOfColumns
+    ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
     : undefined;
   const maxWidth = 2000;
   // useEffect(() => { }, [pinnedServersHeight]);
@@ -169,7 +169,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <AnimatePresence>
                     {paginatedEvents.map((event) => {
                       return <XStack w={eventCardWidth} key={federateId(event.instances[0]?.id ?? '', server)}
-                        animation='standard' {...standardHorizontalAnimation} mx='$1'>
+                        animation='standard' {...standardHorizontalAnimation} mx='$1' px='$1'>
                         <EventCard event={event} isPreview />
                       </XStack>;
                     })}
