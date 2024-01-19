@@ -11,6 +11,7 @@ message ServerConfiguration {
   // The name, description, logo, color scheme, etc. of the server.
   optional ServerInfo server_info = 1;
 
+  // The federation configuration for the server.
   optional FederationInfo federation_info = 2;
 
   // Permissions for a user who isn't logged in to the server. Allows
@@ -31,20 +32,25 @@ message ServerConfiguration {
   // `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`.
   repeated Permission basic_user_permissions = 12;
 
+  // Configuration for users on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_USERS_GLOBALLY`.
   FeatureSettings people_settings = 20;
+  // Configuration for groups on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_GROUPS_GLOBALLY`.
   FeatureSettings group_settings = 21;
+  // Configuration for posts on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_POSTS_GLOBALLY`.
   PostSettings post_settings = 22;
+  // Configuration for events on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   // contain `PUBLISH_EVENTS_GLOBALLY`.
-  FeatureSettings event_settings = 23;
+  PostSettings event_settings = 23;
+  // Configuration for media on the server.
   // If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
-  // contain `PUBLISH_EVENTS_GLOBALLY`.
+  // contain `PUBLISH_MEDIA_GLOBALLY`.
   FeatureSettings media_settings = 24;
 
   // If set, enables External CDN support for the server. This means that the
@@ -52,7 +58,6 @@ message ServerConfiguration {
   // and instead serve up Tamagui Web/Flutter clients directly. This allows you
   // to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
   // up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
-  //
   // See ExternalCDNConfig for more details on securing this setup.
   optional ExternalCDNConfig external_cdn_config = 90;
 
@@ -97,7 +102,9 @@ message ExternalCDNConfig {
   bool cdn_grpc = 6;
 }
 
+// Authentication features that can be enabled/disabled by the server admin.
 enum AuthenticationFeature {
+  // An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.)
   AUTHENTICATION_FEATURE_UNKNOWN = 0;
   // Users can sign up for an account.
   CREATE_ACCOUNT = 1;
@@ -105,6 +112,8 @@ enum AuthenticationFeature {
   LOGIN = 2;
 }
 
+// Settings for a feature (e.g. People, Groups, Posts, Events, Media).
+// Encompasses both the feature's visibility and moderation settings.
 message FeatureSettings {
   // Hide the Posts or Events tab from the user with this flag.
   bool visible = 1;
@@ -119,9 +128,12 @@ message FeatureSettings {
   // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
+  // (TODO) Custom title, like "Section"s instead of "Group"s.
+  // This is more an idea; internationalization is obviously problematic here.
   optional string custom_title = 4;
 }
 
+// Specific settings for Posts and Events.
 message PostSettings {
   // Hide the Posts or Events tab from the user with this flag.
   bool visible = 1;
@@ -136,12 +148,15 @@ message PostSettings {
   // if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` 
   // as appropriate.
   Visibility default_visibility = 3;
+  // (TODO) Custom title, like "Section"s instead of "Group"s.
+  // This is more an idea; internationalization is obviously problematic here.
   optional string custom_title = 4;
   // Controls whether replies are shown in the UI. Note that users' ability to reply
   // is controlled by the `REPLY_TO_POSTS` permission.
-  bool enable_replies = 5;
+  optional bool enable_replies = 5;
 }
 
+// Strategy when a user sets their visibility to `PRIVATE`.
 enum PrivateUserStrategy {
   // `PRIVATE` Users can't see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events).
   // Other users can't see them.
@@ -158,26 +173,40 @@ enum PrivateUserStrategy {
 message ServerInfo {
   // Name of the server.
   optional string name = 1;
+  // Short name of the server. Used in URLs, etc. (Currently unused.)
   optional string short_name = 2;
+  // Description of the server.
   optional string description = 3;
+  // The server's privacy policy. Will be displayed during account creation
+  // and on the `/about` page.
   optional string privacy_policy = 4;
+  // Multi-size logo data for the server.
   optional ServerLogo logo = 5;
+  // The web UI to use (React/Tamagui (default) vs. Flutter Web)
   optional WebUserInterface web_user_interface = 6;
+  // The color scheme for the server.
   optional ServerColors colors = 7;
+  // The media policy for the server. Will be displayed during account creation
+  // and on the `/about` page.
   optional string media_policy = 8;
   // This will be replaced with FederationInfo soon.
   repeated string recommended_server_hosts = 9 [deprecated = true];
 }
 
-
+// Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media).
 message ServerLogo {
+  // The media ID for the square logo.
   optional string squareMediaId = 1;
+  // The media ID for the square logo in dark mode.
   optional string squareMediaIdDark = 2;
+  // The media ID for the wide logo.
   optional string wideMediaId = 3;
+  // The media ID for the wide logo in dark mode.
   optional string wideMediaIdDark = 4;
 }
 
-// Offers a choice of web UIs. All
+// Offers a choice of web UIs. Generally though, React/Tamagui is
+// a century ahead of Flutter Web, so it's the default.
 enum WebUserInterface {
   // Uses Flutter Web. Loaded from /app.
   FLUTTER_WEB = 0;

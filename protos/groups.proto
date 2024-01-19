@@ -8,67 +8,110 @@ import "media.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 
+// `Group`s are a way to organize users and posts (and thus events). They can be used for many purposes,
 message Group {
+  // The group's unique ID.
   string id = 1;
+  // Mutable name of the group. Must be unique, such that the derived `shortname` is also unique.
   string name = 2;
+  // Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated.
   string shortname = 3;
+  // A description of the group.
   string description = 4;
+  // An avatar for the group.
   optional MediaReference avatar = 5;
 
+  // The default permissions for new members of the group.
   repeated Permission default_membership_permissions = 6;
+  // The default moderation for new members of the group.
   // Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   Moderation default_membership_moderation = 7;
+  // The default moderation for new posts in the group.
   Moderation default_post_moderation = 8;
+  // The default moderation for new events in the group.
   Moderation default_event_moderation = 9;
 
   // LIMITED visibility groups are only visible to members. PRIVATE groups are only
   // visibile to users with the ADMIN group permission.
   Visibility visibility = 10;
+
+  // The number of members in the group.
   uint32 member_count = 11;
+  // The number of posts in the group.
   uint32 post_count = 12;
+  // The number of events in the group.
   uint32 event_count = 13;
 
+  // The permissions given to non-members of the group.
   repeated Permission non_member_permissions = 18;
+  // The membership for the current user, if any.
   optional Membership current_user_membership = 19;
+  // The time the group was created.
   google.protobuf.Timestamp created_at = 20;
+  // The time the group was last updated.
   optional google.protobuf.Timestamp updated_at = 21;
 }
 
+// Request to get a group or groups by name or ID.
 message GetGroupsRequest {
+  // The ID of the group to get.
   optional string group_id = 1;
+  // The name of the group to get.
   optional string group_name = 2;
+  // The shortname of the group to get.
   // Group shortname search is case-insensitive.
   optional string group_shortname = 3;
+  // The group listing type.
   GroupListingType listing_type = 10;
+  // The page of results to get.
   optional int32 page = 11;
 }
 
+// The type of group listing to get.
 enum GroupListingType {
+  // Get all groups (visible to the current user).
   ALL_GROUPS = 0;
+  // Get groups the current user is a member of.
   MY_GROUPS = 1;
+  // Get groups the current user has requested to join.
   REQUESTED_GROUPS = 2;
+  // Get groups the current user has been invited to.
   INVITED_GROUPS = 3;
 }
 
+// Response to a GetGroupsRequest.
 message GetGroupsResponse {
+  // The groups that matched the request.
   repeated Group groups = 1;
+  // Whether there are more groups to get.
   bool has_next_page = 2;
 }
 
-// Used by group MODERATE_USERS mods to manage group requests from the People tab.
-// See also: UserListingType.MEMBERSHIP_REQUESTS.
+// Used when fetching group members using the `GetMembers` RPC.
 message Member {
+  // The user.
   User user = 1;
+  // The user's membership (or join request, or invitation, or both) in the group.
   Membership membership = 2;
 }
+
+// Request to get members of a group.
 message GetMembersRequest {
+  // The ID of the group to get members of.
   string group_id = 1;
+  // The username of the members to search for.
   optional string username = 2;
+  // The membership status to filter members by.
+  // If not specified, all members are returned.
   optional Moderation group_moderation = 3;
+  // The page of results to get.
   optional int32 page = 10;
 }
 
+// Response to a GetMembersRequest.
 message GetMembersResponse {
+  // The members that matched the request.
   repeated Member members = 1;
+  // Whether there are more members to get.
   bool has_next_page = 2;
 }

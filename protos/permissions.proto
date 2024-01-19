@@ -8,6 +8,7 @@ package jonline;
 // Subsets of these permissions are also applicable to anonymous users via [`anonymous_user_permissions` in `ServerConfiguration`](#jonline-ServerConfiguration),
 // and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
 enum Permission {
+  // A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.)
   PERMISSION_UNKNOWN = 0;
   // Allow the user to view profiles with `SERVER_PUBLIC` Visbility.
   // Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission).

@@ -19,7 +19,7 @@ import "users.proto";
 //     - Get one post ,including preview data/
 // - `{post_id:, reply_depth: 1}`
 //     - Get replies to a post - only support for replyDepth=1 is done for now though.
-// - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+// - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
 //     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
 // - `{author_user_id:, group_id:}`
 //     - Get posts by a user for a group. (TODO)
@@ -28,20 +28,23 @@ import "users.proto";
 message GetPostsRequest {
   // Returns the single post with the given ID.
   optional string post_id = 1;
-  // Limits results to replies to the given post.
-  // optional string replies_to_post_id = 2;
   // Limits results to those by the given author user ID.
   optional string author_user_id = 2;
+  // Limits results to those in the given group ID.
   optional string group_id = 3;
   // Only supported for depth=2 for now.
   optional uint32 reply_depth = 4;
   // Only POST and REPLY are supported for now.
   optional PostContext context = 5;
+  // The listing type of the request. See `PostListingType` for more info.
   PostListingType listing_type = 10;
+  // The page of results to return. Defaults to 0.
   uint32 page = 15;
 }
 
+// Used for getting posts.
 message GetPostsResponse {
+  // The posts returned by the request.
   repeated Post posts = 1;
 }
 
@@ -56,9 +59,10 @@ enum PostListingType {
   MY_GROUPS_POSTS = 2;
   // Returns `DIRECT` posts that are directly addressed to the user.
   DIRECT_POSTS = 3;
+  // Returns posts pending moderation by the server-level mods/admins.
   POSTS_PENDING_MODERATION = 4;
 
-  // Returns posts from a specific group. group_id parameter is required for these.
+  // Returns posts from a specific group. Requires group_id parameter.
   GROUP_POSTS = 10;
   // Returns pending_moderation posts from a specific group. Requires group_id
   // parameter and user must have group (or server) admin permissions.
@@ -145,9 +149,13 @@ message Post {
   // in the frontend.
   repeated Post replies = 19;
 
+  // The time the post was created.
   google.protobuf.Timestamp created_at = 20;
+  // The time the post was last updated.
   optional google.protobuf.Timestamp updated_at = 21;
+  // The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   optional google.protobuf.Timestamp published_at = 22;
+  // The time the post was last interacted with (replied to, etc.)
   google.protobuf.Timestamp last_activity_at = 23;
 }
 
@@ -155,27 +163,39 @@ message Post {
 // information about the moderation of the post in the group, as well as
 // the time it was cross-posted and the user who did the cross-posting.
 message GroupPost{
+  // The ID of the group this post is in.
   string group_id = 1;
+  // The ID of the post.
   string post_id = 2;
+  // The ID of the user who cross-posted the post.
   string user_id = 3;
+  // The moderation of the post in the group.
   Moderation group_moderation = 4;
+  // The time the post was cross-posted.
   google.protobuf.Timestamp created_at = 5;
 }
 
-// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused.
-message UserPost{
-  string group_id = 1;
-  string user_id = 2;
+// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
+// See also: [`DIRECT` `Visibility`](#jonline-Visibility).
+message UserPost {
+  // The ID of the user the post is shared with.
+  string user_id = 1;
+  // The ID of the post shared.
+  string post_id = 2;
+  // The time the post was shared.
   google.protobuf.Timestamp created_at = 3;
 }
 
-// Used for getting context about GroupPosts of an existing Post.
+// Used for getting context about `GroupPost`s of an existing `Post`.
 message GetGroupPostsRequest {
+  // The ID of the post to get `GroupPost`s for.
   string post_id = 1;
+  // The ID of the group to get `GroupPost`s for.
   optional string group_id = 2;
 }
 
-// Used for getting context about GroupPosts of an existing Post.
+// Used for getting context about `GroupPost`s of an existing `Post`.
 message GetGroupPostsResponse {
+  // The `GroupPost`s for the given `Post` or `Group`.
   repeated GroupPost group_posts = 1;
 }

@@ -381,8 +381,8 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a>, ports 80 and/or 443).
       A Jonline server is generally also expected to serve up web apps on ports 80/443, where
       select APIs are exposed with HTTP interfaces instead of gRPC.
-      (Specifically, <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a> again
-      and <a href="#jonline-Media">Media</a>.)
+      (Specifically, that <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a> again
+      and <a href="#jonline-Media"><code>Media</code>, for interoperability purposes</a>.)
     </p>
     <h5 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h5>
     <p>
@@ -402,7 +402,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
       Jonline only has client-server APIs. The idea is that <em>all</em> of the federation data for a given Jonline server is simply the value of
-      <a href="#serverinfo">ServerInfo.recommended_server_hosts</a>.
+      <a href="#jonline-ServerConfiguration"><code>federation_info</code> in <code>ServerConfiguration</code></a>.
     </p>
     <p>
       That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
@@ -743,7 +743,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>refresh_token</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The refresh token to use to request a new access token.</td>
         </tr>
         <tr>
           <td>expires_at</td>
@@ -827,7 +827,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>device_name</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>(Not yet implemented.) The name of the device being used to create the account.</td>
         </tr>
       </tbody>
     </table>
@@ -893,7 +893,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>device_name</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(Not yet implemented.)</td>
+          <td>(Not yet implemented.) The name of the device being used to login.</td>
         </tr>
         <tr>
           <td>user_id</td>
@@ -968,6 +968,51 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h2 id="visibility_moderationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#visibility_moderationproto"><span class="octicon octicon-link"></span></a>visibility_moderation.proto</h2>
     <p><a name="jonline-Moderation"></a></p>
     <h3 id="moderation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation"><span class="octicon octicon-link"></span></a>Moderation</h3>
+    <p>Nearly everything in Jonline has one or more <code>Moderation</code>s on it.</p>
+    <p>From a high level:</p>
+    <ul>
+      <li>
+        A <code>User</code> has a <code>moderation</code> that determines whether they can log in (and their visibility per their <code>visibility</code>).
+        (This is poorly enforced currently! Fix it if you want!)
+        <ul>
+          <li>
+            This is managed by <code>people_settings.default_moderation</code> in <code>ServerConfiguration</code>.
+            A default of <code>UNMODERATED</code> means that all users can log in. A default of <code>PENDING</code>
+            means that all users must be approved by a moderator/admin before they can log in.
+          </li>
+        </ul>
+      </li>
+      <li>A <code>Follow</code> has a <code>target_user_moderation</code> that determines whether the <code>User</code> is following the <code>Group</code>.
+        <ul>
+          <li>It is managed by <code>default_follow_moderation</code> in the targeted <code>User</code>.</li>
+        </ul>
+      </li>
+      <li>A <code>Group</code> has a <code>moderation</code> that determines whether the <code>Group</code> is visible to users (per its <code>visibility</code>).
+        <ul>
+          <li>This is managed by <code>group_settings.default_moderation</code> in <code>ServerConfiguration</code>.</li>
+        </ul>
+      </li>
+      <li>
+        A <code>Membership</code> has a <code>group_moderation</code> and <code>user_moderation</code> that determine whether
+        the <code>Group</code> admins and/or the invited user has approved the <code>Membership</code>, respectively.
+        <ul>
+          <li>
+            User invites to <code>Group</code>s (i.e. the <code>user_moderation</code>) always start as <code>PENDING</code>.
+            The group side of this is managed by <code>default_membership_moderation</code> of the <code>Group</code> in question.
+          </li>
+        </ul>
+      </li>
+      <li>A <code>Post</code> has a <code>moderation</code> that determines whether the <code>Post</code> is visible to users (per its <code>visibility</code>).
+        <ul>
+          <li>This is managed by <code>post_settings.default_moderation</code> in <code>ServerConfiguration</code>.</li>
+        </ul>
+      </li>
+      <li>A <code>GroupPost</code> has a <code>moderation</code> that determines whether the admins/mods of the <code>Group</code> has approved the <code>Post</code> (or <code>Post</code>-descended thing like <code>Event</code>s).</li>
+      <li>
+        <code>Event</code>s and further objects contain a <code>Post</code> and thus inherit its <code>moderation</code> and
+        related <code>GroupPost</code> behavior, for "Group Events."
+      </li>
+    </ul>
     <table>
       <thead>
         <tr>
@@ -980,7 +1025,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>MODERATION_UNKNOWN</td>
           <td>0</td>
-          <td></td>
+          <td>A moderation that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)</td>
         </tr>
         <tr>
           <td>UNMODERATED</td>
@@ -1006,6 +1051,37 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-Visibility"></a></p>
     <h3 id="visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#visibility"><span class="octicon octicon-link"></span></a>Visibility</h3>
+    <p>
+      Visibility in Jonline is a complex topic. There are several different types of visibility,
+      and each type of entity (<code>User</code>, <code>Media</code>, <code>Group</code>, then <code>Post</code>/<code>Event</code>/etc. with common logic)
+      has different rules for visibility.
+    </p>
+    <p>From the top down, the rules break down as follows:</p>
+    <ul>
+      <li>Even a <code>PRIVATE</code> entity is always visible to the user who owns it.
+        <ul>
+          <li>For <code>Group</code>s, this means all full members of the <code>Group</code>.</li>
+          <li>
+            For <code>User</code>s, this is confusing and there is a whole <code>PrivateUserStrategy</code> thing
+            in <code>ServerConfiguration</code> for this.
+          </li>
+        </ul>
+      </li>
+      <li>
+        A <code>LIMITED</code> entity is visible to to the owner(s) and any explicitly associated
+        <code>User</code>s and <code>Group</code>s. Generally, this only applies to <code>Post</code>/<code>Event</code>/etc. entities.
+        Associations exist via <code>UserPost</code>s and <code>GroupPost</code>s.
+        <ul>
+          <li>
+            This is currently only implemented for <code>Group</code>s and <code>GroupPost</code>s. There are some
+            choices to be made about how to implement this for <code>User</code>s and <code>UserPost</code>s, and whether
+            <code>DIRECT</code> should be a separate visibility type.
+          </li>
+        </ul>
+      </li>
+      <li>A <code>SERVER_PUBLIC</code> entity is visible to all authenticated users.</li>
+      <li>A <code>GLOBAL_PUBLIC</code> entity is visible to the open internet.</li>
+    </ul>
     <table>
       <thead>
         <tr>
@@ -1018,7 +1094,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>VISIBILITY_UNKNOWN</td>
           <td>0</td>
-          <td></td>
+          <td>A visibility that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)</td>
         </tr>
         <tr>
           <td>PRIVATE</td>
@@ -1072,7 +1148,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>PERMISSION_UNKNOWN</td>
           <td>0</td>
-          <td></td>
+          <td>A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.)</td>
         </tr>
         <tr>
           <td>VIEW_USERS</td>
@@ -1687,7 +1763,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h3 id="getmediarequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmediarequest"><span class="octicon octicon-link"></span></a>GetMediaRequest</h3>
     <p>Valid GetMediaRequest formats:</p>
     <ul>
-      <li><code>{user_id: &#x26;#34;123&#x26;#34;}</code> - Gets the media of the given user that the current user can see. IE:
+      <li><code>{user_id: abc123}</code> - Gets the media of the given user that the current user can see. IE:
         <ul>
           <li><em>all</em> of the current user's own media</li>
           <li><code>GLOBAL_PUBLIC</code> media for the user if the current user is not logged in.</li>
@@ -1695,7 +1771,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li><code>LIMITED</code> media for the user if the current user is following the user.</li>
         </ul>
       </li>
-      <li><code>{media_id: &#x26;#34;123&#x26;#34;}</code> - Gets the media with the given ID, if visible to the current user.</li>
+      <li><code>{media_id: abc123}</code> - Gets the media with the given ID, if visible to the current user.</li>
     </ul>
     <table>
       <thead>
@@ -1913,6 +1989,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h2 id="groupsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#groupsproto"><span class="octicon octicon-link"></span></a>groups.proto</h2>
     <p><a name="jonline-GetGroupsRequest"></a></p>
     <h3 id="getgroupsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgroupsrequest"><span class="octicon octicon-link"></span></a>GetGroupsRequest</h3>
+    <p>Request to get a group or groups by name or ID.</p>
     <table>
       <thead>
         <tr>
@@ -1927,36 +2004,37 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The ID of the group to get.</td>
         </tr>
         <tr>
           <td>group_name</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The name of the group to get.</td>
         </tr>
         <tr>
           <td>group_shortname</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Group shortname search is case-insensitive.</td>
+          <td>The shortname of the group to get. Group shortname search is case-insensitive.</td>
         </tr>
         <tr>
           <td>listing_type</td>
           <td><a href="#jonline-GroupListingType">GroupListingType</a></td>
           <td></td>
-          <td></td>
+          <td>The group listing type.</td>
         </tr>
         <tr>
           <td>page</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The page of results to get.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetGroupsResponse"></a></p>
     <h3 id="getgroupsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgroupsresponse"><span class="octicon octicon-link"></span></a>GetGroupsResponse</h3>
+    <p>Response to a GetGroupsRequest.</p>
     <table>
       <thead>
         <tr>
@@ -1971,18 +2049,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>groups</td>
           <td><a href="#jonline-Group">Group</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The groups that matched the request.</td>
         </tr>
         <tr>
           <td>has_next_page</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td></td>
+          <td>Whether there are more groups to get.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetMembersRequest"></a></p>
     <h3 id="getmembersrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmembersrequest"><span class="octicon octicon-link"></span></a>GetMembersRequest</h3>
+    <p>Request to get members of a group.</p>
     <table>
       <thead>
         <tr>
@@ -1997,30 +2076,31 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the group to get members of.</td>
         </tr>
         <tr>
           <td>username</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The username of the members to search for.</td>
         </tr>
         <tr>
           <td>group_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The membership status to filter members by. If not specified, all members are returned.</td>
         </tr>
         <tr>
           <td>page</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The page of results to get.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetMembersResponse"></a></p>
     <h3 id="getmembersresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getmembersresponse"><span class="octicon octicon-link"></span></a>GetMembersResponse</h3>
+    <p>Response to a GetMembersRequest.</p>
     <table>
       <thead>
         <tr>
@@ -2035,18 +2115,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>members</td>
           <td><a href="#jonline-Member">Member</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The members that matched the request.</td>
         </tr>
         <tr>
           <td>has_next_page</td>
           <td><a href="#bool">bool</a></td>
           <td></td>
-          <td></td>
+          <td>Whether there are more members to get.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-Group"></a></p>
     <h3 id="group"><a class="anchor" aria-hidden="true" tabindex="-1" href="#group"><span class="octicon octicon-link"></span></a>Group</h3>
+    <p><code>Group</code>s are a way to organize users and posts (and thus events). They can be used for many purposes,</p>
     <table>
       <thead>
         <tr>
@@ -2061,55 +2142,55 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The group's unique ID.</td>
         </tr>
         <tr>
           <td>name</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Mutable name of the group. Must be unique, such that the derived <code>shortname</code> is also unique.</td>
         </tr>
         <tr>
           <td>shortname</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Immutable shortname of the group. Derived from changes to <code>name</code> when the <code>Group</code> is updated.</td>
         </tr>
         <tr>
           <td>description</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>A description of the group.</td>
         </tr>
         <tr>
           <td>avatar</td>
           <td><a href="#jonline-MediaReference">MediaReference</a></td>
           <td>optional</td>
-          <td></td>
+          <td>An avatar for the group.</td>
         </tr>
         <tr>
           <td>default_membership_permissions</td>
           <td><a href="#jonline-Permission">Permission</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The default permissions for new members of the group.</td>
         </tr>
         <tr>
           <td>default_membership_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td>Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.</td>
+          <td>The default moderation for new members of the group. Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.</td>
         </tr>
         <tr>
           <td>default_post_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td></td>
+          <td>The default moderation for new posts in the group.</td>
         </tr>
         <tr>
           <td>default_event_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td></td>
+          <td>The default moderation for new events in the group.</td>
         </tr>
         <tr>
           <td>visibility</td>
@@ -2121,52 +2202,49 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>member_count</td>
           <td><a href="#uint32">uint32</a></td>
           <td></td>
-          <td></td>
+          <td>The number of members in the group.</td>
         </tr>
         <tr>
           <td>post_count</td>
           <td><a href="#uint32">uint32</a></td>
           <td></td>
-          <td></td>
+          <td>The number of posts in the group.</td>
         </tr>
         <tr>
           <td>event_count</td>
           <td><a href="#uint32">uint32</a></td>
           <td></td>
-          <td></td>
+          <td>The number of events in the group.</td>
         </tr>
         <tr>
           <td>non_member_permissions</td>
           <td><a href="#jonline-Permission">Permission</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The permissions given to non-members of the group.</td>
         </tr>
         <tr>
           <td>current_user_membership</td>
           <td><a href="#jonline-Membership">Membership</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The membership for the current user, if any.</td>
         </tr>
         <tr>
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the group was created.</td>
         </tr>
         <tr>
           <td>updated_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The time the group was last updated.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-Member"></a></p>
     <h3 id="member"><a class="anchor" aria-hidden="true" tabindex="-1" href="#member"><span class="octicon octicon-link"></span></a>Member</h3>
-    <p>
-      Used by group MODERATE_USERS mods to manage group requests from the People tab.
-      See also: UserListingType.MEMBERSHIP_REQUESTS.
-    </p>
+    <p>Used when fetching group members using the <code>GetMembers</code> RPC.</p>
     <table>
       <thead>
         <tr>
@@ -2181,18 +2259,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>user</td>
           <td><a href="#jonline-User">User</a></td>
           <td></td>
-          <td></td>
+          <td>The user.</td>
         </tr>
         <tr>
           <td>membership</td>
           <td><a href="#jonline-Membership">Membership</a></td>
           <td></td>
-          <td></td>
+          <td>The user's membership (or join request, or invitation, or both) in the group.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GroupListingType"></a></p>
     <h3 id="grouplistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grouplistingtype"><span class="octicon octicon-link"></span></a>GroupListingType</h3>
+    <p>The type of group listing to get.</p>
     <table>
       <thead>
         <tr>
@@ -2205,22 +2284,22 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>ALL_GROUPS</td>
           <td>0</td>
-          <td></td>
+          <td>Get all groups (visible to the current user).</td>
         </tr>
         <tr>
           <td>MY_GROUPS</td>
           <td>1</td>
-          <td></td>
+          <td>Get groups the current user is a member of.</td>
         </tr>
         <tr>
           <td>REQUESTED_GROUPS</td>
           <td>2</td>
-          <td></td>
+          <td>Get groups the current user has requested to join.</td>
         </tr>
         <tr>
           <td>INVITED_GROUPS</td>
           <td>3</td>
-          <td></td>
+          <td>Get groups the current user has been invited to.</td>
         </tr>
       </tbody>
     </table>
@@ -2229,7 +2308,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <h2 id="postsproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsproto"><span class="octicon octicon-link"></span></a>posts.proto</h2>
     <p><a name="jonline-GetGroupPostsRequest"></a></p>
     <h3 id="getgrouppostsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsrequest"><span class="octicon octicon-link"></span></a>GetGroupPostsRequest</h3>
-    <p>Used for getting context about GroupPosts of an existing Post.</p>
+    <p>Used for getting context about <code>GroupPost</code>s of an existing <code>Post</code>.</p>
     <table>
       <thead>
         <tr>
@@ -2244,19 +2323,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>post_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the post to get <code>GroupPost</code>s for.</td>
         </tr>
         <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The ID of the group to get <code>GroupPost</code>s for.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetGroupPostsResponse"></a></p>
     <h3 id="getgrouppostsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getgrouppostsresponse"><span class="octicon octicon-link"></span></a>GetGroupPostsResponse</h3>
-    <p>Used for getting context about GroupPosts of an existing Post.</p>
+    <p>Used for getting context about <code>GroupPost</code>s of an existing <code>Post</code>.</p>
     <table>
       <thead>
         <tr>
@@ -2271,7 +2350,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>group_posts</td>
           <td><a href="#jonline-GroupPost">GroupPost</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The <code>GroupPost</code>s for the given <code>Post</code> or <code>Group</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -2299,7 +2378,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li>Get replies to a post - only support for replyDepth=1 is done for now though.</li>
         </ul>
       </li>
-      <li><code>{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}</code>
+      <li><code>{listing_type: MyGroupsPosts|</code>GroupPost<code>sPendingModeration, group_id:}</code>
         <ul>
           <li>Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.</li>
         </ul>
@@ -2335,13 +2414,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>author_user_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>Limits results to replies to the given post. optional string replies_to_post_id = 2; Limits results to those by the given author user ID.</td>
+          <td>Limits results to those by the given author user ID.</td>
         </tr>
         <tr>
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Limits results to those in the given group ID.</td>
         </tr>
         <tr>
           <td>reply_depth</td>
@@ -2359,18 +2438,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>listing_type</td>
           <td><a href="#jonline-PostListingType">PostListingType</a></td>
           <td></td>
-          <td></td>
+          <td>The listing type of the request. See <code>PostListingType</code> for more info.</td>
         </tr>
         <tr>
           <td>page</td>
           <td><a href="#uint32">uint32</a></td>
           <td></td>
-          <td></td>
+          <td>The page of results to return. Defaults to 0.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetPostsResponse"></a></p>
     <h3 id="getpostsresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getpostsresponse"><span class="octicon octicon-link"></span></a>GetPostsResponse</h3>
+    <p>Used for getting posts.</p>
     <table>
       <thead>
         <tr>
@@ -2385,7 +2465,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>posts</td>
           <td><a href="#jonline-Post">Post</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The posts returned by the request.</td>
         </tr>
       </tbody>
     </table>
@@ -2410,31 +2490,31 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>group_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the group this post is in.</td>
         </tr>
         <tr>
           <td>post_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the post.</td>
         </tr>
         <tr>
           <td>user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the user who cross-posted the post.</td>
         </tr>
         <tr>
           <td>group_moderation</td>
           <td><a href="#jonline-Moderation">Moderation</a></td>
           <td></td>
-          <td></td>
+          <td>The moderation of the post in the group.</td>
         </tr>
         <tr>
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the post was cross-posted.</td>
         </tr>
       </tbody>
     </table>
@@ -2572,31 +2652,34 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the post was created.</td>
         </tr>
         <tr>
           <td>updated_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The time the post was last updated.</td>
         </tr>
         <tr>
           <td>published_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The time the post was published (its visibility first changed to <code>SERVER_PUBLIC</code> or <code>GLOBAL_PUBLIC</code>).</td>
         </tr>
         <tr>
           <td>last_activity_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the post was last interacted with (replied to, etc.)</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-UserPost"></a></p>
     <h3 id="userpost"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userpost"><span class="octicon octicon-link"></span></a>UserPost</h3>
-    <p>A <code>UserPost</code> is a "direct share" of a <code>Post</code> to a <code>User</code>. Currently unused.</p>
+    <p>
+      A <code>UserPost</code> is a "direct share" of a <code>Post</code> to a <code>User</code>. Currently unused/unimplemented.
+      See also: <a href="#jonline-Visibility"><code>DIRECT</code> <code>Visibility</code></a>.
+    </p>
     <table>
       <thead>
         <tr>
@@ -2608,22 +2691,22 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       </thead>
       <tbody>
         <tr>
-          <td>group_id</td>
-          <td><a href="#string">string</a></td>
-          <td></td>
-          <td></td>
-        </tr>
-        <tr>
           <td>user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
+          <td>The ID of the user the post is shared with.</td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
           <td></td>
+          <td>The ID of the post shared.</td>
         </tr>
         <tr>
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the post was shared.</td>
         </tr>
       </tbody>
     </table>
@@ -2706,12 +2789,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>POSTS_PENDING_MODERATION</td>
           <td>4</td>
-          <td></td>
+          <td>Returns posts pending moderation by the server-level mods/admins.</td>
         </tr>
         <tr>
           <td>GROUP_POSTS</td>
           <td>10</td>
-          <td>Returns posts from a specific group. group_id parameter is required for these.</td>
+          <td>Returns posts from a specific group. Requires group_id parameter.</td>
         </tr>
         <tr>
           <td>GROUP_POSTS_PENDING_MODERATION</td>
@@ -2885,18 +2968,19 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>created_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
-          <td></td>
+          <td>The time the attendance was created.</td>
         </tr>
         <tr>
           <td>updated_at</td>
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The time the attendance was last updated.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-EventAttendances"></a></p>
     <h3 id="eventattendances"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventattendances"><span class="octicon octicon-link"></span></a>EventAttendances</h3>
+    <p>Response to get RSVP data for an event.</p>
     <table>
       <thead>
         <tr>
@@ -2911,7 +2995,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>attendances</td>
           <td><a href="#jonline-EventAttendance">EventAttendance</a></td>
           <td>repeated</td>
-          <td></td>
+          <td>The attendance data for the event, in no particular order.</td>
         </tr>
       </tbody>
     </table>
@@ -2972,13 +3056,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>Unique ID for the event instance generated by the Jonline BE.</td>
         </tr>
         <tr>
           <td>event_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>ID of the parent <code>Event</code>.</td>
         </tr>
         <tr>
           <td>post</td>
@@ -3032,7 +3116,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>rsvp_info</td>
           <td><a href="#jonline-EventInstanceRsvpInfo">EventInstanceRsvpInfo</a></td>
           <td>optional</td>
-          <td></td>
+          <td>RSVP configuration and metadata for the event instance.</td>
         </tr>
       </tbody>
     </table>
@@ -3074,37 +3158,37 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>going_rsvps</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of users who have RSVP'd to the event.</td>
         </tr>
         <tr>
           <td>going_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of attendees who have RSVP'd to the event. (RSVPs may have multiple attendees, i.e. guests.)</td>
         </tr>
         <tr>
           <td>interested_rsvps</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of users who have signaled interest in the event.</td>
         </tr>
         <tr>
           <td>interested_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.)</td>
         </tr>
         <tr>
           <td>invited_rsvps</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of users who have been invited to the event.</td>
         </tr>
         <tr>
           <td>invited_attendees</td>
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.)</td>
         </tr>
       </tbody>
     </table>
@@ -3125,13 +3209,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>event_instance_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The ID of the event to get RSVP data for.</td>
         </tr>
         <tr>
           <td>anonymous_attendee_auth_token</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.)</td>
         </tr>
       </tbody>
     </table>
@@ -3397,17 +3481,17 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>EVENTS_PENDING_MODERATION</td>
           <td>4</td>
-          <td>Returns <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> that need moderation.</td>
+          <td>Returns events pending moderation by the server-level mods/admins.</td>
         </tr>
         <tr>
           <td>GROUP_EVENTS</td>
           <td>10</td>
-          <td>group_id parameter is required for these.</td>
+          <td>Returns events from a specific group. Requires group_id parameterRequires group_id parameter</td>
         </tr>
         <tr>
           <td>GROUP_EVENTS_PENDING_MODERATION</td>
           <td>11</td>
-          <td>Returns <code>LIMITED</code>, <code>SERVER_PUBLIC</code>, and <code>GLOBAL_PUBLIC</code> that need moderation.</td>
+          <td>Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions.</td>
         </tr>
       </tbody>
     </table>
@@ -3471,6 +3555,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-FeatureSettings"></a></p>
     <h3 id="featuresettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#featuresettings"><span class="octicon octicon-link"></span></a>FeatureSettings</h3>
+    <p>
+      Settings for a feature (e.g. People, Groups, Posts, Events, Media).
+      Encompasses both the feature's visibility and moderation settings.
+    </p>
     <table>
       <thead>
         <tr>
@@ -3503,12 +3591,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>custom_title</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-PostSettings"></a></p>
     <h3 id="postsettings"><a class="anchor" aria-hidden="true" tabindex="-1" href="#postsettings"><span class="octicon octicon-link"></span></a>PostSettings</h3>
+    <p>Specific settings for Posts and Events.</p>
     <table>
       <thead>
         <tr>
@@ -3541,12 +3630,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>custom_title</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>(TODO) Custom title, like "Section"s instead of "Group"s. This is more an idea; internationalization is obviously problematic here.</td>
         </tr>
         <tr>
           <td>enable_replies</td>
           <td><a href="#bool">bool</a></td>
-          <td></td>
+          <td>optional</td>
           <td>Controls whether replies are shown in the UI. Note that users' ability to reply is controlled by the <code>REPLY_TO_POSTS</code> permission.</td>
         </tr>
       </tbody>
@@ -3619,7 +3708,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>federation_info</td>
           <td><a href="#jonline-FederationInfo">FederationInfo</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The federation configuration for the server.</td>
         </tr>
         <tr>
           <td>anonymous_user_permissions</td>
@@ -3643,45 +3732,52 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>people_settings</td>
           <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
           <td></td>
-          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_USERS_GLOBALLY</code>.</td>
+          <td>Configuration for users on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_USERS_GLOBALLY</code>.</td>
         </tr>
         <tr>
           <td>group_settings</td>
           <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
           <td></td>
-          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_GROUPS_GLOBALLY</code>.</td>
+          <td>Configuration for groups on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_GROUPS_GLOBALLY</code>.</td>
         </tr>
         <tr>
           <td>post_settings</td>
           <td><a href="#jonline-PostSettings">PostSettings</a></td>
           <td></td>
-          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_POSTS_GLOBALLY</code>.</td>
+          <td>Configuration for posts on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_POSTS_GLOBALLY</code>.</td>
         </tr>
         <tr>
           <td>event_settings</td>
-          <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
+          <td><a href="#jonline-PostSettings">PostSettings</a></td>
           <td></td>
-          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+          <td>Configuration for events on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
         </tr>
         <tr>
           <td>media_settings</td>
           <td><a href="#jonline-FeatureSettings">FeatureSettings</a></td>
           <td></td>
-          <td>If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_EVENTS_GLOBALLY</code>.</td>
+          <td>Configuration for media on the server. If default visibility is <code>GLOBAL_PUBLIC</code>, default_user_permissions <em>must</em> contain <code>PUBLISH_MEDIA_GLOBALLY</code>.</td>
         </tr>
         <tr>
           <td>external_cdn_config</td>
           <td><a href="#jonline-ExternalCDNConfig">ExternalCDNConfig</a></td>
           <td>optional</td>
-          <td>If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will <em>not</em> redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare's CDN.</td>
+          <td>If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will <em>not</em> redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare's CDN. See ExternalCDNConfig for more details on securing this setup.</td>
+        </tr>
+        <tr>
+          <td>private_user_strategy</td>
+          <td><a href="#jonline-PrivateUserStrategy">PrivateUserStrategy</a></td>
+          <td></td>
+          <td>Strategy when a user sets their visibility to <code>PRIVATE</code>. Defaults to <code>ACCOUNT_IS_FROZEN</code>.</td>
+        </tr>
+        <tr>
+          <td>authentication_features</td>
+          <td><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></td>
+          <td>repeated</td>
+          <td>(TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully!</td>
         </tr>
       </tbody>
     </table>
-    <p>
-      See ExternalCDNConfig for more details on securing this setup. |
-      | private_user_strategy | <a href="#jonline-PrivateUserStrategy">PrivateUserStrategy</a> | | Strategy when a user sets their visibility to <code>PRIVATE</code>. Defaults to <code>ACCOUNT_IS_FROZEN</code>. |
-      | authentication_features | <a href="#jonline-AuthenticationFeature">AuthenticationFeature</a> | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
-    </p>
     <p><a name="jonline-ServerInfo"></a></p>
     <h3 id="serverinfo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverinfo"><span class="octicon octicon-link"></span></a>ServerInfo</h3>
     <p>User-facing information about the server displayed on the "about" page.</p>
@@ -3705,43 +3801,43 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>short_name</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Short name of the server. Used in URLs, etc. (Currently unused.)</td>
         </tr>
         <tr>
           <td>description</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Description of the server.</td>
         </tr>
         <tr>
           <td>privacy_policy</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The server's privacy policy. Will be displayed during account creation and on the <code>/about</code> page.</td>
         </tr>
         <tr>
           <td>logo</td>
           <td><a href="#jonline-ServerLogo">ServerLogo</a></td>
           <td>optional</td>
-          <td></td>
+          <td>Multi-size logo data for the server.</td>
         </tr>
         <tr>
           <td>web_user_interface</td>
           <td><a href="#jonline-WebUserInterface">WebUserInterface</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The web UI to use (React/Tamagui (default) vs. Flutter Web)</td>
         </tr>
         <tr>
           <td>colors</td>
           <td><a href="#jonline-ServerColors">ServerColors</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The color scheme for the server.</td>
         </tr>
         <tr>
           <td>media_policy</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The media policy for the server. Will be displayed during account creation and on the <code>/about</code> page.</td>
         </tr>
         <tr>
           <td>recommended_server_hosts</td>
@@ -3753,6 +3849,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-ServerLogo"></a></p>
     <h3 id="serverlogo"><a class="anchor" aria-hidden="true" tabindex="-1" href="#serverlogo"><span class="octicon octicon-link"></span></a>ServerLogo</h3>
+    <p>Logo data for the server. Built atop Jonline <a href="#jonline-Media"><code>Media</code> APIs</a>.</p>
     <table>
       <thead>
         <tr>
@@ -3767,30 +3864,31 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>squareMediaId</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The media ID for the square logo.</td>
         </tr>
         <tr>
           <td>squareMediaIdDark</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The media ID for the square logo in dark mode.</td>
         </tr>
         <tr>
           <td>wideMediaId</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The media ID for the wide logo.</td>
         </tr>
         <tr>
           <td>wideMediaIdDark</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td></td>
+          <td>The media ID for the wide logo in dark mode.</td>
         </tr>
       </tbody>
     </table>
     <p><a name="jonline-AuthenticationFeature"></a></p>
     <h3 id="authenticationfeature"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authenticationfeature"><span class="octicon octicon-link"></span></a>AuthenticationFeature</h3>
+    <p>Authentication features that can be enabled/disabled by the server admin.</p>
     <table>
       <thead>
         <tr>
@@ -3803,7 +3901,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>AUTHENTICATION_FEATURE_UNKNOWN</td>
           <td>0</td>
-          <td></td>
+          <td>An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.)</td>
         </tr>
         <tr>
           <td>CREATE_ACCOUNT</td>
@@ -3819,6 +3917,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-PrivateUserStrategy"></a></p>
     <h3 id="privateuserstrategy"><a class="anchor" aria-hidden="true" tabindex="-1" href="#privateuserstrategy"><span class="octicon octicon-link"></span></a>PrivateUserStrategy</h3>
+    <p>Strategy when a user sets their visibility to <code>PRIVATE</code>.</p>
     <table>
       <thead>
         <tr>
@@ -3847,7 +3946,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-WebUserInterface"></a></p>
     <h3 id="webuserinterface"><a class="anchor" aria-hidden="true" tabindex="-1" href="#webuserinterface"><span class="octicon octicon-link"></span></a>WebUserInterface</h3>
-    <p>Offers a choice of web UIs. All</p>
+    <p>
+      Offers a choice of web UIs. Generally though, React/Tamagui is
+      a century ahead of Flutter Web, so it's the default.
+    </p>
     <table>
       <thead>
         <tr>
@@ -3933,6 +4035,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-GetServiceVersionResponse"></a></p>
     <h3 id="getserviceversionresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#getserviceversionresponse"><span class="octicon octicon-link"></span></a>GetServiceVersionResponse</h3>
+    <p>Version information for the Jonline server.</p>
     <table>
       <thead>
         <tr>
@@ -3947,7 +4050,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>version</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td></td>
+          <td>The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server.</td>
         </tr>
       </tbody>
     </table>

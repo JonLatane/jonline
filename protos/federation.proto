@@ -2,7 +2,10 @@ syntax = "proto3";
 
 package jonline;
 
+// Version information for the Jonline server.
 message GetServiceVersionResponse {
+  // The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
+  // that generated the binary for the server.
   string version = 1;
 }
 

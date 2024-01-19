@@ -122,8 +122,8 @@ generally exposed on port 27707 or 443 (and, when using
 [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
 A Jonline server is generally also expected to serve up web apps on ports 80/443, where
 select APIs are exposed with HTTP interfaces instead of gRPC.
-(Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
-and [Media](#jonline-Media).)
+(Specifically, that [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
+and [`Media`, for interoperability purposes](#jonline-Media).)
 
 ##### Authentication
 Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
@@ -140,7 +140,7 @@ one in client storage.)
 ##### Dumbfederation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
-[ServerInfo.recommended_server_hosts](#serverinfo).
+[`federation_info` in `ServerConfiguration`](#jonline-ServerConfiguration).
 
 That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
 (Eventually, this will affect CORS policies for added security.)
@@ -257,7 +257,7 @@ Request for a new access token using a refresh token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| refresh_token | [string](#string) |  |  |
+| refresh_token | [string](#string) |  | The refresh token to use to request a new access token. |
 | expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Optional *requested* expiration time for the token. Server may ignore this. |
 
 
@@ -294,7 +294,7 @@ Request to create a new account.
 | email | [ContactMethod](#jonline-ContactMethod) | optional | Email to be used as a contact method. |
 | phone | [ContactMethod](#jonline-ContactMethod) | optional | Phone number to be used as a contact method. |
 | expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request an expiration time for the Auth Token returned. By default it will not expire. |
-| device_name | [string](#string) | optional |  |
+| device_name | [string](#string) | optional | (Not yet implemented.) The name of the device being used to create the account. |
 
 
 
@@ -328,7 +328,7 @@ Request to login to an existing account.
 | username | [string](#string) |  | Username for the account to be logged into. Must exist. |
 | password | [string](#string) |  | Password for the account to be logged into. |
 | expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request an expiration time for the Auth Token returned. By default it will not expire. |
-| device_name | [string](#string) | optional | (Not yet implemented.) |
+| device_name | [string](#string) | optional | (Not yet implemented.) The name of the device being used to login. |
 | user_id | [string](#string) | optional | (TODO) If provided, username is ignored and login is initiated via user_id instead. |
 
 
@@ -390,11 +390,32 @@ Request to reset a password.
 <a name="jonline-Moderation"></a>
 
 ### Moderation
+Nearly everything in Jonline has one or more `Moderation`s on it.
 
+From a high level:
+
+- A `User` has a `moderation` that determines whether they can log in (and their visibility per their `visibility`).
+  (This is poorly enforced currently! Fix it if you want!)
+    - This is managed by `people_settings.default_moderation` in `ServerConfiguration`.
+      A default of `UNMODERATED` means that all users can log in. A default of `PENDING`
+      means that all users must be approved by a moderator/admin before they can log in.
+- A `Follow` has a `target_user_moderation` that determines whether the `User` is following the `Group`.
+   - It is managed by `default_follow_moderation` in the targeted `User`.
+- A `Group` has a `moderation` that determines whether the `Group` is visible to users (per its `visibility`).
+    - This is managed by `group_settings.default_moderation` in `ServerConfiguration`.
+- A `Membership` has a `group_moderation` and `user_moderation` that determine whether
+  the `Group` admins and/or the invited user has approved the `Membership`, respectively.
+    - User invites to `Group`s (i.e. the `user_moderation`) always start as `PENDING`.
+      The group side of this is managed by `default_membership_moderation` of the `Group` in question.
+- A `Post` has a `moderation` that determines whether the `Post` is visible to users (per its `visibility`).
+    - This is managed by `post_settings.default_moderation` in `ServerConfiguration`.
+- A `GroupPost` has a `moderation` that determines whether the admins/mods of the `Group` has approved the `Post` (or `Post`-descended thing like `Event`s).
+- `Event`s and further objects contain a `Post` and thus inherit its `moderation` and
+  related `GroupPost` behavior, for &#34;Group Events.&#34;
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MODERATION_UNKNOWN | 0 |  |
+| MODERATION_UNKNOWN | 0 | A moderation that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.) |
 | UNMODERATED | 1 | Subject has not been moderated and is visible to all users. |
 | PENDING | 2 | Subject is awaiting moderation and not visible to any users. |
 | APPROVED | 3 | Subject has been approved by moderators and is visible to all users. |
@@ -405,11 +426,28 @@ Request to reset a password.
 <a name="jonline-Visibility"></a>
 
 ### Visibility
+Visibility in Jonline is a complex topic. There are several different types of visibility, 
+and each type of entity (`User`, `Media`, `Group`, then `Post`/`Event`/etc. with common logic)
+has different rules for visibility.
 
+From the top down, the rules break down as follows:
+
+- Even a `PRIVATE` entity is always visible to the user who owns it.
+    - For `Group`s, this means all full members of the `Group`.
+    - For `User`s, this is confusing and there is a whole `PrivateUserStrategy` thing
+      in `ServerConfiguration` for this.
+- A `LIMITED` entity is visible to to the owner(s) and any explicitly associated
+  `User`s and `Group`s. Generally, this only applies to `Post`/`Event`/etc. entities.
+  Associations exist via `UserPost`s and `GroupPost`s.
+    - This is currently only implemented for `Group`s and `GroupPost`s. There are some
+      choices to be made about how to implement this for `User`s and `UserPost`s, and whether
+      `DIRECT` should be a separate visibility type.
+- A `SERVER_PUBLIC` entity is visible to all authenticated users.
+- A `GLOBAL_PUBLIC` entity is visible to the open internet.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| VISIBILITY_UNKNOWN | 0 |  |
+| VISIBILITY_UNKNOWN | 0 | A visibility that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.) |
 | PRIVATE | 1 | Subject is only visible to the user who owns it. |
 | LIMITED | 2 | Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost). |
 | SERVER_PUBLIC | 3 | Subject is visible to all authenticated users. |
@@ -445,7 +483,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| PERMISSION_UNKNOWN | 0 |  |
+| PERMISSION_UNKNOWN | 0 | A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) |
 | VIEW_USERS | 1 | Allow the user to view profiles with `SERVER_PUBLIC` Visbility. Allow anonymous users to view profiles with `GLOBAL_PUBLIC` Visbility (when configured as an anonymous user permission). |
 | PUBLISH_USERS_LOCALLY | 2 | Allow the user to publish profiles with `SERVER_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
 | PUBLISH_USERS_GLOBALLY | 3 | Allow the user to publish profiles with `GLOBAL_PUBLIC` Visbility. This generally only applies to the user&#39;s own profile, except for Admins. |
@@ -681,12 +719,12 @@ Ways of listing users.
 
 ### GetMediaRequest
 Valid GetMediaRequest formats:
-- `{user_id: &#34;123&#34;}` - Gets the media of the given user that the current user can see. IE:
+- `{user_id: abc123}` - Gets the media of the given user that the current user can see. IE:
     - *all* of the current user&#39;s own media
     - `GLOBAL_PUBLIC` media for the user if the current user is not logged in.
     - `SERVER_PUBLIC` media for the user if the current user is logged in.
     - `LIMITED` media for the user if the current user is following the user.
-- `{media_id: &#34;123&#34;}` - Gets the media with the given ID, if visible to the current user.
+- `{media_id: abc123}` - Gets the media with the given ID, if visible to the current user.
 
 
 | Field | Type | Label | Description |
@@ -800,16 +838,16 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-GetGroupsRequest"></a>
 
 ### GetGroupsRequest
-
+Request to get a group or groups by name or ID.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_id | [string](#string) | optional |  |
-| group_name | [string](#string) | optional |  |
-| group_shortname | [string](#string) | optional | Group shortname search is case-insensitive. |
-| listing_type | [GroupListingType](#jonline-GroupListingType) |  |  |
-| page | [int32](#int32) | optional |  |
+| group_id | [string](#string) | optional | The ID of the group to get. |
+| group_name | [string](#string) | optional | The name of the group to get. |
+| group_shortname | [string](#string) | optional | The shortname of the group to get. Group shortname search is case-insensitive. |
+| listing_type | [GroupListingType](#jonline-GroupListingType) |  | The group listing type. |
+| page | [int32](#int32) | optional | The page of results to get. |
 
 
 
@@ -819,13 +857,13 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-GetGroupsResponse"></a>
 
 ### GetGroupsResponse
-
+Response to a GetGroupsRequest.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| groups | [Group](#jonline-Group) | repeated |  |
-| has_next_page | [bool](#bool) |  |  |
+| groups | [Group](#jonline-Group) | repeated | The groups that matched the request. |
+| has_next_page | [bool](#bool) |  | Whether there are more groups to get. |
 
 
 
@@ -835,15 +873,15 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-GetMembersRequest"></a>
 
 ### GetMembersRequest
-
+Request to get members of a group.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_id | [string](#string) |  |  |
-| username | [string](#string) | optional |  |
-| group_moderation | [Moderation](#jonline-Moderation) | optional |  |
-| page | [int32](#int32) | optional |  |
+| group_id | [string](#string) |  | The ID of the group to get members of. |
+| username | [string](#string) | optional | The username of the members to search for. |
+| group_moderation | [Moderation](#jonline-Moderation) | optional | The membership status to filter members by. If not specified, all members are returned. |
+| page | [int32](#int32) | optional | The page of results to get. |
 
 
 
@@ -853,13 +891,13 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-GetMembersResponse"></a>
 
 ### GetMembersResponse
-
+Response to a GetMembersRequest.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| members | [Member](#jonline-Member) | repeated |  |
-| has_next_page | [bool](#bool) |  |  |
+| members | [Member](#jonline-Member) | repeated | The members that matched the request. |
+| has_next_page | [bool](#bool) |  | Whether there are more members to get. |
 
 
 
@@ -869,28 +907,28 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-Group"></a>
 
 ### Group
-
+`Group`s are a way to organize users and posts (and thus events). They can be used for many purposes,
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| name | [string](#string) |  |  |
-| shortname | [string](#string) |  |  |
-| description | [string](#string) |  |  |
-| avatar | [MediaReference](#jonline-MediaReference) | optional |  |
-| default_membership_permissions | [Permission](#jonline-Permission) | repeated |  |
-| default_membership_moderation | [Moderation](#jonline-Moderation) |  | Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. |
-| default_post_moderation | [Moderation](#jonline-Moderation) |  |  |
-| default_event_moderation | [Moderation](#jonline-Moderation) |  |  |
+| id | [string](#string) |  | The group&#39;s unique ID. |
+| name | [string](#string) |  | Mutable name of the group. Must be unique, such that the derived `shortname` is also unique. |
+| shortname | [string](#string) |  | Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated. |
+| description | [string](#string) |  | A description of the group. |
+| avatar | [MediaReference](#jonline-MediaReference) | optional | An avatar for the group. |
+| default_membership_permissions | [Permission](#jonline-Permission) | repeated | The default permissions for new members of the group. |
+| default_membership_moderation | [Moderation](#jonline-Moderation) |  | The default moderation for new members of the group. Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. |
+| default_post_moderation | [Moderation](#jonline-Moderation) |  | The default moderation for new posts in the group. |
+| default_event_moderation | [Moderation](#jonline-Moderation) |  | The default moderation for new events in the group. |
 | visibility | [Visibility](#jonline-Visibility) |  | LIMITED visibility groups are only visible to members. PRIVATE groups are only visibile to users with the ADMIN group permission. |
-| member_count | [uint32](#uint32) |  |  |
-| post_count | [uint32](#uint32) |  |  |
-| event_count | [uint32](#uint32) |  |  |
-| non_member_permissions | [Permission](#jonline-Permission) | repeated |  |
-| current_user_membership | [Membership](#jonline-Membership) | optional |  |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| member_count | [uint32](#uint32) |  | The number of members in the group. |
+| post_count | [uint32](#uint32) |  | The number of posts in the group. |
+| event_count | [uint32](#uint32) |  | The number of events in the group. |
+| non_member_permissions | [Permission](#jonline-Permission) | repeated | The permissions given to non-members of the group. |
+| current_user_membership | [Membership](#jonline-Membership) | optional | The membership for the current user, if any. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the group was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the group was last updated. |
 
 
 
@@ -900,14 +938,13 @@ and the media item&#39;s name (for alt text usage).
 <a name="jonline-Member"></a>
 
 ### Member
-Used by group MODERATE_USERS mods to manage group requests from the People tab.
-See also: UserListingType.MEMBERSHIP_REQUESTS.
+Used when fetching group members using the `GetMembers` RPC.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| user | [User](#jonline-User) |  |  |
-| membership | [Membership](#jonline-Membership) |  |  |
+| user | [User](#jonline-User) |  | The user. |
+| membership | [Membership](#jonline-Membership) |  | The user&#39;s membership (or join request, or invitation, or both) in the group. |
 
 
 
@@ -919,14 +956,14 @@ See also: UserListingType.MEMBERSHIP_REQUESTS.
 <a name="jonline-GroupListingType"></a>
 
 ### GroupListingType
-
+The type of group listing to get.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ALL_GROUPS | 0 |  |
-| MY_GROUPS | 1 |  |
-| REQUESTED_GROUPS | 2 |  |
-| INVITED_GROUPS | 3 |  |
+| ALL_GROUPS | 0 | Get all groups (visible to the current user). |
+| MY_GROUPS | 1 | Get groups the current user is a member of. |
+| REQUESTED_GROUPS | 2 | Get groups the current user has requested to join. |
+| INVITED_GROUPS | 3 | Get groups the current user has been invited to. |
 
 
  
@@ -947,13 +984,13 @@ See also: UserListingType.MEMBERSHIP_REQUESTS.
 <a name="jonline-GetGroupPostsRequest"></a>
 
 ### GetGroupPostsRequest
-Used for getting context about GroupPosts of an existing Post.
+Used for getting context about `GroupPost`s of an existing `Post`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| post_id | [string](#string) |  |  |
-| group_id | [string](#string) | optional |  |
+| post_id | [string](#string) |  | The ID of the post to get `GroupPost`s for. |
+| group_id | [string](#string) | optional | The ID of the group to get `GroupPost`s for. |
 
 
 
@@ -963,12 +1000,12 @@ Used for getting context about GroupPosts of an existing Post.
 <a name="jonline-GetGroupPostsResponse"></a>
 
 ### GetGroupPostsResponse
-Used for getting context about GroupPosts of an existing Post.
+Used for getting context about `GroupPost`s of an existing `Post`.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_posts | [GroupPost](#jonline-GroupPost) | repeated |  |
+| group_posts | [GroupPost](#jonline-GroupPost) | repeated | The `GroupPost`s for the given `Post` or `Group`. |
 
 
 
@@ -988,7 +1025,7 @@ Valid GetPostsRequest formats:
     - Get one post ,including preview data/
 - `{post_id:, reply_depth: 1}`
     - Get replies to a post - only support for replyDepth=1 is done for now though.
-- `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+- `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
 - `{author_user_id:, group_id:}`
     - Get posts by a user for a group. (TODO)
@@ -999,12 +1036,12 @@ Valid GetPostsRequest formats:
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | post_id | [string](#string) | optional | Returns the single post with the given ID. |
-| author_user_id | [string](#string) | optional | Limits results to replies to the given post. optional string replies_to_post_id = 2; Limits results to those by the given author user ID. |
-| group_id | [string](#string) | optional |  |
+| author_user_id | [string](#string) | optional | Limits results to those by the given author user ID. |
+| group_id | [string](#string) | optional | Limits results to those in the given group ID. |
 | reply_depth | [uint32](#uint32) | optional | Only supported for depth=2 for now. |
 | context | [PostContext](#jonline-PostContext) | optional | Only POST and REPLY are supported for now. |
-| listing_type | [PostListingType](#jonline-PostListingType) |  |  |
-| page | [uint32](#uint32) |  |  |
+| listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See `PostListingType` for more info. |
+| page | [uint32](#uint32) |  | The page of results to return. Defaults to 0. |
 
 
 
@@ -1014,12 +1051,12 @@ Valid GetPostsRequest formats:
 <a name="jonline-GetPostsResponse"></a>
 
 ### GetPostsResponse
-
+Used for getting posts.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| posts | [Post](#jonline-Post) | repeated |  |
+| posts | [Post](#jonline-Post) | repeated | The posts returned by the request. |
 
 
 
@@ -1036,11 +1073,11 @@ the time it was cross-posted and the user who did the cross-posting.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_id | [string](#string) |  |  |
-| post_id | [string](#string) |  |  |
-| user_id | [string](#string) |  |  |
-| group_moderation | [Moderation](#jonline-Moderation) |  |  |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| group_id | [string](#string) |  | The ID of the group this post is in. |
+| post_id | [string](#string) |  | The ID of the post. |
+| user_id | [string](#string) |  | The ID of the user who cross-posted the post. |
+| group_moderation | [Moderation](#jonline-Moderation) |  | The moderation of the post in the group. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was cross-posted. |
 
 
 
@@ -1079,10 +1116,10 @@ and Event Instances.
 | moderation | [Moderation](#jonline-Moderation) |  | The moderation of the Post. |
 | current_group_post | [GroupPost](#jonline-GroupPost) | optional | If the Post was retrieved from GetPosts with a group_id, the GroupPost metadata may be returned along with the Post. |
 | replies | [Post](#jonline-Post) | repeated | Hierarchical replies to this post. There will never be more than `reply_count` replies. However, there may be fewer than `reply_count` replies if some replies are hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts in the frontend. |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| published_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
-| last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the post was last updated. |
+| published_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`). |
+| last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was last interacted with (replied to, etc.) |
 
 
 
@@ -1092,14 +1129,15 @@ and Event Instances.
 <a name="jonline-UserPost"></a>
 
 ### UserPost
-A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unused.
+A `UserPost` is a &#34;direct share&#34; of a `Post` to a `User`. Currently unused/unimplemented.
+See also: [`DIRECT` `Visibility`](#jonline-Visibility).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| group_id | [string](#string) |  |  |
-| user_id | [string](#string) |  |  |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
+| user_id | [string](#string) |  | The ID of the user the post is shared with. |
+| post_id | [string](#string) |  | The ID of the post shared. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was shared. |
 
 
 
@@ -1135,8 +1173,8 @@ A high-level enumeration of general ways of requesting posts.
 | FOLLOWING_POSTS | 1 | Returns posts from users the user is following. |
 | MY_GROUPS_POSTS | 2 | Returns posts from any group the user is a member of. |
 | DIRECT_POSTS | 3 | Returns `DIRECT` posts that are directly addressed to the user. |
-| POSTS_PENDING_MODERATION | 4 |  |
-| GROUP_POSTS | 10 | Returns posts from a specific group. group_id parameter is required for these. |
+| POSTS_PENDING_MODERATION | 4 | Returns posts pending moderation by the server-level mods/admins. |
+| GROUP_POSTS | 10 | Returns posts from a specific group. Requires group_id parameter. |
 | GROUP_POSTS_PENDING_MODERATION | 11 | Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
 
 
@@ -1217,8 +1255,8 @@ Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an `Eve
 | private_note | [string](#string) |  | Public note for everyone who can see the event to see. |
 | public_note | [string](#string) |  | Private note for the event owner. |
 | moderation | [Moderation](#jonline-Moderation) |  | Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable). |
-| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
-| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional |  |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the attendance was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the attendance was last updated. |
 
 
 
@@ -1228,12 +1266,12 @@ Could be called an &#34;RSVP.&#34; Describes the attendance of a user at an `Eve
 <a name="jonline-EventAttendances"></a>
 
 ### EventAttendances
-
+Response to get RSVP data for an event.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| attendances | [EventAttendance](#jonline-EventAttendance) | repeated |  |
+| attendances | [EventAttendance](#jonline-EventAttendance) | repeated | The attendance data for the event, in no particular order. |
 
 
 
@@ -1268,8 +1306,8 @@ a `Location`, and an optional `Post` (and discussion thread) specific to this pa
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| id | [string](#string) |  |  |
-| event_id | [string](#string) |  |  |
+| id | [string](#string) |  | Unique ID for the event instance generated by the Jonline BE. |
+| event_id | [string](#string) |  | ID of the parent `Event`. |
 | post | [Post](#jonline-Post) | optional | Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`. |
 | info | [EventInstanceInfo](#jonline-EventInstanceInfo) |  | Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`. |
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
@@ -1290,7 +1328,7 @@ Stored as JSON in the database.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| rsvp_info | [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo) | optional |  |
+| rsvp_info | [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo) | optional | RSVP configuration and metadata for the event instance. |
 
 
 
@@ -1309,12 +1347,12 @@ Curently, the `optional` counts below are *never* returned by the API.
 | allows_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_rsvps`, if set, for this instance. |
 | allows_anonymous_rsvps | [bool](#bool) | optional | Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance. |
 | max_attendees | [uint32](#uint32) | optional | Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported. |
-| going_rsvps | [uint32](#uint32) | optional |  |
-| going_attendees | [uint32](#uint32) | optional |  |
-| interested_rsvps | [uint32](#uint32) | optional |  |
-| interested_attendees | [uint32](#uint32) | optional |  |
-| invited_rsvps | [uint32](#uint32) | optional |  |
-| invited_attendees | [uint32](#uint32) | optional |  |
+| going_rsvps | [uint32](#uint32) | optional | The number of users who have RSVP&#39;d to the event. |
+| going_attendees | [uint32](#uint32) | optional | The number of attendees who have RSVP&#39;d to the event. (RSVPs may have multiple attendees, i.e. guests.) |
+| interested_rsvps | [uint32](#uint32) | optional | The number of users who have signaled interest in the event. |
+| interested_attendees | [uint32](#uint32) | optional | The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.) |
+| invited_rsvps | [uint32](#uint32) | optional | The number of users who have been invited to the event. |
+| invited_attendees | [uint32](#uint32) | optional | The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.) |
 
 
 
@@ -1329,8 +1367,8 @@ Request to get RSVP data for an event.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| event_instance_id | [string](#string) |  |  |
-| anonymous_attendee_auth_token | [string](#string) | optional |  |
+| event_instance_id | [string](#string) |  | The ID of the event to get RSVP data for. |
+| anonymous_attendee_auth_token | [string](#string) | optional | If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.) |
 
 
 
@@ -1459,9 +1497,9 @@ The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_E
 | FOLLOWING_EVENTS | 1 | Returns events from users the user is following. |
 | MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
 | DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |
-| EVENTS_PENDING_MODERATION | 4 | Returns `SERVER_PUBLIC` and `GLOBAL_PUBLIC` that need moderation. |
-| GROUP_EVENTS | 10 | group_id parameter is required for these. |
-| GROUP_EVENTS_PENDING_MODERATION | 11 | Returns `LIMITED`, `SERVER_PUBLIC`, and `GLOBAL_PUBLIC` that need moderation. |
+| EVENTS_PENDING_MODERATION | 4 | Returns events pending moderation by the server-level mods/admins. |
+| GROUP_EVENTS | 10 | Returns events from a specific group. Requires group_id parameterRequires group_id parameter |
+| GROUP_EVENTS_PENDING_MODERATION | 11 | Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
 
 
  
@@ -1504,7 +1542,8 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 <a name="jonline-FeatureSettings"></a>
 
 ### FeatureSettings
-
+Settings for a feature (e.g. People, Groups, Posts, Events, Media).
+Encompasses both the feature&#39;s visibility and moderation settings.
 
 
 | Field | Type | Label | Description |
@@ -1512,7 +1551,7 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 | visible | [bool](#bool) |  | Hide the Posts or Events tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional |  |
+| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
 
 
 
@@ -1522,7 +1561,7 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 <a name="jonline-PostSettings"></a>
 
 ### PostSettings
-
+Specific settings for Posts and Events.
 
 
 | Field | Type | Label | Description |
@@ -1530,8 +1569,8 @@ If set, the web client will use this value instead. NOTE: Only applies to Tamagu
 | visible | [bool](#bool) |  | Hide the Posts or Events tab from the user with this flag. |
 | default_moderation | [Moderation](#jonline-Moderation) |  | Only `UNMODERATED` and `PENDING` are valid. When `UNMODERATED`, user reports may transition status to `PENDING`. When `PENDING`, users&#39; SERVER_PUBLIC or `GLOBAL_PUBLIC` posts will not be visible until a moderator approves them. `LIMITED` visiblity posts are always visible to targeted users (who have not blocked the author) regardless of default_moderation. |
 | default_visibility | [Visibility](#jonline-Visibility) |  | Only `SERVER_PUBLIC` and `GLOBAL_PUBLIC` are valid. `GLOBAL_PUBLIC` is only valid if default_user_permissions contains `GLOBALLY_PUBLISH_[USERS|GROUPS|POSTS|EVENTS]` as appropriate. |
-| custom_title | [string](#string) | optional |  |
-| enable_replies | [bool](#bool) |  | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
+| custom_title | [string](#string) | optional | (TODO) Custom title, like &#34;Section&#34;s instead of &#34;Group&#34;s. This is more an idea; internationalization is obviously problematic here. |
+| enable_replies | [bool](#bool) | optional | Controls whether replies are shown in the UI. Note that users&#39; ability to reply is controlled by the `REPLY_TO_POSTS` permission. |
 
 
 
@@ -1566,18 +1605,16 @@ Configuration for a Jonline server instance.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | server_info | [ServerInfo](#jonline-ServerInfo) | optional | The name, description, logo, color scheme, etc. of the server. |
-| federation_info | [FederationInfo](#jonline-FederationInfo) | optional |  |
+| federation_info | [FederationInfo](#jonline-FederationInfo) | optional | The federation configuration for the server. |
 | anonymous_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions for a user who isn&#39;t logged in to the server. Allows admins to disable certain features for anonymous users. Valid values are `VIEW_USERS`, `VIEW_GROUPS`, `VIEW_POSTS`, and `VIEW_EVENTS`. |
 | default_user_permissions | [Permission](#jonline-Permission) | repeated | Default user permissions given to a new user. Users with `MODERATE_USERS` permission can also grant/revoke these permissions for others. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
 | basic_user_permissions | [Permission](#jonline-Permission) | repeated | Permissions grantable by a user with the `GRANT_BASIC_PERMISSIONS` permission. Valid values are `VIEW_USERS`, `PUBLISH_USERS_LOCALLY`, `PUBLISH_USERS_GLOBALLY`, `VIEW_GROUPS`, `CREATE_GROUPS`, `PUBLISH_GROUPS_LOCALLY`, `PUBLISH_GROUPS_GLOBALLY`, `JOIN_GROUPS`, `VIEW_POSTS`, `CREATE_POSTS`, `PUBLISH_POSTS_LOCALLY`, `PUBLISH_POSTS_GLOBALLY`, `VIEW_EVENTS`, `CREATE_EVENTS`, `PUBLISH_EVENTS_LOCALLY`, and `PUBLISH_EVENTS_GLOBALLY`. |
-| people_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_USERS_GLOBALLY`. |
-| group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
-| post_settings | [PostSettings](#jonline-PostSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
-| event_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
-| media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
-| external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN.
-
-See ExternalCDNConfig for more details on securing this setup. |
+| people_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for users on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_USERS_GLOBALLY`. |
+| group_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for groups on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_GROUPS_GLOBALLY`. |
+| post_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for posts on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_POSTS_GLOBALLY`. |
+| event_settings | [PostSettings](#jonline-PostSettings) |  | Configuration for events on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_EVENTS_GLOBALLY`. |
+| media_settings | [FeatureSettings](#jonline-FeatureSettings) |  | Configuration for media on the server. If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must* contain `PUBLISH_MEDIA_GLOBALLY`. |
+| external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN. See ExternalCDNConfig for more details on securing this setup. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
 
@@ -1595,13 +1632,13 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) | optional | Name of the server. |
-| short_name | [string](#string) | optional |  |
-| description | [string](#string) | optional |  |
-| privacy_policy | [string](#string) | optional |  |
-| logo | [ServerLogo](#jonline-ServerLogo) | optional |  |
-| web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional |  |
-| colors | [ServerColors](#jonline-ServerColors) | optional |  |
-| media_policy | [string](#string) | optional |  |
+| short_name | [string](#string) | optional | Short name of the server. Used in URLs, etc. (Currently unused.) |
+| description | [string](#string) | optional | Description of the server. |
+| privacy_policy | [string](#string) | optional | The server&#39;s privacy policy. Will be displayed during account creation and on the `/about` page. |
+| logo | [ServerLogo](#jonline-ServerLogo) | optional | Multi-size logo data for the server. |
+| web_user_interface | [WebUserInterface](#jonline-WebUserInterface) | optional | The web UI to use (React/Tamagui (default) vs. Flutter Web) |
+| colors | [ServerColors](#jonline-ServerColors) | optional | The color scheme for the server. |
+| media_policy | [string](#string) | optional | The media policy for the server. Will be displayed during account creation and on the `/about` page. |
 | recommended_server_hosts | [string](#string) | repeated | **Deprecated.** This will be replaced with FederationInfo soon. |
 
 
@@ -1612,15 +1649,15 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 <a name="jonline-ServerLogo"></a>
 
 ### ServerLogo
-
+Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media).
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| squareMediaId | [string](#string) | optional |  |
-| squareMediaIdDark | [string](#string) | optional |  |
-| wideMediaId | [string](#string) | optional |  |
-| wideMediaIdDark | [string](#string) | optional |  |
+| squareMediaId | [string](#string) | optional | The media ID for the square logo. |
+| squareMediaIdDark | [string](#string) | optional | The media ID for the square logo in dark mode. |
+| wideMediaId | [string](#string) | optional | The media ID for the wide logo. |
+| wideMediaIdDark | [string](#string) | optional | The media ID for the wide logo in dark mode. |
 
 
 
@@ -1632,11 +1669,11 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 <a name="jonline-AuthenticationFeature"></a>
 
 ### AuthenticationFeature
-
+Authentication features that can be enabled/disabled by the server admin.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| AUTHENTICATION_FEATURE_UNKNOWN | 0 |  |
+| AUTHENTICATION_FEATURE_UNKNOWN | 0 | An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) |
 | CREATE_ACCOUNT | 1 | Users can sign up for an account. |
 | LOGIN | 2 | Users can sign in with an existing account. |
 
@@ -1645,7 +1682,7 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 <a name="jonline-PrivateUserStrategy"></a>
 
 ### PrivateUserStrategy
-
+Strategy when a user sets their visibility to `PRIVATE`.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -1658,7 +1695,8 @@ User-facing information about the server displayed on the &#34;about&#34; page.
 <a name="jonline-WebUserInterface"></a>
 
 ### WebUserInterface
-Offers a choice of web UIs. All
+Offers a choice of web UIs. Generally though, React/Tamagui is
+a century ahead of Flutter Web, so it&#39;s the default.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -1717,12 +1755,12 @@ The federation configuration for a Jonline server.
 <a name="jonline-GetServiceVersionResponse"></a>
 
 ### GetServiceVersionResponse
-
+Version information for the Jonline server.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| version | [string](#string) |  |  |
+| version | [string](#string) |  | The version of the Jonline server. May be suffixed with the GitHub SHA of the commit that generated the binary for the server. |
 
 
 
