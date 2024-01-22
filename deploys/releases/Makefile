@@ -87,6 +87,7 @@ release_be_build_binary: ../../backend/target/release/jonline__server_release
 	cd ../.. && mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 	cd ../.. && mv backend/target/release/to_db_id backend/target/release/to_db_id__server_release
 	cd ../.. && mv backend/target/release/to_proto_id backend/target/release/to_proto_id__server_release
+	cd ../.. && mv backend/target/release/load_balancer backend/target/release/load_balancer__server_release
 
 release_be_push_local: local_registry_create release_be_build_binary release_web_builds
 	cd ../.. && docker build . -t $(LOCAL_REGISTRY)/jonline -f deploys/docker/server/Dockerfile

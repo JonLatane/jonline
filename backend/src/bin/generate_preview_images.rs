@@ -20,6 +20,7 @@ use jonline::{db_connection, init_bin_logging, minio_connection};
 use jonline::schema::{media, posts};
 use s3::Bucket;
 use uuid::Uuid;
+use reqwest;
 
 #[tokio::main]
 async fn main() {

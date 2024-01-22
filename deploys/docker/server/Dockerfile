@@ -9,6 +9,9 @@ RUN dpkg -i libssl1.1.deb
 # grpcurl is useful to have on a jonline instance!
 RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
 
+# This hash is used by the GetServiceVersion RPC.
+COPY deploys/docker/continuous_delivery_hash /opt/continuous_delivery_hash
+
 # Jonline server binary (runs Rocket/FE/Web and Tonic/BE/gRPC services, all in one)
 COPY backend/target/release/jonline__server_release /opt/jonline
 
@@ -26,9 +29,6 @@ COPY backend/target/release/to_proto_id__server_release /opt/to_proto_id
 # Browser preview generator job binary. NOTE: USELESS (crashes) without a Chrome instance running against
 # port 9222. See the Dockerfile in backend/docker/preview_generator for setup steps for Brave.
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
-
-# This hash is used by the GetServiceVersion RPC.
-COPY deploys/docker/continuous_delivery_hash /opt/continuous_delivery_hash
 
 # Flutter web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/flutter/build/web/ /opt/flutter_web

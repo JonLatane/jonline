@@ -2,9 +2,9 @@ import { Anchor, Button, ColorTokens, Heading, Image, Input, Label, Paragraph, S
 import { AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
-import { useAccount, useAppDispatch, useLocalConfiguration } from 'app/hooks';
+import { useAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedEntity, FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -24,15 +24,17 @@ export type AccountsSheetProps = {
   // Indicate to the AccountsSheet that we're
   // viewing server configuration for a server,
   // and should only show accounts for that server.
-  onlyShowServer?: JonlineServer;
+  // onlyShowServer?: JonlineServer;
   selectedGroup?: FederatedGroup;
+  primaryEntity?: FederatedEntity<any>;
 }
 const doesPlatformPreferDarkMode = () =>
   window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 
-export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: AccountsSheetProps) {
+export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: AccountsSheetProps) {
   const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
+  const primaryAccountOrServer = useFederatedAccountOrServer(primaryEntity);
   const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
   const [addingServer, setAddingServer] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
@@ -44,7 +46,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
   const dispatch = useAppDispatch();
-  const { server, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
+  const { server: currentServer, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
   const account = useAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
@@ -54,7 +56,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
   const newServerExists = servers.some(s => s.host == newServerHost);
   const newServerValid = newServerHostNotBlank && !newServerExists;
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
-  const effectiveServer = onlyShowServer ?? server;
+  const effectiveServer = primaryAccountOrServer.server ?? currentServer;
 
   const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
@@ -74,23 +76,23 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
 
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
-  const primaryServer = onlyShowServer || server;
+  const primaryServer = primaryEntity?.serverHost || currentServer;
   const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
-  const displayedAccounts = onlyShowServer ? accountsOnPrimaryServer : accounts;
+  const displayedAccounts = accounts;
 
 
   const currentServerHosts = servers.map(s => s.host);
 
-  const currentServerRecommendedHosts = server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
+  const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
   const allRecommendableServerHosts = [...new Set([
-    ...(server ? currentServerRecommendedHosts : []),
-    ...servers.filter(s => s.host != server?.host)
+    ...(currentServer ? currentServerRecommendedHosts : []),
+    ...servers.filter(s => s.host != currentServer?.host)
       .flatMap(s => s.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])
   ])];
   const recommendedServerHostsUnfiltered = browsingServers
     ? allRecommendableServerHosts
-    : [...new Set(server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
+    : [...new Set(currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
   const [authError, setAuthError] = useState(undefined as string | undefined);
@@ -112,7 +114,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
 
     const accountEntities = store.getState().accounts.entities;
     const account = store.getState().accounts.ids.map((id) => accountEntities[id])
-      .find(a => a && a.user.username === newAccountUser && a.server.host === server?.host);
+      .find(a => a && a.user.username === newAccountUser && a.server.host === currentServer?.host);
 
     if (account) {
       // if (onAccountSelected) {
@@ -167,42 +169,13 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
     }
   }, [accountsLoading, forceDisableAccountButtons]);
 
-  // useEffect(() => {
-  //   if (serversState.successMessage) {
-  //     setTimeout(() => {
-  //       setNewServerHost('');
-  //       setNewServerSecure(true);
-  //       dispatch(clearServerAlerts());
-  //       setAddingServer(false);
-  //     }, 1000);
-  //   }
-  // }, [serversState.successMessage]);
-
-  // useEffect(() => {
-  //   if (accountsState.successMessage) {
-  //     setTimeout(() => {
-  //       setAddingAccount(false);
-  //       setOpen(false);
-  //       setTimeout(() => {
-  //         dispatch(clearAccountAlerts());
-  //         setNewAccountUser('');
-  //         setNewAccountPass('');
-  //         setForceDisableAccountButtons(false);
-  //         setLoginMethod(undefined);
-  //       }, 1000);
-  //     }, 1500);
-  //   } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-  //     setForceDisableAccountButtons(false);
-  //   }
-  // }, [accountsState.successMessage, accountsState.errorMessage, forceDisableAccountButtons]);
-
   useEffect(() => {
     if (!allowServerSelection && browsingServers) {
       dispatch(setBrowsingServers(false));
     }
   }, [allowServerSelection, browsingServers]);
-  const serversDiffer = onlyShowServer && server && serverID(onlyShowServer) != serverID(server);
-  const serverId = server ? serverID(server) : undefined;
+  const serversDiffer = primaryEntity && currentServer && primaryEntity.serverHost != currentServer.host;
+  const serverId = currentServer ? serverID(currentServer) : undefined;
   // debugger;
   const currentServerInfoLink = useLink({
     href: serverId === physicallyHostingServerId() ? '/about' : `/server/${serverId!}`
@@ -218,14 +191,14 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
   //   ? AlertTriangle :
   //   account ? UserIcon : LogIn;
 
-  const currentServer = server;
+  // const currentServer = currentServer;
   const avatarSize = 22;
   const alertTriangle = ({ color }: { color?: string | ColorTokens } = {}) => <Tooltip>
     <Tooltip.Trigger>
       <AlertTriangle color={color} />
     </Tooltip.Trigger>
     <Tooltip.Content>
-      <Paragraph size='$1'>You are seeing data as though you were on {server?.host}, although you're on {browsingOn}.</Paragraph>
+      <Paragraph size='$1'>You are seeing data as though you were on {currentServer?.host}, although you're on {browsingOn}.</Paragraph>
     </Tooltip.Content>
   </Tooltip>;
   return (
@@ -400,50 +373,31 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                   : undefined} */}
               </XStack>
 
-              {onlyShowServer
+              {/* {onlyShowServer
                 ? <XStack mx='auto' space='$2'>
                   <XStack my='auto'><Info /></XStack>
                   <Heading my='auto' f={1} size='$3' textAlign='center'>
                     Viewing server configuration
                   </Heading>
                 </XStack>
-                : undefined}
-              {onlyShowServer && serversDiffer
+                : undefined} */}
+              {serversDiffer
                 ? undefined
                 : <YStack space="$2" mb='$1'>
-                  {/* <XStack> */}
-
-                  {/* <XStack f={1} /> */}
-
                   {!browsingServers ?
                     <XStack mx='auto' animation="quick" mt={allowServerSelection ? '$3' : undefined} {...reverseStandardAnimation}>
-                      {/* {currentServerInfoLink && !onlyShowServer
-                        ? <Button size='$3' mr='$2' disabled icon={<Info />} circular opacity={0} />
-                        : undefined} */}
                       <YStack
                         w='100%'
-                        // maw={mediaQuery.gtXs ? 350 : 250}
                         pl='$1'
                         pr='$2'
                         f={1}>
-                        {/* <XStack h={48}> */}
                         <ServerNameAndLogo enlargeSmallText />
-                        {/* </XStack> */}
-                        {/* <Heading
-                          // whiteSpace="nowrap" 
-                          w='100%'
-                          // maw={200}
-                          // overflow='hidden'
-                          ta='center'
-                          als='center'>{serversState.server?.serverConfiguration?.serverInfo?.name}</Heading> */}
                       </YStack>
-                      {currentServerInfoLink && !onlyShowServer
+                      {currentServerInfoLink
                         ? <Button size='$3' my='auto' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
                         : undefined}
                     </XStack>
                     : undefined}
-                  {/* <XStack f={1} /> */}
-                  {/* </XStack> */}
                 </YStack>}
 
               {servers.length === 0 ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading> : undefined}
@@ -455,7 +409,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                     <XStack space='$3'>
                       {servers.map((server, index) => {
                         return <ServerCard
-                          linkToServerInfo={onlyShowServer !== undefined}
+                          // linkToServerInfo={onlyShowServer !== undefined}
                           server={server}
                           key={`serverCard-${serverID(server)}`}
                           isPreview />;
@@ -466,7 +420,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                 </YStack> : undefined}
               {!browsingServers
                 ? <Heading size='$3' als='center' textAlign='center' mt='$1'>
-                  {server ? server.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                  {currentServer ? currentServer.host : '<None>'}{serversDiffer ? ' is selected' : ''}
                 </Heading>
                 : undefined}
               {recommendedServerHosts.length > 0
@@ -494,7 +448,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                                       <SeparatorHorizontal size='$5' />
                                     </Tooltip.Trigger>
                                     <Tooltip.Content>
-                                      <Paragraph size='$1'>Servers to the right are recommended by servers other than {server?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                                      <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
                                     </Tooltip.Content>
                                   </Tooltip>
                                 </XStack>
@@ -528,7 +482,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                         {primaryServer?.serverConfiguration?.serverInfo?.name}
                       </Heading> */}
                       <Heading size='$3' als='center' marginTop='$2' textAlign='center'>
-                        Viewing server configuration for {onlyShowServer.host}
+                        Viewing/interacting with data on {primaryEntity.host}
                       </Heading>
                     </YStack>
                   </XStack>
@@ -555,7 +509,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                   <Button
                     size="$3"
                     icon={Plus}
-                    disabled={server === undefined}
+                    disabled={currentServer === undefined}
                     {...themedButtonBackground(primaryColor, primaryTextColor)}
                     onPress={() => {
                       setAddingAccount(true);
@@ -591,7 +545,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                         pr={mediaQuery.gtXs ? '$4' : '$1'}>
 
                         <XStack f={1} ai='center'>
-                          <ServerNameAndLogo server={server} />
+                          <ServerNameAndLogo server={currentServer} />
                         </XStack>
                         <Button
                           alignSelf='center'
@@ -620,7 +574,7 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                           maw={600} w='100%' als='center'
                           // pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : '$3'}
                           pt='$3'
-                          >
+                        >
                           {/* <Heading size="$10">Add Account</Heading> */}
                           <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                             editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
@@ -670,20 +624,20 @@ export function AccountsSheet({ size = '$5', onlyShowServer, selectedGroup }: Ac
                             ? <>
                               <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
                               <TamaguiMarkdown text={`
-${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+${currentServer?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
 released under the AGPL. As a user, you have a fundamental right to view the source code of this software. If you suspect that the
 operator of this server is not using the official Jonline software, you can contact the [Free Software Foundation](https://www.fsf.org/)
 to evaluate support options.
                           `} />
-                              {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                              {(currentServer?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
                                 ? <>
                                   <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                                  <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                                  <TamaguiMarkdown text={currentServer?.serverConfiguration?.serverInfo?.privacyPolicy} />
                                 </> : undefined}
-                              {(server?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
+                              {(currentServer?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
                                 ? <>
                                   <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
-                                  <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.mediaPolicy} />
+                                  <TamaguiMarkdown text={currentServer?.serverConfiguration?.serverInfo?.mediaPolicy} />
                                 </> : undefined}
                             </>
                             : undefined}
@@ -746,7 +700,7 @@ to evaluate support options.
                         onProfileOpen={() => setOpen(false)}
                         totalAccounts={accountsOnPrimaryServer.length} />
                     </YStack>)}
-                  {accountsElsewhere.length > 0 && !onlyShowServer
+                  {accountsElsewhere.length > 0
                     ? <>
                       <Heading mr='$3' pr='$3'>Accounts Elsewhere</Heading>
                       {accountsElsewhere.map((account) =>

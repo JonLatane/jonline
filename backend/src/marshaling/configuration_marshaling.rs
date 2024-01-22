@@ -45,7 +45,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             serde_json::from_value(self.people_settings.to_owned()).unwrap();
         let post_settings: PostSettings =
             serde_json::from_value(self.post_settings.to_owned()).unwrap();
-        let event_settings: FeatureSettings =
+        let event_settings: PostSettings =
             serde_json::from_value(self.event_settings.to_owned()).unwrap();
         let external_cdn_config: Option<ExternalCdnConfig> = self
             .external_cdn_config

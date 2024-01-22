@@ -1,7 +1,8 @@
-extern crate async_tls;
 extern crate async_std;
+extern crate async_tls;
 extern crate futures_lite;
 extern crate rustls;
+extern crate reqwest;
 
 use jonline::init_bin_logging;
 
@@ -16,19 +17,19 @@ use rustls::server::ResolvesServerCert;
 use rustls::{Certificate, PrivateKey, ServerConfig};
 use rustls_pemfile::{certs, read_one, Item};
 
+use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::net::ToSocketAddrs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::env;
 use std::vec::*;
 use structopt::StructOpt;
+use tokio;
 
 #[derive(StructOpt)]
 struct Options {
     addr: String,
-
     // /// cert file
     // #[structopt(short = "c", long = "cert", parse(from_os_str))]
     // cert: PathBuf,
@@ -63,15 +64,18 @@ fn load_key(path: &Path) -> io::Result<PrivateKey> {
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Server {
     host: String,
-    namespace: String
+    namespace: String,
 }
 
 struct ServerResolver {
-    servers: Vec<Server>
+    servers: Vec<Server>,
 }
 
 impl ResolvesServerCert for ServerResolver {
-    fn resolve(&self, client_hello: rustls::server::ClientHello) -> Option<Arc<rustls::sign::CertifiedKey>> {
+    fn resolve(
+        &self,
+        client_hello: rustls::server::ClientHello,
+    ) -> Option<Arc<rustls::sign::CertifiedKey>> {
         info!("Resolving client hello: {:?}", client_hello.server_name());
         todo!()
     }
@@ -87,7 +91,7 @@ fn load_config(options: &Options) -> io::Result<ServerConfig> {
     // let key = load_key(&options.key)?;
 
     let env_servers = env::var("SERVERS").expect("SERVERS must be set, JSON of the format [");
-    // TODO: 
+    // TODO:
     let servers: ServerResolver = ServerResolver { servers: vec![] };
     let server_arc = Arc::new(servers);
     // we don't use client authentication
@@ -95,10 +99,10 @@ fn load_config(options: &Options) -> io::Result<ServerConfig> {
         .with_safe_defaults()
         .with_no_client_auth()
         .with_cert_resolver(server_arc);
-        // set this server to use one cert together with the loaded private key
-        // .with_single_cert(certs, key)
-        
-        // .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+    // set this server to use one cert together with the loaded private key
+    // .with_single_cert(certs, key)
+
+    // .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
 
     Ok(config)
 }
@@ -130,10 +134,14 @@ async fn handle_connection(acceptor: &TlsAcceptor, tcp_stream: &mut TcpStream) -
     Ok(())
 }
 
-fn main() -> io::Result<()> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_bin_logging();
     let options = Options::from_args();
 
+    log::info!("JBL: Jonline Balancer of Loads");
+    log::info!("A Rust Load Balancer for Jonline Kubernetes services");
+    log::info!("JBL: Jonline Balancer of Loads");
     let addr = options
         .addr
         .to_socket_addrs()?
@@ -145,6 +153,8 @@ fn main() -> io::Result<()> {
     // We create one TLSAcceptor around a shared configuration.
     // Cloning the acceptor will not clone the configuration.
     let acceptor = TlsAcceptor::from(Arc::new(config));
+
+    load_secrets().await;
 
     // We start a classic TCP server, passing all connections to the
     // handle_connection async function
@@ -172,6 +182,27 @@ fn main() -> io::Result<()> {
 
         Ok(())
     })
+}
+
+// shell script version of this:
+//  curl -sSk -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)"       https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/demo-namespace/secrets
+async fn load_secrets() {
+    log::info!("Loading secrets...");
+    let token = std::fs::read_to_string("/run/secrets/kubernetes.io/serviceaccount/token").unwrap();
+    let url = format!(
+        "https://{}:{}/api/v1/namespaces/{}/secrets",
+        std::env::var("KUBERNETES_SERVICE_HOST").unwrap(),
+        std::env::var("KUBERNETES_PORT_443_TCP_PORT").unwrap(),
+        std::env::var("NAMESPACE").unwrap()
+    );
+    let resp = reqwest::Client::new()
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", token))
+        .send()
+        .await
+        .unwrap();
+    // println!("{:?}", resp);
+    log::info!("Got secrets response: {:?}", resp);
 }
 
 // use hudsucker::{

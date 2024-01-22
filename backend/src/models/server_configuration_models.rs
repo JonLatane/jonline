@@ -141,14 +141,15 @@ I will, however, not sell your data to advertisers nor deliberately expose any v
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
-            enable_replies: true,
+            enable_replies: Some(true),
         })
         .unwrap(),
-        event_settings: serde_json::to_value(FeatureSettings {
+        event_settings: serde_json::to_value(PostSettings {
             visible: true,
             default_moderation: Moderation::Unmoderated as i32,
             default_visibility: Visibility::ServerPublic as i32,
             custom_title: None,
+            enable_replies: Some(true),
         })
         .unwrap(),
         external_cdn_config: None,

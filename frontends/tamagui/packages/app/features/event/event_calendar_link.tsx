@@ -67,7 +67,7 @@ export const EventCalendarLink: React.FC<Props> = ({
 
   return <Tooltip>
     <Tooltip.Trigger>
-      <Popover size="$5" allowFlip stayInFrame placement='left'>
+      <Popover size="$5" allowFlip stayInFrame placement='bottom-end'>
         <Popover.Trigger asChild>
           {/* <Tooltip>
         <Tooltip.Trigger> */}

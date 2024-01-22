@@ -1,0 +1,249 @@
+# Note that the deploy steps expect that backend/Cargo.toml and deploys/k8s/server_external.yaml
+# have the same version number.
+name: Load Balancer CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_call:
+    secrets:
+      DOCKERHUB_USERNAME:
+        description: 'DockerHub username for CD'
+        required: true
+      DOCKERHUB_TOKEN:
+        description: 'DockerHub access token for CD'
+        required: true
+
+jobs:
+  build_rust_binaries:
+    name: Build Rust Binaries
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+    - uses: actions-rs/toolchain@v1
+      with:
+        toolchain: stable
+    - uses: arduino/setup-protoc@v2
+
+    - uses: Swatinem/rust-cache@v2
+      with:
+        workspaces: ./backend -> target
+        # default key
+        key: jonline-${{ runner.OS }}-github-build
+        shared-key: jonline-${{ runner.OS }}-github-build
+
+    - working-directory: backend
+      run: cargo build --release
+
+    - uses: actions/cache/save@v3
+      id: rust-app-cache
+      with:
+        path: backend/target/release
+        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+  test_rust_binaries:
+    name: Test Rust Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - uses: arduino/setup-protoc@v2
+      # - run: sudo apt install libprotobuf-dev protobuf-compiler
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          # default key
+          key: jonline-${{ runner.OS }}-github-test
+          shared-key: jonline-${{ runner.OS }}-github-test
+      - working-directory: backend
+        run: cargo test --all-features
+      - working-directory: backend
+        run: cargo build --all-features
+
+  push_server:
+    name: Push LB Image
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - build_rust_binaries
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+    - uses: actions/cache/restore@v3
+      id: rust-app-cache
+      with:
+        path: backend/target/release
+        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+
+    - uses: docker/setup-buildx-action@v2
+    - uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Rename Rust binaries for Dockerfiles
+      run: >-
+           mv backend/target/release/load_balancer backend/target/release/load_balancer__server_release
+
+    - name: Build and push jonline image
+      uses: docker/build-push-action@v4
+      with:
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jbl:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        context: .
+        file: ./deploys/docker/load_balancer/Dockerfile
+        platforms: linux/amd64,linux/arm64
+
+  # # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server_external.yaml
+  # # have the same version number.
+  # deploy_to_jonlineio:
+  #   name: Deploy to Jonline.io
+  #   if: github.ref == 'refs/heads/main'
+  #   needs: 
+  #     - test_rust_binaries
+  #     - test_flutter_ui
+  #     - test_tamagui_ui
+  #     - push_server
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v3
+
+  #   - name: Extract Versioning Data
+  #     id: vars
+  #     run: |-
+  #       echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+  #       echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  #   - uses: digitalocean/action-doctl@v2
+  #     with:
+  #       token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+  #   - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+  #     run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/server_external.yaml
+
+  #   - name: Save DigitalOcean kubeconfig with short-lived credentials
+  #     run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+  #   # If you haven't already integrated with your registry and only want workloads in a particular namespace to be able to pull 
+  #   # from your registry, uncomment the next two commands.
+  #   # - name: Upload credentials of your registry to your DigitalOcean Kubernetes cluster
+  #   #   run: doctl registry kubernetes-manifest | kubectl apply -f -
+      
+  #   # - name: Reference the secret you just uploaded as an imagePullSecrets
+  #   #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
+
+  #   - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+  #     run: kubectl apply -f deploys/k8s/server_external.yaml -n jonline
+
+  #   - name: Verify Server deployment
+  #     run: kubectl rollout status deployment/jonline -n jonline
+
+  #   - name: Purge Cloudflare cache
+  #     uses: jakejarvis/cloudflare-purge-action@master
+  #     env:
+  #       CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
+  #       CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+
+  # # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server_external.yaml
+  # # have the same version number.
+  # deploy_to_bullcitysocial:
+  #   name: Deploy to Bull City Social
+  #   needs: deploy_to_jonlineio
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v3
+
+  #   - name: Extract Versioning Data
+  #     id: vars
+  #     run: |-
+  #       echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+  #       echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  #   - uses: digitalocean/action-doctl@v2
+  #     with:
+  #       token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+  #   - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+  #     run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/server_external.yaml
+
+  #   - name: Save DigitalOcean kubeconfig with short-lived credentials
+  #     run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+  #   - name: Deploy to Bull City Social via DigitalOcean Kubernetes
+  #     run: kubectl apply -f deploys/k8s/server_external.yaml -n bullcitysocial
+
+  #   - name: Verify Server deployment
+  #     run: kubectl rollout status deployment/jonline -n bullcitysocial
+
+  #   - name: Purge Cloudflare cache
+  #     uses: jakejarvis/cloudflare-purge-action@master
+  #     env:
+  #       CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_BULLCITY_SOCIAL }}
+  #       CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+
+  # # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server_external.yaml
+  # # have the same version number.
+  # deploy_to_oakcitysocial:
+  #   name: Deploy to Oak City Social
+  #   needs: deploy_to_jonlineio
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+
+  #   steps:
+  #   - uses: actions/checkout@v3
+
+  #   - name: Extract Versioning Data
+  #     id: vars
+  #     run: |-
+  #       echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+  #       echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+  #   - uses: digitalocean/action-doctl@v2
+  #     with:
+  #       token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+  #   - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+  #     run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|' deploys/k8s/server_external.yaml
+
+  #   - name: Save DigitalOcean kubeconfig with short-lived credentials
+  #     run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+  #   - name: Deploy to Oak City Social via DigitalOcean Kubernetes
+  #     run: kubectl apply -f deploys/k8s/server_external.yaml -n oakcitysocial
+
+  #   - name: Verify Server deployment
+  #     run: kubectl rollout status deployment/jonline -n oakcitysocial
+
+  #   - name: Purge Cloudflare cache
+  #     uses: jakejarvis/cloudflare-purge-action@master
+  #     env:
+  #       CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_OAKCITY_SOCIAL }}
+  #       CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
