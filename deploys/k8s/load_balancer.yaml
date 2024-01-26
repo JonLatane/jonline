@@ -5,7 +5,10 @@ metadata:
   labels:
     app: jonline-lb
 spec:
-  type: LoadBalancer
+  # Update this to use an external LoadBalancer instead of internal ClusterIP
+  # once this seems to be working.
+  type: ClusterIP
+  # type: LoadBalancer
   selector:
     app: jonline-lb
   ports:
@@ -45,6 +48,13 @@ spec:
       containers:
         - image: docker.io/jonlatane/jonline:0.2.531
           name: jonline-lb
+          env:
+          - name: SERVERS
+            valueFrom:
+              configMapKeyRef:
+                name: jonline-lb-config
+                key: servers
+
           # env:
           #   - name: DATABASE_URL
           #     value: postgres://admin:secure_password1@jonline-postgres/jonline

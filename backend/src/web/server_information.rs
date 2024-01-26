@@ -1,12 +1,14 @@
-use super::RocketState;
-use crate::rpcs::{get_server_configuration_proto, get_service_version};
+use std::str::FromStr;
+
+use super::{RocketState, load_media_file_data, open_named_file};
+use crate::{rpcs::{get_server_configuration_proto, get_service_version}, protos::{ServerInfo, ServerLogo}};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use rocket::{fs::NamedFile, http::Status, response::Redirect, routes, uri, Route, State};
+use rocket::{fs::NamedFile, http::{MediaType, ContentType, Status}, response::Redirect, routes, uri, Route, State};
 use rocket_cache_response::CacheResponse;
 
 lazy_static! {
     pub static ref INFORMATIONAL_PAGES: Vec<Route> =
-        routes![info_shield, docs, documentation, protocol_docs];
+        routes![info_shield, docs, documentation, protocol_docs, favicon];
 }
 
 #[rocket::get("/info_shield")]
@@ -73,5 +75,85 @@ async fn docs_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
         }),
         max_age: 60,
         must_revalidate: false,
+    }
+}
+
+
+#[rocket::get("/favicon.ico")]
+async fn favicon<'a>(
+    state: &State<RocketState>,
+) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
+    let mut conn = state.pool.get().unwrap();
+    let configuration = get_server_configuration_proto(&mut conn).unwrap();
+    let logo = configuration
+        .server_info
+        .unwrap_or(ServerInfo {
+            ..Default::default()
+        })
+        .logo
+        .unwrap_or(ServerLogo {
+            ..Default::default()
+        })
+        .square_media_id;
+    match logo {
+        None => {
+            let media_type = ContentType(
+                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+            );
+            let favicon_file = match NamedFile::open("opt/web/favicon.ico").await {
+                Ok(file) => file,
+                Err(_) => {
+                    match NamedFile::open("../frontends/tamagui/apps/next/out/favicon.ico").await {
+                        Ok(file) => file,
+                        Err(_) => return Err(Status::ExpectationFailed),
+                    }
+                }
+            };
+            Ok(CacheResponse::Public {
+                responder: (media_type, favicon_file),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
+        Some(square_media_id) => {
+            let data = load_media_file_data(&square_media_id, state).await?;
+            let mut content_type = &data.0;
+            let mut named_filename = &data.1.path().as_os_str().to_str().unwrap().to_string();
+            let ico_filename = format!(
+                "{}/png-converted-favicon.ico",
+                state.tempdir.path().display()
+            );
+            let ico_content_type = &ContentType(
+                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
+            );
+            // Convert PNG icons to ICO
+            if content_type.to_string().ends_with("png") {
+                let mut icon_dir = ico::IconDir::new(ico::ResourceType::Icon);
+                // Read PNG file from disk and add it to the collection:
+                let file = std::fs::File::open(named_filename).unwrap();
+                let image = ico::IconImage::read_png(file).unwrap();
+                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
+                // Alternatively, you can create an IconImage from raw RGBA pixel data
+                // (e.g. from another image library):
+                let rgba = vec![std::u8::MAX; 4 * 16 * 16];
+                let image = ico::IconImage::from_rgba_data(16, 16, rgba);
+                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
+                // Finally, write the ICO file to disk:
+                let file = std::fs::File::create(&ico_filename).unwrap();
+                icon_dir.write(file).unwrap();
+
+                named_filename = &ico_filename;
+                content_type = ico_content_type
+            }
+
+            Ok(CacheResponse::Public {
+                responder: (
+                    content_type.to_owned(),
+                    open_named_file(named_filename).await?,
+                ),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
     }
 }

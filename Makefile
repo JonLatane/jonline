@@ -11,6 +11,22 @@ NAMESPACE ?= jonline
 deploy_get_all:
 	cd deploys && $(MAKE) deploy_get_all
 
+# Manage your Load Balancer (WIP)
+deploy_lb_create_config:
+	cd deploys && $(MAKE) deploy_lb_create_config
+deploy_lb_delete_config:
+	cd deploys && $(MAKE) deploy_lb_delete_config
+deploy_lb_get_config:
+	cd deploys && $(MAKE) deploy_lb_get_config
+deploy_lb_link_service_account:
+	cd deploys && $(MAKE) deploy_lb_link_service_account
+deploy_lb_unlink_service_account:
+	cd deploys && $(MAKE) deploy_lb_unlink_service_account
+deploy_lb_create:
+	cd deploys && $(MAKE) deploy_lb_create
+deploy_lb_update:
+	cd deploys && $(MAKE) deploy_lb_update
+
 # Targets for deploying Jonline to your K8s cluster.
 # Internal or external refers to whether the service is exposed to the internet.
 # External is the default, but internal is useful for testing, and could

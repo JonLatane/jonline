@@ -19,7 +19,8 @@ export default class Document extends NextDocument {
     const styles = [
       getStyleElement(),
       <style key="tamagui-css" dangerouslySetInnerHTML={{ __html: Tamagui.getCSS() }} />,
-      <style key='jonline-css' dangerouslySetInnerHTML={{ __html: `
+      <style key='jonline-css' dangerouslySetInnerHTML={{
+        __html: `
         .blur {
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
@@ -33,7 +34,7 @@ export default class Document extends NextDocument {
           margin-right: 0.5em;
           margin-left: 0.5em;
         }
-      `}}/>
+      `}} />
     ]
 
     return { ...page, styles: Children.toArray(styles) }
@@ -44,6 +45,9 @@ export default class Document extends NextDocument {
       <Html>
         <Head>
           <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+
+          {/** Note that these tags must be findable by tamagui_web.rs, so Jonline's Rust server 
+           * can override them with Post/Event titles, images, etc. */}
           <meta property="og:title" content="Jonline Social Link" />
           <meta property="og:image" content="/favicon.ico" />
         </Head>

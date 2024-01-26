@@ -1,60 +1,73 @@
-use ico;
-use rocket::{
-    fs::*,
-    http::{ContentType, MediaType},
-    routes, Route, State,
-};
-use rocket_cache_response::CacheResponse;
-use std::{path::*, str::FromStr};
+use async_std::path;
+use jonline_path::create_responder;
+use lazy_static::lazy_static;
 
-use crate::{
-    protos::{ServerInfo, ServerLogo},
-    rpcs::get_server_configuration_proto,
-    web::RocketState,
+use rocket::{routes, tokio::sync::RwLock, Route};
+use rocket_cache_response::CacheResponse;
+use std::{
+    collections::HashMap,
+    fs,
+    path::{Path, PathBuf},
 };
+
+use crate::{db_connection::PgPooledConnection, models, rpcs};
 use rocket::http::Status;
 
-use super::{load_media_file_data, open_named_file};
+use super::{jonline_path, jonline_path_responder, JonlineResponder, JonlineSummary};
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
-        tamagui_index,
-        tamagui_media,
-        tamagui_posts,
-        tamagui_events,
-        tamagui_about,
-        tamagui_about_jonline,
-        tamagui_post,
-        tamagui_event,
-        tamagui_user,
-        tamagui_people,
-        tamagui_follow_requests,
-        tamagui_server,
-        tamagui_group_home,
-        tamagui_group_posts,
-        tamagui_group_post,
-        tamagui_group_events,
-        tamagui_group_event,
-        tamagui_group_members,
-        tamagui_group_member,
-        tamagui_favicon,
-        tamagui_file_or_username,
+        index,
+        media,
+        posts,
+        events,
+        about,
+        about_jonline,
+        post,
+        event,
+        user,
+        people,
+        follow_requests,
+        server,
+        group_home,
+        group_posts,
+        group_post,
+        group_events,
+        group_event,
+        group_members,
+        group_member,
+        file_or_username,
     ];
 }
 
+// #[derive(Responder)]
+// pub struct JonlineResponder {
+//     pub inner: String,
+//     pub content_type: ContentType,
+//     // responder: Result<String, Status>,
+//     // max_age: u32,
+//     // must_revalidate: bool,
+// }
+
 #[rocket::get("/<file..>")]
-async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFile, Status>> {
-    log::info!("tamagui_file_or_username: {:?}", file);
-    let result = match NamedFile::open(Path::new("opt/tamagui_web/").join(file.to_owned())).await {
-        Ok(file) => Ok(file),
-        Err(_) => {
-            match NamedFile::open(Path::new("../frontends/tamagui/apps/next/out/").join(file)).await
-            {
-                Ok(file) => Ok(file),
-                Err(_) => return tamagui_path("[username].html").await,
+async fn file_or_username(file: PathBuf) -> CacheResponse<Result<JonlineResponder, Status>> {
+    log::info!("file_or_username: {:?}", &file);
+    let result: Result<JonlineResponder, Status> =
+        match fs::read_to_string(Path::new("opt/web/").join(file.clone().to_owned())) {
+            Ok(body) => Ok(create_responder(file.to_str().unwrap(), body).await),
+            Err(_) => {
+                match fs::read_to_string(
+                    Path::new("../frontends/tamagui/apps/next/out/").join(file.clone()),
+                ) {
+                    Ok(body) => Ok(create_responder(file.to_str().unwrap(), body).await),
+                    Err(_) => {
+                        // TODO: Preload social link data (i.e., <meta property="og:title" ... />) for this user.
+                        let _user: Option<models::User> = None;
+                        return tamagui_path("[username].html", None).await;
+                    }
+                }
             }
-        }
-    };
+        };
     CacheResponse::Public {
         responder: result,
         max_age: 60,
@@ -62,162 +75,157 @@ async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<NamedFi
     }
 }
 
-#[rocket::get("/favicon.ico")]
-pub async fn tamagui_favicon<'a>(
-    state: &State<RocketState>,
-) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
-    let mut conn = state.pool.get().unwrap();
-    let configuration = get_server_configuration_proto(&mut conn).unwrap();
-    let logo = configuration
-        .server_info
-        .unwrap_or(ServerInfo {
-            ..Default::default()
-        })
-        .logo
-        .unwrap_or(ServerLogo {
-            ..Default::default()
-        })
-        .square_media_id;
-    match logo {
-        None => {
-            let media_type = ContentType(
-                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
-            );
-            let favicon_file = match NamedFile::open("opt/tamagui_web/favicon.ico").await {
-                Ok(file) => file,
-                Err(_) => {
-                    match NamedFile::open("../frontends/tamagui/apps/next/out/favicon.ico").await {
-                        Ok(file) => file,
-                        Err(_) => return Err(Status::ExpectationFailed),
-                    }
-                }
-            };
-            Ok(CacheResponse::Public {
-                responder: (media_type, favicon_file),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
-        }
-        Some(square_media_id) => {
-            let data = load_media_file_data(&square_media_id, state).await?;
-            let mut content_type = &data.0;
-            let mut named_filename = &data.1.path().as_os_str().to_str().unwrap().to_string();
-            let ico_filename = format!(
-                "{}/png-converted-favicon.ico",
-                state.tempdir.path().display()
-            );
-            let ico_content_type = &ContentType(
-                MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
-            );
-            // Convert PNG icons to ICO
-            if content_type.to_string().ends_with("png") {
-                let mut icon_dir = ico::IconDir::new(ico::ResourceType::Icon);
-                // Read PNG file from disk and add it to the collection:
-                let file = std::fs::File::open(named_filename).unwrap();
-                let image = ico::IconImage::read_png(file).unwrap();
-                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
-                // Alternatively, you can create an IconImage from raw RGBA pixel data
-                // (e.g. from another image library):
-                let rgba = vec![std::u8::MAX; 4 * 16 * 16];
-                let image = ico::IconImage::from_rgba_data(16, 16, rgba);
-                icon_dir.add_entry(ico::IconDirEntry::encode(&image).unwrap());
-                // Finally, write the ICO file to disk:
-                let file = std::fs::File::create(&ico_filename).unwrap();
-                icon_dir.write(file).unwrap();
-
-                named_filename = &ico_filename;
-                content_type = ico_content_type
-            }
-
-            Ok(CacheResponse::Public {
-                responder: (
-                    content_type.to_owned(),
-                    open_named_file(named_filename).await?,
-                ),
-                max_age: 3600 * 12,
-                must_revalidate: true,
-            })
-        }
-    }
-}
-
-macro_rules! rscfn {
+macro_rules! webui {
+    // There seems `;` is no longer recognized, so no way to remove `;`
+    // and thus redundant_semicolons warnings are triggered.
+    // (@inner ;) => { {print!(";");} };
     ($name:tt, $web_route:tt, $html_path:literal) => {
         #[rocket::get($web_route)]
-        pub async fn $name() -> CacheResponse<Result<NamedFile, Status>> {
-            tamagui_path($html_path).await
+        pub async fn $name() -> CacheResponse<Result<JonlineResponder, Status>> {
+            tamagui_path($html_path, None).await
+        }
+    };
+    // (@inner $summary:stmt) => { $summary };
+    ($name:tt, $web_route:tt, $html_path:literal, $summary:expr) => {
+        #[rocket::get($web_route)]
+        pub async fn $name() -> CacheResponse<Result<JonlineResponder, Status>> {
+            let connection = None;
+            let path = None;
+            let summary: Option<JonlineSummary> = ($summary)(connection, path);
+            tamagui_path($html_path, summary).await
         }
     };
 }
 
-rscfn!(tamagui_index, "/tamagui", "index.html");
-rscfn!(tamagui_media, "/media", "media.html");
-rscfn!(tamagui_posts, "/posts", "posts.html");
-rscfn!(tamagui_events, "/events", "events.html");
-rscfn!(tamagui_about, "/about", "about.html");
-rscfn!(
-    tamagui_about_jonline,
-    "/about_jonline",
-    "about_jonline.html"
-);
-rscfn!(tamagui_post, "/post/<_..>", "post/[postId].html");
-rscfn!(tamagui_event, "/event/<_>", "event/[instanceId].html");
-rscfn!(tamagui_user, "/user/<_>", "user/[id].html");
-rscfn!(tamagui_people, "/people", "people.html");
-rscfn!(
-    tamagui_follow_requests,
-    "/people/follow_requests",
-    "people/follow_requests.html"
-);
-rscfn!(tamagui_group_home, "/g/<_>", "g/[shortname].html");
-rscfn!(
-    tamagui_group_posts,
-    "/g/<_>/posts",
-    "g/[shortname]/posts.html"
-);
-rscfn!(
-    tamagui_group_post,
-    "/g/<_>/p/<_..>",
-    "g/[shortname]/p/[postId].html"
-);
-rscfn!(
-    tamagui_group_events,
-    "/g/<_>/events",
-    "g/[shortname]/events.html"
-);
-rscfn!(
-    tamagui_group_event,
-    "/g/<_>/e/<_>",
-    "g/[shortname]/e/[instanceId].html"
-);
-rscfn!(
-    tamagui_group_members,
-    "/g/<_>/members",
-    "g/[shortname]/members.html"
-);
-rscfn!(
-    tamagui_group_member,
-    "/g/<_>/m/<_>",
-    "g/[shortname]/m/[username].html"
-);
-rscfn!(tamagui_server, "/server/<_..>", "server/[id].html");
+lazy_static! {
+    static ref CACHED_FILES: RwLock<HashMap<String, String>> = {
+        let m = HashMap::new();
+        RwLock::new(m)
+    };
+}
 
-async fn tamagui_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
-    let result = match NamedFile::open(format!("opt/tamagui_web/{}", path)).await {
-        Ok(file) => Ok(file),
-        Err(_) => {
-            match NamedFile::open(format!("../frontends/tamagui/apps/next/out/{}", path)).await {
-                Ok(file) => Ok(file),
-                Err(e) => Err(e),
-            }
+async fn tamagui_path(
+    static_file_path: &str,
+    summary: Option<JonlineSummary>,
+) -> CacheResponse<Result<JonlineResponder, Status>> {
+    let mut template = jonline_path_responder(
+        static_file_path,
+        &format!("opt/web/{}", static_file_path),
+        &format!("../frontends/tamagui/apps/next/out/{}", static_file_path),
+    )
+    .await;
+
+    match (summary, template.as_mut()) {
+        (Some(summary), Some(template)) => {
+            match summary.title {
+                Some(title) => {
+                    let updated_body = template.inner.replacen("Jonline Social Link", &title, 1);
+                    template.inner = updated_body;
+                }
+                None => (),
+            };
         }
+        _ => (),
     };
     CacheResponse::Public {
-        responder: result.map_err(|e| {
-            log::info!("tamagui_path: {:?}", e);
-            Status::NotFound
-        }),
+        responder: template.map_or(Err(Status::NotFound), |body| Ok(body)),
         max_age: 60,
         must_revalidate: false,
     }
 }
+
+webui!(
+    index,
+    "/tamagui",
+    "index.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        log::info!("index called, {}", connection.is_some());
+        Some(JonlineSummary {
+            title: Some("Latest - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(media, "/media", "media.html");
+webui!(
+    posts,
+    "/posts",
+    "posts.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Posts - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(
+    events,
+    "/events",
+    "events.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Events - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(about, "/about", "about.html");
+webui!(
+    about_jonline,
+    "/about_jonline",
+    "about_jonline.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("About Jonline".to_string()),
+            description: None,
+            image: None, //Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(post, "/post/<_..>", "post/[postId].html");
+webui!(event, "/event/<_>", "event/[instanceId].html");
+webui!(user, "/user/<_>", "user/[id].html");
+webui!(
+    people,
+    "/people",
+    "people.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("People - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(
+    follow_requests,
+    "/people/follow_requests",
+    "people/follow_requests.html"
+);
+webui!(group_home, "/g/<_>", "g/[shortname].html");
+webui!(group_posts, "/g/<_>/posts", "g/[shortname]/posts.html");
+webui!(
+    group_post,
+    "/g/<_>/p/<_..>",
+    "g/[shortname]/p/[postId].html"
+);
+webui!(group_events, "/g/<_>/events", "g/[shortname]/events.html");
+webui!(
+    group_event,
+    "/g/<_>/e/<_>",
+    "g/[shortname]/e/[instanceId].html"
+);
+webui!(
+    group_members,
+    "/g/<_>/members",
+    "g/[shortname]/members.html"
+);
+webui!(
+    group_member,
+    "/g/<_>/m/<_>",
+    "g/[shortname]/m/[username].html"
+);
+webui!(server, "/server/<_..>", "server/[id].html");

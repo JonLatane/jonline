@@ -1,14 +1,18 @@
 # Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml) 
 Jonline is an open-source, community-scale social network designed to be capable of "[dumbfederating](#dumbfederation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - use localStorage (or system storage, for native Flutter apps) and neither set nor read cookies at all.
 
-The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60 to run the 3 domains](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind CloudFlare's free CDN.)
+The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind CloudFlare's free CDN.)
 
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 [![Buy me a beer!](https://img.shields.io/badge/🙏%20buy%20me%20a%20beer%20🍺-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
 
-## Deployments
+## Images & Deployments
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+
+JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing:
+
+[![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl_load_balancer&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jbl/tags)
 
 | Deployment                                                                                    | Purpose                          | Federated Servers/Default Data Sources | Links                                                                                                                                           | Deployment Version |
 | --------------------------------------------------------------------------------------------- | -------------------------------- | --|----------------------------------------------------------------------------------------------------------------------------------------------- |-- |
@@ -22,7 +26,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 | App Store (iOS, iPadOS) | [![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml) | N/A            | [TestFlight](https://testflight.apple.com/join/pIvX01w2) | Versions may not be current, subject to (Beta) App Review submission + approval |
 
 - [Jonline ](#jonline-)
-  - [Deployments](#deployments)
+  - [Images \& Deployments](#images--deployments)
     - [Native Builds](#native-builds)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
@@ -197,7 +201,7 @@ Jonline documentation consists of Markdown in the [`docs/` directory](https://gi
 ### Dumbfederation
 A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication is via "recommended servers," which will eventually also let admins enable CORS to control where users can see content and user information from their servers.
 
-This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/http%3Abullcity.social?section=federation) - literally nothing but a list of hosts.
+This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https%3Abullcity.social?section=federation) - literally nothing but a list of hosts.
 
 ### Protocol Documentation
 A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).

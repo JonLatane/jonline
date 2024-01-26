@@ -277,9 +277,13 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const yourAttendances = [currentAnonRsvp, currentRsvp]
     .filter(a => a !== undefined).map(a => a as EventAttendance);
 
+  const sortedStatus = (attendance: EventAttendance) =>
+    (attendance.status === AttendanceStatus.NOT_GOING 
+      ? AttendanceStatus.UNRECOGNIZED 
+      : attendance.status)
   const sortedAttendances = attendances
     .sort((a, b) => (a.userAttendee ? -1 : 1) - (b.userAttendee ? -1 : 1))
-    .sort((a, b) => b.status - a.status);
+    .sort((a, b) => sortedStatus(b) - sortedStatus(a));
   const editingAttendance = newRsvpMode === 'anonymous' ? currentAnonRsvp : newRsvpMode === 'user' ? currentRsvp : undefined;
 
   const nonPendingAttendances = sortedAttendances.filter(a => passes(a.moderation));
