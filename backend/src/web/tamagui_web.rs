@@ -136,7 +136,7 @@ webui!(
     index,
     "/tamagui",
     "index.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Latest - {}", server_name)),
             description: None,
@@ -149,7 +149,7 @@ webui!(
     posts,
     "/posts",
     "posts.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Posts - {}", server_name)),
             description: None,
@@ -161,7 +161,7 @@ webui!(
     events,
     "/events",
     "events.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Events - {}", server_name)),
             description: None,
@@ -173,7 +173,7 @@ webui!(
     about,
     "/about",
     "about.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("About Community - {}", server_name)),
             description: None,
@@ -185,7 +185,7 @@ webui!(
     about_jonline,
     "/about_jonline",
     "about_jonline.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, _server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some("About Jonline".to_string()),
             description: None,
@@ -197,7 +197,7 @@ webui!(
     post,
     "/post/<_..>",
     "post/[postId].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Post Details - {}", server_name)),
             description: None,
@@ -209,7 +209,7 @@ webui!(
     event,
     "/event/<_>",
     "event/[instanceId].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Event Details - {}", server_name)),
             description: None,
@@ -222,7 +222,7 @@ webui!(
     people,
     "/people",
     "people.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("People - {}", server_name)),
             description: None,
@@ -234,7 +234,7 @@ webui!(
     follow_requests,
     "/people/follow_requests",
     "people/follow_requests.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Follow Requests - {}", server_name)),
             description: None,
@@ -246,7 +246,7 @@ webui!(
     group_home,
     "/g/<_>",
     "g/[shortname].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Home/Latest Page - {}", server_name)),
             description: None,
@@ -258,7 +258,7 @@ webui!(
     group_posts,
     "/g/<_>/posts",
     "g/[shortname]/posts.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Posts Page - {}", server_name)),
             description: None,
@@ -270,7 +270,7 @@ webui!(
     group_post,
     "/g/<_>/p/<_..>",
     "g/[shortname]/p/[postId].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Post Details - {}", server_name)),
             description: None,
@@ -282,7 +282,7 @@ webui!(
     group_events,
     "/g/<_>/events",
     "g/[shortname]/events.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Events Page - {}", server_name)),
             description: None,
@@ -294,7 +294,7 @@ webui!(
     group_event,
     "/g/<_>/e/<_>",
     "g/[shortname]/e/[instanceId].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Event Details - {}", server_name)),
             description: None,
@@ -306,7 +306,7 @@ webui!(
     group_members,
     "/g/<_>/members",
     "g/[shortname]/members.html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Members - {}", server_name)),
             description: None,
@@ -318,7 +318,7 @@ webui!(
     group_member,
     "/g/<_>/m/<_>",
     "g/[shortname]/m/[username].html",
-    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
+    |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Group Member Details - {}", server_name)),
             description: None,
