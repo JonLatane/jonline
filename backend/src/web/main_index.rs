@@ -42,6 +42,6 @@ pub async fn main_index(state: &State<RocketState>) -> CacheResponse<Result<Jonl
             }
             // flutter_index().await
         },
-        _ => index().await,
+        _ => index(state).await,
     }
 }

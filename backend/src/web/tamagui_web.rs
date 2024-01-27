@@ -1,8 +1,7 @@
-use async_std::path;
 use jonline_path::create_responder;
 use lazy_static::lazy_static;
 
-use rocket::{routes, tokio::sync::RwLock, Route};
+use rocket::{routes, tokio::sync::RwLock, Route, State};
 use rocket_cache_response::CacheResponse;
 use std::{
     collections::HashMap,
@@ -10,7 +9,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{db_connection::PgPooledConnection, models, rpcs};
+use crate::{
+    db_connection::PgPooledConnection, models, rpcs, web::RocketState,
+};
 use rocket::http::Status;
 
 use super::{jonline_path, jonline_path_responder, JonlineResponder, JonlineSummary};
@@ -41,10 +42,12 @@ lazy_static! {
 }
 
 #[rocket::get("/<file..>")]
-async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<JonlineResponder, Status>> {
+async fn tamagui_file_or_username(
+    file: PathBuf,
+) -> CacheResponse<Result<JonlineResponder, Status>> {
     log::info!("file_or_username: {:?}", &file);
     let result: Result<JonlineResponder, Status> =
-        match fs::read_to_string(Path::new("opt/web/").join(file.clone().to_owned())) {
+        match fs::read_to_string(Path::new("opt/tamagui_web/").join(file.clone().to_owned())) {
             Ok(body) => Ok(create_responder(file.to_str().unwrap(), body).await),
             Err(_) => {
                 match fs::read_to_string(
@@ -79,10 +82,14 @@ macro_rules! webui {
     // (@inner $summary:stmt) => { $summary };
     ($name:tt, $web_route:tt, $html_path:literal, $summary:expr) => {
         #[rocket::get($web_route)]
-        pub async fn $name() -> CacheResponse<Result<JonlineResponder, Status>> {
-            let connection = None;
+        pub async fn $name(
+            state: &State<RocketState>,
+        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+            let mut connection = state.pool.get().unwrap();
+            let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
+            let server_name = configuration.server_info.map(|i| i.name).flatten().unwrap_or("Jonline".to_string());
             let path = None;
-            let summary: Option<JonlineSummary> = ($summary)(connection, path);
+            let summary: Option<JonlineSummary> = ($summary)(connection, server_name, path);
             tamagui_path($html_path, summary).await
         }
     };
@@ -129,10 +136,9 @@ webui!(
     index,
     "/tamagui",
     "index.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
-        log::info!("index called, {}", connection.is_some());
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Latest - Jonline".to_string()),
+            title: Some(format!("Latest - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -143,9 +149,9 @@ webui!(
     posts,
     "/posts",
     "posts.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Posts - Jonline".to_string()),
+            title: Some(format!("Posts - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -155,9 +161,9 @@ webui!(
     events,
     "/events",
     "events.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Events - Jonline".to_string()),
+            title: Some(format!("Events - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -167,9 +173,9 @@ webui!(
     about,
     "/about",
     "about.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("About Community - Jonline".to_string()),
+            title: Some(format!("About Community - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -179,7 +185,7 @@ webui!(
     about_jonline,
     "/about_jonline",
     "about_jonline.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
             title: Some("About Jonline".to_string()),
             description: None,
@@ -191,9 +197,9 @@ webui!(
     post,
     "/post/<_..>",
     "post/[postId].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Post Details - Jonline".to_string()),
+            title: Some(format!("Post Details - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -203,9 +209,9 @@ webui!(
     event,
     "/event/<_>",
     "event/[instanceId].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Event Details - Jonline".to_string()),
+            title: Some(format!("Event Details - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -216,9 +222,9 @@ webui!(
     people,
     "/people",
     "people.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("People - Jonline".to_string()),
+            title: Some(format!("People - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -228,9 +234,9 @@ webui!(
     follow_requests,
     "/people/follow_requests",
     "people/follow_requests.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Follow Requests - Jonline".to_string()),
+            title: Some(format!("Follow Requests - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -240,9 +246,9 @@ webui!(
     group_home,
     "/g/<_>",
     "g/[shortname].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Home/Latest Page - Jonline".to_string()),
+            title: Some(format!("Group Home/Latest Page - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -252,9 +258,9 @@ webui!(
     group_posts,
     "/g/<_>/posts",
     "g/[shortname]/posts.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Posts Page - Jonline".to_string()),
+            title: Some(format!("Group Posts Page - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -264,9 +270,9 @@ webui!(
     group_post,
     "/g/<_>/p/<_..>",
     "g/[shortname]/p/[postId].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Post Details - Jonline".to_string()),
+            title: Some(format!("Group Post Details - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -276,9 +282,9 @@ webui!(
     group_events,
     "/g/<_>/events",
     "g/[shortname]/events.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Events Page - Jonline".to_string()),
+            title: Some(format!("Group Events Page - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -288,9 +294,9 @@ webui!(
     group_event,
     "/g/<_>/e/<_>",
     "g/[shortname]/e/[instanceId].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Event Details - Jonline".to_string()),
+            title: Some(format!("Group Event Details - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -300,9 +306,9 @@ webui!(
     group_members,
     "/g/<_>/members",
     "g/[shortname]/members.html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Members - Jonline".to_string()),
+            title: Some(format!("Group Members - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
@@ -312,9 +318,9 @@ webui!(
     group_member,
     "/g/<_>/m/<_>",
     "g/[shortname]/m/[username].html",
-    |connection: Option<PgPooledConnection>, path: Option<String>| {
+    |connection: PgPooledConnection, server_name: String, path: Option<String>| {
         Some(JonlineSummary {
-            title: Some("Group Member Details - Jonline".to_string()),
+            title: Some(format!("Group Member Details - {}", server_name)),
             description: None,
             image: Some("/favicon.ico".to_string()),
         })
