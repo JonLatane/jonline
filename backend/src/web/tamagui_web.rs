@@ -101,7 +101,7 @@ async fn tamagui_path(
 ) -> CacheResponse<Result<JonlineResponder, Status>> {
     let mut template = jonline_path_responder(
         static_file_path,
-        &format!("./opt/web/{}", static_file_path),
+        &format!("opt/tamagui_web/{}", static_file_path),
         &format!("../frontends/tamagui/apps/next/out/{}", static_file_path),
     )
     .await;
