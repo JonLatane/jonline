@@ -1,7 +1,12 @@
 use jonline_path::create_responder;
 use lazy_static::lazy_static;
 
-use rocket::{routes, tokio::sync::RwLock, Route, State};
+use rocket::{
+    http::{uri::Origin, Status},
+    routes,
+    tokio::sync::RwLock,
+    Route, State,
+};
 use rocket_cache_response::CacheResponse;
 use std::{
     collections::HashMap,
@@ -10,9 +15,8 @@ use std::{
 };
 
 use crate::{
-    db_connection::PgPooledConnection, models, rpcs, web::RocketState,
+    db_connection::PgPooledConnection, models, protos::GetUsersRequest, rpcs, web::RocketState,
 };
-use rocket::http::Status;
 
 use super::{jonline_path, jonline_path_responder, JonlineResponder, JonlineSummary};
 
@@ -44,6 +48,8 @@ lazy_static! {
 #[rocket::get("/<file..>")]
 async fn tamagui_file_or_username(
     file: PathBuf,
+    state: &State<RocketState>,
+    origin: &Origin<'_>,
 ) -> CacheResponse<Result<JonlineResponder, Status>> {
     log::info!("file_or_username: {:?}", &file);
     let result: Result<JonlineResponder, Status> =
@@ -56,8 +62,53 @@ async fn tamagui_file_or_username(
                     Ok(body) => Ok(create_responder(file.to_str().unwrap(), body).await),
                     Err(_) => {
                         // TODO: Preload social link data (i.e., <meta property="og:title" ... />) for this user.
-                        let _user: Option<models::User> = None;
-                        return tamagui_path("[username].html", None).await;
+                        let mut connection = state.pool.get().unwrap();
+                        let configuration =
+                            rpcs::get_server_configuration_proto(&mut connection).unwrap();
+                        let server_name = configuration
+                            .server_info
+                            .map(|i| i.name)
+                            .flatten()
+                            .unwrap_or("Jonline".to_string());
+                        let username = Some(
+                            origin
+                                .path()
+                                .to_string()
+                                .split('/')
+                                .last()
+                                .unwrap()
+                                .to_string(),
+                        );
+                        let user = rpcs::get_users(
+                            GetUsersRequest {
+                                username,
+                                ..Default::default()
+                            },
+                            &None,
+                            &mut connection,
+                        )
+                        .ok()
+                        .map(|u| u.users.into_iter().next())
+                        .flatten();
+
+                        let (page_title, description, avatar) = match user {
+                            Some(user) => {
+                                let page_title = user.username.clone();
+                                let description = user.bio.clone();
+                                let avatar = user.avatar.clone().map(|a| format!("/media/{}", a.id));
+                                (page_title, Some(description), avatar)
+                            }
+                            None => ("User Profile".to_string(), None, None),
+                        };
+
+                        let title = Some(format!("{} - {}", page_title, server_name));
+
+                        let summary: Option<JonlineSummary> = Some(JonlineSummary {
+                            title,
+                            description,
+                            image: avatar,
+                        });
+                        return tamagui_path("[username].html", summary).await;
                     }
                 }
             }
@@ -87,7 +138,11 @@ macro_rules! webui {
         ) -> CacheResponse<Result<JonlineResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
-            let server_name = configuration.server_info.map(|i| i.name).flatten().unwrap_or("Jonline".to_string());
+            let server_name = configuration
+                .server_info
+                .map(|i| i.name)
+                .flatten()
+                .unwrap_or("Jonline".to_string());
             let path = None;
             let summary: Option<JonlineSummary> = ($summary)(connection, server_name, path);
             tamagui_path($html_path, summary).await
