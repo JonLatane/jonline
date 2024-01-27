@@ -36,21 +36,12 @@ lazy_static! {
         group_event,
         group_members,
         group_member,
-        file_or_username,
+        tamagui_file_or_username,
     ];
 }
 
-// #[derive(Responder)]
-// pub struct JonlineResponder {
-//     pub inner: String,
-//     pub content_type: ContentType,
-//     // responder: Result<String, Status>,
-//     // max_age: u32,
-//     // must_revalidate: bool,
-// }
-
 #[rocket::get("/<file..>")]
-async fn file_or_username(file: PathBuf) -> CacheResponse<Result<JonlineResponder, Status>> {
+async fn tamagui_file_or_username(file: PathBuf) -> CacheResponse<Result<JonlineResponder, Status>> {
     log::info!("file_or_username: {:?}", &file);
     let result: Result<JonlineResponder, Status> =
         match fs::read_to_string(Path::new("opt/web/").join(file.clone().to_owned())) {
@@ -172,7 +163,18 @@ webui!(
         })
     }
 );
-webui!(about, "/about", "about.html");
+webui!(
+    about,
+    "/about",
+    "about.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("About Community - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
 webui!(
     about_jonline,
     "/about_jonline",
@@ -185,8 +187,30 @@ webui!(
         })
     }
 );
-webui!(post, "/post/<_..>", "post/[postId].html");
-webui!(event, "/event/<_>", "event/[instanceId].html");
+webui!(
+    post,
+    "/post/<_..>",
+    "post/[postId].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Post Details - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(
+    event,
+    "/event/<_>",
+    "event/[instanceId].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Event Details - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
 webui!(user, "/user/<_>", "user/[id].html");
 webui!(
     people,
@@ -203,29 +227,97 @@ webui!(
 webui!(
     follow_requests,
     "/people/follow_requests",
-    "people/follow_requests.html"
+    "people/follow_requests.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Follow Requests - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
 );
-webui!(group_home, "/g/<_>", "g/[shortname].html");
-webui!(group_posts, "/g/<_>/posts", "g/[shortname]/posts.html");
+webui!(
+    group_home,
+    "/g/<_>",
+    "g/[shortname].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Home/Latest Page - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
+webui!(
+    group_posts,
+    "/g/<_>/posts",
+    "g/[shortname]/posts.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Posts Page - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
 webui!(
     group_post,
     "/g/<_>/p/<_..>",
-    "g/[shortname]/p/[postId].html"
+    "g/[shortname]/p/[postId].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Post Details - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
 );
-webui!(group_events, "/g/<_>/events", "g/[shortname]/events.html");
+webui!(
+    group_events,
+    "/g/<_>/events",
+    "g/[shortname]/events.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Events Page - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
+);
 webui!(
     group_event,
     "/g/<_>/e/<_>",
-    "g/[shortname]/e/[instanceId].html"
+    "g/[shortname]/e/[instanceId].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Event Details - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
 );
 webui!(
     group_members,
     "/g/<_>/members",
-    "g/[shortname]/members.html"
+    "g/[shortname]/members.html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Members - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
 );
 webui!(
     group_member,
     "/g/<_>/m/<_>",
-    "g/[shortname]/m/[username].html"
+    "g/[shortname]/m/[username].html",
+    |connection: Option<PgPooledConnection>, path: Option<String>| {
+        Some(JonlineSummary {
+            title: Some("Group Member Details - Jonline".to_string()),
+            description: None,
+            image: Some("/favicon.ico".to_string()),
+        })
+    }
 );
 webui!(server, "/server/<_..>", "server/[id].html");
