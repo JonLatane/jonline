@@ -186,9 +186,9 @@ async fn tamagui_path(
             );
 
             template.inner = template.inner.replacen(
-                "<meta property=\"og:image\" content=\"/favicon.ico\" />",
+                "<meta property=\"og:image\" content=\"/favicon.ico\"/>",
                 summary.image.map_or("", |i| {
-                    String::leak(format!("<meta property=\"og:image\" content=\"/{}\" />", i))
+                    String::leak(format!("<meta property=\"og:image\" content=\"{}\"/>", i))
                 }),
                 1,
             );
