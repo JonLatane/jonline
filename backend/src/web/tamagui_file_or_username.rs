@@ -43,7 +43,7 @@ pub async fn tamagui_file_or_username(
                         let path = origin.path();
                         let path_components = path.split('/').collect_vec();
                         // FUck it let's see if this works
-                        if (path_components.len() != 2) || (path_components[0] != "user") {
+                        if path_components.len() != 2 {
                             return tamagui_path(file.to_str().unwrap(), None).await;
                         }
 
