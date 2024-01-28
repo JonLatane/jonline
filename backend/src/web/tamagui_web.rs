@@ -15,7 +15,7 @@ use std::{
 };
 
 use crate::{
-    db_connection::PgPooledConnection, models, protos::GetUsersRequest, rpcs, web::RocketState,
+    db_connection::PgPooledConnection, protos::GetUsersRequest, rpcs, web::RocketState,
 };
 
 use super::{jonline_path, jonline_path_responder, JonlineResponder, JonlineSummary};
@@ -93,7 +93,7 @@ async fn tamagui_file_or_username(
 
                         let (page_title, description, avatar) = match user {
                             Some(user) => {
-                                let page_title = user.username.clone();
+                                let page_title = format!("{} - User Profile", user.username.clone());
                                 let description = user.bio.clone();
                                 let avatar =
                                     user.avatar.clone().map(|a| format!("/media/{}", a.id));
