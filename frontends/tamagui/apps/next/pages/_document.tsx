@@ -49,6 +49,7 @@ export default class Document extends NextDocument {
           {/** Note that these tags must be findable by tamagui_web.rs, so Jonline's Rust server 
            * can override them with Post/Event titles, images, etc. */}
           <meta property="og:title" content="Jonline Social Link" />
+          <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
           <meta property="og:image" content="/favicon.ico" />
         </Head>
         <body>

@@ -95,7 +95,8 @@ async fn tamagui_file_or_username(
                             Some(user) => {
                                 let page_title = user.username.clone();
                                 let description = user.bio.clone();
-                                let avatar = user.avatar.clone().map(|a| format!("/media/{}", a.id));
+                                let avatar =
+                                    user.avatar.clone().map(|a| format!("/media/{}", a.id));
                                 (page_title, Some(description), avatar)
                             }
                             None => ("User Profile".to_string(), None, None),
@@ -177,6 +178,20 @@ async fn tamagui_path(
                 }
                 None => (),
             };
+
+            template.inner = template.inner.replacen(
+                "A link from a fediverse community with events, posts, and realtime chat",
+                &summary.description.unwrap_or("".to_string()),
+                1,
+            );
+
+            template.inner = template.inner.replacen(
+                "<meta property=\"og:image\" content=\"/favicon.ico\" />",
+                summary.image.map_or("", |i| {
+                    String::leak(format!("<meta property=\"og:image\" content=\"/{}\" />", i))
+                }),
+                1,
+            );
         }
         _ => (),
     };
@@ -194,7 +209,7 @@ webui!(
     |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Latest - {}", server_name)),
-            description: None,
+            description: Some("Posts and Events from a Jonline community".to_string()),
             image: Some("/favicon.ico".to_string()),
         })
     }
@@ -207,7 +222,7 @@ webui!(
     |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Posts - {}", server_name)),
-            description: None,
+            description: Some("Posts from a Jonline community".to_string()),
             image: Some("/favicon.ico".to_string()),
         })
     }
@@ -219,7 +234,7 @@ webui!(
     |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("Events - {}", server_name)),
-            description: None,
+            description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
             image: Some("/favicon.ico".to_string()),
         })
     }
@@ -231,7 +246,7 @@ webui!(
     |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("About Community - {}", server_name)),
-            description: None,
+            description: Some("Information a Jonline community".to_string()),
             image: Some("/favicon.ico".to_string()),
         })
     }
@@ -243,7 +258,7 @@ webui!(
     |_connection: PgPooledConnection, _server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some("About Jonline".to_string()),
-            description: None,
+            description: Some("Information about the Jonline federated social network stack".to_string()),
             image: None, //Some("/favicon.ico".to_string()),
         })
     }
@@ -280,7 +295,7 @@ webui!(
     |_connection: PgPooledConnection, server_name: String, _path: Option<String>| {
         Some(JonlineSummary {
             title: Some(format!("People - {}", server_name)),
-            description: None,
+            description: Some("User listings for a Jonline community".to_string()),
             image: Some("/favicon.ico".to_string()),
         })
     }
