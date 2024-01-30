@@ -3,7 +3,7 @@ import { debounce, useDebounce } from "@jonline/ui";
 import { FederatedGroup, RootState, getServersMissingGroupsPage, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { useCredentialDispatch, useCurrentAndPinnedServers } from "../account_and_server_hooks";
-import { finishPagination } from './post_pagination_hooks';
+import { finishPagination } from './pagination_hooks';
 
 export type GroupPageParams = { onLoaded?: () => void, disableLoading?: boolean };
 
