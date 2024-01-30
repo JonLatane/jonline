@@ -8,7 +8,7 @@ import { ArrowRightFromLine, CalendarPlus, Check, ChevronDown, ChevronRight, Del
 import { FadeInView, ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedAccountOrServer, useFederatedDispatch, useForceUpdate, useMediaUrl } from "app/hooks";
+import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -210,6 +210,7 @@ export const EventCard: React.FC<Props> = ({
         : `/event/${detailsLinkId}`
       : '.'
   });
+  const { fancyPostBackgrounds } = useLocalConfiguration();
 
   const authorLink = useLink({
     href: authorName
@@ -925,9 +926,9 @@ export const EventCard: React.FC<Props> = ({
               </YStack>
             }
           </Card.Footer>
-          <Card.Background>
-            {(showBackgroundPreview) ?
-              <FadeInView>
+          {fancyPostBackgrounds ?
+            <Card.Background>
+              {(showBackgroundPreview) ?
                 <Image
                   pos="absolute"
                   width={backgroundSize}
@@ -940,9 +941,9 @@ export const EventCard: React.FC<Props> = ({
                   // borderRadius={5}
                   borderBottomRightRadius={5}
                 />
-              </FadeInView>
-              : undefined}
-          </Card.Background>
+                : undefined}
+            </Card.Background>
+            : undefined}
         </Card >
       </YStack>
     </AccountOrServerContextProvider>

@@ -11,7 +11,7 @@ import { TamaguiMarkdown } from "../../components/tamagui_markdown";
 import { AuthorInfo } from "./author_info";
 
 import { FadeInView, ShareableToggle, VisibilityPicker } from "app/components";
-import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useIsVisible, useMediaUrl, usePostDispatch } from "app/hooks";
+import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
 import { GroupPostManager } from '../groups/group_post_manager';
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
@@ -90,6 +90,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
+  const { fancyPostBackgrounds } = useLocalConfiguration();
 
   function saveEdits() {
     setSavingEdits(true);
@@ -490,9 +491,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               </YStack>
             }
           </Card.Footer>
-          <Card.Background>
-            {(showBackgroundPreview) ?
-              <FadeInView>
+          {fancyPostBackgrounds ?
+            <Card.Background>
+              {(showBackgroundPreview) ?
                 <Image
                   pos="absolute"
                   width={backgroundSize}
@@ -505,9 +506,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                   // borderRadius={5}
                   borderBottomRightRadius={5}
                 />
-              </FadeInView>
-              : undefined}
-          </Card.Background>
+                : undefined}
+            </Card.Background>
+            : undefined}
         </Card >
         {/* </Theme> */}
       </YStack >

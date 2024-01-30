@@ -1,7 +1,7 @@
 import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { FeaturesNavigation } from './navigation/features_navigation';
@@ -95,10 +95,13 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   value={app.shrinkFeatureNavigation}
                   setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
               </YStack>
-
-              <Heading size='$5' mt='$5'>Accounts</Heading>
+              <Heading size='$5' mt='$3'>Posts and Events</Heading>
               <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
+
+                <ToggleRow name='Fancy Post/Event Backgrounds'
+                  description='Eat up some memory (maybe?) and crash some browsers, but make it pretty'
+                  value={app.fancyPostBackgrounds} setter={setFancyPostBackgrounds} autoDispatch />
+
               </YStack>
 
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
@@ -129,6 +132,11 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </XStack>
               </YStack>
 
+              <Heading size='$5' mt='$5'>Accounts</Heading>
+              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
+              </YStack>
+
               <Heading size='$5' mt='$5'>Testing</Heading>
               <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Allow Server Selection'
@@ -146,67 +154,67 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
 
               </YStack>
-                <XStack>
-                  <Dialog>
-                    <Dialog.Trigger asChild>
+              <XStack>
+                <Dialog>
+                  <Dialog.Trigger asChild>
 
-                      <Button f={1} icon={XIcon} iconAfter={AlertTriangle} color='red' mt='$3' mb='$3'>
-                        Reset ALL Local Data
-                      </Button>
-                      {/* <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular /> */}
-                    </Dialog.Trigger>
-                    <Dialog.Portal>
-                      <Dialog.Overlay
-                        key="overlay"
-                        animation="quick"
-                        o={0.5}
-                        enterStyle={{ o: 0 }}
-                        exitStyle={{ o: 0 }}
-                      />
-                      <Dialog.Content
-                        bordered
-                        elevate
-                        key="content"
-                        animation={[
-                          'quick',
-                          {
-                            opacity: {
-                              overshootClamping: true,
-                            },
+                    <Button f={1} icon={XIcon} iconAfter={AlertTriangle} color='red' mt='$3' mb='$3'>
+                      Reset ALL Local Data
+                    </Button>
+                    {/* <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular /> */}
+                  </Dialog.Trigger>
+                  <Dialog.Portal>
+                    <Dialog.Overlay
+                      key="overlay"
+                      animation="quick"
+                      o={0.5}
+                      enterStyle={{ o: 0 }}
+                      exitStyle={{ o: 0 }}
+                    />
+                    <Dialog.Content
+                      bordered
+                      elevate
+                      key="content"
+                      animation={[
+                        'quick',
+                        {
+                          opacity: {
+                            overshootClamping: true,
                           },
-                        ]}
-                        m='$3'
-                        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                        x={0}
-                        scale={1}
-                        opacity={1}
-                        y={0}
-                      >
-                        <YStack space>
-                          <Dialog.Title>Reset app data</Dialog.Title>
-                          <Dialog.Description>
-                            {/* <Paragraph> */}
-                            Really remove all settings, {accountCount} account{accountCount == 1 ? '' : 's'} and {serverCount} server{serverCount == 1 ? '' : 's'}?
-                            {/* </Paragraph> */}
-                          </Dialog.Description>
+                        },
+                      ]}
+                      m='$3'
+                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                      x={0}
+                      scale={1}
+                      opacity={1}
+                      y={0}
+                    >
+                      <YStack space>
+                        <Dialog.Title>Reset app data</Dialog.Title>
+                        <Dialog.Description>
+                          {/* <Paragraph> */}
+                          Really remove all settings, {accountCount} account{accountCount == 1 ? '' : 's'} and {serverCount} server{serverCount == 1 ? '' : 's'}?
+                          {/* </Paragraph> */}
+                        </Dialog.Description>
 
-                          <XStack space="$3" jc="flex-end">
-                            <Dialog.Close asChild>
-                              <Button>Cancel</Button>
-                            </Dialog.Close>
-                            {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
+                        <XStack space="$3" jc="flex-end">
+                          <Dialog.Close asChild>
+                            <Button>Cancel</Button>
+                          </Dialog.Close>
+                          {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
 
-                            <Dialog.Close asChild>
-                              <Button theme="active" onPress={doResetAllData}>Reset all data</Button>
-                            </Dialog.Close>
-                            {/* </Dialog.Action> */}
-                          </XStack>
-                        </YStack>
-                      </Dialog.Content>
-                    </Dialog.Portal>
-                  </Dialog>
-                </XStack>
+                          <Dialog.Close asChild>
+                            <Button theme="active" onPress={doResetAllData}>Reset all data</Button>
+                          </Dialog.Close>
+                          {/* </Dialog.Action> */}
+                        </XStack>
+                      </YStack>
+                    </Dialog.Content>
+                  </Dialog.Portal>
+                </Dialog>
+              </XStack>
             </YStack>
           </Sheet.ScrollView>
         </Sheet.Frame>

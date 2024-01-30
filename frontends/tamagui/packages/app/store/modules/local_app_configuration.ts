@@ -30,6 +30,7 @@ export type LocalAppConfiguration = {
   showHelp: boolean;
   showPinnedServers: boolean;
   autoHideNavigation: boolean;
+  fancyPostBackgrounds: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -54,6 +55,7 @@ const initialState: LocalAppConfiguration = {
   showHelp: true,
   showPinnedServers: true,
   autoHideNavigation: false,
+  fancyPostBackgrounds: false,
 };
 
 export const localAppSlice = createSlice({
@@ -126,7 +128,10 @@ export const localAppSlice = createSlice({
     },
     setAutoHideNavigation: (state, action: PayloadAction<boolean>) => {
       state.autoHideNavigation = action.payload;
-    }
+    },
+    setFancyPostBackgrounds: (state, action: PayloadAction<boolean>) => {
+      state.fancyPostBackgrounds = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
@@ -136,7 +141,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
-  setShowHelp, setShowPinnedServers, setAutoHideNavigation
+  setShowHelp, setShowPinnedServers, setAutoHideNavigation,setFancyPostBackgrounds,
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;
