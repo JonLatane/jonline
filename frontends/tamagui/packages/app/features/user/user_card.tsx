@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia, useTheme } from '@jonline/ui';
 import { Bot, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
@@ -43,7 +43,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
   const { account, server } = accountOrServer;
   const media = useMedia();
-  const app = useLocalConfiguration();
+  const { showUserIds } = useLocalConfiguration();
+  const { fancyPostBackgrounds } = useLocalConfiguration();
 
   const [username, avatar] = editable ? [inputUsername, inputAvatar]
     : [user.username, user.avatar];
@@ -193,7 +194,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
       <Paragraph size='$1' o={0.5}>Account Created</Paragraph>
       <DateViewer date={user.createdAt} updatedDate={user.updatedAt} />
-      {app.showUserIds ? <XStack o={0.6}>
+      {showUserIds ? <XStack o={0.6}>
         <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
       </XStack> : undefined}
     </YStack>
@@ -257,32 +258,34 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               : footerContent}
           </YStack>
         </Card.Footer>
-        <Card.Background>
-          <ZStack w='100%' h='100%'>
-            {(isPreview && hasAvatarUrl) ?
-              <Image
-                mr={0}
-                o={0.10}
-                width={backgroundSize}
-                height={backgroundSize}
-                opacity={0.25}
-                resizeMode="cover"
-                als="center"
-                source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
-                blurRadius={1.5}
-                borderBottomRightRadius={5}
-              />
-              : undefined}
+        {fancyPostBackgrounds
+          ? <Card.Background>
+            <ZStack w='100%' h='100%'>
+              {(isPreview && hasAvatarUrl) ?
+                <Image
+                  mr={0}
+                  o={0.10}
+                  width={backgroundSize}
+                  height={backgroundSize}
+                  opacity={0.25}
+                  resizeMode="cover"
+                  als="center"
+                  source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
+                  blurRadius={1.5}
+                  borderBottomRightRadius={5}
+                />
+                : undefined}
 
-            <XStack h='100%'>
-              <YStack h='100%' w={8}
-                borderTopLeftRadius={20} borderBottomLeftRadius={20}
-                backgroundColor={primaryColor} />
-              <YStack h='100%' w={3}
-                backgroundColor={navColor} />
-            </XStack>
-          </ZStack>
-        </Card.Background>
+              <XStack h='100%'>
+                <YStack h='100%' w={8}
+                  borderTopLeftRadius={20} borderBottomLeftRadius={20}
+                  backgroundColor={primaryColor} />
+                <YStack h='100%' w={3}
+                  backgroundColor={navColor} />
+              </XStack>
+            </ZStack>
+          </Card.Background>
+          : undefined}
       </Card>
     </Theme>
   );
