@@ -1,17 +1,21 @@
 use super::*;
 use rocket::http::{ContentType, MediaType};
-use rocket::{State, http::Status};
+use rocket::{http::Status, State};
 
 use super::RocketState;
 
-use rocket_cache_response::CacheResponse;
-use std::fs;
 use crate::protos::*;
 use crate::rpcs::get_server_configuration_proto;
+use rocket::http::uri::Origin;
+use rocket_cache_response::CacheResponse;
+use std::fs;
 use std::str::FromStr;
 
 #[rocket::get("/")]
-pub async fn main_index(state: &State<RocketState>) -> CacheResponse<Result<JonlineResponder, Status>> {
+pub async fn main_index(
+    state: &State<RocketState>,
+    origin: &Origin<'_>,
+) -> CacheResponse<Result<JonlineResponder, Status>> {
     let mut conn = state.pool.get().unwrap();
     let configuration = get_server_configuration_proto(&mut conn).unwrap();
 
@@ -41,7 +45,7 @@ pub async fn main_index(state: &State<RocketState>) -> CacheResponse<Result<Jonl
                 must_revalidate: false,
             }
             // flutter_index().await
-        },
-        _ => index(state).await,
+        }
+        _ => index(state, origin).await,
     }
 }

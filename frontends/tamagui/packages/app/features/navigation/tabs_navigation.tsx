@@ -117,6 +117,8 @@ export function TabsNavigation({
         <YStack jc="center" ac='center' ai="center"
           w='100%'
           minHeight={window.innerHeight}
+          maw={window.innerWidth}
+          overflow="hidden"
         >
           <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
             <YStack backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} w='100%'>

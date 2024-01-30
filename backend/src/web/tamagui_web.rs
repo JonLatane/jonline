@@ -1,13 +1,23 @@
 use lazy_static::lazy_static;
 
-use rocket::{http::Status, routes, Route, State};
+use rocket::{
+    http::{
+        uri::{Origin, Path},
+        Status,
+    },
+    routes, Route, State,
+};
 use rocket_cache_response::CacheResponse;
 
 use crate::{
     db_connection::PgPooledConnection,
-    protos::{ServerInfo, ServerLogo},
+    protos::{GetPostsRequest, MediaReference, ServerInfo, ServerLogo},
     rpcs,
     web::RocketState,
+};
+use crate::{
+    itertools::Itertools,
+    protos::{GetEventsRequest, Post},
 };
 
 use super::{tamagui_file_or_username, tamagui_path, JonlineResponder, JonlineSummary};
@@ -52,6 +62,7 @@ macro_rules! webui {
         #[rocket::get($web_route)]
         pub async fn $name(
             state: &State<RocketState>,
+            origin: &Origin<'_>,
         ) -> CacheResponse<Result<JonlineResponder, Status>> {
             let mut connection = state.pool.get().unwrap();
             let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
@@ -72,7 +83,7 @@ macro_rules! webui {
                 })
                 .square_media_id;
             let server_logo = server_logo_id.map(|id| format!("/media/{}", id));
-            let path = None;
+            let path = origin.path();
             let summary: Option<JonlineSummary> =
                 ($summary)(connection, server_name, server_logo, path);
             tamagui_path($html_path, summary).await
@@ -87,7 +98,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Latest - {}", server_name)),
             description: Some("Posts and Events from a Jonline community".to_string()),
@@ -103,7 +114,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Posts - {}", server_name)),
             description: Some("Posts from a Jonline community".to_string()),
@@ -118,7 +129,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Events - {}", server_name)),
             description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
@@ -133,7 +144,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("About Community - {}", server_name)),
             description: Some("Information a Jonline community".to_string()),
@@ -148,7 +159,7 @@ webui!(
     |_connection: PgPooledConnection,
      _server_name: String,
      _server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some("About Jonline".to_string()),
             description: Some(
@@ -162,30 +173,106 @@ webui!(
     post,
     "/post/<_..>",
     "post/[postId].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
-        Some(JonlineSummary {
-            title: Some(format!("Post Details - {}", server_name)),
-            description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
-        })
+     path: Path| {
+        let path_components = path.split('/').collect_vec();
+        if path_components.len() < 3 {
+            return None;
+        }
+        let post_id = path_components[2].to_string();
+        let post = rpcs::get_posts(
+            GetPostsRequest {
+                post_id: Some(post_id),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        )
+        .ok()
+        .map(|r| r.posts.into_iter().next())
+        .flatten();
+
+        post_summary("Post".to_string(), post, server_name, server_logo, None)
+        // let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
+        // let (title, description, image) = match post {
+        //     Some(post) => {
+        //         let title = post
+        //             .title
+        //             .map_or(format!("Post Details - {}", server_name), |title| {
+        //                 format!("{} - Post Details - {}", title.clone(), server_name)
+        //             });
+        //         // let image = None;
+        //         let image_ref: Option<&MediaReference> = post
+        //             .media
+        //             .iter()
+        //             .find(|m| m.content_type.starts_with("image"));
+        //         let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
+        //         (title, post.content.clone(), image)
+        //     }
+        //     None => (format!("Post Details - {}", server_name), None, basic_logo),
+        // };
+
+        // Some(JonlineSummary {
+        //     title: Some(title),
+        //     description,
+        //     image,
+        // })
     }
 );
 webui!(
     event,
     "/event/<_>",
     "event/[instanceId].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
-        Some(JonlineSummary {
-            title: Some(format!("Event Details - {}", server_name)),
-            description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
-        })
+     path: Path| {
+        let path_components = path.split('/').collect_vec();
+        if path_components.len() < 3 {
+            return None;
+        }
+        let event_instance_id = path_components[2].to_string();
+        let event = rpcs::get_events(
+            GetEventsRequest {
+                event_instance_id: Some(event_instance_id),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        )
+        .ok()
+        .map(|r| r.events.into_iter().next())
+        .flatten();
+        let post = event.map(|e| e.post).flatten();
+
+        post_summary("Event".to_string(), post, server_name, server_logo, None)
+
+        // let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
+        // let (title, description, image) = match post {
+        //     Some(post) => {
+        //         let title = post
+        //             .title
+        //             .map_or(format!("Event Details - {}", server_name), |title| {
+        //                 format!("{} - Event Details - {}", title.clone(), server_name)
+        //             });
+        //         // let image = None;
+        //         let image_ref: Option<&MediaReference> = post
+        //             .media
+        //             .iter()
+        //             .find(|m| m.content_type.starts_with("image"));
+        //         let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
+        //         (title, post.content.clone(), image)
+        //     }
+        //     None => (format!("Event Details - {}", server_name), None, basic_logo),
+        // };
+
+        // Some(JonlineSummary {
+        //     title: Some(title),
+        //     description,
+        //     image,
+        // })
     }
 );
 webui!(user, "/user/<_>", "user/[id].html");
@@ -196,7 +283,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("People - {}", server_name)),
             description: Some("User listings for a Jonline community".to_string()),
@@ -211,7 +298,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Follow Requests - {}", server_name)),
             description: None,
@@ -226,7 +313,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Home/Latest Page - {}", server_name)),
             description: None,
@@ -241,7 +328,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Posts Page - {}", server_name)),
             description: None,
@@ -256,7 +343,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Post Details - {}", server_name)),
             description: None,
@@ -271,7 +358,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Events Page - {}", server_name)),
             description: None,
@@ -286,7 +373,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Event Details - {}", server_name)),
             description: None,
@@ -301,7 +388,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Members - {}", server_name)),
             description: None,
@@ -316,7 +403,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Option<String>| {
+     _path: Path| {
         Some(JonlineSummary {
             title: Some(format!("Group Member Details - {}", server_name)),
             description: None,
@@ -325,3 +412,45 @@ webui!(
     }
 );
 webui!(server, "/server/<_..>", "server/[id].html");
+
+fn post_summary(
+    entity_type: String,
+    post: Option<Post>,
+    server_name: String,
+    server_logo: Option<String>,
+    _group_name: Option<String>,
+) -> Option<JonlineSummary> {
+    let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
+    let (title, description, image) = match post {
+        Some(post) => {
+            let title = post.title.map_or(
+                format!("{} Details - {}", entity_type, server_name),
+                |title| {
+                    format!(
+                        "{} - {} Details - {}",
+                        title.clone(),
+                        entity_type,
+                        server_name
+                    )
+                },
+            );
+            let image_ref: Option<&MediaReference> = post
+                .media
+                .iter()
+                .find(|m| m.content_type.starts_with("image"));
+            let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
+            (title, post.content.clone(), image)
+        }
+        None => (
+            format!("{} Details - {}", entity_type, server_name),
+            None,
+            basic_logo,
+        ),
+    };
+
+    Some(JonlineSummary {
+        title: Some(title),
+        description,
+        image,
+    })
+}

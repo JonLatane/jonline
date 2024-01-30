@@ -99,17 +99,17 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
   async function onAccountAdded() {
     setAddingAccount(false);
+    setOpen(false);
 
     setTimeout(() => {
-      setOpen(false);
       dispatch(clearAccountAlerts());
 
-      setTimeout(() => {
-        setNewAccountUser('');
-        setNewAccountPass('');
-        setForceDisableAccountButtons(false);
-        setLoginMethod(undefined);
-      }, 600);
+      // setTimeout(() => {
+      setNewAccountUser('');
+      setNewAccountPass('');
+      setForceDisableAccountButtons(false);
+      setLoginMethod(undefined);
+      // }, 600);
     }, 600);
 
     const accountEntities = store.getState().accounts.entities;

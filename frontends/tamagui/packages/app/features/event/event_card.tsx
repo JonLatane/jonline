@@ -31,7 +31,7 @@ interface Props {
   event: FederatedEvent;
   selectedInstance?: EventInstance;
   isPreview?: boolean;
-  groupContext?: Group;
+  groupContext?: FederatedGroup;
   horizontal?: boolean;
   xs?: boolean;
   hideEditControls?: boolean;
@@ -59,6 +59,7 @@ export const EventCard: React.FC<Props> = ({
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const server = accountOrServer.server;
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
 
@@ -194,11 +195,11 @@ export const EventCard: React.FC<Props> = ({
   const authorName = post.author?.username;
 
   const primaryInstanceIdString = primaryInstance?.id ?? 'no-primary-instance';
-  const detailsLinkId = showServerInfo
+  const detailsLinkId = !isPrimaryServer
     ? federateId(primaryInstanceIdString, accountOrServer.server)
     : primaryInstanceIdString;
   const groupLinkId = groupContext ?
-    (showServerInfo
+    (!isGroupPrimaryServer
       ? federateId(groupContext.shortname, accountOrServer.server)
       : groupContext.shortname)
     : undefined;

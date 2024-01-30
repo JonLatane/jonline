@@ -64,6 +64,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
   const mediaQuery = useMedia();
   const groupContext = useGroupContext();
+  const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
 
 
   const currentUser = useAccount()?.user;
@@ -129,11 +130,13 @@ export const PostCard: React.FC<PostCardProps> = ({
   const postLink = postHasWebLink ? useLink({
     href: post.link!,
   }) : {};
-  const detailsLinkId = showServerInfo
+  const detailsLinkId = !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
     : post.id;
-  const detailsGroupId = showServerInfo && groupContext
-    ? federateId(groupContext.shortname, accountOrServer.server)
+  const detailsGroupId = groupContext
+    ? (!isGroupPrimaryServer
+      ? federateId(groupContext.shortname, accountOrServer.server)
+      : groupContext.shortname)
     : undefined;
   const detailsLink = useLink({
     href: groupContext

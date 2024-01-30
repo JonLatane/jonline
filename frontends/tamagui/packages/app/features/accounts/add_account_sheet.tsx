@@ -56,18 +56,18 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
 
   async function onAccountAdded() {
     setAddingAccount(false);
+    setOpen(false);
 
     setTimeout(() => {
-      setOpen(false);
       dispatch(clearAccountAlerts());
 
-      setTimeout(() => {
-        setNewAccountUser('');
-        setNewAccountPass('');
-        setForceDisableAccountButtons(false);
-        setLoginMethod(undefined);
-        setReauthenticating(false);
-      }, 600);
+      // setTimeout(() => {
+      setNewAccountUser('');
+      setNewAccountPass('');
+      setForceDisableAccountButtons(false);
+      setLoginMethod(undefined);
+      setReauthenticating(false);
+      // }, 600);
     }, 600);
 
     const accountEntities = store.getState().accounts.entities;
@@ -234,7 +234,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
                 onPress={() => {
                   setAddingAccount(true);
                   setTimeout(() => usernameRef.current.focus(), 100);
-                  }}>
+                }}>
                 <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
               </Button>
               {/* </Tooltip.Trigger>
