@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
 import { Button, Card, Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
-import { Edit3 as Edit } from "@tamagui/lucide-icons";
+import { Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { passes } from "app/utils/moderation_utils";

@@ -1,6 +1,6 @@
 import { Moderation, Permission, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
+import { AlertTriangle, CheckCircle, ChevronRight, Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useAccount, useCredentialDispatch, useFederatedDispatch } from 'app/hooks';
 import { RootState, deleteUser, getFederated, getServerTheme, loadUserPosts, loadUsername, resetPassword, selectAllServers, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';

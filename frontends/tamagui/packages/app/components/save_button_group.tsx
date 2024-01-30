@@ -1,5 +1,5 @@
 import { Button, Dialog, XStack, YStack } from '@jonline/ui';
-import { Delete, Edit3 as Edit, Eye, Save, X as XIcon } from '@tamagui/lucide-icons';
+import { Delete, Edit, Eye, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { } from '../features/post/post_card';
