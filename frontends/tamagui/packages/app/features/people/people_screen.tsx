@@ -80,10 +80,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               // textContentType='search'
               value={searchText}
               onChange={(e) => setSearchText(e.nativeEvent.text)} />
-            {searchText.length > 0
-              ? //<XStack position='absolute' right={0} top={0} bottom={0} my='auto' mr='$2'>
-              <Button circular icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
-              : undefined}
+            <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
+
           </XStack>
         </YStack>
       }

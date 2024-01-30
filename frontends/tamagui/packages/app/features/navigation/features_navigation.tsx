@@ -120,7 +120,7 @@ export type FeaturesNavigationProps = {
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
   const { account, server } = useAccountOrServer();
   const mediaQuery = useMedia();
-  const { primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
   const groupIdentifier = selectedGroup
     ? (selectedGroup?.serverHost === server?.host
@@ -281,7 +281,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
               <XStack space='$2'>
                 {icon}
                 {!inlineNavigation || !shrinkNavigation || !icon
-                  ? <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : undefined}>
+                  ? <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
                     {name}
                   </Heading>
                   : undefined}
