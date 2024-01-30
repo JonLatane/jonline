@@ -23,7 +23,7 @@ export function UsernameDetailsScreen() {
 
   const { dispatch, accountOrServer } = useFederatedDispatch(inputServerHost);
 
-  const {server, account} = accountOrServer;
+  const { server, account } = accountOrServer;
   // const server = inputServerHost
   //   ? useRootSelector((state: RootState) => selectAllServers(state.servers).find(s => s.host == inputServerHost))
   //   : useRootSelector((state: RootState) => state.servers.server);
@@ -191,7 +191,63 @@ export function UsernameDetailsScreen() {
   //   || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
-    <TabsNavigation appSection={AppSection.PROFILE} primaryEntity={user}>
+    <TabsNavigation appSection={AppSection.PROFILE} primaryEntity={user}
+      bottomChrome={canEdit
+        ? <YStack w='100%' paddingVertical='$2' alignContent='center'>
+          <XStack mx='auto' px='$3' w='100%' maw={800}>
+            {/* <XStack f={1} /> */}
+            <Tooltip placement="top-start">
+              <Tooltip.Trigger>
+                <Button icon={Eye} circular mr='$2' als='center'
+                  {...themedButtonBackground(editMode ? undefined : navColor, editMode ? undefined : navTextColor)}
+                  onPress={() => setEditMode(false)} />
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <Heading size='$2'>View {isCurrentUser ? 'your' : 'this'} profile</Heading>
+              </Tooltip.Content>
+            </Tooltip>
+            <Tooltip placement="top-start">
+              <Tooltip.Trigger>
+                <Button icon={Edit} circular mr='$5' als='center'
+                  {...themedButtonBackground(!editMode ? undefined : navColor, !editMode ? undefined : navTextColor)}
+                  onPress={() => {
+                    setEditMode(true);
+                    // setShowPermissionsAndVisibility(true);
+                    const maxScrollPosition = 270 + (avatar ? fullAvatarHeight : 0);
+                    if (window.scrollY > maxScrollPosition) {
+                      isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });
+                    }
+                  }} />
+              </Tooltip.Trigger>
+              <Tooltip.Content>
+                <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
+              </Tooltip.Content>
+            </Tooltip>
+
+            <XStack f={1} />
+            {/* <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+          <AlertTriangle color='yellow' />
+        </YStack> */}
+            <ZStack w={48} h={48}>
+              <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
+                <CheckCircle color='green' />
+              </YStack>
+              <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+                <AlertTriangle color='yellow' />
+              </YStack>
+              <YStack animation='quick' o={saving ? 1 : 0} p='$3'>
+                <Spinner size='small' />
+              </YStack>
+            </ZStack>
+            <Button key={`save-color-${primaryColor}`} mr='$3'
+              {...themedButtonBackground(primaryColor, primaryTextColor, saving ? 0.5 : 1)}
+              // disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5}
+              als='center' onPress={saveUser}>
+              <Heading size='$2' color={primaryTextColor}>Save</Heading>
+            </Button>
+            {/* <XStack f={1} /> */}
+          </XStack>
+        </YStack> : undefined}>
       <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
         {user ? <>
           <ScrollView w='100%'>
@@ -244,67 +300,6 @@ export function UsernameDetailsScreen() {
               {isWeb && canEdit ? <YStack h={50} /> : undefined}
             </YStack>
           </ScrollView>
-          {canEdit ?
-            isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
-              <YStack w='100%' opacity={.92} paddingVertical='$2' alignContent='center'>
-                <XStack mx='auto' px='$3' w='100%' maw={800}>
-                  {/* <XStack f={1} /> */}
-                  <Tooltip placement="top-start">
-                    <Tooltip.Trigger>
-                      <Button icon={Eye} circular mr='$2' als='center'
-                        {...themedButtonBackground(editMode ? undefined : navColor, editMode ? undefined : navTextColor)}
-                        onPress={() => setEditMode(false)} />
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <Heading size='$2'>View {isCurrentUser ? 'your' : 'this'} profile</Heading>
-                    </Tooltip.Content>
-                  </Tooltip>
-                  <Tooltip placement="top-start">
-                    <Tooltip.Trigger>
-                      <Button icon={Edit} circular mr='$5' als='center'
-                        {...themedButtonBackground(!editMode ? undefined : navColor, !editMode ? undefined : navTextColor)}
-                        onPress={() => {
-                          setEditMode(true);
-                          // setShowPermissionsAndVisibility(true);
-                          const maxScrollPosition = 270 + (avatar ? fullAvatarHeight : 0);
-                          if (window.scrollY > maxScrollPosition) {
-                            isClient && window.scrollTo({ top: maxScrollPosition, behavior: 'smooth' });
-                          }
-                        }} />
-                    </Tooltip.Trigger>
-                    <Tooltip.Content>
-                      <Heading size='$2'>Edit {isCurrentUser ? 'your' : 'this'} profile</Heading>
-                    </Tooltip.Content>
-                  </Tooltip>
-
-                  <XStack f={1} />
-                  {/* <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
-                      <AlertTriangle color='yellow' />
-                    </YStack> */}
-                  <ZStack w={48} h={48}>
-                    <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
-                      <CheckCircle color='green' />
-                    </YStack>
-                    <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
-                      <AlertTriangle color='yellow' />
-                    </YStack>
-                    <YStack animation='quick' o={saving ? 1 : 0} p='$3'>
-                      <Spinner size='small' />
-                    </YStack>
-                  </ZStack>
-                  <Button key={`save-color-${primaryColor}`} mr='$3'
-                    {...themedButtonBackground(primaryColor, primaryTextColor, saving ? 0.5 : 1)}
-                    // disabled={!dirtyData} opacity={dirtyData ? 1 : 0.5}
-                    als='center' onPress={saveUser}>
-                    <Heading size='$2' color={primaryTextColor}>Save</Heading>
-                  </Button>
-                  {/* <XStack f={1} /> */}
-                </XStack>
-              </YStack>
-            </StickyBox>
-
-              : <Button mt='$3' backgroundColor={primaryColor} onPress={saveUser}>Save Changes</Button>
-            : undefined}
         </>
           : userLoadFailed
             ? <YStack width='100%' maw={800} jc="center" ai="center">

@@ -118,9 +118,12 @@ pub async fn create_responder(path: &str, body: String) -> JonlineResponder {
         inner: body,
         content_type,
     };
-    CACHED_FILES
-        .write()
-        .await
-        .insert(path.to_string(), responder.clone());
+    // Disable this cache for development purposes.
+    // Relying on commenting this out for now, but it would be nice to hide cache writes
+    // behind a flag/argument for the `main` of `jonline`.
+    // CACHED_FILES
+    //     .write()
+    //     .await
+    //     .insert(path.to_string(), responder.clone());
     responder
 }

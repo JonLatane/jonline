@@ -84,7 +84,10 @@ export function PostDetailsScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.POST} selectedGroup={group}
-      primaryEntity={subjectPost ?? {serverHost: serverHost ?? currentServer?.host}}
+      primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
+      bottomChrome={<ReplyArea replyingToPath={replyPostIdPath}
+        onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
+        hidden={!showReplyArea} />}
     >
       {!subjectPost
         ? failedToLoadPost
@@ -107,9 +110,6 @@ export function PostDetailsScreen() {
               </ScrollView>
 
 
-              <ReplyArea replyingToPath={replyPostIdPath}
-                onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
-                hidden={!showReplyArea} />
             </YStack>
           </ConversationContextProvider>
         </AccountOrServerContextProvider>

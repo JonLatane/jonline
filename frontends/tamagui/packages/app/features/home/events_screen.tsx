@@ -3,7 +3,7 @@ import { AnimatePresence, Heading, Spinner, Text, XStack, YStack, dismissScrollP
 import { RootState, federateId, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
-// import { StickyCreateButton } from '../evepont/create_event_sheet';
+// import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
 import { NavigationContextConsumer } from 'app/contexts';
 import { useEventPages, usePaginatedRendering } from 'app/hooks';
@@ -17,7 +17,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
-import { StickyCreateButton } from './sticky_create_button';
+import { DynamicCreateButton } from './dynamic_create_button';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -119,10 +119,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       selectedGroup={selectedGroup}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/events`}
       withServerPinning
-    >
-      <NavigationContextConsumer>
-        {(navContext) => <StickyBox key='filters' offsetTop={(navContext?.navigationHeight ?? 0) + (navContext?.pinnedServersHeight ?? 0)} className='blur' style={{ width: '100%', zIndex: 10 }}>
-          <YStack w='100%' px='$2' key='filter-toolbar'>
+      loading={loadingEvents}
+      topChrome={
+        <YStack w='100%' px='$2' key='filter-toolbar'>
 
             <XStack w='100%'>
               {displayModeButton('upcoming', 'Upcoming')}
@@ -146,15 +145,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 : undefined}
             </AnimatePresence>
           </YStack>
-        </StickyBox>}
-      </NavigationContextConsumer>
-      {loadingEvents ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-        <YStack space="$1" opacity={0.92}>
-          <Spinner size='large' color={navColor} scale={2}
-            top={dimensions.height / 2 - 50}
-          />
-        </YStack>
-      </StickyBox> : undefined}
+      }
+      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
+    >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' px='$3' maw={maxWidth} space>
 
         {firstPageLoaded || allEvents.length > 0
@@ -188,8 +181,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           : undefined}
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
-      <StickyCreateButton selectedGroup={selectedGroup} showEvents />
-      {/* <StickyCreateButton /> */}
     </TabsNavigation>
   )
 }

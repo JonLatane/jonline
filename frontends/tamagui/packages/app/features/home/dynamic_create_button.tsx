@@ -12,18 +12,18 @@ import { CreateEventSheet } from '../event/create_event_sheet';
 import { CreatePostSheet } from '../post/create_post_sheet';
 import { useHideNavigation } from '../navigation/use_hide_navigation';
 
-interface StickyCreateButtonProps {
+interface DynamicCreateButtonProps {
   selectedGroup?: FederatedGroup;
   showPosts?: boolean;
   showEvents?: boolean;
   // replyingToPath: string[];
 }
 
-export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
+export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   selectedGroup,
   showPosts,
   showEvents,
-}: StickyCreateButtonProps) => {
+}: DynamicCreateButtonProps) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
@@ -35,7 +35,8 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
 
   const hide = useHideNavigation();
 
-  return hide ? <></> : <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
+  return hide ? <></> : 
+  <>
     {canCreatePosts
       ? <XStack w='100%' p='$2' space='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
         {doShowPosts ? <CreatePostSheet selectedGroup={selectedGroup} /> : undefined}
@@ -52,6 +53,7 @@ export const StickyCreateButton: React.FC<StickyCreateButtonProps> = ({
         : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
           <AddAccountSheet operation='Post' />
         </YStack>}
-  </StickyBox>;
+  </>
+  ;
 
 }

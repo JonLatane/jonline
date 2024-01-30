@@ -11,7 +11,7 @@ import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { PaginationIndicator } from './pagination_indicator';
-import { StickyCreateButton } from './sticky_create_button';
+import { DynamicCreateButton } from './dynamic_create_button';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -83,14 +83,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       customHomeAction={selectedGroup ? undefined : onHomePressed}
       selectedGroup={selectedGroup}
       withServerPinning
+      loading={loadingPosts || loadingEvents}
+      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
     >
-      {loadingPosts || loadingEvents ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-        <YStack space="$1" opacity={0.92}>
-          <Spinner size='large' color={navColor} scale={2}
-            top={dimensions.height / 2 - 50}
-          />
-        </YStack>
-      </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
         <AnimatePresence>
           {(eventsLoaded || postsLoaded) || allEvents.length > 0
@@ -174,7 +169,6 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
-      <StickyCreateButton selectedGroup={selectedGroup} showPosts showEvents />
     </TabsNavigation>
   )
 }

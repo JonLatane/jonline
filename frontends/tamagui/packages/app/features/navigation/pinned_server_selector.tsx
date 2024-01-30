@@ -83,7 +83,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       {simplified
         ? undefined
         : <XStack key='pinned-server-toggle-row'>
-          <Button key='pinned-server-toggle' py='$1' h='auto' borderRadius={0} onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+          <Button key='pinned-server-toggle' py='$1' h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
             <XStack mr='auto'>
               <Paragraph my='auto' size='$1'>
                 From {excludeCurrentServer ? '' : `${shortServerName} and `}{pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
@@ -93,7 +93,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
               </XStack>
             </XStack>
           </Button>
-          <Button key='exclude-current-server-toggle' py='$1' h='auto' borderRadius={0}
+          <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
             onPress={() => dispatch(setExcludeCurrentServer(!excludeCurrentServer))}>
             <XStack ml='auto' space='$2'>
               {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}

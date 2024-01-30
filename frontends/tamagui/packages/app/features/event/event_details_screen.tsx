@@ -133,6 +133,9 @@ export function EventDetailsScreen() {
   return (
     <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
+      bottomChrome={ <ReplyArea replyingToPath={replyPostIdPath}
+          onStopReplying={() => postId && setReplyPostIdPath([postId])}
+          hidden={!showReplyArea} />}
     >
       {!subjectEvent || !subjectPost
         ? failedToLoadEvent
@@ -160,9 +163,6 @@ export function EventDetailsScreen() {
               </ScrollView>
 
 
-              <ReplyArea replyingToPath={replyPostIdPath}
-                onStopReplying={() => postId && setReplyPostIdPath([postId])}
-                hidden={!showReplyArea} />
             </YStack>
           </ConversationContextProvider>
         </AccountOrServerContextProvider>

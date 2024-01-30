@@ -296,21 +296,43 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     <TabsNavigation appSection={AppSection.INFO}
       //onlyShowServer={server}
       primaryEntity={server ? { serverHost: server.host } : undefined}
+      topChrome={
+        <XStack w='100%'>
+          {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
+          {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
+          {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
+          {sectionButton('federation', 'Federation', <Network color={section === 'federation' ? navAnchorColor : undefined} />)}
+          {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
+          {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
+        </XStack>
+      }
+      bottomChrome={server && isAdmin
+        ? <XStack px='$3' w='100%' maw={800} mx='auto' opacity={.92} paddingVertical='$2'
+          alignContent='center' alignItems='center' alignSelf='center'>
+
+          <XStack f={1} />
+
+          <ZStack w={48} h={48}>
+            <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
+              <CheckCircle color='green' />
+            </YStack>
+            <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
+              <Spinner size='small' />
+            </YStack>
+          </ZStack>
+          <Button maw={600} als='center'
+            disabled={updating || updated || !inputsValid}
+            {...themedButtonBackground(primaryColor, primaryTextColor,
+              updating || updated || !inputsValid ? 0.5 : 1)}
+            // opacity={updating || updated || !inputsValid ? 0.2 : 1}
+            onPress={updateServer}  >
+            <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
+          </Button>
+
+          {/* <XStack f={1} /> */}
+        </XStack>
+        : undefined}
     >
-      <NavigationContextConsumer>
-        {(navContext) =>
-          <StickyBox offsetTop={navContext?.navigationHeight} className='blur' style={{ width: '100%', zIndex: 10 }}>
-            <XStack w='100%'>
-              {sectionButton('about', 'About', <Info color={section === 'about' ? navAnchorColor : undefined} />)}
-              {sectionButton('theme', 'Theme', <Palette color={section === 'theme' ? navAnchorColor : undefined} />)}
-              {sectionButton('settings', 'Settings', <Cog color={section === 'settings' ? navAnchorColor : undefined} />)}
-              {sectionButton('federation', 'Federation', <Network color={section === 'federation' ? navAnchorColor : undefined} />)}
-              {/* {sectionButton('servers', 'Servers', <Server color={section === 'servers' ? primaryAnchorColor : undefined} />)} */}
-              {sectionButton('cdn', 'CDN', <Code color={section === 'cdn' ? navAnchorColor : undefined} />)}
-            </XStack>
-          </StickyBox>
-        }
-      </NavigationContextConsumer>
       <YStack f={1} jc="center" ai="center" space w='100%'>
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >
@@ -745,35 +767,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           </YStack>
         }
       </YStack>
-      {server && isAdmin ?
-        isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
-          <XStack px='$3' w='100%' maw={800} mx='auto' opacity={.92} paddingVertical='$2'
-            alignContent='center' alignItems='center' alignSelf='center'>
-
-            <XStack f={1} />
-
-            <ZStack w={48} h={48}>
-              <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
-                <CheckCircle color='green' />
-              </YStack>
-              <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
-                <Spinner size='small' />
-              </YStack>
-            </ZStack>
-            <Button maw={600} als='center'
-              disabled={updating || updated || !inputsValid}
-              {...themedButtonBackground(primaryColor, primaryTextColor,
-                updating || updated || !inputsValid ? 0.5 : 1)}
-              // opacity={updating || updated || !inputsValid ? 0.2 : 1}
-              onPress={updateServer}  >
-              <Heading size='$1' color={primaryTextColor}>Update Server</Heading>
-            </Button>
-
-            {/* <XStack f={1} /> */}
-          </XStack>
-        </StickyBox>
-          : <Button maw={600} mt='$3' als='center' backgroundColor={primaryColor} onPress={updateServer} disabled={updating} opacity={updating ? 0.5 : 1}>Update Server</Button>
-        : undefined}
     </TabsNavigation>
   )
 }

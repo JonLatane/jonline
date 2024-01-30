@@ -11,7 +11,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
-import { StickyCreateButton } from './sticky_create_button';
+import { DynamicCreateButton } from './dynamic_create_button';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
@@ -56,14 +56,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       selectedGroup={selectedGroup}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/posts`}
       withServerPinning
+      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts />}
+      loading={loadingPosts}
     >
-      {loadingPosts ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-        <YStack space="$1" opacity={0.92}>
-          <Spinner size='large' color={navColor} scale={2}
-            top={dimensions.height / 2 - 50}
-          />
-        </YStack>
-      </StickyBox> : undefined}
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
         {firstPageLoaded || allPosts.length > 0
           ? allPosts.length == 0
@@ -84,7 +79,6 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
         }
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
-      <StickyCreateButton selectedGroup={selectedGroup} showPosts />
     </TabsNavigation>
   )
 }

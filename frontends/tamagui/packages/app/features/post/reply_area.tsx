@@ -20,7 +20,7 @@ interface ReplyAreaProps {
   onStopReplying?: () => void;
 }
 
-// Must be within an AccountOrServerContextProvided
+// Must be within an AccountOrServerContextProvider
 export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, onStopReplying }) => {
   const dispatch = useAppDispatch();
   const currentAccountOrServer = useAccountOrServer();
@@ -107,96 +107,94 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
 
   const hideNavigation = useHideNavigation();
   const hide = hidden || hideNavigation;
-  return hide ? <></> : isWeb ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%' }}>
-    {canComment
-      ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-        {hasReplyTextFocused || media.length > 0
-          ? <>
-            <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-              <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
-                <ChevronRight size='$1' />
-              </XStack>
-              <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
-            </Button>
-            {showMedia
-              ? previewReply
-                ? <PostMediaRenderer {...{
-                  post: Post.create({
-                    // ...post,
-                    id: '',
-                    media,
-                    embedLink
-                  })
-                }} />
-                : <PostMediaManager
-                  link={''}
-                  {...{ media, setMedia, embedLink, setEmbedLink }}
-                  disableInputs={isSendingReply}
-                />
-              : undefined}
-          </>
-          : undefined}
-        {replyingToPath.length > 1
-          ? <XStack w='100%'>
-            <Heading size='$1' f={1}>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
-            {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button> : undefined}
-            <XStack f={1} />
-          </XStack>
-          : undefined}
-        <XStack>
-          <ZStack f={1}>
-            <TextArea f={1} value={replyText} ref={textAreaRef}
-              disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
-              onChangeText={t => setReplyText(t)}
-              onFocus={() => setReplyTextFocused(true)}
-              onBlur={() => setReplyTextFocused(false)}
-              placeholder={`Reply to this post. Markdown is supported.`} />
-            {previewReply
-              ? <YStack p='$3' f={1} backgroundColor='$background'>
-                <ScrollView maxHeight={maxPreviewHeight} height={maxPreviewHeight}>
-                  <TamaguiMarkdown text={replyText} />
-                </ScrollView>
-              </YStack>
-              : undefined}
-          </ZStack>
-          <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
-            <YStack f={1} />
-            <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>
-              <Tooltip.Trigger>
-                <Button circular mb='$2' icon={previewReply ? Edit : Eye}
-                  backgroundColor={navColor} color={navTextColor}
-                  disabled={!canSend} opacity={!canSend ? 0.5 : 1}
-                  onPress={() => {
-                    setPreviewReply(!previewReply);
-                    if (previewReply) {
-                      setTimeout(() => textAreaRef.current?.focus(), 100);
-                    }
-                  }} />
-              </Tooltip.Trigger>
-              <Tooltip.Content>
-                <Heading size='$2'>{previewReply ? 'Edit reply' : 'Preview reply'}</Heading>
-              </Tooltip.Content>
-            </Tooltip>
-            {/* <YStack f={1}/> */}
-            <Button circular icon={SendIcon}
-              backgroundColor={primaryColor} color={primaryTextColor}
-              disabled={isSendingReply || !canSend}
-              opacity={isSendingReply || !canSend ? 0.5 : 1}
-              onPress={sendReply} />
-          </YStack>
+  return hide ? <></> : isWeb ? canComment
+    ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+      {hasReplyTextFocused || media.length > 0
+        ? <>
+          <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
+            <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
+              <ChevronRight size='$1' />
+            </XStack>
+            <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
+          </Button>
+          {showMedia
+            ? previewReply
+              ? <PostMediaRenderer {...{
+                post: Post.create({
+                  // ...post,
+                  id: '',
+                  media,
+                  embedLink
+                })
+              }} />
+              : <PostMediaManager
+                link={''}
+                {...{ media, setMedia, embedLink, setEmbedLink }}
+                disableInputs={isSendingReply}
+              />
+            : undefined}
+        </>
+        : undefined}
+      {replyingToPath.length > 1
+        ? <XStack w='100%'>
+          <Heading size='$1' f={1}>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
+          {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button> : undefined}
+          <XStack f={1} />
         </XStack>
-      </YStack>
-      : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
-        <Heading size='$1'>You do not have permission to {chatUI ? 'chat' : 'comment'}.</Heading>
-      </YStack>
-        : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
-          {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
+        : undefined}
+      <XStack>
+        <ZStack f={1}>
+          <TextArea f={1} value={replyText} ref={textAreaRef}
+            disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
+            onChangeText={t => setReplyText(t)}
+            onFocus={() => setReplyTextFocused(true)}
+            onBlur={() => setReplyTextFocused(false)}
+            placeholder={`Reply to this post. Markdown is supported.`} />
+          {previewReply
+            ? <YStack p='$3' f={1} backgroundColor='$background'>
+              <ScrollView maxHeight={maxPreviewHeight} height={maxPreviewHeight}>
+                <TamaguiMarkdown text={replyText} />
+              </ScrollView>
+            </YStack>
+            : undefined}
+        </ZStack>
+        <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
+          <YStack f={1} />
+          <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>
+            <Tooltip.Trigger>
+              <Button circular mb='$2' icon={previewReply ? Edit : Eye}
+                backgroundColor={navColor} color={navTextColor}
+                disabled={!canSend} opacity={!canSend ? 0.5 : 1}
+                onPress={() => {
+                  setPreviewReply(!previewReply);
+                  if (previewReply) {
+                    setTimeout(() => textAreaRef.current?.focus(), 100);
+                  }
+                }} />
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>{previewReply ? 'Edit reply' : 'Preview reply'}</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+          {/* <YStack f={1}/> */}
+          <Button circular icon={SendIcon}
+            backgroundColor={primaryColor} color={primaryTextColor}
+            disabled={isSendingReply || !canSend}
+            opacity={isSendingReply || !canSend ? 0.5 : 1}
+            onPress={sendReply} />
+        </YStack>
+      </XStack>
+    </YStack>
+    : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+      <Heading size='$1'>You do not have permission to {chatUI ? 'chat' : 'comment'}.</Heading>
+    </YStack>
+      : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
+        {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}
-          <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'}
-            server={accountOrServer.server} />
-        </YStack>}
-  </StickyBox>
+        <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'}
+          server={accountOrServer.server} />
+      </YStack>
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />
 
 }

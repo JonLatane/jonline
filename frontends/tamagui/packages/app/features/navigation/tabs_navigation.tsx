@@ -1,5 +1,5 @@
 import { Group, WebUserInterface } from "@jonline/api";
-import { Button, ScrollView, Theme, ToastViewport, XStack, YStack, useMedia } from "@jonline/ui";
+import { Button, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, useMedia, useWindowDimensions } from "@jonline/ui";
 import { ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { GroupContextProvider, NavigationContextProvider, NavigationContextType, useNavigationContext, useOrCreateNavigationContext } from 'app/contexts';
 import { useAppDispatch, useLocalConfiguration, useServer } from "app/hooks";
@@ -29,6 +29,9 @@ export type TabsNavigationProps = {
   groupPageExiter?: () => void;
   withServerPinning?: boolean;
   primaryEntity?: FederatedEntity<any>;
+  topChrome?: React.ReactNode;
+  bottomChrome?: React.ReactNode;
+  loading?: boolean;
 };
 
 // export const tabNavBaseHeight = 64;
@@ -43,7 +46,10 @@ export function TabsNavigation({
   groupPageForwarder,
   groupPageExiter,
   withServerPinning,
-  primaryEntity
+  primaryEntity,
+  topChrome,
+  bottomChrome,
+  loading
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const currentServer = useServer();
@@ -67,7 +73,9 @@ export function TabsNavigation({
   const primaryColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
   // console.log('primaryColor', primaryColor);
   const primaryTextColor = colorMeta(primaryColor).textColor;
-
+  const navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
+  const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
+  
   const navigationContext: NavigationContextType = useOrCreateNavigationContext();
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
@@ -108,6 +116,8 @@ export function TabsNavigation({
       disabled,
     ]
   );
+
+  const dimensions = useWindowDimensions();
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
@@ -116,13 +126,11 @@ export function TabsNavigation({
 
         <YStack jc="center" ac='center' ai="center"
           w='100%'
-          minHeight={window.innerHeight}
-          maw={window.innerWidth}
-          overflow="hidden"
-        >
+          minHeight={window.innerHeight} >
           <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
-            <YStack backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} w='100%'>
-              {disabled ? undefined:<XStack id='nav-main' space="$1" my='$1' pl='$1' w='100%'>
+            <YStack  w='100%'>
+              {disabled ? undefined : <XStack id='nav-main' 
+              backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} space="$1" py='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
                   <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
@@ -195,15 +203,37 @@ export function TabsNavigation({
               </YStack> */}
 
               <XStack w='100%' id='nav-pinned-server-selector'>
-                <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation />
+                <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation transparent />
               </XStack>
+
+              {topChrome}
             </YStack>
           </StickyBox>
 
-          <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}>
+
+        {loading
+          ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+          <YStack space="$1" opacity={0.92}>
+            <Spinner size='large' color={navColor} scale={2}
+              top={dimensions.height / 2 - 50}
+            />
+          </YStack>
+        </StickyBox>
+          : undefined}
+
+          <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}
+            maw={window.innerWidth}
+            overflow="hidden"
+          >
             {children}
           </YStack>
         </YStack>
+
+        {bottomChrome
+          ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
+            {bottomChrome}
+          </StickyBox>
+          : undefined}
       </GroupContextProvider>
     </NavigationContextProvider>
   </Theme>;

@@ -106,14 +106,28 @@ I will, however, not sell your data to advertisers nor deliberately expose any v
                 navigation: Some(0xFFA23B72),
                 ..Default::default()
             }),
-            recommended_server_hosts: vec![
-                "jonline.io".to_string(),
-                "bullcity.social".to_string(),
-                "oakcity.social".to_string(),
-            ],
+            ..Default::default()
         })
         .unwrap(),
-        federation_info: serde_json::to_value(FederationInfo { ..Default::default() }).unwrap(),
+        federation_info: serde_json::to_value(FederationInfo { 
+            servers: vec![
+                FederatedServer {
+                    host: "jonline.io".to_string(),
+                    configured_by_default: Some(false),
+                    pinned_by_default: Some(false),
+                },
+                FederatedServer {
+                    host: "bullcity.social".to_string(),
+                    configured_by_default: Some(false),
+                    pinned_by_default: Some(false),
+                },
+                FederatedServer {
+                    host: "oakcity.social".to_string(),
+                    configured_by_default: Some(false),
+                    pinned_by_default: Some(false),
+                },
+            ]
+         }).unwrap(),
         anonymous_user_permissions: vec![
             Permission::ViewUsers,
             Permission::ViewGroups,
