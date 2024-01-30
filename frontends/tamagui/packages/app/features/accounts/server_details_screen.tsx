@@ -1,13 +1,12 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
+import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
-import { colorMeta, useAccountOrServer, useAppDispatch, useFederatedAccountOrServer } from 'app/hooks';
-import { JonlineServer, RootState, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServer, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { colorMeta, useAppDispatch, useFederatedAccountOrServer } from 'app/hooks';
+import { JonlineServer, RootState, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
-import StickyBox from "react-sticky-box";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { MediaRef } from '../media/media_chooser';
@@ -18,7 +17,6 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { RecommendedServer } from './recommended_server';
 import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
-import { NavigationContextConsumer, NavigationContextProvider } from 'app/contexts';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 

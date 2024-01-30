@@ -5,7 +5,6 @@ import React, { useEffect, useState } from 'react';
 import StickyBox from "react-sticky-box";
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
-import { NavigationContextConsumer } from 'app/contexts';
 import { useEventPages, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle } from 'app/utils';
 import moment from 'moment';

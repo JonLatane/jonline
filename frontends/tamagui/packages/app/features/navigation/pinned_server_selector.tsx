@@ -2,11 +2,8 @@ import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Tooltip
 import { AtSign, CheckCircle, ChevronRight, Circle, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl, useServer } from "app/hooks";
 
-import { useNavigationContext } from "app/contexts";
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setShowPinnedServers, setViewingRecommendedServers, unpinAccount } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setViewingRecommendedServers, unpinAccount } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { useEffect } from "react";
-import { accountID, setExcludeCurrentServer } from 'app/store';
 import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
@@ -54,32 +51,16 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     .filter(host => !currentServerHosts.includes(host));
 
   const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
-  const navigationContext = useNavigationContext();
 
   const disabled = useHideNavigation();
-  useEffect(() => {
-    if (navigationContext && affectsNavigation) {
-      const pinnedServersHeight = document.querySelector('#navigation-pinned-servers')?.clientHeight ?? 0;
-      navigationContext.setPinnedServersHeight(pinnedServersHeight);
-    }
-  },
-    [
-      allServers.map(serverID).toString(),
-      pinnedServers.map(p => p.serverId).toString(),
-      currentServer ? serverID(currentServer) : undefined,
-      viewingRecommendedServers,
-      browsingServers,
-      showPinnedServers,
-      disabled
-    ]
-  );
+
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
     {/* <AnimatePresence> */}
-    {show && !disabled? <>
+    {show && !disabled ? <>
       {simplified
         ? undefined
         : <XStack key='pinned-server-toggle-row'>
