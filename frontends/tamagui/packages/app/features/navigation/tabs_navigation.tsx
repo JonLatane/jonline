@@ -75,7 +75,7 @@ export function TabsNavigation({
   const primaryTextColor = colorMeta(primaryColor).textColor;
   const navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
-  
+
   const navigationContext: NavigationContextType = useOrCreateNavigationContext();
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
@@ -126,11 +126,12 @@ export function TabsNavigation({
 
         <YStack jc="center" ac='center' ai="center"
           w='100%'
+          backgroundColor={bgColor}
           minHeight={window.innerHeight} >
           <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
-            <YStack  w='100%'>
-              {disabled ? undefined : <XStack id='nav-main' 
-              backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} space="$1" py='$1' pl='$1' w='100%'>
+            <YStack w='100%'>
+              {disabled ? undefined : <XStack id='nav-main'
+                backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} space="$1" py='$1' pl='$1' w='100%'>
                 {/* <XStack w={5} /> */}
                 <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
                   <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
@@ -211,29 +212,29 @@ export function TabsNavigation({
           </StickyBox>
 
 
-        {loading
-          ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-          <YStack space="$1" opacity={0.92}>
-            <Spinner size='large' color={navColor} scale={2}
-              top={dimensions.height / 2 - 50}
-            />
-          </YStack>
-        </StickyBox>
-          : undefined}
+          {loading
+            ? <StickyBox style={{ zIndex: 10, height: 0 }}>
+              <YStack space="$1" opacity={0.92}>
+                <Spinner size='large' color={navColor} scale={2}
+                  top={dimensions.height / 2 - 50}
+                />
+              </YStack>
+            </StickyBox>
+            : undefined}
 
-          <YStack f={1} w='100%' jc="center" ac='center' ai="center" backgroundColor={bgColor}
+          <YStack f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
             maw={window.innerWidth}
             overflow="hidden"
           >
             {children}
           </YStack>
-        </YStack>
 
-        {bottomChrome
-          ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
-            {bottomChrome}
-          </StickyBox>
-          : undefined}
+          {bottomChrome
+            ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
+              {bottomChrome}
+            </StickyBox>
+            : undefined}
+        </YStack>
       </GroupContextProvider>
     </NavigationContextProvider>
   </Theme>;

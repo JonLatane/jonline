@@ -1,11 +1,11 @@
 import { PostListingType } from "@jonline/api";
-import { debounce, useDebounce } from "@jonline/ui";
+import { useDebounce } from "@jonline/ui";
 import { useCredentialDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
 import { useCurrentAndPinnedServers, useFederatedDispatch } from '../account_and_server_hooks';
-import { PaginationResults } from "./pagination_hooks";
+import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
 
 export type PostPageParams = {};
 
@@ -30,7 +30,7 @@ export function useServerPostPages(
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = useCurrentAndPinnedServers();
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const [loading, setLoadingPosts] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const results: FederatedPost[] = getPostsPages(postsState, listingType, throughPage, servers);
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0, servers);
@@ -38,36 +38,27 @@ export function useServerPostPages(
   const serversAllDefined = !servers.some(s => !s.server);
 
   const reload = () => {
-    setLoadingPosts(true);
+    setLoading(true);
     const serversToUpdate = getServersMissingPostsPage(postsState, listingType, 0, servers);
     console.log('Reloading posts for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server =>
       dispatch(loadPostsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded posts", results);
-      finishPagination(setLoadingPosts);
+      finishPagination(setLoading);
     });
   }
   const debounceReload = useDebounce(reload, 1000, { leading: true });
 
   useEffect(() => {
     if (!loading && serversAllDefined && someUnloaded(postsState.pagesStatus, servers)) {
-      setLoadingPosts(true);
+      setLoading(true);
       console.log("Loading posts...");
       setTimeout(debounceReload, 1);
     }
   }, [serversAllDefined, loading, postsState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
-}
-
-export function onPageLoaded(setLoading: (v: boolean) => void, onLoaded?: () => void) {
-  return () => finishPagination(setLoading, onLoaded);
-}
-
-export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: () => void) {
-  setLoading(false);
-  onLoaded?.();
 }
 
 export function useGroupPostPages(

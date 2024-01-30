@@ -34,30 +34,6 @@ pub async fn jonline_path(
     server_location: &str,
     repo_location: &str,
 ) -> CacheResponse<Result<JonlineResponder, Status>> {
-    // let read_guard = CACHED_FILES.read().await;
-    // let cached_body = read_guard.get(path).cloned();
-    // drop(read_guard);
-
-    // let body = match cached_body {
-    //     Some(body) => Some(body),
-    //     None => {
-    //         let result_string: io::Result<String> = match fs::read_to_string(server_location) {
-    //             Ok(file) => Ok(file),
-    //             Err(_) => match fs::read_to_string(repo_location) {
-    //                 Ok(file) => Ok(file),
-    //                 Err(e) => Err(e),
-    //             },
-    //         };
-    //         match result_string {
-    //             Ok(body) => {
-    //                 let responder = create_responder(path, body).await;
-    //                 Some(responder)
-    //             }
-    //             Err(_) => None,
-    //         }
-    //     }
-    // };
-
     let body = jonline_path_responder(path, server_location, repo_location).await;
 
     CacheResponse::Public {

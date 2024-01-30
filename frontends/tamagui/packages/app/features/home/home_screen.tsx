@@ -96,16 +96,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                   <ChevronRight />
                 </XStack>
               </Button>
-              {/* <XStack f={1} /> */}
-              <Button ml='auto' transparent {...themedButtonBackground(navColor)}
+              {/* <Button ml='auto' transparent {...themedButtonBackground(navColor)}
                 {...eventsLink}>
-                {/* <ChevronRight color={navTextColor} /> */}
                 <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
-                {/* <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}> */}
-                {/* <ChevronRight color={navTextColor} /> */}
-                {/* </XStack> */}
-              </Button>
-              {/* <XStack my='auto'><DarkModeToggle /></XStack> */}
+              </Button> */}
             </XStack>
             : undefined}
           {showEventsOnLatest ?
@@ -140,7 +134,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                     </XStack>
                   </ScrollView>}
               </YStack>
-              : <Spinner color={navColor} />
+              : undefined//<Spinner color={navColor} />
             : undefined}
         </AnimatePresence>
 

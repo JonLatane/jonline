@@ -8,3 +8,15 @@ export type PaginationResults<F extends FederatedEntity<any>> = {
   hasMorePages?: boolean;
   firstPageLoaded?: boolean;
 };
+
+
+export function onPageLoaded(setLoading: (v: boolean) => void, onLoaded?: () => void) {
+  return () => finishPagination(setLoading, onLoaded);
+}
+
+export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: () => void) {
+  setTimeout(() => {
+    setLoading(false);
+    onLoaded?.();
+  }, 1000);
+}

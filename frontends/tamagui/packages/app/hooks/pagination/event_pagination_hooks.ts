@@ -6,7 +6,8 @@ import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEven
 import { useEffect, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { PaginationResults } from "./pagination_hooks";
-import { PostPageParams, finishPagination, onPageLoaded } from "./post_pagination_hooks";
+import { PostPageParams } from "./post_pagination_hooks";
+import { finishPagination, onPageLoaded } from "./pagination_hooks";
 
 export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
 
