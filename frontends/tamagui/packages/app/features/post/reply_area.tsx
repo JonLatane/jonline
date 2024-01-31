@@ -118,16 +118,18 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
             <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
           </Button>
           {showMedia
-            ? previewReply
-              ? <PostMediaRenderer {...{
-                post: Post.create({
-                  // ...post,
-                  id: '',
-                  media,
-                  embedLink
-                })
-              }} />
-              : <PostMediaManager
+            ? 
+            // previewReply
+            //   ? <PostMediaRenderer {...{
+            //     post: Post.create({
+            //       // ...post,
+            //       id: '',
+            //       media,
+            //       embedLink
+            //     })
+            //   }} />
+            //   : 
+              <PostMediaManager
                 link={''}
                 {...{ media, setMedia, embedLink, setEmbedLink }}
                 disableInputs={isSendingReply}
@@ -145,7 +147,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         {previewReply
           ? <YStack p='$3' f={1} backgroundColor='$background'
           >
-            <ScrollView maxHeight={maxPreviewHeight} height={maxPreviewHeight}>
+            <ScrollView maxHeight={maxPreviewHeight}>
               <TamaguiMarkdown text={replyText} shrink />
             </ScrollView>
           </YStack>
