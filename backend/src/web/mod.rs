@@ -4,9 +4,6 @@ pub use rocket_state::*;
 pub mod jonline_path;
 pub use jonline_path::*;
 
-pub mod scoped_join;
-pub use scoped_join::*;
-
 // This module contains Rocket routes and handlers for the web interface.
 
 pub mod headers;
