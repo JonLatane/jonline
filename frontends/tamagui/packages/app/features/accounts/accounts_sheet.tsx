@@ -39,6 +39,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const [addingServer, setAddingServer] = useState(false);
   const [addingAccount, setAddingAccount] = useState(false);
   const [position, setPosition] = useState(0);
+  const [addingAccountPosition, setAddingAccountPosition] = useState(0);
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
   const [newAccountUser, setNewAccountUser] = useState('');
@@ -101,16 +102,16 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     setAddingAccount(false);
     setOpen(false);
 
-    // setTimeout(() => {
-    //   dispatch(clearAccountAlerts());
+    setTimeout(() => {
+      dispatch(clearAccountAlerts());
 
-    //   // setTimeout(() => {
-    //   setNewAccountUser('');
-    //   setNewAccountPass('');
-    //   setForceDisableAccountButtons(false);
-    //   setLoginMethod(undefined);
-    //   // }, 600);
-    // }, 2500);
+      // setTimeout(() => {
+      setNewAccountUser('');
+      setNewAccountPass('');
+      setForceDisableAccountButtons(false);
+      setLoginMethod(undefined);
+      // }, 600);
+    }, 2000);
 
     const accountEntities = store.getState().accounts.entities;
     const account = store.getState().accounts.ids.map((id) => accountEntities[id])
@@ -524,8 +525,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                     onOpenChange={setAddingAccount}
                     // snapPoints={[80]}
                     snapPoints={[81]} dismissOnSnapToBottom
-                    position={position}
-                    onPositionChange={setPosition}
+                    position={addingAccountPosition}
+                    onPositionChange={setAddingAccountPosition}
                   // dismissOnSnapToBottom
                   >
                     <Sheet.Overlay />

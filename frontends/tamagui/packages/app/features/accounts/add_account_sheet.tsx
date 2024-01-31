@@ -55,10 +55,10 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
   async function onAccountAdded() {
-    setAddingAccount(false);
     setOpen(false);
 
     setTimeout(() => {
+      setAddingAccount(false);
       dispatch(clearAccountAlerts());
 
       // setTimeout(() => {
@@ -68,7 +68,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
       setLoginMethod(undefined);
       setReauthenticating(false);
       // }, 600);
-    }, 600);
+    }, 2000);
 
     const accountEntities = store.getState().accounts.entities;
     const account = store.getState().accounts.ids.map((id) => accountEntities[id])
