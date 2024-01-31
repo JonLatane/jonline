@@ -31,7 +31,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
 
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
-  const maxPreviewHeight = useWindowDimensions().height * 0.5;
+  const maxPreviewHeight = useWindowDimensions().height * 0.3;
   // const [isReplying, setIsReplying] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const textAreaRef = React.createRef<TextInput>();// as React.MutableRefObject<HTMLElement | View>;
@@ -108,7 +108,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const hideNavigation = useHideNavigation();
   const hide = hidden || hideNavigation;
   return hide ? <></> : isWeb ? canComment
-    ? <YStack w='100%' pl='$2' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+    ? <YStack w='100%' pl='$2' paddingVertical='$2' backgroundColor='$background' alignContent='center'>
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
@@ -142,8 +142,24 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
           <XStack f={1} />
         </XStack>
         : undefined}
+        {previewReply
+          ? <YStack p='$3' f={1} backgroundColor='$background'
+          >
+            <ScrollView maxHeight={maxPreviewHeight} height={maxPreviewHeight}>
+              <TamaguiMarkdown text={replyText} shrink />
+            </ScrollView>
+          </YStack>
+          : undefined}
       <XStack>
-        <ZStack f={1}>
+        <YStack f={1}>
+          <TextArea f={1} value={replyText} ref={textAreaRef}
+            disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
+            onChangeText={t => setReplyText(t)}
+            onFocus={() => setReplyTextFocused(true)}
+            onBlur={() => setReplyTextFocused(false)}
+            placeholder={`Reply to this post. Markdown is supported.`} />
+        </YStack>
+        {/* <ZStack f={1}>
           <TextArea f={1} value={replyText} ref={textAreaRef}
             disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
             onChangeText={t => setReplyText(t)}
@@ -157,7 +173,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
               </ScrollView>
             </YStack>
             : undefined}
-        </ZStack>
+        </ZStack> */}
         <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
           <YStack f={1} />
           <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>

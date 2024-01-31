@@ -951,8 +951,6 @@ export const EventCard: React.FC<Props> = ({
 
 export default EventCard;
 
-
-
 function useStartAndEndTime(instance: EventInstance | undefined, setInstance: (instance: EventInstance) => void) {
   const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
   function setEndTime(value: string) {

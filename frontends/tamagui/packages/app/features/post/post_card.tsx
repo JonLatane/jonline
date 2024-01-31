@@ -262,11 +262,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <Card.Footer>
                   <YStack w='100%'>
                     <XStack mah={200} w='100%'>
-                      <TamaguiMarkdown text={previewParent.content} />
+                      <TamaguiMarkdown text={previewParent.content} shrink />
                     </XStack>
 
-                    <XStack ml='$2'>
-                      <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} />
+                    <XStack ml='auto' mr='$2'>
+                      <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
                     </XStack>
                   </YStack>
                 </Card.Footer>

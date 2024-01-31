@@ -19,8 +19,9 @@ export type AuthorInfoProps = {
   disableLink?: boolean;
   isVisible?: boolean;
   larger?: boolean;
+  shrink?: boolean;
 }
-export const AuthorInfo = ({ post, author = post?.author, disableLink = false, detailsMargins = 0, isVisible = true, larger = false }: AuthorInfoProps) => {
+export const AuthorInfo = ({ post, author = post?.author, disableLink = false, detailsMargins = 0, isVisible = true, larger = false, shrink = false }: AuthorInfoProps) => {
   const { dispatch, accountOrServer } = useProvidedDispatch();
   // const author = inputAuthor as Author;
   const server = accountOrServer.server;
@@ -66,14 +67,17 @@ export const AuthorInfo = ({ post, author = post?.author, disableLink = false, d
     }
   }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
   const avatarUrl = useMediaUrl(author?.avatar?.id ?? authorUser?.avatar?.id, accountOrServer);
-  const avatarImage = <XStack p={0} w={mediaQuery.gtXs ? 50 : 26} h={mediaQuery.gtXs ? 50 : 26}>
+  const avatarSize = mediaQuery.gtXs 
+  ? shrink ? 30 : 50 
+  : shrink ? 18 : 26;
+  const avatarImage = <XStack p={0} w={avatarSize} h={avatarSize}>
     <Image
-      width={mediaQuery.gtXs ? 50 : 26}
-      height={mediaQuery.gtXs ? 50 : 26}
-      borderRadius={mediaQuery.gtXs ? 25 : 13}
+      width={avatarSize}
+      height={avatarSize}
+      borderRadius={avatarSize/2}
       resizeMode="cover"
       als="flex-start"
-      source={{ uri: avatarUrl, width: mediaQuery.gtXs ? 50 : 26, height: mediaQuery.gtXs ? 50 : 26 }}
+      source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
     />
   </XStack>;
 
