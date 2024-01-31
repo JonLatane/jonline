@@ -48,8 +48,8 @@
     "yarn": "^1.22.21"
   },
   "devDependencies": {
-    "@types/react": "^18.0.27",
-    "@types/react-native": "^0.71.3",
-    "@types/uuid": "^9.0.0"
+    "@types/react": "^18.2.48",
+    "@types/react-native": "^0.71.13",
+    "@types/uuid": "^9.0.8"
   }
 }
