@@ -1,10 +1,10 @@
-import { Button, Dialog, Heading, Paragraph, Sheet, SizeTokens, Slider, XStack, YStack } from '@jonline/ui';
+import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, View, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
 import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
-import { FeaturesNavigation } from './navigation/features_navigation';
+import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
 
 
 export type SettingsSheetProps = {
@@ -29,6 +29,8 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     resetAllData();
     setTimeout(forceUpdate, 2000);
   }
+
+  const { shrinkNavigation, inlineNavigation} = useInlineFeatureNavigation();
 
   return (
     <>
@@ -81,25 +83,51 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     <FeaturesNavigation disabled />
                   </XStack>
                 </YStack>
-                <ToggleRow name='Auto Feature Navigation'
-                  description='Automatically enable/disable Inline Feature Navigation based on screen size.'
+                <XStack my='$2' o={app.inlineFeatureNavigation === undefined ? 0.5 : 1}>
+                  <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
+                    <YStack w='100%'>
+                      <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' animation='standard' o={inlineNavigation ? 0.5 : 1}>
+                        Popover
+                      </Paragraph>
+                    </YStack>
+                  </Label>
+                  <Switch name='nav-mode-toggle' size="$5" margin='auto'
+                    defaultChecked={app.inlineFeatureNavigation}
+                    checked={inlineNavigation}
+                    value={inlineNavigation.toString()}
+                    disabled={app.inlineFeatureNavigation === undefined}
+                    onCheckedChange={(checked) => dispatch(setInlineFeatureNavigation(checked))}>
+                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                  </Switch>
+                  <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
+                    <YStack w='100%'>
+                      <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' animation='standard' o={!inlineNavigation ? 0.5 : 1}>
+                        Inline
+                      </Paragraph>
+                    </YStack>
+                  </Label>
+                </XStack>
+                <ToggleRow name='Auto Popover/Inline'
+                  description='Choose Popover or Inline based on screen size.'
                   value={app.inlineFeatureNavigation === undefined}
-                  setter={(v) => setInlineFeatureNavigation(v ? undefined : false)} autoDispatch />
-                <ToggleRow name='Inline Feature Navigation' value={app.inlineFeatureNavigation}
-                  description='Show features in a horizontal row at the top of the screen.'
-                  disabled={app.inlineFeatureNavigation === undefined}
-                  setter={setInlineFeatureNavigation} autoDispatch />
-                <ToggleRow name='Shrink Inline Feature Navigation'
-                  description='Shrink Feature Navigation when Inline Feature Navigation is enabled.'
+                  setter={(v) => setInlineFeatureNavigation(v ? undefined : true)} autoDispatch />
+                <Heading size='$4' mt='$2' o={app.inlineFeatureNavigation === false ? 0.5 : 1}>Inline Navigation</Heading>
+                <ToggleRow name='Auto Shrink Inline Navigation'
+                  description='Automatically Shrink Inline Navigation based on screen size.'
+                  disabled={app.inlineFeatureNavigation === false}
+                  value={app.shrinkFeatureNavigation === undefined}
+                  setter={(v) => setShrinkFeatureNavigation(v ? undefined : true )} autoDispatch />
+                <ToggleRow name='Shrink Inline Navigation'
+                  description='Shrink inactive icons in the Inline Navigation UI.'
                   disabled={app.inlineFeatureNavigation === false}
                   value={app.shrinkFeatureNavigation}
                   setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
               </YStack>
-              <Heading size='$5' mt='$3'>Posts and Events</Heading>
+              <Heading size='$5' mt='$3'>Posts, Events, and People</Heading>
               <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
 
-                <ToggleRow name='Fancy Post/Event Backgrounds'
-                  description='Eat up some memory (maybe?) and crash some browsers, but make it pretty'
+                <ToggleRow name='Fancy Backgrounds'
+                  description='Add pretty blurred background images to the UI. Memory and CPU intensive; may lead to crashes. Runs fine on my M1 Max MacBook Pro, crashes my iPhone 12 Pro.'
                   value={app.fancyPostBackgrounds} setter={setFancyPostBackgrounds} autoDispatch />
 
               </YStack>
@@ -143,7 +171,9 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                   // disabled={serverCount !== 1}
                   value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
-                <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
+                <Paragraph size='$1' mt='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
+                <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5} ai='center'>An alert triangle (<AlertTriangle size='$1' style={{transform: 'scale(0.8) translateY(7px)'}} />) will appear in the UI when a different server is selected.</Paragraph>
+
                 {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}

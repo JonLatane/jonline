@@ -11,7 +11,7 @@ use rocket_cache_response::CacheResponse;
 
 use crate::{
     db_connection::PgPooledConnection,
-    protos::{GetPostsRequest, MediaReference, ServerInfo, ServerLogo},
+    protos::{Event, GetPostsRequest, MediaReference, ServerInfo, ServerLogo},
     rpcs,
     web::RocketState,
 };
@@ -177,48 +177,13 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let path_components = path.split('/').collect_vec();
-        if path_components.len() < 3 {
-            return None;
-        }
-        let post_id = path_components[2].to_string();
-        let post = rpcs::get_posts(
-            GetPostsRequest {
-                post_id: Some(post_id),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        )
-        .ok()
-        .map(|r| r.posts.into_iter().next())
-        .flatten();
+        let post = match federated_path_component(&path, 2) {
+            Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
+            Some(FederatedId::Federated(_,_)) => None,
+            None => return None,
+        };
 
         post_summary("Post".to_string(), post, server_name, server_logo, None)
-        // let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
-        // let (title, description, image) = match post {
-        //     Some(post) => {
-        //         let title = post
-        //             .title
-        //             .map_or(format!("Post Details - {}", server_name), |title| {
-        //                 format!("{} - Post Details - {}", title.clone(), server_name)
-        //             });
-        //         // let image = None;
-        //         let image_ref: Option<&MediaReference> = post
-        //             .media
-        //             .iter()
-        //             .find(|m| m.content_type.starts_with("image"));
-        //         let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
-        //         (title, post.content.clone(), image)
-        //     }
-        //     None => (format!("Post Details - {}", server_name), None, basic_logo),
-        // };
-
-        // Some(JonlineSummary {
-        //     title: Some(title),
-        //     description,
-        //     image,
-        // })
     }
 );
 webui!(
@@ -229,50 +194,14 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let path_components = path.split('/').collect_vec();
-        if path_components.len() < 3 {
-            return None;
-        }
-        let event_instance_id = path_components[2].to_string();
-        let event = rpcs::get_events(
-            GetEventsRequest {
-                event_instance_id: Some(event_instance_id),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        )
-        .ok()
-        .map(|r| r.events.into_iter().next())
-        .flatten();
+        let event = match federated_path_component(&path, 2) {
+            Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
+            Some(FederatedId::Federated(_,_)) => None,
+            None => return None,
+        };
         let post = event.map(|e| e.post).flatten();
 
         post_summary("Event".to_string(), post, server_name, server_logo, None)
-
-        // let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
-        // let (title, description, image) = match post {
-        //     Some(post) => {
-        //         let title = post
-        //             .title
-        //             .map_or(format!("Event Details - {}", server_name), |title| {
-        //                 format!("{} - Event Details - {}", title.clone(), server_name)
-        //             });
-        //         // let image = None;
-        //         let image_ref: Option<&MediaReference> = post
-        //             .media
-        //             .iter()
-        //             .find(|m| m.content_type.starts_with("image"));
-        //         let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
-        //         (title, post.content.clone(), image)
-        //     }
-        //     None => (format!("Event Details - {}", server_name), None, basic_logo),
-        // };
-
-        // Some(JonlineSummary {
-        //     title: Some(title),
-        //     description,
-        //     image,
-        // })
     }
 );
 webui!(user, "/user/<_>", "user/[id].html");
@@ -453,4 +382,68 @@ fn post_summary(
         description,
         image,
     })
+}
+
+fn get_post(
+    post_id: String,
+    connection: &mut PgPooledConnection,
+) -> Option<Post> {
+    let post = rpcs::get_posts(
+        GetPostsRequest {
+            post_id: Some(post_id),
+            ..Default::default()
+        },
+        &None,
+        connection,
+    )
+    .ok()
+    .map(|r| r.posts.into_iter().next())
+    .flatten();
+    post
+}
+
+fn get_event(
+    event_instance_id: String,
+    connection: &mut PgPooledConnection,
+) -> Option<Event> {
+    let event = rpcs::get_events(
+        GetEventsRequest {
+            event_instance_id: Some(event_instance_id),
+            ..Default::default()
+        },
+        &None,
+        connection,
+    )
+    .ok()
+    .map(|r| r.events.into_iter().next())
+    .flatten();
+    event
+}
+
+enum FederatedId {
+    Local(String),
+    Federated(String, String),
+}
+
+fn federated_path_component(path: &Path, index: usize) -> Option<FederatedId> {
+    let path_component = path_component(path, index);
+    match path_component {
+        Some(path_component) if path_component.split('@').count() == 1 => Some(FederatedId::Local(path_component)),
+        Some(path_component) => {
+            let mut path_components = path_component.split('@');
+            let username = path_components.next().unwrap().to_string();
+            let domain = path_components.next().unwrap().to_string();
+            Some(FederatedId::Federated(username, domain))
+        },
+        _ => None
+    }
+}
+
+
+fn path_component(path: &Path, index: usize) -> Option<String> {
+    let path_components = path.split('/').collect_vec();
+    if path_components.len() <= index {
+        return None;
+    }
+    Some(path_components[index].to_string())
 }

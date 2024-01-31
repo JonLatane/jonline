@@ -25,7 +25,7 @@ export type LocalAppConfiguration = {
   recentGroups: string[];
   // Here, undefined means "auto" (i.e. based on screen/window width)
   inlineFeatureNavigation: boolean | undefined;
-  shrinkFeatureNavigation: boolean;
+  shrinkFeatureNavigation: boolean | undefined;
   browseRsvpsFromPreviews: boolean;
   showHelp: boolean;
   showPinnedServers: boolean;
@@ -49,8 +49,8 @@ const initialState: LocalAppConfiguration = {
   showEventsOnLatest: true,
   // serverRecentGroups: {},
   recentGroups: [],
-  inlineFeatureNavigation: undefined,
-  shrinkFeatureNavigation: false,
+  inlineFeatureNavigation: true,
+  shrinkFeatureNavigation: undefined,
   browseRsvpsFromPreviews: true,
   showHelp: true,
   showPinnedServers: true,
@@ -112,7 +112,7 @@ export const localAppSlice = createSlice({
     setInlineFeatureNavigation: (state, action: PayloadAction<boolean | undefined>) => {
       state.inlineFeatureNavigation = action.payload;
     },
-    setShrinkFeatureNavigation: (state, action: PayloadAction<boolean>) => {
+    setShrinkFeatureNavigation: (state, action: PayloadAction<boolean | undefined>) => {
       state.shrinkFeatureNavigation = action.payload;
     },
     setBrowseRsvpsFromPreviews: (state, action: PayloadAction<boolean>) => {

@@ -2,7 +2,7 @@ import { deletePost, federateId, getServerTheme, loadPostReplies, updatePost } f
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
-import { Post } from "@jonline/api";
+import { Post, Visibility } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
 import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -428,7 +428,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                         </>
                       : undefined}
                     <XStack space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
-                      <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
+                      {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                         <VisibilityPicker
                           id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
                           label='Post Visibility'
@@ -437,7 +437,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                           visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
                           readOnly={!editing || previewingEdits}
                         />
-                      </XStack>
+                      </XStack>}
                       <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                         <ShareableToggle value={shareable}
                           setter={setEditedShareable}

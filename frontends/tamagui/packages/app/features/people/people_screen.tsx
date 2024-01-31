@@ -1,11 +1,11 @@
 import { UserListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Input, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
-import { useCredentialDispatch, useCurrentAndPinnedServers, usePaginatedRendering, useUsersPage } from 'app/hooks';
+import { useCredentialDispatch, useCurrentAndPinnedServers, usePaginatedRendering, useServer, useUsersPage } from 'app/hooks';
 import { RootState, federatedId, getFederated, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
+import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
 import { PaginationIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
@@ -20,21 +20,26 @@ export function MainPeopleScreen() {
   return <BasePeopleScreen listingType={UserListingType.EVERYONE} />;
 }
 
-
 export type PeopleScreenProps = HomeScreenProps & {
   listingType?: UserListingType;
 };
 
-
+const { useParam, useUpdateParams } = createParam<{ search: string }>()
 export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
   const isForGroupMembers = listingType === undefined;
 
-  const servers = useCurrentAndPinnedServers();
   const { results: allUsers, loading: loadingUsers, reload: reloadUsers, firstPageLoaded } = isForGroupMembers
     ? { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
     : useUsersPage(listingType, 0);
 
-  const [searchText, setSearchText] = useState('');
+  const [searchParam] = useParam('search');
+  const updateParams = useUpdateParams();
+  const [searchText, _setSearchText] = useState(searchParam ?? '');
+  function setSearchText (text: string) {
+    _setSearchText(text);
+    updateParams({ search: text }, { web: { replace: true } });
+  };
+
   const filteredUsers = allUsers?.filter((user) => {
     return user.username.toLowerCase().includes(searchText.toLowerCase());
   });
@@ -43,10 +48,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const paginatedUsers = pagination.results;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  let { dispatch, accountOrServer } = useCredentialDispatch();
-  const { server, primaryColor, navColor, navTextColor } = useServerTheme();
-
-  const dimensions = useWindowDimensions();
+  const server = useServer();
 
   const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
@@ -77,7 +79,6 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
           <XStack w='100%' ai='center' space='$2' mx='$2'>
             <Input placeholder='Search'
               f={1}
-              // textContentType='search'
               value={searchText}
               onChange={(e) => setSearchText(e.nativeEvent.text)} />
             <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
@@ -92,7 +93,6 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             ? listingType == UserListingType.FOLLOW_REQUESTS ?
               <YStack width='100%' maw={600} jc="center" ai="center">
                 <Heading size='$5' mb='$3'>No follow requests found.</Heading>
-                {/* <Heading size='$3' ta='center'>.</Heading> */}
               </YStack> :
               <YStack width='100%' maw={600} jc="center" ai="center">
                 <Heading size='$5' mb='$3'>No people found.</Heading>

@@ -87,7 +87,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       {showPinnedServers || simplified && !disabled
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-            <XStack m='$3' ai='center' space='$2' key='available-servers'>
+            <XStack mx='$3' my='$1' py='$1' ai='center' space='$2' key='available-servers'>
               <AnimatePresence>
                 {availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
