@@ -21,10 +21,10 @@ export type LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: number;
   showUserIds: boolean;
   showEventsOnLatest: boolean;
-  // serverRecentGroups: { [serverId: string]: string[] };
   recentGroups: string[];
   // Here, undefined means "auto" (i.e. based on screen/window width)
   inlineFeatureNavigation: boolean | undefined;
+  // Here, undefined means "auto" (i.e. based on screen/window width)
   shrinkFeatureNavigation: boolean | undefined;
   browseRsvpsFromPreviews: boolean;
   showHelp: boolean;
@@ -47,7 +47,6 @@ const initialState: LocalAppConfiguration = {
   discussionRefreshIntervalSeconds: 6,
   showUserIds: false,
   showEventsOnLatest: true,
-  // serverRecentGroups: {},
   recentGroups: [],
   inlineFeatureNavigation: true,
   shrinkFeatureNavigation: undefined,

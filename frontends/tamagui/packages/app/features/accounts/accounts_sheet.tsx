@@ -101,16 +101,16 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     setAddingAccount(false);
     setOpen(false);
 
-    setTimeout(() => {
-      dispatch(clearAccountAlerts());
+    // setTimeout(() => {
+    //   dispatch(clearAccountAlerts());
 
-      // setTimeout(() => {
-      setNewAccountUser('');
-      setNewAccountPass('');
-      setForceDisableAccountButtons(false);
-      setLoginMethod(undefined);
-      // }, 600);
-    }, 600);
+    //   // setTimeout(() => {
+    //   setNewAccountUser('');
+    //   setNewAccountPass('');
+    //   setForceDisableAccountButtons(false);
+    //   setLoginMethod(undefined);
+    //   // }, 600);
+    // }, 2500);
 
     const accountEntities = store.getState().accounts.entities;
     const account = store.getState().accounts.ids.map((id) => accountEntities[id])

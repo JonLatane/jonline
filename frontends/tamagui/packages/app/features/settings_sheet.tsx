@@ -108,7 +108,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   </Label>
                 </XStack>
                 <ToggleRow name='Auto Popover/Inline'
-                  description='Choose Popover or Inline based on screen size.'
+                  description='Use Popover or Inline based on screen size.'
                   value={app.inlineFeatureNavigation === undefined}
                   setter={(v) => setInlineFeatureNavigation(v ? undefined : true)} autoDispatch />
                 <Heading size='$4' mt='$2' o={app.inlineFeatureNavigation === false ? 0.5 : 1}>Inline Navigation</Heading>

@@ -66,7 +66,7 @@ export const EventCard: React.FC<Props> = ({
   const currentUser = useAccount()?.user;
   const post = federatedEntity(event.post!, server);
 
-  const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor } = getServerTheme(server);
+  const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = getServerTheme(server);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);
@@ -701,7 +701,7 @@ export const EventCard: React.FC<Props> = ({
                       <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
                         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
                         <Text fontSize='$2' fontFamily='$body'>
-                          <input type='datetime-local' style={{ padding: 10 }}
+                          <input type='datetime-local' style={{ colorScheme: darkMode ? 'dark' : 'light', padding: 10 }}
                             min={supportDateInput(moment(0))}
                             value={supportDateInput(moment(editingInstance.startsAt))}
                             onChange={(v) => setStartTime(v.target.value)} />
@@ -709,8 +709,8 @@ export const EventCard: React.FC<Props> = ({
                       </XStack>
                       <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
                         <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                        <Text fontSize='$2' fontFamily='$body' color={textColor}>
-                          <input type='datetime-local' style={{ padding: 10 }}
+                        <Text fontSize='$2' fontFamily='$body'>
+                          <input type='datetime-local' style={{ colorScheme: darkMode ? 'dark' : 'light', padding: 10 }}
                             min={editingInstance.startsAt}
                             value={supportDateInput(moment(editingInstance.endsAt))}
                             onChange={(v) => setEndTime(v.target.value)} />
