@@ -82,11 +82,11 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
     targetPost = targetPost?.replies?.find(reply => reply.id == replyId);
   }
   const replyingToPost = targetPost;
-  useEffect(() => {
-    if (previewReply && replyText == '') {
-      setPreviewReply(false);
-    }
-  }, [previewReply, replyText]);
+  // useEffect(() => {
+  //   if (previewReply && replyText == '') {
+  //     setPreviewReply(false);
+  //   }
+  // }, [previewReply, replyText]);
   const canSend = replyText.length > 0 || media.length > 0;
   const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
     || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
@@ -111,19 +111,24 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
             : undefined}
         </>
         : undefined}
+      {previewReply
+        ? <YStack px='$3' py='$1' f={1} backgroundColor='$background' animation='standard' {...reverseStandardAnimation}>
+          <ScrollView maxHeight={maxPreviewHeight}>
+            {!showMedia && media.length > 0
+              ? <PostMediaRenderer {...{
+                post: Post.create({ id: '', media, embedLink })
+              }} />
+              : undefined}
+            <TamaguiMarkdown text={replyText} shrink />
+          </ScrollView>
+        </YStack>
+        : undefined}
       {replyingToPath.length > 1
         ? <XStack w='100%'>
           <Heading size='$1' f={1}>Replying to {replyingToPost?.author?.username ?? ''}</Heading>
           {onStopReplying ? <Button size='$1' onPress={onStopReplying}>Cancel</Button> : undefined}
           <XStack f={1} />
         </XStack>
-        : undefined}
-      {previewReply
-        ? <YStack px='$3' py='$1' f={1} backgroundColor='$background' animation='standard' {...reverseStandardAnimation}>
-          <ScrollView maxHeight={maxPreviewHeight}>
-            <TamaguiMarkdown text={replyText} shrink />
-          </ScrollView>
-        </YStack>
         : undefined}
       <XStack>
         <YStack f={1} mt='$1'>
