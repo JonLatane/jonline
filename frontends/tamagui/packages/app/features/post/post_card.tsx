@@ -240,38 +240,37 @@ export const PostCard: React.FC<PostCardProps> = ({
             {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
             <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
-            <Theme inverse={selectedPostId == previewParent.id}>
-              <Card f={1} theme="dark" size="$1" bordered id={componentKey}
-                margin='$0'
-                // marginBottom={replyPostIdPath ? '$0' : '$3'}
-                // marginTop={replyPostIdPath ? '$0' : '$3'}
-                // padding='$2'
-                px='$2'
-                py='$1'
-                mb='$1'
-                // f={isPreview ? undefined : 1}
-                animation='standard'
-                scale={0.92}
-                opacity={1}
-                y={0}
-                // enterStyle={{ y: -50, opacity: 0, }}
-                // exitStyle={{ opacity: 0, }}
-                pressStyle={{ scale: 0.91 }}
-                onPress={onPressParentPreview}
-              >
-                <Card.Footer>
-                  <YStack w='100%'>
-                    <XStack mah={200} w='100%'>
-                      <TamaguiMarkdown text={previewParent.content} shrink />
-                    </XStack>
+            <Card f={1} theme="dark" size="$1" bordered id={componentKey}
+              margin='$0'
+              backgroundColor={selectedPostId == previewParent.id ? '$backgroundFocus' : undefined}
+              // marginBottom={replyPostIdPath ? '$0' : '$3'}
+              // marginTop={replyPostIdPath ? '$0' : '$3'}
+              // padding='$2'
+              px='$2'
+              py='$1'
+              mb='$1'
+              // f={isPreview ? undefined : 1}
+              animation='standard'
+              scale={0.92}
+              opacity={1}
+              y={0}
+              // enterStyle={{ y: -50, opacity: 0, }}
+              // exitStyle={{ opacity: 0, }}
+              pressStyle={{ scale: 0.91 }}
+              onPress={onPressParentPreview}
+            >
+              <Card.Footer>
+                <YStack w='100%'>
+                  <XStack mah={200} w='100%'>
+                    <TamaguiMarkdown text={previewParent.content} shrink />
+                  </XStack>
 
-                    <XStack ml='auto' mr='$2'>
-                      <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
-                    </XStack>
-                  </YStack>
-                </Card.Footer>
-              </Card>
-            </Theme>
+                  <XStack ml='auto' mr='$2'>
+                    <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
+                  </XStack>
+                </YStack>
+              </Card.Footer>
+            </Card>
           </XStack>
           : undefined}
         {/* <Theme inverse={selectedPostId == post.id}> */}
