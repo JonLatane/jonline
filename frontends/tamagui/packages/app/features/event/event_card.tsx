@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
-import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
+import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";

@@ -4,7 +4,7 @@ import { GestureResponderEvent, View } from "react-native";
 
 import { Post, Visibility } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
-import { ChevronRight, Delete, Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { ChevronRight, Delete, Edit3 as Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { TamaguiMarkdown } from "../../components/tamagui_markdown";

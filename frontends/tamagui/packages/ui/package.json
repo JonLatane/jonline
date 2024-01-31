@@ -13,20 +13,14 @@
     "dist"
   ],
   "scripts": {
-    "build": "tamagui-build",
-    "watch": "tamagui-build --watch"
+    "build": "tamagui-build --skip-types",
+    "watch": "tamagui-build --skip-types --watch"
   },
   "dependencies": {
-    "@tamagui/animations-css": "latest",
-    "@tamagui/animations-react-native": "latest",
-    "@tamagui/font-inter": "latest",
-    "@tamagui/react-native-media-driver": "latest",
-    "@tamagui/shorthands": "latest",
-    "@tamagui/themes": "latest",
-    "@tamagui/toast": "latest",
-    "tamagui": "latest"
+    "@tamagui/toast": "^1.88.17",
+    "tamagui": "^1.88.17"
   },
   "devDependencies": {
-    "@tamagui/build": "latest"
+    "@tamagui/build": "^1.88.17"
   }
 }

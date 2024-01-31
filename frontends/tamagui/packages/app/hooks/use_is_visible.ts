@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 
-export function useIsVisible(ref/*: React.MutableRefObject<Element>*/) {
+export function useIsVisible(ref/*: React.MutableRefObject<Element>*/): boolean {
   const [isIntersecting, setIntersecting] = useState(false);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) =>
-      entry && setIntersecting(entry.isIntersecting)
-    );
+    try {
+      const observer = new IntersectionObserver(([entry]) =>
+        entry && setIntersecting(entry.isIntersecting)
+      );
 
-    observer.observe(ref.current);
-    return () => {
-      observer.disconnect();
-    };
+      observer.observe(ref.current);
+      return () => {
+        observer.disconnect();
+      };
+    } catch (e) {
+      console.warn("Error measuring element visibility", e);
+    }
   }, [ref]);
 
   return isIntersecting;

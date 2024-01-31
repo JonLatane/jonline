@@ -86,7 +86,7 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn install
     - working-directory: frontends/tamagui
-      run: yarn vercel:install
+      run: yarn version:install
     - working-directory: frontends/tamagui
       run: yarn tsc
     - working-directory: frontends/tamagui
@@ -182,7 +182,7 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn install
     - working-directory: frontends/tamagui
-      run: yarn vercel:install
+      run: yarn version:install
     - working-directory: frontends/tamagui
       run: yarn build
     - working-directory: frontends/tamagui

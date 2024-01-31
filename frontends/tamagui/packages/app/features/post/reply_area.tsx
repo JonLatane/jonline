@@ -1,6 +1,6 @@
 import { Permission, Post } from '@jonline/api'
 import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack, isClient, isWeb, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
-import { ChevronRight, Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
+import { ChevronRight, Edit3 as Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { useAccountOrServerContext } from 'app/contexts'
 import { useAccountOrServer, useAppDispatch } from 'app/hooks'
