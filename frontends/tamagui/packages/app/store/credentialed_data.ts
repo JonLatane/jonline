@@ -49,13 +49,13 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
             .accessToken({ refreshToken: account.refreshToken!.token })
             .then((result) => {
               updatedAccount = { ...account, lastSyncFailed: false, needsReauthentication: false };
-              store.dispatch(accountsSlice.actions.upsertAccount(account));
+              store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
               return result;
             })
             .catch(() => {
               console.log("failed to load access token");
               updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
-              store.dispatch(accountsSlice.actions.upsertAccount(account));
+              store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
               store.dispatch(accountsSlice.actions.selectAccount(undefined))
 
               return undefined;
@@ -71,7 +71,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
           newRefreshToken = fetchedRefreshToken!;
           _newRefreshToken = newRefreshToken;
           updatedAccount = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
-          store.dispatch(accountsSlice.actions.upsertAccount(account));
+          store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
           metadata.append('authorization', account.accessToken.token);
 
           console.log("loading current user...");
@@ -79,11 +79,11 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
           client.getCurrentUser({}, { metadata: Metadata({ authorization: account.accessToken.token }) }).then(user => {
             console.log("loaded current user");
             updatedAccount = { ...account, user, lastSyncFailed: false, needsReauthentication: false };
-            store.dispatch(accountsSlice.actions.upsertAccount(account));
+            store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
           }).catch((e) => {
             console.error("failed to load current user", account.user.username, account.accessToken.token, e);
             updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
-            store.dispatch(accountsSlice.actions.upsertAccount(account));
+            store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
             store.dispatch(accountsSlice.actions.selectAccount(undefined))
           });
         } else {
