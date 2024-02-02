@@ -112,6 +112,8 @@ export const config = createTamagui({
     gtXl: { minWidth: 1420 + 1 },
     xxl: { maxWidth: 1600 },
     gtXxl: { minWidth: 1600 + 1 },
+    xxxl: { maxWidth: 1800 },
+    gtXxxl: { minWidth: 1800 + 1 },
     short: { maxHeight: 820 },
     xShort: { maxHeight: 410 },
     tall: { minHeight: 820 },

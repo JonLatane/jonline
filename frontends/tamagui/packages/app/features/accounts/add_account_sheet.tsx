@@ -245,9 +245,9 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
             </XStack>
             : <Heading size='$9' ml='$5'>Add Account</Heading>}
           <Sheet.ScrollView>
-            <YStack space="$2" maw={600} w='100%' pb='$2' als='center' paddingHorizontal="$5">
+            <YStack gap="$2" maw={600} w='100%' pb='$2' als='center' paddingHorizontal="$5">
               {addingAccount
-                ? <YStack space="$2" w='100%'>
+                ? <YStack gap="$2" w='100%'>
                   <Heading size="$6">{server?.host}/</Heading>
                   <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                     editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
@@ -330,7 +330,7 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                         {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
                       </Button>
                     </XStack>
-                    : <XStack space='$1'>
+                    : <XStack gap='$1'>
                       <Button flex={2} marginRight='$1'
                         onPress={() => {
                           setLoginMethod(LoginMethod.CreateAccount);

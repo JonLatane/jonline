@@ -76,7 +76,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
           </Button>
           <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
             onPress={() => dispatch(setExcludeCurrentServer(!excludeCurrentServer))}>
-            <XStack ml='auto' space='$2'>
+            <XStack ml='auto' gap='$2'>
               {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
               <Paragraph my='auto' size='$1'>
                 Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
@@ -87,7 +87,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       {showPinnedServers || simplified && !disabled
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-            <XStack mx='$3' my='$1' py='$1' ai='center' space='$2' key='available-servers'>
+            <XStack mx='$3' my='$1' py='$1' ai='center' gap='$2' key='available-servers'>
               <AnimatePresence>
                 {availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
@@ -196,7 +196,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
             borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
             o={pinned ? 1 : 0.5}
             {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
-            <XStack ai='center' w='100%' space='$2'>
+            <XStack ai='center' w='100%' gap='$2'>
 
               {(avatarUrl && avatarUrl != '') ?
 

@@ -260,8 +260,8 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
               {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
-              <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
-                <YStack space="$2" w='100%'>
+              <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+                <YStack gap="$2" w='100%'>
                   {/* <Heading size="$6">{server?.host}/</Heading> */}
                   <XStack>
                     <Input f={1}

@@ -63,21 +63,21 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
             }}
           />
           <Sheet.ScrollView p="$4" space>
-            <YStack maxWidth={800} width='100%' alignSelf='center' space='$1'>
+            <YStack maxWidth={800} width='100%' alignSelf='center' gap='$1'>
               <Heading>Settings</Heading>
 
               <Heading size='$5' mt='$5'>Navigation</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Auto-Hide Navigation'
                   description='Automatically hide navigation when scrolling down. For short (landscape phone) screens, this is automatically enabled.'
                   value={app.autoHideNavigation}
                   setter={(v) => setAutoHideNavigation(v)} autoDispatch />
               </YStack>
-              <XStack flexWrap='wrap' space='$3' ai='center' mt='$2'>
+              <XStack flexWrap='wrap' gap='$3' ai='center' mt='$2'>
                 <Heading size='$4'>Feature Navigation</Heading>
                 <Paragraph o={0.5} size='$1'>(Posts, Events, People, Latest, Media, etc.)</Paragraph>
               </XStack>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <YStack w='100%' backgroundColor={primaryColor} borderRadius='$3'>
                   <XStack mx='auto' py='$1'>
                     <FeaturesNavigation disabled />
@@ -124,7 +124,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
               </YStack>
               <Heading size='$5' mt='$3'>Posts, Events, and People</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
 
                 <ToggleRow name='Fancy Backgrounds'
                   description='Add pretty blurred background images to the UI. Memory and CPU intensive; may lead to crashes. Runs fine on my M1 Max MacBook Pro, crashes my iPhone 12 Pro.'
@@ -134,7 +134,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               {/* {toggleRow('Show Intro on Homepage', app.showIntro, setShowIntro)} */}
               <Heading size='$5' mt='$3'>Discussions and Chat</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Auto-Refresh Chat'
                   description='Automatically refresh the discussion chat every few seconds. Only supported in Chat Mode.'
                   value={app.autoRefreshDiscussions}
@@ -161,12 +161,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               </YStack>
 
               <Heading size='$5' mt='$5'>Accounts</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
               </YStack>
 
               <Heading size='$5' mt='$5'>Testing</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Allow Server Selection'
                   description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
                   // disabled={serverCount !== 1}
@@ -179,7 +179,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <ToggleRow name='Dark Mode' value={app.darkMode} setter={setDarkMode} disabled={app.darkModeAuto} autoDispatch /> */}
               </YStack>
               <Heading size='$5' mt='$5'>Development</Heading>
-              <YStack space='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Browse RSVPs from Event Previews' value={app.browseRsvpsFromPreviews} setter={setBrowseRsvpsFromPreviews} autoDispatch />
                 <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
 
@@ -229,7 +229,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                           {/* </Paragraph> */}
                         </Dialog.Description>
 
-                        <XStack space="$3" jc="flex-end">
+                        <XStack gap="$3" jc="flex-end">
                           <Dialog.Close asChild>
                             <Button>Cancel</Button>
                           </Dialog.Close>

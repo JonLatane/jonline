@@ -35,7 +35,7 @@ export function ModerationPicker({
       <Select.Content zIndex={200000}>
         <Select.Viewport minWidth={200} w='100%'>
           <XStack w='100%'>
-            <Select.Group space="$0" w='100%'>
+            <Select.Group gap="$0" w='100%'>
               <Select.Label w='100%'>{label ?? 'Moderation'}</Select.Label>
               {values.map((item, i) => {
                 return (

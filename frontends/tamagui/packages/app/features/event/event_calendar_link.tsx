@@ -110,7 +110,7 @@ export const EventCalendarLink: React.FC<Props> = ({
         >
           <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-          <YStack space="$3" h='100%'>
+          <YStack gap="$3" h='100%'>
             {/* {willAdaptEdit ?
           <Popover.Sheet.ScrollView f={1}> */}
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...icsLink}><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>ICS (iCal/Apple)</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>

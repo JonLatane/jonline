@@ -76,7 +76,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
   const externalLink = useLink({ href: `https://${host}` });
 
   const { color: buttonBackgroundColor, textColor: buttonTextColor } = colorIntMeta(pendingServer?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242);
-  return <YStack px='$3' space='$2'>
+  return <YStack px='$3' gap='$2'>
     {/* {tiny
       ? */}
     <XStack>
@@ -95,10 +95,10 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
         hoverStyle={{ backgroundColor: buttonBackgroundColor }}
         onPress={addServer}>
 
-        {tiny ? <YStack space='$0' ai='center'>
+        {tiny ? <YStack gap='$0' ai='center'>
           <Paragraph color={buttonTextColor} lineHeight='$1' size='$1' my='auto'>Add</Paragraph>
           <Heading color={buttonTextColor} lineHeight='$1' size='$2' my='auto'>{host}</Heading>
-        </YStack> : <XStack space='$2' ai='center'>
+        </YStack> : <XStack gap='$2' ai='center'>
           <Paragraph color={buttonTextColor} size='$2' my='auto'>Add</Paragraph>
           <Heading color={buttonTextColor} size='$3' my='auto'>{host}</Heading>
         </XStack>}
@@ -124,10 +124,10 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
           hoverStyle={{ backgroundColor: buttonBackgroundColor }}
           onPress={addServer}>
 
-          {tiny ? <YStack space='$0' ai='center'>
+          {tiny ? <YStack gap='$0' ai='center'>
             <Paragraph color={buttonTextColor} lineHeight='$1' size='$1' my='auto'>Add</Paragraph>
             <Heading color={buttonTextColor} lineHeight='$1' size='$2' my='auto'>{host}</Heading>
-          </YStack> : <XStack space='$2' ai='center'>
+          </YStack> : <XStack gap='$2' ai='center'>
             <Paragraph color={buttonTextColor} size='$2' my='auto'>Add</Paragraph>
             <Heading color={buttonTextColor} size='$3' my='auto'>{host}</Heading>
           </XStack>}

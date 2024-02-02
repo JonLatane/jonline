@@ -46,7 +46,7 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
     {...standardAnimation}
   >
     {media.length > 0 ? <ScrollView horizontal w='100%'>
-      <XStack space='$2'>
+      <XStack gap='$2'>
         {media.map((mediaRef, index) =>
           <ZStack key={`media-renderer-${mediaRef.id}`} w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
             {/* <ZStack> */}

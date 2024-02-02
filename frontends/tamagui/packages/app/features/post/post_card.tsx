@@ -347,7 +347,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       {contentArea}
                     </Anchor>
                     : contentArea}
-                  <XStack space='$2' flexWrap="wrap" py='$2'>
+                  <XStack gap='$2' flexWrap="wrap" py='$2'>
                     {showEdit
                       ? editing
                         ? <>
@@ -412,7 +412,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                                     The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
                                   </Dialog.Description>
 
-                                  <XStack space="$3" jc="flex-end">
+                                  <XStack gap="$3" jc="flex-end">
                                     <Dialog.Close asChild>
                                       <Button>Cancel</Button>
                                     </Dialog.Close>
@@ -426,7 +426,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                           </Dialog>
                         </>
                       : undefined}
-                    <XStack space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                    <XStack gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                       {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                         <VisibilityPicker
                           id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}

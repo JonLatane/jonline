@@ -38,6 +38,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       : federateId(selectedGroup.shortname, selectedGroup.serverHost))
     : undefined;
   const eventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events' });
+  const allEventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events?endsAfter=1969-12-31T19%3A00%3A00.000-05%3A00' });
 
   const dimensions = useWindowDimensions();
 
@@ -87,23 +88,29 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
-        <AnimatePresence>
-          {(eventsLoaded || postsLoaded) || allEvents.length > 0
-            ? <XStack key='latest-events-header' w='100%' px='$3'>
-              <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
-                <Heading size='$6'>Upcoming Events</Heading>
-                <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
-                  <ChevronRight />
-                </XStack>
+        {/* <AnimatePresence> */}
+          {/* {(eventsLoaded || postsLoaded) || allEvents.length > 0
+            ?  */}
+          <XStack key='latest-events-header' w='100%' px='$3' ai='center'>
+            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+              <Heading size='$6'>Upcoming Events</Heading>
+              <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
+                <ChevronRight />
+              </XStack>
+            </Button>
+            {eventsLoaded && allEvents.length === 0
+              ? <Button ml='auto' h='auto' transparent {...themedButtonBackground(navColor)}
+                {...allEventsLink}>
+                <YStack ai='center' w='100%'>
+                  <Heading size='$1' color={navTextColor} textDecorationLine='none'>All</Heading>
+                  <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
+                </YStack>
               </Button>
-              {/* <Button ml='auto' transparent {...themedButtonBackground(navColor)}
-                {...eventsLink}>
-                <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
-              </Button> */}
-            </XStack>
-            : undefined}
+              : undefined}
+          </XStack>
+          {/* : undefined} */}
           {showEventsOnLatest ?
-            ((eventsLoaded && postsLoaded) || allEvents.length > 0) ?
+            (eventsLoaded || allEvents.length > 0) ?
               <YStack key='latest-events'
                 w='100%'
                 // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
@@ -112,14 +119,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 {...standardAnimation}
               >
                 {allEvents.length == 0
-                  ? eventsLoaded
-                    ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' px='$2' mt='$3'>
-                      <Heading size='$5' mb='$3'>No events found.</Heading>
-                      <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                    </YStack>
-                    : undefined
+                  ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' px='$2' mt='$3'>
+                    <Heading size='$5' mb='$3'>No events found.</Heading>
+                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                  </YStack>
                   : <ScrollView horizontal w='100%'>
-                    <XStack w={eventCardWidth} space='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
+                    <XStack w={eventCardWidth} gap='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
                       {paginatedEvents.map((event) =>
                         <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
                           <EventCard event={event} isPreview horizontal xs />
@@ -134,9 +139,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                     </XStack>
                   </ScrollView>}
               </YStack>
-              : undefined//<Spinner color={navColor} />
+              : loadingEvents
+                ? <Spinner color={navColor} />
+                : undefined
             : undefined}
-        </AnimatePresence>
+        {/* </AnimatePresence> */}
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
           {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)

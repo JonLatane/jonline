@@ -76,7 +76,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       topChrome={
         <YStack w='100%' px='$2' py='$2' key='filter-toolbar'>
 
-          <XStack w='100%' ai='center' space='$2' mx='$2'>
+          <XStack w='100%' ai='center' gap='$2' mx='$2'>
             <Input placeholder='Search'
               f={1}
               value={searchText}

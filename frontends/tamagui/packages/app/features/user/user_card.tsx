@@ -140,9 +140,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         : undefined}
       {followRequestReceived ?
         <YStack key='follow-request-heading' animation='quick' {...standardAnimation}
-          space='$2'>
+          gap='$2'>
           <Heading size='$1' ta='center'>Wants to follow you</Heading>
-          <XStack ac='center' jc='center' mb='$2' space='$2'>
+          <XStack ac='center' jc='center' mb='$2' gap='$2'>
             <Button onPress={(e) => doRespondToFollowRequest(e, true)} backgroundColor={primaryColor}
               disabled={isLocked} opacity={isLocked ? 0.5 : 1}>
               <Heading size='$2' color={primaryTextColor}>
@@ -215,7 +215,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         y={0}
       >
         <Card.Header>
-          <XStack w='100%' space='$1' ai='center'>
+          <XStack w='100%' gap='$1' ai='center'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
                 {usernameRegion}

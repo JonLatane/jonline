@@ -41,7 +41,7 @@ export function VisibilityPicker({
   if (readOnly) {
     return <Tooltip>
       <Tooltip.Trigger>
-        <XStack my='auto' opacity={0.5} space='$2'>
+        <XStack my='auto' opacity={0.5} gap='$2'>
           {/* <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading> */}
           <Paragraph my='auto' size='$1'>{visibilityName(visibility)}</Paragraph>
           {/* <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>{visibilityName(visibility)}</Text> */}
@@ -82,7 +82,7 @@ export function VisibilityPicker({
 
           <Select.Viewport minWidth={200} w='100%'>
             <XStack w='100%'>
-              <Select.Group space="$0" w='100%'>
+              <Select.Group gap="$0" w='100%'>
                 <Select.Label w='100%'>{label ?? 'Visibility'}</Select.Label>
                 {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {
                   if (item != visibility) {

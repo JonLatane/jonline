@@ -49,7 +49,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
     <Heading key='permissions-editor-heading' size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
       {label ?? 'Permissions'}
     </Heading>
-    <XStack key='permissions-editor-permissions' w='100%' space='$2' flexWrap='wrap'>
+    <XStack key='permissions-editor-permissions' w='100%' gap='$2' flexWrap='wrap'>
       {selectedPermissions.map((p: Permission) =>
         <Button key={`permission-${p}`} disabled={!editMode} onPress={() => deselectPermission(p)} mb='$2'>
           <XStack>
@@ -95,7 +95,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({ id, label,
 
           <Select.Viewport minWidth={200}>
             <XStack>
-              <Select.Group key='permissions-editor' space="$0" w='100%'>
+              <Select.Group key='permissions-editor' gap="$0" w='100%'>
                 <Select.Label>{'Available Permissions'}</Select.Label>
                 <Select.Item disabled index={0} key='placeholder' value={Permission.PERMISSION_UNKNOWN.toString()}>
                   <Select.ItemText>

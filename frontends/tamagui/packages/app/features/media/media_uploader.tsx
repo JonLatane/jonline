@@ -102,7 +102,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
             backgroundColor={dragging ? primaryColor : navColor}
             opacity={0.95}
             hoverStyle={{ opacity: 1, backgroundColor: dragging ? primaryColor : navColor }}>
-            <XStack space='$2'>
+            <XStack gap='$2'>
               <XStack my='auto'>
                 <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
               </XStack>

@@ -37,7 +37,7 @@ export function ShareableToggle({
   }
 
   // const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
-  return <YStack space='$1' o={disabled ? 0.5 : 1} my='auto'>
+  return <YStack gap='$1' o={disabled ? 0.5 : 1} my='auto'>
     <Label htmlFor={name} my='auto' f={1}>
       <Paragraph size='$1' mx='auto' lineHeight='$1'>
         Shareable

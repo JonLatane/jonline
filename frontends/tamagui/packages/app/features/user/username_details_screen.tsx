@@ -433,9 +433,9 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                 <YStack space>
                   <Dialog.Title>Reset Password</Dialog.Title>
                   <Dialog.Description>
-                    <YStack space='$2'>
+                    <YStack gap='$2'>
                       <Paragraph size="$2">New Password:</Paragraph>
-                      <XStack space='$2'>
+                      <XStack gap='$2'>
                         <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
                           value={resetUserPassword}
                           onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
@@ -465,7 +465,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     </YStack>
                   </Dialog.Description>
 
-                  <XStack space="$3" jc="flex-end">
+                  <XStack gap="$3" jc="flex-end">
                     <Dialog.Close asChild>
                       <Button>Cancel</Button>
                     </Dialog.Close>
@@ -524,7 +524,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
                   </Dialog.Description>
 
-                  <XStack space="$3" jc="flex-end">
+                  <XStack gap="$3" jc="flex-end">
                     <Dialog.Close asChild>
                       <Button>Cancel</Button>
                     </Dialog.Close>

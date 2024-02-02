@@ -3,7 +3,7 @@ import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntit
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
@@ -19,12 +19,11 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { defaultEventInstance, supportDateInput, toProtoISOString } from "./create_event_sheet";
+import { defaultEventInstance, } from "./create_event_sheet";
 import { EventCalendarLink } from './event_calendar_link';
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
-
 
 interface Props {
   event: FederatedEvent;
@@ -356,7 +355,7 @@ export const EventCard: React.FC<Props> = ({
       </ZStack>
     </Button>;
   const instanceManagementButtons = <>
-    {/* <YStack key='instances-buttons' my='$2' space="$3"> */}
+    {/* <YStack key='instances-buttons' my='$2' gap="$3"> */}
     {editing
       ? <Button my='auto' size='$3' circular icon={CalendarPlus} onPress={addInstance} />
       : undefined}
@@ -430,8 +429,8 @@ export const EventCard: React.FC<Props> = ({
       </>}
   </YStack>;
 
-  const headerLinksEdit = <YStack f={1} space='$2' key='header-links-edit'>
-    <XStack w='100%' space='$2'>
+  const headerLinksEdit = <YStack f={1} gap='$2' key='header-links-edit'>
+    <XStack w='100%' gap='$2'>
       <Input f={1} textContentType="name" placeholder={`Event Title (required)`}
         disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
         value={editedTitle}
@@ -557,7 +556,7 @@ export const EventCard: React.FC<Props> = ({
                           <Select.Content zIndex={200000}>
                             <Select.Viewport minWidth={200} w='100%'>
                               <XStack w='100%'>
-                                <Select.Group space="$0" w='100%'>
+                                <Select.Group gap="$0" w='100%'>
                                   {weeklyRepeatOptions.map(i => i + 1).map((item, i) => {
                                     return (
                                       <Select.Item
@@ -602,7 +601,7 @@ export const EventCard: React.FC<Props> = ({
                         : undefined}
                     </Dialog.Description>
 
-                    <XStack space="$3" jc="flex-end">
+                    <XStack gap="$3" jc="flex-end">
                       <Dialog.Close asChild>
                         <Button>Cancel</Button>
                       </Dialog.Close>
@@ -679,7 +678,7 @@ export const EventCard: React.FC<Props> = ({
 
 
                     {scrollInstancesVertically
-                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} space='$2' flexWrap='wrap' f={1}>
+                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
                         <AnimatePresence>
                           {displayedInstances?.map((i) => renderInstance(i))}
                         </AnimatePresence>
@@ -700,21 +699,16 @@ export const EventCard: React.FC<Props> = ({
                     ? <>
                       <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
                         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-                        <Text fontSize='$2' fontFamily='$body'>
-                          <input type='datetime-local' style={{ colorScheme: darkMode ? 'dark' : 'light', padding: 10 }}
-                            min={supportDateInput(moment(0))}
-                            value={supportDateInput(moment(editingInstance.startsAt))}
-                            onChange={(v) => setStartTime(v.target.value)} />
-                        </Text>
+
+                        <XStack ml='auto' my='auto'>
+                          <DateTimePicker value={editingInstance.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
+                        </XStack>
                       </XStack>
                       <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
                         <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                        <Text fontSize='$2' fontFamily='$body'>
-                          <input type='datetime-local' style={{ colorScheme: darkMode ? 'dark' : 'light', padding: 10 }}
-                            min={editingInstance.startsAt}
-                            value={supportDateInput(moment(editingInstance.endsAt))}
-                            onChange={(v) => setEndTime(v.target.value)} />
-                        </Text>
+                        <XStack ml='auto' my='auto'>
+                          <DateTimePicker value={editingInstance.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
+                        </XStack>
                       </XStack>
                       {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
                     </>
@@ -787,7 +781,7 @@ export const EventCard: React.FC<Props> = ({
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack key='save-buttons' space='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
+                <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
                   {showEdit
                     ? editing
                       ? <>
@@ -857,7 +851,7 @@ export const EventCard: React.FC<Props> = ({
                                   The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
                                 </Dialog.Description>
 
-                                <XStack space="$3" jc="flex-end">
+                                <XStack gap="$3" jc="flex-end">
                                   <Dialog.Close asChild>
                                     <Button>Cancel</Button>
                                   </Dialog.Close>
@@ -872,7 +866,7 @@ export const EventCard: React.FC<Props> = ({
                       </>
                     : undefined}
 
-                  <XStack key='visibility-etc' space='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                  <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                     <XStack key='visibility-edit' my='auto' ml='auto'>
                       <VisibilityPicker
                         id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}

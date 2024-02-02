@@ -1,10 +1,10 @@
 import { Permission } from "@jonline/api";
 import { Button, Card, Dialog, Heading, Image, Input, Paragraph, Theme, Tooltip, TooltipSimple, XStack, YStack, formatError, useMedia, useTheme } from "@jonline/ui";
-import { AlertCircle, Bot, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
+import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { colorMeta, useAppSelector, useCredentialDispatch, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, actionSucceeded, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
 import { useRequestResult } from "../../hooks/use_request_result";
@@ -32,7 +32,12 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const [showReauthenticate, setShowReauthenticate] = useState(false);
   // console.log('showReauthenticate', showReauthenticate);
   const [reauthenticationPassword, setReauthenticationPassword] = useState('');
-
+  const [reauthenticationSuccess, setReauthenticationSuccess] = useState<boolean | undefined>();
+  useEffect(() => {
+    if (reauthenticationSuccess) {
+      setTimeout(() => setReauthenticationSuccess(undefined), 1500);
+    }
+  });
 
   const {
     caller: doReauthentication,
@@ -52,6 +57,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         setTimeout(() => setResult(undefined), 1000);
         setShowReauthenticate(false);
         setReauthenticationPassword('');
+        setReauthenticationSuccess(true);
       } else {
         setError(formatError('error' in action ? action.error : undefined));
       }
@@ -178,7 +184,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
           {account.needsReauthentication
 
             ? showReauthenticate
-              ? <XStack flexWrap="wrap" ai='center' space='$3'>
+              ? <XStack flexWrap="wrap" ai='center' gap='$3'>
                 <Input placeholder="Password" secureTextEntry
                   ref={passwordRef}
                   value={reauthenticationPassword}
@@ -212,7 +218,10 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 setShowReauthenticate(true);
                 setTimeout(() => passwordRef.current?.focus(), 100);
               }}>
-                <XStack space='$2'>
+                <XStack animation='standard' o={reauthenticationSuccess ? 1 : 0}>
+                  <Check color={navAnchorColor} />
+                </XStack>
+                <XStack gap='$2'>
                   <YStack my='auto'><AlertCircle color={navAnchorColor} /></YStack>
                   <Paragraph size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
                     Reauthentication required.
@@ -259,7 +268,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
               ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
               : undefined}
             {totalAccounts > 1 && (!selected || onPress || mediaQuery.gtXxxs)
-              ? <XStack my='auto' space='$2' mr='$2'>
+              ? <XStack my='auto' gap='$2' mr='$2'>
                 <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronUp} circular />
                 <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronDown} circular />
               </XStack>
@@ -306,7 +315,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                       in this browser again.
                     </Dialog.Description>
 
-                    <XStack space="$3" jc="flex-end">
+                    <XStack gap="$3" jc="flex-end">
                       <Dialog.Close asChild>
                         <Button>Cancel</Button>
                       </Dialog.Close>

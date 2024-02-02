@@ -116,18 +116,18 @@ export function TabsTutorial({ }) {
   return <AnimatePresence>
     {showHelp && false
       ? <ZStack w='100%' h={height} animation='standard' {...standardAnimation} mt='$3' pt='$2'>
-        <XStack w='100%' ai='center' space='$2' animation='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
-          <YStack space='$1' ai='center' jc='center' ac='center' ml={homeButtonWidth + ((groupsButtonWidth - 20) / 2) - 5} >
+        <XStack w='100%' ai='center' gap='$2' animation='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
+          <YStack gap='$1' ai='center' jc='center' ac='center' ml={homeButtonWidth + ((groupsButtonWidth - 20) / 2) - 5} >
             <XStack ml='$1'><MoveUp size='$5' opacity={multiphase && showPhase2 ? 0.25 : 1} /></XStack>
             <Paragraph mt='$1' size='$2' fontWeight='bold' transform={[{ translateX: -12 }]}>Groups</Paragraph>
           </YStack>
-          <YStack space='$1' ai='center' ml={-20 + (groupsButtonWidth - 20) / 2}>
+          <YStack gap='$1' ai='center' ml={-20 + (groupsButtonWidth - 20) / 2}>
             <MoveUp size='$5' opacity={!mediaQuery.gtXxs && showPhase2 ? 0.25 : 1} />
             <Paragraph mt='$1' size='$2' fontWeight='bold' transform={[{ translateX: 37 }]}>Features/Sections</Paragraph>
           </YStack>
         </XStack>
-        <XStack w='100%' ai='center' space='$2' mt={-4}>
-          <YStack my='auto' ai='center' space='$2' mt='$4'>
+        <XStack w='100%' ai='center' gap='$2' mt={-4}>
+          <YStack my='auto' ai='center' gap='$2' mt='$4'>
             <Button ml='$3' {...themedButtonBackground(navColor, navTextColor)} size='$3' py='$1' px='$2' onPress={gotIt}>
               <Heading size='$1' color={navTextColor}>
                 {hidingStarted ? 'Okay' : 'Got it!'}

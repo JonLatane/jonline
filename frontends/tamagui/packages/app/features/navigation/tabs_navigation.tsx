@@ -113,7 +113,7 @@ export function TabsNavigation({
         <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
           <YStack w='100%'>
             {disabled ? undefined : <XStack id='nav-main'
-              backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} space="$1" py='$1' pl='$1' w='100%'>
+              backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
               {/* <XStack w={5} /> */}
               <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
                 <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
@@ -152,7 +152,7 @@ export function TabsNavigation({
                 ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                 : undefined}
               {!scrollGroupsSheet
-                ? <XStack space='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
+                ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
                   <GroupsSheet key='main'
                     selectedGroup={selectedGroup}
                     groupPageForwarder={groupPageForwarder}
@@ -196,7 +196,7 @@ export function TabsNavigation({
 
         {loading
           ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-            <YStack space="$1" opacity={0.92}>
+            <YStack gap="$1" opacity={0.92}>
               <Spinner size='large' color={navColor} scale={2}
                 top={dimensions.height / 2 - 50}
               />

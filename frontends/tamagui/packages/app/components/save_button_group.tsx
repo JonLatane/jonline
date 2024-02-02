@@ -128,7 +128,7 @@ export function SaveButtonGroup({
     doUpdate();
   }
 
-  return <XStack p='$3' space='$2'>
+  return <XStack p='$3' gap='$2'>
     {canEdit
       ? editing
         ? <>
@@ -195,7 +195,7 @@ export function SaveButtonGroup({
                       {deleteDialogText}
                     </Dialog.Description>
 
-                    <XStack space="$3" jc="flex-end">
+                    <XStack gap="$3" jc="flex-end">
                       <Dialog.Close asChild>
                         <Button>Cancel</Button>
                       </Dialog.Close>

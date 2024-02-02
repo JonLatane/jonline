@@ -1,8 +1,7 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
-import { AnimatePresence, Heading, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
 import { RootState, federateId, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useEventPages, usePaginatedRendering } from 'app/hooks';
@@ -10,13 +9,12 @@ import { setDocumentTitle } from 'app/utils';
 import moment from 'moment';
 import { createParam } from 'solito';
 import { standardHorizontalAnimation } from '../../../ui/src/animations';
-import { supportDateInput, toProtoISOString } from '../event/create_event_sheet';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
+import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
-import { DynamicCreateButton } from './dynamic_create_button';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -100,7 +98,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       }} />;
   }
   const renderInColumns = mediaQuery.gtXs;
-  const numberOfColumns = mediaQuery.gtXxl ? 6
+  const numberOfColumns = mediaQuery.gtXxxl ? 6
     : mediaQuery.gtXl ? 5
       : mediaQuery.gtLg ? 4
         : mediaQuery.gtMd ? 3
@@ -122,28 +120,29 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       topChrome={
         <YStack w='100%' px='$2' key='filter-toolbar'>
 
-            <XStack w='100%'>
-              {displayModeButton('upcoming', 'Upcoming')}
-              {displayModeButton('all', 'All')}
-              {displayModeButton('filtered', 'Filtered')}
-            </XStack>
-            {/* <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
+          <XStack w='100%'>
+            {displayModeButton('upcoming', 'Upcoming')}
+            {displayModeButton('all', 'All')}
+            {displayModeButton('filtered', 'Filtered')}
+          </XStack>
+          {/* <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
             <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
               <ChevronRight size='$1' />
             </XStack>
             <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
           </Button> */}
-            <AnimatePresence>
-              {displayMode === 'filtered' ?
-                <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' animation='standard' {...standardAnimation}>
-                  <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
-                  <Text ml='auto' my='auto' fontSize='$2' fontFamily='$body'>
-                    <input type='datetime-local' min={supportDateInput(moment(0))} value={supportDateInput(moment(endsAfter))} onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))} style={{ padding: 10 }} />
-                  </Text>
+          <AnimatePresence>
+            {displayMode === 'filtered' ?
+              <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
+                animation='standard' {...standardAnimation}>
+                <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
+                <XStack ml='auto' my='auto'>
+                  <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
                 </XStack>
-                : undefined}
-            </AnimatePresence>
-          </YStack>
+              </XStack>
+              : undefined}
+          </AnimatePresence>
+        </YStack>
       }
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
@@ -156,8 +155,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : renderInColumns ?
-              <YStack space='$2'>
-                <XStack mx='auto' space='$2' flexWrap='wrap' jc='center'>
+              <YStack gap='$2'>
+                <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
                   <AnimatePresence>
                     {paginatedEvents.map((event) => {
                       return <XStack w={eventCardWidth} key={federateId(event.instances[0]?.id ?? '', server)}
@@ -169,7 +168,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 </XStack>
                 <PaginationIndicator {...pagination} />
               </YStack>
-              : <YStack w='100%' ac='center' ai='center' jc='center' space='$2'>
+              : <YStack w='100%' ac='center' ai='center' jc='center' gap='$2'>
                 {paginatedEvents.map((event) => {
                   return <XStack animation='standard' {...standardAnimation} w='100%'>
                     <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
@@ -183,3 +182,4 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     </TabsNavigation>
   )
 }
+

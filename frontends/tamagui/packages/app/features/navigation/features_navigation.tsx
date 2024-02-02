@@ -234,7 +234,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         : undefined}
       // icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
       {...themedButtonBackground(navColor)}>
-      <XStack space='$2'>
+      <XStack gap='$2'>
         {icon}
         <Heading f={1} size="$4" color={navTextColor}>
           {subsectionTitle(appSubsection) ?? sectionTitle(appSection)}
@@ -278,7 +278,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
               hoverStyle={{ backgroundColor: '$colorTransparent' }}
               {...link}
             >
-              <XStack space='$2'>
+              <XStack gap='$2'>
                 {icon}
                 {!inlineNavigation || !shrinkNavigation || !icon
                   ? <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
@@ -311,7 +311,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     ? <>
       <XStack w={selectedGroup ? 11 : 3.5} />
       {!reorderInlineNavigation && MENU_SECTIONS.includes(appSection) ? undefined : triggerButton()}
-      <XStack space='$2' ml='$1' my='auto'>
+      <XStack gap='$2' ml='$1' my='auto'>
         {isPeopleRow && reorderInlineNavigation ? peopleRow : postsEventsRow}
         {inlineSeparator}
         {isPeopleRow && reorderInlineNavigation ? postsEventsRow : peopleRow}
@@ -345,14 +345,14 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         >
           <Popover.Arrow bw={1} boc="$borderColor" />
 
-          <YStack space="$3">
-            <XStack ac='center' jc='center' space='$2'>
+          <YStack gap="$3">
+            <XStack ac='center' jc='center' gap='$2'>
               {postsEventsRow}
             </XStack>
-            <XStack ac='center' jc='center' space='$2'>
+            <XStack ac='center' jc='center' gap='$2'>
               {peopleRow}
             </XStack>
-            <XStack ac='center' jc='center' space='$2'>
+            <XStack ac='center' jc='center' gap='$2'>
               {myDataRow}
             </XStack>
           </YStack>

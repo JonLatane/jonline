@@ -35,7 +35,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   return hide ? <></> :
     <>
       {canCreatePosts
-        ? <XStack w='100%' p='$2' space='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
+        ? <XStack w='100%' p='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
           {doShowPosts ? <CreatePostSheet selectedGroup={selectedGroup} /> : undefined}
           {doShowEvents ? <CreateEventSheet selectedGroup={selectedGroup} /> : undefined}
         </XStack>

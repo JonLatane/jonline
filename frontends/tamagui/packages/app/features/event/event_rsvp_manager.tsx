@@ -352,14 +352,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       {/* {isPreview
         ? <></>
         :  */}
-      <XStack className={topButtonsClassName} space='$1' //w='100%'
+      <XStack className={topButtonsClassName} gap='$1' //w='100%'
         borderTopLeftRadius='$5' borderTopRightRadius='$5' backgroundColor='$backgroundHover'
         mx='$1'
       >
         {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
           ? <Button disabled={busy} opacity={busy ? 0.5 : 1}
             transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
-            <XStack ai='center' space='$2'>
+            <XStack ai='center' gap='$2'>
               {/* {isPreview ? undefined : */}
               <ZStack h='$2' w='$2' my='auto' pt='$5'>
                 <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
@@ -386,7 +386,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           ? <>
             <Button mb='$2' disabled={busy} opacity={busy ? 0.5 : 1}
               transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
-              <XStack ai='center' space='$2'>
+              <XStack ai='center' gap='$2'>
                 {/* {isPreview ? undefined : */}
                 <ZStack h='$2' w='$2'>
                   <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
@@ -417,7 +417,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
       {/* } */}
       <AnimatePresence>
         {newRsvpMode !== undefined
-          ? <YStack className={formClassName} key='rsvp-section' space='$2'
+          ? <YStack className={formClassName} key='rsvp-section' gap='$2'
             backgroundColor='$backgroundHover' borderRadius={0}
             p='$2'
             mx='$1'
@@ -467,7 +467,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 }}
                 mb='$1'
                 value={rsvpStatus.toString()} name="form" >
-                <XStack alignItems="center" space="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
+                <XStack alignItems="center" gap="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
                   <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
                     {...valueAndLabel(AttendanceStatus.GOING)} />
                   <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
@@ -551,7 +551,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
             <AnimatePresence>
               {showDetails
-                ? <YStack className={formClassName} key='rsvp-details' space='$2' animation='standard' {...standardAnimation}>
+                ? <YStack className={formClassName} key='rsvp-details' gap='$2' animation='standard' {...standardAnimation}>
                   <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
                     <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                       <Select.Value w='100%' placeholder="Choose Visibility" />
@@ -560,7 +560,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     <Select.Content zIndex={200000}>
                       <Select.Viewport minWidth={200} w='100%'>
                         <XStack w='100%'>
-                          <Select.Group space="$0" w='100%'>
+                          <Select.Group gap="$0" w='100%'>
                             {numberOfGuestsOptions.map(i => i + 1).map((item, i) => {
                               return (
                                 <Select.Item
@@ -608,7 +608,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </YStack>
                 : undefined}
             </AnimatePresence>
-            <XStack w='100%' space='$2'>
+            <XStack w='100%' gap='$2'>
 
               {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0
                 ? <>
@@ -652,7 +652,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                             Make sure you've saved <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
                           </Dialog.Description>
 
-                          <XStack space="$3" jc="flex-end">
+                          <XStack gap="$3" jc="flex-end">
                             <Dialog.Close asChild>
                               <Button>Cancel</Button>
                             </Dialog.Close>
@@ -712,7 +712,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                           Really delete this RSVP?
                         </Dialog.Description>
 
-                        <XStack space="$3" jc="flex-end">
+                        <XStack gap="$3" jc="flex-end">
                           <Dialog.Close asChild>
                             <Button>Cancel</Button>
                           </Dialog.Close>
@@ -789,7 +789,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           </XStack>
         </Button>
         {showRsvpCards
-          ? <YStack key='attendance-cards' mt='$1' space='$2' animation='standard'
+          ? <YStack key='attendance-cards' mt='$1' gap='$2' animation='standard'
             borderBottomLeftRadius='$5' borderBottomRightRadius='$5' backgroundColor='$backgroundHover'
             mx='$1' pt='$1' px='$1'
             {...standardAnimation}>
@@ -894,7 +894,7 @@ export function RadioGroupItemWithLabel(props: {
 }) {
   const id = useComponentKey('radio-group-item');
   return (
-    <XStack f={1} alignItems="center" space="$2">
+    <XStack f={1} alignItems="center" gap="$2">
       <RadioGroup.Item value={props.value} id={id} size={props.size}>
         <RadioGroup.Indicator />
       </RadioGroup.Item>

@@ -89,7 +89,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
           itemTitle={post.title}
           selectedGroup={selectedGroup ?? singleSharedGroup}
           // onGroupSelected={() => { }}
-          disabled={groupsUnavailable}
+          disabled={!groupPostData || groupsUnavailable}
           topGroupIds={groupPostData?.map(gp => federateId(gp.groupId, server)) ?? []}
           extraListItemChrome={(group) => {
             const groupPost = groupPostData?.find(gp => gp.groupId == group.id);
@@ -164,7 +164,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     setLoadingGroup(true);
   }
   return <YStack mx='auto' w='100%'>
-    <XStack space='$1' my='$2' w='100%' flexWrap="wrap">
+    <XStack gap='$1' my='$2' w='100%' flexWrap="wrap">
       <XStack f={1}>
         <XStack mx='auto'>
           <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>

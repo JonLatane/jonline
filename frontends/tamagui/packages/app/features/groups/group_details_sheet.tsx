@@ -226,7 +226,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       <Sheet.Overlay />
       <Sheet.Frame>
         <Sheet.Handle />
-        <XStack space='$4' paddingHorizontal='$3'>
+        <XStack gap='$4' paddingHorizontal='$3'>
 
           {showServerInfo
             ? <XStack my='auto' jc='center'>
@@ -265,7 +265,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           </Button>
         </XStack>
 
-        <YStack space="$0" px='$4' maw={800} als='center' width='100%'>
+        <YStack gap="$0" px='$4' maw={800} als='center' width='100%'>
           <XStack>
             {editing && !previewingEdits //&& infoRenderingGroup?.id != selectedGroup?.id
               ? <Input textContentType="name" f={1}
@@ -334,7 +334,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           </XStack>
         </YStack>
         <Sheet.ScrollView>
-          <YStack space="$0" px='$4' maw={800} als='center' width='100%'>
+          <YStack gap="$0" px='$4' maw={800} als='center' width='100%'>
             {/* <AnimatePresence> */}
             <YStack mx='$3'>
               {editing && !previewingEdits && showMedia
@@ -409,7 +409,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
           doUpdate={() => doUpdateGroup()}
           doDelete={() => doDeleteGroup()}
           deleteDialogText={
-            <YStack space='$3'>
+            <YStack gap='$3'>
               <Paragraph>
                 Really delete the group "{infoRenderingGroup?.name ?? 'group'}"?
               </Paragraph>

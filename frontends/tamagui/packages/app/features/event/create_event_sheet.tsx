@@ -1,9 +1,8 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
-import { Heading, Paragraph, Text, XStack } from '@jonline/ui';
+import { DateTimePicker, Heading, Paragraph, XStack, supportDateInput, toProtoISOString } from '@jonline/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage } from 'app/store';
 import React, { useEffect, useState } from 'react';
-// import AccountCard from './account_card';
-// import ServerCard from './server_card';
+
 import { useCredentialDispatch } from 'app/hooks';
 import moment from 'moment';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
@@ -15,10 +14,6 @@ export const defaultEventInstance: () => EventInstance = () => EventInstance.cre
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
 };
-
-export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
-export const toProtoISOString = (localDateTimeInput: string) =>
-  moment(localDateTimeInput).toISOString(true);
 
 export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -111,15 +106,15 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
     additionalFields={(post, group) => <>
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-        <Text fontSize='$2' fontFamily='$body'>
-          <input type='datetime-local' min={supportDateInput(moment(0))} value={startsAt} onChange={(v) => setStartsAt(v.target.value)} style={{ padding: 10 }} />
-        </Text>
+        <XStack ml='auto' my='auto'>
+          <DateTimePicker value={startsAt} onChange={(v) => setStartsAt(v)} />
+        </XStack>
       </XStack>
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-        <Text fontSize='$2' fontFamily='$body'>
-          <input type='datetime-local' value={endsAt} min={startsAt} onChange={(v) => setEndsAt(v.target.value)} style={{ padding: 10 }} />
-        </Text>
+        <XStack ml='auto' my='auto'>
+          <DateTimePicker value={endsAt} onChange={(v) => setEndsAt(v)} />
+        </XStack>
       </XStack>
 
       {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}

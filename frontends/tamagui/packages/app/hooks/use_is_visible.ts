@@ -4,7 +4,8 @@ export function useIsVisible(ref/*: React.MutableRefObject<Element>*/): boolean 
   const [isIntersecting, setIntersecting] = useState(false);
 
   useEffect(() => {
-    try {
+    // try {
+    if (ref.current) {
       const observer = new IntersectionObserver(([entry]) =>
         entry && setIntersecting(entry.isIntersecting)
       );
@@ -13,10 +14,11 @@ export function useIsVisible(ref/*: React.MutableRefObject<Element>*/): boolean 
       return () => {
         observer.disconnect();
       };
-    } catch (e) {
-      console.warn("Error measuring element visibility", e);
     }
-  }, [ref]);
+    // } catch (e) {
+    //   console.warn("Error measuring element visibility", e);
+    // }
+  }, [ref.current]);
 
   return isIntersecting;
 }

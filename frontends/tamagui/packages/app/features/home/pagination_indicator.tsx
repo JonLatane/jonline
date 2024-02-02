@@ -4,10 +4,16 @@ import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useServerTheme } from 'app/store';
 import React, { useEffect } from "react";
 
-export const PaginationIndicator: React.FC<Pagination<any>> = ({ page, loadingPage, hasNextPage = true, loadNextPage }) => {
+export const PaginationIndicator: React.FC<Pagination<any>> = ({
+  page,
+  loadingPage,
+  hasNextPage = true,
+  loadNextPage
+}) => {
   // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const ref = React.createRef<TamaguiElement>();
   const isVisible = useIsVisible(ref);
+  console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   // debugger;

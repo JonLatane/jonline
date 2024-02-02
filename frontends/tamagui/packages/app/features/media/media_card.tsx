@@ -98,7 +98,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
                             Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
                           </AlertDialog.Description>
 
-                          <XStack space="$3" justifyContent="flex-end">
+                          <XStack gap="$3" justifyContent="flex-end">
                             <AlertDialog.Cancel asChild>
                               <Button>Cancel</Button>
                             </AlertDialog.Cancel>

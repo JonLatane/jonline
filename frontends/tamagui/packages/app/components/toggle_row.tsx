@@ -15,7 +15,7 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
   const dispatch = useAppDispatch();
   const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
   const value = !!optionalValue;
-  return <XStack space='$3' o={disabled ? 0.5 : 1} my='$1'>
+  return <XStack gap='$3' o={disabled ? 0.5 : 1} my='$1'>
     <Label htmlFor={nameKey} my='auto' f={1}>
       <YStack w='100%'>
         <Paragraph size='$5' my='auto'>

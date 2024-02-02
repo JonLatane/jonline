@@ -98,7 +98,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       <XStack w='100%' maw={800}>
         <ScrollView horizontal w={isPreview ? '260px' : '100%'}
           h={mediaQuery.gtXs ? '400px' : '260px'} >
-          <XStack space='$2'>
+          <XStack gap='$2'>
             {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
               <MediaRenderer media={mediaRef} />
             </YStack>)}

@@ -73,7 +73,7 @@ export const LocationControl: React.FC<Props> = ({
     if (!location || location.uniformlyFormattedAddress === '') {
       return <></>;
     }
-    return <XStack space='$2' w='100%'>
+    return <XStack gap='$2' w='100%'>
       {link
         ? <XStack my='auto' f={1}>
           <Anchor {...link} f={1} my='auto' w='100%' textDecorationLine="none">
@@ -123,7 +123,7 @@ export const LocationControl: React.FC<Props> = ({
         >
           <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-          <YStack space="$3" h='100%'>
+          <YStack gap="$3" h='100%'>
             {/* {willAdaptEdit ?
               <Popover.Sheet.ScrollView f={1}> */}
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>OpenStreet</Paragraph><Paragraph lineHeight='$1' size='$2'>Map</Paragraph></YStack></Button>
@@ -138,7 +138,7 @@ export const LocationControl: React.FC<Props> = ({
           </YStack>
         </Popover.Content>
       </Popover >
-      {/* <XStack my='auto' ml='auto' space='$2'>
+      {/* <XStack my='auto' ml='auto' gap='$2'>
         <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>
         <Button my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Apple</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
         <Button my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Google</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
@@ -147,7 +147,7 @@ export const LocationControl: React.FC<Props> = ({
   }
 
 
-  const resultsView = <YStack space='$2'>
+  const resultsView = <YStack gap='$2'>
     {results
       ? results
         .filter(x => x)
@@ -173,7 +173,7 @@ export const LocationControl: React.FC<Props> = ({
         })
       : undefined}
   </YStack>;
-  return <XStack space='$1' w='100%'>
+  return <XStack gap='$1' w='100%'>
     <Input f={1} textContentType="fullStreetAddress" placeholder={`Location (optional)`}
       disabled={disabled} opacity={disabled || '' ? 0.5 : 1}
       // autoCapitalize='words'
@@ -218,7 +218,7 @@ export const LocationControl: React.FC<Props> = ({
       >
         <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-        <YStack space="$3" h='100%'>
+        <YStack gap="$3" h='100%'>
           <Heading size="$3" mx='auto'><Anchor {...osmCopyrightLink} target='_blank'>OpenStreetMap</Anchor> Suggestions</Heading>
           {isSearching ? <Spinner /> : undefined}
 

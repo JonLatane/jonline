@@ -85,7 +85,7 @@ export function ServerNameAndLogo({
 
   const serverNameBreakdown = <YStack my='auto' f={1}
     ml='$1'
-  // space={enlargeSmallText ? '$2' : '$0'}
+  // gap={enlargeSmallText ? '$2' : '$0'}
   >
     <Heading my='auto'
       fontSize={largeServername
@@ -138,7 +138,7 @@ export function ServerNameAndLogo({
     : <XStack
       mr={'$2'}
       h={'100%'} w='100%'
-      space='$5'
+      gap='$5'
       pl={useSquareLogo ? '$1' : undefined}
       maw={maxWidth}
     >

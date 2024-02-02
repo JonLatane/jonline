@@ -18,7 +18,7 @@ export const SingleMediaChooser: React.FC<Props> = ({ selectedMedia, setSelected
   const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
   const elementKey = `media-chooser-${mediaUseName.replace(' ', '-').toLowerCase()}`;
   return <YStack key={elementKey} animation='quick' {...standardAnimation}
-    space='$2' mb='$2'>
+    gap='$2' mb='$2'>
     <MediaChooser
       selectedMedia={selectedMedia ? [selectedMedia] : []}
       disabled={disabled}

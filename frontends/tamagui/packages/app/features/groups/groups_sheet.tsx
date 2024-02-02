@@ -148,7 +148,7 @@ export function GroupsSheet({
                 borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
                 o={account ? 1 : 0.5}
                 {...themedButtonBackground(navColor, navTextColor)}>
-                <XStack ai='center' w='100%' space='$2'>
+                <XStack ai='center' w='100%' gap='$2'>
 
                   {(avatarUrl && avatarUrl != '') ?
 
@@ -224,7 +224,7 @@ export function GroupsSheet({
             <Sheet.Overlay />
             <Sheet.Frame>
               <Sheet.Handle />
-              <XStack space='$4' paddingHorizontal='$3' mb='$2'>
+              <XStack gap='$4' paddingHorizontal='$3' mb='$2'>
                 <XStack f={1} />
                 <Button
                   alignSelf='center'
@@ -236,11 +236,11 @@ export function GroupsSheet({
                 <XStack f={1} />
               </XStack>
 
-              <YStack space="$3" mb='$2' maw={800} als='center' width='100%'>
+              <YStack gap="$3" mb='$2' maw={800} als='center' width='100%'>
                 {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
                 {itemTitle ? <Heading size="$7" paddingHorizontal='$3' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>{itemTitle}</Heading> : undefined}
 
-                <XStack space="$3" paddingHorizontal='$3'>
+                <XStack gap="$3" paddingHorizontal='$3'>
                   <XStack w='100%' pr='$0'>
                     <XStack my='auto' ml='$3' mr={-34}>
                       <Search />

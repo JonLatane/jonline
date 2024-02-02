@@ -101,7 +101,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
           </YStack>
           {/* <Button icon={<Info />} circular
                 onPress={(e) => { e.stopPropagation(); infoLink.onPress(e); }} /> */}
-          <YStack ac='flex-end' space='$2' ml='$1'>
+          <YStack ac='flex-end' gap='$2' ml='$1'>
             <XStack jc='flex-end'>
               {serverIsExternal ?
                 <Button mx='$1' icon={<ExternalLink />} circular
@@ -115,7 +115,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
             </XStack>
             {isPreview && serversState.ids.length > 1
               ?
-              <XStack jc='flex-end' space='$2'>
+              <XStack jc='flex-end' gap='$2'>
                 <Button disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveUp(); }} icon={ChevronLeft} circular />
                 <Button disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5} size='$2' onPress={(e) => { e.stopPropagation(); moveDown(); }} icon={ChevronRight} circular />
               </XStack>
@@ -183,7 +183,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
                         {/* </Paragraph> */}
                       </Dialog.Description>
 
-                      <XStack space="$3" jc="flex-end">
+                      <XStack gap="$3" jc="flex-end">
                         <Dialog.Close asChild>
                           <Button>Cancel</Button>
                         </Dialog.Close>

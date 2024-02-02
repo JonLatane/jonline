@@ -335,7 +335,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         {server ?
           <YStack mb='$2' w='100%' jc="center" ai="center" >
             <ScrollView w='100%'>
-              <YStack space='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
+              <YStack gap='$2' w='100%' maw={800} paddingHorizontal='$3' als='center' marginHorizontal='auto'>
                 {/* {serverIsSelected ? undefined : <XStack>
                   <XStack my='auto'><AlertTriangle /></XStack>
                   <YStack my='auto' f={1}>
@@ -363,7 +363,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         <Heart color={navTextColor} />
                       </>
                     }>
-                    <XStack space='$3' my='auto'>
+                    <XStack gap='$3' my='auto'>
                       <Info size='$3' color={navTextColor} />
                       <Heading size='$2' my='auto' color={navTextColor}>Powered by <Text fontSize='$6' color={navTextColor}>Jonline</Text></Heading>
                     </XStack>
@@ -411,7 +411,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       </Paragraph>
                       {/* <ScrollView horizontal> */}
                       <Heading size='$1' my='$2'>Name and Logo Previews</Heading>
-                      <XStack mx='auto' space='$3' my='$2'>
+                      <XStack mx='auto' gap='$3' my='$2'>
                         <XStack h={48} overflow='hidden'>
                           <ServerNameAndLogo server={{ ...server, serverConfiguration: updatedConfiguration }} />
                         </XStack>
@@ -522,7 +522,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
                 {section === 'settings' ? <>
                   <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
-                  <YStack space='$3' mt='$3'>
+                  <YStack gap='$3' mt='$3'>
                     {<PermissionsEditor label='Anonymous User Permissions'
                       {...anonymousPermissionsEditorProps} />}
 
@@ -555,12 +555,12 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {federatedServers?.map((server, index) =>
 
 
-                    <XStack ml='$3' mb='$2' w='100%' space='$2' ai='center'>
+                    <XStack ml='$3' mb='$2' w='100%' gap='$2' ai='center'>
                       <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
                       <Card elevate bordered f={1} px='$3'>
                         <YStack key={`recommendedServer-${server.host}`} w='100%' my='$2' alignContent='center' ai='center'>
 
-                          <XStack mb='$2' w='100%' space='$2' ai='center'>
+                          <XStack mb='$2' w='100%' gap='$2' ai='center'>
                             <Heading f={1} fontFamily='$body' size='$1' >{server.host}</Heading>
                             {isAdmin
                               ? <>
@@ -592,8 +592,8 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                               : undefined}
                           </XStack>
                           <RecommendedServer host={server.host} />
-                          <YStack ai="center" space="$1" opacity={isAdmin ? 1 : 0.5}>
-                            <XStack ai="center" space="$4">
+                          <YStack ai="center" gap="$1" opacity={isAdmin ? 1 : 0.5}>
+                            <XStack ai="center" gap="$4">
                               <Label pr="$0" miw={90} jc="flex-end" size='$2'
                                 o={!server.configuredByDefault ? 1 : 0.5}
                                 htmlFor={`${server.host}-add-by-default`}>
@@ -612,7 +612,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                               </Label>
                             </XStack>
                             {/* <SeparatorHorizontal /> */}
-                            <XStack ai="center" space="$4">
+                            <XStack ai="center" gap="$4">
                               <Switch id={`${server.host}-pin-by-default`} size='$2' defaultChecked={server.pinnedByDefault}
                                 checked={server.pinnedByDefault} value={server.pinnedByDefault?.toString()}
                                 disabled={!isAdmin}

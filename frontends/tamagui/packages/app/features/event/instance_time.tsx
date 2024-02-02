@@ -91,7 +91,7 @@ export const InstanceTime: React.FC<Props> = ({
       <Paragraph size="$1" color={color} mx={mx} lineHeight={lh}>
         {startsAtDate}
       </Paragraph>
-      <XStack space='$2' mx={mx}>
+      <XStack gap='$2' mx={mx}>
         <Heading size="$2" color={color} lineHeight={lh}>
           {moment.utc(startsAt).local().format('h:mma').replace(':00', '')}
         </Heading>
@@ -103,7 +103,7 @@ export const InstanceTime: React.FC<Props> = ({
         </Heading>
       </XStack>
     </YStack>
-    : <XStack space={linkToInstance ? undefined : '$2'}
+    : <XStack gap={linkToInstance ? undefined : '$2'}
       opacity={opacity}>
       <YStack f={linkToInstance ? 1 : undefined}>
         {startsAt ? dateView(startsAt) : undefined}

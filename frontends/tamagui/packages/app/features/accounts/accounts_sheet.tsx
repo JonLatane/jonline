@@ -253,7 +253,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          <XStack space='$4' paddingHorizontal='$3'>
+          <XStack gap='$4' paddingHorizontal='$3'>
             <DarkModeToggle />
             <XStack pointerEvents='none' o={0}><TutorialToggle onPress={() => setOpen(false)} /></XStack>
             <XStack f={1} />
@@ -326,7 +326,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                         setAddingServer(false)
                       }}
                     />
-                    <YStack space="$2" maxWidth={600} width='100%' alignSelf='center'>
+                    <YStack gap="$2" maxWidth={600} width='100%' alignSelf='center'>
                       <Heading size="$10" f={1}>Add Server</Heading>
                       <YStack>
                         <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
@@ -375,7 +375,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
               </XStack>
 
               {/* {onlyShowServer
-                ? <XStack mx='auto' space='$2'>
+                ? <XStack mx='auto' gap='$2'>
                   <XStack my='auto'><Info /></XStack>
                   <Heading my='auto' f={1} size='$3' textAlign='center'>
                     Viewing server configuration
@@ -384,7 +384,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                 : undefined} */}
               {serversDiffer
                 ? undefined
-                : <YStack space="$2" mb='$1'>
+                : <YStack gap="$2" mb='$1'>
                   {!browsingServers ?
                     <XStack mx='auto' animation="quick" mt={allowServerSelection ? '$3' : undefined} {...reverseStandardAnimation}>
                       <YStack
@@ -407,7 +407,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                 ? <YStack animation="quick" mt='$2' mb='$2' {...standardAnimation}>
                   {/* <> */}
                   <ScrollView horizontal>
-                    <XStack space='$3'>
+                    <XStack gap='$3'>
                       {servers.map((server, index) => {
                         return <ServerCard
                           // linkToServerInfo={onlyShowServer !== undefined}
@@ -490,7 +490,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                 </>
                 : undefined}
               {browsingOnDiffers
-                ? <><XStack mx='auto' space='$2'>
+                ? <><XStack mx='auto' gap='$2'>
                   <XStack my='auto'>{alertTriangle()}</XStack>
                   <Heading size='$3' my='auto' als='center' textAlign='center'>
                     Browsing via {browsingOn}
@@ -501,7 +501,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                 //   ? <Heading size='$3' marginTop='$2'>&nbsp;</Heading>
                 : undefined}
               {/* {!browsingServers ? <YStack h="$2" /> : undefined} */}
-              <YStack space="$2" mt='$2'>
+              <YStack gap="$2" mt='$2'>
                 <XStack mb='$2'>
                   <Heading f={1}>
                     Accounts
@@ -571,7 +571,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                       </Heading>
                       <Heading size="$4">{primaryServer?.host}/</Heading>
                       <Sheet.ScrollView>
-                        <YStack space="$2" pb='$2' //pt={loginMethod ? undefined : '$3'}
+                        <YStack gap="$2" pb='$2' //pt={loginMethod ? undefined : '$3'}
                           maw={600} w='100%' als='center'
                           // pt={loginMethod === 'login' ? Math.max(0, (window.innerHeight - 400) * 0.3) : '$3'}
                           pt='$3'

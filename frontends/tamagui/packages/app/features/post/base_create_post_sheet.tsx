@@ -284,9 +284,9 @@ export function BaseCreatePostSheet({
               {/* <AnimatePresence> */}
               {/* </AnimatePresence> */}
               {/* <Sheet.ScrollView> */}
-              <XStack f={1} mb='$4' space="$2" maw={600} w='100%' als='center'>
+              <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center'>
                 {showEditor
-                  ? <YStack space="$2" w='100%' px="$5">
+                  ? <YStack gap="$2" w='100%' px="$5">
                     {/* <Heading size="$6">{server?.host}/</Heading> */}
                     <Input textContentType="name" placeholder={`${entityName} Title (required)`}
                       disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
@@ -295,7 +295,7 @@ export function BaseCreatePostSheet({
                       value={title}
                       onChange={(data) => { setTitle(data.nativeEvent.text) }} />
                     {additionalFields?.(previewPost, group)}
-                    <XStack space='$2'>
+                    <XStack gap='$2'>
                       <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
                         disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
                         onFocus={() => setShowSettings(false)}

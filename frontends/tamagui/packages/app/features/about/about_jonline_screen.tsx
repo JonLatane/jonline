@@ -39,7 +39,7 @@ export function AboutJonlineScreen() {
     <TabsNavigation appSection={AppSection.INFO}>
       {/* <ZStack f={1} w='100%' jc="center" ai="center" p="$0"> */}
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
-        <YStack space="$4" maw={600}>
+        <YStack gap="$4" maw={600}>
 
           <H2 ta="center">About Jonline</H2>
           <H4 ta="center">As in: &ldquo;{quote}&rdquo; 🙃</H4>
@@ -52,9 +52,9 @@ export function AboutJonlineScreen() {
             and to be intuitive and fun for customers, members, and administrators alike.
           </Paragraph>
           <AboutListItem>
-            <XStack flexWrap='wrap' space='$2'>
+            <XStack flexWrap='wrap' gap='$2'>
               <Anchor color={navColor} href="https://github.com/JonLatane/jonline" target="_blank">
-                <XStack space='$2'>
+                <XStack gap='$2'>
                   <YStack my='auto'><Github color={navColor} /></YStack>
                   <Paragraph color={navColor} my='auto'>GitHub: https://github.com/JonLatane/jonline</Paragraph>
                 </XStack>
@@ -64,7 +64,7 @@ export function AboutJonlineScreen() {
           </AboutListItem>
           <AboutListItem mb='$3'>
             <Anchor color={navColor} href="https://hub.docker.com/r/jonlatane/jonline" target="_blank">
-              <XStack space='$2'>
+              <XStack gap='$2'>
                 <YStack my='auto'><Container color={navColor} /></YStack>
                 <Paragraph color={navColor} my='auto'>DockerHub: https://hub.docker.com/r/jonlatane/jonline</Paragraph>
               </XStack>
@@ -84,7 +84,7 @@ export function AboutJonlineScreen() {
                   Flutter frontend
                 </Anchor> is also available and compatible, with more administrator features for now.
               </Paragraph>
-              <XStack justifyContent='center' marginTop={15} mb='$3' space='$2'>
+              <XStack justifyContent='center' marginTop={15} mb='$3' gap='$2'>
                 {Platform.OS == 'web' && showTechDetails ? <Button onPress={() => Linking.openURL('/flutter')}>Open Flutter Web UI</Button> : undefined}
               </XStack>
               <Heading size='$5' mb='$2' mt='$3'>Built with:</Heading>

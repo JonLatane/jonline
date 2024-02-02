@@ -111,7 +111,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
           <Sheet.Handle />
 
           {account && (mediaState.loadStatus == 'loading' || mediaState.loadStatus == 'unloaded' || loadingMedia || showSpinnerForUploading) ?
-            <YStack space="$1" opacity={0.92} zi={1000} position='absolute' als='center' pointerEvents='none'>
+            <YStack gap="$1" opacity={0.92} zi={1000} position='absolute' als='center' pointerEvents='none'>
               <Spinner size='large' color={navColor} scale={2}
                 top={dimensions.height / 2 - 50}
               />
@@ -139,7 +139,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                   </YStack>
                   : undefined
                 : <>
-                  <XStack space='$0' flexWrap='wrap' als='center' mx='auto'>
+                  <XStack gap='$0' flexWrap='wrap' als='center' mx='auto'>
                     {media?.map((item) => {
                       const selectionIndex = selectedMedia.findIndex(selectedItem => selectedItem.id === item.id);
                       const selectionIndexBase1 = selectionIndex == -1 ? undefined : selectionIndex + 1;
@@ -209,7 +209,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                                     Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
                                   </AlertDialog.Description>
 
-                                  <XStack space="$3" justifyContent="flex-end">
+                                  <XStack gap="$3" justifyContent="flex-end">
                                     <AlertDialog.Cancel asChild>
                                       <Button>Cancel</Button>
                                     </AlertDialog.Cancel>
