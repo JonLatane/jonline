@@ -12,7 +12,7 @@ import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { useGroupContext } from "../../contexts/group_context";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
-import { EventCalendarLink } from "./event_calendar_link";
+import { EventCalendarExporter } from "./event_calendar_exporter";
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
@@ -531,7 +531,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later, or export the link to your favorite calendar:
                 </Paragraph>
                 <XStack mx='auto'>
-                  <EventCalendarLink event={event} instance={instance} anonymousRsvpPath={anonymousRsvpPath} />
+                  <EventCalendarExporter event={event} instance={instance} anonymousRsvpPath={anonymousRsvpPath} />
                 </XStack>
               </>
               : undefined}

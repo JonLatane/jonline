@@ -7,22 +7,24 @@ export interface Pagination<T extends HasIdFromServer> {
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
+  reset(): void;
 }
 
 export function usePaginatedRendering<T extends HasIdFromServer>(dataSet: T[], pageSize: number): Pagination<T> {
   const [page, setPage] = useState(0);
+  const reset = () => setPage(0);
   const results = dataSet.slice(0, (page + 1) * pageSize);
   const hasNextPage = dataSet.length > results.length;
 
   const [loadingPage, setLoadingPage] = useState(false);
   function loadNextPage() {
-    // if (loadingPage) return;
-    // setLoadingPage(true);
-    // setTimeout(() => {
+    if (loadingPage) return;
+    setLoadingPage(true);
+    setTimeout(() => {
       setPage(page + 1);
-      // setLoadingPage(false);
-    // }, 500);
+      setLoadingPage(false);
+    }, 100);
   }
 
-  return { results, page, loadingPage, hasNextPage, loadNextPage };
+  return { results, page, loadingPage, hasNextPage, loadNextPage, reset };
 }

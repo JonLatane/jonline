@@ -16,7 +16,7 @@ type Props = {
   tiny?: boolean;
   anonymousRsvpPath?: string;
 };
-export const EventCalendarLink: React.FC<Props> = ({
+export const EventCalendarExporter: React.FC<Props> = ({
   event,
   instance,
   tiny: inputTiny = false,
@@ -67,7 +67,7 @@ export const EventCalendarLink: React.FC<Props> = ({
 
   return <Tooltip>
     <Tooltip.Trigger>
-      <Popover size="$5" allowFlip stayInFrame placement='bottom-end'>
+      <Popover size="$5" stayInFrame placement='bottom-end'>
         <Popover.Trigger asChild>
           {/* <Tooltip>
         <Tooltip.Trigger> */}

@@ -20,7 +20,7 @@ import { ShareableToggle } from 'app/components/shareable_toggle';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, } from "./create_event_sheet";
-import { EventCalendarLink } from './event_calendar_link';
+import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
@@ -402,7 +402,7 @@ export const EventCard: React.FC<Props> = ({
           <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
           </Anchor>
-          {primaryInstance ? <EventCalendarLink tiny event={event} instance={primaryInstance} /> : undefined}
+          {primaryInstance ? <EventCalendarExporter tiny event={event} instance={primaryInstance} /> : undefined}
         </XStack>
       </>
       : <>
@@ -423,7 +423,7 @@ export const EventCard: React.FC<Props> = ({
                 : undefined}
           </YStack>
           <XStack f={1} />
-          {primaryInstance ? <EventCalendarLink event={event} instance={primaryInstance} /> : undefined}
+          {primaryInstance ? <EventCalendarExporter event={event} instance={primaryInstance} /> : undefined}
           {instanceManagementButtons}
         </XStack>
       </>}

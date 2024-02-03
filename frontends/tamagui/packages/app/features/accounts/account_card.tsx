@@ -32,12 +32,16 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const [showReauthenticate, setShowReauthenticate] = useState(false);
   // console.log('showReauthenticate', showReauthenticate);
   const [reauthenticationPassword, setReauthenticationPassword] = useState('');
-  const [reauthenticationSuccess, setReauthenticationSuccess] = useState<boolean | undefined>();
-  useEffect(() => {
-    if (reauthenticationSuccess) {
-      setTimeout(() => setReauthenticationSuccess(undefined), 1500);
-    }
-  });
+  // const [reauthenticationSuccess, setReauthenticationSuccess] = useState<boolean | undefined>();
+//   useEffect(() => {
+//     if (reauthenticationSuccess) {
+//       setTimeout(() => {
+//         setReauthenticationSuccess(undefined);
+// \      }, 1500);
+
+//       setTimeout(() => setResult(undefined), 1000);
+//     }
+//   });
 
   const {
     caller: doReauthentication,
@@ -57,13 +61,14 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         setTimeout(() => setResult(undefined), 1000);
         setShowReauthenticate(false);
         setReauthenticationPassword('');
-        setReauthenticationSuccess(true);
+        // setReauthenticationSuccess(true);
       } else {
         setError(formatError('error' in action ? action.error : undefined));
       }
     });
 
   const reauthenticationValid = reauthenticationPassword.length >= 8;
+  const enablePasswordInput = !reauthenticating && !reauthenticationResult;
   const enableReauthenticateButton = reauthenticationValid && !reauthenticating && !reauthenticationResult;
   // console.log('reauthenticationValid', reauthenticationValid, 'reauthenticating', reauthenticating, 'reauthenticationResult', reauthenticationResult);
 
@@ -181,13 +186,15 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         <YStack f={1}>
           <Heading size="$1" color={textColor} mr='auto'>{account.server.host}/</Heading>
           <Heading size="$7" color={textColor} mr='auto'>{account.user.username}</Heading>
-          {account.needsReauthentication
+          {reauthenticationResult || account.needsReauthentication
 
             ? showReauthenticate
               ? <XStack flexWrap="wrap" ai='center' gap='$3'>
                 <Input placeholder="Password" secureTextEntry
                   ref={passwordRef}
                   value={reauthenticationPassword}
+                  disabled={!enablePasswordInput}
+                  o={enablePasswordInput ? 1 : 0.5}
                   textContentType="password"
                   onChange={(e) => {
                     console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
@@ -218,7 +225,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 setShowReauthenticate(true);
                 setTimeout(() => passwordRef.current?.focus(), 100);
               }}>
-                <XStack animation='standard' o={reauthenticationSuccess ? 1 : 0}>
+                <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
                   <Check color={navAnchorColor} />
                 </XStack>
                 <XStack gap='$2'>

@@ -35,7 +35,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const [searchParam] = useParam('search');
   const updateParams = useUpdateParams();
   const [searchText, _setSearchText] = useState(searchParam ?? '');
-  function setSearchText (text: string) {
+  function setSearchText(text: string) {
     _setSearchText(text);
     updateParams({ search: text }, { web: { replace: true } });
   };
@@ -52,6 +52,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
 
   const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
+  useEffect(pagination.reset, [searchText]);
   useEffect(() => {
     let title = isForGroupMembers ? 'Members' :
       listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';

@@ -72,7 +72,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       dismissScrollPreserver(setShowScrollPreserver);
     }
   }, [firstPageLoaded]);
-
+  useEffect(pagination.reset, [queryEndsAfter]);
 
   const [displayMode, setDisplayMode] = useState('upcoming' as EventDisplayMode);
   useEffect(() => {
