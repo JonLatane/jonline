@@ -52,7 +52,18 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-  const pagination = usePaginatedRendering(allEvents, 7);
+  const renderInColumns = mediaQuery.gtXs;
+  const numberOfColumns = mediaQuery.gtXxxl ? 6
+    : mediaQuery.gtXl ? 5
+      : mediaQuery.gtLg ? 4
+        : mediaQuery.gtMd ? 3
+          : 2;
+  const pagination = usePaginatedRendering(allEvents, renderInColumns
+    ? mediaQuery.gtXxxl ? 12
+      : mediaQuery.gtXl ? 10
+        : mediaQuery.gtLg ? 8 : 6
+    : 7);
+
   const paginatedEvents = pagination.results;
 
 
@@ -97,12 +108,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }} />;
   }
-  const renderInColumns = mediaQuery.gtXs;
-  const numberOfColumns = mediaQuery.gtXxxl ? 6
-    : mediaQuery.gtXl ? 5
-      : mediaQuery.gtLg ? 4
-        : mediaQuery.gtMd ? 3
-          : 2;
   console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
   const eventCardWidth = renderInColumns
     ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
