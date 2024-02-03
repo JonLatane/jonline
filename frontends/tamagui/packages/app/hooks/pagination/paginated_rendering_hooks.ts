@@ -16,12 +16,12 @@ export function usePaginatedRendering<T extends HasIdFromServer>(dataSet: T[], p
 
   const [loadingPage, setLoadingPage] = useState(false);
   function loadNextPage() {
-    if (loadingPage) return;
-    setLoadingPage(true);
-    setTimeout(() => {
+    // if (loadingPage) return;
+    // setLoadingPage(true);
+    // setTimeout(() => {
       setPage(page + 1);
-      setLoadingPage(false);
-    }, 500);
+      // setLoadingPage(false);
+    // }, 500);
   }
 
   return { results, page, loadingPage, hasNextPage, loadNextPage };
