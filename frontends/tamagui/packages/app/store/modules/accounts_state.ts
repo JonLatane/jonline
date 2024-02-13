@@ -159,7 +159,6 @@ export const accountsSlice = createSlice({
           pinned: true
         });
 
-
         setTimeout(async () => {
           const client = await getCredentialClient({ account, server: account.server })
           console.log("Loaded client");

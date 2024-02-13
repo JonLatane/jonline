@@ -104,15 +104,19 @@ function initializeWithServer(initialServer: JonlineServer) {
         console.warn('polling for initial server configuration');
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      const server = getPrimaryServer();
-      store.dispatch(selectServer(server));
+      const primaryServer = getPrimaryServer();
+      if (!primaryServer) return;
 
-      const federatedServers: FederatedServer[] = server?.serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
-        ? server!.serverConfiguration!.federationInfo!.servers
-        : (server?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? []).map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
+      store.dispatch(selectServer(primaryServer));
 
+      const federatedServers: FederatedServer[] = primaryServer.serverConfiguration?.federationInfo?.servers ?? [];
+
+      const allFederatedServers = [
+        { host: primaryServer.host, configuredByDefault: true, pinnedByDefault: true },
+        ...federatedServers.filter(s => s.host != primaryServer.host)
+      ]
       // Configure federated servers in order with a 100ms delay between each.
-      for (const { host, configuredByDefault, pinnedByDefault } of federatedServers) {
+      for (const { host, configuredByDefault, pinnedByDefault } of allFederatedServers) {
         const recommendedServer = { host: host, secure: true };
         const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
         if (configuredByDefault) {
