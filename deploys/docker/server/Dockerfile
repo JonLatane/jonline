@@ -7,7 +7,7 @@ RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 # RUN dpkg -i libssl1.1.deb
 
 # grpcurl is useful to have on a jonline instance!
-RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
+RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C /opt
 
 # This hash is used by the GetServiceVersion RPC.
 COPY deploys/docker/continuous_delivery_hash /opt/continuous_delivery_hash

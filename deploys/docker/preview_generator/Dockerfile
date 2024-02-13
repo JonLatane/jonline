@@ -7,7 +7,7 @@ RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 # RUN dpkg -i libssl1.1.deb
 
 # grpcurl is useful to have on a jonline instance!
-RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.6/grpcurl_1.8.6_linux_x86_64.tar.gz" | tar -xz -C /opt
+RUN curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C /opt
 
 # Install Chrome-related dependencies
 RUN apt-get -y install gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 \
