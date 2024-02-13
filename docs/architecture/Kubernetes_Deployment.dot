@@ -51,7 +51,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline1 [label = "jonline";];
+    jonline1 [label = <<table><tr><td>jonline</td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
     minio1 [label = "Minio";];
     postgres1 [label = "Postgres";];
     
@@ -68,7 +68,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jonline2 [label = "jonline";];
+    jonline2 [label = <<table><tr><td>jonline</td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>;];
     minio2 [label = "Minio";];
     postgres2 [label = "Postgres";];
     

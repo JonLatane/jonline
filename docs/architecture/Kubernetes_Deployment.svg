@@ -16,13 +16,13 @@
 </g>
 <g id="clust2" class="cluster">
 <title>cluster1</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="363,-8 363,-182.63 710,-182.63 710,-8 363,-8"/>
-<text text-anchor="middle" x="536.5" y="-165.33" font-family="Times,serif" font-size="14.00">oakcitysocial namespace</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="363,-8 363,-207.77 710,-207.77 710,-8 363,-8"/>
+<text text-anchor="middle" x="536.5" y="-190.47" font-family="Times,serif" font-size="14.00">oakcitysocial namespace</text>
 </g>
 <g id="clust3" class="cluster">
 <title>cluster2</title>
-<polygon fill="lightgrey" stroke="lightgrey" points="718,-8 718,-182.63 1065,-182.63 1065,-8 718,-8"/>
-<text text-anchor="middle" x="891.5" y="-165.33" font-family="Times,serif" font-size="14.00">bullcitysocial namespace</text>
+<polygon fill="lightgrey" stroke="lightgrey" points="718,-8 718,-207.77 1065,-207.77 1065,-8 718,-8"/>
+<text text-anchor="middle" x="891.5" y="-190.47" font-family="Times,serif" font-size="14.00">bullcitysocial namespace</text>
 </g>
 <!-- browser -->
 <g id="node1" class="node">
@@ -71,14 +71,14 @@
 <!-- bullcitysocial -->
 <g id="node5" class="node">
 <title>bullcitysocial</title>
-<ellipse fill="none" stroke="black" cx="725" cy="-268.27" rx="62.61" ry="18"/>
-<text text-anchor="middle" x="725" y="-263.22" font-family="Times,serif" font-size="14.00">bullcity.social</text>
+<ellipse fill="none" stroke="black" cx="740" cy="-268.27" rx="62.61" ry="18"/>
+<text text-anchor="middle" x="740" y="-263.22" font-family="Times,serif" font-size="14.00">bullcity.social</text>
 </g>
 <!-- resolve_namespace&#45;&gt;bullcitysocial -->
 <g id="edge4" class="edge">
 <title>resolve_namespace&#45;&gt;bullcitysocial</title>
-<path fill="none" stroke="black" stroke-dasharray="1,5" d="M551.13,-323.89C587.76,-312.38 636.54,-297.06 673.11,-285.57"/>
-<polygon fill="black" stroke="black" points="674.1,-288.93 682.59,-282.59 672,-282.25 674.1,-288.93"/>
+<path fill="none" stroke="black" stroke-dasharray="1,5" d="M554.29,-323.98C593.96,-312.29 647.13,-296.63 686.41,-285.05"/>
+<polygon fill="black" stroke="black" points="687.3,-288.44 695.91,-282.26 685.32,-281.73 687.3,-288.44"/>
 </g>
 <!-- jonline0 -->
 <g id="node6" class="node">
@@ -100,28 +100,36 @@
 <!-- jonline1 -->
 <g id="node10" class="node">
 <title>jonline1</title>
-<ellipse fill="white" stroke="white" cx="499" cy="-132.13" rx="36.51" ry="18"/>
-<text text-anchor="middle" x="499" y="-127.08" font-family="Times,serif" font-size="14.00">jonline</text>
+<ellipse fill="white" stroke="white" cx="499" cy="-132.13" rx="97.76" ry="43.13"/>
+<polygon fill="none" stroke="white" points="440.88,-133.13 440.88,-155.63 557.12,-155.63 557.12,-133.13 440.88,-133.13"/>
+<text text-anchor="start" x="480.25" y="-139.33" font-family="Times,serif" font-size="14.00">jonline</text>
+<polygon fill="none" stroke="white" points="440.88,-108.63 440.88,-131.13 557.12,-131.13 557.12,-108.63 440.88,-108.63"/>
+<text text-anchor="start" x="443.88" y="-114.83" font-family="Times,serif" font-size="14.00">(K8s LoadBalancer)</text>
+<polygon fill="none" stroke="white" points="437.88,-105.63 437.88,-158.63 560.12,-158.63 560.12,-105.63 437.88,-105.63"/>
 </g>
 <!-- oakcitysocial&#45;&gt;jonline1 -->
 <g id="edge12" class="edge">
 <title>oakcitysocial&#45;&gt;jonline1</title>
-<path fill="none" stroke="black" d="M499,-250.01C499,-227.67 499,-188.45 499,-161.66"/>
-<polygon fill="black" stroke="black" points="502.5,-161.84 499,-151.84 495.5,-161.84 502.5,-161.84"/>
+<path fill="none" stroke="black" d="M499,-250.01C499,-234.1 499,-209.63 499,-187.18"/>
+<polygon fill="black" stroke="black" points="502.5,-187.2 499,-177.2 495.5,-187.2 502.5,-187.2"/>
 <text text-anchor="middle" x="528.62" y="-218.97" font-family="Times,serif" font-size="14.00">$12/month</text>
 </g>
 <!-- jonline2 -->
 <g id="node14" class="node">
 <title>jonline2</title>
-<ellipse fill="white" stroke="white" cx="807" cy="-132.13" rx="36.51" ry="18"/>
-<text text-anchor="middle" x="807" y="-127.08" font-family="Times,serif" font-size="14.00">jonline</text>
+<ellipse fill="white" stroke="white" cx="839" cy="-132.13" rx="97.76" ry="43.13"/>
+<polygon fill="none" stroke="white" points="780.88,-133.13 780.88,-155.63 897.12,-155.63 897.12,-133.13 780.88,-133.13"/>
+<text text-anchor="start" x="820.25" y="-139.33" font-family="Times,serif" font-size="14.00">jonline</text>
+<polygon fill="none" stroke="white" points="780.88,-108.63 780.88,-131.13 897.12,-131.13 897.12,-108.63 780.88,-108.63"/>
+<text text-anchor="start" x="783.88" y="-114.83" font-family="Times,serif" font-size="14.00">(K8s LoadBalancer)</text>
+<polygon fill="none" stroke="white" points="777.88,-105.63 777.88,-158.63 900.12,-158.63 900.12,-105.63 777.88,-105.63"/>
 </g>
 <!-- bullcitysocial&#45;&gt;jonline2 -->
 <g id="edge16" class="edge">
 <title>bullcitysocial&#45;&gt;jonline2</title>
-<path fill="none" stroke="black" d="M735.39,-250.28C749.45,-227.28 774.67,-186.01 791.12,-159.1"/>
-<polygon fill="black" stroke="black" points="793.94,-161.21 796.17,-150.86 787.96,-157.56 793.94,-161.21"/>
-<text text-anchor="middle" x="785.62" y="-218.97" font-family="Times,serif" font-size="14.00">$12/month</text>
+<path fill="none" stroke="black" d="M752.54,-250.28C765.03,-233.35 784.82,-206.53 802.32,-182.83"/>
+<polygon fill="black" stroke="black" points="805.12,-184.92 808.25,-174.8 799.49,-180.77 805.12,-184.92"/>
+<text text-anchor="middle" x="806.62" y="-218.97" font-family="Times,serif" font-size="14.00">$12/month</text>
 </g>
 <!-- minio0 -->
 <g id="node7" class="node">
@@ -168,8 +176,8 @@
 <!-- jonline1&#45;&gt;minio1 -->
 <g id="edge9" class="edge">
 <title>jonline1&#45;&gt;minio1</title>
-<path fill="none" stroke="black" d="M483.9,-115.69C468.82,-100.27 445.46,-76.38 428.06,-58.59"/>
-<polygon fill="black" stroke="black" points="430.62,-56.19 421.12,-51.49 425.61,-61.09 430.62,-56.19"/>
+<path fill="none" stroke="black" d="M460.77,-92.03C449.65,-80.66 437.85,-68.6 427.98,-58.51"/>
+<polygon fill="black" stroke="black" points="430.76,-56.34 421.27,-51.63 425.75,-61.23 430.76,-56.34"/>
 </g>
 <!-- postgres1 -->
 <g id="node12" class="node">
@@ -180,8 +188,8 @@
 <!-- jonline1&#45;&gt;postgres1 -->
 <g id="edge10" class="edge">
 <title>jonline1&#45;&gt;postgres1</title>
-<path fill="none" stroke="black" d="M499,-113.95C499,-99.95 499,-79.9 499,-63.51"/>
-<polygon fill="black" stroke="black" points="502.5,-63.88 499,-53.88 495.5,-63.88 502.5,-63.88"/>
+<path fill="none" stroke="black" d="M499,-88.69C499,-80.24 499,-71.55 499,-63.7"/>
+<polygon fill="black" stroke="black" points="502.5,-63.7 499,-53.7 495.5,-63.7 502.5,-63.7"/>
 </g>
 <!-- tls1 -->
 <g id="node13" class="node">
@@ -192,8 +200,8 @@
 <!-- jonline1&#45;&gt;tls1 -->
 <g id="edge11" class="edge">
 <title>jonline1&#45;&gt;tls1</title>
-<path fill="none" stroke="black" d="M518.76,-116.74C539.68,-101.51 573.05,-77.2 597.98,-59.05"/>
-<polygon fill="black" stroke="black" points="599.83,-62.03 605.85,-53.32 595.7,-56.38 599.83,-62.03"/>
+<path fill="none" stroke="black" d="M548.9,-94.79C565.31,-82.84 583.14,-69.86 597.97,-59.05"/>
+<polygon fill="black" stroke="black" points="599.99,-61.91 606.02,-53.19 595.87,-56.25 599.99,-61.91"/>
 </g>
 <!-- minio2 -->
 <g id="node15" class="node">
@@ -204,8 +212,8 @@
 <!-- jonline2&#45;&gt;minio2 -->
 <g id="edge13" class="edge">
 <title>jonline2&#45;&gt;minio2</title>
-<path fill="none" stroke="black" d="M798.81,-114.39C791.78,-100 781.51,-78.99 773.29,-62.19"/>
-<polygon fill="black" stroke="black" points="776.45,-60.68 768.92,-53.24 770.16,-63.76 776.45,-60.68"/>
+<path fill="none" stroke="black" d="M806.18,-91.2C797.32,-80.41 787.99,-69.06 780.05,-59.4"/>
+<polygon fill="black" stroke="black" points="782.95,-57.41 773.89,-51.91 777.54,-61.86 782.95,-57.41"/>
 </g>
 <!-- postgres2 -->
 <g id="node16" class="node">
@@ -216,8 +224,8 @@
 <!-- jonline2&#45;&gt;postgres2 -->
 <g id="edge14" class="edge">
 <title>jonline2&#45;&gt;postgres2</title>
-<path fill="none" stroke="black" d="M815.19,-114.39C822.22,-100 832.49,-78.99 840.71,-62.19"/>
-<polygon fill="black" stroke="black" points="843.84,-63.76 845.08,-53.24 837.55,-60.68 843.84,-63.76"/>
+<path fill="none" stroke="black" d="M845.62,-88.69C846.96,-80.14 848.33,-71.35 849.57,-63.42"/>
+<polygon fill="black" stroke="black" points="853,-64.1 851.08,-53.68 846.09,-63.02 853,-64.1"/>
 </g>
 <!-- tls2 -->
 <g id="node17" class="node">
@@ -228,8 +236,8 @@
 <!-- jonline2&#45;&gt;tls2 -->
 <g id="edge15" class="edge">
 <title>jonline2&#45;&gt;tls2</title>
-<path fill="none" stroke="black" d="M831.14,-118.17C859.89,-102.73 908.42,-76.66 943.5,-57.82"/>
-<polygon fill="black" stroke="black" points="944.98,-61 952.13,-53.19 941.67,-54.84 944.98,-61"/>
+<path fill="none" stroke="black" d="M892.9,-95.88C911.81,-83.52 932.58,-69.94 949.7,-58.74"/>
+<polygon fill="black" stroke="black" points="951.59,-61.69 958.04,-53.28 947.76,-55.83 951.59,-61.69"/>
 </g>
 </g>
 </svg>

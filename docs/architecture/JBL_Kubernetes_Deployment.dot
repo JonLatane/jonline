@@ -10,7 +10,7 @@ digraph G {
     style = filled;
     color = lightgrey;
     
-    jbl [shape = box;label = <<table><tr><td>JBL Load Balancer</td></tr><tr><td>("Jonline Balancer of Loads")</td></tr></table>>];
+    jbl [shape = box;label = <<table><tr><td>JBL Load Balancer</td></tr><tr><td>"Jonline Balancer of Loads"</td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>];
     configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <
       <table>
       <tr>
