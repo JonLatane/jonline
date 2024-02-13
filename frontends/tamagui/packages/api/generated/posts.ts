@@ -27,8 +27,9 @@ export enum PostListingType {
   MY_GROUPS_POSTS = 2,
   /** DIRECT_POSTS - Returns `DIRECT` posts that are directly addressed to the user. */
   DIRECT_POSTS = 3,
+  /** POSTS_PENDING_MODERATION - Returns posts pending moderation by the server-level mods/admins. */
   POSTS_PENDING_MODERATION = 4,
-  /** GROUP_POSTS - Returns posts from a specific group. group_id parameter is required for these. */
+  /** GROUP_POSTS - Returns posts from a specific group. Requires group_id parameter. */
   GROUP_POSTS = 10,
   /**
    * GROUP_POSTS_PENDING_MODERATION - Returns pending_moderation posts from a specific group. Requires group_id
@@ -181,7 +182,7 @@ export function postContextToJSON(object: PostContext): string {
  *     - Get one post ,including preview data/
  * - `{post_id:, reply_depth: 1}`
  *     - Get replies to a post - only support for replyDepth=1 is done for now though.
- * - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+ * - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
  *     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
  * - `{author_user_id:, group_id:}`
  *     - Get posts by a user for a group. (TODO)
@@ -193,12 +194,11 @@ export interface GetPostsRequest {
   postId?:
     | string
     | undefined;
-  /**
-   * Limits results to replies to the given post.
-   * optional string replies_to_post_id = 2;
-   * Limits results to those by the given author user ID.
-   */
-  authorUserId?: string | undefined;
+  /** Limits results to those by the given author user ID. */
+  authorUserId?:
+    | string
+    | undefined;
+  /** Limits results to those in the given group ID. */
   groupId?:
     | string
     | undefined;
@@ -207,12 +207,18 @@ export interface GetPostsRequest {
     | number
     | undefined;
   /** Only POST and REPLY are supported for now. */
-  context?: PostContext | undefined;
+  context?:
+    | PostContext
+    | undefined;
+  /** The listing type of the request. See `PostListingType` for more info. */
   listingType: PostListingType;
+  /** The page of results to return. Defaults to 0. */
   page: number;
 }
 
+/** Used for getting posts. */
 export interface GetPostsResponse {
+  /** The posts returned by the request. */
   posts: Post[];
 }
 
@@ -288,9 +294,19 @@ export interface Post {
    * in the frontend.
    */
   replies: Post[];
-  createdAt: string | undefined;
-  updatedAt?: string | undefined;
-  publishedAt?: string | undefined;
+  /** The time the post was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the post was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /** The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`). */
+  publishedAt?:
+    | string
+    | undefined;
+  /** The time the post was last interacted with (replied to, etc.) */
   lastActivityAt: string | undefined;
 }
 
@@ -300,28 +316,42 @@ export interface Post {
  * the time it was cross-posted and the user who did the cross-posting.
  */
 export interface GroupPost {
+  /** The ID of the group this post is in. */
   groupId: string;
+  /** The ID of the post. */
   postId: string;
+  /** The ID of the user who cross-posted the post. */
   userId: string;
+  /** The moderation of the post in the group. */
   groupModeration: Moderation;
+  /** The time the post was cross-posted. */
   createdAt: string | undefined;
 }
 
-/** A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused. */
+/**
+ * A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
+ * See also: [`DIRECT` `Visibility`](#jonline-Visibility).
+ */
 export interface UserPost {
-  groupId: string;
+  /** The ID of the user the post is shared with. */
   userId: string;
+  /** The ID of the post shared. */
+  postId: string;
+  /** The time the post was shared. */
   createdAt: string | undefined;
 }
 
-/** Used for getting context about GroupPosts of an existing Post. */
+/** Used for getting context about `GroupPost`s of an existing `Post`. */
 export interface GetGroupPostsRequest {
+  /** The ID of the post to get `GroupPost`s for. */
   postId: string;
+  /** The ID of the group to get `GroupPost`s for. */
   groupId?: string | undefined;
 }
 
-/** Used for getting context about GroupPosts of an existing Post. */
+/** Used for getting context about `GroupPost`s of an existing `Post`. */
 export interface GetGroupPostsResponse {
+  /** The `GroupPost`s for the given `Post` or `Group`. */
   groupPosts: GroupPost[];
 }
 
@@ -1060,16 +1090,16 @@ export const GroupPost = {
 };
 
 function createBaseUserPost(): UserPost {
-  return { groupId: "", userId: "", createdAt: undefined };
+  return { userId: "", postId: "", createdAt: undefined };
 }
 
 export const UserPost = {
   encode(message: UserPost, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.groupId !== "") {
-      writer.uint32(10).string(message.groupId);
-    }
     if (message.userId !== "") {
-      writer.uint32(18).string(message.userId);
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.postId !== "") {
+      writer.uint32(18).string(message.postId);
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
@@ -1089,14 +1119,14 @@ export const UserPost = {
             break;
           }
 
-          message.groupId = reader.string();
+          message.userId = reader.string();
           continue;
         case 2:
           if (tag !== 18) {
             break;
           }
 
-          message.userId = reader.string();
+          message.postId = reader.string();
           continue;
         case 3:
           if (tag !== 26) {
@@ -1116,19 +1146,19 @@ export const UserPost = {
 
   fromJSON(object: any): UserPost {
     return {
-      groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : "",
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      postId: isSet(object.postId) ? globalThis.String(object.postId) : "",
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
     };
   },
 
   toJSON(message: UserPost): unknown {
     const obj: any = {};
-    if (message.groupId !== "") {
-      obj.groupId = message.groupId;
-    }
     if (message.userId !== "") {
       obj.userId = message.userId;
+    }
+    if (message.postId !== "") {
+      obj.postId = message.postId;
     }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
@@ -1141,8 +1171,8 @@ export const UserPost = {
   },
   fromPartial<I extends Exact<DeepPartial<UserPost>, I>>(object: I): UserPost {
     const message = createBaseUserPost();
-    message.groupId = object.groupId ?? "";
     message.userId = object.userId ?? "";
+    message.postId = object.postId ?? "";
     message.createdAt = object.createdAt ?? undefined;
     return message;
   },
@@ -1297,7 +1327,7 @@ export type Exact<P, I extends P> = P extends Builtin ? P
 
 function toTimestamp(dateStr: string): Timestamp {
   const date = new globalThis.Date(dateStr);
-  const seconds = date.getTime() / 1_000;
+  const seconds = Math.trunc(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }

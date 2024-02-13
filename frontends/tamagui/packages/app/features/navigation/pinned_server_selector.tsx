@@ -1,6 +1,6 @@
 import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, SeparatorHorizontal } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
@@ -56,20 +56,27 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
-  console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
+  const accountId = accountID(useAccount());
+  function toggleExcludeCurrentServer (){
+    const updatedValue = !excludeCurrentServer;
+    dispatch(setExcludeCurrentServer(updatedValue));
+    dispatch(setShowPinnedServers(true));
+    dispatch(pinServer({ serverId: serverID(currentServer!), pinned: !updatedValue, accountId }));
+  };
+  // console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
 
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
-    <AnimatePresence>
-      {configuringFederation ?
-        <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
-          <Spinner size='small' color={primaryAnchorColor} />
-          <Paragraph size='$1'>Configuring servers...</Paragraph>
-        </XStack>
-        : undefined}
-    </AnimatePresence>
+    {/* <AnimatePresence> */}
+    {configuringFederation ?
+      <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
+        <Spinner size='small' color={primaryAnchorColor} />
+        <Paragraph size='$1'>Configuring servers...</Paragraph>
+      </XStack>
+      : undefined}
+    {/* </AnimatePresence> */}
     {/* <AnimatePresence> */}
     {show && !disabled ? <>
       {simplified
@@ -86,7 +93,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
             </XStack>
           </Button>
           <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
-            onPress={() => dispatch(setExcludeCurrentServer(!excludeCurrentServer))}>
+            onPress={toggleExcludeCurrentServer}>
             <XStack ml='auto' gap='$2'>
               {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
               <Paragraph my='auto' size='$1'>
@@ -233,6 +240,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
           </Button>} />
     }
     <Button onPress={onPress} animation='standard' h='auto'
+      px='$1'
       borderTopLeftRadius={simplified ? undefined : 0} borderTopRightRadius={simplified ? undefined : 0}
       o={pinned ? 1 : 0.5}
       {...(pinned ? themedButtonBackground(primaryColor, primaryTextColor) : {})}>

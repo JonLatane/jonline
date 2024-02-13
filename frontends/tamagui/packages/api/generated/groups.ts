@@ -15,10 +15,15 @@ import {
 
 export const protobufPackage = "jonline";
 
+/** The type of group listing to get. */
 export enum GroupListingType {
+  /** ALL_GROUPS - Get all groups (visible to the current user). */
   ALL_GROUPS = 0,
+  /** MY_GROUPS - Get groups the current user is a member of. */
   MY_GROUPS = 1,
+  /** REQUESTED_GROUPS - Get groups the current user has requested to join. */
   REQUESTED_GROUPS = 2,
+  /** INVITED_GROUPS - Get groups the current user has been invited to. */
   INVITED_GROUPS = 3,
   UNRECOGNIZED = -1,
 }
@@ -60,65 +65,121 @@ export function groupListingTypeToJSON(object: GroupListingType): string {
   }
 }
 
+/** `Group`s are a way to organize users and posts (and thus events). They can be used for many purposes, */
 export interface Group {
+  /** The group's unique ID. */
   id: string;
+  /** Mutable name of the group. Must be unique, such that the derived `shortname` is also unique. */
   name: string;
+  /** Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated. */
   shortname: string;
+  /** A description of the group. */
   description: string;
-  avatar?: MediaReference | undefined;
+  /** An avatar for the group. */
+  avatar?:
+    | MediaReference
+    | undefined;
+  /** The default permissions for new members of the group. */
   defaultMembershipPermissions: Permission[];
-  /** Valid values are PENDING (requires a moderator to let you join) and UNMODERATED. */
+  /**
+   * The default moderation for new members of the group.
+   * Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
+   */
   defaultMembershipModeration: Moderation;
+  /** The default moderation for new posts in the group. */
   defaultPostModeration: Moderation;
+  /** The default moderation for new events in the group. */
   defaultEventModeration: Moderation;
   /**
    * LIMITED visibility groups are only visible to members. PRIVATE groups are only
    * visibile to users with the ADMIN group permission.
    */
   visibility: Visibility;
+  /** The number of members in the group. */
   memberCount: number;
+  /** The number of posts in the group. */
   postCount: number;
+  /** The number of events in the group. */
   eventCount: number;
+  /** The permissions given to non-members of the group. */
   nonMemberPermissions: Permission[];
-  currentUserMembership?: Membership | undefined;
-  createdAt: string | undefined;
+  /** The membership for the current user, if any. */
+  currentUserMembership?:
+    | Membership
+    | undefined;
+  /** The time the group was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the group was last updated. */
   updatedAt?: string | undefined;
 }
 
+/** Request to get a group or groups by name or ID. */
 export interface GetGroupsRequest {
-  groupId?: string | undefined;
+  /** The ID of the group to get. */
+  groupId?:
+    | string
+    | undefined;
+  /** The name of the group to get. */
   groupName?:
     | string
     | undefined;
-  /** Group shortname search is case-insensitive. */
-  groupShortname?: string | undefined;
+  /**
+   * The shortname of the group to get.
+   * Group shortname search is case-insensitive.
+   */
+  groupShortname?:
+    | string
+    | undefined;
+  /** The group listing type. */
   listingType: GroupListingType;
+  /** The page of results to get. */
   page?: number | undefined;
 }
 
+/** Response to a GetGroupsRequest. */
 export interface GetGroupsResponse {
+  /** The groups that matched the request. */
   groups: Group[];
+  /** Whether there are more groups to get. */
   hasNextPage: boolean;
 }
 
-/**
- * Used by group MODERATE_USERS mods to manage group requests from the People tab.
- * See also: UserListingType.MEMBERSHIP_REQUESTS.
- */
+/** Used when fetching group members using the `GetMembers` RPC. */
 export interface Member {
-  user: User | undefined;
+  /** The user. */
+  user:
+    | User
+    | undefined;
+  /** The user's membership (or join request, or invitation, or both) in the group. */
   membership: Membership | undefined;
 }
 
+/** Request to get members of a group. */
 export interface GetMembersRequest {
+  /** The ID of the group to get members of. */
   groupId: string;
-  username?: string | undefined;
-  groupModeration?: Moderation | undefined;
+  /** The username of the members to search for. */
+  username?:
+    | string
+    | undefined;
+  /**
+   * The membership status to filter members by.
+   * If not specified, all members are returned.
+   */
+  groupModeration?:
+    | Moderation
+    | undefined;
+  /** The page of results to get. */
   page?: number | undefined;
 }
 
+/** Response to a GetMembersRequest. */
 export interface GetMembersResponse {
+  /** The members that matched the request. */
   members: Member[];
+  /** Whether there are more members to get. */
   hasNextPage: boolean;
 }
 
@@ -939,7 +1000,7 @@ export type Exact<P, I extends P> = P extends Builtin ? P
 
 function toTimestamp(dateStr: string): Timestamp {
   const date = new globalThis.Date(dateStr);
-  const seconds = date.getTime() / 1_000;
+  const seconds = Math.trunc(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }

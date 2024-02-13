@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// Authentication features that can be enabled/disabled by the server admin.
 class AuthenticationFeature extends $pb.ProtobufEnum {
   static const AuthenticationFeature AUTHENTICATION_FEATURE_UNKNOWN = AuthenticationFeature._(0, _omitEnumNames ? '' : 'AUTHENTICATION_FEATURE_UNKNOWN');
   static const AuthenticationFeature CREATE_ACCOUNT = AuthenticationFeature._(1, _omitEnumNames ? '' : 'CREATE_ACCOUNT');
@@ -30,6 +31,7 @@ class AuthenticationFeature extends $pb.ProtobufEnum {
   const AuthenticationFeature._($core.int v, $core.String n) : super(v, n);
 }
 
+/// Strategy when a user sets their visibility to `PRIVATE`.
 class PrivateUserStrategy extends $pb.ProtobufEnum {
   static const PrivateUserStrategy ACCOUNT_IS_FROZEN = PrivateUserStrategy._(0, _omitEnumNames ? '' : 'ACCOUNT_IS_FROZEN');
   static const PrivateUserStrategy LIMITED_CREEPINESS = PrivateUserStrategy._(1, _omitEnumNames ? '' : 'LIMITED_CREEPINESS');
@@ -47,7 +49,8 @@ class PrivateUserStrategy extends $pb.ProtobufEnum {
   const PrivateUserStrategy._($core.int v, $core.String n) : super(v, n);
 }
 
-/// Offers a choice of web UIs. All
+/// Offers a choice of web UIs. Generally though, React/Tamagui is
+/// a century ahead of Flutter Web, so it's the default.
 class WebUserInterface extends $pb.ProtobufEnum {
   static const WebUserInterface FLUTTER_WEB = WebUserInterface._(0, _omitEnumNames ? '' : 'FLUTTER_WEB');
   static const WebUserInterface HANDLEBARS_TEMPLATES = WebUserInterface._(1, _omitEnumNames ? '' : 'HANDLEBARS_TEMPLATES');

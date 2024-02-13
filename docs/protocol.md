@@ -137,7 +137,7 @@ then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `
 may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 one in client storage.)
 
-##### Dumbfederation
+##### dumfederation
 Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
 Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
 [`federation_info` in `ServerConfiguration`](#jonline-ServerConfiguration).
@@ -1378,6 +1378,11 @@ Request to get RSVP data for an event.
 <a name="jonline-GetEventsRequest"></a>
 
 ### GetEventsRequest
+Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
+if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+
+These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+
 Valid GetEventsRequest formats:
 - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
@@ -1397,6 +1402,8 @@ Valid GetEventsRequest formats:
 | time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned `EventInstance`s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
+| post_id | [string](#string) | optional | (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT`. |
+| instance_post_id | [string](#string) | optional | (TODO) Finds events that have an instance with the given post ID. The Post should have a `PostContext` of `EVENT_INSTANCE`. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 
 
@@ -1491,15 +1498,18 @@ in any direction, but:
 ### EventListingType
 The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
 
+Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
+
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| ALL_ACCESSIBLE_EVENTS | 0 | Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible. |
+| ALL_ACCESSIBLE_EVENTS | 0 | Gets `SERVER_PUBLIC` and `GLOBAL_PUBLIC` events depending on whether the user is logged in, `LIMITED` events from authors the user is following, and `PRIVATE` events owned by, or directly addressed to, the current user. |
 | FOLLOWING_EVENTS | 1 | Returns events from users the user is following. |
 | MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
 | DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |
 | EVENTS_PENDING_MODERATION | 4 | Returns events pending moderation by the server-level mods/admins. |
 | GROUP_EVENTS | 10 | Returns events from a specific group. Requires group_id parameterRequires group_id parameter |
 | GROUP_EVENTS_PENDING_MODERATION | 11 | Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
+| NEWLY_ADDED_EVENTS | 20 | Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter). Returned EventInstances will be ordered by creation time rather than start time. |
 
 
  

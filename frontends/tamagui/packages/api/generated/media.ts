@@ -87,12 +87,12 @@ export interface MediaReference {
 
 /**
  * Valid GetMediaRequest formats:
- * - `{user_id: "123"}` - Gets the media of the given user that the current user can see. IE:
+ * - `{user_id: abc123}` - Gets the media of the given user that the current user can see. IE:
  *     - *all* of the current user's own media
  *     - `GLOBAL_PUBLIC` media for the user if the current user is not logged in.
  *     - `SERVER_PUBLIC` media for the user if the current user is logged in.
  *     - `LIMITED` media for the user if the current user is following the user.
- * - `{media_id: "123"}` - Gets the media with the given ID, if visible to the current user.
+ * - `{media_id: abc123}` - Gets the media with the given ID, if visible to the current user.
  */
 export interface GetMediaRequest {
   /** Returns the single media item with the given ID. */
@@ -611,7 +611,7 @@ export type Exact<P, I extends P> = P extends Builtin ? P
 
 function toTimestamp(dateStr: string): Timestamp {
   const date = new globalThis.Date(dateStr);
-  const seconds = date.getTime() / 1_000;
+  const seconds = Math.trunc(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }

@@ -138,6 +138,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp ensureExpiresAt() => $_ensure(4);
 
+  /// (Not yet implemented.) The name of the device being used to create the account.
   @$pb.TagNumber(6)
   $core.String get deviceName => $_getSZ(5);
   @$pb.TagNumber(6)
@@ -241,7 +242,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $9.Timestamp ensureExpiresAt() => $_ensure(2);
 
-  /// (Not yet implemented.)
+  /// (Not yet implemented.) The name of the device being used to login.
   @$pb.TagNumber(4)
   $core.String get deviceName => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -466,6 +467,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   static AccessTokenRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AccessTokenRequest>(create);
   static AccessTokenRequest? _defaultInstance;
 
+  /// The refresh token to use to request a new access token.
   @$pb.TagNumber(1)
   $core.String get refreshToken => $_getSZ(0);
   @$pb.TagNumber(1)

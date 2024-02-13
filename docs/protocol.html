@@ -398,7 +398,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
-    <h5 id="dumbfederation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#dumbfederation"><span class="octicon octicon-link"></span></a>Dumbfederation</h5>
+    <h5 id="dumfederation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#dumfederation"><span class="octicon octicon-link"></span></a>dumfederation</h5>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
       Jonline only has client-server APIs. The idea is that <em>all</em> of the federation data for a given Jonline server is simply the value of
@@ -3221,6 +3221,11 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     </table>
     <p><a name="jonline-GetEventsRequest"></a></p>
     <h3 id="geteventsrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsrequest"><span class="octicon octicon-link"></span></a>GetEventsRequest</h3>
+    <p>
+      Request to get Events in a formatted <em>per-EventInstance</em> structure. i.e. the response will carry duplicate <code>Event</code>s with the same ID
+      if that <code>Event</code> has multiple <code>EventInstance</code>s in the time frame the client asked for.
+    </p>
+    <p>These structured EventInstances are ordered by start time unless otherwise specified (specifically, <code>EventListingType.NEWLY_ADDED_EVENTS</code>).</p>
     <p>Valid GetEventsRequest formats:</p>
     <ul>
       <li><code>{[listing_type: PublicEvents]}</code> (TODO: get ServerPublic/GlobalPublic events you can see)</li>
@@ -3284,6 +3289,18 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-AttendanceStatus">AttendanceStatus</a></td>
           <td>repeated</td>
           <td>If set, only return events for which the current user's attendance status matches one of the given statuses. If <code>attendee_id</code> is also set, only returns events where the given user's status matches one of the given statuses.</td>
+        </tr>
+        <tr>
+          <td>post_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(TODO) Finds the Event for the Post with the given ID. The Post should have a <code>PostContext</code> of <code>EVENT</code>.</td>
+        </tr>
+        <tr>
+          <td>instance_post_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>(TODO) Finds events that have an instance with the given post ID. The Post should have a <code>PostContext</code> of <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>listing_type</td>
@@ -3449,6 +3466,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <p><a name="jonline-EventListingType"></a></p>
     <h3 id="eventlistingtype"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventlistingtype"><span class="octicon octicon-link"></span></a>EventListingType</h3>
     <p>The listing type, e.g. <code>ALL_ACCESSIBLE_EVENTS</code>, <code>FOLLOWING_EVENTS</code>, <code>MY_GROUPS_EVENTS</code>, <code>DIRECT_EVENTS</code>, <code>GROUP_EVENTS</code>, <code>GROUP_EVENTS_PENDING_MODERATION</code>.</p>
+    <p>Events returned are ordered by start time unless otherwise specified (specifically, <code>NEWLY_ADDED_EVENTS</code>).</p>
     <table>
       <thead>
         <tr>
@@ -3461,7 +3479,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         <tr>
           <td>ALL_ACCESSIBLE_EVENTS</td>
           <td>0</td>
-          <td>Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible.</td>
+          <td>Gets <code>SERVER_PUBLIC</code> and <code>GLOBAL_PUBLIC</code> events depending on whether the user is logged in, <code>LIMITED</code> events from authors the user is following, and <code>PRIVATE</code> events owned by, or directly addressed to, the current user.</td>
         </tr>
         <tr>
           <td>FOLLOWING_EVENTS</td>
@@ -3492,6 +3510,11 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>GROUP_EVENTS_PENDING_MODERATION</td>
           <td>11</td>
           <td>Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions.</td>
+        </tr>
+        <tr>
+          <td>NEWLY_ADDED_EVENTS</td>
+          <td>20</td>
+          <td>Returns events from either <code>ALL_ACCESSIBLE_EVENTS</code> or a specific author (with optional author_user_id parameter). Returned EventInstances will be ordered by creation time rather than start time.</td>
         </tr>
       </tbody>
     </table>

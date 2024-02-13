@@ -9,6 +9,11 @@ import "visibility_moderation.proto";
 import "users.proto";
 import "location.proto";
 
+// Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
+// if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+//
+// These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+//
 // Valid GetEventsRequest formats:
 // - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
 // - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
@@ -56,8 +61,10 @@ message TimeFilter {
 }
 
 // The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
+//
+// Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
 enum EventListingType {
-  // Gets SERVER_PUBLIC and GLOBAL_PUBLIC events as is sensible.
+  // Gets `SERVER_PUBLIC` and `GLOBAL_PUBLIC` events depending on whether the user is logged in, `LIMITED` events from authors the user is following, and `PRIVATE` events owned by, or directly addressed to, the current user.
   ALL_ACCESSIBLE_EVENTS = 0;
   // Returns events from users the user is following.
   FOLLOWING_EVENTS = 1;
@@ -73,6 +80,10 @@ enum EventListingType {
   // Returns pending_moderation events from a specific group. Requires group_id
   // parameter and user must have group (or server) admin permissions.
   GROUP_EVENTS_PENDING_MODERATION = 11;
+
+  // Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter).
+  // Returned EventInstances will be ordered by creation time rather than start time.
+  NEWLY_ADDED_EVENTS = 20;
 }
 
 // A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.

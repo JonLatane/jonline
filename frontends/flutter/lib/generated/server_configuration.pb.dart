@@ -31,7 +31,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     FeatureSettings? peopleSettings,
     FeatureSettings? groupSettings,
     PostSettings? postSettings,
-    FeatureSettings? eventSettings,
+    PostSettings? eventSettings,
     FeatureSettings? mediaSettings,
     ExternalCDNConfig? externalCdnConfig,
     PrivateUserStrategy? privateUserStrategy,
@@ -92,7 +92,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
     ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
     ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings', subBuilder: PostSettings.create)
-    ..aOM<FeatureSettings>(23, _omitFieldNames ? '' : 'eventSettings', subBuilder: FeatureSettings.create)
+    ..aOM<PostSettings>(23, _omitFieldNames ? '' : 'eventSettings', subBuilder: PostSettings.create)
     ..aOM<FeatureSettings>(24, _omitFieldNames ? '' : 'mediaSettings', subBuilder: FeatureSettings.create)
     ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig', subBuilder: ExternalCDNConfig.create)
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
@@ -133,6 +133,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ServerInfo ensureServerInfo() => $_ensure(0);
 
+  /// The federation configuration for the server.
   @$pb.TagNumber(2)
   $1.FederationInfo get federationInfo => $_getN(1);
   @$pb.TagNumber(2)
@@ -167,6 +168,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $core.List<$11.Permission> get basicUserPermissions => $_getList(4);
 
+  /// Configuration for users on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_USERS_GLOBALLY`.
   @$pb.TagNumber(20)
@@ -180,6 +182,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   FeatureSettings ensurePeopleSettings() => $_ensure(5);
 
+  /// Configuration for groups on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_GROUPS_GLOBALLY`.
   @$pb.TagNumber(21)
@@ -193,6 +196,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   FeatureSettings ensureGroupSettings() => $_ensure(6);
 
+  /// Configuration for posts on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_POSTS_GLOBALLY`.
   @$pb.TagNumber(22)
@@ -206,21 +210,23 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(22)
   PostSettings ensurePostSettings() => $_ensure(7);
 
+  /// Configuration for events on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
   /// contain `PUBLISH_EVENTS_GLOBALLY`.
   @$pb.TagNumber(23)
-  FeatureSettings get eventSettings => $_getN(8);
+  PostSettings get eventSettings => $_getN(8);
   @$pb.TagNumber(23)
-  set eventSettings(FeatureSettings v) { setField(23, v); }
+  set eventSettings(PostSettings v) { setField(23, v); }
   @$pb.TagNumber(23)
   $core.bool hasEventSettings() => $_has(8);
   @$pb.TagNumber(23)
   void clearEventSettings() => clearField(23);
   @$pb.TagNumber(23)
-  FeatureSettings ensureEventSettings() => $_ensure(8);
+  PostSettings ensureEventSettings() => $_ensure(8);
 
+  /// Configuration for media on the server.
   /// If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
-  /// contain `PUBLISH_EVENTS_GLOBALLY`.
+  /// contain `PUBLISH_MEDIA_GLOBALLY`.
   @$pb.TagNumber(24)
   FeatureSettings get mediaSettings => $_getN(9);
   @$pb.TagNumber(24)
@@ -232,13 +238,12 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   FeatureSettings ensureMediaSettings() => $_ensure(9);
 
-  ///  If set, enables External CDN support for the server. This means that the
-  ///  non-secure HTTP server (on port 80) will *not* redirect to the secure server,
-  ///  and instead serve up Tamagui Web/Flutter clients directly. This allows you
-  ///  to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
-  ///  up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
-  ///
-  ///  See ExternalCDNConfig for more details on securing this setup.
+  /// If set, enables External CDN support for the server. This means that the
+  /// non-secure HTTP server (on port 80) will *not* redirect to the secure server,
+  /// and instead serve up Tamagui Web/Flutter clients directly. This allows you
+  /// to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
+  /// up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
+  /// See ExternalCDNConfig for more details on securing this setup.
   @$pb.TagNumber(90)
   ExternalCDNConfig get externalCdnConfig => $_getN(10);
   @$pb.TagNumber(90)
@@ -408,6 +413,8 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   void clearCdnGrpc() => clearField(6);
 }
 
+/// Settings for a feature (e.g. People, Groups, Posts, Events, Media).
+/// Encompasses both the feature's visibility and moderation settings.
 class FeatureSettings extends $pb.GeneratedMessage {
   factory FeatureSettings({
     $core.bool? visible,
@@ -500,6 +507,8 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearDefaultVisibility() => clearField(3);
 
+  /// (TODO) Custom title, like "Section"s instead of "Group"s.
+  /// This is more an idea; internationalization is obviously problematic here.
   @$pb.TagNumber(4)
   $core.String get customTitle => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -510,6 +519,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   void clearCustomTitle() => clearField(4);
 }
 
+/// Specific settings for Posts and Events.
 class PostSettings extends $pb.GeneratedMessage {
   factory PostSettings({
     $core.bool? visible,
@@ -607,6 +617,8 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearDefaultVisibility() => clearField(3);
 
+  /// (TODO) Custom title, like "Section"s instead of "Group"s.
+  /// This is more an idea; internationalization is obviously problematic here.
   @$pb.TagNumber(4)
   $core.String get customTitle => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -721,6 +733,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearName() => clearField(1);
 
+  /// Short name of the server. Used in URLs, etc. (Currently unused.)
   @$pb.TagNumber(2)
   $core.String get shortName => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -730,6 +743,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearShortName() => clearField(2);
 
+  /// Description of the server.
   @$pb.TagNumber(3)
   $core.String get description => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -739,6 +753,8 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearDescription() => clearField(3);
 
+  /// The server's privacy policy. Will be displayed during account creation
+  /// and on the `/about` page.
   @$pb.TagNumber(4)
   $core.String get privacyPolicy => $_getSZ(3);
   @$pb.TagNumber(4)
@@ -748,6 +764,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearPrivacyPolicy() => clearField(4);
 
+  /// Multi-size logo data for the server.
   @$pb.TagNumber(5)
   ServerLogo get logo => $_getN(4);
   @$pb.TagNumber(5)
@@ -759,6 +776,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   ServerLogo ensureLogo() => $_ensure(4);
 
+  /// The web UI to use (React/Tamagui (default) vs. Flutter Web)
   @$pb.TagNumber(6)
   WebUserInterface get webUserInterface => $_getN(5);
   @$pb.TagNumber(6)
@@ -768,6 +786,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearWebUserInterface() => clearField(6);
 
+  /// The color scheme for the server.
   @$pb.TagNumber(7)
   ServerColors get colors => $_getN(6);
   @$pb.TagNumber(7)
@@ -779,6 +798,8 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   ServerColors ensureColors() => $_ensure(6);
 
+  /// The media policy for the server. Will be displayed during account creation
+  /// and on the `/about` page.
   @$pb.TagNumber(8)
   $core.String get mediaPolicy => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -794,6 +815,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   $core.List<$core.String> get recommendedServerHosts => $_getList(8);
 }
 
+/// Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media).
 class ServerLogo extends $pb.GeneratedMessage {
   factory ServerLogo({
     $core.String? squareMediaId,
@@ -849,6 +871,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   static ServerLogo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerLogo>(create);
   static ServerLogo? _defaultInstance;
 
+  /// The media ID for the square logo.
   @$pb.TagNumber(1)
   $core.String get squareMediaId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -858,6 +881,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearSquareMediaId() => clearField(1);
 
+  /// The media ID for the square logo in dark mode.
   @$pb.TagNumber(2)
   $core.String get squareMediaIdDark => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -867,6 +891,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearSquareMediaIdDark() => clearField(2);
 
+  /// The media ID for the wide logo.
   @$pb.TagNumber(3)
   $core.String get wideMediaId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -876,6 +901,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearWideMediaId() => clearField(3);
 
+  /// The media ID for the wide logo in dark mode.
   @$pb.TagNumber(4)
   $core.String get wideMediaIdDark => $_getSZ(3);
   @$pb.TagNumber(4)

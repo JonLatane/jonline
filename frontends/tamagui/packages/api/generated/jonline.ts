@@ -39,8 +39,8 @@ export const protobufPackage = "jonline";
  * [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
  * A Jonline server is generally also expected to serve up web apps on ports 80/443, where
  * select APIs are exposed with HTTP interfaces instead of gRPC.
- * (Specifically, [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
- * and [Media](#jonline-Media).)
+ * (Specifically, that [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
+ * and [`Media`, for interoperability purposes](#jonline-Media).)
  *
  * ##### Authentication
  * Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
@@ -54,10 +54,10 @@ export const protobufPackage = "jonline";
  * may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
  * one in client storage.)
  *
- * ##### Dumbfederation
+ * ##### dumfederation
  * Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
  * Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
- * [ServerInfo.recommended_server_hosts](#serverinfo).
+ * [`federation_info` in `ServerConfiguration`](#jonline-ServerConfiguration).
  *
  * That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
  * (Eventually, this will affect CORS policies for added security.)

@@ -10,6 +10,7 @@ export const protobufPackage = "jonline";
  * and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Group), as well as others documented there.
  */
 export enum Permission {
+  /** PERMISSION_UNKNOWN - A permission that could not be read using the Jonline protocol. (Perhaps, a permission from a newer Jonline version.) */
   PERMISSION_UNKNOWN = 0,
   /**
    * VIEW_USERS - Allow the user to view profiles with `SERVER_PUBLIC` Visbility.

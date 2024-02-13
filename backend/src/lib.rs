@@ -4,7 +4,6 @@ use std::env;
 extern crate diesel;
 extern crate bcrypt;
 extern crate bs58;
-extern crate uuid;
 extern crate diesel_migrations;
 extern crate dotenv;
 extern crate futures;
@@ -13,24 +12,25 @@ extern crate ring;
 extern crate serde;
 extern crate serde_json;
 extern crate tonic_web;
+extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
-extern crate env_logger;
-extern crate log;
-extern crate tokio_stream;
-extern crate s3;
-extern crate bytes;
 extern crate awscreds;
 extern crate awsregion;
-extern crate tempfile;
+extern crate bytes;
+extern crate env_logger;
+extern crate log;
 extern crate percent_encoding;
+extern crate s3;
+extern crate tempfile;
+extern crate tokio_stream;
 
 pub mod auth;
 pub mod db_connection;
-pub mod minio_connection;
 pub mod jonline_service;
 pub mod logic;
 pub mod marshaling;
+pub mod minio_connection;
 pub mod models;
 pub mod protos;
 pub mod rpcs;
@@ -48,7 +48,10 @@ mod tests {
     #[test]
     fn id_conversions_work() {
         assert_eq!(10, 10.to_proto_id().to_db_id().unwrap());
-        assert_eq!(10000000000000, 10000000000000.to_proto_id().to_db_id().unwrap());
+        assert_eq!(
+            10000000000000,
+            (10000000000000 as i64).to_proto_id().to_db_id().unwrap()
+        );
     }
 }
 

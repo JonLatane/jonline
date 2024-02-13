@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// The type of group listing to get.
 class GroupListingType extends $pb.ProtobufEnum {
   static const GroupListingType ALL_GROUPS = GroupListingType._(0, _omitEnumNames ? '' : 'ALL_GROUPS');
   static const GroupListingType MY_GROUPS = GroupListingType._(1, _omitEnumNames ? '' : 'MY_GROUPS');

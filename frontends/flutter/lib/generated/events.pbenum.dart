@@ -13,7 +13,9 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-/// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
+///  The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
+///
+///  Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
 class EventListingType extends $pb.ProtobufEnum {
   static const EventListingType ALL_ACCESSIBLE_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_EVENTS');
   static const EventListingType FOLLOWING_EVENTS = EventListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_EVENTS');
@@ -22,6 +24,7 @@ class EventListingType extends $pb.ProtobufEnum {
   static const EventListingType EVENTS_PENDING_MODERATION = EventListingType._(4, _omitEnumNames ? '' : 'EVENTS_PENDING_MODERATION');
   static const EventListingType GROUP_EVENTS = EventListingType._(10, _omitEnumNames ? '' : 'GROUP_EVENTS');
   static const EventListingType GROUP_EVENTS_PENDING_MODERATION = EventListingType._(11, _omitEnumNames ? '' : 'GROUP_EVENTS_PENDING_MODERATION');
+  static const EventListingType NEWLY_ADDED_EVENTS = EventListingType._(20, _omitEnumNames ? '' : 'NEWLY_ADDED_EVENTS');
 
   static const $core.List<EventListingType> values = <EventListingType> [
     ALL_ACCESSIBLE_EVENTS,
@@ -31,6 +34,7 @@ class EventListingType extends $pb.ProtobufEnum {
     EVENTS_PENDING_MODERATION,
     GROUP_EVENTS,
     GROUP_EVENTS_PENDING_MODERATION,
+    NEWLY_ADDED_EVENTS,
   ];
 
   static final $core.Map<$core.int, EventListingType> _byValue = $pb.ProtobufEnum.initByValue(values);

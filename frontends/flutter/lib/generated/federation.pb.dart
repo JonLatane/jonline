@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+/// Version information for the Jonline server.
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
   factory GetServiceVersionResponse({
     $core.String? version,
@@ -53,6 +54,8 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   static GetServiceVersionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetServiceVersionResponse>(create);
   static GetServiceVersionResponse? _defaultInstance;
 
+  /// The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
+  /// that generated the binary for the server.
   @$pb.TagNumber(1)
   $core.String get version => $_getSZ(0);
   @$pb.TagNumber(1)

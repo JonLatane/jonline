@@ -13,7 +13,9 @@ import {
 
 export const protobufPackage = "jonline";
 
+/** Authentication features that can be enabled/disabled by the server admin. */
 export enum AuthenticationFeature {
+  /** AUTHENTICATION_FEATURE_UNKNOWN - An authentication feature that is not known to the server. (Likely, the client and server use different versions of the Jonline protocol.) */
   AUTHENTICATION_FEATURE_UNKNOWN = 0,
   /** CREATE_ACCOUNT - Users can sign up for an account. */
   CREATE_ACCOUNT = 1,
@@ -54,6 +56,7 @@ export function authenticationFeatureToJSON(object: AuthenticationFeature): stri
   }
 }
 
+/** Strategy when a user sets their visibility to `PRIVATE`. */
 export enum PrivateUserStrategy {
   /**
    * ACCOUNT_IS_FROZEN - `PRIVATE` Users can't see other Users (only `PUBLIC_GLOBAL` Visilibity Users/Posts/Events).
@@ -105,7 +108,10 @@ export function privateUserStrategyToJSON(object: PrivateUserStrategy): string {
   }
 }
 
-/** Offers a choice of web UIs. All */
+/**
+ * Offers a choice of web UIs. Generally though, React/Tamagui is
+ * a century ahead of Flutter Web, so it's the default.
+ */
 export enum WebUserInterface {
   /** FLUTTER_WEB - Uses Flutter Web. Loaded from /app. */
   FLUTTER_WEB = 0,
@@ -155,7 +161,10 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
 /** Configuration for a Jonline server instance. */
 export interface ServerConfiguration {
   /** The name, description, logo, color scheme, etc. of the server. */
-  serverInfo?: ServerInfo | undefined;
+  serverInfo?:
+    | ServerInfo
+    | undefined;
+  /** The federation configuration for the server. */
   federationInfo?:
     | FederationInfo
     | undefined;
@@ -183,6 +192,7 @@ export interface ServerConfiguration {
    */
   basicUserPermissions: Permission[];
   /**
+   * Configuration for users on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_USERS_GLOBALLY`.
    */
@@ -190,6 +200,7 @@ export interface ServerConfiguration {
     | FeatureSettings
     | undefined;
   /**
+   * Configuration for groups on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_GROUPS_GLOBALLY`.
    */
@@ -197,6 +208,7 @@ export interface ServerConfiguration {
     | FeatureSettings
     | undefined;
   /**
+   * Configuration for posts on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_POSTS_GLOBALLY`.
    */
@@ -204,15 +216,17 @@ export interface ServerConfiguration {
     | PostSettings
     | undefined;
   /**
+   * Configuration for events on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
    * contain `PUBLISH_EVENTS_GLOBALLY`.
    */
   eventSettings:
-    | FeatureSettings
+    | PostSettings
     | undefined;
   /**
+   * Configuration for media on the server.
    * If default visibility is `GLOBAL_PUBLIC`, default_user_permissions *must*
-   * contain `PUBLISH_EVENTS_GLOBALLY`.
+   * contain `PUBLISH_MEDIA_GLOBALLY`.
    */
   mediaSettings:
     | FeatureSettings
@@ -223,7 +237,6 @@ export interface ServerConfiguration {
    * and instead serve up Tamagui Web/Flutter clients directly. This allows you
    * to point Cloudflare's "CNAME HTTPS Proxy" feature at your Jonline server to serve
    * up HTML/CS/JS and Media files with caching from Cloudflare's CDN.
-   *
    * See ExternalCDNConfig for more details on securing this setup.
    */
   externalCdnConfig?:
@@ -287,6 +300,10 @@ export interface ExternalCDNConfig {
   cdnGrpc: boolean;
 }
 
+/**
+ * Settings for a feature (e.g. People, Groups, Posts, Events, Media).
+ * Encompasses both the feature's visibility and moderation settings.
+ */
 export interface FeatureSettings {
   /** Hide the Posts or Events tab from the user with this flag. */
   visible: boolean;
@@ -305,9 +322,14 @@ export interface FeatureSettings {
    * as appropriate.
    */
   defaultVisibility: Visibility;
+  /**
+   * (TODO) Custom title, like "Section"s instead of "Group"s.
+   * This is more an idea; internationalization is obviously problematic here.
+   */
   customTitle?: string | undefined;
 }
 
+/** Specific settings for Posts and Events. */
 export interface PostSettings {
   /** Hide the Posts or Events tab from the user with this flag. */
   visible: boolean;
@@ -326,6 +348,10 @@ export interface PostSettings {
    * as appropriate.
    */
   defaultVisibility: Visibility;
+  /**
+   * (TODO) Custom title, like "Section"s instead of "Group"s.
+   * This is more an idea; internationalization is obviously problematic here.
+   */
   customTitle?:
     | string
     | undefined;
@@ -333,19 +359,46 @@ export interface PostSettings {
    * Controls whether replies are shown in the UI. Note that users' ability to reply
    * is controlled by the `REPLY_TO_POSTS` permission.
    */
-  enableReplies: boolean;
+  enableReplies?: boolean | undefined;
 }
 
 /** User-facing information about the server displayed on the "about" page. */
 export interface ServerInfo {
   /** Name of the server. */
-  name?: string | undefined;
-  shortName?: string | undefined;
-  description?: string | undefined;
-  privacyPolicy?: string | undefined;
-  logo?: ServerLogo | undefined;
-  webUserInterface?: WebUserInterface | undefined;
-  colors?: ServerColors | undefined;
+  name?:
+    | string
+    | undefined;
+  /** Short name of the server. Used in URLs, etc. (Currently unused.) */
+  shortName?:
+    | string
+    | undefined;
+  /** Description of the server. */
+  description?:
+    | string
+    | undefined;
+  /**
+   * The server's privacy policy. Will be displayed during account creation
+   * and on the `/about` page.
+   */
+  privacyPolicy?:
+    | string
+    | undefined;
+  /** Multi-size logo data for the server. */
+  logo?:
+    | ServerLogo
+    | undefined;
+  /** The web UI to use (React/Tamagui (default) vs. Flutter Web) */
+  webUserInterface?:
+    | WebUserInterface
+    | undefined;
+  /** The color scheme for the server. */
+  colors?:
+    | ServerColors
+    | undefined;
+  /**
+   * The media policy for the server. Will be displayed during account creation
+   * and on the `/about` page.
+   */
   mediaPolicy?:
     | string
     | undefined;
@@ -357,10 +410,21 @@ export interface ServerInfo {
   recommendedServerHosts: string[];
 }
 
+/** Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media). */
 export interface ServerLogo {
-  squareMediaId?: string | undefined;
-  squareMediaIdDark?: string | undefined;
-  wideMediaId?: string | undefined;
+  /** The media ID for the square logo. */
+  squareMediaId?:
+    | string
+    | undefined;
+  /** The media ID for the square logo in dark mode. */
+  squareMediaIdDark?:
+    | string
+    | undefined;
+  /** The media ID for the wide logo. */
+  wideMediaId?:
+    | string
+    | undefined;
+  /** The media ID for the wide logo in dark mode. */
   wideMediaIdDark?: string | undefined;
 }
 
@@ -437,7 +501,7 @@ export const ServerConfiguration = {
       PostSettings.encode(message.postSettings, writer.uint32(178).fork()).ldelim();
     }
     if (message.eventSettings !== undefined) {
-      FeatureSettings.encode(message.eventSettings, writer.uint32(186).fork()).ldelim();
+      PostSettings.encode(message.eventSettings, writer.uint32(186).fork()).ldelim();
     }
     if (message.mediaSettings !== undefined) {
       FeatureSettings.encode(message.mediaSettings, writer.uint32(194).fork()).ldelim();
@@ -554,7 +618,7 @@ export const ServerConfiguration = {
             break;
           }
 
-          message.eventSettings = FeatureSettings.decode(reader, reader.uint32());
+          message.eventSettings = PostSettings.decode(reader, reader.uint32());
           continue;
         case 24:
           if (tag !== 194) {
@@ -619,7 +683,7 @@ export const ServerConfiguration = {
       peopleSettings: isSet(object.peopleSettings) ? FeatureSettings.fromJSON(object.peopleSettings) : undefined,
       groupSettings: isSet(object.groupSettings) ? FeatureSettings.fromJSON(object.groupSettings) : undefined,
       postSettings: isSet(object.postSettings) ? PostSettings.fromJSON(object.postSettings) : undefined,
-      eventSettings: isSet(object.eventSettings) ? FeatureSettings.fromJSON(object.eventSettings) : undefined,
+      eventSettings: isSet(object.eventSettings) ? PostSettings.fromJSON(object.eventSettings) : undefined,
       mediaSettings: isSet(object.mediaSettings) ? FeatureSettings.fromJSON(object.mediaSettings) : undefined,
       externalCdnConfig: isSet(object.externalCdnConfig)
         ? ExternalCDNConfig.fromJSON(object.externalCdnConfig)
@@ -660,7 +724,7 @@ export const ServerConfiguration = {
       obj.postSettings = PostSettings.toJSON(message.postSettings);
     }
     if (message.eventSettings !== undefined) {
-      obj.eventSettings = FeatureSettings.toJSON(message.eventSettings);
+      obj.eventSettings = PostSettings.toJSON(message.eventSettings);
     }
     if (message.mediaSettings !== undefined) {
       obj.mediaSettings = FeatureSettings.toJSON(message.mediaSettings);
@@ -701,7 +765,7 @@ export const ServerConfiguration = {
       ? PostSettings.fromPartial(object.postSettings)
       : undefined;
     message.eventSettings = (object.eventSettings !== undefined && object.eventSettings !== null)
-      ? FeatureSettings.fromPartial(object.eventSettings)
+      ? PostSettings.fromPartial(object.eventSettings)
       : undefined;
     message.mediaSettings = (object.mediaSettings !== undefined && object.mediaSettings !== null)
       ? FeatureSettings.fromPartial(object.mediaSettings)
@@ -961,7 +1025,13 @@ export const FeatureSettings = {
 };
 
 function createBasePostSettings(): PostSettings {
-  return { visible: false, defaultModeration: 0, defaultVisibility: 0, customTitle: undefined, enableReplies: false };
+  return {
+    visible: false,
+    defaultModeration: 0,
+    defaultVisibility: 0,
+    customTitle: undefined,
+    enableReplies: undefined,
+  };
 }
 
 export const PostSettings = {
@@ -978,7 +1048,7 @@ export const PostSettings = {
     if (message.customTitle !== undefined) {
       writer.uint32(34).string(message.customTitle);
     }
-    if (message.enableReplies === true) {
+    if (message.enableReplies !== undefined) {
       writer.uint32(40).bool(message.enableReplies);
     }
     return writer;
@@ -1041,7 +1111,7 @@ export const PostSettings = {
       defaultModeration: isSet(object.defaultModeration) ? moderationFromJSON(object.defaultModeration) : 0,
       defaultVisibility: isSet(object.defaultVisibility) ? visibilityFromJSON(object.defaultVisibility) : 0,
       customTitle: isSet(object.customTitle) ? globalThis.String(object.customTitle) : undefined,
-      enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : false,
+      enableReplies: isSet(object.enableReplies) ? globalThis.Boolean(object.enableReplies) : undefined,
     };
   },
 
@@ -1059,7 +1129,7 @@ export const PostSettings = {
     if (message.customTitle !== undefined) {
       obj.customTitle = message.customTitle;
     }
-    if (message.enableReplies === true) {
+    if (message.enableReplies !== undefined) {
       obj.enableReplies = message.enableReplies;
     }
     return obj;
@@ -1074,7 +1144,7 @@ export const PostSettings = {
     message.defaultModeration = object.defaultModeration ?? 0;
     message.defaultVisibility = object.defaultVisibility ?? 0;
     message.customTitle = object.customTitle ?? undefined;
-    message.enableReplies = object.enableReplies ?? false;
+    message.enableReplies = object.enableReplies ?? undefined;
     return message;
   },
 };

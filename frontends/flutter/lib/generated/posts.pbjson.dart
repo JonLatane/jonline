@@ -182,17 +182,17 @@ final $typed_data.Uint8List groupPostDescriptor = $convert.base64Decode(
 const UserPost$json = {
   '1': 'UserPost',
   '2': [
-    {'1': 'group_id', '3': 1, '4': 1, '5': 9, '10': 'groupId'},
-    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'post_id', '3': 2, '4': 1, '5': 9, '10': 'postId'},
     {'1': 'created_at', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
   ],
 };
 
 /// Descriptor for `UserPost`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List userPostDescriptor = $convert.base64Decode(
-    'CghVc2VyUG9zdBIZCghncm91cF9pZBgBIAEoCVIHZ3JvdXBJZBIXCgd1c2VyX2lkGAIgASgJUg'
-    'Z1c2VySWQSOQoKY3JlYXRlZF9hdBgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBS'
-    'CWNyZWF0ZWRBdA==');
+    'CghVc2VyUG9zdBIXCgd1c2VyX2lkGAEgASgJUgZ1c2VySWQSFwoHcG9zdF9pZBgCIAEoCVIGcG'
+    '9zdElkEjkKCmNyZWF0ZWRfYXQYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUglj'
+    'cmVhdGVkQXQ=');
 
 @$core.Deprecated('Use getGroupPostsRequestDescriptor instead')
 const GetGroupPostsRequest$json = {

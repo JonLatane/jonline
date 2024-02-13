@@ -75,7 +75,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
   const singleMediaPreview = showScrollableMediaPreviews
     ? undefined
-    : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
+    : post?.media?.find(m => m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
   const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
   const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 

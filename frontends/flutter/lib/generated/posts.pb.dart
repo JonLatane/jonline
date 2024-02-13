@@ -31,7 +31,7 @@ export 'posts.pbenum.dart';
 ///      - Get one post ,including preview data/
 ///  - `{post_id:, reply_depth: 1}`
 ///      - Get replies to a post - only support for replyDepth=1 is done for now though.
-///  - `{listing_type: MyGroupsPosts|GroupPostsPendingModeration, group_id:}`
+///  - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
 ///      - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
 ///  - `{author_user_id:, group_id:}`
 ///      - Get posts by a user for a group. (TODO)
@@ -117,8 +117,6 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearPostId() => clearField(1);
 
-  /// Limits results to replies to the given post.
-  /// optional string replies_to_post_id = 2;
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
   $core.String get authorUserId => $_getSZ(1);
@@ -129,6 +127,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearAuthorUserId() => clearField(2);
 
+  /// Limits results to those in the given group ID.
   @$pb.TagNumber(3)
   $core.String get groupId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -158,6 +157,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearContext() => clearField(5);
 
+  /// The listing type of the request. See `PostListingType` for more info.
   @$pb.TagNumber(10)
   PostListingType get listingType => $_getN(5);
   @$pb.TagNumber(10)
@@ -167,6 +167,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 
+  /// The page of results to return. Defaults to 0.
   @$pb.TagNumber(15)
   $core.int get page => $_getIZ(6);
   @$pb.TagNumber(15)
@@ -177,6 +178,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   void clearPage() => clearField(15);
 }
 
+/// Used for getting posts.
 class GetPostsResponse extends $pb.GeneratedMessage {
   factory GetPostsResponse({
     $core.Iterable<Post>? posts,
@@ -217,6 +219,7 @@ class GetPostsResponse extends $pb.GeneratedMessage {
   static GetPostsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPostsResponse>(create);
   static GetPostsResponse? _defaultInstance;
 
+  /// The posts returned by the request.
   @$pb.TagNumber(1)
   $core.List<Post> get posts => $_getList(0);
 }
@@ -551,6 +554,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(19)
   $core.List<Post> get replies => $_getList(17);
 
+  /// The time the post was created.
   @$pb.TagNumber(20)
   $9.Timestamp get createdAt => $_getN(18);
   @$pb.TagNumber(20)
@@ -562,6 +566,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   $9.Timestamp ensureCreatedAt() => $_ensure(18);
 
+  /// The time the post was last updated.
   @$pb.TagNumber(21)
   $9.Timestamp get updatedAt => $_getN(19);
   @$pb.TagNumber(21)
@@ -573,6 +578,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   $9.Timestamp ensureUpdatedAt() => $_ensure(19);
 
+  /// The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`).
   @$pb.TagNumber(22)
   $9.Timestamp get publishedAt => $_getN(20);
   @$pb.TagNumber(22)
@@ -584,6 +590,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(22)
   $9.Timestamp ensurePublishedAt() => $_ensure(20);
 
+  /// The time the post was last interacted with (replied to, etc.)
   @$pb.TagNumber(23)
   $9.Timestamp get lastActivityAt => $_getN(21);
   @$pb.TagNumber(23)
@@ -659,6 +666,7 @@ class GroupPost extends $pb.GeneratedMessage {
   static GroupPost getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GroupPost>(create);
   static GroupPost? _defaultInstance;
 
+  /// The ID of the group this post is in.
   @$pb.TagNumber(1)
   $core.String get groupId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -668,6 +676,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearGroupId() => clearField(1);
 
+  /// The ID of the post.
   @$pb.TagNumber(2)
   $core.String get postId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -677,6 +686,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
+  /// The ID of the user who cross-posted the post.
   @$pb.TagNumber(3)
   $core.String get userId => $_getSZ(2);
   @$pb.TagNumber(3)
@@ -686,6 +696,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearUserId() => clearField(3);
 
+  /// The moderation of the post in the group.
   @$pb.TagNumber(4)
   $10.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
@@ -695,6 +706,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearGroupModeration() => clearField(4);
 
+  /// The time the post was cross-posted.
   @$pb.TagNumber(5)
   $9.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
@@ -707,19 +719,20 @@ class GroupPost extends $pb.GeneratedMessage {
   $9.Timestamp ensureCreatedAt() => $_ensure(4);
 }
 
-/// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused.
+/// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.
+/// See also: [`DIRECT` `Visibility`](#jonline-Visibility).
 class UserPost extends $pb.GeneratedMessage {
   factory UserPost({
-    $core.String? groupId,
     $core.String? userId,
+    $core.String? postId,
     $9.Timestamp? createdAt,
   }) {
     final $result = create();
-    if (groupId != null) {
-      $result.groupId = groupId;
-    }
     if (userId != null) {
       $result.userId = userId;
+    }
+    if (postId != null) {
+      $result.postId = postId;
     }
     if (createdAt != null) {
       $result.createdAt = createdAt;
@@ -731,8 +744,8 @@ class UserPost extends $pb.GeneratedMessage {
   factory UserPost.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'groupId')
-    ..aOS(2, _omitFieldNames ? '' : 'userId')
+    ..aOS(1, _omitFieldNames ? '' : 'userId')
+    ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..aOM<$9.Timestamp>(3, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
@@ -758,24 +771,27 @@ class UserPost extends $pb.GeneratedMessage {
   static UserPost getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserPost>(create);
   static UserPost? _defaultInstance;
 
+  /// The ID of the user the post is shared with.
   @$pb.TagNumber(1)
-  $core.String get groupId => $_getSZ(0);
+  $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set groupId($core.String v) { $_setString(0, v); }
+  set userId($core.String v) { $_setString(0, v); }
   @$pb.TagNumber(1)
-  $core.bool hasGroupId() => $_has(0);
+  $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearGroupId() => clearField(1);
+  void clearUserId() => clearField(1);
 
+  /// The ID of the post shared.
   @$pb.TagNumber(2)
-  $core.String get userId => $_getSZ(1);
+  $core.String get postId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set userId($core.String v) { $_setString(1, v); }
+  set postId($core.String v) { $_setString(1, v); }
   @$pb.TagNumber(2)
-  $core.bool hasUserId() => $_has(1);
+  $core.bool hasPostId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearUserId() => clearField(2);
+  void clearPostId() => clearField(2);
 
+  /// The time the post was shared.
   @$pb.TagNumber(3)
   $9.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(3)
@@ -788,7 +804,7 @@ class UserPost extends $pb.GeneratedMessage {
   $9.Timestamp ensureCreatedAt() => $_ensure(2);
 }
 
-/// Used for getting context about GroupPosts of an existing Post.
+/// Used for getting context about `GroupPost`s of an existing `Post`.
 class GetGroupPostsRequest extends $pb.GeneratedMessage {
   factory GetGroupPostsRequest({
     $core.String? postId,
@@ -834,6 +850,7 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   static GetGroupPostsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupPostsRequest>(create);
   static GetGroupPostsRequest? _defaultInstance;
 
+  /// The ID of the post to get `GroupPost`s for.
   @$pb.TagNumber(1)
   $core.String get postId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -843,6 +860,7 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearPostId() => clearField(1);
 
+  /// The ID of the group to get `GroupPost`s for.
   @$pb.TagNumber(2)
   $core.String get groupId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -853,7 +871,7 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   void clearGroupId() => clearField(2);
 }
 
-/// Used for getting context about GroupPosts of an existing Post.
+/// Used for getting context about `GroupPost`s of an existing `Post`.
 class GetGroupPostsResponse extends $pb.GeneratedMessage {
   factory GetGroupPostsResponse({
     $core.Iterable<GroupPost>? groupPosts,
@@ -894,6 +912,7 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
   static GetGroupPostsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupPostsResponse>(create);
   static GetGroupPostsResponse? _defaultInstance;
 
+  /// The `GroupPost`s for the given `Post` or `Group`.
   @$pb.TagNumber(1)
   $core.List<GroupPost> get groupPosts => $_getList(0);
 }

@@ -117,3 +117,8 @@ documentation:
 html_docs: documentation
 	npm i markdown-to-html-cli -g
 	markdown-to-html --source docs/protocol.md --output docs/protocol.html --github-corners https://github.com/JonLatane/jonline --style 'markdown-style { padding-top: 40px!important; }' --title 'Jonline Protocol Documentation'
+
+graphs:
+	cd docs/architecture && dot -Tsvg Kubernetes_Deployment.dot -o Kubernetes_Deployment.svg
+	cd docs/architecture && dot -Tsvg JBL_Kubernetes_Deployment.dot -o JBL_Kubernetes_Deployment.svg
+

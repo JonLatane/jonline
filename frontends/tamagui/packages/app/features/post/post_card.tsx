@@ -4,7 +4,7 @@ import { GestureResponderEvent, View } from "react-native";
 
 import { Post, Visibility } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
-import { ChevronRight, Delete, Edit3 as Edit, Eye, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { TamaguiMarkdown } from "../../components/tamagui_markdown";
@@ -127,10 +127,26 @@ export const PostCard: React.FC<PostCardProps> = ({
     }
   }, [isVisible]);
 
-  const postHasWebLink = post.link && post.link.startsWith('http');
+  const postHasWebLink = !!post.link && post.link.startsWith('http');
   const postLink = postHasWebLink ? useLink({
     href: post.link!,
-  }) : {};
+  }) : undefined;
+
+  const postLinkView = postHasWebLink
+    ? <Anchor key='post-link' textDecorationLine='none' {...postLink} target="_blank">
+      <XStack>
+        <YStack my='auto' mr='$1'>
+          <Link size='$1' color={navAnchorColor} />
+        </YStack>
+        <YStack f={1} my='auto'>
+          <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">
+            {post.link}
+          </Paragraph>
+        </YStack>
+      </XStack>
+    </Anchor>
+    : undefined;
+
   const detailsLinkId = !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
     : post.id;
@@ -232,6 +248,8 @@ export const PostCard: React.FC<PostCardProps> = ({
           : undefined
     }
   </YStack>;
+
+  const title = post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`;
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
@@ -297,18 +315,25 @@ export const PostCard: React.FC<PostCardProps> = ({
           {!post.replyToPostId && (post.link != '' || post.title != '')
             ? <Card.Header>
               <XStack ai='center'>
-                <Anchor f={1} textDecorationLine='none'
-                  {...{ ...(isPreview ? detailsLink : {}), ...postLink, }}
-                  target={postHasWebLink ? '_blank' : undefined}>
-                  <YStack w='100%'>
-                    <Heading size="$7" marginRight='auto'
-                      color={post.link && post.link?.startsWith('http')
-                        ? navAnchorColor
-                        : undefined}>
-                      {post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`}
-                    </Heading>
-                  </YStack>
-                </Anchor>
+                <YStack f={1}>
+                  {isPreview
+                    ? <Anchor textDecorationLine='none'
+                      {...(isPreview ? detailsLink : {})}
+                    >
+                      <YStack w='100%'>
+                        <Heading size="$7" marginRight='auto'>
+                          {title}
+                        </Heading>
+                      </YStack>
+                    </Anchor>
+                    : <YStack w='100%'>
+                      <Heading size="$7" marginRight='auto'>
+                        {title}
+                      </Heading>
+                    </YStack>}
+
+                  {postLinkView}
+                </YStack>
 
                 {showServerInfo
                   ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>

@@ -3,7 +3,12 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "jonline";
 
+/** Version information for the Jonline server. */
 export interface GetServiceVersionResponse {
+  /**
+   * The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
+   * that generated the binary for the server.
+   */
   version: string;
 }
 

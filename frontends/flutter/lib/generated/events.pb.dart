@@ -23,14 +23,19 @@ import 'visibility_moderation.pbenum.dart' as $10;
 
 export 'events.pbenum.dart';
 
-/// Valid GetEventsRequest formats:
-/// - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
-/// - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-/// - `{event_id:}`                                    (TODO: get single event including preview data)
-/// - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
-///                                                    (TODO: get events/events needing moderation for a group)
-/// - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
-/// - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
+///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
+///  if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+///
+///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+///
+///  Valid GetEventsRequest formats:
+///  - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+///  - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+///  - `{event_id:}`                                    (TODO: get single event including preview data)
+///  - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+///                                                     (TODO: get events/events needing moderation for a group)
+///  - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+///  - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest({
     $core.String? eventId,
@@ -40,6 +45,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     TimeFilter? timeFilter,
     $core.String? attendeeId,
     $core.Iterable<AttendanceStatus>? attendanceStatuses,
+    $core.String? postId,
+    $core.String? instancePostId,
     EventListingType? listingType,
   }) {
     final $result = create();
@@ -64,6 +71,12 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (attendanceStatuses != null) {
       $result.attendanceStatuses.addAll(attendanceStatuses);
     }
+    if (postId != null) {
+      $result.postId = postId;
+    }
+    if (instancePostId != null) {
+      $result.instancePostId = instancePostId;
+    }
     if (listingType != null) {
       $result.listingType = listingType;
     }
@@ -81,6 +94,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
     ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
     ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
+    ..aOS(8, _omitFieldNames ? '' : 'postId')
+    ..aOS(9, _omitFieldNames ? '' : 'instancePostId')
     ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..hasRequiredFields = false
   ;
@@ -174,13 +189,33 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
+  /// (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT`.
+  @$pb.TagNumber(8)
+  $core.String get postId => $_getSZ(7);
+  @$pb.TagNumber(8)
+  set postId($core.String v) { $_setString(7, v); }
+  @$pb.TagNumber(8)
+  $core.bool hasPostId() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearPostId() => clearField(8);
+
+  /// (TODO) Finds events that have an instance with the given post ID. The Post should have a `PostContext` of `EVENT_INSTANCE`.
+  @$pb.TagNumber(9)
+  $core.String get instancePostId => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set instancePostId($core.String v) { $_setString(8, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasInstancePostId() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearInstancePostId() => clearField(9);
+
   /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
-  EventListingType get listingType => $_getN(7);
+  EventListingType get listingType => $_getN(9);
   @$pb.TagNumber(10)
   set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(7);
+  $core.bool hasListingType() => $_has(9);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 }
@@ -600,6 +635,7 @@ class EventInstance extends $pb.GeneratedMessage {
   static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
   static EventInstance? _defaultInstance;
 
+  /// Unique ID for the event instance generated by the Jonline BE.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -609,6 +645,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
+  /// ID of the parent `Event`.
   @$pb.TagNumber(2)
   $core.String get eventId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -721,6 +758,7 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   static EventInstanceInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
   static EventInstanceInfo? _defaultInstance;
 
+  /// RSVP configuration and metadata for the event instance.
   @$pb.TagNumber(1)
   EventInstanceRsvpInfo get rsvpInfo => $_getN(0);
   @$pb.TagNumber(1)
@@ -845,6 +883,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   void clearMaxAttendees() => clearField(3);
 
+  /// The number of users who have RSVP'd to the event.
   @$pb.TagNumber(4)
   $core.int get goingRsvps => $_getIZ(3);
   @$pb.TagNumber(4)
@@ -854,6 +893,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   void clearGoingRsvps() => clearField(4);
 
+  /// The number of attendees who have RSVP'd to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(5)
   $core.int get goingAttendees => $_getIZ(4);
   @$pb.TagNumber(5)
@@ -863,6 +903,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearGoingAttendees() => clearField(5);
 
+  /// The number of users who have signaled interest in the event.
   @$pb.TagNumber(6)
   $core.int get interestedRsvps => $_getIZ(5);
   @$pb.TagNumber(6)
@@ -872,6 +913,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   void clearInterestedRsvps() => clearField(6);
 
+  /// The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(7)
   $core.int get interestedAttendees => $_getIZ(6);
   @$pb.TagNumber(7)
@@ -881,6 +923,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   void clearInterestedAttendees() => clearField(7);
 
+  /// The number of users who have been invited to the event.
   @$pb.TagNumber(8)
   $core.int get invitedRsvps => $_getIZ(7);
   @$pb.TagNumber(8)
@@ -890,6 +933,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearInvitedRsvps() => clearField(8);
 
+  /// The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(9)
   $core.int get invitedAttendees => $_getIZ(8);
   @$pb.TagNumber(9)
@@ -946,6 +990,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   static GetEventAttendancesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventAttendancesRequest>(create);
   static GetEventAttendancesRequest? _defaultInstance;
 
+  /// The ID of the event to get RSVP data for.
   @$pb.TagNumber(1)
   $core.String get eventInstanceId => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -955,6 +1000,9 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearEventInstanceId() => clearField(1);
 
+  /// If set, and if the token has an RSVP for this even, request that RSVP data
+  /// in addition to the rest of the RSVP data. (The event creator can always
+  /// see and moderate anonymous RSVPs.)
   @$pb.TagNumber(2)
   $core.String get anonymousAttendeeAuthToken => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -965,6 +1013,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   void clearAnonymousAttendeeAuthToken() => clearField(2);
 }
 
+/// Response to get RSVP data for an event.
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
@@ -1005,6 +1054,7 @@ class EventAttendances extends $pb.GeneratedMessage {
   static EventAttendances getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendances>(create);
   static EventAttendances? _defaultInstance;
 
+  /// The attendance data for the event, in no particular order.
   @$pb.TagNumber(1)
   $core.List<EventAttendance> get attendances => $_getList(0);
 }
@@ -1227,6 +1277,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   void clearModeration() => clearField(10);
 
+  /// The time the attendance was created.
   @$pb.TagNumber(11)
   $9.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(11)
@@ -1238,6 +1289,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $9.Timestamp ensureCreatedAt() => $_ensure(10);
 
+  /// The time the attendance was last updated.
   @$pb.TagNumber(12)
   $9.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(12)

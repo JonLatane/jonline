@@ -76,8 +76,8 @@ export function ServerNameAndLogo({
   const logo = server?.serverConfiguration?.serverInfo?.logo;
 
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
-  const useSquareLogo = canUseLogo && logo?.squareMediaId != undefined;
-  const useWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkToSquare;
+  const displaySquareLogo = canUseLogo && logo?.squareMediaId != undefined;
+  const displayWideLogo = canUseLogo && logo?.wideMediaId != undefined && !shrinkToSquare;
   const hasEmoji = serverNameEmoji && serverNameEmoji !== '';
 
   const imageLogoSize = enlargeSmallText ? '$6' : '$3';
@@ -97,7 +97,7 @@ export function ServerNameAndLogo({
       lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
     // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
     >
-      {serverNameBeforeEmoji}{useSquareLogo && hasEmoji && serverNameEmoji != '|' ? ` ${serverNameEmoji}` : undefined}
+      {serverNameBeforeEmoji}{displaySquareLogo && hasEmoji && serverNameEmoji != '|' ? ` ${serverNameEmoji}` : undefined}
     </Heading>
     {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
       ? <Paragraph
@@ -116,7 +116,7 @@ export function ServerNameAndLogo({
   return shrinkToSquare
     ? <Tooltip>
       <Tooltip.Trigger>
-        {useSquareLogo
+        {displaySquareLogo
           ? <XStack h='100%'
             w='100%'
             scale={1.1}
@@ -138,11 +138,11 @@ export function ServerNameAndLogo({
     : <XStack
       mr={'$2'}
       h={'100%'} w='100%'
-      gap='$5'
-      pl={useSquareLogo ? '$1' : undefined}
+      // gap='$5'
+      pl={displaySquareLogo ? '$1' : undefined}
       maw={maxWidth}
     >
-      {useWideLogo
+      {displayWideLogo
         ?
         <Tooltip>
           <Tooltip.Trigger>
@@ -156,7 +156,7 @@ export function ServerNameAndLogo({
           </Tooltip.Content>
         </Tooltip>
         : <>
-          {useSquareLogo
+          {displaySquareLogo
             ? <XStack
               w={imageLogoSize}
               h={imageLogoSize} ml='$2' mr='$1' my='auto'>

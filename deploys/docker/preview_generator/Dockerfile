@@ -1,5 +1,14 @@
 FROM --platform=linux/amd64 debian:stable-slim
 
+# The preview generator image only includes the background job binary and a tool to delete images. Other Jonline binaries aren't really useful;
+# the bulk of this image will be the Chrome distro included.
+#
+# Note that its entrypoint is a headless browser, which is necessary for the preview generator to work. A cluster job of some sort must
+# run /opt/generate_preview_images periodically (which is set up automatically in Jonline deployment as a K8s CronJob).
+COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
+COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
+
+# Setup the environment for the preview generator.
 RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
 
 # Old Ubuntu OpenSSL thing
@@ -37,10 +46,6 @@ RUN apt-get -y install brave-browser
 
 # Chrome ad/cookie blockers for screenshot generator
 # COPY backend/docker/preview_generator/preview_generator_extensions /opt/preview_generator_extensions
-
-# Only includes the background job binary.
-COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
-COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
 
 EXPOSE 27707 8000 80 443 8001-9000 9222
 

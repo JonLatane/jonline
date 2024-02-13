@@ -393,11 +393,11 @@ export const EventCard: React.FC<Props> = ({
           <XStack>
             <YStack f={1}>
               <Heading size="$7" marginRight='auto'>{title}</Heading>
+              {postLinkView}
             </YStack>
             {serverInfoView}
           </XStack>
         </Anchor>
-        {postLinkView}
         <XStack mr='$2'>
           <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}

@@ -20,7 +20,10 @@ export interface CreateAccountRequest {
     | ContactMethod
     | undefined;
   /** Request an expiration time for the Auth Token returned. By default it will not expire. */
-  expiresAt?: string | undefined;
+  expiresAt?:
+    | string
+    | undefined;
+  /** (Not yet implemented.) The name of the device being used to create the account. */
   deviceName?: string | undefined;
 }
 
@@ -34,7 +37,7 @@ export interface LoginRequest {
   expiresAt?:
     | string
     | undefined;
-  /** (Not yet implemented.) */
+  /** (Not yet implemented.) The name of the device being used to login. */
   deviceName?:
     | string
     | undefined;
@@ -69,6 +72,7 @@ export interface ExpirableToken {
 
 /** Request for a new access token using a refresh token. */
 export interface AccessTokenRequest {
+  /** The refresh token to use to request a new access token. */
   refreshToken: string;
   /** Optional *requested* expiration time for the token. Server may ignore this. */
   expiresAt?: string | undefined;
@@ -769,7 +773,7 @@ export type Exact<P, I extends P> = P extends Builtin ? P
 
 function toTimestamp(dateStr: string): Timestamp {
   const date = new globalThis.Date(dateStr);
-  const seconds = date.getTime() / 1_000;
+  const seconds = Math.trunc(date.getTime() / 1_000);
   const nanos = (date.getTime() % 1_000) * 1_000_000;
   return { seconds, nanos };
 }

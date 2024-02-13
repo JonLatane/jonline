@@ -74,7 +74,7 @@ const ServerConfiguration$json = {
     {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'peopleSettings'},
     {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'groupSettings'},
     {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
-    {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'eventSettings'},
+    {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'eventSettings'},
     {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'mediaSettings'},
     {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 2, '10': 'externalCdnConfig', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
@@ -99,15 +99,15 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'JBCg9wZW9wbGVfc2V0dGluZ3MYFCABKAsyGC5qb25saW5lLkZlYXR1cmVTZXR0aW5nc1IOcGVv'
     'cGxlU2V0dGluZ3MSPwoOZ3JvdXBfc2V0dGluZ3MYFSABKAsyGC5qb25saW5lLkZlYXR1cmVTZX'
     'R0aW5nc1INZ3JvdXBTZXR0aW5ncxI6Cg1wb3N0X3NldHRpbmdzGBYgASgLMhUuam9ubGluZS5Q'
-    'b3N0U2V0dGluZ3NSDHBvc3RTZXR0aW5ncxI/Cg5ldmVudF9zZXR0aW5ncxgXIAEoCzIYLmpvbm'
-    'xpbmUuRmVhdHVyZVNldHRpbmdzUg1ldmVudFNldHRpbmdzEj8KDm1lZGlhX3NldHRpbmdzGBgg'
-    'ASgLMhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDW1lZGlhU2V0dGluZ3MSTwoTZXh0ZXJuYW'
-    'xfY2RuX2NvbmZpZxhaIAEoCzIaLmpvbmxpbmUuRXh0ZXJuYWxDRE5Db25maWdIAlIRZXh0ZXJu'
-    'YWxDZG5Db25maWeIAQESUAoVcHJpdmF0ZV91c2VyX3N0cmF0ZWd5GGQgASgOMhwuam9ubGluZS'
-    '5Qcml2YXRlVXNlclN0cmF0ZWd5UhNwcml2YXRlVXNlclN0cmF0ZWd5ElcKF2F1dGhlbnRpY2F0'
-    'aW9uX2ZlYXR1cmVzGGUgAygOMh4uam9ubGluZS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dG'
-    'hlbnRpY2F0aW9uRmVhdHVyZXNCDgoMX3NlcnZlcl9pbmZvQhIKEF9mZWRlcmF0aW9uX2luZm9C'
-    'FgoUX2V4dGVybmFsX2Nkbl9jb25maWc=');
+    'b3N0U2V0dGluZ3NSDHBvc3RTZXR0aW5ncxI8Cg5ldmVudF9zZXR0aW5ncxgXIAEoCzIVLmpvbm'
+    'xpbmUuUG9zdFNldHRpbmdzUg1ldmVudFNldHRpbmdzEj8KDm1lZGlhX3NldHRpbmdzGBggASgL'
+    'Mhguam9ubGluZS5GZWF0dXJlU2V0dGluZ3NSDW1lZGlhU2V0dGluZ3MSTwoTZXh0ZXJuYWxfY2'
+    'RuX2NvbmZpZxhaIAEoCzIaLmpvbmxpbmUuRXh0ZXJuYWxDRE5Db25maWdIAlIRZXh0ZXJuYWxD'
+    'ZG5Db25maWeIAQESUAoVcHJpdmF0ZV91c2VyX3N0cmF0ZWd5GGQgASgOMhwuam9ubGluZS5Qcm'
+    'l2YXRlVXNlclN0cmF0ZWd5UhNwcml2YXRlVXNlclN0cmF0ZWd5ElcKF2F1dGhlbnRpY2F0aW9u'
+    'X2ZlYXR1cmVzGGUgAygOMh4uam9ubGluZS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dGhlbn'
+    'RpY2F0aW9uRmVhdHVyZXNCDgoMX3NlcnZlcl9pbmZvQhIKEF9mZWRlcmF0aW9uX2luZm9CFgoU'
+    'X2V4dGVybmFsX2Nkbl9jb25maWc=');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {
@@ -165,10 +165,11 @@ const PostSettings$json = {
     {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
     {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
     {'1': 'custom_title', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'customTitle', '17': true},
-    {'1': 'enable_replies', '3': 5, '4': 1, '5': 8, '10': 'enableReplies'},
+    {'1': 'enable_replies', '3': 5, '4': 1, '5': 8, '9': 1, '10': 'enableReplies', '17': true},
   ],
   '8': [
     {'1': '_custom_title'},
+    {'1': '_enable_replies'},
   ],
 };
 
@@ -177,8 +178,9 @@ final $typed_data.Uint8List postSettingsDescriptor = $convert.base64Decode(
     'CgxQb3N0U2V0dGluZ3MSGAoHdmlzaWJsZRgBIAEoCFIHdmlzaWJsZRJCChJkZWZhdWx0X21vZG'
     'VyYXRpb24YAiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SEWRlZmF1bHRNb2RlcmF0aW9uEkIK'
     'EmRlZmF1bHRfdmlzaWJpbGl0eRgDIAEoDjITLmpvbmxpbmUuVmlzaWJpbGl0eVIRZGVmYXVsdF'
-    'Zpc2liaWxpdHkSJgoMY3VzdG9tX3RpdGxlGAQgASgJSABSC2N1c3RvbVRpdGxliAEBEiUKDmVu'
-    'YWJsZV9yZXBsaWVzGAUgASgIUg1lbmFibGVSZXBsaWVzQg8KDV9jdXN0b21fdGl0bGU=');
+    'Zpc2liaWxpdHkSJgoMY3VzdG9tX3RpdGxlGAQgASgJSABSC2N1c3RvbVRpdGxliAEBEioKDmVu'
+    'YWJsZV9yZXBsaWVzGAUgASgISAFSDWVuYWJsZVJlcGxpZXOIAQFCDwoNX2N1c3RvbV90aXRsZU'
+    'IRCg9fZW5hYmxlX3JlcGxpZXM=');
 
 @$core.Deprecated('Use serverInfoDescriptor instead')
 const ServerInfo$json = {

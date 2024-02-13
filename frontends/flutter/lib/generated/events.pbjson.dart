@@ -24,6 +24,7 @@ const EventListingType$json = {
     {'1': 'EVENTS_PENDING_MODERATION', '2': 4},
     {'1': 'GROUP_EVENTS', '2': 10},
     {'1': 'GROUP_EVENTS_PENDING_MODERATION', '2': 11},
+    {'1': 'NEWLY_ADDED_EVENTS', '2': 20},
   ],
 };
 
@@ -32,7 +33,7 @@ final $typed_data.Uint8List eventListingTypeDescriptor = $convert.base64Decode(
     'ChBFdmVudExpc3RpbmdUeXBlEhkKFUFMTF9BQ0NFU1NJQkxFX0VWRU5UUxAAEhQKEEZPTExPV0'
     'lOR19FVkVOVFMQARIUChBNWV9HUk9VUFNfRVZFTlRTEAISEQoNRElSRUNUX0VWRU5UUxADEh0K'
     'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIQCgxHUk9VUF9FVkVOVFMQChIjCh9HUk9VUF'
-    '9FVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAs=');
+    '9FVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAsSFgoSTkVXTFlfQURERURfRVZFTlRTEBQ=');
 
 @$core.Deprecated('Use attendanceStatusDescriptor instead')
 const AttendanceStatus$json = {
@@ -61,6 +62,8 @@ const GetEventsRequest$json = {
     {'1': 'time_filter', '3': 5, '4': 1, '5': 11, '6': '.jonline.TimeFilter', '9': 4, '10': 'timeFilter', '17': true},
     {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 5, '10': 'attendeeId', '17': true},
     {'1': 'attendance_statuses', '3': 7, '4': 3, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'attendanceStatuses'},
+    {'1': 'post_id', '3': 8, '4': 1, '5': 9, '9': 6, '10': 'postId', '17': true},
+    {'1': 'instance_post_id', '3': 9, '4': 1, '5': 9, '9': 7, '10': 'instancePostId', '17': true},
     {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
   ],
   '8': [
@@ -70,6 +73,8 @@ const GetEventsRequest$json = {
     {'1': '_event_instance_id'},
     {'1': '_time_filter'},
     {'1': '_attendee_id'},
+    {'1': '_post_id'},
+    {'1': '_instance_post_id'},
   ],
 };
 
@@ -81,10 +86,12 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     '5jZUlkiAEBEjkKC3RpbWVfZmlsdGVyGAUgASgLMhMuam9ubGluZS5UaW1lRmlsdGVySARSCnRp'
     'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
     'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
-    'bmRhbmNlU3RhdHVzZXMSPAoMbGlzdGluZ190eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3'
-    'RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsK'
-    'CV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdH'
-    'RlbmRlZV9pZA==');
+    'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESLQoQaW5zdGFuY2'
+    'VfcG9zdF9pZBgJIAEoCUgHUg5pbnN0YW5jZVBvc3RJZIgBARI8CgxsaXN0aW5nX3R5cGUYCiAB'
+    'KA4yGS5qb25saW5lLkV2ZW50TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlQgsKCV9ldmVudF9pZE'
+    'IRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQhQKEl9ldmVudF9pbnN0YW5jZV9pZEIO'
+    'CgxfdGltZV9maWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoKCF9wb3N0X2lkQhMKEV9pbnN0YW5jZV'
+    '9wb3N0X2lk');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {
