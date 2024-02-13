@@ -11,7 +11,7 @@ impl<'r> FromRequest<'r> for AuthHeader<'r> {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match req.headers().get_one("Authorization") {
             Some(h) => Outcome::Success(AuthHeader(h)),
-            None => Outcome::Failure((rocket::http::Status::NotAcceptable, ())),
+            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
         }
     }
 }
@@ -26,7 +26,7 @@ impl<'r> FromRequest<'r> for ContentTypeHeader<'r> {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match req.headers().get_one("Content-Type") {
             Some(h) => Outcome::Success(ContentTypeHeader(h)),
-            None => Outcome::Failure((rocket::http::Status::NotAcceptable, ())),
+            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
         }
     }
 }
@@ -40,7 +40,7 @@ impl<'r> FromRequest<'r> for FilenameHeader<'r> {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match req.headers().get_one("Filename") {
             Some(h) => Outcome::Success(FilenameHeader(h)),
-            None => Outcome::Failure((rocket::http::Status::NotAcceptable, ())),
+            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
         }
     }
 }
@@ -54,7 +54,7 @@ impl<'r> FromRequest<'r> for MediaTitleHeader<'r> {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match req.headers().get_one("Media-Title") {
             Some(h) => Outcome::Success(MediaTitleHeader(h)),
-            None => Outcome::Failure((rocket::http::Status::NotAcceptable, ())),
+            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
         }
     }
 }
@@ -69,7 +69,7 @@ impl<'r> FromRequest<'r> for MediaDescriptionHeader<'r> {
     async fn from_request(req: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         match req.headers().get_one("Media-Description") {
             Some(h) => Outcome::Success(MediaDescriptionHeader(h)),
-            None => Outcome::Failure((rocket::http::Status::NotAcceptable, ())),
+            None => Outcome::Error((rocket::http::Status::NotAcceptable, ())),
         }
     }
 }

@@ -22,7 +22,7 @@ tonic = { version = "0.10.2", features = [
 tonic-reflection = "0.10.2"
 tonic-web = "0.10.2"
 tower-http = "0.4.4" # used to configure CORS for Tonic Web
-rocket = { version = "0.5.0-rc.3", features = ["tls"] }
+rocket = { version = "0.5.0", features = ["tls"] }
 rocket_async_compression = "0.5.0"
 async-compression = "0.4.0"
 rocket-cache-response = "0.6.2"
