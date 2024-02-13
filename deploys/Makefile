@@ -78,19 +78,26 @@ deploy_lb_get_ip:
 # Use "internal" when deploying with a separate load balancer, and 
 # use deploy_be_link_lb_service_account to link the load balancer to the
 # internal Jonline service.
-deploy_be_create_external: deploy_ensure_namespace
+deploy_be_external_create: deploy_ensure_namespace
 	kubectl create -f k8s/server_external.yaml --save-config -n $(NAMESPACE)
 	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
-deploy_be_create_internal: deploy_ensure_namespace
+deploy_be_internal_create: deploy_ensure_namespace
 	kubectl create -f k8s/server_internal.yaml --save-config -n $(NAMESPACE)
 	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
+deploy_be_internal_insecure_create: deploy_ensure_namespace
+	kubectl create -f k8s/server_internal_insecure.yaml --save-config -n $(NAMESPACE)
+	kubectl create -f k8s/preview_generator.yaml --save-config -n $(NAMESPACE)
 
-deploy_be_update_external:
+deploy_be_external_update:
 	kubectl apply -f k8s/server_external.yaml -n $(NAMESPACE)
 	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
 	$(MAKE) deploy_be_monitor_rollout
-deploy_be_update_internal:
+deploy_be_internal_update:
 	kubectl apply -f k8s/server_internal.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
+	$(MAKE) deploy_be_monitor_rollout
+deploy_be_internal_insecure_update:
+	kubectl apply -f k8s/server_internal_insecure.yaml -n $(NAMESPACE)
 	kubectl apply -f k8s/preview_generator.yaml -n $(NAMESPACE)
 	$(MAKE) deploy_be_monitor_rollout
 
@@ -140,7 +147,7 @@ deploy_test_be_tls_openssl:
 deploy_data_create: deploy_db_create deploy_minio_create
 deploy_data_update: deploy_db_update deploy_minio_update
 deploy_data_delete: deploy_db_delete deploy_minio_delete
-deploy_data_restart: deploy_ddbrestart deploy_dminiorestart
+deploy_data_restart: deploy_db_restart deploy_minio_restart
 
 # K8s DB deployment targets (optional if using managed DB)
 deploy_db_create: deploy_ensure_namespace

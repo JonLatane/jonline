@@ -33,13 +33,13 @@ Most of the high-level Jonline backend build management lives in `../Makefile`.
 For instance, for me, after incremention the version in `Cargo.toml`, I generally run the following to build/push a release to Dockerhub and deploy to both [jonline.io](https://jonline.io) and [get.jonline](https://getj.online):
 
 ```bash
-make release_be_cloud deploy_be_update_external && NAMESPACE=getjonline make deploy_be_update_external && say 'deploy complete'
+make release_be_cloud deploy_be_external_update && NAMESPACE=getjonline make deploy_be_external_update && say 'deploy complete'
 ```
 
 As an end user, once you've set up per the quick setup, you can simply run this to apply updates:
 
 ```bash
-git pull && make deploy_be_update_external
+git pull && make deploy_be_external_update
 ```
 
 Until Jonline is fairly complete, I'm not bothering with migrations. Be prepared to reset data until then. To reset your database/minio (if you're using the K8s one and not a managed DB):

@@ -1,0 +1,149 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: jonline
+  labels:
+    app: jonline
+spec:
+  type: ClusterIP
+  # type: ExternalName
+  # externalName: ${JONLINE_HOST}
+  selector:
+    app: jonline
+  ports:
+    - name: grpc
+      protocol: TCP
+      port: 27707
+      targetPort: 27707
+    - name: web-secure
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: web-insecure-1
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: web-insecure-2
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jonline
+  labels:
+    app: jonline
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: jonline
+  template:
+    metadata:
+      labels:
+        app: jonline
+    spec:
+      containers:
+        - image: docker.io/jonlatane/jonline:0.2.531
+          name: jonline
+          env:
+            - name: DATABASE_URL
+              value: postgres://admin:secure_password1@jonline-postgres/jonline
+            - name: MINIO_ENDPOINT
+              value: http://jonline-minio:9000
+            - name: MINIO_REGION
+              value: ''
+            - name: MINIO_BUCKET
+              value: jonline
+            - name: MINIO_ACCESS_KEY
+              value: minio
+            - name: MINIO_SECRET_KEY
+              value: minio123
+            - name: RUST_BACKTRACE
+              value: full
+            # - name: TLS_KEY
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: jonline-generated-tls
+            #       key: tls.key
+            #       optional: true
+            # - name: TLS_CERT
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: jonline-generated-tls
+            #       key: tls.crt
+            #       optional: true
+            - name: CA_CERT
+              valueFrom:
+                configMapKeyRef:
+                  name: jonline-generated-ca
+                  key: ca.crt
+                  optional: true
+          ports:
+            - containerPort: 27707
+              protocol: TCP
+              name: jonline
+            - containerPort: 443
+              protocol: TCP
+              name: jonline-web-s
+            - containerPort: 80
+              protocol: TCP
+              name: jonline-web-i1
+            - containerPort: 8000
+              protocol: TCP
+              name: jonline-web-i2
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: delete-expired-tokens
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: delete-expired-tokens
+            image: docker.io/jonlatane/jonline:0.2.531
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DATABASE_URL
+                value: postgres://admin:secure_password1@jonline-postgres/jonline
+            command:
+            - /opt/delete_expired_tokens
+          restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: delete-unowned-media
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: delete-unowned-media
+            image: docker.io/jonlatane/jonline:0.2.531
+            imagePullPolicy: IfNotPresent
+            env:
+              - name: DATABASE_URL
+                value: postgres://admin:secure_password1@jonline-postgres/jonline
+              - name: MINIO_ENDPOINT
+                value: http://jonline-minio:9000
+              - name: MINIO_REGION
+                value: ''
+              - name: MINIO_BUCKET
+                value: jonline
+              - name: MINIO_ACCESS_KEY
+                value: minio
+              - name: MINIO_SECRET_KEY
+                value: minio123
+            command:
+            - /opt/delete_unowned_media
+          restartPolicy: Never

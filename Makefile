@@ -31,14 +31,14 @@ deploy_lb_update:
 # Internal or external refers to whether the service is exposed to the internet.
 # External is the default, but internal is useful for testing, and could
 # save lots of money if you want to host many servers from a single LoadBalancer/IP.
-deploy_be_create_external:
-	cd deploys && $(MAKE) deploy_be_create_external
-deploy_be_create_internal:
-	cd deploys && $(MAKE) deploy_be_create_internal
-deploy_be_update_external:
-	cd deploys && $(MAKE) deploy_be_update_external
-deploy_be_update_internal:
-	cd deploys && $(MAKE) deploy_be_update_internal
+deploy_be_external_create:
+	cd deploys && $(MAKE) deploy_be_external_create
+deploy_be_internal_create:
+	cd deploys && $(MAKE) deploy_be_internal_create
+deploy_be_external_update:
+	cd deploys && $(MAKE) deploy_be_external_update
+deploy_be_internal_update:
+	cd deploys && $(MAKE) deploy_be_internal_update
 deploy_be_restart:
 	cd deploys && $(MAKE) deploy_be_restart
 deploy_be_delete:
