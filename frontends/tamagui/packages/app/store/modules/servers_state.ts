@@ -35,6 +35,7 @@ export function frontendServerUrl(server: JonlineServer): string {
 
 export interface ServersState {
   status: "unloaded" | "loading" | "loaded" | "errored";
+  configuringFederation: boolean;
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
@@ -55,7 +56,7 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   "servers/create",
   async (server, state) => {
     // getServerClient will update/upsert the server as a side effect.
-    let client = await getServerClient(server);
+    let _client = await getServerClient(server);
     // let serviceVersion: GetServiceVersionResponse = await Promise.race([client.getServiceVersion({}), timeout(5000, "service version")]);
     // let serverConfiguration = await Promise.race([client.getServerConfiguration({}), timeout(5000, "server configuration")]);
     return server;
@@ -63,12 +64,9 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
 );
 
 // Initialize the app with a server asynchronously, after the store has already
-// been initialized. This lets us detect CDN changes.
-let _backendHost: string | undefined = undefined;
-let _frontendHost: string | undefined = undefined;
-
+// been initialized.
 setTimeout(async () => {
-  if (Platform.OS != 'web') {
+  if (Platform.OS !== 'web') {
     const initialServer = {
       host: 'jonline.io',
       secure: true,
@@ -93,10 +91,14 @@ setTimeout(async () => {
       };
 
     initializeWithServer(initialServer);
+  } else {
+    // Just in case we get in a weird state where there's a server setup but federation wasn't fully configured...
+    store.dispatch(finishConfiguringFederation());
   }
 }, 1);
 
 function initializeWithServer(initialServer: JonlineServer) {
+  store.dispatch(startConfiguringFederation());
   getServerClient(initialServer).then(async () => {
     if (!store.getState().servers.currentServerId) {
       const getPrimaryServer = () => store.getState().servers.entities[serverID(initialServer)];
@@ -126,21 +128,25 @@ function initializeWithServer(initialServer: JonlineServer) {
                 store.dispatch(pinServer(pinnedServer));
                 await new Promise((resolve) => setTimeout(resolve, 100));
               }
-            });
+            }).catch(() => {
+              console.error(`Failed to configure federated server ${host}`);
+             });
         }
       };
     }
+    store.dispatch(finishConfiguringFederation());
   });
 }
 
 const initialState: ServersState = {
   status: "unloaded",
+  configuringFederation: true,
   error: undefined,
   currentServerId: undefined,
   ...serversAdapter.getInitialState(),
 };
 
-export const serversSlice = createSlice({
+const serversSlice = createSlice({
   name: "servers",
   initialState: initialState,
   reducers: {
@@ -189,7 +195,13 @@ export const serversSlice = createSlice({
         const element = state.ids.splice(index, 1)[0]!;
         state.ids.splice(index + 1, 0, element);
       }
-    }
+    },
+    startConfiguringFederation: (state) => {
+      state.configuringFederation = true;
+    },
+    finishConfiguringFederation: (state) => {
+      state.configuringFederation = false;
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(upsertServer.pending, (state) => {
@@ -214,10 +226,28 @@ export const serversSlice = createSlice({
     });
   },
 });
+const {
+  startConfiguringFederation,
+  finishConfiguringFederation
+} = serversSlice.actions;
 
-export const { selectServer, removeServer, clearServerAlerts, resetServers, moveServerUp, moveServerDown } = serversSlice.actions;
+export const {
+  selectServer,
+  removeServer,
+  clearServerAlerts,
+  resetServers,
+  moveServerUp,
+  moveServerDown,
+  // startConfiguringFederation,
+  // finishConfiguringFederation
+} = serversSlice.actions;
 
-export const { selectAll: selectAllServers, selectById: selectServerById, selectTotal: selectServerTotal } = serversAdapter.getSelectors();
+
+export const {
+  selectAll: selectAllServers,
+  selectById: selectServerById,
+  selectTotal: selectServerTotal
+} = serversAdapter.getSelectors();
 
 export const serversReducer = serversSlice.reducer;
 export default serversReducer;

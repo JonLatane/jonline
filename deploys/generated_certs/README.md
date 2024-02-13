@@ -1,10 +1,10 @@
 # Generated Certs for Jonline
-The easiest way to secure your Jonline distro is with Cert-Manager. There's also support manually using your own certs, and I've also documented using your own custom CA here, though this is of course not useful for most use cases of Jonline 😁
+The easiest way to secure your Jonline distro is with Cert-Manager. There's also support for manually using your own certs, and using your own custom CA, though the latter is of course not useful for most use cases of Jonline 😁
 
 ## Use Cert-Manager (recommended)
 These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean. The following `make` commands should be run from inside this directory (`generated_certs`).
 
-### Quick setup with Cert-Manager (DigitalOcean-only for now)
+### Quick setup with Cert-Manager (DigitalOcean-specific for now)
 These steps are all based off of using [the `Makefile` in this directory](https://github.com/JonLatane/jonline/blob/main/generated_certs/Makefile).
 1. Point your DNS host (for instance, I use `jonline.io`), at the IP for your deployed `jonline` LoadBalancer instance. For the default Quick Start deploy, get it with: `kubectl describe service jonline -n jonline | grep 'LoadBalancer Ingress'`.
     * You need to be using DigitalOcean DNS for your domain and DigitalOcean Kubernetes Service (DOKS) to host.
@@ -16,7 +16,7 @@ These steps are all based off of using [the `Makefile` in this directory](https:
     * To deploy the credential to a different namespace, add `NAMESPACE=my-k8s-namespace` to the environment variables.
     * Eventually quick setup will work with other providers with the `CERT_MANAGER_PROVIDER` variable, but for now it defaults to `digitalocean` and that's the only valid value.
 
-To validate that setup worked, simply run `kubectl get certificates`:
+To validate that setup worked, simply run `kubectl get certificates`, which should yield something like:
 
 ```
 NAME                       READY   SECRET                  AGE

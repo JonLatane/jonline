@@ -190,5 +190,8 @@ Note that multiple *external* deployments will each have a Kubernetes LoadBalanc
 It should be possible to manage many Jonline instances using Nginx and any preferred certificate management scheme you'd like as a sysadmin.
 
 ## Jonline Balancer of Loads (JBL), a load balancer for Kubernetes
-Jonline Balancer of Loads will be a 
+Jonline Balancer of Loads will be a dedicated Kubernetes LoadBalancer designed to use K8s secrets named `jonline-tls` to LoadBalance K8s services named `jonline` on ports 80, 443, 8000, and 27707 (Jonline's service ports) from across a variety of namespaces.
+
 This feature is incomplete, but the `Makefile` scripts (that simply run `kubectl` and `jq` to manage configuration) are.
+
+Envisioned functionality: the final JBL binary should be able to both spawn an Nginx server that's. But to start with, whichever is easier would be a welcome contribution from anyone who thinks they could contribute it!

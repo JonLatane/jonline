@@ -1,8 +1,8 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, SeparatorHorizontal } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl, useServer } from "app/hooks";
+import { useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setViewingRecommendedServers, unpinAccount } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
@@ -21,8 +21,8 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
+  const { server: currentServer, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme();
 
-  const currentServer = useServer();
   const allServers = useAppSelector(state => selectAllServers(state.servers));
   const availableServers = useAppSelector(state =>
     selectAllServers(state.servers)
@@ -55,10 +55,21 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   const disabled = useHideNavigation();
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
+  const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
+  console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
+
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}
   >
+    <AnimatePresence>
+      {configuringFederation ?
+        <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
+          <Spinner size='small' color={primaryAnchorColor} />
+          <Paragraph size='$1'>Configuring servers...</Paragraph>
+        </XStack>
+        : undefined}
+    </AnimatePresence>
     {/* <AnimatePresence> */}
     {show && !disabled ? <>
       {simplified

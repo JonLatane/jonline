@@ -56,7 +56,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
       - [CI/CD (Continuous Integration and Delivery)](#cicd-continuous-integration-and-delivery)
           - [CI For iOS, Android, macOS, Windows, and Linux](#ci-for-ios-android-macos-windows-and-linux)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
-    - [Domain management, TLS certificate management, deploying multiple `jonline` instances to different namespaces in the same cluster, and (not-yet-complete) integrated cross-K8s-namespace load balancing](#domain-management-tls-certificate-management-deploying-multiple-jonline-instances-to-different-namespaces-in-the-same-cluster-and-not-yet-complete-integrated-cross-k8s-namespace-load-balancing)
+    - [Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing](#deployment-domain-and-tls-certificate-management-deploying-multiple-jonline-instances-to-different-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-k8s-namespace-load-balancing)
   - [Motivations](#motivations)
     - [Scaling Social Software via Dumbfederation](#scaling-social-software-via-dumbfederation)
   - [Future features](#future-features)
@@ -272,6 +272,7 @@ If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're 
 $ kubectl get services
 NAME         TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 kubernetes   ClusterIP   10.245.0.1   <none>        443/TCP   161d
+# You should not be using a Kubernetes namespace named jonline; otherwise, existing services could be overridden.
 $ kubectl get namespace jonline
 Error from server (NotFound): namespaces "jonline" not found
 ```
@@ -295,14 +296,13 @@ make deploy_data_create deploy_be_external_create
 
 That's it! You've created Minio and Postgres servers along with an *unsecured Jonline instance* where ***passwords and auth tokens will be sent in plain text*** (You should secure it immediately if you care about any data/people, but feel free to play around with it until you do! Simply `make deploy_data_delete deploy_data_create deploy_be_restart` to reset your server's data.) Because Jonline is a very tiny Rust service, it will all be up within seconds. Your Kubenetes provider will probably take some time to assign you an IP, though.
 
-If this is a cluster you're paying for, keep in mind that 
+Simply `kubectl delete namespace jonline` to delete your deployment (or see below for more detailed management instructions).
 
-### Domain management, TLS certificate management, deploying multiple `jonline` instances to different namespaces in the same cluster, and (not-yet-complete) integrated cross-K8s-namespace load balancing
+### Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing
 
-[`deploys/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/Makefile) and a few Jonline Rust binaries (mostly the main `jonline` server) provides the tools to do all this.
+[`deploys/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/Makefile), [`deploys/generated_certs/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/Makefile), and a few of Jonline's Rust binaries (mostly the main `jonline` server) provide the tools to update your deployment, point a domain at it, manage TLS certificates, and more.
 
-For more detailed instructions for deploying to your own cluster, see [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md).
-
+For details on these scenarios and more when deploying to your own cluster, see [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md) and [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md).
 
 ## Motivations
 Current social media and messaging solutions all kind of suck. The early open source software (OSS) movement, dating to the 80s, was generally right about many of the problems that have arisen mixing a market(ing)-based economy with social computing. If we entrust our social interactions to applications with closed source run on private Alphabet, Meta, Apple, etc. servers, *of course we're going to see the disinformation and effective-advertising-driven consumerism that plague the world today*. These models are profitable.
