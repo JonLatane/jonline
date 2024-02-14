@@ -261,34 +261,35 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
             </AnimatePresence>
           </YStack>
         </Card.Footer>
-        {fancyPostBackgrounds
-          ? <Card.Background>
-            <ZStack w='100%' h='100%'>
-              {(isPreview && hasAvatarUrl) ?
-                <Image
-                  mr={0}
-                  o={0.10}
-                  width={backgroundSize}
-                  height={backgroundSize}
-                  opacity={0.25}
-                  resizeMode="cover"
-                  als="center"
-                  source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
-                  blurRadius={1.5}
-                  borderBottomRightRadius={5}
-                />
-                : undefined}
+        {/* {fancyPostBackgrounds
+          ?  */}
+        <Card.Background>
+          <ZStack w='100%' h='100%'>
+            {(isPreview && hasAvatarUrl) ?
+              <Image
+                mr={0}
+                o={0.10}
+                width={backgroundSize}
+                height={backgroundSize}
+                opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                resizeMode="cover"
+                als="center"
+                source={{ uri: avatarUrl, height: backgroundSize, width: backgroundSize }}
+                blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                borderBottomRightRadius={5}
+              />
+              : undefined}
 
-              <XStack h='100%'>
-                <YStack h='100%' w={8}
-                  borderTopLeftRadius={20} borderBottomLeftRadius={20}
-                  backgroundColor={primaryColor} />
-                <YStack h='100%' w={3}
-                  backgroundColor={navColor} />
-              </XStack>
-            </ZStack>
-          </Card.Background>
-          : undefined}
+            <XStack h='100%'>
+              <YStack h='100%' w={8}
+                borderTopLeftRadius={20} borderBottomLeftRadius={20}
+                backgroundColor={primaryColor} />
+              <YStack h='100%' w={3}
+                backgroundColor={navColor} />
+            </XStack>
+          </ZStack>
+        </Card.Background>
+        {/* : undefined} */}
       </Card>
     </Theme>
   );

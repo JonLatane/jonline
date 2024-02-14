@@ -55,7 +55,7 @@ const initialState: LocalAppConfiguration = {
   showHelp: true,
   showPinnedServers: true,
   autoHideNavigation: false,
-  fancyPostBackgrounds: true,
+  fancyPostBackgrounds: false,
   shrinkPreviews: false,
 };
 

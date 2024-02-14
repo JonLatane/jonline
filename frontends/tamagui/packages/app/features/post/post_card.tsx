@@ -520,24 +520,24 @@ export const PostCard: React.FC<PostCardProps> = ({
               </YStack>
             }
           </Card.Footer>
-          {fancyPostBackgrounds ?
-            <Card.Background>
-              {(showBackgroundPreview) ?
-                <Image
-                  pos="absolute"
-                  width={backgroundSize}
-                  opacity={0.11}
-                  height={backgroundSize}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
-                  blurRadius={1.5}
-                  // borderRadius={5}
-                  borderBottomRightRadius={5}
-                />
-                : undefined}
-            </Card.Background>
-            : undefined}
+          {/* {fancyPostBackgrounds ? */}
+          <Card.Background>
+            {(showBackgroundPreview) ?
+              <Image
+                pos="absolute"
+                width={backgroundSize}
+                opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                height={backgroundSize}
+                resizeMode="cover"
+                als="flex-start"
+                source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
+                blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                // borderRadius={5}
+                borderBottomRightRadius={5}
+              />
+              : undefined}
+          </Card.Background>
+          {/* : undefined} */}
         </Card >
         {/* </Theme> */}
       </YStack >
