@@ -35,6 +35,8 @@ jobs:
             jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
+        run: yarn install
+      - working-directory: frontends/tamagui
         run: yarn version:install
 
       - name: Build Markdown & HTML docs
