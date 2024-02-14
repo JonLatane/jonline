@@ -1,4 +1,4 @@
-name: Protobuf Consistency
+name: Docs/Proto Consistency
 
 on:
   push:
@@ -16,6 +16,17 @@ jobs:
       #   with:
       #     toolchain: stable
       - uses: arduino/setup-protoc@v2
+      - uses: subosito/flutter-action@v2
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - run: npm install --global yarn
+      - run: make
+
+      # Todo: check for "nothing to commit, working tree clean"
+      - run: git diff --exit-code
+
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
       # - working-directory: backend
       #   run: cargo test --all-features
