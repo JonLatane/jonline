@@ -44,7 +44,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const { account, server } = accountOrServer;
   const media = useMedia();
   const { showUserIds } = useLocalConfiguration();
-  const { fancyPostBackgrounds } = useLocalConfiguration();
+  const { fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
 
   const [username, avatar] = editable ? [inputUsername, inputAvatar]
     : [user.username, user.avatar];
@@ -251,11 +251,14 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               </Anchor>
               : mainImage}
             {followHandler}
-            {isPreview
-              ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? userLink : {})}>
-                {footerContent}
-              </Anchor>
-              : footerContent}
+            <AnimatePresence>
+              {isPreview
+                ? shrinkPreviews ? undefined
+                  : <Anchor w='100%' f={1} animation='standard' {...standardAnimation} textDecorationLine='none' {...(isPreview ? userLink : {})}>
+                    {footerContent}
+                  </Anchor>
+                : footerContent}
+            </AnimatePresence>
           </YStack>
         </Card.Footer>
         {fancyPostBackgrounds

@@ -1,8 +1,8 @@
 import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
-import { AtSign, CheckCircle, ChevronRight, Circle, SeparatorHorizontal } from '@tamagui/lucide-icons';
+import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
@@ -34,7 +34,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
   const totalServerCount = availableServers.length;
-  const { showPinnedServers, viewingRecommendedServers, browsingServers } = useLocalConfiguration();
+  const { showPinnedServers, viewingRecommendedServers, browsingServers, shrinkPreviews } = useLocalConfiguration();
 
 
   const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
@@ -57,7 +57,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
   const accountId = accountID(useAccount());
-  function toggleExcludeCurrentServer (){
+  function toggleExcludeCurrentServer() {
     const updatedValue = !excludeCurrentServer;
     dispatch(setExcludeCurrentServer(updatedValue));
     dispatch(setShowPinnedServers(true));
@@ -99,6 +99,16 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
               <Paragraph my='auto' size='$1'>
                 Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
               </Paragraph>
+            </XStack>
+          </Button>
+          <Button key='shrink-previews-button' py='$1' h='auto' transparent
+            // icon={shrinkPreviews ? <Maximize2 size='$1' /> : <Minimize2 size='$1' />}
+            onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
+            <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
+              <Maximize2 size='$1' />
+            </XStack>
+            <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
+              <Minimize2 size='$1' />
             </XStack>
           </Button>
         </XStack>}

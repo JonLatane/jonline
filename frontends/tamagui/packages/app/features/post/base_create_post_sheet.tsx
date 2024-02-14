@@ -3,7 +3,7 @@ import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZSt
 import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCredentialDispatch } from 'app/hooks';
-import { FederatedGroup, JonlineServer, RootState, clearPostAlerts, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -137,7 +137,7 @@ export function BaseCreatePostSheet({
     setRenderType(RenderType.Edit);
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    dispatch(clearPostAlerts!());
+    // dispatch(clearPostAlerts!());
     setPosting(false);
     // setShowSettings(true);
   }

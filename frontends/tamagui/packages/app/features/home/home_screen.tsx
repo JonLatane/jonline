@@ -79,6 +79,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
   const eventCardWidth = media.gtSm ? 400 : 323;
+  const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
   return (
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
@@ -98,7 +99,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               <ChevronRight />
             </XStack>
           </Button>
-          {eventsLoaded && allEvents.length === 0
+          {/* {eventsLoaded && allEvents.length === 0
             ? <Button ml='auto' h='auto' transparent {...themedButtonBackground(navColor)}
               {...allEventsLink}>
               <YStack ai='center' w='100%'>
@@ -106,7 +107,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
               </YStack>
             </Button>
-            : undefined}
+            : undefined} */}
         </XStack>
         {/* : undefined} */}
         {showEventsOnLatest ?
@@ -118,31 +119,37 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               animation='standard'
               {...standardAnimation}
             >
-              {allEvents.length == 0
-                ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' px='$2' mt='$3'>
-                  <Heading size='$5' mb='$3'>No events found.</Heading>
-                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                </YStack>
-                : <ScrollView horizontal w='100%'>
-                  <XStack w={eventCardWidth} gap='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
+              <ScrollView horizontal w='100%'>
+                <XStack w={eventCardWidth} gap='$2' mx='auto' pl={media.gtMd ? '$5' : undefined} my='auto'>
 
-                    <FlipMove style={{ display: 'flex' }}>
-                      {paginatedEvents.map((event) =>
-                        <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                          <XStack mx='$1' px='$1' pb='$5'>
-                            <EventCard event={event} isPreview horizontal xs />
-                          </XStack>
-                        </span>)}
-                    </FlipMove>
-                    <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
-                      <YStack ai='center' py='$3' jc='center'>
-                        <Heading size='$4'>More</Heading>
-                        <Heading size='$5'>Events</Heading>
-                        <ChevronRight />
-                      </YStack>
-                    </Button>
-                  </XStack>
-                </ScrollView>}
+                  <FlipMove style={{ display: 'flex' }}>
+
+                    {allEvents.length == 0
+                      ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
+                        <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
+                          <Heading size='$5' ta='center' mb='$3'>No events found.</Heading>
+                          <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                        </YStack>
+                      </div>
+                      : undefined}
+                    {paginatedEvents.map((event) =>
+                      <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                        <XStack mx='$1' px='$1' pb='$5'>
+                          <EventCard event={event} isPreview horizontal xs />
+                        </XStack>
+                      </span>)}
+                    <div style={{marginTop:'auto', marginBottom: 'auto'}}>
+                      <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                        <YStack ai='center' py='$3' jc='center'>
+                          <Heading size='$4'>More</Heading>
+                          <Heading size='$5'>Events</Heading>
+                          <ChevronRight />
+                        </YStack>
+                      </Button>
+                    </div>
+                  </FlipMove>
+                </XStack>
+              </ScrollView>
             </YStack>
             : loadingEvents
               ? <Spinner color={navColor} />
@@ -151,31 +158,32 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         {/* </AnimatePresence> */}
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
-          {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
-            ? allPosts.length === 0
-              ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" f={1}
-              // animation='quick'
-              // {...standardAnimation}
-              >
-                <Heading size='$5' mb='$3'>No posts found.</Heading>
-                <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-              </YStack>
-              : <YStack f={1} px='$3' w='100%' key={`post-list`}>
-                <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
-                <PaginationResetIndicator {...postPagination} />
-                <FlipMove>
-                  {paginatedPosts.map((post) => {
-                    return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
-                      {/* <XStack w='100%'> */}
-                        <PostCard post={post} isPreview />
-                      {/* </XStack> */}
-                    </div>;
-                  })}
-                </FlipMove>
-                <PaginationIndicator {...postPagination} />
-              </YStack>
-            : undefined
-          }
+          <YStack f={1} px='$3' w='100%' key={`post-list`}>
+            <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
+            <PaginationResetIndicator {...postPagination} />
+            <FlipMove>
+
+              {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
+                ? allPosts.length === 0
+                  ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
+                    <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                      <Heading size='$5' mb='$3'>No posts found.</Heading>
+                      <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    </YStack>
+                  </div>
+                  : undefined
+                : undefined
+              }
+              {paginatedPosts.map((post) => {
+                return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
+                  {/* <XStack w='100%'> */}
+                  <PostCard post={post} isPreview />
+                  {/* </XStack> */}
+                </div>;
+              })}
+            </FlipMove>
+            <PaginationIndicator {...postPagination} />
+          </YStack>
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>

@@ -90,33 +90,36 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       }
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' maw={800} space>
-        {filteredUsers && filteredUsers.length == 0
-          ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
-            ? listingType == UserListingType.FOLLOW_REQUESTS ?
-              <YStack width='100%' maw={600} jc="center" ai="center">
-                <Heading size='$5' mb='$3'>No follow requests found.</Heading>
-              </YStack> :
-              <YStack width='100%' maw={600} jc="center" ai="center">
-                <Heading size='$5' mb='$3'>No people found.</Heading>
-                <Heading size='$3' ta='center'>The people you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                {allUsers.length > 0 ? <Heading size='$3' ta='center'>Try searching for something else.</Heading> : undefined}
-              </YStack>
-            : undefined
-          : <>
-            <PaginationResetIndicator {...pagination} />
-            <FlipMove>
-              {paginatedUsers?.map((user) => {
-                return <div style={{ width: '100%' }} key={`user-${federatedId(user)}`}>
-                  <YStack w='100%' mb='$3'>
-                    <UserCard user={user} isPreview />
-                  </YStack>
-                </div>;
-              })}
-            </FlipMove>
-            <PaginationIndicator {...pagination} />
-            {showScrollPreserver ? <YStack h={100000} /> : undefined}
+        {<>
+          <PaginationResetIndicator {...pagination} />
+          <FlipMove>
+            {filteredUsers && filteredUsers.length == 0
+              ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
+                ? <div key='no-people'>
+                  {listingType == UserListingType.FOLLOW_REQUESTS ?
+                    <YStack width='100%' maw={600} jc="center" ai="center">
+                      <Heading size='$5' mb='$3'>No follow requests found.</Heading>
+                    </YStack> :
+                    <YStack width='100%' maw={600} jc="center" ai="center">
+                      <Heading size='$5' mb='$3'>No people found.</Heading>
+                      <Heading size='$3' ta='center'>The people you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                      {allUsers.length > 0 ? <Heading size='$3' ta='center'>Try searching for something else.</Heading> : undefined}
+                    </YStack>}
+                </div>
+                : undefined
+              : undefined}
+            {paginatedUsers?.map((user) => {
+              return <div style={{ width: '100%' }} key={`user-${federatedId(user)}`}>
+                <YStack w='100%' mb='$3'>
+                  <UserCard user={user} isPreview />
+                </YStack>
+              </div>;
+            })}
+          </FlipMove>
+          <PaginationIndicator {...pagination} />
+          {showScrollPreserver ? <YStack h={100000} /> : undefined}
 
-          </>}
+        </>}
       </YStack>
     </TabsNavigation>
   )

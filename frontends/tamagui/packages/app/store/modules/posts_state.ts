@@ -13,7 +13,7 @@ import { Federated, FederatedEntity, createFederated, federateId, federatedEntit
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { createEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
 import { loadUserPosts } from "./user_actions";
 export * from './post_actions';
 
@@ -64,11 +64,17 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
     builder.addCase(createPost.fulfilled, (state, action) => {
       // setFederated(state.status, action, "loaded");
-      postsAdapter.upsertOne(state, federatedPayload(action));
+      const post = federatedPayload(action);
+      postsAdapter.upsertOne(state, post);
       if (publicVisibility(action.payload.visibility)) {
-        state.postPages[defaultPostListingType] = state.postPages[defaultPostListingType] || [];
-        const firstPage = state.postPages[defaultPostListingType][0] || [];
-        state.postPages[defaultPostListingType][0] = [action.payload.id, ...firstPage];
+
+        const serverPostPages: GroupedPages = getFederated(state.postPages, action);
+        if (!serverPostPages[defaultPostListingType]) serverPostPages[defaultPostListingType] = [];
+
+        const postPages: PaginatedIds = serverPostPages[defaultPostListingType]!;
+        const firstPage = postPages[0] || [];
+        postPages[0] = [federatedId(post), ...firstPage];
+        setFederated(state.postPages, action, serverPostPages);
       }
     });
     // builder.addCase(locallyUpsertPost.fulfilled, (state, action) => {
@@ -189,10 +195,13 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const posts = action.payload.events.map(event => event.post!);
       upsertPosts(state, federatedEntities(posts, action));
     });
+    builder.addCase(deletePost.fulfilled, (state, action) => {
+      postsAdapter.removeOne(state, federatedId(federatedPayload(action)));
+    });
   },
 });
 
-export const { removePost, clearPostAlerts: clearPostAlerts, resetPosts, upsertPost } = postsSlice.actions;
+export const { removePost, resetPosts, upsertPost } = postsSlice.actions;
 export const { selectAll: selectAllPosts, selectById: selectPostById } = postsAdapter.getSelectors();
 export const postsReducer = postsSlice.reducer;
 // export const upsertPost = postRe;

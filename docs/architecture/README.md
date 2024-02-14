@@ -30,5 +30,5 @@ This is how Jonline is currently deployed.
 ![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg)
 
 ### K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer
-An ongoing dev effort (that welcomes outside contributions)
+Not yet implemented; an ongoing dev effort (that welcomes outside contributions)! See [the GitHub issue for more information](https://github.com/JonLatane/jonline/issues/15).
 ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg)

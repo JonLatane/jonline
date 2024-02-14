@@ -69,12 +69,20 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(createEvent.fulfilled, (state, action) => {
       const payload = federatedPayload(action);
       eventsAdapter.upsertOne(state, payload);
-      console.log('created event from server', payload);
+      // console.log('created event from server', payload);
       if (publicVisibility(action.payload.post?.visibility)) {
-        state.eventInstancePages[defaultEventListingType] = state.eventInstancePages[defaultEventListingType] || {};
-        state.eventInstancePages[defaultEventListingType][unfilteredTime] = state.eventInstancePages[defaultEventListingType][unfilteredTime] || [];
-        const firstPage = state.eventInstancePages[defaultEventListingType][unfilteredTime][0] || [];
-        state.eventInstancePages[defaultEventListingType][unfilteredTime][0] = [action.payload.id, ...firstPage];
+        const serverEventPages = getFederated(state.eventInstancePages, action);
+        if (!serverEventPages[defaultEventListingType])
+          serverEventPages[defaultEventListingType] = {};
+
+        if (!serverEventPages[defaultEventListingType]![unfilteredTime])
+          serverEventPages[defaultEventListingType]![unfilteredTime] = [];
+        // serverEventPages[defaultEventListingType]![unfilteredTime] =
+        //   serverEventPages[defaultEventListingType]![unfilteredTime] ?? [];
+        const eventPages: string[][] = serverEventPages[defaultEventListingType]![unfilteredTime]!;
+        const firstPage = eventPages[0] || [];
+        eventPages[0] = [federatedId(payload), ...firstPage];
+        setFederated(state.eventInstancePages, action, serverEventPages);
       }
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
@@ -83,9 +91,6 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       setTimeout(() => {
         store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
       }, 1);
-    });
-    builder.addCase(deleteEvent.fulfilled, (state, action) => {
-      eventsAdapter.upsertOne(state, federatedPayload(action));
     });
     builder.addCase(loadEventsPage.pending, (state, action) => {
       setFederated(state.pagesStatus, action, "loading");
@@ -141,6 +146,9 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
       const events = federatedEntities(action.payload.events, action);
       // upsertEvents(state, events);
       events.forEach((e) => mergeEvent(state, e, action));
+    });
+    builder.addCase(deleteEvent.fulfilled, (state, action) => {
+      eventsAdapter.removeOne(state, federatedId(federatedPayload(action)));
     });
   },
 });

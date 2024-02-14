@@ -208,7 +208,7 @@ export const EventCard: React.FC<Props> = ({
         : `/event/${detailsLinkId}`
       : '.'
   });
-  const { fancyPostBackgrounds } = useLocalConfiguration();
+  const { fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
 
   const authorLink = useLink({
     href: authorName
@@ -639,6 +639,59 @@ export const EventCard: React.FC<Props> = ({
   }
 
 
+  const deleteDialog = <Dialog key='delete-button-dialog'>
+    <Dialog.Trigger asChild>
+      <Button key='delete-button' my='auto' size='$2' icon={Delete} transparent
+        disabled={deleting} o={deleting ? 0.5 : 1}>
+        Delete
+      </Button>
+    </Dialog.Trigger>
+    <Dialog.Portal zi={1000011}>
+      <Dialog.Overlay
+        key="overlay"
+        animation="quick"
+        o={0.5}
+        enterStyle={{ o: 0 }}
+        exitStyle={{ o: 0 }} />
+      <Dialog.Content
+        bordered
+        elevate
+        key="content"
+        animation={[
+          'quick',
+          {
+            opacity: {
+              overshootClamping: true,
+            },
+          },
+        ]}
+        m='$3'
+        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+        x={0}
+        scale={1}
+        opacity={1}
+        y={0}
+      >
+        <YStack space>
+          <Dialog.Title>Delete Event</Dialog.Title>
+          <Dialog.Description>
+            Really delete event?
+            The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+          </Dialog.Description>
+
+          <XStack gap="$3" jc="flex-end">
+            <Dialog.Close asChild>
+              <Button>Cancel</Button>
+            </Dialog.Close>
+            <Theme inverse>
+              <Button onPress={doDeletePost}>Delete</Button>
+            </Theme>
+          </XStack>
+        </YStack>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog>;
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
@@ -715,20 +768,6 @@ export const EventCard: React.FC<Props> = ({
                     : undefined}
 
                 </YStack>
-                {primaryInstance
-                  ?
-                  <XStack mx='$3' mt='$1'>
-                    <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                      readOnly={!editing || previewingEdits}
-                      preview={isPreview && horizontal}
-                      link={isPreview ? eventLink : undefined}
-                      setLocation={(location: Location) => {
-                        if (editingInstance) {
-                          updateEditingInstance({ ...editingInstance, location });
-                        }
-                      }} />
-                  </XStack>
-                  : undefined}
               </YStack>
             </Card.Header>
             : undefined}
@@ -736,43 +775,61 @@ export const EventCard: React.FC<Props> = ({
             {deleted
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%'>
-                <YStack key='event-content' px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
-                  <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
-                    {editing && !previewingEdits
-                      ? <PostMediaManager
-                        key='media-edit'
-                        link={post.link}
-                        media={editedMedia}
-                        setMedia={setEditedMedia}
-                        embedLink={editedEmbedLink}
-                        setEmbedLink={setEditedEmbedLink}
-                        disableInputs={savingEdits}
+                <AnimatePresence>
+                  {shrinkPreviews && isPreview ? undefined :
+                    <YStack key='event-content' animation='standard' {...standardAnimation}
+                      px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
+                      {primaryInstance
+                        ?
+                        <XStack mx='$3' mt='$1'>
+                          <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                            readOnly={!editing || previewingEdits}
+                            preview={isPreview && horizontal}
+                            link={isPreview ? eventLink : undefined}
+                            setLocation={(location: Location) => {
+                              if (editingInstance) {
+                                updateEditingInstance({ ...editingInstance, location });
+                              }
+                            }} />
+                        </XStack>
+                        : undefined}
+                      <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
+                        {editing && !previewingEdits
+                          ? <PostMediaManager
+                            key='media-edit'
+                            link={post.link}
+                            media={editedMedia}
+                            setMedia={setEditedMedia}
+                            embedLink={editedEmbedLink}
+                            setEmbedLink={setEditedEmbedLink}
+                            disableInputs={savingEdits}
+                          />
+                          : <PostMediaRenderer
+                            key='media-view'
+                            smallPreview={horizontal && isPreview}
+                            xsPreview={xs && isPreview}
+                            {...{ detailsLink, isPreview, groupContext, hasBeenVisible }}
+                            post={{
+                              ...post,
+                              media,
+                              embedLink
+                            }} />}
+                      </YStack>
+                      <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
+                        {contentView}
+                      </YStack>
+                      {editing && !previewingEdits
+                        ? <>
+                          <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
+                          <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
+                            disabled={!editedAllowRsvps}
+                            setter={setEditedAllowAnonymousRsvps} />
+                        </>
+                        : undefined}
 
-                      />
-                      : <PostMediaRenderer
-                        key='media-view'
-                        smallPreview={horizontal && isPreview}
-                        xsPreview={xs && isPreview}
-                        {...{ detailsLink, isPreview, groupContext, hasBeenVisible }}
-                        post={{
-                          ...post,
-                          media,
-                          embedLink
-                        }} />}
-                  </YStack>
-                  <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
-                    {contentView}
-                  </YStack>
-                  {editing && !previewingEdits
-                    ? <>
-                      <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
-                      <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
-                        disabled={!editedAllowRsvps}
-                        setter={setEditedAllowAnonymousRsvps} />
-                    </>
-                    : undefined}
-
-                </YStack>
+                    </YStack>
+                  }
+                </AnimatePresence>
                 {primaryInstance && (!isPreview || hasBeenVisible)
                   ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
                     <EventRsvpManager
@@ -809,62 +866,9 @@ export const EventCard: React.FC<Props> = ({
                           Edit
                         </Button>
 
-                        <Dialog key='delete-button-dialog'>
-                          <Dialog.Trigger asChild>
-                            <Button key='delete-button' my='auto' size='$2' icon={Delete} transparent
-                              disabled={deleting} o={deleting ? 0.5 : 1}>
-                              Delete
-                            </Button>
-                          </Dialog.Trigger>
-                          <Dialog.Portal zi={1000011}>
-                            <Dialog.Overlay
-                              key="overlay"
-                              animation="quick"
-                              o={0.5}
-                              enterStyle={{ o: 0 }}
-                              exitStyle={{ o: 0 }}
-                            />
-                            <Dialog.Content
-                              bordered
-                              elevate
-                              key="content"
-                              animation={[
-                                'quick',
-                                {
-                                  opacity: {
-                                    overshootClamping: true,
-                                  },
-                                },
-                              ]}
-                              m='$3'
-                              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                              x={0}
-                              scale={1}
-                              opacity={1}
-                              y={0}
-                            >
-                              <YStack space>
-                                <Dialog.Title>Delete Event</Dialog.Title>
-                                <Dialog.Description>
-                                  Really delete event?
-                                  The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
-                                </Dialog.Description>
-
-                                <XStack gap="$3" jc="flex-end">
-                                  <Dialog.Close asChild>
-                                    <Button>Cancel</Button>
-                                  </Dialog.Close>
-                                  <Theme inverse>
-                                    <Button onPress={doDeletePost}>Delete</Button>
-                                  </Theme>
-                                </XStack>
-                              </YStack>
-                            </Dialog.Content>
-                          </Dialog.Portal>
-                        </Dialog>
+                        {deleteDialog}
                       </>
-                    : undefined}
+                    : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
 
                   <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                     <XStack key='visibility-edit' my='auto' ml='auto'>
@@ -893,6 +897,7 @@ export const EventCard: React.FC<Props> = ({
 
                 <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
                   <AuthorInfo key='author-details' {...{ post, isVisible }} />
+
                   <Anchor key='author-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack key='author-anchor-root' h='100%'>
                       <Button key='comments-link-button'

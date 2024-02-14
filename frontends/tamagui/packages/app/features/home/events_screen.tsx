@@ -152,48 +152,63 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' px='$3' maw={maxWidth} space>
+        {renderInColumns ?
+          <YStack gap='$2'>
+            <PaginationResetIndicator {...pagination} />
+            <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
+              {/* <AnimatePresence> */}
 
-        {firstPageLoaded || allEvents.length > 0
-          ? allEvents.length == 0
-            ? <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>No events found.</Heading>
-              <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-            </YStack>
-            : renderInColumns ?
-              <YStack gap='$2'>
-                <PaginationResetIndicator {...pagination} />
-                <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
-                  {/* <AnimatePresence> */}
+              <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}>
 
-                  <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}>
-                    {paginatedEvents.map((event) => {
-                      return <span key={federateId(event.instances[0]?.id ?? '', server)}>
-                        <XStack w={eventCardWidth}
-                          mx='$1' px='$1'>
-                          <EventCard event={event} isPreview />
-                        </XStack>
-                      </span>;
-                    })}
-                  </FlipMove>
-                  {/* </AnimatePresence> */}
-                </XStack>
-                <PaginationIndicator {...pagination} />
-              </YStack>
-              : <YStack w='100%' ac='center' ai='center' jc='center' gap='$2'>
-
-                <PaginationResetIndicator {...pagination} />
-                <FlipMove>
-                  {paginatedEvents.map((event) => {
-                    return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                      <XStack w='100%'>
-                        <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
-                      </XStack>
+                {firstPageLoaded || allEvents.length > 0
+                  ? allEvents.length === 0
+                    ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
+                      <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                        <Heading size='$5' mb='$3'>No events found.</Heading>
+                        <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                      </YStack>
                     </div>
-                  })}
-                </FlipMove>
-                <PaginationIndicator {...pagination} />
-              </YStack>
-          : undefined}
+                    : undefined
+                  : undefined}
+                {paginatedEvents.map((event) => {
+                  return <span key={federateId(event.instances[0]?.id ?? '', server)}>
+                    <XStack w={eventCardWidth}
+                      mx='$1' px='$1'>
+                      <EventCard event={event} isPreview />
+                    </XStack>
+                  </span>;
+                })}
+              </FlipMove>
+              {/* </AnimatePresence> */}
+            </XStack>
+            <PaginationIndicator {...pagination} />
+          </YStack>
+          : <YStack w='100%' ac='center' ai='center' jc='center' gap='$2'>
+
+            <PaginationResetIndicator {...pagination} />
+            <FlipMove>
+
+              {firstPageLoaded || allEvents.length > 0
+                ? allEvents.length === 0
+                  ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
+                    <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                      <Heading size='$5' mb='$3'>No events found.</Heading>
+                      <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    </YStack>
+                  </div>
+                  : undefined
+                : undefined}
+              {paginatedEvents.map((event) => {
+                return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                  <XStack w='100%'>
+                    <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
+                  </XStack>
+                </div>
+              })}
+            </FlipMove>
+            <PaginationIndicator {...pagination} />
+          </YStack>}
+
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
     </TabsNavigation>

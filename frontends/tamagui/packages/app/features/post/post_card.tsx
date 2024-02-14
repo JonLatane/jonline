@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, Visibility } from "@jonline/api";
-import { Anchor, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, useMedia, useTheme } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, standardAnimation, useMedia, useTheme } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
@@ -90,7 +90,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
-  const { fancyPostBackgrounds } = useLocalConfiguration();
+  const { fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
 
   function saveEdits() {
     setSavingEdits(true);
@@ -250,6 +250,59 @@ export const PostCard: React.FC<PostCardProps> = ({
   </YStack>;
 
   const title = post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`;
+  const deleteDialog = <Dialog>
+    <Dialog.Trigger asChild>
+      <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
+        Delete
+      </Button>
+    </Dialog.Trigger>
+    <Dialog.Portal zi={1000011}>
+      <Dialog.Overlay
+        key="overlay"
+        animation="quick"
+        o={0.5}
+        enterStyle={{ o: 0 }}
+        exitStyle={{ o: 0 }}
+      />
+      <Dialog.Content
+        bordered
+        elevate
+        key="content"
+        animation={[
+          'quick',
+          {
+            opacity: {
+              overshootClamping: true,
+            },
+          },
+        ]}
+        m='$3'
+        enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+        exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+        x={0}
+        scale={1}
+        opacity={1}
+        y={0}
+      >
+        <YStack space>
+          <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
+          <Dialog.Description>
+            Really delete {post.replyToPostId ? 'reply' : 'post'}?
+            The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
+          </Dialog.Description>
+
+          <XStack gap="$3" jc="flex-end">
+            <Dialog.Close asChild>
+              <Button>Cancel</Button>
+            </Dialog.Close>
+            <Theme inverse>
+              <Button onPress={doDeletePost}>Delete</Button>
+            </Theme>
+          </XStack>
+        </YStack>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog>;
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
@@ -349,30 +402,34 @@ export const PostCard: React.FC<PostCardProps> = ({
               : <YStack zi={1000} width='100%'>
 
                 <YStack w='100%' px='$3' >
-                  <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
-                    {editing && !previewingEdits
-                      ? <PostMediaManager
-                        link={post.link}
-                        media={editedMedia}
-                        setMedia={setEditedMedia}
-                        embedLink={editedEmbedLink}
-                        setEmbedLink={setEditedEmbedLink}
-                        disableInputs={savingEdits}
-                      />
-                      : <PostMediaRenderer {...{
-                        post: {
-                          ...post,
-                          media,
-                          embedLink
-                        }, isPreview, groupContext, hasBeenVisible
-                      }} />}
-                  </YStack>
-                  {isPreview
-                    ? <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                      {contentArea}
-                    </Anchor>
-                    : contentArea}
-                  <XStack gap='$2' flexWrap="wrap" py='$2'>
+                  <AnimatePresence>
+                    {shrinkPreviews && isPreview ? undefined : <YStack key='content' animation='standard' {...standardAnimation}>
+                      <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
+                        {editing && !previewingEdits
+                          ? <PostMediaManager
+                            link={post.link}
+                            media={editedMedia}
+                            setMedia={setEditedMedia}
+                            embedLink={editedEmbedLink}
+                            setEmbedLink={setEditedEmbedLink}
+                            disableInputs={savingEdits}
+                          />
+                          : <PostMediaRenderer {...{
+                            post: {
+                              ...post,
+                              media,
+                              embedLink
+                            }, isPreview, groupContext, hasBeenVisible
+                          }} />}
+                      </YStack>
+                      {isPreview
+                        ? <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                          {contentArea}
+                        </Anchor>
+                        : contentArea}
+                    </YStack>}
+                  </AnimatePresence>
+                  <XStack key='edit-buttons' gap='$2' flexWrap="wrap" py='$2'>
                     {showEdit
                       ? editing
                         ? <>
@@ -396,61 +453,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                             Edit
                           </Button>
 
-                          <Dialog>
-                            <Dialog.Trigger asChild>
-                              <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
-                                Delete
-                              </Button>
-                            </Dialog.Trigger>
-                            <Dialog.Portal zi={1000011}>
-                              <Dialog.Overlay
-                                key="overlay"
-                                animation="quick"
-                                o={0.5}
-                                enterStyle={{ o: 0 }}
-                                exitStyle={{ o: 0 }}
-                              />
-                              <Dialog.Content
-                                bordered
-                                elevate
-                                key="content"
-                                animation={[
-                                  'quick',
-                                  {
-                                    opacity: {
-                                      overshootClamping: true,
-                                    },
-                                  },
-                                ]}
-                                m='$3'
-                                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                                x={0}
-                                scale={1}
-                                opacity={1}
-                                y={0}
-                              >
-                                <YStack space>
-                                  <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
-                                  <Dialog.Description>
-                                    Really delete {post.replyToPostId ? 'reply' : 'post'}?
-                                    The content{post.replyToPostId ? '' : ' and title'} will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
-                                  </Dialog.Description>
-
-                                  <XStack gap="$3" jc="flex-end">
-                                    <Dialog.Close asChild>
-                                      <Button>Cancel</Button>
-                                    </Dialog.Close>
-                                    <Theme inverse>
-                                      <Button onPress={doDeletePost}>Delete</Button>
-                                    </Theme>
-                                  </XStack>
-                                </YStack>
-                              </Dialog.Content>
-                            </Dialog.Portal>
-                          </Dialog>
+                          {deleteDialog}
                         </>
-                      : undefined}
+                      : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
                     <XStack gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                       {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                         <VisibilityPicker

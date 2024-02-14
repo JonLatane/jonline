@@ -61,28 +61,30 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       loading={loadingPosts}
     >
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
-        {firstPageLoaded || allPosts.length > 0
-          ? allPosts.length == 0
-            ? <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>No posts found.</Heading>
-              <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-            </YStack>
-            : <YStack w='100%'>
-              <PaginationResetIndicator {...pagination} />
-              <FlipMove>
-                {paginatedPosts.map((post) => {
-                  return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
-                    <XStack w='100%'
-                      animation='standard' {...standardAnimation}>
-                      <PostCard post={post} isPreview />
-                    </XStack>
-                  </div>;
-                })}
-              </FlipMove>
-              <PaginationIndicator {...pagination} />
-            </YStack>
-          : undefined
-        }
+        <YStack w='100%'>
+          <PaginationResetIndicator {...pagination} />
+          <FlipMove>
+            {firstPageLoaded || allPosts.length > 0
+              ? allPosts.length === 0
+                ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
+                  <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                    <Heading size='$5' mb='$3'>No posts found.</Heading>
+                    <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                  </YStack>
+                </div>
+                : undefined
+              : undefined}
+            {paginatedPosts.map((post) => {
+              return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
+                <XStack w='100%'
+                  animation='standard' {...standardAnimation}>
+                  <PostCard post={post} isPreview />
+                </XStack>
+              </div>;
+            })}
+          </FlipMove>
+          <PaginationIndicator {...pagination} />
+        </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
     </TabsNavigation>

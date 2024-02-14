@@ -92,7 +92,7 @@ export function TabsNavigation({
   const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
     (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
   const shrinkHomeButton = !!selectedGroup || showServerInfo;
-  const disabled = useHideNavigation();
+  const hideNavigation = useHideNavigation();
 
   useEffect(() => {
     if (selectedGroup && currentServer && recentGroupIds[0] != federatedId(selectedGroup)) {
@@ -101,6 +101,9 @@ export function TabsNavigation({
   }, [selectedGroup?.id]);
 
   const dimensions = useWindowDimensions();
+
+  const measuredHomeButtonWidth = document.querySelector('#home-button')?.clientWidth ?? 0;
+  const measuredHomeButtonHeight = document.querySelector('#home-button')?.clientHeight ?? 0;
   return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
@@ -110,14 +113,26 @@ export function TabsNavigation({
         w='100%'
         backgroundColor={bgColor}
         minHeight={window.innerHeight} >
-        <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: disabled ? 'none' : undefined }} className='blur'>
+        <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: hideNavigation ? 'none' : undefined }} className='blur'>
           <YStack w='100%'>
-            {disabled ? undefined : <XStack id='nav-main'
-              backgroundColor={primaryColor} opacity={disabled ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
+            {hideNavigation ? undefined : <XStack id='nav-main'
+              backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
               {/* <XStack w={5} /> */}
               <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
                 <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
                   selectedGroup={selectedGroup} />
+                <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}
+                  pointerEvents="none"
+                  ml={(measuredHomeButtonWidth - 30) / 2}
+                  mt={(measuredHomeButtonHeight - 10) / 2}>
+                  <Spinner size='large' color={primaryColor} scale={1.4} />
+                </XStack>
+                <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}
+                  pointerEvents="none"
+                  ml={(measuredHomeButtonWidth - 30) / 2}
+                  mt={(measuredHomeButtonHeight - 10) / 2}>
+                  <Spinner size='large' color={navColor} scale={1.2} />
+                </XStack>
                 <Button //size="$4"
                   id="home-button"
                   py={0}
@@ -194,15 +209,13 @@ export function TabsNavigation({
         </StickyBox>
 
 
-        {loading
-          ? <StickyBox style={{ zIndex: 10, height: 0 }}>
-            <YStack gap="$1" opacity={0.92}>
-              <Spinner size='large' color={navColor} scale={2}
-                top={dimensions.height / 2 - 50}
-              />
-            </YStack>
-          </StickyBox>
-          : undefined}
+        <StickyBox style={{ zIndex: 10, height: 0, pointerEvents: 'none' }}>
+          <YStack gap="$1" animation='standard' opacity={loading && hideNavigation ? 0.92 : 0}>
+            <Spinner size='large' color={navColor} scale={2}
+              top={dimensions.height / 2 - 50}
+            />
+          </YStack>
+        </StickyBox>
 
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
           maw={window.innerWidth}

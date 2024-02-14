@@ -120,7 +120,8 @@ Costs are designed to be predictable on most Kubernetes service providers. Jonli
 
 | Simple Approach | Scalable Approach |
 | --- | --- |
-| ![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg) |
+| ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single JBL LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg) |
+| Costs $24/mo (for base server) + $12.60/mo ($12 for LoadBalancer, 60¢ for storage) per domain+IP. | Costs $36/mo ($24 for base server, $12 for JBL LoadBalancer IP) + 60¢/mo (for storage) per domain. ***Not yet implemented***; an ongoing dev effort (that welcomes outside contributions)! See [the GitHub issue for more information](https://github.com/JonLatane/jonline/issues/15). |
 
 **November 2023 Server Costs:** (3 instances)
 ![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)

@@ -11,18 +11,20 @@ export interface Pagination<T extends HasIdFromServer> {
   reset(): void;
 }
 
-export const maxPagesToRender = 5;
+export const maxPagesToRender = 3;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[], 
   pageSize: number
 ): Pagination<T> {
+  const pageCount = Math.ceil(dataSet.length / pageSize);
   const [page, setPage] = useState(0);
-  const reset = () => setPage(0);
+  const reset = () => {
+    setPage(Math.max(0,Math.min(pageCount - 1, maxPagesToRender - 1)));
+  };
   const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
   const upperBoundPage = page + 1;
   const results = dataSet.slice(lowerBoundPage * pageSize, upperBoundPage * pageSize);
   const hasNextPage = dataSet.length > upperBoundPage * pageSize;
-  const pageCount = Math.ceil(dataSet.length / pageSize);
 
   const [loadingPage, setLoadingPage] = useState(false);
   function loadNextPage() {
