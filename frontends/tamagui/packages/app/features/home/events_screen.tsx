@@ -14,7 +14,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
-import { PaginationIndicator } from './pagination_indicator';
+import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 
 const { useParam } = createParam<{ endsAfter: string }>()
 export function EventsScreen() {
@@ -161,6 +161,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             </YStack>
             : renderInColumns ?
               <YStack gap='$2'>
+                <PaginationResetIndicator {...pagination} />
                 <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
                   {/* <AnimatePresence> */}
 
@@ -180,6 +181,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               </YStack>
               : <YStack w='100%' ac='center' ai='center' jc='center' gap='$2'>
 
+                <PaginationResetIndicator {...pagination} />
                 <FlipMove>
                   {paginatedEvents.map((event) => {
                     return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>

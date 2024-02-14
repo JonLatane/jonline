@@ -1,20 +1,28 @@
-import { HasIdFromServer } from "app/store";
+import { FederatedEntity, HasIdFromServer } from "app/store";
 import { useState } from "react";
 
 export interface Pagination<T extends HasIdFromServer> {
-  results: T[];
+  results: FederatedEntity<T>[];
   page: number;
+  pageCount: number;
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
   reset(): void;
 }
 
-export function usePaginatedRendering<T extends HasIdFromServer>(dataSet: T[], pageSize: number): Pagination<T> {
+export const maxPagesToRender = 5;
+export function usePaginatedRendering<T extends HasIdFromServer>(
+  dataSet: FederatedEntity<T>[], 
+  pageSize: number
+): Pagination<T> {
   const [page, setPage] = useState(0);
   const reset = () => setPage(0);
-  const results = dataSet.slice(0, (page + 1) * pageSize);
-  const hasNextPage = dataSet.length > results.length;
+  const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
+  const upperBoundPage = page + 1;
+  const results = dataSet.slice(lowerBoundPage * pageSize, upperBoundPage * pageSize);
+  const hasNextPage = dataSet.length > upperBoundPage * pageSize;
+  const pageCount = Math.ceil(dataSet.length / pageSize);
 
   const [loadingPage, setLoadingPage] = useState(false);
   function loadNextPage() {
@@ -23,8 +31,8 @@ export function usePaginatedRendering<T extends HasIdFromServer>(dataSet: T[], p
     setTimeout(() => {
       setPage(page + 1);
       setLoadingPage(false);
-    }, 100);
+    }, 500);
   }
 
-  return { results, page, loadingPage, hasNextPage, loadNextPage, reset };
+  return { results, page, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
 }

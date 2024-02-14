@@ -10,7 +10,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { HomeScreenProps } from './home_screen';
-import { PaginationIndicator } from './pagination_indicator';
+import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 import { DynamicCreateButton } from './dynamic_create_button';
 import FlipMove from 'react-flip-move';
 
@@ -68,6 +68,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : <YStack w='100%'>
+              <PaginationResetIndicator {...pagination} />
               <FlipMove>
                 {paginatedPosts.map((post) => {
                   return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>

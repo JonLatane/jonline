@@ -1,17 +1,17 @@
 import { UserListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Input, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { Button, Heading, Input, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
-import { useCredentialDispatch, useCurrentAndPinnedServers, usePaginatedRendering, useServer, useUsersPage } from 'app/hooks';
-import { RootState, federatedId, getFederated, useRootSelector, useServerTheme } from 'app/store';
+import { usePaginatedRendering, useServer, useUsersPage } from 'app/hooks';
+import { RootState, federatedId, getFederated, useRootSelector } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
+import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
-import { PaginationIndicator } from '../home/pagination_indicator';
+import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
-import FlipMove from 'react-flip-move';
 
 export function FollowRequestsScreen() {
   return <BasePeopleScreen listingType={UserListingType.FOLLOW_REQUESTS} />;
@@ -103,9 +103,10 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               </YStack>
             : undefined
           : <>
+            <PaginationResetIndicator {...pagination} />
             <FlipMove>
               {paginatedUsers?.map((user) => {
-                return <div style={{width: '100%'}} key={`user-${federatedId(user)}`}>
+                return <div style={{ width: '100%' }} key={`user-${federatedId(user)}`}>
                   <YStack w='100%' mb='$3'>
                     <UserCard user={user} isPreview />
                   </YStack>

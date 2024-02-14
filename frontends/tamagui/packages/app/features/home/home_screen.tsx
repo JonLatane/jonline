@@ -11,7 +11,7 @@ import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
-import { PaginationIndicator } from './pagination_indicator';
+import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -162,13 +162,13 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               </YStack>
               : <YStack f={1} px='$3' w='100%' key={`post-list`}>
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
+                <PaginationResetIndicator {...postPagination} />
                 <FlipMove>
                   {paginatedPosts.map((post) => {
                     return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
-                      <XStack w='100%'
-                        animation='standard' {...standardAnimation}>
+                      {/* <XStack w='100%'> */}
                         <PostCard post={post} isPreview />
-                      </XStack>
+                      {/* </XStack> */}
                     </div>;
                   })}
                 </FlipMove>
