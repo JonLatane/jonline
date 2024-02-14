@@ -80,7 +80,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
     // <Theme inverse={selected}>
     <Card theme="dark" size="$4" bordered
       animation='standard'
-      {...standardHorizontalAnimation}
+      // {...standardHorizontalAnimation}
       scale={0.9}
       backgroundColor={selected ? primaryColor : undefined}
       width={isPreview ? 280 : '100%'}

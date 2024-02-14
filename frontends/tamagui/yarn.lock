@@ -6795,6 +6795,7 @@ __metadata:
     nice-grpc-web: "npm:^3.3.2"
     react-colorful: "npm:^5.6.1"
     react-drag-drop-files: "npm:^2.3.10"
+    react-flip-move: "npm:^3.0.5"
     react-markdown: "npm:^8.0.7"
     react-native-animation-library: "npm:^0.0.8"
     react-native-get-random-values: "npm:^1.10.0"
@@ -16138,6 +16139,16 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 928eb9479693dd9b69a9beab122791faaf498f08004c5495f9ff5e9ede1f20b6747bcfe036f2a89fdb7e3e37fd58f33db7f5dc203d4c691ab0d3a372fe6be388
+  languageName: node
+  linkType: hard
+
+"react-flip-move@npm:^3.0.5":
+  version: 3.0.5
+  resolution: "react-flip-move@npm:3.0.5"
+  peerDependencies:
+    react: ">=16.3.x"
+    react-dom: ">=16.3.x"
+  checksum: 7f1e807c4377422c3eca8a21b6ed0bf1ba8c9d5c1fbd0b97f9c8b97333e960e86d9c362e5d4a1b1597b90806df202f312a151b703e3e0cf2a6e9a1a1bc843e97
   languageName: node
   linkType: hard
 

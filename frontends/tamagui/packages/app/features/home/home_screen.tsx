@@ -1,17 +1,17 @@
 import { EventListingType, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, standardHorizontalAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
+import FlipMove from 'react-flip-move';
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
-import { PaginationIndicator } from './pagination_indicator';
 import { DynamicCreateButton } from './dynamic_create_button';
+import { PaginationIndicator } from './pagination_indicator';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -89,60 +89,65 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
         {/* <AnimatePresence> */}
-          {/* {(eventsLoaded || postsLoaded) || allEvents.length > 0
+        {/* {(eventsLoaded || postsLoaded) || allEvents.length > 0
             ?  */}
-          <XStack key='latest-events-header' w='100%' px='$3' ai='center'>
-            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
-              <Heading size='$6'>Upcoming Events</Heading>
-              <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
-                <ChevronRight />
-              </XStack>
-            </Button>
-            {eventsLoaded && allEvents.length === 0
-              ? <Button ml='auto' h='auto' transparent {...themedButtonBackground(navColor)}
-                {...allEventsLink}>
-                <YStack ai='center' w='100%'>
-                  <Heading size='$1' color={navTextColor} textDecorationLine='none'>All</Heading>
-                  <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
-                </YStack>
-              </Button>
-              : undefined}
-          </XStack>
-          {/* : undefined} */}
-          {showEventsOnLatest ?
-            (eventsLoaded || allEvents.length > 0) ?
-              <YStack key='latest-events'
-                w='100%'
-                // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-                // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-                animation='standard'
-                {...standardAnimation}
-              >
-                {allEvents.length == 0
-                  ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' px='$2' mt='$3'>
-                    <Heading size='$5' mb='$3'>No events found.</Heading>
-                    <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                  </YStack>
-                  : <ScrollView horizontal w='100%'>
-                    <XStack w={eventCardWidth} gap='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
-                      {paginatedEvents.map((event) =>
-                        <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} pb='$5' animation='standard' {...standardHorizontalAnimation}>
-                          <EventCard event={event} isPreview horizontal xs />
-                        </XStack>)}
-                      <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
-                        <YStack ai='center' py='$3' jc='center'>
-                          <Heading size='$4'>More</Heading>
-                          <Heading size='$5'>Events</Heading>
-                          <ChevronRight />
-                        </YStack>
-                      </Button>
-                    </XStack>
-                  </ScrollView>}
+        <XStack key='latest-events-header' w='100%' px='$3' ai='center'>
+          <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+            <Heading size='$6'>Upcoming Events</Heading>
+            <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
+              <ChevronRight />
+            </XStack>
+          </Button>
+          {eventsLoaded && allEvents.length === 0
+            ? <Button ml='auto' h='auto' transparent {...themedButtonBackground(navColor)}
+              {...allEventsLink}>
+              <YStack ai='center' w='100%'>
+                <Heading size='$1' color={navTextColor} textDecorationLine='none'>All</Heading>
+                <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
               </YStack>
-              : loadingEvents
-                ? <Spinner color={navColor} />
-                : undefined
+            </Button>
             : undefined}
+        </XStack>
+        {/* : undefined} */}
+        {showEventsOnLatest ?
+          (eventsLoaded || allEvents.length > 0) ?
+            <YStack key='latest-events'
+              w='100%'
+              // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+              // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+              animation='standard'
+              {...standardAnimation}
+            >
+              {allEvents.length == 0
+                ? <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' px='$2' mt='$3'>
+                  <Heading size='$5' mb='$3'>No events found.</Heading>
+                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                </YStack>
+                : <ScrollView horizontal w='100%'>
+                  <XStack w={eventCardWidth} gap='$2' mx='$2' pl={media.gtMd ? '$5' : undefined} my='auto'>
+
+                    <FlipMove style={{ display: 'flex' }}>
+                      {paginatedEvents.map((event) =>
+                        <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                          <XStack mx='$1' px='$1' pb='$5'>
+                            <EventCard event={event} isPreview horizontal xs />
+                          </XStack>
+                        </span>)}
+                    </FlipMove>
+                    <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                      <YStack ai='center' py='$3' jc='center'>
+                        <Heading size='$4'>More</Heading>
+                        <Heading size='$5'>Events</Heading>
+                        <ChevronRight />
+                      </YStack>
+                    </Button>
+                  </XStack>
+                </ScrollView>}
+            </YStack>
+            : loadingEvents
+              ? <Spinner color={navColor} />
+              : undefined
+          : undefined}
         {/* </AnimatePresence> */}
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
@@ -157,12 +162,16 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               </YStack>
               : <YStack f={1} px='$3' w='100%' key={`post-list`}>
                 <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
-                {paginatedPosts.map((post) => {
-                  return <XStack w='100%' key={`post-${federatedId(post)}`}
-                    animation='standard' {...standardAnimation}>
-                    <PostCard post={post} isPreview />
-                  </XStack>;
-                })}
+                <FlipMove>
+                  {paginatedPosts.map((post) => {
+                    return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
+                      <XStack w='100%'
+                        animation='standard' {...standardAnimation}>
+                        <PostCard post={post} isPreview />
+                      </XStack>
+                    </div>;
+                  })}
+                </FlipMove>
                 <PaginationIndicator {...postPagination} />
               </YStack>
             : undefined

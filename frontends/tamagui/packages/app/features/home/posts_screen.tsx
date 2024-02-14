@@ -12,6 +12,7 @@ import PostCard from '../post/post_card';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator } from './pagination_indicator';
 import { DynamicCreateButton } from './dynamic_create_button';
+import FlipMove from 'react-flip-move';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
@@ -67,12 +68,16 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : <YStack w='100%'>
-              {paginatedPosts.map((post) => {
-                return <XStack w='100%' key={`post-${federatedId(post)}`}
-                  animation='standard' {...standardAnimation}>
-                  <PostCard post={post} isPreview />
-                </XStack>;
-              })}
+              <FlipMove>
+                {paginatedPosts.map((post) => {
+                  return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
+                    <XStack w='100%'
+                      animation='standard' {...standardAnimation}>
+                      <PostCard post={post} isPreview />
+                    </XStack>
+                  </div>;
+                })}
+              </FlipMove>
               <PaginationIndicator {...pagination} />
             </YStack>
           : undefined

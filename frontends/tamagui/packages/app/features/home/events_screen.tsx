@@ -1,14 +1,14 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
 import { AnimatePresence, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, federateId, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useEventPages, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle } from 'app/utils';
 import moment from 'moment';
+import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
-import { standardHorizontalAnimation } from '../../../ui/src/animations';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
@@ -162,23 +162,33 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             : renderInColumns ?
               <YStack gap='$2'>
                 <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
-                  <AnimatePresence>
+                  {/* <AnimatePresence> */}
+
+                  <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}>
                     {paginatedEvents.map((event) => {
-                      return <XStack w={eventCardWidth} key={federateId(event.instances[0]?.id ?? '', server)}
-                        animation='standard' {...standardHorizontalAnimation} mx='$1' px='$1'>
-                        <EventCard event={event} isPreview />
-                      </XStack>;
+                      return <span key={federateId(event.instances[0]?.id ?? '', server)}>
+                        <XStack w={eventCardWidth}
+                          mx='$1' px='$1'>
+                          <EventCard event={event} isPreview />
+                        </XStack>
+                      </span>;
                     })}
-                  </AnimatePresence>
+                  </FlipMove>
+                  {/* </AnimatePresence> */}
                 </XStack>
                 <PaginationIndicator {...pagination} />
               </YStack>
               : <YStack w='100%' ac='center' ai='center' jc='center' gap='$2'>
-                {paginatedEvents.map((event) => {
-                  return <XStack animation='standard' {...standardAnimation} w='100%'>
-                    <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
-                  </XStack>
-                })}
+
+                <FlipMove>
+                  {paginatedEvents.map((event) => {
+                    return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                      <XStack w='100%'>
+                        <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
+                      </XStack>
+                    </div>
+                  })}
+                </FlipMove>
                 <PaginationIndicator {...pagination} />
               </YStack>
           : undefined}

@@ -18,6 +18,7 @@ import AccountCard from './account_card';
 import { LoginMethod } from './add_account_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
+import FlipMove from 'react-flip-move';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -409,13 +410,16 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                   {/* <> */}
                   <ScrollView horizontal>
                     <XStack gap='$3'>
-                      {servers.map((server, index) => {
-                        return <ServerCard
-                          // linkToServerInfo={onlyShowServer !== undefined}
-                          server={server}
-                          key={`serverCard-${serverID(server)}`}
-                          isPreview />;
-                      })}
+                      <FlipMove style={{display: 'flex'}}>
+                        {servers.map((server, index) => {
+                          return <span key={`serverCard-${serverID(server)}`} style={{margin: 2}}>
+                            <ServerCard
+                              // linkToServerInfo={onlyShowServer !== undefined}
+                              server={server}
+                              isPreview />
+                          </span>;
+                        })}
+                      </FlipMove>
                     </XStack>
                   </ScrollView>
                   {/* </> */}
