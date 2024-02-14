@@ -12,10 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      # - uses: actions-rs/toolchain@v1
-      #   with:
-      #     toolchain: stable
       - uses: arduino/setup-protoc@v2
+      - uses: ts-graphviz/setup-graphviz@v2
       - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v3
         with:
@@ -27,7 +25,7 @@ jobs:
         working-directory: frontends/tamagui
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
-
+  
       - uses: actions/cache@v3
         # id: yarn-cache
         with:
@@ -41,11 +39,5 @@ jobs:
 
       - run: make
 
-      # Todo: check for "nothing to commit, working tree clean"
+      # Check for "nothing to commit, working tree clean"
       - run: git diff --exit-code
-
-      # - run: sudo apt install libprotobuf-dev protobuf-compiler
-      # - working-directory: backend
-      #   run: cargo test --all-features
-      # - working-directory: backend
-      #   run: cargo build --all-features
