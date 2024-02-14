@@ -114,8 +114,8 @@ function initializeWithServer(initialServer: JonlineServer) {
       const federatedServers: FederatedServer[] = primaryServer.serverConfiguration?.federationInfo?.servers ?? [];
 
       const allFederatedServers = [
-        ...federatedServers.filter(s => s.host != primaryServer.host),
         { host: primaryServer.host, configuredByDefault: true, pinnedByDefault: true },
+        ...federatedServers.filter(s => s.host != primaryServer.host),
       ]
       // Configure federated servers in order with a 100ms delay between each.
       for (const { host, configuredByDefault, pinnedByDefault } of allFederatedServers) {

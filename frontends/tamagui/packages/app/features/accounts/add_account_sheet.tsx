@@ -168,6 +168,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
         // snapPoints={[80]}
         snapPoints={[81]} dismissOnSnapToBottom
         position={position}
+        zIndex={100000}
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >

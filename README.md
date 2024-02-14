@@ -10,9 +10,7 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
-JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing:
-
-[![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl_load_balancer&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jbl/tags)
+JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing: [![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jbl/tags)
 
 | Deployment                                                                                    | Purpose                          | Federated Servers/Default Data Sources | Links                                                                                                                                           | Deployment Version |
 | --------------------------------------------------------------------------------------------- | -------------------------------- | --|----------------------------------------------------------------------------------------------------------------------------------------------- |-- |

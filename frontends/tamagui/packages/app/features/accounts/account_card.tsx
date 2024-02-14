@@ -286,7 +286,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
               <Dialog.Trigger asChild>
                 <Button icon={<Delete />} circular onPress={(e) => { e.stopPropagation(); }} color="red" />
               </Dialog.Trigger>
-              <Dialog.Portal zi={1000011}>
+              <Dialog.Portal zi={100000000011}>
                 <Dialog.Overlay
                   key="overlay"
                   animation="quick"
