@@ -110,7 +110,7 @@ release_be_fe_only_cloud:
 lines_of_code:
 	git ls-files | grep -v generated | xargs cloc
 
-docs: documentation html_docs
+docs: documentation html_docs graphs
 documentation:
 	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto
 

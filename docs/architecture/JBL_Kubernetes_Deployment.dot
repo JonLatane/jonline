@@ -1,20 +1,20 @@
 digraph G {
   size = "100,100";
-  browser [shape = note;style = filled;color = ".7 .3 1.0";label = "Web Browser";];
+  browser [shape = doublecircle;style = filled;color = ".7 .3 1.0";label = <<b>Web Browser</b>>;];
   
-  browser -> jbl [style = bold; label = <<table><tr><td><i>Single</i>&nbsp;$12/mo ingress</td></tr><tr><td>Host header: jonline.io | oakcity.social | bullcity.social</td></tr></table>>];
+  browser -> jbl [style = bold; label = <<table><tr><td><i>Single</i>&nbsp;<b>$12/mo</b>&nbsp;ingress</td></tr><tr><td>Host header: jonline.io | oakcity.social | bullcity.social</td></tr></table>>];
   
   subgraph cluster0 {
-    label = <<table><tr><td>JBL Namespace</td></tr><tr><td>(could be the same as another namespace)</td></tr></table>>;
+    label = <<table><tr><td><b>jbl</b></td></tr><tr><td>(K8s Namespace)</td></tr><tr><td>(could be the same as another namespace)</td></tr></table>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jbl [shape = box;label = <<table><tr><td>JBL Load Balancer</td></tr><tr><td>"Jonline Balancer of Loads"</td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>];
+    jbl [shape = oval; style=filled; color = white; label = <<table><tr><td><b>jbl</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr><tr><td>"Jonline Balancer of Loads"</td></tr><tr><td>Could feasibly just pre-configure and run/fork/await an Nginx instance.</td></tr></table>>];
     configuration [shape = box;style = filled;color = ".7 .3 1.0";label = <
       <table>
       <tr>
-      <td>Configuration</td>
+      <td><b>JBL Configuration</b></td>
       </tr>
       <tr>
       <td>(K8s ConfigMap)</td>
@@ -22,92 +22,97 @@ digraph G {
       <tr>
       <td>Maps domain name -&gt; K8s namespace</td>
       </tr>
+      <tr>
+      <td>Configurable with deploys/jbl/Makefile</td>
+      </tr>
       </table>
       >;];
     
     configuration -> resolve_namespace [style = bold];
     
-    parse_host [label = "Parse Host Header";];
-    resolve_namespace [label = "Resolve Namespace from Host Header";];
+    parse_host [shape=parallelogram label = "Parse Host Header";];
+    resolve_namespace [shape=parallelogram label = "Resolve Namespace from Host Header";];
     // jbl -> resolve_namespace [weight = 8;];
     jbl -> parse_host [weight = 8;];
     parse_host -> resolve_namespace [weight = 8;];
     
     
-    jonlineio [label = "jonline.io";];
-    oakcitysocial [label = "oakcity.social";];
-    bullcitysocial [label = "bullcity.social";];
+    jonlineio [shape=note label = "jonline.io";];
+    oakcitysocial [shape=note label = "oakcity.social";];
+    bullcitysocial [shape=note label = "bullcity.social";];
     
     resolve_namespace -> jonlineio [style = dotted;];
     resolve_namespace -> oakcitysocial [style = dotted;];
     resolve_namespace -> bullcitysocial [style = dotted;];
-    
   }
   
   subgraph cluster4 {
-    label = "K8s Control Plane";
+    label = <<b>K8s Control Plane</b>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     certs [shape = box;style = filled;color = ".7 .3 1.0";label = <
       <table>
       <tr>
-      <td>TLS/SSL Cert Management</td>
+      <td><b>TLS/SSL Cert Management</b></td>
       </tr>
       <tr>
       <td>(K8s ClusterRoles and RoleBinding)</td>
+      </tr>
+      <tr>
+      <td>Configurable with deploys/jbl/Makefile</td>
       </tr>
       </table>
       >;];
   }
 
   subgraph cluster1 {
-    label = "jonline namespace";
+    label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline0 [label = <<table><tr><td>jonline</td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>];
-    minio0 [label = "Minio";];
-    postgres0 [label = "Postgres";];
-    tls0 [shape = "box";label = "jonline-tls (TLS secret)";];
+    jonline0 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>];
+    minio0 [shape=cylinder label = "Minio";];
+    postgres0 [shape=cylinder label = "Postgres";];
+    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
     
-    jonline0 -> minio0;
-    jonline0 -> postgres0;
+    jonline0 -> minio0 [label=<5GB @ <b>50¢/mo</b>>];
+    jonline0 -> postgres0 [label=<1GB @ <b>10¢/mo</b>>];
   }
   
   jonlineio -> jonline0;
   parse_host -> certs;
   
   subgraph cluster2 {
-    label = "oakcitysocial namespace";
+    label = <<table><tr><td><b>oakcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline1 [label = <<table><tr><td>jonline</td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    minio1 [label = "Minio";];
-    postgres1 [label = "Postgres";];
+    jonline1 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    minio1 [shape=cylinder label = "Minio";];
+    postgres1 [shape=cylinder label = "Postgres";];
     
-    jonline1 -> minio1;
-    jonline1 -> postgres1;
-    tls1 [shape = "box";label = "jonline-tls (TLS secret)";];
+    jonline1 -> minio1 [label=<5GB @ <b>50¢/mo</b>>];
+    jonline1 -> postgres1 [label=<1GB @ <b>10¢/mo</b>>];
+    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
   }
   oakcitysocial -> jonline1;
   
   subgraph cluster3 {
-    label = "bullcitysocial namespace";
+    label = <<table><tr><td><b>bullcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
     node [style = filled; color = white;];
     style = filled;
     color = lightgrey;
     
-    jonline2 [label = <<table><tr><td>jonline</td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
-    minio2 [label = "Minio";];
-    postgres2 [label = "Postgres";];
+    jonline2 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s ClusterIP)</td></tr></table>>;];
+    minio2 [label = "Minio" shape=cylinder];
+    postgres2 [label = "Postgres" shape=cylinder];
     
-    jonline2 -> minio2;
-    jonline2 -> postgres2;
-    tls2 [shape = "box";label = "jonline-tls (TLS secret)";];
+    jonline2 -> minio2 [label=<5GB @ <b>50¢/mo</b>>];
+    jonline2 -> postgres2 [label=<1GB @ <b>10¢/mo</b>>];
+    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
   }
   bullcitysocial -> jonline2;
   

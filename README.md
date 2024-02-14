@@ -42,23 +42,20 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
       - [GroupPost](#grouppost)
     - [Events](#events)
   - [Documentation](#documentation)
-    - [dumfederation](#dumfederation)
+    - [Dumfederation](#dumfederation)
     - [Protocol Documentation](#protocol-documentation)
     - [Project Components](#project-components)
       - [Documentation](#documentation-1)
       - [gRPC APIs](#grpc-apis)
-      - [Deployment Management](#deployment-management)
-        - [TLS Certificate Generation](#tls-certificate-generation)
+      - [Architecture/Deployment Management](#architecturedeployment-management)
       - [Rust Backend](#rust-backend)
       - [Frontends](#frontends)
         - [Web (Tamagui/React/Next.js) Frontend](#web-tamaguireactnextjs-frontend)
         - [Flutter Frontend](#flutter-frontend)
-      - [CI/CD (Continuous Integration and Delivery)](#cicd-continuous-integration-and-delivery)
-          - [CI For iOS, Android, macOS, Windows, and Linux](#ci-for-ios-android-macos-windows-and-linux)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
     - [Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing](#deployment-domain-and-tls-certificate-management-deploying-multiple-jonline-instances-to-different-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-k8s-namespace-load-balancing)
   - [Motivations](#motivations)
-    - [Scaling Social Software via dumfederation](#scaling-social-software-via-dumfederation)
+    - [Scaling Social Software via Dumfederation](#scaling-social-software-via-dumfederation)
   - [Future features](#future-features)
 
 ## What is Jonline?
@@ -192,13 +189,13 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
 
-### dumfederation
+### Dumfederation
 A key thing that separates Jonline from Mastodon and other Fediverse projects is that it *does not* support server-to-server communication. Essentially, the only server-to-server communication is via "recommended servers," which will eventually also let admins enable CORS to control where users can see content and user information from their servers.
 
 This approach does not seek to be particularly innovative or groundbreaking technologically. It simply aims to make it easier for people to use *existing* web standards to interact, share, plan, and play with each other, and make administrating a server simple enough that nearly anyone can do it. All you need to worry about as an administrator in this regard is a [list of servers like this](http://jonline.io/server/https%3Abullcity.social?section=federation) - literally nothing but a list of hosts.
 
 ### Protocol Documentation
-A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their documentation (for example, [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol)).
+A benefit of being built with gRPC is that [Jonline's generated Markdown documentation is relatively easy to read and complete](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#jonline-Jonline). Jonline renders documentation as Markdown, and converts that Markdown to HTML with a separate tool. Jonline servers also always include a copy of their own protocol documentation (i.e., [https://jonline.io/docs/protocol](https://jonline.io/docs/protocol), [https://bullcity.social/docs/protocol](https://bullcity.social/docs/protocol), and [https://oakcity.social/docs/protocol](https://oakcity.social/docs/protocol)).
 
 ### Project Components
 The following components are *literally* just a "nice to read" breakdown of the overall directory structure of this repository. Nonetheless, this should be a useful first pass for anyone hoping to contribute to Jonline.
@@ -224,11 +221,32 @@ Additionally, the following components are *themselves* documented in `README.md
 #### gRPC APIs
 The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
 
-#### Deployment Management
-[Deployment management logic lives in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys). Essentially this is some readable `Makefile` stuff built atop `kubectl`.
+#### Architecture/Deployment Management
+Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. [Architecture docs live in `docs/`](https://github.com/JonLatane/jonline/tree/main/deploys). They cover and link to such topics as:
 
-##### TLS Certificate Generation
-[Generated certs live in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs). Generally, if  you want to deploy to your own Kubernetes cluster, and secure it with TLS, you should take a look at these docs. Cert-Manager for DigitalOcean with DigitalOcean DNS is done. It should be possible to do this for other hosts with Cert-Manager support.
+* [Deployment management, in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys)
+* [TLS cert generation, in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs)
+
+[CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
+
+Here's, like, *all* the badges:
+
+[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)
+[![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
+[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
+[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
+[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
+[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
+[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
+
+
+**CI For iOS, Android, macOS, Windows, and Linux**
+
+[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
+[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
+[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
+[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
+[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
 
 #### Rust Backend
 The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main/backend), is built with [Diesel](https://diesel.rs) and [Tonic](https://github.com/hyperium/tonic).
@@ -244,25 +262,6 @@ Notably, in the future, with Tamagui, it should be possible to build iOS/Android
 ##### Flutter Frontend
 The [Flutter frontend, in `frontends/flutter`](https://github.com/JonLatane/jonline/tree/main/frontends/flutter), is built with vanilla Flutter, [Provider](https://pub.dev/packages/provider), [`auto_route`](https://pub.dev/packages/auto_route), and [`protoc_plugin`](https://pub.dev/packages/protoc_plugin), among others.
 
-#### CI/CD (Continuous Integration and Delivery)
-[CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
-
-Here's, like, *all* the badges:
-
-[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)
-[![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
-[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
-[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
-[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
-[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
-[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
-
-###### CI For iOS, Android, macOS, Windows, and Linux
-[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
-[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
-[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
-[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
-[![Flutter Linux Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_linux.yml)
 
 
 ## Quick deploy to your own cluster
@@ -313,14 +312,14 @@ There isn't an open federated protocol like email for a complete posts+events+me
 
 So, Jonline is a shot at implementing federated, open social media, in a way that is easy for developers to modify and, perhaps most importantly, for *users to understand*.
 
-### Scaling Social Software via dumfederation
+### Scaling Social Software via Dumfederation
 At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power, and leveraging them for any number of rarely-publicly-disclosed purposes (mostly "make money").
 
 But is scaling social media applications in this way *necessary for people to socially interact, sharing pictures and videos with friends and their favorite celebrities and arists*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, and artists/actors/academics/poets/etc., it's not really necessary.
 
 Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
 
-A next step in Jonline's [dumfederation](https://jonline.io/docs/protocol#dumfederation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
+A next step in Jonline's [dumfederation](https://jonline.io/docs/protocol#Dumfederation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
 
 ## Future features
 Potential future features include:
