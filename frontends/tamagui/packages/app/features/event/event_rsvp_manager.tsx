@@ -278,9 +278,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     .filter(a => a !== undefined).map(a => a as EventAttendance);
 
   const sortedStatus = (attendance: EventAttendance) =>
-    (attendance.status === AttendanceStatus.NOT_GOING 
-      ? AttendanceStatus.UNRECOGNIZED 
-      : attendance.status)
+  (attendance.status === AttendanceStatus.NOT_GOING
+    ? AttendanceStatus.UNRECOGNIZED
+    : attendance.status)
   const sortedAttendances = attendances
     .sort((a, b) => (a.userAttendee ? -1 : 1) - (b.userAttendee ? -1 : 1))
     .sort((a, b) => sortedStatus(b) - sortedStatus(a));
@@ -453,29 +453,32 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               </Paragraph>
               : undefined}
 
-            <XStack>
-              <RadioGroup f={1} aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
-                disabled={!canRsvpWhenStatusSet || busy}
-                opacity={!canRsvpWhenStatusSet || busy ? 0.5 : 1}
-                onValueChange={v => {
-                  setRsvpStatus(parseInt(v));
+            <XStack w='100%'>
+              <XStack f={1}>
+                <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
+                  w='100%'
+                  disabled={!canRsvpWhenStatusSet || busy}
+                  opacity={!canRsvpWhenStatusSet || busy ? 0.5 : 1}
+                  onValueChange={v => {
+                    setRsvpStatus(parseInt(v));
 
-                  if (canRsvpWhenStatusSet && !upserting && !deleting) {
-                    upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
-                    // setTimeout(upsertRsvp, 200);
-                  }
-                }}
-                mb='$1'
-                value={rsvpStatus.toString()} name="form" >
-                <XStack alignItems="center" gap="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
-                  <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
-                    {...valueAndLabel(AttendanceStatus.GOING)} />
-                  <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
-                    {...valueAndLabel(AttendanceStatus.INTERESTED)} />
-                  <RadioGroupItemWithLabel size="$3"
-                    {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
-                </XStack>
-              </RadioGroup>
+                    if (canRsvpWhenStatusSet && !upserting && !deleting) {
+                      upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
+                      // setTimeout(upsertRsvp, 200);
+                    }
+                  }}
+                  mb='$1'
+                  value={rsvpStatus.toString()} name="form" >
+                  <XStack ai="center" jc='space-evenly' w='100%' gap="$2" flexWrap="wrap" mb={isPreview ? undefined : '$2'}>
+                    <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
+                      {...valueAndLabel(AttendanceStatus.GOING)} />
+                    <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
+                      {...valueAndLabel(AttendanceStatus.INTERESTED)} />
+                    <RadioGroupItemWithLabel size="$3"
+                      {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
+                  </XStack>
+                </RadioGroup>
+              </XStack>
               <Tooltip>
                 <Tooltip.Trigger>
                   <ZStack w='$2' h='$2' my='auto' mx='auto'
