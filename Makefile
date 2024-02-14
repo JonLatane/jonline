@@ -1,5 +1,6 @@
 .NOTPARALLEL:
-.DEFAULT_GOAL := protos
+.DEFAULT_GOAL := default
+default: protos docs graphs
 
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
@@ -88,7 +89,6 @@ local_minio_delete:
 protos:
 	cd frontends/flutter && $(MAKE) protos
 	cd frontends/tamagui && yarn protos
-	$(MAKE) docs
 
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:
@@ -110,7 +110,8 @@ release_be_fe_only_cloud:
 lines_of_code:
 	git ls-files | grep -v generated | xargs cloc
 
-docs: documentation html_docs graphs
+docs: documentation html_docs
+
 documentation:
 	docker run --rm -v $(PWD)/docs:/out -v $(PWD)/protos:/protos pseudomuto/protoc-gen-doc --doc_opt=markdown,protocol.md jonline.proto authentication.proto visibility_moderation.proto permissions.proto users.proto media.proto groups.proto posts.proto events.proto server_configuration.proto federation.proto
 

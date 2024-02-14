@@ -37,7 +37,17 @@ jobs:
       - working-directory: frontends/tamagui
         run: yarn install
 
-      - run: make
+      - name: Build Markdown & HTML docs
+        run: make documentation html_docs
 
-      # Check for "nothing to commit, working tree clean"
-      - run: git diff --exit-code
+      # TODO: GraphViz versions produce different diagram outputs.
+      # My local Homebrew version is 9.0.0 (20230911.1827),
+      # GitHub Actions is 2.43.0 (0)
+      # - name: Build Graphviz diagrams
+      #   run: make graphs
+
+      - name: Build Protos
+        run: make protos
+
+      - name: Check for changes
+        run: git diff --exit-code
