@@ -118,6 +118,12 @@ It should be possible to bring this down to $24/mo for the server, plus $12/mo f
 
 Contributions and discussion on this topic are welcome! Please [discuss or contribute on the GitHub issue here](https://github.com/JonLatane/jonline/issues/15).
 
+Costs are designed to be predictable on most Kubernetes service providers. Jonline offers intuitive Makefile-based configuration in both a simple and advanced configuration (the latter of which is better for hosting many communities in a single Kubernetes cluster).
+
+| Simple Approach | Scalable Approach |
+| --- | --- |
+| ![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg) |
+
 **November 2023 Server Costs:** (3 instances)
 ![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)
 

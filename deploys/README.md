@@ -10,7 +10,10 @@
   - [Securing your deployment](#securing-your-deployment)
   - [Deleting your deployment](#deleting-your-deployment)
   - [Multiple Deployments](#multiple-deployments)
-  - [Jonline Balancer of Loads (JBL), a load balancer for Kubernetes](#jonline-balancer-of-loads-jbl-a-load-balancer-for-kubernetes)
+    - [Jonline Balancer of Loads (JBL), a load balancer for Kubernetes](#jonline-balancer-of-loads-jbl-a-load-balancer-for-kubernetes)
+    - [Example Kubernetes Cluster Setups](#example-kubernetes-cluster-setups)
+      - [K8s cluster with multiple Kubernetes LoadBalancers (without JBL)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-jbl)
+      - [K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-jbl-loadbalancer)
 
 Jonline is designed so you can simply clone the Jonline repo and use `Makefile`s that run `kubectl` (and, for the load balancer, `jq`) to setup and manage your deployment.
 Jonline deploys are done from the `./deploys` directory from the root of the repo.
@@ -26,6 +29,10 @@ See [Generated Certs](./generated_certs/README.md) for more info on generating c
 
 
 ## Basic Deployment
+By following these instructions, you will bring up one namespace as diagrammed here in your Kubernetes cluster:
+
+[K8s cluster with multiple Kubernetes LoadBalancers](#k8s-cluster-with-multiple-kubernetes-loadbalancers)
+
 If you have `kubectl` and `make`, you can be setup in a few minutes. (If you're looking for a quick, fairly priced, scalable Kubernetes host, [I recommend DigitalOcean](https://m.do.co/c/1eaa3f9e536c).) First make sure `kubectl` is setup correctly and your instance has the `jonline` namespace available with `kubectl get services` and `kubectl get namespace jonline`:
 
 ```bash
@@ -187,11 +194,21 @@ As mentioned in [Deploying to namespaces other than `jonline`](#deploying-to-nam
 
 Note that multiple *external* deployments will each have a Kubernetes LoadBalancer. On many providers, this is relatively expensive (an external IP, $12/mo on DigitalOcean). Other Makefile targets include `deploy_be_internal_create` and `deploy_be_internal_insecure_create` (the latter of which will specifically ignore K8s-stored TLS certificates, to save CPU time by not encrypting interal services).
 
-It should be possible to manage many Jonline instances using Nginx and any preferred certificate management scheme you'd like as a sysadmin.
+It should be possible to manage many Jonline instances using Nginx and any preferred certificate management scheme you'd like as a sysadmin. Additionally, JBL is a somewhat novel, 
 
-## Jonline Balancer of Loads (JBL), a load balancer for Kubernetes
+### Jonline Balancer of Loads (JBL), a load balancer for Kubernetes
 Jonline Balancer of Loads will be a dedicated Kubernetes LoadBalancer designed to use K8s secrets named `jonline-tls` to LoadBalance K8s services named `jonline` on ports 80, 443, 8000, and 27707 (Jonline's service ports) from across a variety of namespaces.
 
 This feature is incomplete, but the `Makefile` scripts (that simply run `kubectl` and `jq` to manage configuration) are.
 
 Envisioned functionality: the final JBL binary should be able to both spawn an Nginx server that's. But to start with, whichever is easier would be a welcome contribution from anyone who thinks they could contribute it!
+
+### Example Kubernetes Cluster Setups
+#### K8s cluster with multiple Kubernetes LoadBalancers (without JBL)
+This is how Jonline is currently deployed.
+
+![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg)
+
+#### K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer
+An ongoing dev effort (that welcomes outside contributions)
+![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg)

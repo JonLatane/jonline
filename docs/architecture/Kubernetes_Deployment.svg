@@ -189,7 +189,7 @@
 <polygon fill="none" stroke="#c1b2ff" points="178.75,-47.5 178.75,-70 471.25,-70 471.25,-47.5 178.75,-47.5"/>
 <text text-anchor="start" x="181.75" y="-53.7" font-family="Times,serif" font-size="14.00">Configurable with deploys/generated_certs/Makefile</text>
 <polygon fill="none" stroke="#c1b2ff" points="178.75,-23 178.75,-45.5 471.25,-45.5 471.25,-23 178.75,-23"/>
-<text text-anchor="start" x="205.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
+<text text-anchor="start" x="205.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
 <text text-anchor="start" x="365.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="175.75,-20 175.75,-122 474.25,-122 474.25,-20 175.75,-20"/>
 </g>
@@ -240,7 +240,7 @@
 <polygon fill="none" stroke="#c1b2ff" points="668.75,-47.5 668.75,-70 961.25,-70 961.25,-47.5 668.75,-47.5"/>
 <text text-anchor="start" x="671.75" y="-53.7" font-family="Times,serif" font-size="14.00">Configurable with deploys/generated_certs/Makefile</text>
 <polygon fill="none" stroke="#c1b2ff" points="668.75,-23 668.75,-45.5 961.25,-45.5 961.25,-23 668.75,-23"/>
-<text text-anchor="start" x="695.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
+<text text-anchor="start" x="695.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
 <text text-anchor="start" x="855.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="665.75,-20 665.75,-122 964.25,-122 964.25,-20 665.75,-20"/>
 </g>
@@ -291,7 +291,7 @@
 <polygon fill="none" stroke="#c1b2ff" points="1158.75,-47.5 1158.75,-70 1451.25,-70 1451.25,-47.5 1158.75,-47.5"/>
 <text text-anchor="start" x="1161.75" y="-53.7" font-family="Times,serif" font-size="14.00">Configurable with deploys/generated_certs/Makefile</text>
 <polygon fill="none" stroke="#c1b2ff" points="1158.75,-23 1158.75,-45.5 1451.25,-45.5 1451.25,-23 1158.75,-23"/>
-<text text-anchor="start" x="1185.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
+<text text-anchor="start" x="1185.75" y="-30.2" font-family="Times,serif" font-size="14.00">Lightweight integration with </text>
 <text text-anchor="start" x="1345.5" y="-30.2" font-family="Times,serif" font-style="italic" font-size="14.00">Cert&#45;Manager</text>
 <polygon fill="none" stroke="#c1b2ff" points="1155.75,-20 1155.75,-122 1454.25,-122 1454.25,-20 1155.75,-20"/>
 </g>

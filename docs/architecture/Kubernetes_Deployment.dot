@@ -20,7 +20,7 @@ digraph G {
     jonline0 [label = <<table><tr><td><b>jonline</b></td></tr><tr><td>(K8s LoadBalancer)</td></tr></table>>];
     minio0 [shape=cylinder label = "Minio";];
     postgres0 [shape=cylinder label = "Postgres";];
-    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
+    tls0 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
     
     jonline0 -> minio0 [label=<5GB @ <b>50¢/mo</b>>];
     jonline0 -> postgres0 [label=<1GB @ <b>10¢/mo</b>>];
@@ -41,7 +41,7 @@ digraph G {
     
     jonline1 -> minio1 [label=<5GB @ <b>50¢/mo</b>>];
     jonline1 -> postgres1 [label=<1GB @ <b>10¢/mo</b>>];
-    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
+    tls1 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
     jonline1 -> tls1;
   }
   oakcitysocial -> jonline1 [label=<<b>$12/mo</b>>];
@@ -58,7 +58,7 @@ digraph G {
     
     jonline2 -> minio2 [label=<5GB @ <b>50¢/mo</b>>];
     jonline2 -> postgres2 [label=<1GB @ <b>10¢/mo</b>>];
-    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with <i>Cert-Manager</i></td></tr></table>>;];
+    tls2 [shape = "box";color = ".7 .3 1.0";label = <<table><tr><td>jonline-tls</td></tr><tr><td>(K8s Secret)</td></tr><tr><td>Configurable with deploys/generated_certs/Makefile</td></tr><tr><td>Lightweight integration with&nbsp;<i>Cert-Manager</i></td></tr></table>>;];
     jonline2 -> tls2;
   }
   bullcitysocial -> jonline2 [label=<<b>$12/mo</b>>];
