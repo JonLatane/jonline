@@ -131,7 +131,7 @@ export function TabsNavigation({
                   pointerEvents="none"
                   ml={(measuredHomeButtonWidth - 30) / 2}
                   mt={(measuredHomeButtonHeight - 10) / 2}>
-                  <Spinner size='large' color={navColor} scale={1.2} />
+                  <Spinner size='large' color={navColor} scale={-1.1} />
                 </XStack>
                 <Button //size="$4"
                   id="home-button"
