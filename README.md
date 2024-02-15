@@ -39,6 +39,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
     - [Posts](#posts)
       - [GroupPost](#grouppost)
     - [Events](#events)
+    - [Future Feature Roadmap](#future-feature-roadmap)
   - [Documentation](#documentation)
     - [Dumfederation](#dumfederation)
     - [Protocol Documentation](#protocol-documentation)
@@ -54,7 +55,6 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
     - [Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing](#deployment-domain-and-tls-certificate-management-deploying-multiple-jonline-instances-to-different-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-k8s-namespace-load-balancing)
   - [Motivations](#motivations)
     - [Scaling Social Software via Dumfederation](#scaling-social-software-via-dumfederation)
-  - [Future features](#future-features)
 
 ## What is Jonline?
 Jonline is a network of, and a protocol for, social networks. It aims to be something like [Plex](https://www.plex.tv/), but as a social network released under the [AGPL](https://fossa.com/blog/open-source-software-licenses-101-agpl-license/) (and also, Kubernetes/LetsEncrypt/CertManager-friendly). Use cases include:
@@ -191,6 +191,39 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 ### Events
 `Event`s are a thin layer atop `Post`s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the `GroupPost` mechanism.
 
+### Future Feature Roadmap
+Jonline is currently in the 0.2.x phase of development. Its phases are:
+
+* 0.1.x (old) - Basic gRPC social network with Users, Follows, Groups, Posts and Events, and multiple clients/UIs (React Web and Flutter).
+* 0.2.x (current) - Fully federated gRPC social network - able to view Posts/People/Events from oakcity.social on jonline.io, etc.
+  * Most federation features are being built atop React Web. Flutter app still functional for login and listing Users, Groups, and Posts, though comparatively less featureful otherwise. This is fine, as web is really the priority given what Jonline is and the current politics behind app stores. A sad state of affairs, though.
+  * A dedicated iOS/Android developer who has the time and faith to deal with Apple/Google would be a welcome contributor!
+* 0.3.x/0.4.x - Based on which is ready first, 0.3.x and 0.4.x will mark the releases of:
+  * Web push notification support for discussions, and more chat-oriented features generally once that's in place.
+    * Again, interested iOS/Android devs could make welcome contributions during this work. Jonline's current environment makes Web push the sensible thing to prioritize on my own end.
+  * JBL, a load balancer, which will make hosting lots of domains affordable.
+* 0.5.x/0.6.x - Music and Video streaming features. These could also easily be added sooner, but are a backburner priority for me for now. Wanna change my mind? Buy me *lots* of coffees and beers below 🙃
+* There are lots of other features that could be added (see below), but this is the immediate priority set.
+* Jonline will only ever get a 1.0.x release if I become a millionaire from it, so mash these payment buttons and put in big numbers if you want me building this stuff full time:
+
+[![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
+[![Buy me a beer!](https://img.shields.io/badge/🙏%20buy%20me%20a%20beer%20🍺-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
+
+Other potential future features, that may in particular be of interest to small/medium/local businesses, and to cities/counties that want to support their local businesses, include:
+
+* Payments
+    * Jonline should support user-to-user payments via Apple Pay, Venmo, etc.
+* Products
+    * Products should be flexible enough to be used for neighborhood buy/sell groups, or for independent artists or artist collectives to have a web store presence (with community/social features around it).
+    * Payments should be built upon Jonline Payments.
+* Transport
+    * For either products or humans.
+    * Fulfillment side of Jonline Products.
+    * Built atop OpenStreetMap, Google Maps, or possibly let the user/server choose implmementation.
+    * OSS, social-baed competitor to Uber/Lyft.
+
+Again, if you want these features prioritized, reach out to me in any way, but especially with those payment buttons above 🙏
+
 ## Documentation
 Jonline documentation consists of Markdown in the [`docs/` directory](https://github.com/JonLatane/jonline/tree/main/docs), starting from [`docs/README.md`](https://github.com/JonLatane/jonline/blob/main/docs/README.md).
 
@@ -316,17 +349,3 @@ But is scaling social media applications in this way *necessary for people to so
 Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
 
 A next step in Jonline's [dumfederation](https://jonline.io/docs/protocol#Dumfederation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
-
-## Future features
-Potential future features include:
-
-* Payments
-    * Jonline should support user-to-user payments via Apple Pay, Venmo, etc.
-* Products
-    * Products should be flexible enough to be used for neighborhood buy/sell groups, or for independent artists or artist collectives to have a web store presence (with community/social features around it).
-    * Payments should be built upon Jonline Payments.
-* Transport
-    * For either products or humans.
-    * Fulfillment side of Jonline Products.
-    * Built atop OpenStreetMap, Google Maps, or possibly let the user/server choose implmementation.
-    * OSS, social-baed competitor to Uber/Lyft.

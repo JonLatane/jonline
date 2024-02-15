@@ -1,13 +1,15 @@
 import moment from 'moment';
 import BaseDateTimePicker from 'react-datetime-picker';
 
-import { Text } from '@jonline/ui';
+import { Label, Text, XStack } from '@jonline/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
+import { useComponentKey, useLocalConfiguration } from 'app/hooks';
 import 'react-calendar/dist/Calendar.css';
 import 'react-clock/dist/Clock.css';
 import 'react-datetime-picker/dist/DateTimePicker.css';
 import './datetime_picker.css';
+import { isSafari } from './global';
 
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
@@ -23,18 +25,29 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   value,
   onChange,
 }) => {
+  const { dateTimeRenderer: renderer } = useLocalConfiguration();
 
-  {/* <Text fontSize='$2' fontFamily='$body'>
-    <input type='datetime-local' 
-      style={{ colorScheme: darkMode ? 'dark' : 'light', padding: 10 }}
-      min={editingInstance.startsAt}
-      value={supportDateInput(moment(editingInstance.endsAt))}
-      onChange={(v) => setEndTime(v.target.value)} />
-  </Text> */}
-
-  {/* <Text ml='auto' my='auto' fontSize='$2' fontFamily='$body'> */ }
-  {/* <input type='datetime-local' min={supportDateInput(moment(0))} value={supportDateInput(moment(endsAfter))} onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))} style={{ padding: 10 }} /> */ }
-  {/* </Text> */ }
+  const componentKey = useComponentKey('datetime-picker');
+  const safari = isSafari();
+  if (renderer === 'native') {
+    return <XStack ai='center'>
+      {safari
+        ? <Label htmlFor={componentKey}>
+          <Calendar size='$1' />
+        </Label>
+        : undefined}
+      <Text fontSize='$2' fontFamily='$body'>
+        <input type='datetime-local' name={componentKey} id={componentKey} min={supportDateInput(moment(0))}
+          value={supportDateInput(moment(value))}
+          onChange={(v) => v ? onChange(moment(v.target.value).toISOString(true)) : undefined}
+          // onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))}
+          style={{
+            padding: 10,
+            //colorScheme: darkMode ? 'dark' : 'light', padding: 10
+          }} />
+      </Text>
+    </XStack>;
+  }
 
   return <Text fontSize='$2' fontFamily='$body'>
     <BaseDateTimePicker

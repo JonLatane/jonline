@@ -46,7 +46,7 @@ export const PaginationIndicator: React.FC<Pagination<any>> = ({
           <XStack p='$5' w='100%' ai='center'>
             <Paragraph color={fgColor} size='$2' f={1} my='auto'>
               {loadingPage
-                ? `Loading page ${page + 2}...`
+                ? `Loading...` //`Loading page ${page + 2}...`
                 : text}
             </Paragraph>
             <XStack my='auto' animation='lazy' o={loadingPage ? 1 : hasNextPage ? 0 : 0}>
@@ -57,7 +57,7 @@ export const PaginationIndicator: React.FC<Pagination<any>> = ({
         : <XStack backgroundColor={bgColor} h={80} ai='center' borderRadius={5} p='$5' w='100%'>
           <Paragraph color={fgColor} size='$2' f={1} my='auto'>
             {loadingPage
-              ? `Loading page ${page + 2}...`
+              ? `Loading...` //`Loading page ${page + 2}...`
               : text}
           </Paragraph>
           <XStack my='auto' animation='lazy' o={loadingPage ? 1 : hasNextPage ? 0 : 0}>
@@ -77,7 +77,7 @@ export const PaginationResetIndicator: React.FC<Pagination<any>> = ({
     return <></>;
   }
   if (maxPagesToRender < page + 1) {
-    return <Button onPress={reset}>
+    return <Button onPress={reset} mb='$3'>
       <Paragraph>
         {page + 1 - maxPagesToRender} {page + 1 - maxPagesToRender === 1 ? 'page' : 'pages'} hidden. Press to return to the top.
       </Paragraph>

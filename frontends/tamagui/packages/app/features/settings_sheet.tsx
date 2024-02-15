@@ -1,7 +1,8 @@
-import { Button, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, View, XStack, YStack } from '@jonline/ui';
+import { Button, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
@@ -30,7 +31,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     setTimeout(forceUpdate, 2000);
   }
 
-  const { shrinkNavigation, inlineNavigation} = useInlineFeatureNavigation();
+  const { shrinkNavigation, inlineNavigation } = useInlineFeatureNavigation();
 
   return (
     <>
@@ -116,7 +117,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   description='Automatically Shrink Inline Navigation based on screen size.'
                   disabled={app.inlineFeatureNavigation === false}
                   value={app.shrinkFeatureNavigation === undefined}
-                  setter={(v) => setShrinkFeatureNavigation(v ? undefined : true )} autoDispatch />
+                  setter={(v) => setShrinkFeatureNavigation(v ? undefined : true)} autoDispatch />
                 <ToggleRow name='Shrink Inline Navigation'
                   description='Shrink inactive icons in the Inline Navigation UI.'
                   disabled={app.inlineFeatureNavigation === false}
@@ -160,6 +161,57 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </XStack>
               </YStack>
 
+
+              {/* <XStack flexWrap='wrap' gap='$3' ai='center' mt='$2'> */}
+              <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
+              {/* <Paragraph o={0.5} size='$1'>(Posts, Events, People, Latest, Media, etc.)</Paragraph> */}
+              {/* </XStack> */}
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                {/* <YStack w='100%' backgroundColor={primaryColor} borderRadius='$3'>
+                  <XStack mx='auto' py='$1'>
+                    <FeaturesNavigation disabled />
+                  </XStack>
+                </YStack> */}
+                <XStack my='$2'>
+                  <Label htmlFor='date-type-toggle' my='auto' f={1}>
+                    <YStack w='100%'>
+                      <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' animation='standard'
+                        o={app.dateTimeRenderer === 'native' ? 0.5 : 1}>
+                        Custom
+                      </Paragraph>
+                      <Paragraph size='$1' my='auto' ta='right' mx='$2' animation='standard'
+                        fontFamily='$mono'
+                        o={app.dateTimeRenderer === 'native' ? 0.5 : 1}>
+                        react-datetime-picker
+                      </Paragraph>
+                    </YStack>
+                  </Label>
+                  <Switch name='date-type-toggle' size="$5" margin='auto'
+                    defaultChecked={app.dateTimeRenderer === 'native'}
+                    checked={app.dateTimeRenderer === 'native'}
+                    value={(app.dateTimeRenderer === 'native').toString()}
+                    // disabled={app.inlineFeatureNavigation === undefined}
+                    onCheckedChange={(checked) => dispatch(setDateTimeRenderer(checked ? 'native' : 'custom'))}>
+                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                  </Switch>
+                  <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
+                    <YStack w='100%'>
+                      <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' animation='standard'
+                        o={app.dateTimeRenderer !== 'native' ? 0.5 : 1}>
+                        Native
+                      </Paragraph>
+                      <Paragraph size='$1' my='auto' mx='$2' animation='standard'
+                        o={app.dateTimeRenderer !== 'native' ? 0.5 : 1}>
+                        Safari/Chrome/Firefox/Edge-specific UI
+                      </Paragraph>
+                    </YStack>
+                  </Label>
+                </XStack>
+                <YStack ai='center' mx='center'>
+                  <DateTimePicker value={moment(0).toISOString()} onChange={(v) => { }} />
+                </YStack>
+              </YStack>
+
               <Heading size='$5' mt='$5'>Accounts</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
@@ -172,7 +224,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   // disabled={serverCount !== 1}
                   value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
                 <Paragraph size='$1' mt='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
-                <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5} ai='center'>An alert triangle (<AlertTriangle size='$1' style={{transform: 'scale(0.8) translateY(7px)'}} />) will appear in the UI when a different server is selected.</Paragraph>
+                <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5} ai='center'>An alert triangle (<AlertTriangle size='$1' style={{ transform: 'scale(0.8) translateY(7px)' }} />) will appear in the UI when a different server is selected.</Paragraph>
 
                 {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>
               <ToggleRow name='Auto Dark Mode' value={app.darkModeAuto} setter={setDarkModeAuto} autoDispatch />

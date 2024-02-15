@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Button, Card, Dialog, Heading, Image, Input, Paragraph, Theme, Tooltip, TooltipSimple, XStack, YStack, formatError, useMedia, useTheme } from "@jonline/ui";
+import { Text, Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Theme, Tooltip, TooltipSimple, XStack, YStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { colorMeta, useAppSelector, useCredentialDispatch, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, actionSucceeded, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
@@ -33,15 +33,15 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   // console.log('showReauthenticate', showReauthenticate);
   const [reauthenticationPassword, setReauthenticationPassword] = useState('');
   // const [reauthenticationSuccess, setReauthenticationSuccess] = useState<boolean | undefined>();
-//   useEffect(() => {
-//     if (reauthenticationSuccess) {
-//       setTimeout(() => {
-//         setReauthenticationSuccess(undefined);
-// \      }, 1500);
+  //   useEffect(() => {
+  //     if (reauthenticationSuccess) {
+  //       setTimeout(() => {
+  //         setReauthenticationSuccess(undefined);
+  // \      }, 1500);
 
-//       setTimeout(() => setResult(undefined), 1000);
-//     }
-//   });
+  //       setTimeout(() => setResult(undefined), 1000);
+  //     }
+  //   });
 
   const {
     caller: doReauthentication,
@@ -55,6 +55,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         username: account.user.username,
         userId: account.user.id,
         password: reauthenticationPassword,
+        skipSelection: true
       }));
       if (actionSucceeded(action)) {
         setResult(action.payload);
@@ -314,12 +315,20 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                   opacity={1}
                   y={0}
                 >
-                  <YStack space>
+                  <YStack>
                     <Dialog.Title>Remove Account</Dialog.Title>
                     <Dialog.Description>
-                      Really remove account {account.user.username} on {account.server.host}?
-                      The account will remain on {account.server.host}, but you will have to login
-                      in this browser again.
+                      <YStack gap='$2' mt='$2' mb='$3'>
+                        <Paragraph>
+                          Really remove account <Text fontWeight='bold'>{account.user.username}@{account.server.host}</Text> from this device?
+                        </Paragraph>
+                        <Paragraph>
+                          The account will remain on {account.server.host}, but your data will be removed from this browser.
+                        </Paragraph>
+                        <Paragraph>
+                          To delete your account and data on {account.server.host}, open the User Settings on your <Anchor {...profileLinkProps}>profile page</Anchor>.
+                        </Paragraph>
+                      </YStack>
                     </Dialog.Description>
 
                     <XStack gap="$3" jc="flex-end">

@@ -6,7 +6,9 @@ import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
 import { federateId } from "../federation";
+import { isSafari } from "@jonline/ui/src";
 
+export type DateTimeRenderer = 'custom' | 'native';
 export type LocalAppConfiguration = {
   showIntro: boolean;
   darkModeAuto: boolean;
@@ -32,6 +34,7 @@ export type LocalAppConfiguration = {
   autoHideNavigation: boolean;
   fancyPostBackgrounds: boolean;
   shrinkPreviews: boolean;
+  dateTimeRenderer?: DateTimeRenderer;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -57,6 +60,7 @@ const initialState: LocalAppConfiguration = {
   autoHideNavigation: false,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
+  dateTimeRenderer: isSafari() ? 'native' : 'custom' as DateTimeRenderer,
 };
 
 export const localAppSlice = createSlice({
@@ -135,6 +139,9 @@ export const localAppSlice = createSlice({
     },
     setShrinkPreviews: (state, action: PayloadAction<boolean>) => {
       state.shrinkPreviews = action.payload;
+    },
+    setDateTimeRenderer: (state, action: PayloadAction<DateTimeRenderer>) => {
+      state.dateTimeRenderer = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -145,7 +152,8 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
-  setShowHelp, setShowPinnedServers, setAutoHideNavigation,setFancyPostBackgrounds, setShrinkPreviews
+  setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
+  setDateTimeRenderer
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

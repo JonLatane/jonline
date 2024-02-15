@@ -12,6 +12,7 @@ import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { AddAccountSheet } from '../accounts/add_account_sheet';
+import FlipMove from 'react-flip-move';
 
 export type GroupsSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -270,24 +271,27 @@ export function GroupsSheet({
                     ?
                     <>
                       <YStack>
-                        {topGroups.map((group, index) => {
-                          return <GroupButton
-                            key={`groupButton-${federatedId(group)}`}
-                            group={group}
-                            groupPageForwarder={groupPageForwarder}
-                            onGroupSelected={onGroupSelected}
-                            selected={group.id == selectedGroup?.id}
-                            onShowInfo={() => {
-                              setInfoGroupId(federatedId(group));
-                              setInfoOpen(true);
-                            }}
-                            setOpen={setOpen}
-                            disabled={disableSelection}
-                            hideInfoButton={hideInfoButtons}
-                            extraListItemChrome={extraListItemChrome}
-                            hideLeaveButton={hideLeaveButtons}
-                          />
-                        })}
+                        <FlipMove>
+                          {topGroups.map((group, index) => {
+                            return <div key={`groupButton-${federatedId(group)}`}>
+                              <GroupButton
+                                group={group}
+                                groupPageForwarder={groupPageForwarder}
+                                onGroupSelected={onGroupSelected}
+                                selected={group.id == selectedGroup?.id}
+                                onShowInfo={() => {
+                                  setInfoGroupId(federatedId(group));
+                                  setInfoOpen(true);
+                                }}
+                                setOpen={setOpen}
+                                disabled={disableSelection}
+                                hideInfoButton={hideInfoButtons}
+                                extraListItemChrome={extraListItemChrome}
+                                hideLeaveButton={hideLeaveButtons}
+                              />
+                            </div>
+                          })}
+                        </FlipMove>
                       </YStack>
                     </>
                     : undefined}
@@ -295,24 +299,27 @@ export function GroupsSheet({
                     ? <>
                       <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
                       <YStack>
-                        {recentGroups.map((group, index) => {
-                          return <GroupButton
-                            key={`groupButton-${federatedId(group)}`}
-                            group={group}
-                            groupPageForwarder={groupPageForwarder}
-                            onGroupSelected={onGroupSelected}
-                            selected={group.id == selectedGroup?.id}
-                            onShowInfo={() => {
-                              setInfoGroupId(federatedId(group));
-                              setInfoOpen(true);
-                            }}
-                            setOpen={setOpen}
-                            disabled={disableSelection}
-                            hideInfoButton={hideInfoButtons}
-                            extraListItemChrome={extraListItemChrome}
-                            hideLeaveButton={hideLeaveButtons}
-                          />
-                        })}
+                        <FlipMove>
+                          {recentGroups.map((group, index) => {
+                            return <div key={`groupButton-${federatedId(group)}`}>
+                              <GroupButton
+                                group={group}
+                                groupPageForwarder={groupPageForwarder}
+                                onGroupSelected={onGroupSelected}
+                                selected={group.id == selectedGroup?.id}
+                                onShowInfo={() => {
+                                  setInfoGroupId(federatedId(group));
+                                  setInfoOpen(true);
+                                }}
+                                setOpen={setOpen}
+                                disabled={disableSelection}
+                                hideInfoButton={hideInfoButtons}
+                                extraListItemChrome={extraListItemChrome}
+                                hideLeaveButton={hideLeaveButtons}
+                              />
+                            </div>
+                          })}
+                        </FlipMove>
                       </YStack>
                     </>
                     : undefined}
@@ -322,24 +329,27 @@ export function GroupsSheet({
                       ? <>
                         {topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
                         <YStack>
-                          {sortedGroups.map((group, index) => {
-                            return <GroupButton
-                              key={`groupButton-${federatedId(group)}`}
-                              group={group}
-                              groupPageForwarder={groupPageForwarder}
-                              onGroupSelected={onGroupSelected}
-                              selected={group.id == selectedGroup?.id}
-                              onShowInfo={() => {
-                                setInfoGroupId(federatedId(group));
-                                setInfoOpen(true);
-                              }}
-                              setOpen={setOpen}
-                              disabled={disableSelection}
-                              hideInfoButton={hideInfoButtons}
-                              extraListItemChrome={extraListItemChrome}
-                              hideLeaveButton={hideLeaveButtons}
-                            />
-                          })}
+                          <FlipMove>
+                            {sortedGroups.map((group, index) => {
+                              return <div key={`groupButton-${federatedId(group)}`}>
+                                <GroupButton
+                                  group={group}
+                                  groupPageForwarder={groupPageForwarder}
+                                  onGroupSelected={onGroupSelected}
+                                  selected={group.id == selectedGroup?.id}
+                                  onShowInfo={() => {
+                                    setInfoGroupId(federatedId(group));
+                                    setInfoOpen(true);
+                                  }}
+                                  setOpen={setOpen}
+                                  disabled={disableSelection}
+                                  hideInfoButton={hideInfoButtons}
+                                  extraListItemChrome={extraListItemChrome}
+                                  hideLeaveButton={hideLeaveButtons}
+                                />
+                              </div>
+                            })}
+                          </FlipMove>
                         </YStack>
                       </>
                       : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}

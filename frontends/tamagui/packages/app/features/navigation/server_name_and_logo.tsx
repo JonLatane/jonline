@@ -14,12 +14,13 @@ export type ServerNameAndLogoProps = {
   textColor?: string;
 };
 
+type SplitOnFirstEmojiRequest = { text: string; supportPipe?: boolean; };
 type SplitOnFirstEmojiResult = [string, string | undefined, string | undefined];
-const _splitOnFirstEmojiCache = new Map<string, SplitOnFirstEmojiResult>();
+const _splitOnFirstEmojiCache = new Map<SplitOnFirstEmojiRequest, SplitOnFirstEmojiResult>();
 export function splitOnFirstEmoji(
   text: string, supportPipe?: boolean
 ): SplitOnFirstEmojiResult {
-  const cacheKey = JSON.stringify({ text, supportPipe });
+  const cacheKey: SplitOnFirstEmojiRequest = { text, supportPipe };
   if (_splitOnFirstEmojiCache.has(cacheKey)) {
     return _splitOnFirstEmojiCache.get(cacheKey)!;
   }

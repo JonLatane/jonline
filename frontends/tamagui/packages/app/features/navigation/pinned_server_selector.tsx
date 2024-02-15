@@ -50,7 +50,12 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
 
-  const shortServerName = splitOnFirstEmoji(currentServer?.serverConfiguration?.serverInfo?.name ?? '...')[0];
+  const shortServerName = currentServer?.serverConfiguration?.serverInfo?.shortName
+    ||
+    // Note the split *without* support for pipes (so | will be included)
+    splitOnFirstEmoji(
+      currentServer?.serverConfiguration?.serverInfo?.name ?? '...'
+    )[0].replace(/\s*\|\s*/, ' ');
 
   const disabled = useHideNavigation();
 
@@ -65,6 +70,13 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   };
   // console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
 
+  const description = excludeCurrentServer && pinnedServerCount === 0
+    ? 'No servers are selected'
+    : `From ${excludeCurrentServer
+      ? ''
+      : `${shortServerName}`} ${pinnedServerCount === 0
+        ? 'only'
+        : `${excludeCurrentServer ? '' : 'and '}${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`}`
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}
@@ -82,10 +94,12 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
       {simplified
         ? undefined
         : <XStack key='pinned-server-toggle-row'>
-          <Button key='pinned-server-toggle' py='$1' h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-            <XStack mr='auto'>
-              <Paragraph my='auto' size='$1'>
-                From {excludeCurrentServer ? '' : `${shortServerName} and `}{pinnedServerCount} of {totalServerCount} other {totalServerCount === 1 ? 'server' : 'servers'}
+          <Button key='pinned-server-toggle' py='$1'
+            pl='$2' pr='$1'
+            h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+            <XStack mr='auto' maw='100%'>
+              <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+                {description}
               </Paragraph>
               <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
                 <ChevronRight size='$1' />
@@ -133,9 +147,9 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
                           <Heading size='$1'>
                             Recommended
                           </Heading>
-                          {recommendedServerHosts.length > 0
-                            ? <Heading size='$1'>({recommendedServerHosts.length})</Heading>
-                            : undefined}
+                          <Heading size='$1'>
+                            Servers{recommendedServerHosts.length ? ` (${recommendedServerHosts.length})` : undefined}
+                          </Heading>
                         </YStack>
                         <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
                           <ChevronRight size='$1' />
@@ -212,8 +226,24 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
   };
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
   const avatarSize = 20;
-
+  const loadingPosts = useAppSelector(state => state.posts.pagesStatus.values[server.host] === 'loading');
+  const loadingEvents = useAppSelector(state => state.events.pagesStatus.values[server.host] === 'loading');
+  const loadingUsers = useAppSelector(state => state.users.pagesStatus.values[server.host] === 'loading');
   return <YStack maw={170}>
+    <XStack zi={1000000} pointerEvents="none" mx='auto'>
+      <XStack position='absolute' animation='standard' o={loadingUsers ? 1 : 0}
+        pointerEvents="none" ml={-20} mt={12}>
+        <Spinner size='large' color={navColor} scaleX={-1.7} scaleY={1.7} />
+      </XStack>
+      <XStack position='absolute' animation='standard' o={loadingPosts ? 1 : 0}
+        pointerEvents="none"  ml={-20} mt={12}>
+        <Spinner size='large' color={primaryColor} scale={1.4} />
+      </XStack>
+      <XStack position='absolute' animation='standard' o={loadingEvents ? 1 : 0}
+        pointerEvents="none" ml={-20} mt={12}>
+        <Spinner size='large' color={navColor} scaleX={1.1} scaleY={-1.1} />
+      </XStack>
+    </XStack>
     {simplified
       ? undefined
       : <AddAccountSheet server={server}

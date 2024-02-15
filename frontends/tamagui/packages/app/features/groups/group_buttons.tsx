@@ -55,7 +55,8 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
     : group.name;
   const fullAvatarHeight = 48;
 
-  return <XStack w='100%' animation="standard" {...standardAnimation}>
+  return <XStack w='100%' //animation="standard" {...standardAnimation}
+  >
     <YStack f={1} borderRadius='$5' borderWidth={1} borderColor={primaryColor} mb='$2'
       backgroundColor={selected ? navColor : undefined}
     >

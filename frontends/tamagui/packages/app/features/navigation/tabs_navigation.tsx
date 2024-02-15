@@ -131,7 +131,7 @@ export function TabsNavigation({
                   pointerEvents="none"
                   ml={(measuredHomeButtonWidth - 30) / 2}
                   mt={(measuredHomeButtonHeight - 10) / 2}>
-                  <Spinner size='large' color={navColor} scale={-1.1} />
+                  <Spinner size='large' color={navColor} scaleX={1.1} scaleY={-1.1} />
                 </XStack>
                 <Button //size="$4"
                   id="home-button"
@@ -208,14 +208,17 @@ export function TabsNavigation({
           </YStack>
         </StickyBox>
 
-
-        <StickyBox style={{ zIndex: 10, height: 0, pointerEvents: 'none' }}>
-          <YStack gap="$1" animation='standard' opacity={loading && hideNavigation ? 0.92 : 0}>
-            <Spinner size='large' color={navColor} scale={2}
-              top={dimensions.height / 2 - 50}
-            />
-          </YStack>
-        </StickyBox>
+        <XStack zi={1000} style={{ position: 'fixed' }} animation='standard' o={loading && hideNavigation ? 1 : 0}
+          top={dimensions.height / 2 - 50}>
+          <XStack position='absolute'
+            transform={[{ translateX: -17 }]}>
+            <Spinner size='large' color={primaryColor} scale={2.4} />
+          </XStack>
+          <XStack position='absolute'
+            transform={[{ translateX: -17 }]}>
+            <Spinner size='large' color={navColor} scaleX={1.8} scaleY={-1.8} />
+          </XStack>
+        </XStack>
 
         <YStack f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
           maw={window.innerWidth}

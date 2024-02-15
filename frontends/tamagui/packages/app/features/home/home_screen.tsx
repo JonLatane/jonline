@@ -51,7 +51,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } =
     usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);
 
-  const postPagination = usePaginatedRendering(allPosts, 7);
+
+  const postPagination = usePaginatedRendering(allPosts, 7, {
+    // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
+  });
   const paginatedPosts = postPagination.results;
 
   // Only load the first page of events on this screen.
@@ -138,7 +141,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                           <EventCard event={event} isPreview horizontal xs />
                         </XStack>
                       </span>)}
-                    <div style={{marginTop:'auto', marginBottom: 'auto'}}>
+                    <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                       <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
                         <YStack ai='center' py='$3' jc='center'>
                           <Heading size='$4'>More</Heading>
@@ -175,7 +178,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 : undefined
               }
               {paginatedPosts.map((post) => {
-                return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
+                return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`} style={{ width: '100%' }}>
                   {/* <XStack w='100%'> */}
                   <PostCard post={post} isPreview />
                   {/* </XStack> */}
