@@ -10,7 +10,7 @@ declare module 'tamagui' {
 export default config
 
 export function isSafari() {
-  return /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  return /^((?!chrome|android).)*safari/i.test(navigator?.userAgent ?? '');
 }
 
 export function needsScrollPreservers(): boolean {

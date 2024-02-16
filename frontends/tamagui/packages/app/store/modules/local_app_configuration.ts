@@ -7,6 +7,7 @@ import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
 import { federateId } from "../federation";
 import { isSafari } from "@jonline/ui";
+import { store } from "../store";
 
 export type DateTimeRenderer = 'custom' | 'native';
 export type LocalAppConfiguration = {
@@ -60,8 +61,18 @@ const initialState: LocalAppConfiguration = {
   autoHideNavigation: false,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
-  dateTimeRenderer: isSafari() ? 'native' : 'custom' as DateTimeRenderer,
+  dateTimeRenderer: undefined
 };
+
+setTimeout(async () => {
+  if (store.getState().app.dateTimeRenderer === undefined) {
+    while (!globalThis.navigator) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    store.dispatch(setDateTimeRenderer(isSafari() ? 'native' : 'custom'))
+  }
+}, 1000);
 
 export const localAppSlice = createSlice({
   name: "localApp",

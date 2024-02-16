@@ -2,6 +2,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:provider/provider.dart';
+import 'package:web/web.dart';
 
 import '../models/jonline_account_operations.dart';
 import '../screens/accounts/server_configuration_page.dart';
@@ -21,7 +22,7 @@ import 'models/settings.dart';
 import 'my_platform.dart';
 import 'router/auth_guard.dart';
 import 'router/router.gr.dart';
-import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
+// import 'utils/fake_js.dart' if (dart.library.js) 'dart:js';
 
 const noOne = 'no one';
 const blurSigma = 10.0;
@@ -251,7 +252,9 @@ class AppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // For web, ensure the actual URL hostname is used as the default server.
       if (MyPlatform.isWeb) {
-        primaryServerHost = context.callMethod("getJonlineServerHost", []);
+        primaryServerHost =
+            document.location?.hostname.split(':')[0] ?? primaryServerHost;
+        //context.ca.callMethod("getJonlineServerHost", []);
         log.info("getJonlineServerHost", primaryServerHost);
         final JonlineServer server = JonlineServer(primaryServerHost);
         final List<JonlineServer> servers = await JonlineServer.servers;

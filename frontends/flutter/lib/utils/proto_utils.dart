@@ -1,9 +1,9 @@
 import 'package:protobuf/protobuf.dart';
 
-import 'fake_js.dart' if (dart.library.js) 'dart:js';
+// import 'fake_js.dart' if (dart.library.js) 'dart:js';
 
 extension ProtoUtils<T extends GeneratedMessage> on T {
-  dynamic protoJsify() => JsObject.jsify(jonCopy().toProto3Json()!);
+  dynamic protoJsify() => jonCopy().toProto3Json()!;
   T jonCopy() {
     return deepCopy();
   }
