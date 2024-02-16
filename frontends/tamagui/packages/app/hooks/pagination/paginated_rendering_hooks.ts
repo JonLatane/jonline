@@ -34,7 +34,7 @@ export function usePageParam() {
 
   return [page, setPage] as const;
 }
-export const maxPagesToRender = 2;
+export const maxPagesToRender = 5;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[],
   pageSize: number,
@@ -69,7 +69,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     const startPage = 0; //Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1))
     setPage(startPage);
     // args?.onPageLoaded?.(startPage, lastItem);
-    setTimeout(() => setLoadingPage(false), 3000);
+    setTimeout(() => setLoadingPage(false), 1000);
     // setLoadingPage(false);
     // }, 500);
   };
@@ -80,7 +80,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     // setTimeout(() => {
     setPage(page + 1);
     onPageLoaded?.(page + 1);
-    setTimeout(() => setLoadingPage(false), 3000);
+    setTimeout(() => setLoadingPage(false), 1000);
     // setLoadingPage(false);
     // }, 500);
   }

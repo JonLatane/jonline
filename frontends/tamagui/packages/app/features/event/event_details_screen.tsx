@@ -143,7 +143,7 @@ export function EventDetailsScreen() {
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
 
       topChrome={
-        <XStack w='100%' maw={800} mx='auto' mt='$1'>
+        <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
