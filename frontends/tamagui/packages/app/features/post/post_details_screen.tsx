@@ -108,8 +108,10 @@ export function PostDetailsScreen() {
   }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
 
   function scrollToBottom() {
-    // if (!isClient) return;
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
   const chatUI = app?.discussionChatUI;
 
@@ -121,8 +123,11 @@ export function PostDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
-                transparent={interactionType !== 'post'}
-                onPress={() => setInteractionType('post')} mr='$2'>
+                transparent={interactionType !== 'post'} mr='$2'
+                onPress={() => {
+                  setInteractionType('post');
+                  scrollToTop();
+                }}>
                 <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>
               </Button>
             </Tooltip.Trigger>
@@ -175,6 +180,7 @@ export function PostDetailsScreen() {
                     scrollToBottom();
                   } else {
                     setInteractionType('chat');
+                    setTimeout(scrollToBottom, 1000);
                   }
                 }} />
             </Tooltip.Trigger>

@@ -78,8 +78,16 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     if (loadingPage) return;
     setLoadingPage(true);
     // setTimeout(() => {
-    setPage(page + 1);
-    onPageLoaded?.(page + 1);
+    const targetPage = page + 1;
+    if (targetPage < maxPagesToRender - 1) {
+      setPage(maxPagesToRender - 1);
+      onPageLoaded?.(targetPage - 1);
+    } else {
+      setPage(targetPage);
+      onPageLoaded?.(targetPage);
+    }
+    // setPage(page + 1);
+    // onPageLoaded?.(page + 1);
     setTimeout(() => setLoadingPage(false), 1000);
     // setLoadingPage(false);
     // }, 500);
