@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation } from '@jonline/ui'
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
 import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useServer, } from 'app/hooks'
 import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
@@ -39,6 +39,7 @@ export function usePostInteractionType(): [PostDetailsInteractionType, (interact
   }
 }
 export function PostDetailsScreen() {
+  const mediaQuery = useMedia();
   const [pathPostId] = useParam('postId');
   // const [postId] = useParam('postId');
   // const [postId, erverHost] = (pathPostId ?? '').split('@');
@@ -130,9 +131,11 @@ export function PostDetailsScreen() {
             </Tooltip.Content>
           </Tooltip>
 
-          <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
-            {subjectPost?.title || 'Loading...'}
-          </Paragraph>
+          {mediaQuery.gtSm
+            ? <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
+              {subjectPost?.title || 'Loading...'}
+            </Paragraph>
+            : <XStack f={1} />}
 
           <Tooltip placement="bottom">
             <Tooltip.Trigger>

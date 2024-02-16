@@ -1,5 +1,5 @@
 import { EventInstance } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
 import { useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
 import { RootState, federateId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -19,6 +19,7 @@ const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortnam
 // In terms of the web app's URL structure, "/event" corresponds to
 // EventInstances, not Events.
 export function EventDetailsScreen() {
+  const mediaQuery = useMedia();
   const [pathInstanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
@@ -157,9 +158,11 @@ export function EventDetailsScreen() {
             </Tooltip.Content>
           </Tooltip>
 
-          <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
-            {subjectPost?.title || 'Loading...'}
-          </Paragraph>
+          {mediaQuery.gtSm
+            ? <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
+              {subjectPost?.title || 'Loading...'}
+            </Paragraph>
+            : <XStack f={1} />}
 
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
