@@ -1,17 +1,18 @@
 import { EventInstance } from '@jonline/api';
-import { Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation } from '@jonline/ui';
 import { useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
 import { RootState, federateId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
-import { isPastInstance, setDocumentTitle } from 'app/utils';
+import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
-import { ConversationContextProvider, ConversationManager, useStatefulConversationContext } from '../post';
+import { ConversationContextProvider, ConversationManager, usePostInteractionType, useStatefulConversationContext } from '../post';
 import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
 import { AccountOrServerContextProvider } from 'app/contexts';
+import { ListEnd } from '@tamagui/lucide-icons';
 
 const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
@@ -20,6 +21,7 @@ const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortnam
 export function EventDetailsScreen() {
   const [pathInstanceId] = useParam('instanceId');
   const [shortname] = useParam('shortname');
+  const [interactionType, setInteractionType] = usePostInteractionType();
   const updateParams = useUpdateParams();
 
   const currentServer = useServer();
@@ -130,12 +132,85 @@ export function EventDetailsScreen() {
     setDocumentTitle(title)
   }, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
 
+  function scrollToBottom() {
+    // if (!isClient) return;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+  const chatUI = app?.discussionChatUI;
+
   return (
     <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
-      bottomChrome={ <ReplyArea replyingToPath={replyPostIdPath}
-          onStopReplying={() => postId && setReplyPostIdPath([postId])}
-          hidden={!showReplyArea} />}
+
+      topChrome={
+        <XStack w='100%' maw={800} mx='auto' mt='$1'>
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
+                transparent={interactionType !== 'post'}
+                onPress={() => setInteractionType('post')} mr='$2'>
+                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Post Details</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+
+          <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
+            {subjectPost?.title || 'Loading...'}
+          </Paragraph>
+
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
+                transparent={interactionType !== 'discussion'}
+                onPress={() => setInteractionType('discussion')} mr='$2'>
+                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : undefined}>Discussion</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on top.</Heading>
+              <Heading size='$1'>Grouped into threads.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'chat' ? navColor : undefined)}
+                transparent={interactionType !== 'chat'}
+                borderTopRightRadius={0} borderBottomRightRadius={0}
+                onPress={() => setInteractionType('chat')}>
+                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : undefined}>Chat</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on bottom.</Heading>
+              <Heading size='$1'>Sorted by time.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+          <Tooltip placement="bottom-end">
+            <Tooltip.Trigger>
+              <Button transparent={!chatUI} icon={ListEnd}
+                borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                opacity={!chatUI ? 0.5 : 1}
+                onPress={() => {
+                  if (chatUI) {
+                    scrollToBottom();
+                  } else {
+                    setInteractionType('chat');
+                  }
+                }} />
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Go to newest.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+        </XStack>
+      }
+      bottomChrome={<ReplyArea replyingToPath={replyPostIdPath}
+        onStopReplying={() => postId && setReplyPostIdPath([postId])}
+        hidden={!showReplyArea} />}
     >
       {!subjectEvent || !subjectPost
         ? failedToLoadEvent
@@ -150,15 +225,20 @@ export function EventDetailsScreen() {
           <ConversationContextProvider value={conversationContext}>
             <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
               <ScrollView w='100%'>
-                <XStack w='100%' paddingHorizontal='$3'>
-                  <EventCard key={`event-card-loaded`}
-                    event={subjectEvent}
-                    onEditingChange={editHandler(subjectPost!.id)}
-                    selectedInstance={subjectInstance}
-                    onInstancesUpdated={onEventInstancesUpdated}
-                    {...{ newRsvpMode, setNewRsvpMode }}
-                  />
-                </XStack>
+                <AnimatePresence>
+                  {interactionType === 'post'
+                    ? <XStack w='100%' paddingHorizontal='$3'
+                      animation='standard' {...standardHorizontalAnimation}>
+                      <EventCard key={`event-card-loaded`}
+                        event={subjectEvent}
+                        onEditingChange={editHandler(subjectPost!.id)}
+                        selectedInstance={subjectInstance}
+                        onInstancesUpdated={onEventInstancesUpdated}
+                        {...{ newRsvpMode, setNewRsvpMode }}
+                      />
+                    </XStack>
+                    : undefined}
+                </AnimatePresence>
                 <ConversationManager post={subjectPost!} />
               </ScrollView>
 

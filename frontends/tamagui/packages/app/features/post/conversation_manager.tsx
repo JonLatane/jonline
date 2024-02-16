@@ -1,5 +1,5 @@
 import { Post } from '@jonline/api';
-import { Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, } from 'app/hooks';
 import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
@@ -8,6 +8,7 @@ import React, { useEffect, useReducer, useState } from 'react';
 import { useConversationContext } from './conversation_context';
 import PostCard from './post_card';
 import FlipMove from 'react-flip-move';
+import { usePostInteractionType } from './post_details_screen';
 
 interface ConversationManagerProps {
   post: FederatedPost;
@@ -148,58 +149,63 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
   const dimensions = useWindowDimensions();
 
   let replyAboveCurrent: Post | undefined = undefined;
+  const [interactionType] = usePostInteractionType();
   return <YStack>
-    <XStack>
-      <XStack f={1} />
-      <Tooltip placement="bottom">
-        <Tooltip.Trigger>
-          <Button backgroundColor={chatUI ? undefined : navColor}
-            hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
-            transparent={chatUI}
-            onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
-            <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
-          </Button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          <Heading size='$2'>Newest on top.</Heading>
-          <Heading size='$1'>Grouped into threads.</Heading>
-        </Tooltip.Content>
-      </Tooltip>
+    <AnimatePresence>
+      {interactionType === 'post'
+        ? <XStack animation='standard' {...standardAnimation}>
+          <XStack f={1} />
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button backgroundColor={chatUI ? undefined : navColor}
+                hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
+                transparent={chatUI}
+                onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
+                <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on top.</Heading>
+              <Heading size='$1'>Grouped into threads.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
 
-      <Tooltip placement="bottom">
-        <Tooltip.Trigger>
-          <Button backgroundColor={!chatUI ? undefined : navColor}
-            hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
-            transparent={!chatUI}
-            borderTopRightRadius={0} borderBottomRightRadius={0}
-            onPress={() => dispatch(setDiscussionChatUI(true))}>
-            <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
-          </Button>
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          <Heading size='$2'>Newest on bottom.</Heading>
-          <Heading size='$1'>Sorted by time.</Heading>
-        </Tooltip.Content>
-      </Tooltip>
-      <Tooltip placement="bottom-end">
-        <Tooltip.Trigger>
-          <Button transparent={!chatUI} icon={ListEnd}
-            borderTopLeftRadius={0} borderBottomLeftRadius={0}
-            opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-            onPress={() => {
-              if (chatUI) {
-                scrollToBottom();
-              } else {
-                dispatch(setDiscussionChatUI(true))
-              }
-            }} />
-        </Tooltip.Trigger>
-        <Tooltip.Content>
-          <Heading size='$2'>Go to newest.</Heading>
-        </Tooltip.Content>
-      </Tooltip>
-      <XStack f={1} />
-    </XStack>
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button backgroundColor={!chatUI ? undefined : navColor}
+                hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
+                transparent={!chatUI}
+                borderTopRightRadius={0} borderBottomRightRadius={0}
+                onPress={() => dispatch(setDiscussionChatUI(true))}>
+                <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on bottom.</Heading>
+              <Heading size='$1'>Sorted by time.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+          <Tooltip placement="bottom-end">
+            <Tooltip.Trigger>
+              <Button transparent={!chatUI} icon={ListEnd}
+                borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
+                onPress={() => {
+                  if (chatUI) {
+                    scrollToBottom();
+                  } else {
+                    dispatch(setDiscussionChatUI(true))
+                  }
+                }} />
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Go to newest.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+          <XStack f={1} />
+        </XStack>
+        : undefined}
+    </AnimatePresence>
     {/* <XStack w='100%'>
               <> */}
     <YStack w='100%' key='comments'>
@@ -215,20 +221,20 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
           const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`}
             // w='100%' f={1}
             mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == post?.id) ? '$3' : 0}
-            // animation='standard'
-            // opacity={1}
-            // scale={1}
-            // y={0}
-            // enterStyle={{
-            //   // scale: 1.5,
-            //   y: expandAnimation ? -50 : 50,
-            //   opacity: 0,
-            // }}
-            // exitStyle={{
-            //   // scale: 1.5,
-            //   // y: 50,
-            //   opacity: 0,
-            // }}
+          // animation='standard'
+          // opacity={1}
+          // scale={1}
+          // y={0}
+          // enterStyle={{
+          //   // scale: 1.5,
+          //   y: expandAnimation ? -50 : 50,
+          //   opacity: 0,
+          // }}
+          // exitStyle={{
+          //   // scale: 1.5,
+          //   // y: 50,
+          //   opacity: 0,
+          // }}
           >
             {postIdPath.slice(1).map((_, index) => {
               stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;

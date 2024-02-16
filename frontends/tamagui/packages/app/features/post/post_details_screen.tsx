@@ -1,7 +1,7 @@
-import { Heading, ScrollView, Spinner, XStack, YStack } from '@jonline/ui'
-import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer, } from 'app/hooks'
-import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, useRootSelector, useServerTheme } from 'app/store'
-import { setDocumentTitle } from 'app/utils'
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation } from '@jonline/ui'
+import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useServer, } from 'app/hooks'
+import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store'
+import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { AppSection } from '../navigation/features_navigation'
@@ -12,9 +12,34 @@ import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
 import { federateId, getFederated } from '../../store/federation';
 import { AccountOrServerContextProvider } from 'app/contexts'
+import { ListEnd } from '@tamagui/lucide-icons'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
+export type PostDetailsInteractionType = 'post' | 'discussion' | 'chat';
+export function usePostInteractionType(): [PostDetailsInteractionType, (interactionType: PostDetailsInteractionType) => void] {
+  const [interactionTypeParam, _setInteractionType] = useHash();
+  const chatUI = useLocalConfiguration().discussionChatUI;
+  const dispatch = useAppDispatch();
+
+  function setInteractionType(interactionType: PostDetailsInteractionType) {
+    _setInteractionType(interactionType);
+    if (interactionType === 'chat' && !chatUI) {
+      dispatch(setDiscussionChatUI(true));
+    } else if (interactionType === 'discussion' && chatUI) {
+      dispatch(setDiscussionChatUI(false));
+    }
+  }
+
+  console.log('interactionTypeParam', interactionTypeParam, chatUI);
+
+  switch (interactionTypeParam.replace(/[^a-z]/g, '')) {
+    case 'post': return ['post', setInteractionType];
+    case 'discussion': return ['discussion', setInteractionType];
+    case 'chat': return ['chat', setInteractionType];
+    default: return ['post', setInteractionType];
+  }
+}
 export function PostDetailsScreen() {
   const [pathPostId] = useParam('postId');
   // const [postId] = useParam('postId');
@@ -27,6 +52,7 @@ export function PostDetailsScreen() {
   console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
 
   const [shortname] = useParam('shortname');
+  const [interactionType, setInteractionType] = usePostInteractionType();
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
@@ -82,9 +108,81 @@ export function PostDetailsScreen() {
     setDocumentTitle(title)
   }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
 
+  function scrollToBottom() {
+    // if (!isClient) return;
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  }
+  const chatUI = app?.discussionChatUI;
+
   return (
     <TabsNavigation appSection={AppSection.POST} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
+      topChrome={
+        <XStack w='100%' maw={800} mx='auto' mt='$1'>
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
+                transparent={interactionType !== 'post'}
+                onPress={() => setInteractionType('post')} mr='$2'>
+                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Post Details</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+
+          <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
+            {subjectPost?.title || 'Loading...'}
+          </Paragraph>
+
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
+                transparent={interactionType !== 'discussion'}
+                onPress={() => setInteractionType('discussion')} mr='$2'>
+                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : undefined}>Discussion</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on top.</Heading>
+              <Heading size='$1'>Grouped into threads.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+
+          <Tooltip placement="bottom">
+            <Tooltip.Trigger>
+              <Button {...themedButtonBackground(interactionType === 'chat' ? navColor : undefined)}
+                transparent={interactionType !== 'chat'}
+                borderTopRightRadius={0} borderBottomRightRadius={0}
+                onPress={() => setInteractionType('chat')}>
+                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : undefined}>Chat</Heading>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Newest on bottom.</Heading>
+              <Heading size='$1'>Sorted by time.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+          <Tooltip placement="bottom-end">
+            <Tooltip.Trigger>
+              <Button transparent={!chatUI} icon={ListEnd}
+                borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                opacity={!chatUI ? 0.5 : 1}
+                onPress={() => {
+                  if (chatUI) {
+                    scrollToBottom();
+                  } else {
+                    setInteractionType('chat');
+                  }
+                }} />
+            </Tooltip.Trigger>
+            <Tooltip.Content>
+              <Heading size='$2'>Go to newest.</Heading>
+            </Tooltip.Content>
+          </Tooltip>
+        </XStack>
+      }
       bottomChrome={<ReplyArea replyingToPath={replyPostIdPath}
         onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
         hidden={!showReplyArea} />}
@@ -101,11 +199,16 @@ export function PostDetailsScreen() {
           <ConversationContextProvider value={conversationContext}>
             <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
               <ScrollView w='100%'>
-                <XStack w='100%' paddingHorizontal='$3'>
-                  <PostCard key={`post-card-main-${serverPostId}`}
-                    post={subjectPost}
-                    onEditingChange={editHandler(subjectPost.id)} />
-                </XStack>
+                <AnimatePresence>
+                  {interactionType === 'post'
+                    ? <XStack w='100%' paddingHorizontal='$3'
+                      animation='standard' {...standardHorizontalAnimation}>
+                      <PostCard key={`post-card-main-${serverPostId}`}
+                        post={subjectPost}
+                        onEditingChange={editHandler(subjectPost.id)} />
+                    </XStack>
+                    : undefined}
+                </AnimatePresence>
                 <ConversationManager post={subjectPost} />
               </ScrollView>
 

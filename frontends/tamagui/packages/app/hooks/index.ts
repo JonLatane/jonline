@@ -8,6 +8,7 @@ export * from './use_query_debounce';
 export * from './use_anonymous_auth_token';
 export * from './use_component_key';
 export * from './account_and_server_hooks';
+export * from './use_hash';
 export * from './store_hooks';
 
 export * from './server_theme_hooks';
