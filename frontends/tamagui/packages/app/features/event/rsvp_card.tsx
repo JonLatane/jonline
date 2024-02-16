@@ -3,12 +3,11 @@ import { FederatedEvent, getCredentialClient, useServerTheme } from "app/store";
 import React, { useState } from "react";
 
 import { AttendanceStatus, EventAttendance, EventInstance, Moderation, Post } from "@jonline/api";
-import { Button, Card, Heading, Paragraph, XStack, YStack, useMedia } from "@jonline/ui";
+import { Button, Card, Heading, Paragraph, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { Edit3 as Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { passes } from "app/utils/moderation_utils";
-import { standardAnimation } from '../../../ui/src/animations';
 import { TamaguiMarkdown } from "../../components/tamagui_markdown";
 import { AuthorInfo } from "../post/author_info";
 

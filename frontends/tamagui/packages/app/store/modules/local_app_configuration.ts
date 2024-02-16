@@ -6,7 +6,7 @@ import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
 import { federateId } from "../federation";
-import { isSafari } from "@jonline/ui/src";
+import { isSafari } from "@jonline/ui";
 
 export type DateTimeRenderer = 'custom' | 'native';
 export type LocalAppConfiguration = {

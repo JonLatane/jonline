@@ -9,5 +9,5 @@
     }
   },
   "extends": "expo/tsconfig.base",
-  "exclude": [ "**/node_modules", "**/dist", "**/types", "apps/next/out", "apps/next/.next", "apps/next/.tamagui"]
+  "exclude": [ "**/node_modules", "**/dist", "**/types", "apps/next/out", "apps/next/.next"]
 }

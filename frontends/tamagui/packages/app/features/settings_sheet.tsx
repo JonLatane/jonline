@@ -162,16 +162,8 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               </YStack>
 
 
-              {/* <XStack flexWrap='wrap' gap='$3' ai='center' mt='$2'> */}
               <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
-              {/* <Paragraph o={0.5} size='$1'>(Posts, Events, People, Latest, Media, etc.)</Paragraph> */}
-              {/* </XStack> */}
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                {/* <YStack w='100%' backgroundColor={primaryColor} borderRadius='$3'>
-                  <XStack mx='auto' py='$1'>
-                    <FeaturesNavigation disabled />
-                  </XStack>
-                </YStack> */}
                 <XStack my='$2'>
                   <Label htmlFor='date-type-toggle' my='auto' f={1}>
                     <YStack w='100%'>
@@ -194,7 +186,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     onCheckedChange={(checked) => dispatch(setDateTimeRenderer(checked ? 'native' : 'custom'))}>
                     <Switch.Thumb animation="quick" backgroundColor='black' />
                   </Switch>
-                  <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
+                  <Label htmlFor='date-type-toggle' my='auto' f={1}>
                     <YStack w='100%'>
                       <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' animation='standard'
                         o={app.dateTimeRenderer !== 'native' ? 0.5 : 1}>

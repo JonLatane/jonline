@@ -1,7 +1,7 @@
 import moment from 'moment';
 import BaseDateTimePicker from 'react-datetime-picker';
 
-import { Label, Text, XStack } from '@jonline/ui';
+import { Label, Text, XStack , isSafari} from '@jonline/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
 import { useComponentKey, useLocalConfiguration } from 'app/hooks';
@@ -9,8 +9,6 @@ import 'react-calendar/dist/Calendar.css';
 import 'react-clock/dist/Clock.css';
 import 'react-datetime-picker/dist/DateTimePicker.css';
 import './datetime_picker.css';
-import { isSafari } from './global';
-
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
 export const toProtoISOString = (localDateTimeInput: string) =>

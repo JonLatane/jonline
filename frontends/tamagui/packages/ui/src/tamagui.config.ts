@@ -81,6 +81,7 @@ export const config = createTamagui({
   animations,
   shouldAddPrefersColorThemes: true,
   themeClassNameOnRoot: true,
+  onlyAllowShorthands: false,
   shorthands,
   fonts: {
     heading: headingFont,

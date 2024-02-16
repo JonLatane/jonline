@@ -40,8 +40,8 @@
     "eslint": "^8.56.0",
     "node-gyp": "^9.4.1",
     "prettier": "^2.8.8",
-    "ts-proto": "^1.167.2",
-    "turbo": "^1.12.1",
+    "ts-proto": "^1.167.5",
+    "turbo": "^1.12.4",
     "typescript": "^5.3.3"
   },
   "packageManager": "yarn@4.0.2"

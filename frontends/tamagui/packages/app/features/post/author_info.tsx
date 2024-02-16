@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 
 import { Author, Permission, Post } from "@jonline/api";
 import { Anchor, DateViewer, Heading, Image, XStack, YStack, useMedia } from "@jonline/ui";
-import { PermissionIndicator } from "@jonline/ui/src/permission_indicator";
+import { PermissionIndicator } from "@jonline/ui";
 import { useAccountOrServer, useAppDispatch, useCredentialDispatch, useProvidedDispatch, useServer } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { federateId, federatedIDPair } from "app/store/federation";
