@@ -5,7 +5,8 @@
     "paths": {
       "app/*": ["./packages/app/*"],
       "@jonline/ui/*": ["./packages/ui/*"],
-      "@jonline/api/*": ["./packages/api/*"]
+      "@jonline/api/*": ["./packages/api/*"],
+      "react": [ "./node_modules/@types/react" ]
     }
   },
   "extends": "expo/tsconfig.base",
