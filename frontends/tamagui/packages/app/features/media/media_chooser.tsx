@@ -215,7 +215,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                                     </AlertDialog.Cancel>
                                     <AlertDialog.Action asChild>
                                       <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
-                                        console.log("calling deleteMedia!");
+                                        // console.log("calling deleteMedia!");
                                         onMediaSelected?.(selectedMedia.filter((selectedItem) => selectedItem.id != item.id));
                                         dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
                                       }}>Delete</Button>

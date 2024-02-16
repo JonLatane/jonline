@@ -108,7 +108,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }} />;
   }
-  console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
+  // console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
   const eventCardWidth = renderInColumns
     ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
     : undefined;

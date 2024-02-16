@@ -94,7 +94,7 @@ export function EventDetailsScreen() {
         setLoadingEvent(true);
         // console.log('loadEventByInstance', instanceId!)
         // setTimeout(() =>
-        console.log('loadEventByInstance', { ...accountOrServer, instanceId: serverInstanceId });
+        // console.log('loadEventByInstance', { ...accountOrServer, instanceId: serverInstanceId });
         dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
           .then((action) => {
             setTimeout(() => setLoadingEvent(false), 100);

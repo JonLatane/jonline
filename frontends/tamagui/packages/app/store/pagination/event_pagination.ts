@@ -62,7 +62,7 @@ function getGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter:
   const pageInstanceIds: string[] = ((groups.groupEventPages[groupId] ?? {})[timeFilter] ?? {})[page] ?? [];
   // debugger;
   const pageEvents = instancesToEvents(events, pageInstanceIds);
-  console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
+  // console.log('pageInstanceIds.length', pageInstanceIds.length, pageInstanceIds, 'pageEvents.length', pageEvents.length);
   return pageEvents;
 }
 export function getHasGroupEventsPage(state: RootState, group: FederatedGroup, timeFilter: string, page: number): boolean {

@@ -53,22 +53,22 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const requestedServerUrlParts = requestedServerUrl?.split(':');
   const requestedServerUrlValid = requestedServerUrlParts?.length == 2
     && ['http', 'https'].includes(requestedServerUrlParts[0]!);
-  console.log('BaseServerDetailsScreen', {
-    requestedServerUrl,
-    requestedServerUrlParts,
-    requestedServerUrlValid,
-  })
+  // console.log('BaseServerDetailsScreen', {
+  //   requestedServerUrl,
+  //   requestedServerUrlParts,
+  //   requestedServerUrlValid,
+  // })
   const requestedServer: JonlineServer | undefined = requestedServerUrlParts
     ? {
       host: requestedServerUrlParts[1]!,
       secure: requestedServerUrlParts[0]! == 'https',
     } : undefined;
-  console.log('BaseServerDetailsScreen', {
-    requestedServerUrl,
-    requestedServerUrlParts,
-    requestedServerUrlValid,
-    requestedServer
-  })
+  // console.log('BaseServerDetailsScreen', {
+  //   requestedServerUrl,
+  //   requestedServerUrlParts,
+  //   requestedServerUrlValid,
+  //   requestedServer
+  // })
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
   const savedServer: JonlineServer | undefined = useRootSelector((state: RootState) =>
@@ -90,7 +90,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const isAdmin = !!account && !!server &&
     serverID(account.server) == serverID(server) &&
     hasAdminPermission(account?.user);
-  console.log('isAdmin', isAdmin, account, server);
+  // console.log('isAdmin', isAdmin, account, server);
   const [updating, setUpdating] = useState(false);
   const [updated, setUpdated] = useState(false);
   const [updateError, setUpdateError] = useState('');
@@ -131,7 +131,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const serverFederatedServers = serverConfiguration?.federationInfo?.servers?.length ?? 0 > 0
     ? serverConfiguration?.federationInfo?.servers
     : serverRecommendedHosts?.map(host => ({ host, configuredByDefault: true, pinnedByDefault: true }));
-  console.log('serverFederatedServers', serverFederatedServers);
+  // console.log('serverFederatedServers', serverFederatedServers);
   const [federatedServers, setFederatedServers] = useState(serverFederatedServers);
   const [newRecommendedHostName, setNewRecommendedHostName] = useState('');
   const isNewRecommendedHostNameValid = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/.test(newRecommendedHostName)
@@ -263,7 +263,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         })
         .then(() => setTimeout(() => setUpdated(false), 3000));
     } catch (e) {
-      console.log(e);
+      console.error('Error loading client', e);
       setUpdateError(formatError(e.message));
     } finally {
       setUpdating(false);

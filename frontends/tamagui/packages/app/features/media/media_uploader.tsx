@@ -59,7 +59,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
       const xhr = new XMLHttpRequest();
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
-          console.log("upload progress:", event.loaded / event.total);
+          // console.log("upload progress:", event.loaded / event.total);
           setUploadProgress(0.9 * (event.loaded / event.total));
         }
       });

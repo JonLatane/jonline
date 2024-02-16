@@ -73,7 +73,7 @@ export function useEditableState<T>(uneditedValue: T, editingContext?: EditableC
       : uneditedValue != editedValue;
 
     if (changed) {
-      console.log('overwriting editedValue', editedValue, 'with uneditedValue', uneditedValue, arrayEquals(uneditedValue as Array<any>, editedValue as Array<any>))
+      // console.log('overwriting editedValue', editedValue, 'with uneditedValue', uneditedValue, arrayEquals(uneditedValue as Array<any>, editedValue as Array<any>))
       setEditedValue(uneditedValue);
     }
   }, [uneditedValue]);

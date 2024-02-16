@@ -38,7 +38,7 @@ export function UsernameDetailsScreen() {
       : undefined);
   // const [userId, setUserId] = useState(paramUserId);
   const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
-  console.log('pathUsername', pathUsername, inputUsername, 'server', server, 'user', user);
+  // console.log('pathUsername', pathUsername, inputUsername, 'server', server, 'user', user);
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);

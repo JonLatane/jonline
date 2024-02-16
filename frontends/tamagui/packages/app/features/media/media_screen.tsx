@@ -78,7 +78,7 @@ export function useMediaPage(userId: string | undefined, page: number, onLoaded?
     if (!loadingMedia && (mediaState.loadStatus == 'unloaded' || media == undefined)) {
       if (!accountOrServer.server) return;
 
-      console.log("Loading media...");
+      // console.log("Loading media...");
       setLoadingMedia(true);
       reloadMedia();
     } else if (mediaState.loadStatus == 'loaded' && loadingMedia) {

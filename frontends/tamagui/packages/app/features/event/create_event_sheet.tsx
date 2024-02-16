@@ -94,7 +94,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
     entityName='Event'
     {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid }}
     preview={(post, group) => {
-      console.log('previewEvent', previewEvent(post));
+      // console.log('previewEvent', previewEvent(post));
       return <EventCard event={previewEvent(post)} hideEditControls />;
     }}
     feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview hideEditControls />}

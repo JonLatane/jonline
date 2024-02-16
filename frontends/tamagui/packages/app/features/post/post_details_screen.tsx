@@ -31,8 +31,6 @@ export function usePostInteractionType(): [PostDetailsInteractionType, (interact
     }
   }
 
-  console.log('interactionTypeParam', interactionTypeParam, chatUI);
-
   switch (interactionTypeParam.replace(/[^a-z]/g, '')) {
     case 'post': return ['post', setInteractionType];
     case 'discussion': return ['discussion', setInteractionType];

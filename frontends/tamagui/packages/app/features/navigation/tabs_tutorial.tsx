@@ -65,25 +65,14 @@ export function TabsTutorial({ }) {
   const measuredGroupsButtonWidth = document.querySelector('#main-groups-button')?.clientWidth ?? 0;
   const groupsButtonWidth = Math.max(0, measuredGroupsButtonWidth);
 
-  // const forceUpdate = useForceUpdate();
-  // useEffect(() => {
-  //   setTimeout(() => {
-  //     console.log('forceUpdate', server?.host, document.querySelector('#home-button')?.clientWidth, document.querySelector('#main-groups-button')?.clientWidth);
-  //     forceUpdate();
-  //   }, 1000);
-  // }, [server ? serverID(server) : undefined]);
-
   const gotIt = () => {
-    console.log('got it')
     if (nextPhase()) {
-      console.log('moved to next phase, skipping hiding')
     } else if (!hidingStarted) {
       startHidingHelp();
     } else {
       dispatch(setShowHelp(false));
     }
   }
-
 
   const { darkMode, darkModeAuto } = useLocalConfiguration();
   const multiphase = !mediaQuery.gtXxxs;
@@ -102,13 +91,11 @@ export function TabsTutorial({ }) {
   function nextPhase(): boolean {
     if (multiphase) {
       if (showPhase1) {
-        console.log('moving to phase 2')
         setShowPhase1(false);
         setShowPhase2(true);
         return true;
       }
     }
-    console.log('no phase shift')
     return false;
   }
 

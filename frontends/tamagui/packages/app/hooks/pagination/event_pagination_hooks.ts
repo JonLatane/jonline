@@ -109,6 +109,6 @@ export function useGroupEventPages(
   const firstPageLoaded = getHasGroupEventsPage(state, group, timeFilter, 0);
   const hasMorePages = getHasMoreGroupEventPages(state.groups, group, timeFilter, throughPage);
 
-  console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
+  // console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

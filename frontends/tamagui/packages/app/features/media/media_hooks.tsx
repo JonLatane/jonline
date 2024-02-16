@@ -4,7 +4,7 @@ import { RootState, getMediaPage, loadMediaPage, useRootSelector } from 'app/sto
 import { useEffect, useState } from 'react';
 
 export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
-  console.log('useMediaPage');
+  // console.log('useMediaPage');
   const accountOrServer = useAccountOrServer();
   const mediaState = useRootSelector((state: RootState) => state.media);
   const [loadingMedia, setLoadingMedia] = useState(false);
