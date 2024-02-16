@@ -65,7 +65,9 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   function toggleExcludeCurrentServer() {
     const updatedValue = !excludeCurrentServer;
     dispatch(setExcludeCurrentServer(updatedValue));
-    dispatch(setShowPinnedServers(updatedValue));
+    if (updatedValue && !pinnedServers.some(s => s.pinned && s.serverId !== serverID(currentServer!))) {
+      dispatch(setShowPinnedServers(true));
+    }
     dispatch(pinServer({ serverId: serverID(currentServer!), pinned: !updatedValue, accountId }));
   };
   // console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
@@ -236,7 +238,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
         <Spinner size='large' color={navColor} scaleX={-1.7} scaleY={1.7} />
       </XStack>
       <XStack position='absolute' animation='standard' o={loadingPosts ? 1 : 0}
-        pointerEvents="none"  ml={-20} mt={12}>
+        pointerEvents="none" ml={-20} mt={12}>
         <Spinner size='large' color={primaryColor} scale={1.4} />
       </XStack>
       <XStack position='absolute' animation='standard' o={loadingEvents ? 1 : 0}
