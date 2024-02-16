@@ -777,7 +777,7 @@ export const EventCard: React.FC<Props> = ({
               : <YStack key='footer-base' zi={1000} width='100%'>
                 <AnimatePresence>
                   {shrinkPreviews && isPreview ? undefined :
-                    <YStack key='event-content' animation='standard' {...standardAnimation}
+                    <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                       px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
                       {primaryInstance
                         ?
@@ -838,89 +838,94 @@ export const EventCard: React.FC<Props> = ({
                       instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                   </YStack>
                   : undefined}
-                <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
-                  {showEdit
-                    ? editing
-                      ? <>
-                        <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
-                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                          Save
-                        </Button>
-                        <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
-                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                          Cancel
-                        </Button>
-                        <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
-                          disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                          {previewingEdits ? 'Edit' : 'Preview'}
-                        </Button>
-                      </>
-                      : <>
-                        <Button my='auto' key='edit-button' size='$2' icon={Edit}
-                          onPress={() => {
-                            setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
-                              setEditingInstance(selectedInstance)
-                            }
-                          }} transparent
-                          disabled={deleting} o={deleting ? 0.5 : 1}>
-                          Edit
-                        </Button>
+                <AnimatePresence>
+                  {shrinkPreviews && isPreview ? undefined
+                    : <YStack animation='standard' {...standardAnimation}>
+                      <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
+                        {showEdit
+                          ? editing
+                            ? <>
+                              <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                Save
+                              </Button>
+                              <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                Cancel
+                              </Button>
+                              <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                {previewingEdits ? 'Edit' : 'Preview'}
+                              </Button>
+                            </>
+                            : <>
+                              <Button my='auto' key='edit-button' size='$2' icon={Edit}
+                                onPress={() => {
+                                  setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
+                                    setEditingInstance(selectedInstance)
+                                  }
+                                }} transparent
+                                disabled={deleting} o={deleting ? 0.5 : 1}>
+                                Edit
+                              </Button>
 
-                        {deleteDialog}
-                      </>
-                    : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
+                              {deleteDialog}
+                            </>
+                          : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
 
-                  <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
-                    <XStack key='visibility-edit' my='auto' ml='auto'>
-                      <VisibilityPicker
-                        id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
-                        label='Event Visibility'
-                        visibility={visibility}
-                        onChange={setEditedVisibility}
-                        visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
-                        readOnly={!editing || previewingEdits}
-                      />
-                    </XStack>
-                    <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
-                      <ShareableToggle value={shareable}
-                        setter={setEditedShareable}
-                        readOnly={!editing || previewingEdits} />
-                    </XStack>
-                    {isPrimaryServer
-                      ? <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                        <GroupPostManager post={post} isVisible={isVisible}
-                          createViewHref={createGroupEventViewHref} />
-                      </XStack>
-                      : undefined}
-                  </XStack>
-                </XStack>
-
-                <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
-                  <AuthorInfo key='author-details' {...{ post, isVisible }} />
-
-                  <Anchor key='author-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                    <YStack key='author-anchor-root' h='100%'>
-                      <Button key='comments-link-button'
-                        opacity={isPreview ? 1 : 0.9}
-                        transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-                        disabled={true}
-                        marginVertical='auto'
-                        px='$2'
-                      >
-                        <XStack opacity={0.9}>
-                          <YStack marginVertical='auto' scale={0.75}>
-                            <Paragraph size="$1" ta='right'>
-                              {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                            </Paragraph>
-                            {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                              {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                            </Paragraph>}
-                          </YStack>
+                        <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                          <XStack key='visibility-edit' my='auto' ml='auto'>
+                            <VisibilityPicker
+                              id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                              label='Event Visibility'
+                              visibility={visibility}
+                              onChange={setEditedVisibility}
+                              visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                              readOnly={!editing || previewingEdits}
+                            />
+                          </XStack>
+                          <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
+                            <ShareableToggle value={shareable}
+                              setter={setEditedShareable}
+                              readOnly={!editing || previewingEdits} />
+                          </XStack>
+                          {isPrimaryServer
+                            ? <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
+                              <GroupPostManager post={post} isVisible={isVisible}
+                                createViewHref={createGroupEventViewHref} />
+                            </XStack>
+                            : undefined}
                         </XStack>
-                      </Button>
-                    </YStack>
-                  </Anchor>
-                </XStack>
+                      </XStack>
+
+                      <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
+                        <AuthorInfo key='author-details' {...{ post, isVisible }} />
+
+                        <Anchor key='author-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                          <YStack key='author-anchor-root' h='100%'>
+                            <Button key='comments-link-button'
+                              opacity={isPreview ? 1 : 0.9}
+                              transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                              disabled={true}
+                              marginVertical='auto'
+                              px='$2'
+                            >
+                              <XStack opacity={0.9}>
+                                <YStack marginVertical='auto' scale={0.75}>
+                                  <Paragraph size="$1" ta='right'>
+                                    {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                                  </Paragraph>
+                                  {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                    {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                                  </Paragraph>}
+                                </YStack>
+                              </XStack>
+                            </Button>
+                          </YStack>
+                        </Anchor>
+                      </XStack>
+                    </YStack>}
+                </AnimatePresence>
               </YStack>
             }
           </Card.Footer>

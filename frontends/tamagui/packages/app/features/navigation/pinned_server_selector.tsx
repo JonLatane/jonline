@@ -65,7 +65,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
   function toggleExcludeCurrentServer() {
     const updatedValue = !excludeCurrentServer;
     dispatch(setExcludeCurrentServer(updatedValue));
-    dispatch(setShowPinnedServers(true));
+    dispatch(setShowPinnedServers(updatedValue));
     dispatch(pinServer({ serverId: serverID(currentServer!), pinned: !updatedValue, accountId }));
   };
   // console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
