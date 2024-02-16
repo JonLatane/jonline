@@ -7,6 +7,7 @@ import moment, { Moment } from 'moment';
 import React, { useEffect, useReducer, useState } from 'react';
 import { useConversationContext } from './conversation_context';
 import PostCard from './post_card';
+import FlipMove from 'react-flip-move';
 
 interface ConversationManagerProps {
   post: FederatedPost;
@@ -202,69 +203,73 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     {/* <XStack w='100%'>
               <> */}
     <YStack w='100%' key='comments'>
-      {flattenedReplies.length == 0 ? <Heading size='$3' f={1} ta='center' mt='$10' mb='$8'>No replies yet.</Heading> : undefined}
-      {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
-        let stripeColor = navColor;
-        const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
-        const showParentPreview = chatUI && parentPost?.id != post?.id
-          && parentPost?.id != replyAboveCurrent?.id
-          && parentPost?.id != replyAboveCurrent?.replyToPostId;
-        const hideTopMargin = chatUI && parentPost?.id != post?.id && (parentPost?.id == replyAboveCurrent?.id || parentPost?.id == replyAboveCurrent?.replyToPostId);
-        const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`}
-          // w='100%' f={1}
-          mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == post?.id) ? '$3' : 0}
-          animation='standard'
-          opacity={1}
-          scale={1}
-          y={0}
-          enterStyle={{
-            // scale: 1.5,
-            y: expandAnimation ? -50 : 50,
-            opacity: 0,
-          }}
-          exitStyle={{
-            // scale: 1.5,
-            // y: 50,
-            opacity: 0,
-          }}
-        >
-          {postIdPath.slice(1).map((_, index) => {
-            stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
-            return <YStack key={`stripes-index-${index}`} w={7} bg={stripeColor} />
-          })}
-          <XStack key={`comment-postid-${reply.id}-container`} f={1}>
-            <PostCard key={`comment-postid-${reply.id}`}
-              post={reply} replyPostIdPath={postIdPath}
-              selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
-              collapseReplies={collapsedReplies.has(reply.id)}
-              previewParent={showParentPreview ? parentPost : undefined}
-              onLoadReplies={() => setExpandAnimation(true)}
-              toggleCollapseReplies={() => {
-                setExpandAnimation(collapsedReplies.has(reply.id));
-                toggleCollapseReplies(reply.id);
-              }}
-              onPressReply={() => {
-                if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
-                  setReplyPostIdPath([rootPostId!]);
-                } else {
-                  setReplyPostIdPath(postIdPath);
-                }
-              }}
-              onEditingChange={editHandler(reply.id)}
-              onPressParentPreview={() => {
-                const parentPostIdPath = postIdPath.slice(0, -1);
-                if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
-                  setReplyPostIdPath([rootPostId!]);
-                } else {
-                  setReplyPostIdPath(parentPostIdPath);
-                }
-              }}
-            />
-          </XStack>
-        </XStack>;
-        replyAboveCurrent = reply;
-        return result;
-      })}
+      <FlipMove>
+        {flattenedReplies.length == 0 ? <Heading size='$3' f={1} ta='center' mt='$10' mb='$8'>No replies yet.</Heading> : undefined}
+        {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
+          let stripeColor = navColor;
+          const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
+          const showParentPreview = chatUI && parentPost?.id != post?.id
+            && parentPost?.id != replyAboveCurrent?.id
+            && parentPost?.id != replyAboveCurrent?.replyToPostId;
+          const hideTopMargin = chatUI && parentPost?.id != post?.id && (parentPost?.id == replyAboveCurrent?.id || parentPost?.id == replyAboveCurrent?.replyToPostId);
+          const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`}
+            // w='100%' f={1}
+            mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == post?.id) ? '$3' : 0}
+            // animation='standard'
+            // opacity={1}
+            // scale={1}
+            // y={0}
+            // enterStyle={{
+            //   // scale: 1.5,
+            //   y: expandAnimation ? -50 : 50,
+            //   opacity: 0,
+            // }}
+            // exitStyle={{
+            //   // scale: 1.5,
+            //   // y: 50,
+            //   opacity: 0,
+            // }}
+          >
+            {postIdPath.slice(1).map((_, index) => {
+              stripeColor = (stripeColor == primaryColor) ? navColor : primaryColor;
+              return <YStack key={`stripes-index-${index}`} w={7} bg={stripeColor} />
+            })}
+            <XStack key={`comment-postid-${reply.id}-container`} f={1}>
+              <PostCard key={`comment-postid-${reply.id}`}
+                post={reply} replyPostIdPath={postIdPath}
+                selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
+                collapseReplies={collapsedReplies.has(reply.id)}
+                previewParent={showParentPreview ? parentPost : undefined}
+                onLoadReplies={() => setExpandAnimation(true)}
+                toggleCollapseReplies={() => {
+                  setExpandAnimation(collapsedReplies.has(reply.id));
+                  toggleCollapseReplies(reply.id);
+                }}
+                onPressReply={() => {
+                  if (replyPostIdPath[replyPostIdPath.length - 1] == postIdPath[postIdPath.length - 1]) {
+                    setReplyPostIdPath([rootPostId!]);
+                  } else {
+                    setReplyPostIdPath(postIdPath);
+                  }
+                }}
+                onEditingChange={editHandler(reply.id)}
+                onPressParentPreview={() => {
+                  const parentPostIdPath = postIdPath.slice(0, -1);
+                  if (replyPostIdPath[replyPostIdPath.length - 1] == parentPostIdPath[parentPostIdPath.length - 1]) {
+                    setReplyPostIdPath([rootPostId!]);
+                  } else {
+                    setReplyPostIdPath(parentPostIdPath);
+                  }
+                }}
+              />
+            </XStack>
+          </XStack>;
+          replyAboveCurrent = reply;
+          return <div key={`post-reply-${reply.id}`}>
+            {result}
+          </div>;
+        })}
+      </FlipMove>
       <YStack key='scrollPreserver' h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} ></YStack>
     </YStack>
   </YStack>;
