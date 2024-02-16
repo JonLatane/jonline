@@ -150,11 +150,11 @@ export function EventDetailsScreen() {
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
                 transparent={interactionType !== 'post'}
                 onPress={() => setInteractionType('post')} mr='$2'>
-                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>
+                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Event</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
-              <Heading size='$2'>Post Details</Heading>
+              <Heading size='$2'>Event Details</Heading>
             </Tooltip.Content>
           </Tooltip>
 
