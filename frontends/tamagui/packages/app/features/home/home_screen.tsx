@@ -115,7 +115,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </XStack>
         {/* : undefined} */}
         {showEventsOnLatest ?
-          (eventsLoaded || allEvents.length > 0) ?
+          (eventsLoaded || allEvents.length > 0 || loadingEvents) ?
             <YStack key='latest-events'
               w='100%'
               // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
@@ -128,7 +128,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
                   <FlipMove style={{ display: 'flex' }}>
 
-                    {allEvents.length == 0
+                    {allEvents.length == 0 && !loadingEvents
                       ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
                         <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
                           <Heading size='$5' ta='center' mb='$3'>No events found.</Heading>
@@ -142,6 +142,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                           <EventCard event={event} isPreview horizontal xs />
                         </XStack>
                       </span>)}
+                    {loadingEvents && allEvents.length == 0
+                      ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                        <Spinner size='large' color={navColor} />
+                      </XStack>
+                      : undefined}
                     <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                       <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
                         <YStack ai='center' py='$3' jc='center'>
@@ -155,8 +160,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 </XStack>
               </ScrollView>
             </YStack>
-            : loadingEvents
-              ? <Spinner color={navColor} />
+            // : loadingEvents
+            //   ? <Spinner color={navColor} />
               : undefined
           : undefined}
         {/* </AnimatePresence> */}
