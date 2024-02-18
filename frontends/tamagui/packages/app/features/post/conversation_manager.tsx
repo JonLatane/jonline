@@ -210,7 +210,20 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
               <> */}
     <YStack w='100%' key='comments'>
       <FlipMove>
-        {flattenedReplies.length == 0 ? <Heading size='$3' f={1} ta='center' mt='$10' mb='$8'>No replies yet.</Heading> : undefined}
+        {flattenedReplies.length == 0
+          ? <div key='no-replies' style={{
+            // marginLeft: window.innerWidth / 2,
+            // marginLeft: 'auto', marginRight: 'auto',
+            display: 'flex',
+            width: '100%',
+            marginTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
+            marginBottom: //interactionType === 'post' ? 100 : 
+            window.innerHeight / 2,
+            // transform: `translateX(-50%)`,
+            // margin: `${window.innerWidth / 2 - 20} ${window.innerHeight / 2 - 20}`
+          }}>
+            <Heading size='$3' mx='auto'>No replies yet.</Heading>
+          </div> : undefined}
         {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
           let stripeColor = navColor;
           const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
@@ -276,7 +289,10 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
           </div>;
         })}
       </FlipMove>
-      <YStack key='scrollPreserver' h={showScrollPreserver ? 100000 : chatUI ? 0 : 150} ></YStack>
+      <YStack key='scrollPreserver' h={showScrollPreserver ? 100000
+        : 0
+        // : chatUI ? 0 : 150
+      } ></YStack>
     </YStack>
   </YStack>;
 }
