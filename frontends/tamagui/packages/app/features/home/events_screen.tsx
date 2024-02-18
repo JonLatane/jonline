@@ -129,7 +129,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // const [bigCalendar, setBigCalendar] = useState(false);
 
   const dispatch = useAppDispatch();
-  const { showBigCalendar: bigCalendar } = useLocalConfiguration();
+  const { showBigCalendar: bigCalendar, showPinnedServers } = useLocalConfiguration();
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
     (result, server: JonlineServer) => {
@@ -140,6 +140,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       return result;
     }, {}
   ));
+
+  const [_showPinnedServers, _setShowPinnedServers] = useState(showPinnedServers);
+  useEffect(() => {
+    _setShowPinnedServers(showPinnedServers);
+  }, [showPinnedServers]);
 
   return (
     <TabsNavigation
@@ -183,22 +188,38 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       }
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" mt='$3' px='$3' maw={maxWidth}>
+      <YStack f={1} w='100%' jc="center" ai="center" mt={bigCalendar ? 0 : '$3'} px='$3' maw={maxWidth}>
         <FlipMove>
           {bigCalendar ?
             // @ts-nocheck
-            <YStack key='calendar-rendering' mx='$1' w='100%'
-              backgroundColor={false ? 'white' : undefined} borderRadius='$3'>
+            <YStack key='calendar-rendering' mx='$1'
+              //  w='100%'
+
+              width={window.innerWidth}
+              height={window.innerHeight - navigationHeight - 85}
+              px='$2'
+
+              backgroundColor={'white'}
+              borderRadius='$3'>
 
               <Text fontFamily='$body' color='black' width='100%'>
                 <div
                   style={{
-                    width: window.innerWidth,
-                    height: window.innerHeight - navigationHeight - 230
+                    width: window.innerWidth - 10,
+                    height: window.innerHeight - navigationHeight - 85
                     // height: '100%'
                   }} >
                   <FullCalendar
                     selectable
+                    headerToolbar={{
+                      start: 'prev', end: 'next',
+                      center: 'title',       
+                    }}
+                    footerToolbar={{
+                      start: 'today',
+                      center: '',
+                      end: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+                    }}
                     plugins={[
                       daygridPlugin,
                       timegridPlugin,
@@ -313,7 +334,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               </YStack>}
         </FlipMove>
 
-        {showScrollPreserver ? <YStack h={100000} /> : undefined}
+        {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}
       </YStack >
     </TabsNavigation >
   )
