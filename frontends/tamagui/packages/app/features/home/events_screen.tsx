@@ -10,7 +10,7 @@ import listPlugin from "@fullcalendar/list";
 
 
 import { AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
-import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
@@ -141,6 +141,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   ));
 
   const navigationHeight = useTabsNavigationHeight();
+  const serializedTimeFilter = serializeTimeFilter(timeFilter);
 
   return (
     <TabsNavigation
@@ -188,7 +189,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         <FlipMove>
           {bigCalendar ?
             // @ts-nocheck
-            <YStack key='calendar-rendering' mx='$1'
+            <YStack key={`calendar-rendering-${serializedTimeFilter}-${allEvents.length}`} mx='$1'
               //  w='100%'
 
               width={window.innerWidth}
@@ -206,10 +207,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     // height: '100%'
                   }} >
                   <FullCalendar
+                    key={`calendar-rendering-${serializedTimeFilter}-${allEvents.length}`}
                     selectable
                     headerToolbar={{
                       start: 'prev', end: 'next',
-                      center: 'title',       
+                      center: 'title',
                     }}
                     footerToolbar={{
                       start: 'today',
