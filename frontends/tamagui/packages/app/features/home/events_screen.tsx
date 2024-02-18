@@ -21,7 +21,7 @@ import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation } from '../navigation/tabs_navigation';
+import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
@@ -52,7 +52,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // }, [endsAfter]);
 
 
-  const navigationHeight = document.getElementById('jonline-top-navigation')?.clientHeight ?? 0;
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   // console.log('timeFilter', timeFilter);
   useEffect(() => {
@@ -141,10 +140,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     }, {}
   ));
 
-  const [_showPinnedServers, _setShowPinnedServers] = useState(showPinnedServers);
-  useEffect(() => {
-    _setShowPinnedServers(showPinnedServers);
-  }, [showPinnedServers]);
+  const navigationHeight = useTabsNavigationHeight();
 
   return (
     <TabsNavigation

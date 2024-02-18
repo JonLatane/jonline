@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
@@ -103,35 +103,35 @@ export function PinnedServerSelector({
     {/* <AnimatePresence> */}
     {show && !disabled ? <>
       <XStack key='pinned-server-toggle-row'>
-        <FlipMove style={{ width: '100%', display: 'flex' }}>
-          {simplified
-            ? undefined
-            : <>
-              <Button key='pinned-server-toggle' py='$1'
-                pl='$2' pr='$1'
-                h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-                <XStack mr='auto' maw='100%'>
-                  <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                    {description}
-                  </Paragraph>
-                  <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-                    <ChevronRight size='$1' />
-                  </XStack>
+        {simplified
+          ? undefined
+          : <>
+            <Button key='pinned-server-toggle' py='$1'
+              pl='$2' pr='$1'
+              h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+              <XStack mr='auto' maw='100%'>
+                <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+                  {description}
+                </Paragraph>
+                <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+                  <ChevronRight size='$1' />
                 </XStack>
-              </Button>
-              <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
-                onPress={toggleExcludeCurrentServer}>
-                <XStack ml='auto' gap='$2'>
-                  {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
-                  <Paragraph my='auto' size='$1'>
-                    Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
-                  </Paragraph>
-                </XStack>
-              </Button>
+              </XStack>
+            </Button>
+            <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
+              onPress={toggleExcludeCurrentServer}>
+              <XStack ml='auto' gap='$2'>
+                {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
+                <Paragraph my='auto' size='$1'>
+                  Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
+                </Paragraph>
+              </XStack>
+            </Button>
 
+            <AnimatePresence>
               {showShrinkPreviews
                 ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
-                  // icon={shrinkPreviews ? <Maximize2 size='$1' /> : <Minimize2 size='$1' />}
+                  animation='standard' {...reverseStandardAnimation}
                   onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
                   <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
                     <Maximize2 size='$1' />
@@ -141,9 +141,9 @@ export function PinnedServerSelector({
                   </XStack>
                 </Button>
                 : undefined}
-            </>
-          }
-        </FlipMove>
+            </AnimatePresence>
+          </>
+        }
       </XStack>
       {showPinnedServers || simplified && !disabled
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>

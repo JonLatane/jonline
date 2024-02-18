@@ -2,9 +2,9 @@ import { WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, useMedia, useWindowDimensions } from "@jonline/ui";
 import { ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { GroupContextProvider } from 'app/contexts';
-import { useAppDispatch, useServer } from "app/hooks";
+import { useAppDispatch, useLocalConfiguration, useServer } from "app/hooks";
 import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
@@ -34,6 +34,18 @@ export type TabsNavigationProps = {
 };
 
 // export const tabNavBaseHeight = 64;
+
+export const useTabsNavigationHeight = () => {
+  const navigationHeight = document.getElementById('jonline-top-navigation')?.clientHeight ?? 0;
+
+  const { showPinnedServers } = useLocalConfiguration();
+  const [_showPinnedServers, _setShowPinnedServers] = useState(showPinnedServers);
+  useEffect(() => {
+    _setShowPinnedServers(showPinnedServers);
+  }, [showPinnedServers]);
+
+  return navigationHeight;
+}
 
 export function TabsNavigation({
   children,
