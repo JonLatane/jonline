@@ -1,5 +1,5 @@
 import { EventListingType, PostListingType } from '@jonline/api';
-import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
@@ -93,9 +93,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
-        {/* <AnimatePresence> */}
-        {/* {(eventsLoaded || postsLoaded) || allEvents.length > 0
-            ?  */}
+
         <XStack key='latest-events-header' w='100%' px='$3' ai='center'>
           <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
             <Heading size='$6'>Upcoming Events</Heading>
@@ -113,9 +111,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </Button>
             : undefined} */}
         </XStack>
-        {/* : undefined} */}
-        {showEventsOnLatest ?
-          (eventsLoaded || allEvents.length > 0 || loadingEvents) ?
+        <AnimatePresence>
+          {showEventsOnLatest &&
+            (eventsLoaded || allEvents.length > 0 || loadingEvents) ?
             <YStack key='latest-events'
               w='100%'
               // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
@@ -160,10 +158,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 </XStack>
               </ScrollView>
             </YStack>
-            // : loadingEvents
-            //   ? <Spinner color={navColor} />
-              : undefined
-          : undefined}
+            : undefined}
+        </AnimatePresence>
         {/* </AnimatePresence> */}
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
