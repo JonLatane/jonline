@@ -57,6 +57,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       selectedGroup={selectedGroup}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/posts`}
       withServerPinning
+      showShrinkPreviews
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts />}
       loading={loadingPosts}
     >

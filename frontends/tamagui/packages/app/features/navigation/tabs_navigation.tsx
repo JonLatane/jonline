@@ -30,6 +30,7 @@ export type TabsNavigationProps = {
   topChrome?: React.ReactNode;
   bottomChrome?: React.ReactNode;
   loading?: boolean;
+  showShrinkPreviews?: boolean;
 };
 
 // export const tabNavBaseHeight = 64;
@@ -47,7 +48,8 @@ export function TabsNavigation({
   primaryEntity,
   topChrome,
   bottomChrome,
-  loading
+  loading,
+  showShrinkPreviews
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const currentServer = useServer();
@@ -114,7 +116,7 @@ export function TabsNavigation({
         backgroundColor={bgColor}
         minHeight={window.innerHeight} >
         <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: hideNavigation ? 'none' : undefined }} className='blur'>
-          <YStack w='100%'>
+          <YStack w='100%' id='jonline-top-navigation'>
             {hideNavigation ? undefined : <XStack id='nav-main'
               backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
               {/* <XStack w={5} /> */}
@@ -201,7 +203,11 @@ export function TabsNavigation({
               </YStack> */}
 
             <XStack w='100%' id='nav-pinned-server-selector'>
-              <PinnedServerSelector show={withServerPinning && !selectedGroup} affectsNavigation transparent />
+              <PinnedServerSelector
+                show={withServerPinning && !selectedGroup}
+                showShrinkPreviews={showShrinkPreviews}
+                affectsNavigation
+                transparent />
             </XStack>
 
             {topChrome}
@@ -228,7 +234,7 @@ export function TabsNavigation({
         </YStack>
 
         {bottomChrome
-          ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }}>
+          ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }} >
             {bottomChrome}
           </StickyBox>
           : undefined}

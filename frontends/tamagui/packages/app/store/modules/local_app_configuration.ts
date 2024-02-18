@@ -36,6 +36,7 @@ export type LocalAppConfiguration = {
   fancyPostBackgrounds: boolean;
   shrinkPreviews: boolean;
   dateTimeRenderer?: DateTimeRenderer;
+  showBigCalendar: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -61,7 +62,8 @@ const initialState: LocalAppConfiguration = {
   autoHideNavigation: false,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
-  dateTimeRenderer: undefined
+  dateTimeRenderer: undefined,
+  showBigCalendar: false,
 };
 
 setTimeout(async () => {
@@ -153,6 +155,9 @@ export const localAppSlice = createSlice({
     },
     setDateTimeRenderer: (state, action: PayloadAction<DateTimeRenderer>) => {
       state.dateTimeRenderer = action.payload;
+    },
+    setShowBigCalendar: (state, action: PayloadAction<boolean>) => {
+      state.showBigCalendar = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -164,7 +169,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
-  setDateTimeRenderer
+  setDateTimeRenderer, setShowBigCalendar
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

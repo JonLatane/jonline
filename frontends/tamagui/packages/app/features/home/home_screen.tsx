@@ -88,6 +88,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       customHomeAction={selectedGroup ? undefined : onHomePressed}
       selectedGroup={selectedGroup}
       withServerPinning
+      showShrinkPreviews
       loading={loadingPosts || loadingEvents}
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
     >

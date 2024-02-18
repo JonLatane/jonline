@@ -8,6 +8,7 @@ import { AddAccountSheet } from "../accounts/add_account_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
+import FlipMove from 'react-flip-move';
 
 
 export type PinnedServerSelectorProps = {
@@ -16,8 +17,16 @@ export type PinnedServerSelectorProps = {
   affectsNavigation?: boolean;
   pagesStatuses?: FederatedPagesStatus[];
   simplified?: boolean;
+  showShrinkPreviews?: boolean;
 };
-export function PinnedServerSelector({ show, transparent, affectsNavigation, pagesStatuses, simplified }: PinnedServerSelectorProps) {
+export function PinnedServerSelector({
+  show,
+  transparent,
+  affectsNavigation,
+  pagesStatuses,
+  simplified,
+  showShrinkPreviews
+}: PinnedServerSelectorProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
@@ -93,41 +102,49 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
     {/* </AnimatePresence> */}
     {/* <AnimatePresence> */}
     {show && !disabled ? <>
-      {simplified
-        ? undefined
-        : <XStack key='pinned-server-toggle-row'>
-          <Button key='pinned-server-toggle' py='$1'
-            pl='$2' pr='$1'
-            h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-            <XStack mr='auto' maw='100%'>
-              <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                {description}
-              </Paragraph>
-              <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-                <ChevronRight size='$1' />
-              </XStack>
-            </XStack>
-          </Button>
-          <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
-            onPress={toggleExcludeCurrentServer}>
-            <XStack ml='auto' gap='$2'>
-              {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
-              <Paragraph my='auto' size='$1'>
-                Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
-              </Paragraph>
-            </XStack>
-          </Button>
-          <Button key='shrink-previews-button' py='$1' h='auto' transparent
-            // icon={shrinkPreviews ? <Maximize2 size='$1' /> : <Minimize2 size='$1' />}
-            onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
-            <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
-              <Maximize2 size='$1' />
-            </XStack>
-            <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
-              <Minimize2 size='$1' />
-            </XStack>
-          </Button>
-        </XStack>}
+      <XStack key='pinned-server-toggle-row'>
+        <FlipMove style={{ width: '100%', display: 'flex' }}>
+          {simplified
+            ? undefined
+            : <>
+              <Button key='pinned-server-toggle' py='$1'
+                pl='$2' pr='$1'
+                h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+                <XStack mr='auto' maw='100%'>
+                  <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+                    {description}
+                  </Paragraph>
+                  <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+                    <ChevronRight size='$1' />
+                  </XStack>
+                </XStack>
+              </Button>
+              <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
+                onPress={toggleExcludeCurrentServer}>
+                <XStack ml='auto' gap='$2'>
+                  {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
+                  <Paragraph my='auto' size='$1'>
+                    Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
+                  </Paragraph>
+                </XStack>
+              </Button>
+
+              {showShrinkPreviews
+                ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
+                  // icon={shrinkPreviews ? <Maximize2 size='$1' /> : <Minimize2 size='$1' />}
+                  onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
+                  <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
+                    <Maximize2 size='$1' />
+                  </XStack>
+                  <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
+                    <Minimize2 size='$1' />
+                  </XStack>
+                </Button>
+                : undefined}
+            </>
+          }
+        </FlipMove>
+      </XStack>
       {showPinnedServers || simplified && !disabled
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
@@ -193,6 +210,7 @@ export function PinnedServerSelector({ show, transparent, affectsNavigation, pag
           </ScrollView>
         </YStack>
         : undefined}
+
     </> : undefined}
     {/* </AnimatePresence> */}
   </YStack >;

@@ -1,13 +1,20 @@
 import { EventListingType, TimeFilter } from '@jonline/api';
-import { Calendar, momentLocalizer } from 'react-big-calendar'
+import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import FullCalendar from "@fullcalendar/react";
+import interactionPlugin from "@fullcalendar/interaction";
+import daygridPlugin from "@fullcalendar/daygrid";
+import timegridPlugin from "@fullcalendar/timegrid";
+import multimonthPlugin from "@fullcalendar/multimonth";
+import listPlugin from "@fullcalendar/list";
+
 
 import { AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
-import { RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
-import { useEventPages, usePaginatedRendering } from 'app/hooks';
+import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import FlipMove from 'react-flip-move';
@@ -32,7 +39,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { server: currentServer, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
@@ -49,7 +56,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   // console.log('timeFilter', timeFilter);
   useEffect(() => {
-    const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
+    const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     setDocumentTitle(`Events | ${title}`)
   });
@@ -119,7 +126,20 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     : undefined;
   const maxWidth = 2000;
   // useEffect(() => { }, [pinnedServersHeight]);
-  const [bigCalendar, setBigCalendar] = useState(false);
+  // const [bigCalendar, setBigCalendar] = useState(false);
+
+  const dispatch = useAppDispatch();
+  const { showBigCalendar: bigCalendar } = useLocalConfiguration();
+  const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
+  const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
+    (result, server: JonlineServer) => {
+      if (server.serverConfiguration?.serverInfo?.colors?.primary) {
+        result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
+
+      }
+      return result;
+    }, {}
+  ));
 
   return (
     <TabsNavigation
@@ -127,6 +147,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       selectedGroup={selectedGroup}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/events`}
       withServerPinning
+      showShrinkPreviews={!bigCalendar}
       loading={loadingEvents}
       topChrome={
         <YStack w='100%' px='$2' key='filter-toolbar'>
@@ -166,9 +187,59 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         <FlipMove>
           {bigCalendar ?
             // @ts-nocheck
-            <YStack key='calendar-rendering' mx='$1' w='100%' backgroundColor='white' borderRadius='$3'>
+            <YStack key='calendar-rendering' mx='$1' w='100%'
+              backgroundColor={false ? 'white' : undefined} borderRadius='$3'>
+
               <Text fontFamily='$body' color='black' width='100%'>
-                <Calendar localizer={localizer}
+                <div
+                  style={{
+                    width: window.innerWidth,
+                    height: window.innerHeight - navigationHeight - 230
+                    // height: '100%'
+                  }} >
+                  <FullCalendar
+                    selectable
+                    plugins={[
+                      daygridPlugin,
+                      timegridPlugin,
+                      multimonthPlugin,
+                      listPlugin,
+                      interactionPlugin
+                    ]}
+                    height='100%'
+                    events={allEvents.map((event) => {
+                      return {
+                        id: federateId(event.instances[0]?.id ?? '', event.serverHost),
+                        // id: event.instances[0]?.id ?? '',
+                        // serverHost: event.serverHost,
+                        title: event.post?.title,
+                        color: serverColors[event.serverHost],
+                        start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
+                        end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+                      }
+                    })}
+                    eventClick={(modelEvent) => {
+                      const { id, serverHost } = parseFederatedId(modelEvent.event.id);
+                      const isPrimaryServer = serverHost === currentServer?.host;
+                      const detailsLinkId = !isPrimaryServer
+                        ? federateId(id, serverHost)
+                        : id;
+                      const groupLinkId = selectedGroup ?
+                        (selectedGroup?.serverHost !== currentServer?.host
+                          ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
+                          : selectedGroup.shortname)
+                        : undefined;
+                      const href = selectedGroup
+                        ? `/g/${groupLinkId}/e/${detailsLinkId}`
+                        : `/event/${detailsLinkId}`;
+                      window.location.pathname = href;
+                    }}
+                  />
+                </div>
+              </Text>
+              {/* <Text fontFamily='$body' color='black' width='100%'>
+
+                <BigCalendar localizer={localizer}
                   // events={[{title: 'test', start: new Date(), end: new Date()}]}
                   events={allEvents.map((event) => {
                     return {
@@ -181,7 +252,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   startAccessor="start"
                   endAccessor="end"
                   style={{ width: window.innerWidth, height: window.innerHeight - navigationHeight - 230}} />
-              </Text>
+              </Text> */}
             </YStack>
             // @ts-nocheck
             : renderInColumns ?
@@ -203,7 +274,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         : undefined
                       : undefined}
                     {paginatedEvents.map((event) => {
-                      return <span key={federateId(event.instances[0]?.id ?? '', server)}>
+                      return <span key={federateId(event.instances[0]?.id ?? '', currentServer)}>
                         <XStack w={eventCardWidth}
                           mx='$1' px='$1'>
                           <EventCard event={event} isPreview />
@@ -233,7 +304,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   {paginatedEvents.map((event) => {
                     return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                       <XStack w='100%'>
-                        <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', server)} isPreview />
+                        <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
                       </XStack>
                     </div>
                   })}
@@ -243,8 +314,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         </FlipMove>
 
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
-      </YStack>
-    </TabsNavigation>
+      </YStack >
+    </TabsNavigation >
   )
 }
 

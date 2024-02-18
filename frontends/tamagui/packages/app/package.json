@@ -7,6 +7,13 @@
     "*.css"
   ],
   "dependencies": {
+    "@fullcalendar/core": "^6.1.10",
+    "@fullcalendar/daygrid": "^6.1.10",
+    "@fullcalendar/interaction": "^6.1.10",
+    "@fullcalendar/list": "^6.1.10",
+    "@fullcalendar/multimonth": "^6.1.10",
+    "@fullcalendar/react": "^6.1.10",
+    "@fullcalendar/timegrid": "^6.1.10",
     "@improbable-eng/grpc-web": "^0.15.0",
     "@improbable-eng/grpc-web-react-native-transport": "^0.15.0",
     "@jonline/ui": "*",

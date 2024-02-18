@@ -74,6 +74,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       appSubsection={listingType == UserListingType.FOLLOW_REQUESTS ? AppSubsection.FOLLOW_REQUESTS : undefined}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/members`}
       withServerPinning
+      showShrinkPreviews
       loading={loadingUsers}
       topChrome={
         <YStack w='100%' px='$2' py='$2' key='filter-toolbar'>
