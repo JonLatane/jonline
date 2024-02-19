@@ -9,7 +9,7 @@ import multimonthPlugin from "@fullcalendar/multimonth";
 import listPlugin from "@fullcalendar/list";
 
 
-import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation } from '@jonline/ui';
+import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation, useTheme } from '@jonline/ui';
 import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
@@ -39,7 +39,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
-  const { server: currentServer, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { server: currentServer, primaryColor, primaryTextColor, navColor, navTextColor, darkMode } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
@@ -283,7 +283,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 height={bigCalHeight}
                 p='$2'
 
-                backgroundColor={'white'}
+                backgroundColor='whitesmoke'
                 borderRadius='$3'>
 
                 <Text fontFamily='$body' color='black' width='100%'>
