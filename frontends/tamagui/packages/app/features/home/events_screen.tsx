@@ -59,49 +59,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // }, [endsAfter]);
 
 
-  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
-  // console.log('timeFilter', timeFilter);
-  useEffect(() => {
-    const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
-    const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    setDocumentTitle(`Events | ${title}`)
-  });
-
-  const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
-    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
-
-  const allEvents = allEventsUnfiltered.filter((e) =>
-    !searchText?.trim() || e.post?.title?.toLowerCase().includes(searchText.toLowerCase()));
-
-  const renderInColumns = mediaQuery.gtXs;
-  const numberOfColumns = mediaQuery.gtXxxl ? 6
-    : mediaQuery.gtXl ? 5
-      : mediaQuery.gtLg ? 4
-        : mediaQuery.gtMd ? 3
-          : 2;
-  const pagination = usePaginatedRendering(allEvents, renderInColumns
-    ? mediaQuery.gtXxxl ? 12
-      : mediaQuery.gtXl ? 10
-        : mediaQuery.gtLg ? 8 : 6
-    : 7);
-
-  const paginatedEvents = pagination.results;
-
-
-  useEffect(() => {
-    if (firstPageLoaded) {
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
-  }, [firstPageLoaded]);
-  useEffect(pagination.reset, [queryEndsAfter]);
-
-  // const [displayMode, setDisplayMode] = useState(
-  //   queryEndsAfter === undefined
-  //     ? 'upcoming' as EventDisplayMode
-  //     : moment(queryEndsAfter).unix() === 0
-  //       ? 'all' as EventDisplayMode
-  //       : 'upcoming' as EventDisplayMode
-  // );
   const displayMode = queryEndsAfter === undefined
     ? 'upcoming' as EventDisplayMode
     : moment(queryEndsAfter).unix() === 0
@@ -141,29 +98,45 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         break;
     }
   };
-  // useEffect(() => {
-  //   switch (displayMode) {
-  //     case 'upcoming':
-  //       if (queryEndsAfter != undefined) {
-  //         // console.log('setting ends after to undefined');
-  //         setQueryEndsAfter(undefined);
-  //       }
-  //       break;
-  //     case 'all':
-  //       if (queryEndsAfter != moment(0).toISOString(true)) {
-  //         // console.log('setting ends after to 0');
-  //         setQueryEndsAfter(moment(0).toISOString(true));
-  //       }
-  //       break;
-  //     case 'filtered':
-  //       if (queryEndsAfter === undefined) {
-  //         // console.log('setting ends after to page load time');
-  //         setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
-  //       }
-  //       break;
-  //   }
+  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  // console.log('timeFilter', timeFilter);
+  useEffect(() => {
+    const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
+    const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
+    setDocumentTitle(`Events | ${title}`)
+  });
 
-  // }, [displayMode, queryEndsAfter]);
+  const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
+
+  const allEvents = allEventsUnfiltered?.filter((e) =>
+    displayMode === 'filtered'
+      ? !searchText?.trim()
+      || e.post?.title?.toLowerCase().includes(searchText.toLowerCase())
+      : true) ?? [];
+
+  const renderInColumns = mediaQuery.gtXs;
+  const numberOfColumns = mediaQuery.gtXxxl ? 6
+    : mediaQuery.gtXl ? 5
+      : mediaQuery.gtLg ? 4
+        : mediaQuery.gtMd ? 3
+          : 2;
+  const pagination = usePaginatedRendering(allEvents, renderInColumns
+    ? mediaQuery.gtXxxl ? 12
+      : mediaQuery.gtXl ? 10
+        : mediaQuery.gtLg ? 8 : 6
+    : 7);
+
+  const paginatedEvents = pagination.results;
+
+
+  useEffect(() => {
+    if (firstPageLoaded) {
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
+  }, [firstPageLoaded]);
+
+  useEffect(pagination.reset, [queryEndsAfter]);
 
   function displayModeButton(associatedDisplayMode: EventDisplayMode, title: string) {
     return <SubnavButton title={title}
