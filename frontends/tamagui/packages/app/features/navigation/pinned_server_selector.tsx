@@ -149,16 +149,17 @@ export function PinnedServerSelector({
         ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
           <ScrollView key='pinned-server-scroller' w='100%' horizontal>
             <XStack mx='$3' my='$1' py='$1' ai='center' gap='$2' key='available-servers'>
-              <AnimatePresence>
+              <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
                 {availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                  return <XStack key={serverID(server)} animation='standard' {...standardHorizontalAnimation} mr='$2'>
+                  return <XStack key={`server-${server.host}`} //animation='standard' {...standardHorizontalAnimation}
+                    mr='$2'>
                     <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
                   </XStack>;
                 })}
 
                 {recommendedServerHosts.length > 0
-                  ? <XStack key='recommended-servers-button' animation='standard' {...standardAnimation}>
+                  ? <XStack key='recommended-servers-button' /*animation='standard' {...standardAnimation}*/>
                     <Button h='auto' py='$1' mr='$2' size='$2'
                       onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
                       <XStack>
@@ -179,7 +180,8 @@ export function PinnedServerSelector({
                   : undefined}
 
                 {viewingRecommendedServers ?
-                  <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
+                  // <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
+                  <>
                     {recommendedServerHosts.map((host, index) => {
                       const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
                       // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
@@ -196,16 +198,17 @@ export function PinnedServerSelector({
                             </Tooltip>
                           </XStack>
                           : undefined}
-                        <XStack my='auto' key={`recommended-server-${host}`}>
+                        <XStack my='auto' key={`server-${host}`}>
                           <RecommendedServer host={host} tiny />
                         </XStack>
                       </>;
                     })}
-                  </XStack>
+                  </>
+                  // </XStack>
                   : recommendedServerHosts.length > 0
                     ? <XStack key='recommendedServerHosts-spacer' w='$10' />
                     : undefined}
-              </AnimatePresence>
+              </FlipMove>
             </XStack>
           </ScrollView>
         </YStack>
@@ -270,7 +273,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
         selectedAccount={pinnedAccount}
         onAccountSelected={toggleAccountSelect}
         button={(onPress) =>
-          <Button onPress={onPress} animation='standard' h='auto' px='$2'
+          <Button onPress={onPress} h='auto' px='$2'
             borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
             o={pinned ? 1 : 0.5}
             {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
@@ -299,7 +302,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
             </XStack>
           </Button>} />
     }
-    <Button onPress={onPress} animation='standard' h='auto'
+    <Button onPress={onPress} h='auto'
       px='$1'
       borderTopLeftRadius={simplified ? undefined : 0} borderTopRightRadius={simplified ? undefined : 0}
       o={pinned ? 1 : 0.5}

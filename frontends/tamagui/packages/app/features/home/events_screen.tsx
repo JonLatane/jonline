@@ -9,8 +9,8 @@ import multimonthPlugin from "@fullcalendar/multimonth";
 import listPlugin from "@fullcalendar/list";
 
 
-import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation, useTheme } from '@jonline/ui';
-import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation, useTheme, Dialog, Unspaced, Adapt, Sheet, ScrollView } from '@jonline/ui';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, selectEventById, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { SubnavButton } from 'app/components/subnav_button';
@@ -158,6 +158,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const dispatch = useAppDispatch();
   const { showBigCalendar: bigCalendar, showPinnedServers } = useLocalConfiguration();
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
+  const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
+  const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
+  const setModalInstance = (e: FederatedEvent | undefined) => {
+    setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
+  }
+
   const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
     (result, server: JonlineServer) => {
       if (server.serverConfiguration?.serverInfo?.colors?.primary) {
@@ -303,26 +309,87 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         }
                       })}
                       eventClick={(modelEvent) => {
-                        const { id, serverHost } = parseFederatedId(modelEvent.event.id);
+                        const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
                         const isPrimaryServer = serverHost === currentServer?.host;
                         const detailsLinkId = !isPrimaryServer
-                          ? federateId(id, serverHost)
-                          : id;
-                        const groupLinkId = selectedGroup ?
-                          (selectedGroup?.serverHost !== currentServer?.host
-                            ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
-                            : selectedGroup.shortname)
-                          : undefined;
-                        const href = selectedGroup
-                          ? `/g/${groupLinkId}/e/${detailsLinkId}`
-                          : `/event/${detailsLinkId}`;
-                        window.location.pathname = href;
+                          ? federateId(instanceId, serverHost)
+                          : instanceId;
+                        setModalInstanceId(detailsLinkId);
+                        // const groupLinkId = selectedGroup ?
+                        //   (selectedGroup?.serverHost !== currentServer?.host
+                        //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
+                        //     : selectedGroup.shortname)
+                        //   : undefined;
+                        // const href = selectedGroup
+                        //   ? `/g/${groupLinkId}/e/${detailsLinkId}`
+                        //   : `/event/${detailsLinkId}`;
+                        // window.location.pathname = href;
                       }}
                     />
                   </div>
                 </Text>
-                {/* <Text fontFamily='$body' color='black' width='100%'>
+                <Dialog modal open={!!modalInstance} onOpenChange={(o) => setModalInstance(undefined)}>
+                  {/* <Dialog.Trigger asChild>
+                    <Button>Show Dialog</Button>
+                  </Dialog.Trigger> */}
 
+                  <Adapt when="sm" platform="touch">
+                    <Sheet animation="medium" zIndex={200000} modal dismissOnSnapToBottom>
+                      <Sheet.Frame padding="$4" gap="$4">
+                        <Sheet.ScrollView>
+                          {modalInstance
+                            ? <EventCard event={modalInstance!} isPreview />
+                            : undefined}
+                        </Sheet.ScrollView>
+                        {/* <Adapt.Contents /> */}
+                      </Sheet.Frame>
+                      <Sheet.Overlay
+                        animation="lazy"
+                        enterStyle={{ opacity: 0 }}
+                        exitStyle={{ opacity: 0 }}
+                      />
+                    </Sheet>
+                  </Adapt>
+
+                  <Dialog.Portal>
+                    <Dialog.Overlay
+                      key="overlay"
+                      animation="slow"
+                      opacity={0.5}
+                      enterStyle={{ opacity: 0 }}
+                      exitStyle={{ opacity: 0 }}
+                    />
+
+                    <Dialog.Content
+                      bordered
+                      elevate
+                      key="content"
+                      animateOnly={['transform', 'opacity']}
+                      animation='standard'
+                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                      gap="$4"
+                    >
+                      {/* <Unspaced> */}
+                      <YStack gap='$2'>
+                        <Dialog.Close asChild>
+                          <Button
+                            ml='auto' mr='$3' size='$1'
+                            circular
+                            icon={XIcon}
+                          />
+                        </Dialog.Close>
+                        <ScrollView f={1} >
+                          {modalInstance
+                            ? <EventCard event={modalInstance!} isPreview />
+                            : undefined}
+                        </ScrollView>
+                      </YStack>
+                    </Dialog.Content>
+                  </Dialog.Portal>
+                </Dialog>
+
+                {/* <Text fontFamily='$body' color='black' width='100%'>
                 <BigCalendar localizer={localizer}
                   // events={[{title: 'test', start: new Date(), end: new Date()}]}
                   events={allEvents.map((event) => {
