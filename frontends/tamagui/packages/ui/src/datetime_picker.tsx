@@ -1,7 +1,7 @@
 import moment from 'moment';
 import BaseDateTimePicker from 'react-datetime-picker';
 
-import { Label, Text, XStack , isSafari} from '@jonline/ui';
+import { Label, Text, XStack, isSafari } from '@jonline/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
 import { useComponentKey, useLocalConfiguration } from 'app/hooks';
@@ -28,12 +28,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   const componentKey = useComponentKey('datetime-picker');
   const safari = isSafari();
   if (renderer === 'native') {
-    return <XStack ai='center'>
-      {safari
-        ? <Label htmlFor={componentKey}>
-          <Calendar size='$1' />
-        </Label>
-        : undefined}
+    return <XStack ai='center' borderColor='$body' borderWidth={2} borderRadius='$2' pt='$1'>
       <Text fontSize='$2' fontFamily='$body'>
         <input type='datetime-local' name={componentKey} id={componentKey} min={supportDateInput(moment(0))}
           value={supportDateInput(moment(value))}
@@ -44,6 +39,11 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             //colorScheme: darkMode ? 'dark' : 'light', padding: 10
           }} />
       </Text>
+      {safari
+        ? <Label htmlFor={componentKey} mb='$1'>
+          <Calendar size='$1' />
+        </Label>
+        : undefined}
     </XStack>;
   }
 

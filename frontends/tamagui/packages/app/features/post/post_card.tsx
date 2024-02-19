@@ -57,6 +57,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   onEditingChange
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
+  const currentUser = accountOrServer.account?.user;
   const server = accountOrServer.server;
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
@@ -66,8 +67,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   const groupContext = useGroupContext();
   const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
 
-
-  const currentUser = useAccount()?.user;
   const theme = useTheme();
   const { primaryColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
   // const postsStatus = useRootSelector((state: RootState) => state.posts.status);

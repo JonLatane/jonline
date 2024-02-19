@@ -81,10 +81,10 @@ export function EventDetailsScreen() {
   // console.log("subjectEvent=", subjectEvent, 'failedToLoadEvent=', failedToLoadEvent);
 
   function onEventInstancesUpdated(instances: EventInstance[]) {
-    if (!instances.some(i => i.id == instanceId)) {
+    if (!instances.some(i => i.id === serverInstanceId)) {
       updateParams({
-        instanceId: instances.find(i => !isPastInstance(i))?.id
-          ?? instances[0]!.id
+        instanceId: `${instances.find(i => !isPastInstance(i))?.id
+          ?? instances[0]!.id}${currentServer?.host === serverHost ? '' : `@${serverHost}`}`
       }, { web: { replace: true } });
     }
   }

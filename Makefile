@@ -122,5 +122,6 @@ html_docs: documentation
 graphs:
 	cd docs/architecture && dot -Tsvg Kubernetes_Deployment.dot -o Kubernetes_Deployment.svg
 	cd docs/architecture && dot -Tsvg JBL_Kubernetes_Deployment.dot -o JBL_Kubernetes_Deployment.svg
-	cd docs/architecture && dot -Tsvg Service_Architecture.dot -o Service_Architecture.svg
+#	cd docs/architecture && dot -Tsvg Service_Architecture.dot -o Service_Architecture.svg
+	cd docs/architecture && neato -Tsvg Service_Architecture.dot -o Service_Architecture.svg
 

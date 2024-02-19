@@ -260,7 +260,21 @@ Additionally, the following components are *themselves* documented in `README.md
 The [gRPC APIs are defined in `protos/`](https://github.com/JonLatane/jonline/tree/main/protos).
 
 #### Architecture/Deployment Management
-Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. [Architecture docs live in `docs/`](https://github.com/JonLatane/jonline/tree/main/deploys). They cover and link to such topics as:
+[Jonline architecture docs live in `docs/architecture`](https://github.com/JonLatane/jonline/tree/main/docs/architecture).
+
+At its core, Jonline is a boring client-server app; the Browser/App, HTTP server, gRPC server, PostgreSQL, and MinIO interact thusly:
+
+![Jonline Application Architecture](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Service_Architecture.svg)
+
+Generally, Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. To this end, Jonline has a "simple" deployment structure, and a more scalable alternative is in the process of being implemented:
+
+| Simple Approach | Scalable Approach |
+| --- | --- |
+| ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single JBL LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg) |
+|  | Yet to be implemented. See [Cost of Operation](#cost-of-operation) for motivations |
+
+
+[Jonline's architecture docs](https://github.com/JonLatane/jonline/tree/main/docs/architecture) also cover and link to such topics as:
 
 * [Deployment management, in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys)
 * [TLS cert generation, in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs)

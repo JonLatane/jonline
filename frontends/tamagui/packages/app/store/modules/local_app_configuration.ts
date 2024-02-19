@@ -65,7 +65,7 @@ const initialState: LocalAppConfiguration = {
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
-  showBigCalendar: false,
+  showBigCalendar: true,
 };
 
 setTimeout(async () => {

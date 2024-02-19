@@ -21,7 +21,7 @@ export function usePageParam() {
   const [pageParam] = useParam('page');
   let parsedPage: number | undefined;
   try {
-    parsedPage = parseInt(pageParam ?? '1') - 1;
+    parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
   } catch (e) {
     console.warn("Error parsing page param", e);
   }
@@ -64,6 +64,8 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
 
   const reset = () => {
     if (loadingPage) return;
+    if (results.length === 0) return;
+
     setLoadingPage(true);
     // setTimeout(() => {
     const startPage = 0; //Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1))

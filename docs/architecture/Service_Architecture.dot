@@ -1,78 +1,79 @@
 digraph G {
-  size = "100000,5000000";
+  size = "100000,100000";
+  compound=true;
   subgraph cluster0 {
     label = "Jonline Rust Backend & Cluster"
+    compound=true;
 
-    
     minio [color=magenta; shape = folder; style=filled; label = <<b>MinIO</b>>;];
     
     media -> minio [color=magenta; style = dashed; label = "+minio_path";];
     
-    subgraph cluster0 {
-      label = "Jonline gRPC Services";
+    subgraph cluster1 {
+      label = "Jonline gRPC Service";
       
       tonic [shape = note;label = <
         <table border="0">
         <tr><td><b>Tonic</b>&nbsp;(or theortical&nbsp;<b>gRPC CDN</b>)</td></tr>
         </table>
         >;];
-      subgraph cluster0 {
+
+      auth_rpc [shape = note;color = lightcoral;label = <
+        <table border="0">
+        <tr><td><b>auth_rpc!</b></td></tr>
+        </table>
+        >;];
+      unauthenticated_rpc [shape = note;color = lightcoral;label = <
+        <table border="0">
+        <tr><td><b>unauthenticated_rpc!</b></td></tr>
+        </table>
+        >;];
+      authenticated_rpc [shape = note;color = lightcoral;label = <
+        <table border="0">
+        <tr><td><b>authenticated_rpc!</b></td></tr>
+        </table>
+        >;];
+      tonic -> auth_rpc;
+      tonic -> unauthenticated_rpc;
+      tonic -> authenticated_rpc;
+      subgraph cluster2 {
         label = "Auth Management RPCs";
-        auth_rpc [shape = note;label = <
-          <table border="0">
-          <tr><td><b>auth_rpc!</b></td></tr>
-          </table>
-          >;];
-        
-        
+
         create_account [shape = cds;label = <CreateAccount>;];
         login [shape = cds;label = <Login>;];
         access_token [shape = cds;label = <AccessToken>;];
-        
-        auth_rpc -> create_account;
-        auth_rpc -> login;
-        auth_rpc -> access_token;
 
-
-        subgraph cluster0 {
+        subgraph cluster3 {
           label = "Public Auth APIs";
           get_service_version [shape = cds;label = <GetServiceVersion>;];
           get_server_configuration [shape = cds;label = <GetServerConfiguration>;];
         }
       }
+
+        auth_rpc -> create_account;
+        auth_rpc -> login;
+        auth_rpc -> access_token;
       
-      tonic -> auth_rpc;
-      
-      subgraph cluster1 {
+      subgraph cluster4 {
         label = "Unauthenticated RPCs";
-        unauthenticated_rpc [shape = note;label = <
-          <table border="0">
-          <tr><td><b>unauthenticated_rpc!</b></td></tr>
-          </table>
-          >;];
 
         get_users [shape = cds;label = <GetUsers>;];
-        unauthenticated_rpc -> get_users;
-        
         get_follows [shape = cds;label = <GetFollows>;];
-        unauthenticated_rpc -> get_follows;
-        
         get_groups [shape = cds;label = <GetGroups>;];
-        unauthenticated_rpc -> get_groups;
-        
         get_memberships [shape = cds;label = <GetMemberships>;];
-        unauthenticated_rpc -> get_memberships;
-
         get_posts [shape = cds;label = <GetPosts>;];
-        unauthenticated_rpc -> get_posts;
-
         get_events [shape = cds;label = <GetEvents>;];
-        unauthenticated_rpc -> get_events;
       }
+
+      unauthenticated_rpc -> get_users;
+      unauthenticated_rpc -> get_follows;
+      unauthenticated_rpc -> get_groups;
+      unauthenticated_rpc -> get_memberships;
+      unauthenticated_rpc -> get_posts;
+      unauthenticated_rpc -> get_events;
 
       unauthenticated_rpc -> get_server_configuration;
       unauthenticated_rpc -> get_service_version;
-      tonic -> unauthenticated_rpc;
       
       
       // resolve_dns -> jonlineio_dns [style = dashed;];
@@ -82,24 +83,16 @@ digraph G {
       
       
       
-      subgraph cluster2 {
+      subgraph cluster5 {
         label = "Authenticated RPCs";
-        authenticated_rpc [shape = note;label = <
-          <table border="0">
-          <tr><td><b>authenticated_rpc!</b></td></tr>
-          </table>
-          >;];
         
-        update_server_configuration [shape = cds;label = <UpdateServerConfiguration>;];
-        authenticated_rpc -> update_server_configuration;
-        
+        update_server_configuration [shape = cds;label = <UpdateServerConfiguration>;];        
         cud_media [shape = cds;label = <
           <table border="0">
           <tr><td>UpdateMedia</td></tr>
           <tr><td>DeleteMedia</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_media;
         
         cud_follow [shape = cds;label = <
           <table border="0">
@@ -108,7 +101,6 @@ digraph G {
           <tr><td>DeleteFollow</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_follow;
         cud_group [shape = cds;label = <
           <table border="0">
           <tr><td>CreateGroup</td></tr>
@@ -116,7 +108,6 @@ digraph G {
           <tr><td>DeleteGroup</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_group;
         cud_membership [shape = cds;label = <
           <table border="0">
           <tr><td>CreateMembership</td></tr>
@@ -124,7 +115,6 @@ digraph G {
           <tr><td>DeleteMembership</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_membership;
         cud_post [shape = cds;label = <
           <table border="0">
           <tr><td>CreatePost</td></tr>
@@ -132,7 +122,6 @@ digraph G {
           <tr><td>DeletePost</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_post;
         cud_event [shape = cds;label = <
           <table border="0">
           <tr><td>CreateEvent</td></tr>
@@ -140,17 +129,22 @@ digraph G {
           <tr><td>DeleteEvent</td></tr>
           </table>
           >;];
-        authenticated_rpc -> cud_event;
       }
+      authenticated_rpc -> update_server_configuration;
+      authenticated_rpc -> cud_media;
+      authenticated_rpc -> cud_follow;
+      authenticated_rpc -> cud_group;
+      authenticated_rpc -> cud_membership;
+      authenticated_rpc -> cud_post;
+      authenticated_rpc -> cud_event;
     }
       
-    tonic -> authenticated_rpc;
-    auth_rpc -> oauth_stuff [style=dotted;];
-    authenticated_rpc -> oauth_stuff [style=dotted;];
-    unauthenticated_rpc -> oauth_stuff [style=dotted;];
+    // auth_rpc -> oauth_stuff [style=dotted;];
+    // authenticated_rpc -> oauth_stuff [style=dotted;];
+    // unauthenticated_rpc -> oauth_stuff [style=dotted;];
     
-    subgraph cluster1 {
-      label = "Jonline HTTP Services";
+    subgraph cluster6 {
+      label = "Jonline HTTP Service";
       // node [style = filled; color = white;];
       // style = filled;
       // color = lightgrey;
@@ -183,7 +177,7 @@ digraph G {
         </table>
         >;];
       rocket -> favicon;
-      subgraph cluster0 {
+      subgraph cluster7 {
         label="UI"
         tamagui [shape = signature;label = <
           <table border="0">
@@ -199,7 +193,7 @@ digraph G {
           </table>
           >;];
         tamagui -> tamagui_previews;
-        flutter [shape = note;label = <
+        flutter [shape = signature;label = <
           <table border="0">
           <tr><td><i>GET /flutter/{*}</i></td></tr>
           <tr><td><b>Flutter UI</b>&nbsp;(various HTML, JS)</td></tr>
@@ -211,7 +205,7 @@ digraph G {
     }
 
 
-    subgraph cluster2 {
+    subgraph cluster8 {
       label = "Database";
       // label = <<table><tr><td><b>bullcitysocial</b></td></tr><tr><td>(K8s Namespace)</td></tr></table>>;
       node [style = filled; color = white;];
@@ -250,14 +244,33 @@ digraph G {
         >;];
 
       // subgraph {auth_rpc}
-      subgraph cluster0 {
+      subgraph cluster9 {
         label = "Users";
         style = filled;
         color = darkgrey;
         users [shape = cylinder; style=filled; color=greenyellow;label = <
           <table border="0">
           <tr><td><b>Users</b></td></tr>
-          <tr><td>+username</td></tr>
+          <tr><td>id: Int8</td></tr>
+          <tr><td>username: Varchar</td></tr>
+          <tr><td>password_salted_hash: Varchar</td></tr>
+          <tr><td>real_name: Varchar</td></tr>
+          <tr><td>email: Nullable&lt;Jsonb&gt;</td></tr>
+          <tr><td>phone: Nullable&lt;Jsonb&gt;</td></tr>
+          <tr><td>permissions: Jsonb</td></tr>
+          <tr><td>avatar_media_id: Nullable&lt;Int8&gt;</td></tr>
+          <tr><td>bio: Text</td></tr>
+          <tr><td>visibility: Varchar</td></tr>
+          <tr><td>moderation: Varchar</td></tr>
+          <tr><td>default_follow_moderation: Varchar</td></tr>
+          <tr><td>follower_count: Int4</td></tr>
+          <tr><td>following_count: Int4</td></tr>
+          <tr><td>group_count: Int4</td></tr>
+          <tr><td>post_count: Int4</td></tr>
+          <tr><td>event_count: Int4</td></tr>
+          <tr><td>response_count: Int4</td></tr>
+          <tr><td>created_at: Timestamp</td></tr>
+          <tr><td>updated_at: Timestamp</td></tr>
           </table>
           >;];
         follows [shape = cylinder; style=filled; color=white;label = <
@@ -272,16 +285,16 @@ digraph G {
       users -> media [color=mediumorchid;style = dashed; label = "+avatar_media_id";];
 
 
-      subgraph cluster1 {
+      subgraph cluster10 {
         label = "Authentication";
         style = filled;
-        color = LightCoral;
+        color = lightcoral;
         node [style = filled; color = white;];
         oauth_stuff [shape=box3d; style=dashed; label="OAuth Stuff";];
       }
       oauth_stuff -> users [color=limegreen;style = dotted; label = <<i>Authentication Logic</i>>];
 
-      subgraph cluster2 {
+      subgraph cluster11 {
         label = "Groups";
         style = filled;
         color = darkgrey;
@@ -319,7 +332,7 @@ digraph G {
         memberships -> groups [color=darkturquoise;style = dashed;];
       }
       
-      subgraph cluster3 {
+      subgraph cluster12 {
         label = "Posts";
         style = filled;
         color = darkgrey;
@@ -344,7 +357,7 @@ digraph G {
 
         group_posts -> posts [color=darkkhaki;style = dashed; label = "+post_id";];
 
-        subgraph cluster0 {
+        subgraph cluster13 {
           label = "Events";
           style = filled;
           color = lightgrey;
@@ -382,7 +395,6 @@ digraph G {
       // posts -> media [color=mediumorchid;style=dotted];
       posts -> media [color=mediumorchid;style=dotted; label="+media_ids: Jsonb Array"];
     }
-  }
 
 
 
@@ -398,25 +410,25 @@ digraph G {
     get_groups -> groups [color=darkturquoise;style=dashed];
     get_memberships -> memberships;
     cud_membership -> memberships;
-    cud_post -> posts[color=darkhaki;];
-    get_posts -> posts[color=darkhaki;style=dashed];
+    cud_post -> posts [color=darkkhaki;];
+    get_posts -> posts [color=darkkhaki;style=dashed];
     get_events -> events;
     cud_event -> events;
-  http -> rocket;
+    tamagui_previews -> unauthenticated_rpc [style = dashed;];
 
-  grpc -> tonic [style = bold;];
-  tamagui_previews -> unauthenticated_rpc [style = dashed;];
+    tamagui_previews -> groups [color=darkturquoise;style = dashed;];
+    tamagui_previews -> posts [color=darkkhaki;style = dashed;];
+    tamagui_previews -> events [style = dashed;];
+    tamagui_previews -> users [color=limegreen;style = dotted;];
+    tamagui_previews -> media [color=mediumorchid;style = dotted;];
 
-  tamagui_previews -> groups [color=darkturquoise;style = dashed;];
-  tamagui_previews -> posts [color=darkkhaki;style = dashed;];
-  tamagui_previews -> events [style = dashed;];
-  tamagui_previews -> users [color=limegreen;style = dotted;];
-  http_get_media -> media [color=mediumorchid;style = dotted;];
-  http_get_media -> minio [style = dotted; color=magenta; label = <<i>binary stream</i>>;];
+    http_get_media -> media [color=mediumorchid;style = dotted;];
+    http_get_media -> minio [style = dotted; color=magenta; label = <<i>binary stream</i>>;];
 
-  favicon -> server_configurations [color=dodgerblue; style = dotted; label = <<i>auto-transform PNG to ICO</i>>;];
-  favicon -> media [color=mediumorchid;style = dotted;];
-  favicon -> minio [color=magenta; style = dotted;];
+    favicon -> server_configurations [color=dodgerblue; style = dotted; label = <<i>auto-transform PNG to ICO</i>>;];
+    favicon -> media [color=mediumorchid;style = dotted;];
+    favicon -> minio [color=magenta; style = dotted;];
+  }_
 
   // subgraph cluster2 {
   //   label="The Open Web"
@@ -429,12 +441,12 @@ digraph G {
     <tr><td>80, 443</td></tr>
     </table>
     >;];
-  browser -> http [style = bold;];
   grpc [shape = doublecircle;style = filled;color = ".7 .3 1.0";label = <
     <table border="0">
     <tr><td><b>gRPC(+TLS)</b></td></tr>
     <tr><td>27707, 443</td></tr>
     </table>
     >;];
-  browser -> grpc [style = bold;];
+  browser -> http  -> rocket[style = bold;];
+  browser -> grpc-> tonic [style = bold;];
 }

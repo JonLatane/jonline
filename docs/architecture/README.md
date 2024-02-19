@@ -1,6 +1,11 @@
 # Jonline Architecture
 Jonline is generally setup to be deployed using Make atop `kubectl` and `jq` (and `graphviz`, if editing architecture diagrams in this directory).
 
+## Application Architecture
+This is how Jonline works on a client-server, in terms of interaction of the Browser/App, HTTP server, gRPC server, PostgreSQL DB, and MinIO.
+
+![Jonline Application Architecture](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Service_Architecture.svg)
+
 ## Deployment Management
 [Deployment management logic lives in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys). Essentially this is some readable `Makefile` stuff built atop `kubectl`.
 

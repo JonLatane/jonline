@@ -55,14 +55,14 @@ export const EventCard: React.FC<Props> = ({
   onInstancesUpdated,
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
+  const currentUser = accountOrServer.account?.user;// useAccount()?.user;
   const server = accountOrServer.server;
-  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const isPrimaryServer = useAccountOrServer().server?.host === server?.host;
   const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
 
   const mediaQuery = useMedia();
-  const currentUser = useAccount()?.user;
   const post = federatedEntity(event.post!, server);
 
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = getServerTheme(server);
@@ -694,7 +694,8 @@ export const EventCard: React.FC<Props> = ({
   </Dialog>;
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
-      <YStack w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
+      <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
+        w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
         <Card theme="dark" size="$4" bordered id={componentKey}
           // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
           animation='standard'

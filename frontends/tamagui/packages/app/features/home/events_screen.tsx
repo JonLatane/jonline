@@ -9,7 +9,7 @@ import multimonthPlugin from "@fullcalendar/multimonth";
 import listPlugin from "@fullcalendar/list";
 
 
-import { AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation } from '@jonline/ui';
 import { JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
@@ -25,9 +25,9 @@ import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navi
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
-import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
+import { Calendar as CalendarIcon, X as XIcon } from '@tamagui/lucide-icons';
 
-const { useParam } = createParam<{ endsAfter: string }>()
+const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
   return <BaseEventsScreen />;
 }
@@ -44,6 +44,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
+  const [querySearch] = useParam('search');
+  const updateParams = useUpdateParams();
+  const [searchText, _setSearchText] = useState(querySearch ?? '');
+  function setSearchText(text: string) {
+    _setSearchText(text);
+    updateParams({ search: text }, { web: { replace: true } });
+  };
   const endsAfter = queryEndsAfter ?? moment(pageLoadTime).toISOString(true);
   // useEffect(() => {
   //   if (!queryEndsAfter) {
@@ -60,8 +67,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     setDocumentTitle(`Events | ${title}`)
   });
 
-  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
+  const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
+
+  const allEvents = allEventsUnfiltered.filter((e) =>
+    !searchText?.trim() || e.post?.title?.toLowerCase().includes(searchText.toLowerCase()));
 
   const renderInColumns = mediaQuery.gtXs;
   const numberOfColumns = mediaQuery.gtXxxl ? 6
@@ -85,30 +95,75 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   }, [firstPageLoaded]);
   useEffect(pagination.reset, [queryEndsAfter]);
 
-  const [displayMode, setDisplayMode] = useState('upcoming' as EventDisplayMode);
-  useEffect(() => {
-    switch (displayMode) {
+  // const [displayMode, setDisplayMode] = useState(
+  //   queryEndsAfter === undefined
+  //     ? 'upcoming' as EventDisplayMode
+  //     : moment(queryEndsAfter).unix() === 0
+  //       ? 'all' as EventDisplayMode
+  //       : 'upcoming' as EventDisplayMode
+  // );
+  const displayMode = queryEndsAfter === undefined
+    ? 'upcoming' as EventDisplayMode
+    : moment(queryEndsAfter).unix() === 0
+      ? 'all' as EventDisplayMode
+      : 'filtered' as EventDisplayMode;
+  const setDisplayMode = (mode: EventDisplayMode) => {
+    switch (mode) {
       case 'upcoming':
-        if (queryEndsAfter != undefined) {
-          // console.log('setting ends after to undefined');
-          setQueryEndsAfter(undefined);
-        }
+        updateParams({
+          endsAfter: undefined,
+          search: undefined
+        });
         break;
       case 'all':
-        if (queryEndsAfter != moment(0).toISOString(true)) {
-          // console.log('setting ends after to 0');
-          setQueryEndsAfter(moment(0).toISOString(true));
-        }
+        updateParams({
+          endsAfter: moment(0).toISOString(true),
+          search: undefined
+        });
         break;
       case 'filtered':
-        if (queryEndsAfter === undefined) {
-          // console.log('setting ends after to page load time');
-          setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
+        const search = searchText;
+        if (displayMode === 'upcoming') {
+          updateParams({
+            endsAfter: moment(pageLoadTime).toISOString(true),
+            search
+          });
+        } else if (displayMode === 'all') {
+          updateParams({
+            endsAfter: moment(pageLoadTime).toISOString(true),
+            search
+          });
+        } else {
+          updateParams({
+            search
+          });
         }
         break;
     }
+  };
+  // useEffect(() => {
+  //   switch (displayMode) {
+  //     case 'upcoming':
+  //       if (queryEndsAfter != undefined) {
+  //         // console.log('setting ends after to undefined');
+  //         setQueryEndsAfter(undefined);
+  //       }
+  //       break;
+  //     case 'all':
+  //       if (queryEndsAfter != moment(0).toISOString(true)) {
+  //         // console.log('setting ends after to 0');
+  //         setQueryEndsAfter(moment(0).toISOString(true));
+  //       }
+  //       break;
+  //     case 'filtered':
+  //       if (queryEndsAfter === undefined) {
+  //         // console.log('setting ends after to page load time');
+  //         setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
+  //       }
+  //       break;
+  //   }
 
-  }, [displayMode, queryEndsAfter]);
+  // }, [displayMode, queryEndsAfter]);
 
   function displayModeButton(associatedDisplayMode: EventDisplayMode, title: string) {
     return <SubnavButton title={title}
@@ -142,7 +197,18 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const navigationHeight = useTabsNavigationHeight();
   const serializedTimeFilter = serializeTimeFilter(timeFilter);
-
+  const minBigCalWidth = 150;
+  const minBigCalHeight = 150;
+  const bigCalWidth = Math.max(minBigCalWidth, window.innerWidth);
+  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85);
+  // const [bigCalWidth, setBigCalWidth] = useState(Math.max(minBigCalWidth, window.innerWidth));
+  // const [bigCalHeight, setBigCalHeight] = useState(Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85));
+  // useEffect(() => (window.innerWidth > minBigCalHeight)
+  //   ? setBigCalWidth(window.innerWidth)
+  //   : undefined, [bigCalWidth, window.innerWidth]);
+  // useEffect(() => (window.innerHeight - navigationHeight - 85 > minBigCalHeight)
+  //   ? setBigCalHeight(window.innerHeight - navigationHeight - 85)
+  //   : undefined, [bigCalHeight, window.innerHeight, navigationHeight]);
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -159,7 +225,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               icon={CalendarIcon}
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
-
             {displayModeButton('upcoming', 'Upcoming')}
             {displayModeButton('all', 'All')}
             {displayModeButton('filtered', 'Filtered')}
@@ -172,13 +237,24 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           </Button> */}
           <AnimatePresence>
             {displayMode === 'filtered' ?
-              <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
-                animation='standard' {...standardAnimation}>
-                <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
-                <XStack ml='auto' my='auto'>
-                  <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
+              <>
+                <YStack w='100%' px='$2' py='$2' key='search-toolbar'>
+                  <XStack w='100%' ai='center' gap='$2' mx='$2'>
+                    <Input placeholder='Search'
+                      f={1}
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.nativeEvent.text)} />
+                    <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
+                  </XStack>
+                </YStack>
+                <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
+                  animation='standard' {...standardAnimation}>
+                  <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
+                  <XStack ml='auto' my='auto'>
+                    <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
+                  </XStack>
                 </XStack>
-              </XStack>
+              </>
               : undefined}
           </AnimatePresence>
         </YStack>
@@ -186,77 +262,93 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
       <YStack f={1} w='100%' jc="center" ai="center" mt={bigCalendar ? 0 : '$3'} px='$3' maw={maxWidth}>
-        <FlipMove>
-          {bigCalendar ?
-            // @ts-nocheck
-            <YStack key={`calendar-rendering-${serializedTimeFilter}-${allEvents.length}`} mx='$1'
-              //  w='100%'
+        <AnimatePresence>
+          {bigCalendar
+            ? allEvents.length === 0 ?
+              loadingEvents || !firstPageLoaded
+                ? <YStack key='bigcalendar-loading' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                  <Spinner color={primaryColor} />
+                  {/* <Heading size='$5' mb='$3'>Loading...</Heading> */}
+                  <Heading size='$5' ta='center'>Loading events...</Heading>
+                </YStack>
+                : <YStack key='bigcalendar-no-events' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                  <Heading size='$5' mb='$3'>No events found.</Heading>
+                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                </YStack>
+              : <YStack key={`calendar-rendering-${serializedTimeFilter}`} mx='$1'
+                animation='standard' {...reverseStandardAnimation}
+                //  w='100%'
 
-              width={window.innerWidth}
-              height={window.innerHeight - navigationHeight - 85}
-              px='$2'
+                width={bigCalWidth}
+                height={bigCalHeight}
+                p='$2'
 
-              backgroundColor={'white'}
-              borderRadius='$3'>
+                backgroundColor={'white'}
+                borderRadius='$3'>
 
-              <Text fontFamily='$body' color='black' width='100%'>
-                <div
-                  style={{
-                    width: window.innerWidth - 10,
-                    height: window.innerHeight - navigationHeight - 85
-                    // height: '100%'
-                  }} >
-                  <FullCalendar
-                    key={`calendar-rendering-${serializedTimeFilter}-${allEvents.length}`}
-                    selectable
-                    headerToolbar={{
-                      start: 'prev', end: 'next',
-                      center: 'title',
-                    }}
-                    footerToolbar={{
-                      start: 'today',
-                      center: '',
-                      end: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
-                    }}
-                    plugins={[
-                      daygridPlugin,
-                      timegridPlugin,
-                      multimonthPlugin,
-                      listPlugin,
-                      interactionPlugin
-                    ]}
-                    height='100%'
-                    events={allEvents.map((event) => {
-                      return {
-                        id: federateId(event.instances[0]?.id ?? '', event.serverHost),
-                        // id: event.instances[0]?.id ?? '',
-                        // serverHost: event.serverHost,
-                        title: event.post?.title,
-                        color: serverColors[event.serverHost],
-                        start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                        end: moment(event.instances[0]?.endsAt ?? 0).toDate()
-                      }
-                    })}
-                    eventClick={(modelEvent) => {
-                      const { id, serverHost } = parseFederatedId(modelEvent.event.id);
-                      const isPrimaryServer = serverHost === currentServer?.host;
-                      const detailsLinkId = !isPrimaryServer
-                        ? federateId(id, serverHost)
-                        : id;
-                      const groupLinkId = selectedGroup ?
-                        (selectedGroup?.serverHost !== currentServer?.host
-                          ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
-                          : selectedGroup.shortname)
-                        : undefined;
-                      const href = selectedGroup
-                        ? `/g/${groupLinkId}/e/${detailsLinkId}`
-                        : `/event/${detailsLinkId}`;
-                      window.location.pathname = href;
-                    }}
-                  />
-                </div>
-              </Text>
-              {/* <Text fontFamily='$body' color='black' width='100%'>
+                <Text fontFamily='$body' color='black' width='100%'>
+                  <div
+                    style={{
+                      display: 'block',
+                      width: bigCalWidth - 10,
+                      height: bigCalHeight - 10,
+                      // height: '100%'
+                    }} >
+                    <FullCalendar
+                      key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
+                      selectable
+                      dateClick={({ date, view }) => {
+                        view.calendar.changeView('listDay', date);
+                      }}
+
+                      headerToolbar={{
+                        start: 'prev', end: 'next',
+                        center: 'title',
+                      }}
+                      footerToolbar={{
+                        start: 'today',
+                        center: 'dayGridMonth,timeGridWeek,timeGridDay',
+                        end: 'listDay',
+                      }}
+                      plugins={[
+                        daygridPlugin,
+                        timegridPlugin,
+                        multimonthPlugin,
+                        listPlugin,
+                        interactionPlugin
+                      ]}
+                      height='100%'
+                      events={allEvents.map((event) => {
+                        return {
+                          id: federateId(event.instances[0]?.id ?? '', event.serverHost),
+                          // id: event.instances[0]?.id ?? '',
+                          // serverHost: event.serverHost,
+                          title: event.post?.title,
+                          color: serverColors[event.serverHost],
+                          start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
+                          end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+                        }
+                      })}
+                      eventClick={(modelEvent) => {
+                        const { id, serverHost } = parseFederatedId(modelEvent.event.id);
+                        const isPrimaryServer = serverHost === currentServer?.host;
+                        const detailsLinkId = !isPrimaryServer
+                          ? federateId(id, serverHost)
+                          : id;
+                        const groupLinkId = selectedGroup ?
+                          (selectedGroup?.serverHost !== currentServer?.host
+                            ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
+                            : selectedGroup.shortname)
+                          : undefined;
+                        const href = selectedGroup
+                          ? `/g/${groupLinkId}/e/${detailsLinkId}`
+                          : `/event/${detailsLinkId}`;
+                        window.location.pathname = href;
+                      }}
+                    />
+                  </div>
+                </Text>
+                {/* <Text fontFamily='$body' color='black' width='100%'>
 
                 <BigCalendar localizer={localizer}
                   // events={[{title: 'test', start: new Date(), end: new Date()}]}
@@ -272,64 +364,66 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   endAccessor="end"
                   style={{ width: window.innerWidth, height: window.innerHeight - navigationHeight - 230}} />
               </Text> */}
-            </YStack>
-            // @ts-nocheck
-            : renderInColumns ?
-              <YStack gap='$2' key='multi-column-rendering'>
-                <PaginationResetIndicator {...pagination} />
-                <XStack mx='auto' gap='$2' flexWrap='wrap' jc='center'>
-                  {/* <AnimatePresence> */}
-
-                  <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}>
-
-                    {firstPageLoaded || allEvents.length > 0
-                      ? allEvents.length === 0
-                        ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
-                          <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                            <Heading size='$5' mb='$3'>No events found.</Heading>
-                            <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
-                          </YStack>
-                        </div>
-                        : undefined
-                      : undefined}
-                    {paginatedEvents.map((event) => {
-                      return <span key={federateId(event.instances[0]?.id ?? '', currentServer)}>
-                        <XStack w={eventCardWidth}
-                          mx='$1' px='$1'>
-                          <EventCard event={event} isPreview />
-                        </XStack>
-                      </span>;
-                    })}
-                  </FlipMove>
-                  {/* </AnimatePresence> */}
-                </XStack>
-                <PaginationIndicator {...pagination} />
               </YStack>
-              : <YStack key='single-column-rendering' w='100%' ac='center' ai='center' jc='center' gap='$2'>
+            : undefined}
+        </AnimatePresence>
+        <FlipMove>
+          {bigCalendar ? undefined : renderInColumns ?
+            <YStack gap='$2' key='multi-column-rendering'>
+              <PaginationResetIndicator {...pagination} />
+              <XStack mx='auto' jc='center' flexWrap='wrap'>
+                <AnimatePresence>
 
-                <PaginationResetIndicator {...pagination} />
-                <FlipMove>
+                  {/* <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}> */}
 
                   {firstPageLoaded || allEvents.length > 0
                     ? allEvents.length === 0
-                      ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
+                      ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
                         <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                           <Heading size='$5' mb='$3'>No events found.</Heading>
                           <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                         </YStack>
-                      </div>
+                      </XStack>
                       : undefined
                     : undefined}
                   {paginatedEvents.map((event) => {
-                    return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                      <XStack w='100%'>
-                        <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
+                    return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)} animation='standard' {...standardAnimation}>
+                      <XStack w={eventCardWidth}
+                        mx='$1' px='$1'>
+                        <EventCard event={event} isPreview />
                       </XStack>
-                    </div>
+                    </XStack>;
                   })}
-                </FlipMove>
-                <PaginationIndicator {...pagination} />
-              </YStack>}
+                  {/* </FlipMove> */}
+                </AnimatePresence>
+              </XStack>
+              <PaginationIndicator {...pagination} />
+            </YStack>
+            : <YStack key='single-column-rendering' w='100%' ac='center' ai='center' jc='center' gap='$2'>
+
+              <PaginationResetIndicator {...pagination} />
+              <FlipMove>
+
+                {firstPageLoaded || allEvents.length > 0
+                  ? allEvents.length === 0
+                    ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
+                      <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                        <Heading size='$5' mb='$3'>No events found.</Heading>
+                        <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                      </YStack>
+                    </div>
+                    : undefined
+                  : undefined}
+                {paginatedEvents.map((event) => {
+                  return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                    <XStack w='100%'>
+                      <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
+                    </XStack>
+                  </div>
+                })}
+              </FlipMove>
+              <PaginationIndicator {...pagination} />
+            </YStack>}
         </FlipMove>
 
         {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}

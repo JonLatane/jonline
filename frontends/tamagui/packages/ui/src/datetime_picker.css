@@ -1,3 +1,7 @@
+.react-datetime-picker__wrapper {
+  border-radius: 4px;
+}
+
 .react-datetime-picker__calendar {
   color: black;
 }
@@ -22,4 +26,10 @@
 .react-datetime-picker__inputGroup__input {
   /* min-width: 10px; */
   min-width: none;
+}
+
+
+.react-datetime-picker__inputGroup__input[name=amPm] {
+  /* min-width: 10px; */
+  width: 55px;
 }
