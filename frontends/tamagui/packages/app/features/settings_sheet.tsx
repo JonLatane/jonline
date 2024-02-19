@@ -1,7 +1,7 @@
 import { Button, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
@@ -124,11 +124,14 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   value={app.shrinkFeatureNavigation}
                   setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
               </YStack>
-              <Heading size='$5' mt='$3'>Posts, Events, and People</Heading>
+              <Heading size='$5' mt='$3'>Post/Event/User Cards</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-
-                <ToggleRow name='Fancy Backgrounds'
-                  description='Add pretty blurred background images to the UI. Memory and CPU intensive; may lead to crashes. Runs fine on my M1 Max MacBook Pro, crashes my iPhone 12 Pro.'
+                <ToggleRow name='Enable Backround Images'
+                  description='Show background images on Posts, Events, and People. Memory intensive depending on browser and device; may lead to crashes. Runs fine on my M1 Max MacBook Pro, crashes my iPhone 12 Pro.'
+                  value={app.imagePostBackgrounds} setter={setImagePostBackgrounds} autoDispatch />
+                <ToggleRow name='Blur Backgrounds'
+                  disabled={!app.imagePostBackgrounds}
+                  description='Blurred background images. Even more memory and CPU intensive!'
                   value={app.fancyPostBackgrounds} setter={setFancyPostBackgrounds} autoDispatch />
 
               </YStack>

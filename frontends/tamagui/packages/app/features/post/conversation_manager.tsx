@@ -216,8 +216,8 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
             // marginLeft: 'auto', marginRight: 'auto',
             display: 'flex',
             width: '100%',
-            marginTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
-            marginBottom: //interactionType === 'post' ? 100 : 
+            paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
+            paddingBottom: //interactionType === 'post' ? 100 : 
             window.innerHeight / 2,
             // transform: `translateX(-50%)`,
             // margin: `${window.innerWidth / 2 - 20} ${window.innerHeight / 2 - 20}`

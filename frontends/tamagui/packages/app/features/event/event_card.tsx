@@ -208,7 +208,7 @@ export const EventCard: React.FC<Props> = ({
         : `/event/${detailsLinkId}`
       : '.'
   });
-  const { fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
+  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
 
   const authorLink = useLink({
     href: authorName
@@ -929,24 +929,24 @@ export const EventCard: React.FC<Props> = ({
               </YStack>
             }
           </Card.Footer>
-          {/* {fancyPostBackgrounds ? */}
-          <Card.Background>
-            {(showBackgroundPreview) ?
-              <Image
-                pos="absolute"
-                width={backgroundSize}
-                opacity={fancyPostBackgrounds ? 0.11 : 0.04}
-                height={backgroundSize}
-                resizeMode="cover"
-                als="flex-start"
-                source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
-                blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
-                // borderRadius={5}
-                borderBottomRightRadius={5}
-              />
-              : undefined}
-          </Card.Background>
-          {/* : undefined} */}
+          {imagePostBackgrounds ?
+            <Card.Background>
+              {(showBackgroundPreview) ?
+                <Image
+                  pos="absolute"
+                  width={backgroundSize}
+                  opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                  height={backgroundSize}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
+                  blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                  // borderRadius={5}
+                  borderBottomRightRadius={5}
+                />
+                : undefined}
+            </Card.Background>
+            : undefined}
         </Card >
       </YStack>
     </AccountOrServerContextProvider>

@@ -90,7 +90,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
-  const { fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
+  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
 
   function saveEdits() {
     setSavingEdits(true);
@@ -527,24 +527,24 @@ export const PostCard: React.FC<PostCardProps> = ({
               </YStack>
             }
           </Card.Footer>
-          {/* {fancyPostBackgrounds ? */}
-          <Card.Background>
-            {(showBackgroundPreview) ?
-              <Image
-                pos="absolute"
-                width={backgroundSize}
-                opacity={fancyPostBackgrounds ? 0.11 : 0.04}
-                height={backgroundSize}
-                resizeMode="cover"
-                als="flex-start"
-                source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
-                blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
-                // borderRadius={5}
-                borderBottomRightRadius={5}
-              />
-              : undefined}
-          </Card.Background>
-          {/* : undefined} */}
+          {imagePostBackgrounds ?
+            <Card.Background>
+              {(showBackgroundPreview) ?
+                <Image
+                  pos="absolute"
+                  width={backgroundSize}
+                  opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                  height={backgroundSize}
+                  resizeMode="cover"
+                  als="flex-start"
+                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
+                  blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                  // borderRadius={5}
+                  borderBottomRightRadius={5}
+                />
+                : undefined}
+            </Card.Background>
+            : undefined}
         </Card >
         {/* </Theme> */}
       </YStack >
