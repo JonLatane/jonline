@@ -9,6 +9,7 @@ import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
 import FlipMove from 'react-flip-move';
+import { ex } from "@fullcalendar/core/internal-common";
 
 
 export type PinnedServerSelectorProps = {
@@ -35,10 +36,8 @@ export function PinnedServerSelector({
   const allServers = useAppSelector(state => selectAllServers(state.servers));
   const availableServers = useAppSelector(state =>
     selectAllServers(state.servers)
-      .filter(server => simplified || (!currentServer || serverID(server) != serverID(currentServer))
-        // && !pinnedServers.some(s => s.serverId === serverID(server))
-      ));
-  // const [showDataSources, setShowDataSources] = useState(true);
+      .filter(server => simplified || !currentServer || server.host !== currentServer.host));
+
   const pinnedServerCount = availableServers
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
@@ -79,15 +78,17 @@ export function PinnedServerSelector({
     }
     dispatch(pinServer({ serverId: serverID(currentServer!), pinned: !updatedValue, accountId }));
   };
-  // console.log('configuringFederation', configuringFederation, 'pagesStatuses', pagesStatuses);
 
   const description = excludeCurrentServer && pinnedServerCount === 0
     ? 'No servers are selected'
-    : `From ${excludeCurrentServer
-      ? ''
-      : `${shortServerName}`} ${pinnedServerCount === 0
-        ? 'only'
-        : `${excludeCurrentServer ? '' : 'and '}${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`}`
+    : excludeCurrentServer
+      ? totalServerCount === pinnedServerCount
+        ? `From ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
+        : `From ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`
+      : totalServerCount === pinnedServerCount
+        ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
+        : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
+
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparent ? undefined : '$backgroundHover'}

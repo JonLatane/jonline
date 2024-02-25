@@ -108,66 +108,6 @@ impl ToProtoMarshalablePost for MarshalablePost {
     }
 }
 
-// pub trait ToProtoPost {
-//     fn to_proto(
-//         &self,
-//         author: Option<&models::Author>,
-//         group_post: Option<&models::GroupPost>,
-//         media_lookup: Option<&MediaLookup>,
-//     ) -> Post;
-// }
-
-// impl ToProtoPost for models::Post {
-//     fn to_proto(
-//         &self,
-//         author: Option<&models::Author>,
-//         group_post: Option<&models::GroupPost>,
-//         media_lookup: Option<&MediaLookup>,
-//     ) -> Post {
-//         Post {
-//             id: self.id.to_proto_id(),
-//             reply_to_post_id: self.parent_post_id.map(|i| i.to_proto_id()),
-//             author: author.map(|a| a.to_proto(media_lookup)),
-
-//             title: self.title.to_owned(),
-//             link: self.link.to_link(),
-//             content: self.content.to_owned(),
-
-//             response_count: self.response_count,
-//             reply_count: self.reply_count,
-//             group_count: self.group_count,
-//             current_group_post: group_post.map(|gp| gp.to_proto()),
-//             media: match media_lookup {
-//                 Some(lookup) => self
-//                     .media
-//                     .iter()
-//                     .map(|v| match lookup.get(v) {
-//                         Some(media) => Some(media.to_proto()),
-//                         None => None,
-//                     })
-//                     .filter(|v| v.is_some())
-//                     .map(|v| v.unwrap())
-//                     .collect_vec(),
-//                 None => vec![],
-//             }, // self.media.iter().map(|v| v.to_proto_id()).collect_vec(),
-//             media_generated: self.media_generated,
-//             embed_link: self.embed_link,
-//             shareable: self.shareable,
-
-//             context: self.context.to_i32_post_context(),
-//             visibility: self.visibility.to_i32_visibility(),
-//             moderation: self.moderation.to_i32_moderation(),
-
-//             replies: vec![], //TODO update this
-
-//             created_at: Some(self.created_at.to_proto()),
-//             updated_at: self.updated_at.map(|t| t.to_proto()),
-//             published_at: self.published_at.map(|t| t.to_proto()),
-//             last_activity_at: Some(self.last_activity_at.to_proto()),
-//         }
-//     }
-// }
-
 pub trait ToProtoGroupPost {
     fn to_proto(&self) -> GroupPost;
     fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status>;

@@ -63,7 +63,8 @@ export const EventCard: React.FC<Props> = ({
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
 
   const mediaQuery = useMedia();
-  const post = federatedEntity(event.post!, server);
+  const eventPost = federatedEntity(event.post!, server);
+  const instancePost = federatedEntity(event.instances[0]?.post!, server);
 
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = getServerTheme(server);
   const [editing, _setEditing] = useState(false);
@@ -74,24 +75,24 @@ export const EventCard: React.FC<Props> = ({
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
 
-  const [editedTitle, setEditedTitle] = useState(post.title);
-  const [editedLink, setEditedLink] = useState(post.link);
-  const [editedContent, setEditedContent] = useState(post.content);
-  const [editedMedia, setEditedMedia] = useState(post.media);
-  const [editedEmbedLink, setEditedEmbedLink] = useState(post.embedLink);
-  const [editedVisibility, setEditedVisibility] = useState(post.visibility);
-  const [editedShareable, setEditedShareable] = useState(post.shareable);
+  const [editedTitle, setEditedTitle] = useState(eventPost.title);
+  const [editedLink, setEditedLink] = useState(eventPost.link);
+  const [editedContent, setEditedContent] = useState(eventPost.content);
+  const [editedMedia, setEditedMedia] = useState(eventPost.media);
+  const [editedEmbedLink, setEditedEmbedLink] = useState(eventPost.embedLink);
+  const [editedVisibility, setEditedVisibility] = useState(eventPost.visibility);
+  const [editedShareable, setEditedShareable] = useState(eventPost.shareable);
 
   const [editedInstances, setEditedInstances] = useState(event.instances);
   const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
   const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
 
-  const title = editing ? editedTitle : post.title;
-  const content = editing ? editedContent : post.content;
-  const media = editing ? editedMedia : post.media;
-  const embedLink = editing ? editedEmbedLink : post.embedLink;
-  const visibility = editing ? editedVisibility : post.visibility;
-  const shareable = editing ? editedShareable : post.shareable;
+  const title = editing ? editedTitle : eventPost.title;
+  const content = editing ? editedContent : eventPost.content;
+  const media = editing ? editedMedia : eventPost.media;
+  const embedLink = editing ? editedEmbedLink : eventPost.embedLink;
+  const visibility = editing ? editedVisibility : eventPost.visibility;
+  const shareable = editing ? editedShareable : eventPost.shareable;
   const instances = editing ? editedInstances : event.instances;
 
   const hasPastInstances = instances.find(isPastInstance) != undefined;
@@ -126,7 +127,7 @@ export const EventCard: React.FC<Props> = ({
         allowsAnonymousRsvps: editedAllowRsvps && editedAllowAnonymousRsvps,
       },
       post: {
-        ...post,
+        ...eventPost,
         title: editedTitle,
         link: editedLink,
         content: editedContent,
@@ -168,7 +169,7 @@ export const EventCard: React.FC<Props> = ({
     setEditingInstance(target);
   }
 
-  const [deleted, setDeleted] = useState(post.author === undefined);
+  const [deleted, setDeleted] = useState(eventPost.author === undefined);
   const [deleting, setDeleting] = useState(false);
   function doDeletePost() {
     setDeleting(true);
@@ -189,8 +190,8 @@ export const EventCard: React.FC<Props> = ({
     }
   }, [isVisible]);
 
-  const authorId = post.author?.userId;
-  const authorName = post.author?.username;
+  const authorId = eventPost.author?.userId;
+  const authorName = eventPost.author?.username;
 
   const primaryInstanceIdString = primaryInstance?.id ?? 'no-primary-instance';
   const detailsLinkId = !isPrimaryServer
@@ -238,34 +239,34 @@ export const EventCard: React.FC<Props> = ({
     : undefined;
 
   const detailsLink: LinkProps | undefined = isPreview ? eventLink : undefined;
-  const postLink = post.link ? useLink({ href: post.link }) : undefined;
-  const authorLinkProps = post.author ? authorLink : undefined;
+  const postLink = eventPost.link ? useLink({ href: eventPost.link }) : undefined;
+  const authorLinkProps = eventPost.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
-  const showDetailsShadow = isPreview && post.content && post.content.length > contentLengthShadowThreshold;
+  const showDetailsShadow = isPreview && eventPost.content && eventPost.content.length > contentLengthShadowThreshold;
   const detailsShadowProps = showDetailsShadow ? {
     shadowOpacity: 0.3,
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
   } : {};
-  const embedSupported = post.embedLink && post.link && post.link.length;
+  const embedSupported = eventPost.embedLink && eventPost.link && eventPost.link.length;
   let embedComponent: React.ReactNode | undefined = undefined;
   if (embedSupported) {
-    const url = new URL(post.link!);
+    const url = new URL(eventPost.link!);
     const hostname = url.hostname.split(':')[0]!;
     if (hostname.endsWith('twitter.com')) {
-      embedComponent = <TwitterEmbed url={post.link!} />;
+      embedComponent = <TwitterEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('instagram.com')) {
-      embedComponent = <InstagramEmbed url={post.link!} />;
+      embedComponent = <InstagramEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('facebook.com')) {
-      embedComponent = <FacebookEmbed url={post.link!} />;
+      embedComponent = <FacebookEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('youtube.com')) {
-      embedComponent = <YouTubeEmbed url={post.link!} />;
+      embedComponent = <YouTubeEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('tiktok.com')) {
-      embedComponent = <TikTokEmbed url={post.link!} />;
+      embedComponent = <TikTokEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('pinterest.com')) {
-      embedComponent = <PinterestEmbed url={post.link!} />;
+      embedComponent = <PinterestEmbed url={eventPost.link!} />;
     } else if (hostname.endsWith('linkedin.com')) {
-      embedComponent = <LinkedInEmbed url={post.link!} />;
+      embedComponent = <LinkedInEmbed url={eventPost.link!} />;
     }
   }
 
@@ -287,7 +288,7 @@ export const EventCard: React.FC<Props> = ({
   );
   const foregroundSize = backgroundSize * 0.7;
 
-  const author = post.author;
+  const author = eventPost.author;
   const isAuthor = author && author.userId === currentUser?.id;
   const showEdit = !!isAuthor && !isPreview && !hideEditControls;
 
@@ -336,7 +337,7 @@ export const EventCard: React.FC<Props> = ({
             <Link size='$1' color={navAnchorColor} />
           </YStack>
           <YStack f={1} my='auto'>
-            <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{post.link}</Paragraph>
+            <Paragraph size="$2" color={navAnchorColor} overflow="hidden" whiteSpace="nowrap" textOverflow="ellipsis">{eventPost.link}</Paragraph>
           </YStack>
         </XStack>
       </Anchor>
@@ -450,10 +451,10 @@ export const EventCard: React.FC<Props> = ({
     {editing && !previewingEdits ? headerLinksEdit : headerLinksView}
   </XStack>;
 
-  const contentView = editing || (post.content && post.content) != ''
+  const contentView = editing || (eventPost.content && eventPost.content) != ''
     ? isPreview
       ? <Anchor key='content-link' textDecorationLine='none' {...detailsLink}>
-        <TamaguiMarkdown text={post.content} disableLinks={isPreview} />
+        <TamaguiMarkdown text={eventPost.content} disableLinks={isPreview} />
       </Anchor>
       : editing && !previewingEdits
         ? <TextArea key='content-editor' f={1} pt='$2' value={content}
@@ -711,7 +712,7 @@ export const EventCard: React.FC<Props> = ({
           y={0}
         // borderColor={primaryAnchorColor}
         >
-          {post.link || post.title
+          {eventPost.link || eventPost.title
             ? <Card.Header p={0}>
               <YStack w='100%'>
                 <XStack ai='center' w='100%'>
@@ -798,7 +799,7 @@ export const EventCard: React.FC<Props> = ({
                         {editing && !previewingEdits
                           ? <PostMediaManager
                             key='media-edit'
-                            link={post.link}
+                            link={eventPost.link}
                             media={editedMedia}
                             setMedia={setEditedMedia}
                             embedLink={editedEmbedLink}
@@ -811,7 +812,7 @@ export const EventCard: React.FC<Props> = ({
                             xsPreview={xs && isPreview}
                             {...{ detailsLink, isPreview, groupContext, hasBeenVisible }}
                             post={{
-                              ...post,
+                              ...eventPost,
                               media,
                               embedLink
                             }} />}
@@ -877,7 +878,7 @@ export const EventCard: React.FC<Props> = ({
                         <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                           <XStack key='visibility-edit' my='auto' ml='auto'>
                             <VisibilityPicker
-                              id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                              id={`visibility-picker-${eventPost.id}${isPreview ? '-preview' : ''}`}
                               label='Event Visibility'
                               visibility={visibility}
                               onChange={setEditedVisibility}
@@ -892,7 +893,7 @@ export const EventCard: React.FC<Props> = ({
                           </XStack>
                           {isPrimaryServer
                             ? <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                              <GroupPostManager post={post} isVisible={isVisible}
+                              <GroupPostManager post={eventPost} isVisible={isVisible}
                                 createViewHref={createGroupEventViewHref} />
                             </XStack>
                             : undefined}
@@ -900,13 +901,13 @@ export const EventCard: React.FC<Props> = ({
                       </XStack>
 
                       <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
-                        <AuthorInfo key='author-details' {...{ post, isVisible }} />
+                        <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
 
-                        <Anchor key='author-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                          <YStack key='author-anchor-root' h='100%'>
+                        <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                          <YStack key='discussion-anchor-root' h='100%'>
                             <Button key='comments-link-button'
                               opacity={isPreview ? 1 : 0.9}
-                              transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                              transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
                               disabled={true}
                               marginVertical='auto'
                               px='$2'
@@ -914,10 +915,10 @@ export const EventCard: React.FC<Props> = ({
                               <XStack opacity={0.9}>
                                 <YStack marginVertical='auto' scale={0.75}>
                                   <Paragraph size="$1" ta='right'>
-                                    {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                                    {instancePost.responseCount} comment{instancePost.responseCount == 1 ? '' : 's'}
                                   </Paragraph>
-                                  {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                    {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                                  {isPreview || instancePost.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                    {instancePost.replyCount} repl{instancePost.replyCount == 1 ? 'y' : 'ies'}
                                   </Paragraph>}
                                 </YStack>
                               </XStack>

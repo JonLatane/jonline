@@ -1,5 +1,5 @@
 import { Post } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, } from 'app/hooks';
 import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
@@ -11,7 +11,7 @@ import FlipMove from 'react-flip-move';
 import { usePostInteractionType } from './post_details_screen';
 
 interface ConversationManagerProps {
-  post: FederatedPost;
+  post: FederatedPost | undefined;
 }
 
 let _nextChatReplyRefresh: Moment | undefined = undefined;
@@ -31,12 +31,12 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { replyPostIdPath, setReplyPostIdPath, editHandler } = useConversationContext()!;
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
-  const rootPostId = federatedId(post);
+  const rootPostId = post ? federatedId(post) : undefined;
   const app = useLocalConfiguration();
   const postsState = useRootSelector((state: RootState) => state.posts);
   // const post = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
   const [loadingPost, setLoadingPost] = useState(false);
-  const [loadingReplies, setLoadingReplies] = useState(false);
+  const [loadingRepliesFor, setLoadingRepliesFor] = useState(undefined as string | undefined);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
   const [expandAnimation, setExpandAnimation] = useState(true);
 
@@ -88,22 +88,28 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
   //   postsState.failedPostIds.includes(rootPostId!);
 
   useEffect(() => {
-    if (replyPostIdPath.length == 0) {
+    if (rootPostId && (replyPostIdPath.length == 0 || replyPostIdPath[0] != rootPostId)) {
       setReplyPostIdPath([rootPostId]);
     }
-    if (post && post.replyCount > 0 && post.replies.length == 0 && !loadingReplies) {
-      setLoadingReplies(true);
+    console.log('postId', post?.id, 'post.replyCount', post?.replyCount, 'post.replies.length', post?.replies.length, 'loadingReplies', loadingRepliesFor);
+    if (post && post.replyCount > 0 && post.replies.length === 0 && (!loadingRepliesFor || loadingRepliesFor != rootPostId)) {
+      setLoadingRepliesFor(rootPostId!);
       // console.log('loadReplies', rootPostId, post.replyCount, post.replies.length, loadingReplies);
-      setTimeout(() =>
-        dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })), 1);
-    } else if (!post && loadingReplies) {
-      setLoadingReplies(false);
+      setTimeout(
+        () => dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] }))
+          .then(() => setLoadingRepliesFor(undefined)),
+        1
+      );
+    } else if (!post && loadingRepliesFor) {
+      setLoadingRepliesFor(undefined);
     }
+  }, [post, post?.replyCount, post?.replies.length, rootPostId, replyPostIdPath, loadingRepliesFor]);
+
+  useEffect(() => {
     if (post && (post.replyCount == 0 || post.replies.length > 0) && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
-
-  });
+  }, [post, post?.replyCount, post?.replies.length, showScrollPreserver]);
 
   function toggleCollapseReplies(postId: string) {
     if (collapsedReplies.has(postId)) {
@@ -141,7 +147,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     }
   }
   if (post) {
-    flattenReplies(post, [rootPostId]);
+    flattenReplies(post, rootPostId ? [rootPostId] : []);
   }
   if (chatUI) {
     flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
@@ -211,19 +217,24 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({
     <YStack w='100%' key='comments'>
       <FlipMove>
         {flattenedReplies.length == 0
-          ? <div key='no-replies' style={{
-            // marginLeft: window.innerWidth / 2,
-            // marginLeft: 'auto', marginRight: 'auto',
-            display: 'flex',
-            width: '100%',
-            paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
-            paddingBottom: //interactionType === 'post' ? 100 : 
-            window.innerHeight / 2,
-            // transform: `translateX(-50%)`,
-            // margin: `${window.innerWidth / 2 - 20} ${window.innerHeight / 2 - 20}`
-          }}>
-            <Heading size='$3' mx='auto'>No replies yet.</Heading>
-          </div> : undefined}
+          ? post && !loadingRepliesFor
+            ? <div key='no-replies' style={{
+              display: 'flex',
+              width: '100%',
+              paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
+              paddingBottom: window.innerHeight / 2,
+            }}>
+              <Heading size='$3' mx='auto'>No replies yet.</Heading>
+            </div>
+            : <div key='no-replies' style={{
+              display: 'flex',
+              width: '100%',
+              paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
+              paddingBottom: window.innerHeight / 2,
+            }}>
+              <Spinner size='large' mx='auto' color={primaryColor} />
+            </div>
+          : undefined}
         {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
           let stripeColor = navColor;
           const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;

@@ -20,7 +20,7 @@ type EventLoadData = (
     models::Event,
     models::Post,
     Option<models::Author>,
-    Option<models::Post>,
+    models::Post,
     Option<models::Author>,
 );
 pub fn get_events(
@@ -95,9 +95,8 @@ macro_rules! select_events_instancewise {
                         .eq($user.as_ref().map(|u| u.id).unwrap_or(0)),
                 )),
             )
-            .left_join(
-                instance_posts
-                    .on(event_instances::post_id.eq(instance_posts.field(posts::id).nullable())),
+            .inner_join(
+                instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
             )
             .left_join(
                 instance_users.on(instance_posts
@@ -109,7 +108,7 @@ macro_rules! select_events_instancewise {
                 events::all_columns,
                 posts::all_columns,
                 AUTHOR_COLUMNS.nullable(),
-                instance_posts.fields(posts::all_columns).nullable(),
+                instance_posts.fields(posts::all_columns),
                 instance_users.fields(AUTHOR_COLUMNS).nullable(),
             ))
             .filter(visible_to_current_user!(
@@ -136,9 +135,12 @@ macro_rules! marshalable_event_data {
                         MarshalablePost(event_post.clone(), event_author.clone(), None, vec![]),
                         vec![MarshalableEventInstance(
                             instance.clone(),
-                            instance_post
-                                .clone()
-                                .map(|p| MarshalablePost(p, instance_author.clone(), None, vec![])),
+                            MarshalablePost(
+                                instance_post.clone(),
+                                instance_author.clone(),
+                                None,
+                                vec![],
+                            ),
                         )],
                     )
                 },
@@ -177,7 +179,11 @@ fn get_event_by_instance_id(
     instance_id: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalableEvent>, Status> {
-    let instance = models::get_event_instance(instance_id.to_string().to_db_id_or_err("instance_id")?, user, conn)?;
+    let instance = models::get_event_instance(
+        instance_id.to_string().to_db_id_or_err("instance_id")?,
+        user,
+        conn,
+    )?;
     get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
 }
 
@@ -218,9 +224,7 @@ fn get_event_by_id(
                     .map(|(instance, instance_post, instance_author)| {
                         MarshalableEventInstance(
                             instance.clone(),
-                            instance_post
-                                .clone()
-                                .map(|p| MarshalablePost(p, instance_author.clone(), None, vec![])),
+                            MarshalablePost(instance_post.clone(), instance_author.clone(), None, vec![]),
                         )
                     })
                     .collect(),
@@ -232,13 +236,11 @@ fn get_event_by_id(
         .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
 }
 
-
 macro_rules! visible_to_current_group_user {
     ($user:expr, $instance_posts:expr, $instance_users:expr) => {{
         posts::visibility
             .eq_any(public_string_visibilities($user))
-            .or(posts::visibility
-                .eq(Visibility::Limited.to_string_visibility()))
+            .or(posts::visibility.eq(Visibility::Limited.to_string_visibility()))
             // .or(posts::visibility
             //     .eq(Visibility::Private.to_string_visibility())
             //     .and(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))))
@@ -268,9 +270,8 @@ macro_rules! select_group_events_instancewise {
                         .eq($user.as_ref().map(|u| u.id).unwrap_or(0)),
                 )),
             )
-            .left_join(
-                instance_posts
-                    .on(event_instances::post_id.eq(instance_posts.field(posts::id).nullable())),
+            .inner_join(
+                instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
             )
             .left_join(
                 instance_users.on(instance_posts
@@ -288,7 +289,7 @@ macro_rules! select_group_events_instancewise {
                 events::all_columns,
                 posts::all_columns,
                 AUTHOR_COLUMNS.nullable(),
-                instance_posts.fields(posts::all_columns).nullable(),
+                instance_posts.fields(posts::all_columns),
                 instance_users.fields(AUTHOR_COLUMNS).nullable(),
             ))
             .filter(visible_to_current_group_user!(
@@ -336,7 +337,7 @@ fn get_group_events(
             let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
             marshalable_event_data!(event_data)
-        },
+        }
         (_, None) => vec![],
     };
 

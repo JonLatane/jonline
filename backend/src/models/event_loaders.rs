@@ -40,9 +40,9 @@ pub fn get_event_instances(
     event_id: i64,
     user: &Option<&User>,
     conn: &mut PgPooledConnection,
-) -> Result<Vec<(EventInstance, Option<Post>, Option<Author>)>, Status> {
+) -> Result<Vec<(EventInstance, Post, Option<Author>)>, Status> {
     event_instances::table
-        .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
+        .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
             follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(
@@ -53,11 +53,11 @@ pub fn get_event_instances(
         )
         .select((
             event_instances::all_columns,
-            posts::all_columns.nullable(),
+            posts::all_columns,
             AUTHOR_COLUMNS.nullable(),
         ))
         .filter(event_instances::event_id.eq(event_id))
-        .load::<(EventInstance, Option<Post>, Option<Author>)>(conn)
+        .load::<(EventInstance, Post, Option<Author>)>(conn)
         .map_err(|e| {
             log::error!(
                 "Failed to load event instances for event_id={}: {:?}",
@@ -105,7 +105,7 @@ pub fn get_event_attendances(
         .inner_join(
             event_instances::table.on(event_attendances::event_instance_id.eq(event_instances::id)),
         )
-        .left_join(posts::table.on(event_instances::post_id.eq(posts::id.nullable())))
+        .left_join(posts::table.on(event_instances::post_id.eq(posts::id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .left_join(
             follows::table.on(posts::user_id.eq(follows::target_user_id.nullable()).and(

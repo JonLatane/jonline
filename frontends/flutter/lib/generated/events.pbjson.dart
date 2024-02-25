@@ -178,14 +178,13 @@ const EventInstance$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'event_id', '3': 2, '4': 1, '5': 9, '10': 'eventId'},
-    {'1': 'post', '3': 3, '4': 1, '5': 11, '6': '.jonline.Post', '9': 0, '10': 'post', '17': true},
+    {'1': 'post', '3': 3, '4': 1, '5': 11, '6': '.jonline.Post', '10': 'post'},
     {'1': 'info', '3': 4, '4': 1, '5': 11, '6': '.jonline.EventInstanceInfo', '10': 'info'},
     {'1': 'starts_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'startsAt'},
     {'1': 'ends_at', '3': 6, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'endsAt'},
-    {'1': 'location', '3': 7, '4': 1, '5': 11, '6': '.jonline.Location', '9': 1, '10': 'location', '17': true},
+    {'1': 'location', '3': 7, '4': 1, '5': 11, '6': '.jonline.Location', '9': 0, '10': 'location', '17': true},
   ],
   '8': [
-    {'1': '_post'},
     {'1': '_location'},
   ],
 };
@@ -193,11 +192,11 @@ const EventInstance$json = {
 /// Descriptor for `EventInstance`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'Cg1FdmVudEluc3RhbmNlEg4KAmlkGAEgASgJUgJpZBIZCghldmVudF9pZBgCIAEoCVIHZXZlbn'
-    'RJZBImCgRwb3N0GAMgASgLMg0uam9ubGluZS5Qb3N0SABSBHBvc3SIAQESLgoEaW5mbxgEIAEo'
-    'CzIaLmpvbmxpbmUuRXZlbnRJbnN0YW5jZUluZm9SBGluZm8SNwoJc3RhcnRzX2F0GAUgASgLMh'
-    'ouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIIc3RhcnRzQXQSMwoHZW5kc19hdBgGIAEoCzIa'
-    'Lmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSBmVuZHNBdBIyCghsb2NhdGlvbhgHIAEoCzIRLm'
-    'pvbmxpbmUuTG9jYXRpb25IAVIIbG9jYXRpb26IAQFCBwoFX3Bvc3RCCwoJX2xvY2F0aW9u');
+    'RJZBIhCgRwb3N0GAMgASgLMg0uam9ubGluZS5Qb3N0UgRwb3N0Ei4KBGluZm8YBCABKAsyGi5q'
+    'b25saW5lLkV2ZW50SW5zdGFuY2VJbmZvUgRpbmZvEjcKCXN0YXJ0c19hdBgFIAEoCzIaLmdvb2'
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCHN0YXJ0c0F0EjMKB2VuZHNfYXQYBiABKAsyGi5nb29n'
+    'bGUucHJvdG9idWYuVGltZXN0YW1wUgZlbmRzQXQSMgoIbG9jYXRpb24YByABKAsyES5qb25saW'
+    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBQgsKCV9sb2NhdGlvbg==');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

@@ -17,7 +17,7 @@ pub struct MarshalableEvent(
     pub Vec<MarshalableEventInstance>,
 );
 #[derive(Debug, Clone)]
-pub struct MarshalableEventInstance(pub models::EventInstance, pub Option<MarshalablePost>);
+pub struct MarshalableEventInstance(pub models::EventInstance, pub MarshalablePost);
 
 pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnection) -> Vec<Event> {
     let media_ids: Vec<i64> = data
@@ -81,7 +81,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
         EventInstance {
             id: event_instance.id.to_proto_id(),
             event_id: event_instance.event_id.to_proto_id(),
-            post: marshalable_post.map(|p| p.to_proto(media_lookup)),
+            post: Some(marshalable_post.to_proto(media_lookup)),
             starts_at: Some(event_instance.starts_at.to_proto()),
             ends_at: Some(event_instance.ends_at.to_proto()),
             info: Some(EventInstanceInfo {

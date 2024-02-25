@@ -183,20 +183,22 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const { posts } = action.payload;
       upsertPosts(state, federatedEntities(posts, action));
     });
-
-    const saveEventPost = (state: PostsState, action: PayloadAction<Event, any, any>) => {
-      postsAdapter.upsertOne(state, federatedEntity(action.payload.post!, action));
-    };
-    builder.addCase(loadEvent.fulfilled, saveEventPost);
-    builder.addCase(loadEventByInstance.fulfilled, saveEventPost);
-    builder.addCase(updateEvent.fulfilled, saveEventPost);
-    builder.addCase(createEvent.fulfilled, saveEventPost);
-    builder.addCase(loadEventsPage.fulfilled, (state, action) => {
-      const posts = action.payload.events.map(event => event.post!);
-      upsertPosts(state, federatedEntities(posts, action));
-    });
     builder.addCase(deletePost.fulfilled, (state, action) => {
       postsAdapter.removeOne(state, federatedId(federatedPayload(action)));
+    });
+
+    const saveEventPosts = (state: PostsState, action: PayloadAction<Event, any, any>) => {
+      const posts: Post[] = [action.payload.post!, ...action.payload.instances.map(i => i.post!)];
+      // postsAdapter.upsertOne(state, federatedEntity(action.payload.post!, action));
+      postsAdapter.upsertMany(state, federatedEntities(posts, action));
+    };
+    builder.addCase(loadEvent.fulfilled, saveEventPosts);
+    builder.addCase(loadEventByInstance.fulfilled, saveEventPosts);
+    builder.addCase(updateEvent.fulfilled, saveEventPosts);
+    builder.addCase(createEvent.fulfilled, saveEventPosts);
+    builder.addCase(loadEventsPage.fulfilled, (state, action) => {
+      const posts: Post[] = action.payload.events.flatMap(event => [event.post!, ...event.instances.map(i => i.post!)]);
+      upsertPosts(state, federatedEntities(posts, action));
     });
   },
 });

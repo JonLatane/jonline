@@ -136,7 +136,7 @@ message EventInstance {
   // ID of the parent `Event`.
   string event_id = 2;
   // Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
-  optional Post post = 3;
+  Post post = 3;
   // Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
   EventInstanceInfo info = 4;
   // The time the event starts (UTC/Timestamp format).

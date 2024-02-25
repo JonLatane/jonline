@@ -6,7 +6,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::event_instances;
+use crate::schema::{event_instances, posts};
 // use crate::schema::event_instances::starts_at;
 
 // use crate::rpcs::validations::*;
@@ -73,58 +73,64 @@ fn update_event_instances(
     request: Event,
     current_user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<Event, Status> {
-    let event = models::get_event(
-        request.id.to_db_id_or_err("id")?,
-        &Some(current_user),
-        conn,
-    )?;
+) -> Result<(), Status> {
+    let event = models::get_event(request.id.to_db_id_or_err("id")?, &Some(current_user), conn)?;
     let existing_instance_data = models::get_event_instances(event.id, &Some(&current_user), conn)?;
     let mut existing_instances = BTreeMap::new();
     for (instance, post, user) in existing_instance_data.iter() {
         existing_instances.insert(instance.id, (instance, post, user));
     }
     // existing_instance_data.iter();
-    let mut result_instance_data: Vec<EventInstance> = vec![];
+    let mut result_instance_data: Vec<models::EventInstance> = vec![];
     for request_instance in request.instances.iter() {
         println!("Processing input instance: {:?}", &request_instance);
-        let existing_instance: Option<models::EventInstance> =
+        let existing_instance_and_post: Option<(models::EventInstance, models::Post)> =
             match request_instance.id.to_db_id_or_err("instance.id") {
                 Ok(instance_id) => {
-                    // println!("Searching for existing instance: {}", instance_id);
-                    let existing_instance = event_instances::table
-                        .select(event_instances::all_columns)
+                    let instance_and_post = event_instances::table
+                        .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
+                        .select((event_instances::all_columns, posts::all_columns))
                         .filter(event_instances::id.eq(instance_id))
-                        .first::<models::EventInstance>(conn)
+                        .first::<(models::EventInstance, models::Post)>(conn)
                         .ok();
-                    // println!("existing_instance: {:?}", &existing_instance);
-                    if existing_instance.is_none()
-                        || existing_instance.as_ref().unwrap().event_id != event.id
+
+                    if instance_and_post.is_none()
+                        || instance_and_post.as_ref().unwrap().0.event_id != event.id
                     {
                         // println!("Creating new instance for UI id: {}", instance.id);
-                        Some(create_instance(&event, request_instance, conn)?)
+                        Some(create_instance(
+                            &event,
+                            request_instance,
+                            current_user,
+                            conn,
+                        )?)
                     } else {
                         // println!("Found existing instance for UI id: {}", instance.id);
-                        existing_instance
+                        instance_and_post
                     }
                 }
                 Err(_) => {
                     // println!("Creating new instance for UI id: {}", instance.id);
-                    Some(create_instance(&event, request_instance, conn)?)
+                    Some(create_instance(
+                        &event,
+                        request_instance,
+                        current_user,
+                        conn,
+                    )?)
                 }
             };
-        println!("Target instance: {:?}", &existing_instance);
+        println!("Target instance: {:?}", &existing_instance_and_post);
 
         // TODO: Update the instance to match the request changes
 
-        match existing_instance {
+        match existing_instance_and_post {
             None => {
                 return Err(Status::new(
                     Code::Internal,
                     format!("failed_to_create_instance[{}]", request_instance.id),
                 ))
             }
-            Some(existing_instance) => {
+            Some((existing_instance, _existing_post)) => {
                 let mut updated_instance = existing_instance.clone();
                 let starts_at = request_instance.starts_at.to_db()?;
                 let ends_at = request_instance.ends_at.to_db()?;
@@ -169,9 +175,10 @@ fn update_event_instances(
                         log::error!("Failed to update event instance: {:?}", e);
                         Status::new(Code::Internal, "failed_to_update_event_instance")
                     })?;
+                // let updated_post = existing_post;
                 println!("Returning instance: {}", existing_instance.id);
                 result_instance_data
-                    .push(MarshalableEventInstance(updated_instance, None).to_proto(None));
+                    .push(updated_instance);
             }
         }
     }
@@ -179,11 +186,11 @@ fn update_event_instances(
     // Delete non-present instances
     let mut result_instances = BTreeMap::new();
     for instance in result_instance_data.iter() {
-        result_instances.insert(instance.id.clone(), instance);
+        result_instances.insert(instance.id, instance);
     }
     let removed_instance_ids: Vec<i64> = existing_instance_data
         .iter()
-        .filter(|(instance, _, _)| !result_instances.contains_key(&instance.id.to_proto_id()))
+        .filter(|(instance, _, _)| !result_instances.contains_key(&instance.id))
         .map(|(instance, _, _)| instance.id)
         .collect();
     diesel::delete(event_instances::table.filter(event_instances::id.eq_any(removed_instance_ids)))
@@ -193,21 +200,57 @@ fn update_event_instances(
             Status::new(Code::Internal, "failed_to_delete_event_instances")
         })?;
 
-    Ok(Event {
-        instances: result_instance_data,
-        ..request
-    })
+    // Ok(Event {
+    //     instances: result_instance_data,
+    //     ..request
+    // })
+
+    Ok(())
 }
 
 pub fn create_instance(
     event: &models::Event,
     instance: &EventInstance,
+    user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<models::EventInstance, Status> {
-    insert_into(event_instances::table)
+) -> Result<(models::EventInstance, models::Post), Status> {
+    let new_post = instance.post.as_ref().map_or(
+        models::NewPost {
+            user_id: Some(user.id),
+            parent_post_id: None,
+            title: None,
+            link: None,
+            content: None,
+            visibility: "GLOBAL_PUBLIC".to_string(),
+            embed_link: false,
+            context: PostContext::EventInstance.as_str_name().to_string(),
+            moderation: "UNMODERATED".to_string(),
+            media: vec![],
+        },
+        |p| models::NewPost {
+            user_id: Some(user.id),
+            parent_post_id: None,
+            title: p.title.to_owned(),
+            link: p.link.to_link(),
+            content: p.content.to_owned(),
+            visibility: p.visibility.to_string_visibility(),
+            embed_link: p.embed_link.to_owned(),
+            context: PostContext::EventInstance.as_str_name().to_string(),
+            moderation: "UNMODERATED".to_string(),
+            media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
+        },
+    );
+    let instance_post: models::Post = insert_into(posts::table)
+        .values(&new_post)
+        .get_result::<models::Post>(conn)
+        .map_err(|e| {
+            log::error!("Failed to create event instance post: {:?}", e);
+            Status::new(Code::Internal, "failed_to_create_event_instance_post")
+        })?;
+    let instance = insert_into(event_instances::table)
         .values(&models::NewEventInstance {
             event_id: event.id,
-            post_id: None, //instance_post.as_ref().map(|p| p.id),
+            post_id: instance_post.id,
             starts_at: instance.starts_at.as_ref().unwrap().to_db(),
             ends_at: instance.ends_at.as_ref().unwrap().to_db(),
             location: instance
@@ -220,5 +263,6 @@ pub fn create_instance(
         .map_err(|e| {
             log::error!("Failed to create event instance: {:?}", e);
             Status::new(Code::Internal, "failed_to_create_event_instance")
-        })
+        })?;
+    Ok((instance, instance_post))
 }

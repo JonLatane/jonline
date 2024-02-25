@@ -301,7 +301,7 @@ export interface EventInstance {
   /** ID of the parent `Event`. */
   eventId: string;
   /** Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`. */
-  post?:
+  post:
     | Post
     | undefined;
   /** Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`. */

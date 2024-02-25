@@ -25,7 +25,7 @@ pub struct NewEvent {
 pub struct EventInstance {
     pub id: i64,
     pub event_id: i64,
-    pub post_id: Option<i64>,
+    pub post_id: i64,
     pub info: serde_json::Value,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
@@ -38,7 +38,7 @@ pub struct EventInstance {
 #[diesel(table_name = event_instances)]
 pub struct NewEventInstance {
     pub event_id: i64,
-    pub post_id: Option<i64>,
+    pub post_id: i64,
     pub info: serde_json::Value,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,

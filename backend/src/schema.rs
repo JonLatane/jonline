@@ -19,7 +19,7 @@ table! {
     event_instances (id) {
         id -> Int8,
         event_id -> Int8,
-        post_id -> Nullable<Int8>,
+        post_id -> Int8,
         info -> Jsonb,
         starts_at -> Timestamp,
         ends_at -> Timestamp,

@@ -1,7 +1,7 @@
 import { EventInstance } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
-import { useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
-import { RootState, federateId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
+import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { RootState, federateId, federatedId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -35,26 +35,30 @@ export function EventDetailsScreen() {
 
   const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
-  const groupId = useRootSelector((state: RootState) =>
+  const groupId = useAppSelector((state) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
-  const group = useRootSelector((state: RootState) =>
+  const group = useAppSelector((state) =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
-  const eventsState = useRootSelector((state: RootState) => state.events);
-  const postsState = useRootSelector((state: RootState) => state.posts);
+  const eventsState = useAppSelector((state) => state.events);
+  const postsState = useAppSelector((state) => state.posts);
 
-  const eventId = useRootSelector((state: RootState) => instanceId
+  const eventId = useAppSelector((state) => instanceId
     ? state.events.instanceEvents[instanceId]
     : undefined);
-  const subjectEvent = useRootSelector((state: RootState) => eventId
+  const subjectEvent = useAppSelector(state => eventId
     ? selectEventById(state.events, eventId)
     : undefined);
-  const subjectPost = useRootSelector((state: RootState) =>
+  const subjectPost = useAppSelector((state) =>
     selectPostById(state.posts, federateId(subjectEvent?.post?.id ?? '', serverHost)));
-
-  const postId = subjectPost?.id;
 
   const subjectInstances = subjectEvent?.instances;
   const [subjectInstance, setSubjectInstance] = useState<EventInstance | undefined>(undefined);
+
+  const instancePost = useAppSelector(state => subjectInstance
+    ? selectPostById(state.posts, federateId(subjectInstance.post!.id, serverHost))
+    : undefined);
+  const instancePostId = instancePost?.id;
+
   // = subjectInstances?.find(i => i.id == instanceId);
   useEffect(() => {
     if (subjectInstances && subjectInstance?.id != instanceId) {
@@ -217,8 +221,9 @@ export function EventDetailsScreen() {
           </Tooltip>
         </XStack>
       }
-      bottomChrome={<ReplyArea replyingToPath={replyPostIdPath}
-        onStopReplying={() => postId && setReplyPostIdPath([postId])}
+      bottomChrome={<ReplyArea 
+        replyingToPath={replyPostIdPath}
+        onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
         hidden={!showReplyArea} />}
     >
       {!subjectEvent || !subjectPost
@@ -248,7 +253,7 @@ export function EventDetailsScreen() {
                     </XStack>
                     : undefined}
                 </AnimatePresence>
-                <ConversationManager post={subjectPost!} />
+                <ConversationManager post={instancePost} />
               </ScrollView>
 
 
