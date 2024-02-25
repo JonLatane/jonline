@@ -221,10 +221,14 @@ export function EventDetailsScreen() {
           </Tooltip>
         </XStack>
       }
-      bottomChrome={<ReplyArea 
-        replyingToPath={replyPostIdPath}
-        onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
-        hidden={!showReplyArea} />}
+      bottomChrome={
+        <AccountOrServerContextProvider value={accountOrServer}>
+          <ReplyArea
+            replyingToPath={replyPostIdPath}
+            onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
+            hidden={!showReplyArea} />
+        </AccountOrServerContextProvider>
+      }
     >
       {!subjectEvent || !subjectPost
         ? failedToLoadEvent

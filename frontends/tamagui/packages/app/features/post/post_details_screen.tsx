@@ -190,9 +190,12 @@ export function PostDetailsScreen() {
           </Tooltip>
         </XStack>
       }
-      bottomChrome={<ReplyArea replyingToPath={replyPostIdPath}
-        onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
-        hidden={!showReplyArea} />}
+      bottomChrome={
+        <AccountOrServerContextProvider value={accountOrServer}>
+          <ReplyArea replyingToPath={replyPostIdPath}
+            onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
+            hidden={!showReplyArea} />
+        </AccountOrServerContextProvider>}
     >
       {!subjectPost
         ? failedToLoadPost

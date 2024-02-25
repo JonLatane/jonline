@@ -4,7 +4,7 @@ import { ChevronRight, Edit3 as Edit, Eye, Send as SendIcon } from '@tamagui/luc
 import { TamaguiMarkdown } from 'app/components'
 import { useAccountOrServerContext } from 'app/contexts'
 import { useAccountOrServer, useAppDispatch } from 'app/hooks'
-import { RootState, actionFailed, getServerTheme, replyToPost, selectPostById, useRootSelector } from 'app/store'
+import { RootState, actionFailed, getServerTheme, parseFederatedId, replyToPost, selectPostById, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
