@@ -121,7 +121,7 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
         postsAdapter.upsertOne(state, { ...post, replies: oldPost?.replies ?? post.replies });
       });
 
-      const postIds = federatedPosts.map(post => federatedId(post));
+      const postIds = federatedPosts.map(federatedId);
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultPostListingType;
 

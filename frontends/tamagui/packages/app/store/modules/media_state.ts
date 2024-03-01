@@ -10,38 +10,36 @@ import {
 } from "@reduxjs/toolkit";
 import moment from "moment";
 import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
-import { PaginatedIds } from "../pagination";
+import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
+import { Federated, FederatedEntity, createFederated, federateId, federatedId, federatedEntities, federatedPayload, setFederated, getFederated } from '../federation';
 export * from './media_actions';
 
+export type FederatedMedia = FederatedEntity<Media>;
 export interface MediaState {
-  loadStatus: "unloaded" | "loading" | "loaded" | "errored";
-  createStatus: "creating" | "created" | "errored" | undefined;
-  updateStatus: "creating" | "created" | "errored" | undefined;
-  deleteStatus: "deleting" | "deleted" | "errored" | undefined;
-  error?: Error;
-  successMessage?: string;
-  errorMessage?: string;
+  pagesStatus: FederatedPagesStatus;
+  // error?: Error;
+  // errorMessage?: string;
   ids: EntityId[];
-  entities: Dictionary<Media>;
+  entities: Dictionary<FederatedMedia>;
   // Stores pages of listed media for Users.
   // i.e.: mediaPages["userId1"][0] -> ["mediaId1", "mediaId2"].
   // Media should be loaded from the adapter/slice's entities.
   // Maps MediaListingType -> page (as a number) -> mediaInstanceIds
-  userMediaPages: Dictionary<PaginatedIds>;
+  userMediaPages: Federated<GroupedPages>;
   failedMediaIds: string[];
 }
-
-const mediaAdapter: EntityAdapter<Media> = createEntityAdapter<Media>({
-  selectId: (media) => media.id,
+const mediaAdapter: EntityAdapter<FederatedMedia> = createEntityAdapter<FederatedMedia>({
+  selectId: (media) => federatedId(media),
   sortComparer: (a, b) => moment.utc(b.createdAt).unix() - moment.utc(a.createdAt).unix(),
 });
 
 const initialState: MediaState = {
-  loadStatus: "unloaded",
-  createStatus: undefined,
-  updateStatus: undefined,
-  deleteStatus: undefined,
-  userMediaPages: {},
+  pagesStatus: createFederatedPagesStatus(),
+  // loadStatus: "unloaded",
+  // createStatus: undefined,
+  // updateStatus: undefined,
+  // deleteStatus: undefined,
+  userMediaPages: createFederated({}),
   failedMediaIds: [],
   ...mediaAdapter.getInitialState(),
 };
@@ -54,75 +52,81 @@ export const mediaSlice: Slice<Draft<MediaState>, any, "media"> = createSlice({
     removeMedia: mediaAdapter.removeOne,
     resetMedia: () => initialState,
     clearMediaAlerts: (state) => {
-      state.errorMessage = undefined;
-      state.successMessage = undefined;
-      state.error = undefined;
-      state.createStatus = undefined;
-      state.updateStatus = undefined;
+      // state.errorMessage = undefined;
+      // state.error = undefined;
+      // state.createStatus = undefined;
+      // state.updateStatus = undefined;
     }
   },
   extraReducers: (builder) => {
-    builder.addCase(loadMediaPage.pending, (state) => {
-      state.loadStatus = "loading";
-      state.error = undefined;
+    builder.addCase(loadMediaPage.pending, (state, action) => {
+      setFederated(state.pagesStatus, action, "loading");
+      // state.error = undefined;
     });
     builder.addCase(loadMediaPage.fulfilled, (state, action) => {
-      state.loadStatus = "loaded";
-      mediaAdapter.upsertMany(state, action.payload.media);
+      setFederated(state.pagesStatus, action, "loaded");
+      const federatedMedia =federatedEntities(action.payload.media, action)
+      mediaAdapter.upsertMany(state, federatedMedia);
 
-      const userId = action.meta.arg.userId!;
+      const mediaIds = federatedMedia.map(federatedId);
       const page = action.meta.arg.page ?? 0;
+      const userId = action.meta.arg.userId!;
 
-      if (!state.userMediaPages[userId]) state.userMediaPages[userId] = [];
-      state.userMediaPages[userId]![page] = action.payload.media.map(media => media.id);
+      const serverUserMediaPages: GroupedPages = getFederated(state.userMediaPages, action);
+      if (!serverUserMediaPages[userId] || page === 0) serverUserMediaPages[userId] = [];
 
-      state.successMessage = `Media loaded.`;
+      const userMediaPages: PaginatedIds = serverUserMediaPages[userId]!;
+      userMediaPages[page] = mediaIds;
+      setFederated(state.userMediaPages, action, serverUserMediaPages);
     });
     builder.addCase(loadMediaPage.rejected, (state, action) => {
-      state.loadStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
+      setFederated(state.pagesStatus, action, "errored");
+      // state.error = action.error as Error;
+      // state.errorMessage = formatError(action.error as Error);
+      // state.error = action.error as Error;
     });
-    builder.addCase(loadMedia.pending, (state) => {
-      state.loadStatus = "loading";
-      state.error = undefined;
+    builder.addCase(loadMedia.pending, (state, action) => {
+      setFederated(state.pagesStatus, action, "loading");
+      // state.error = undefined;
     });
     builder.addCase(loadMedia.fulfilled, (state, action) => {
-      state.loadStatus = "loaded";
-      const media = action.payload;
+      setFederated(state.pagesStatus, action, "loaded");
+      const media = federatedPayload(action);
       mediaAdapter.upsertOne(state, media);
-      state.successMessage = `Media loaded.`;
+      // state.successMessage = `Media loaded.`;
     });
     builder.addCase(loadMedia.rejected, (state, action) => {
-      state.loadStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
+      setFederated(state.pagesStatus, action, "errored");
+      // state.error = action.error as Error;
+      // state.errorMessage = formatError(action.error as Error);
+      // state.error = action.error as Error;
       state.failedMediaIds = [...state.failedMediaIds, (action.meta.arg as LoadMedia).id];
     });
-    builder.addCase(deleteMedia.pending, (state) => {
-      state.deleteStatus = "deleting";
-      state.error = undefined;
+    builder.addCase(deleteMedia.pending, (state, action) => {
+      setFederated(state.pagesStatus, action, "deleting");
+      // state.error = undefined;
     });
     builder.addCase(deleteMedia.fulfilled, (state, action) => {
-      state.deleteStatus = "deleted";
+      setFederated(state.pagesStatus, action, "deleted");
       mediaAdapter.removeOne(state, action.meta.arg.id);
-      for (const i in state.userMediaPages) {
-        const userPages = state.userMediaPages[i]!;
+      const userMediaPages: GroupedPages = getFederated(state.userMediaPages, action);
+
+      for (const i in userMediaPages) {
+        const userPages = userMediaPages[i]!;
         for (const j in userPages) {
           const page = userPages[j]!;
           const filteredPage = page.filter(id => id !== action.meta.arg.id);
           userPages[j] = filteredPage;
         }
       }
-      state.successMessage = `Media deleted.`;
+      setFederated(state.userMediaPages, action, userMediaPages);
+      // state.successMessage = `Media deleted.`;
     });
     builder.addCase(deleteMedia.rejected, (state, action) => {
-      state.deleteStatus = "errored";
-      state.error = action.error as Error;
-      state.errorMessage = formatError(action.error as Error);
-      state.error = action.error as Error;
+      setFederated(state.pagesStatus, action, "errored");
+      // state.error = action.error as Error;
+      // state.errorMessage = formatError(action.error as Error);
+      // state.error = action.error as Error;
       state.failedMediaIds = [...state.failedMediaIds, (action.meta.arg as LoadMedia).id];
     });
   },
@@ -134,9 +138,3 @@ export const mediaReducer = mediaSlice.reducer;
 export const upsertMedia = mediaAdapter.upsertOne;
 export const upsertManyMedia = mediaAdapter.upsertMany;
 export default mediaReducer;
-
-export function getMediaPage(state: MediaState, userId: string, page: number): Media[] | undefined {
-  const pageMediaIds: string[] | undefined = (state.userMediaPages[userId] ?? {})[page];
-  const pageMedia = pageMediaIds?.map(id => selectMediaById(state, id)).filter(p => p) as Media[];
-  return pageMedia;
-}

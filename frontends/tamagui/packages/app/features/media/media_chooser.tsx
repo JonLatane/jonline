@@ -1,6 +1,6 @@
-import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { useAccount, useCredentialDispatch } from 'app/hooks';
-import { RootState, deleteMedia, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
+import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
+import { useAccount, useProvidedDispatch } from 'app/hooks';
+import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { Media, MediaReference } from '@jonline/api';
@@ -8,8 +8,8 @@ import { overlayAnimation } from '@jonline/ui';
 
 import { Image as ImageIcon, Trash, Wand2 } from '@tamagui/lucide-icons';
 
+import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { MediaRenderer } from './media_renderer';
-import { useMediaPage } from './media_screen';
 import { MediaUploader } from './media_uploader';
 
 export type MediaRef = Media | MediaReference;
@@ -29,7 +29,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const serversState = useRootSelector((state: RootState) => state.servers);
   const mediaState = useRootSelector((state: RootState) => state.media);
   const app = useRootSelector((state: RootState) => state.app);
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useProvidedDispatch();// useCredentialDispatch();
   const account = useAccount();
 
   // const media: Media[] | undefined = useRootSelector((state: RootState) =>
@@ -37,7 +37,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   //     ? getMediaPage(state.media, accountOrServer.account?.user?.id, 0)
   //     : undefined);
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server, useTheme());
   const dimensions = useWindowDimensions();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
@@ -52,11 +52,15 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     }
   }
 
-  const { media, loadingMedia, reloadMedia } = useMediaPage(
-    accountOrServer.account?.user?.id,
-    0,
-    () => { }
-  );
+  // const { media: allMedia, loadingMedia, reloadMedia } = useMediaPage(
+  //   accountOrServer.account?.user?.id,
+  //   0,
+  //   () => { }
+  // );
+
+
+  const { results: allMedia, loading: loadingMedia, reload: reloadMedia, hasMorePages, firstPageLoaded } =
+    useMediaPages();
 
   const uploadedMedia = useRootSelector(
     (state: RootState) => uploadedMediaId
@@ -66,12 +70,12 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
 
   useEffect(() => {
     if (uploadedMediaId
-      && (media ?? []).filter((m) => m.id == uploadedMediaId).length > 0
+      && (allMedia ?? []).filter((m) => m.id == uploadedMediaId).length > 0
       && uploadedMedia) {
       selectMedia(uploadedMedia);
       setUploadedMediaId(undefined);
     }
-  }, [uploadedMediaId, media, uploadedMedia]);
+  }, [uploadedMediaId, allMedia, uploadedMedia]);
 
   async function selectMedia(item: MediaRef) {
     if (selectedMedia.some(m => m.id === item.id)) {
@@ -110,7 +114,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
         <Sheet.Frame>
           <Sheet.Handle />
 
-          {account && (mediaState.loadStatus == 'loading' || mediaState.loadStatus == 'unloaded' || loadingMedia || showSpinnerForUploading) ?
+          {account && (loadingMedia || showSpinnerForUploading) ?
             <YStack gap="$1" opacity={0.92} zi={1000} position='absolute' als='center' pointerEvents='none'>
               <Spinner size='large' color={navColor} scale={2}
                 top={dimensions.height / 2 - 50}
@@ -131,8 +135,8 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
           <Sheet.ScrollView p="$4" space>
             <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
 
-              {media && media.length == 0
-                ? mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
+              {allMedia && allMedia.length == 0
+                ? loadingMedia//mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
                   ? <YStack width='100%' mx='auto' jc="center" ai="center">
                     <Heading size='$5' mb='$3'>No media found.</Heading>
                     <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
@@ -140,7 +144,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                   : undefined
                 : <>
                   <XStack gap='$0' flexWrap='wrap' als='center' mx='auto'>
-                    {media?.map((item) => {
+                    {allMedia?.map((item) => {
                       const selectionIndex = selectedMedia.findIndex(selectedItem => selectedItem.id === item.id);
                       const selectionIndexBase1 = selectionIndex == -1 ? undefined : selectionIndex + 1;
                       const mediaName = item.name && item.name.length > 0 ? item.name : undefined;
@@ -157,7 +161,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                         {selectionIndexBase1
                           ? <Paragraph zi={1000} px={5} position='absolute' top='$2' right='$2'
                             borderRadius={5}
-                            backgroundColor={media.length > 0 ? primaryColor : navColor} color={media.length > 0 ? primaryTextColor : navTextColor}>
+                            backgroundColor={allMedia.length > 0 ? primaryColor : navColor} color={allMedia.length > 0 ? primaryTextColor : navTextColor}>
                             {selectionIndexBase1}
                           </Paragraph>
                           : undefined}

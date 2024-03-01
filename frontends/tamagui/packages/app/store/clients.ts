@@ -55,7 +55,7 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
 export async function getConfiguredServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<ConfiguredClient> {
   if (!server) {
     console.error("Server is undefined");
-    debugger;
+    // debugger;
   }
 
   const serverId = serverID(server);

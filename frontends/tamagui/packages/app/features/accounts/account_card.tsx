@@ -1,10 +1,10 @@
 import { Permission } from "@jonline/api";
-import { Text, Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Theme, Tooltip, TooltipSimple, XStack, YStack, formatError, useMedia, useTheme } from "@jonline/ui";
+import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { colorMeta, useAppSelector, useCredentialDispatch, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, actionSucceeded, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
 import { useRequestResult } from "../../hooks/use_request_result";
@@ -147,6 +147,13 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
 
   const primaryBackgroundRight = pinned && !selected;
+  const serverLogo = isCurrentServer ? undefined
+    : <>
+      <YStack w={50} h={50} jc='center' ai='center' ac='center'>
+        <ServerNameAndLogo server={account.server} shrinkToSquare />
+      </YStack>
+      <Heading mx='$2' size='$7' color={selected ? navTextColor : undefined}>/</Heading>
+    </>
   return <Card theme="dark" size="$4" bordered
     animation='standard'
     // w={250}
@@ -158,90 +165,108 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
     onPress={onPress ?? doSelectAccount}
   >
     <Card.Header>
-      <XStack>
-        {isCurrentServer ? undefined
-          : <>
-            <YStack w={50} h={50} my='auto' jc='center' ai='center' ac='center'>
-              <ServerNameAndLogo server={account.server} shrinkToSquare />
-            </YStack>
-            <Heading my='auto' mx='$2' size='$7' color={selected ? navTextColor : undefined}>/</Heading>
-          </>}
-        {(avatarUrl && avatarUrl != '') ?
+      <YStack gap='$2'>
+        <XStack ai='center'>
+          {serverLogo}
+          {(avatarUrl && avatarUrl != '') ?
+            <XStack
+              ai='center'
+              w={mediaQuery.gtXs || true ? 50 : 26}
+              h={mediaQuery.gtXs || true ? 50 : 26}
+              mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
+              <Image
+                // pos="absolute"
+                width={mediaQuery.gtXs || true ? 50 : 26}
+                // opacity={0.25}
+                height={mediaQuery.gtXs || true ? 50 : 26}
+                borderRadius={mediaQuery.gtXs || true ? 25 : 13}
+                resizeMode="cover"
+                // als="flex-start"
+                source={{ uri: avatarUrl, width: mediaQuery.gtXs || true ? 50 : 26, height: mediaQuery.gtXs || true ? 50 : 26 }}
+              // blurRadius={1.5}
+              // borderRadius={5}
+              />
+            </XStack>
+            : undefined}
+          <YStack f={1}>
+            <Heading size="$1" color={textColor} mr='auto'>{account.server.host}/</Heading>
+            <Heading size="$7" color={textColor} mr='auto'>{account.user.username}</Heading>
+          </YStack>
 
-          <XStack w={mediaQuery.gtXs || true ? 50 : 26} h={mediaQuery.gtXs || true ? 50 : 26}
-            mr={mediaQuery.gtXs || true ? '$3' : '$2'}>
-            <Image
-              pos="absolute"
-              width={mediaQuery.gtXs || true ? 50 : 26}
-              // opacity={0.25}
-              height={mediaQuery.gtXs || true ? 50 : 26}
-              borderRadius={mediaQuery.gtXs || true ? 25 : 13}
-              resizeMode="cover"
-              als="flex-start"
-              source={{ uri: avatarUrl, width: mediaQuery.gtXs || true ? 50 : 26, height: mediaQuery.gtXs || true ? 50 : 26 }}
-            // blurRadius={1.5}
-            // borderRadius={5}
-            />
-          </XStack>
-          : undefined}
-        <YStack f={1}>
-          <Heading size="$1" color={textColor} mr='auto'>{account.server.host}/</Heading>
-          <Heading size="$7" color={textColor} mr='auto'>{account.user.username}</Heading>
-          {reauthenticationResult || account.needsReauthentication
 
-            ? showReauthenticate
-              ? <XStack flexWrap="wrap" ai='center' gap='$3'>
-                <Input placeholder="Password" secureTextEntry
-                  ref={passwordRef}
-                  value={reauthenticationPassword}
-                  disabled={!enablePasswordInput}
-                  o={enablePasswordInput ? 1 : 0.5}
-                  textContentType="password"
-                  onChange={(e) => {
-                    console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
-                  }}
-                  onKeyPress={(e) => {
-                    if (e.nativeEvent.key === 'Enter') {
-                      doReauthentication();
-                    }
-                  }} />
+          {hasAdminPermission(account.user)
+            ? <Shield color={selected ? navTextColor : textColor} mb='auto' /> : undefined}
+          {hasPermission(account.user, Permission.RUN_BOTS)
+            ? <Bot color={selected ? navTextColor : textColor} mb='auto' /> : undefined}
+        </XStack>
 
-                {reauthenticationError
-                  ? <Paragraph size='$1'>{reauthenticationError}</Paragraph>
-                  : undefined}
-                <Button mt='$2' mr='auto' h='auto' py='$3'
-                  disabled={!enableReauthenticateButton}
-                  o={enableReauthenticateButton ? 1 : 0.5}
-                  onPress={(e) => {
-                    e.stopPropagation();
+
+        {reauthenticationResult || account.needsReauthentication
+
+          ? showReauthenticate
+            ? <XStack flexWrap="wrap" ai='center' gap='$3'>
+              <Input placeholder="Password" secureTextEntry
+                ref={passwordRef}
+                value={reauthenticationPassword}
+                disabled={!enablePasswordInput}
+                o={enablePasswordInput ? 1 : 0.5}
+                textContentType="password"
+                onChange={(e) => {
+                  console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
+                }}
+                onKeyPress={(e) => {
+                  if (e.nativeEvent.key === 'Enter') {
                     doReauthentication();
-                  }}>
-                  <Paragraph size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
-                    Reauthenticate
+                  }
+                }} />
+
+              {reauthenticationError
+                ? <Paragraph size='$1'>{reauthenticationError}</Paragraph>
+                : undefined}
+              <Button mt='$2' mr='auto' h='auto' py='$3'
+                disabled={!enableReauthenticateButton}
+                o={enableReauthenticateButton ? 1 : 0.5}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  doReauthentication();
+                }}>
+                <Paragraph size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
+                  Reauthenticate
+                </Paragraph>
+              </Button>
+            </XStack>
+            : <Button mt='$2' mr='auto' h='auto' py='$3' onPress={(e) => {
+              e.stopPropagation();
+              setShowReauthenticate(true);
+              setTimeout(() => passwordRef.current?.focus(), 100);
+            }}>
+              <XStack gap='$2' ai='center'>
+                <ZStack w='$2' h='$2'>
+                  <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
+                    <Check color={navAnchorColor} />
+                  </XStack>
+                  <YStack animation='standard' o={reauthenticationResult ? 0 : 1}>
+                    <AlertCircle color={navAnchorColor} />
+                  </YStack>
+                </ZStack>
+                <ZStack w='$12' h='$2'>
+                  <Paragraph o={reauthenticationResult ? 1 : 0}
+                    size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
+                    Reauthentication complete.
                   </Paragraph>
-                </Button>
-              </XStack>
-              : <Button mt='$2' mr='auto' h='auto' py='$3' onPress={(e) => {
-                e.stopPropagation();
-                setShowReauthenticate(true);
-                setTimeout(() => passwordRef.current?.focus(), 100);
-              }}>
-                <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
-                  <Check color={navAnchorColor} />
-                </XStack>
-                <XStack gap='$2'>
-                  <YStack my='auto'><AlertCircle color={navAnchorColor} /></YStack>
-                  <Paragraph size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
+                  <Paragraph o={reauthenticationResult ? 0 : 1}
+                    size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
                     Reauthentication required.
                   </Paragraph>
-                </XStack>
-              </Button>
-            : undefined}
-        </YStack>
-        {/* {account.server.secure ? <Lock/> : <Unlock/>} */}
-        {hasAdminPermission(account.user) ? <Shield color={selected ? navTextColor : textColor} /> : undefined}
-        {hasPermission(account.user, Permission.RUN_BOTS) ? <Bot color={selected ? navTextColor : textColor} /> : undefined}
+                </ZStack>
+              </XStack>
+            </Button>
+          : undefined}
 
+      </YStack>
+      <XStack>
+        <YStack f={1}>
+        </YStack>
       </XStack>
     </Card.Header>
     <Card.Footer p='$3'>
@@ -265,12 +290,6 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                   </Paragraph>
                 </Tooltip.Content>
               </Tooltip>
-              {/* <TooltipSimple label={
-                <Paragraph>
-                  Pinned: data from ${account.server?.host} will come from ${account.user.username}'s account.
-                </Paragraph>
-              }>
-              </TooltipSimple> */}
             </XStack> : undefined}
             {selected && !onPress
               ? <Button onPress={(e) => { e.stopPropagation(); doLogout(); }} mr='$2'>Logout</Button>
@@ -335,11 +354,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                       <Dialog.Close asChild>
                         <Button>Cancel</Button>
                       </Dialog.Close>
-                      {/* <Dialog.Action asChild> */}
                       <Theme inverse>
                         <Button onPress={() => dispatch(removeAccount(accountID(account)!))}>Remove</Button>
                       </Theme>
-                      {/* </Dialog.Action> */}
                     </XStack>
                   </YStack>
                 </Dialog.Content>
@@ -349,8 +366,6 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         </XStack>
       </YStack>
     </Card.Footer>
-    {/* {!selected
-        ?  */}
     <Card.Background>
       <XStack h='100%'>
         <YStack h='100%' w={5}

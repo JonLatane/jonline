@@ -4,8 +4,8 @@ import { useAccountOrServer } from 'app/hooks';
 import { getCredentialClient, serverUrl, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
-import { useReloadMedia } from './media_hooks';
 import { resizeImage } from './resize_media';
+import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 
 
 interface MediaUploaderProps {
@@ -20,7 +20,8 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [dragging, setDragging] = useState(false);
-  const reloadMedia = useReloadMedia(accountOrServer.account?.user?.id, 0);
+
+  const { reload: reloadMedia } = useMediaPages();
 
   // useEffect(() => {
   //   let title = 'Media';

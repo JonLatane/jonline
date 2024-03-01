@@ -1,6 +1,6 @@
 import { PostListingType } from "@jonline/api";
 import { useDebounce } from "@jonline/ui";
-import { useCredentialDispatch } from "app/hooks";
+import { useAppDispatch, useCredentialDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
@@ -27,7 +27,7 @@ export function useServerPostPages(
   listingType: PostListingType,
   throughPage: number
 ): PaginationResults<FederatedPost> {
-  const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
+  const dispatch = useAppDispatch();
   const servers = useCurrentAndPinnedServers();
   const postsState = useRootSelector((state: RootState) => state.posts);
   const [loading, setLoading] = useState(false);

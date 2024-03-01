@@ -1,10 +1,9 @@
-import { Media } from '@jonline/api';
-import { Heading, Spinner, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useAccountOrServer, useCredentialDispatch } from 'app/hooks';
-import { RootState, getMediaPage, loadMediaPage, useRootSelector, useServerTheme } from 'app/store';
+import { Heading, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
+import { useAccountOrServer } from 'app/hooks';
+import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
+import { RootState, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { MediaCard } from './media_card';
@@ -29,16 +28,20 @@ export function MediaScreen() {
     setDocumentTitle(title)
   });
 
-  const { media, loadingMedia, reloadMedia } = useMediaPage(
-    accountOrServer.account?.user?.id,
-    0,
-    () => dismissScrollPreserver(setShowScrollPreserver)
-  );
+  const { results: allMedia, loading: loadingMedia, reload: reloadMedia, hasMorePages, firstPageLoaded } =
+    useMediaPages();
+
+  useEffect(() => {
+    if (firstPageLoaded) {
+      dismissScrollPreserver(setShowScrollPreserver);
+    }
+  }, [firstPageLoaded]);
+  console.log('allMedia', allMedia, 'loadingMedia', loadingMedia, 'reloadMedia', reloadMedia, 'hasMorePages', hasMorePages, 'firstPageLoaded', firstPageLoaded);
 
   const showSpinnerForUploading = uploading && (uploadProgress == undefined || uploadProgress < 0.1 || uploadProgress > 0.9);
   return (
     <TabsNavigation appSection={AppSection.MEDIA}
-    loading={account && (mediaState.loadStatus == 'loading' || loadingMedia || showSpinnerForUploading)}>
+      loading={account && (loadingMedia || showSpinnerForUploading)}>
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         {
           accountOrServer.account
@@ -48,15 +51,15 @@ export function MediaScreen() {
               <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
             </YStack>
         }
-        {media && media.length == 0
-          ? mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
+        {allMedia && allMedia.length == 0
+          ? loadingMedia
             ? <YStack width='100%' maw={600} jc="center" ai="center">
               <Heading size='$5' mb='$3'>No media found.</Heading>
               <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
           : <>
-            {media?.map((item) => {
+            {allMedia?.map((item) => {
               return <YStack w='100%' mb='$3'><MediaCard media={item} /></YStack>;
             })}
             {showScrollPreserver ? <YStack h={100000} /> : undefined}
@@ -64,32 +67,4 @@ export function MediaScreen() {
       </YStack>
     </TabsNavigation >
   )
-}
-
-
-export function useMediaPage(userId: string | undefined, page: number, onLoaded?: () => void) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const mediaState = useRootSelector((state: RootState) => state.media);
-  const [loadingMedia, setLoadingMedia] = useState(false);
-
-  const media: Media[] | undefined = useRootSelector((state: RootState) => userId ? getMediaPage(state.media, userId, 0) : undefined);
-
-  useEffect(() => {
-    if (!loadingMedia && (mediaState.loadStatus == 'unloaded' || media == undefined)) {
-      if (!accountOrServer.server) return;
-
-      // console.log("Loading media...");
-      setLoadingMedia(true);
-      reloadMedia();
-    } else if (mediaState.loadStatus == 'loaded' && loadingMedia) {
-      setLoadingMedia(false);
-      onLoaded?.();
-    }
-  }, [media]);
-
-  function reloadMedia() {
-    dispatch(loadMediaPage({ ...accountOrServer, userId, page }))
-  }
-
-  return { media, loadingMedia, reloadMedia };
 }

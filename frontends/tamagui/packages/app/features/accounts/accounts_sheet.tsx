@@ -246,7 +246,10 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         open={open}
         onOpenChange={setOpen}
         // snapPoints={[80]}
-        snapPoints={[50, 92]}
+        snapPoints={[
+          // 50, 
+          91
+        ]}
         zIndex={100000}
         position={position}
         onPositionChange={setPosition}

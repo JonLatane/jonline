@@ -1,15 +1,15 @@
 import React from "react";
 
-import { Media, Permission } from "@jonline/api";
+import { Permission } from "@jonline/api";
 import { AlertDialog, Button, Card, DateViewer, Heading, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { Trash } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from "app/components";
 import { useCredentialDispatch } from "app/hooks";
-import { deleteMedia, useServerTheme } from "app/store";
+import { FederatedMedia, deleteMedia, useServerTheme } from "app/store";
 import { MediaRenderer } from "./media_renderer";
 
 interface Props {
-  media: Media;
+  media: FederatedMedia;
   selected?: boolean;
   onSelect?: () => void;
 }
