@@ -13,7 +13,6 @@ export interface Pagination<T extends HasIdFromServer> {
   reset(): void;
 }
 
-
 const { useParam, useUpdateParams } = createParam<{ page: string | undefined }>()
 export function usePageParam() {
   const updateParams = useUpdateParams();
@@ -40,11 +39,9 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   pageSize: number,
   args?: {
     itemIdResolver?: (item: FederatedEntity<T>) => string;
-    // onPageLoaded?: (page: number, oldLastItem?: FederatedEntity<T>) => void;
   }
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
-  // const [page, setPage] = useState(0);
   const [page, setPage] = usePageParam();
 
   const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
@@ -67,32 +64,24 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     if (results.length === 0) return;
 
     setLoadingPage(true);
-    // setTimeout(() => {
-    const startPage = 0; //Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1))
+    const startPage = 0;
     setPage(startPage);
-    // args?.onPageLoaded?.(startPage, lastItem);
     setTimeout(() => setLoadingPage(false), 1000);
-    // setLoadingPage(false);
-    // }, 500);
   };
 
   function loadNextPage() {
     if (loadingPage) return;
     setLoadingPage(true);
-    // setTimeout(() => {
     const targetPage = page + 1;
-    if (targetPage < maxPagesToRender - 1) {
-      setPage(maxPagesToRender - 1);
-      onPageLoaded?.(targetPage - 1);
+    const maxPage = Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1));
+    if (targetPage < maxPage) {
+      setPage(maxPage);
+      onPageLoaded?.(maxPage);
     } else {
       setPage(targetPage);
       onPageLoaded?.(targetPage);
     }
-    // setPage(page + 1);
-    // onPageLoaded?.(page + 1);
     setTimeout(() => setLoadingPage(false), 1000);
-    // setLoadingPage(false);
-    // }, 500);
   }
 
   return { results, page, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
