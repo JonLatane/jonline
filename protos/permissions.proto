@@ -89,6 +89,9 @@ enum Permission {
   // Allow the user to moderate events.
   MODERATE_MEDIA = 44;
 
+  // Indicates the user is a business. Used purely for display purposes.
+  BUSINESS = 9998;
+
   // Allow the user to run bots. There is no enforcement of this permission (yet),
   // but it lets other users know that the user is allowed to run bots.
   RUN_BOTS = 9999;

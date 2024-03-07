@@ -40,7 +40,7 @@ export function useServerMediaPages(
 
   const reload = () => {
     setLoading(true);
-    const serversToUpdate = getServersMissingMediaPage(mediaState, 0, servers);
+    const serversToUpdate = servers;//getServersMissingMediaPage(mediaState, 0, servers);
     console.log('Reloading media for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server => {
       const userId = server.account?.user.id;
