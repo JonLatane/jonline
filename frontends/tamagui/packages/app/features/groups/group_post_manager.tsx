@@ -8,7 +8,7 @@ import { Button, Spinner, Text, XStack, YStack, useTheme } from '@jonline/ui';
 
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../../contexts/group_context";
+import { useGroupContext } from "app/contexts/group_context";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { AuthorInfo } from "../post/author_info";
 import { GroupsSheet } from './groups_sheet';

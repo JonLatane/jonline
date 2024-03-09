@@ -7,7 +7,7 @@ import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
-import { useRequestResult } from "../../hooks/use_request_result";
+import { useRequestResult } from "app/hooks/use_request_result";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {

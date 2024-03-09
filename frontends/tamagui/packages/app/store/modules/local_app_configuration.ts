@@ -10,6 +10,7 @@ import { isSafari } from "@jonline/ui";
 import { store } from "../store";
 
 export type DateTimeRenderer = 'custom' | 'native';
+
 export type LocalAppConfiguration = {
   showIntro: boolean;
   darkModeAuto: boolean;
@@ -38,6 +39,7 @@ export type LocalAppConfiguration = {
   shrinkPreviews: boolean;
   dateTimeRenderer?: DateTimeRenderer;
   showBigCalendar: boolean;
+  pinnedPostIds: string[];
 }
 
 const initialState: LocalAppConfiguration = {
@@ -66,6 +68,7 @@ const initialState: LocalAppConfiguration = {
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
   showBigCalendar: true,
+    pinnedPostIds: []
 };
 
 setTimeout(async () => {
@@ -75,6 +78,9 @@ setTimeout(async () => {
     }
 
     store.dispatch(setDateTimeRenderer(isSafari() ? 'native' : 'custom'))
+  }
+  if (store.getState().app.pinnedPostIds === undefined) {
+    store.dispatch(setPinnedPostIds([]))
   }
 }, 1000);
 
@@ -163,6 +169,15 @@ export const localAppSlice = createSlice({
     },
     setImagePostBackgrounds: (state, action: PayloadAction<boolean>) => {
       state.imagePostBackgrounds = action.payload;
+    },
+    setPinnedPostIds: (state, action: PayloadAction<string[]>) => {
+      state.pinnedPostIds = action.payload;
+    },
+    pinPost: (state, action: PayloadAction<string>) => {
+      state.pinnedPostIds = [action.payload, ...state.pinnedPostIds];
+    },
+    unpinPost: (state, action: PayloadAction<string>) => {
+      state.pinnedPostIds = state.pinnedPostIds.filter((id) => id !== action.payload);
     }
   },
   extraReducers: (builder) => {
@@ -174,7 +189,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
-  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds
+  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setPinnedPostIds, pinPost, unpinPost
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

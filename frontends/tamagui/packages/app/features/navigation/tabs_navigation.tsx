@@ -13,6 +13,7 @@ import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigati
 import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
+import { PinnedThreads } from "./pinned_threads";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -129,7 +130,7 @@ export function TabsNavigation({
         minHeight={window.innerHeight} >
         <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: hideNavigation ? 'none' : undefined }} className='blur'>
           <YStack w='100%' id='jonline-top-navigation'>
-            {hideNavigation ? undefined : <XStack id='nav-main'
+            {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
               backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
               {/* <XStack w={5} /> */}
               <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
@@ -206,6 +207,7 @@ export function TabsNavigation({
                 <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
               </ScrollView>
               <XStack f={1} />
+              <PinnedThreads />
               {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
               <XStack w={5} />
             </XStack>}

@@ -386,7 +386,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         </Dialog.Close>
                         <ScrollView f={1} >
                           {modalInstance
-                            ? <EventCard event={modalInstance!} isPreview />
+                            ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
                             : undefined}
                         </ScrollView>
                       </YStack>

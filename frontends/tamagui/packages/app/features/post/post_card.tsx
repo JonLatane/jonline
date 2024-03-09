@@ -1,21 +1,21 @@
-import { deletePost, federateId, getServerTheme, loadPostReplies, updatePost } from "app/store";
+import { deletePost, federateId, getServerTheme, loadPostReplies, pinPost, unpinPost, updatePost } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme } from '@jonline/ui';
-import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
+import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Pin, PinOff, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
-import { TamaguiMarkdown } from "../../components/tamagui_markdown";
 import { AuthorInfo } from "./author_info";
 
 import { ShareableToggle, VisibilityPicker } from "app/components";
 import { AccountOrServerContextProvider, useGroupContext } from "app/contexts";
-import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
-import { federatedEntity } from '../../store/federation';
-import { GroupPostManager } from '../groups/group_post_manager';
-import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
+import { federatedEntity } from 'app/store/federation';
+import { GroupPostManager } from 'app/features/groups/group_post_manager';
+import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
@@ -36,7 +36,8 @@ interface PostCardProps {
   selectedPostId?: string;
   onPressReply?: () => void;
   onEditingChange?: (editing: boolean) => void;
-  ignoreShrinkPreview?: boolean;
+  forceExpandPreview?: boolean;
+  forceShrinkPreview?: boolean;
 }
 
 export const postBackgroundSize = (media: TamaguiMediaState) =>
@@ -56,11 +57,13 @@ export const PostCard: React.FC<PostCardProps> = ({
   selectedPostId,
   onPressReply,
   onEditingChange,
-  ignoreShrinkPreview
+  forceExpandPreview,
+  forceShrinkPreview
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const currentUser = accountOrServer.account?.user;
   const server = accountOrServer.server;
+  const federatedPostId = federateId(post.id, server);
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
@@ -70,13 +73,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
 
   const theme = useTheme();
-  const { primaryColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
+  const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
   // const postsStatus = useRootSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);
     onEditingChange?.(value);
   }
+  const toast = useToastController();
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
 
@@ -91,7 +95,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
-  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews } = useLocalConfiguration();
+  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews } = useLocalConfiguration();
 
   function saveEdits() {
     setSavingEdits(true);
@@ -304,6 +308,22 @@ export const PostCard: React.FC<PostCardProps> = ({
       </Dialog.Content>
     </Dialog.Portal>
   </Dialog>;
+
+  const pinned = useAppSelector(state => state.app.pinnedPostIds.includes(federatedPostId));
+  const shrinkPreviews = !!isPreview && (
+    !!forceShrinkPreview || (
+      appShrinkPreviews && !forceExpandPreview
+    )
+  );
+  function onPinPress() {
+    if (pinned) {
+      dispatch(unpinPost(federatedPostId));
+      toast.show(`Unpinned "${post.title}"`);
+    } else {
+      dispatch(pinPost(federatedPostId));
+      toast.show(`Pinned "${post.title}"`);
+    }
+  }
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
@@ -371,6 +391,13 @@ export const PostCard: React.FC<PostCardProps> = ({
           {!post.replyToPostId && (post.link != '' || post.title != '')
             ? <Card.Header>
               <XStack ai='center'>
+                <Button transparent
+                  size='$2'
+                  p='$1'
+                  icon={!pinned ? Pin : PinOff}
+                  // color={primaryTextColor}
+                  onPress={onPinPress}
+                />
                 <YStack f={1}>
                   {isPreview
                     ? <Anchor textDecorationLine='none'
@@ -392,8 +419,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </YStack>
 
                 {showServerInfo
-                  ? <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
-                    <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
+                  ? <XStack my='auto'
+                   w={mediaQuery.gtXxxs  && !forceShrinkPreview? undefined : '$4'} 
+                   h={mediaQuery.gtXxxs  && !forceShrinkPreview? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
+                    <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs || forceShrinkPreview} />
                   </XStack>
                   : undefined}
               </XStack>
@@ -406,7 +435,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                 <YStack w='100%' px='$3' >
                   <AnimatePresence>
-                    {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
+                    {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
                       <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
                         {editing && !previewingEdits
                           ? <PostMediaManager
@@ -434,9 +463,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </AnimatePresence>
                 </YStack>
                 <AnimatePresence>
-                  {shrinkPreviews  && !ignoreShrinkPreview && isPreview ? undefined
+                  {shrinkPreviews && !forceShrinkPreview? undefined
                     : <YStack animation='standard' {...standardAnimation}>
-                      <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py='$2'>
+                      <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py={!showEdit && !isAuthor ? 0 : '$2'}>
                         {showEdit
                           ? editing
                             ? <>

@@ -8,7 +8,7 @@ import { useAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../../contexts/group_context";
+import { useGroupContext } from "app/contexts/group_context";
 
 type Props = {
   event: FederatedEvent,

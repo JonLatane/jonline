@@ -7,7 +7,7 @@ import { useFederatedAccountOrServer, useServer } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import moment from "moment";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../../contexts/group_context";
+import { useGroupContext } from "app/contexts/group_context";
 
 interface Props {
   event: FederatedEvent;

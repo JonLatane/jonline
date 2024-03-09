@@ -8,7 +8,7 @@ import { Edit3 as Edit } from "@tamagui/lucide-icons";
 import { ModerationPicker } from "app/components/moderation_picker";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { passes } from "app/utils/moderation_utils";
-import { TamaguiMarkdown } from "../../components/tamagui_markdown";
+import { TamaguiMarkdown } from "app/components/tamagui_markdown";
 import { AuthorInfo } from "../post/author_info";
 
 interface Props {

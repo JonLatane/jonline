@@ -172,7 +172,7 @@ export function UsernameDetailsScreen() {
     if (inputUsername && !!accountOrServer.server && !loadingUser && !user && !userLoadFailed) {
       setLoadingUser(true);
       dispatch(loadUsername({ ...accountOrServer, username: inputUsername! }))
-      .then(() => setLoadingUser(false));
+        .then(() => setLoadingUser(false));
     }
   }, [inputUsername, loadingUser, user, userLoadFailed, !!accountOrServer.server]);
   // console.log('user', user, 'loadingUser', loadingUser, userLoadFailed, !!accountOrServer.server);
@@ -310,7 +310,7 @@ export function UsernameDetailsScreen() {
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
-                  <Heading size='$4' ta='center'>{permissions.includes(Permission.BUSINESS) ? 'Business' : 'User'} Settings</Heading>
+                  <Heading size='$4' ta='center'>Permissions & Moderation</Heading>
                   <XStack animation='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
@@ -372,20 +372,20 @@ export function UsernameDetailsScreen() {
 
             <YStack maw={800} w='100%' als='center'>
               <YStack ai='center' w='100%'>
-                <FlipMove style={{width: '100%'}}>
+                <FlipMove style={{ width: '100%' }}>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
-                      ? <div key='no-posts' style={{ width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'>No posts yet</Heading></div>
+                      ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'o={0.5}>No posts yet</Heading></div>
                       : postContext === PostContext.REPLY && userPosts.length === 0
-                        ? <div key='no-replies' style={{ width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'>No replies yet</Heading></div>
+                        ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
                         : undefined}
                   {postContext === PostContext.POST
                     ? userPosts.map((post) => {
-                      return <div key={`userpost-${post.id}`} style={{width: '100%'}}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
+                      return <div key={`userpost-${post.id}`} style={{ width: '100%' }}><PostCard post={post} isPreview forceExpandPreview /></div>;
                       // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                     })
                     : postContext === PostContext.REPLY ? userReplies.map((post) => {
-                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
+                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview forceExpandPreview /></div>;
                       // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                     })
                       : undefined}

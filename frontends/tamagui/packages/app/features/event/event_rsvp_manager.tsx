@@ -10,7 +10,7 @@ import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
 import { createParam } from "solito";
 import { useLink } from "solito/link";
-import { useGroupContext } from "../../contexts/group_context";
+import { useGroupContext } from "app/contexts/group_context";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 import { EventCalendarExporter } from "./event_calendar_exporter";
 
