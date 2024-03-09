@@ -1,44 +1,42 @@
-import { Moderation, Permission, User, Visibility } from '@jonline/api';
+import { Moderation, Permission, PostContext, User, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useAccount, useCredentialDispatch, useFederatedDispatch } from 'app/hooks';
-import { RootState, deleteUser, getFederated, getServerTheme, loadUserPosts, loadUsername, resetPassword, selectAllServers, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { useAccount, useCredentialDispatch, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { FederatedEvent, FederatedPost, RootState, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
+import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
+import { useAppSelector } from '../../hooks/store_hooks';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { useAppSelector } from '../../hooks/store_hooks';
+import EventCard from '../event/event_card';
+import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
 export function UsernameDetailsScreen() {
+  const mediaQuery = useMedia();
   const [pathUsername] = useParam('username');
   const [inputUsername, inputServerHost] = (pathUsername ?? '').split('@');
 
   const { dispatch, accountOrServer } = useFederatedDispatch(inputServerHost);
 
   const { server, account } = accountOrServer;
-  // const server = inputServerHost
-  //   ? useRootSelector((state: RootState) => selectAllServers(state.servers).find(s => s.host == inputServerHost))
-  //   : useRootSelector((state: RootState) => state.servers.server);
 
   const linkProps = useLink({ href: '/' });
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = getServerTheme(server);
   const usernameIds = useAppSelector(state => getFederated(state.users.usernameIds, server));
   const userId: string | undefined = useRootSelector((state: RootState) =>
     inputUsername
       ? usernameIds[inputUsername]
       : undefined);
-  // const [userId, setUserId] = useState(paramUserId);
   const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
-  // console.log('pathUsername', pathUsername, inputUsername, 'server', server, 'user', user);
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
@@ -80,15 +78,68 @@ export function UsernameDetailsScreen() {
     || permissionsModified
   );
 
-  const userPosts = useRootSelector((state: RootState) => {
+  const [loadingUserPosts, setLoadingUserPosts] = useState(false);
+  const userPostData: FederatedPost[] | undefined = useAppSelector((state) => {
     return userId
-      ? (state.users.idPosts ?? {})[userId]
+      ? state.users.idPosts[userId]
         ?.map(postId => state.posts.entities[postId]!)
       : undefined
   });
+  const userPosts = userPostData ?? [];
+  useEffect(() => {
+    if (userId && !userPostData && !loadingUserPosts) {
+      setLoadingUserPosts(true);
+      dispatch(loadUserPosts({ ...accountOrServer, userId }))
+        .then(() => setLoadingUserPosts(false));
+    }
+  }, [userId, userPostData, loadingUserPosts]);
+
+  const [loadingUserReplies, setLoadingUserReplies] = useState(false);
+  const userReplyData: FederatedPost[] | undefined = useRootSelector((state: RootState) => {
+    return userId
+      ? state.users.idReplies[userId]
+        ?.map(postId => state.posts.entities[postId]!)
+      : undefined
+  });
+  const userReplies = userReplyData ?? [];
+  useEffect(() => {
+    if (userId && !userReplyData && !loadingUserReplies) {
+      setLoadingUserReplies(true);
+      dispatch(loadUserReplies({ ...accountOrServer, userId }))
+        .then(() => setLoadingUserReplies(false));
+    }
+  }, [userId, userReplyData, loadingUserReplies]);
+
+  const [loadingEvents, setLoadingUserEvents] = useState(false);
+  const userEventData: FederatedEvent[] | undefined = useRootSelector((state: RootState) => {
+    return userId
+      ? state.users.idEventInstances[userId]
+        ?.map(instanceId => {
+          const eventId = state.events.instanceEvents[instanceId];
+          if (!eventId) return undefined;
+          const event = state.events.entities[eventId];
+          if (!event) return undefined;
+          return { ...event, instances: event.instances.filter(i => i.id === instanceId.split('@')[0]) };
+        })
+        ?.filter(e => e !== undefined) as FederatedEvent[]
+      : undefined
+  });
+  useEffect(() => {
+    if (userId && !userEventData && !loadingEvents) {
+      setLoadingUserEvents(true);
+      dispatch(loadUserEvents({ ...accountOrServer, userId }))
+        .then(() => setLoadingUserEvents(false));
+    }
+  }, [userId, userEventData, loadingEvents]);
+  const allEvents = userEventData ?? [];
+  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const paginatedEvents = eventPagination.results;
+
+  const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
+  const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
+
+  const [postContext, setPostContext] = useState(PostContext.POST);
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const [loadingUserPosts, setLoadingUserPosts] = useState(false);
-  const [loadingUserEvents, setLoadingUserEvents] = useState(false);
   const fullAvatarHeight = useFullAvatarHeight();
   function resetFormData() {
     if (!user) {
@@ -116,21 +167,6 @@ export function UsernameDetailsScreen() {
   useEffect(() => {
     if (editMode && !canEdit) setEditMode(false);
   }, [editMode, canEdit]);
-  useEffect(() => {
-    if (userId && !userPosts && !loadingUserPosts) {
-      setLoadingUserPosts(true);
-      setTimeout(() => dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
-    } else if (loadingUserPosts && userPosts) {
-      setLoadingUserPosts(false);
-    }
-  }, [userId, userPosts, loadingUserPosts]);
-
-  // function reloadPosts() {
-  //   if (!accountOrServer.server) return;
-
-  //   setTimeout(() =>
-  //     dispatch(loadUserPosts({ ...accountOrServer, userId: userId! })), 1);
-  // }
 
   useEffect(() => {
     if (inputUsername && !loadingUser && (!user /*|| usersState.status == 'unloaded'*/) && !userLoadFailed) {
@@ -141,10 +177,10 @@ export function UsernameDetailsScreen() {
     }
   }, [inputUsername, loadingUser, user, /*usersState.status,*/ userLoadFailed]);
   useEffect(() => {
-    if (user && userPosts && showScrollPreserver) {
+    if (user && userPostData && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
-  }, [user, userPosts, showScrollPreserver])
+  }, [user, userPostData, showScrollPreserver])
   const windowHeight = useWindowDimensions().height;
   const [saving, setSaving] = useState(false);
   //= useRootSelector((state: RootState) => state.users.successMessage == userSaved);
@@ -185,7 +221,7 @@ export function UsernameDetailsScreen() {
     });
   }
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const loading = loadingUser || loadingUserPosts || loadingUserEvents;
+  const loading = loadingUser || loadingUserPosts || loadingEvents || loadingUserReplies;
 
   // const loading = usersState.status == 'loading' || usersState.status == 'unloaded'
   //   || postsState.status == 'loading' || postsState.status == 'unloaded';
@@ -248,10 +284,11 @@ export function UsernameDetailsScreen() {
             {/* <XStack f={1} /> */}
           </XStack>
         </YStack> : undefined}>
-      <YStack f={1} jc="center" ai="center" space margin='$3' w='100%'>
+      <YStack f={1} jc="center" ai="center" gap margin='$3' w='100%'>
         {user ? <>
-          <ScrollView w='100%'>
-            <YStack maw={800} w='100%' als='center' p='$2' marginHorizontal='auto'>
+          {/* <ScrollView w='100%'> */}
+          <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'>
+            <YStack maw={800} w='100%' als='center'>
               <UserCard
                 editable editingDisabled={!editMode}
                 user={user}
@@ -273,7 +310,7 @@ export function UsernameDetailsScreen() {
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center'>
-                  <Heading size='$4' ta='center'>User Settings</Heading>
+                  <Heading size='$4' ta='center'>{permissions.includes(Permission.BUSINESS) ? 'Business' : 'User'} Settings</Heading>
                   <XStack animation='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
@@ -281,25 +318,84 @@ export function UsernameDetailsScreen() {
               </Button>
               <UserVisibilityPermissions expanded={showUserSettings}
                 {...{ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, permissionsEditorProps, editMode }} />
-
-              {(userPosts || []).length > 0 ?
-                <>
-                  <Heading size='$4' ta='center' mt='$2'>Latest Activity</Heading>
-                  <>
-                    <YStack>
-                      {userPosts?.map((post) => {
-                        return <PostCard key={`userpost-${post.id}`} post={post} isPreview />;
-                        // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                      })}
-                      {showScrollPreserver ? <YStack h={100000} /> : undefined}
-                    </YStack>
-                  </>
-                </>
-                : loading ? undefined : <Heading size='$1' ta='center'>No posts yet</Heading>}
-
-              {isWeb && canEdit ? <YStack h={50} /> : undefined}
             </YStack>
-          </ScrollView>
+
+            <Heading size='$4' ta='center' mt='$2'>Upcoming Events</Heading>
+
+            <ScrollView horizontal w='100%'>
+              <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+
+                <FlipMove style={{ display: 'flex' }}>
+
+                  {loadingEvents && allEvents.length == 0
+                    ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                      <Spinner size='large' color={navColor} />
+                    </XStack>
+                    : undefined}
+                  {allEvents.length == 0 && !loadingEvents
+                    ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
+                      <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
+                        <Heading size='$5' ta='center' mb='$3'>No events found.</Heading>
+                        <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                      </YStack>
+                    </div>
+                    : undefined}
+
+
+                  <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                    <PaginationResetIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
+                  </div>
+                  {paginatedEvents.map((event) =>
+                    <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                      <XStack mx='$1' px='$1' pb='$5'>
+                        <EventCard event={event} isPreview horizontal xs />
+                      </XStack>
+                    </span>)}
+
+                  <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                    <PaginationIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
+                  </div>
+                </FlipMove>
+              </XStack>
+            </ScrollView>
+
+            <Heading size='$4' ta='center' my='$2'>Latest Activity</Heading>
+
+            <XStack jc='center'>
+              <Button borderTopRightRadius={0} borderBottomRightRadius={0}
+                {...themedButtonBackground(postContext === PostContext.POST ? primaryColor : undefined, postContext === PostContext.POST ? primaryTextColor : undefined)}
+                onPress={() => setPostContext(PostContext.POST)}>Posts</Button>
+              <Button borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                {...themedButtonBackground(postContext === PostContext.REPLY ? primaryColor : undefined, postContext === PostContext.REPLY ? primaryTextColor : undefined)}
+                onPress={() => setPostContext(PostContext.REPLY)}>Replies</Button>
+            </XStack>
+
+            <YStack maw={800} w='100%' als='center'>
+              <YStack ai='center'>
+                <FlipMove>
+                  {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
+                    postContext === PostContext.POST && userPosts.length === 0
+                      ? <div key='no-posts' style={{width: '100%', marginTop: 50, marginBottom: 150}}><Heading w='100%' size='$1' ta='center'>No posts yet</Heading></div>
+                      : postContext === PostContext.REPLY && userPosts.length === 0
+                        ? <div key='no-replies' style={{width: '100%', marginTop: 50, marginBottom: 150}}><Heading w='100%' size='$1' ta='center'>No replies yet</Heading></div>
+                        : undefined}
+                  {postContext === PostContext.POST
+                    ? userPosts.map((post) => {
+                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview /></div>;
+                      // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                    })
+                    : postContext === PostContext.REPLY ? userReplies.map((post) => {
+                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview /></div>;
+                      // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
+                    })
+                      : undefined}
+                </FlipMove>
+              </YStack>
+              {showScrollPreserver ? <YStack h={100000} /> : undefined}
+            </YStack>
+            {isWeb && canEdit ? <YStack h={50} /> : undefined}
+          </YStack>
+          {/* </ScrollView> */}
         </>
           : userLoadFailed
             ? <YStack width='100%' maw={800} jc="center" ai="center">
@@ -326,7 +422,7 @@ interface UserVisibilityPermissionsProps {
 const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true, permissionsEditorProps }) => {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const { server } = accountOrServer;
-  const media = useMedia();
+  const mediaQuery = useMedia();
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const account = useAccount();
   const isCurrentUser = account && account?.user?.id == user.id;
@@ -366,7 +462,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
         opacity: 0,
       }}>
       <XStack ac='center' jc='center' mb='$2'>
-        {media.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
+        {mediaQuery.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
           Visibility
         </Heading> : undefined}
         <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}

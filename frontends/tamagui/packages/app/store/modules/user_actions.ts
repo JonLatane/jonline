@@ -80,15 +80,21 @@ export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserEntities, any> 
   "users/loadPosts",
   async (request) => {
     let client = await getCredentialClient(request);
-    const result = await client.getPosts({ authorUserId: request.userId }, client.credential);
+    // debugger;
+    try {
+    const result = await client.getPosts({ authorUserId: request.userId.split('@')[0] }, client.credential);
     return result;
+    } catch(e) {
+      console.error('error loading user posts', e);
+      throw e;
+    }
   }
 );
 export const loadUserReplies: AsyncThunk<GetPostsResponse, LoadUserEntities, any> = createAsyncThunk<GetPostsResponse, LoadUserEntities>(
   "users/loadReplies",
   async (request) => {
     let client = await getCredentialClient(request);
-    const result = await client.getPosts({ authorUserId: request.userId, context: PostContext.REPLY }, client.credential);
+    const result = await client.getPosts({ authorUserId: request.userId.split('@')[0], context: PostContext.REPLY }, client.credential);
     return result;
   }
 );
@@ -96,7 +102,7 @@ export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEntities, any
   "users/loadEvents",
   async (request) => {
     let client = await getCredentialClient(request);
-    const result = await client.getEvents({ authorUserId: request.userId }, client.credential);
+    const result = await client.getEvents({ authorUserId: request.userId.split('@')[0] }, client.credential);
     return result;
   }
 );

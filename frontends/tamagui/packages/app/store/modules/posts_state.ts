@@ -14,7 +14,7 @@ import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesS
 import { createEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
-import { loadUserPosts } from "./user_actions";
+import { loadUserPosts, loadUserReplies } from "./user_actions";
 export * from './post_actions';
 
 export type FederatedPost = FederatedEntity<Post>;
@@ -176,6 +176,10 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
     });
 
     builder.addCase(loadUserPosts.fulfilled, (state, action) => {
+      const { posts } = action.payload;
+      upsertPosts(state, federatedEntities(posts, action));
+    });
+    builder.addCase(loadUserReplies.fulfilled, (state, action) => {
       const { posts } = action.payload;
       upsertPosts(state, federatedEntities(posts, action));
     });

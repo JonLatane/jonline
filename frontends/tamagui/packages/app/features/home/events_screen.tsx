@@ -160,6 +160,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
+  console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
   const setModalInstance = (e: FederatedEvent | undefined) => {
     setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
   }
@@ -309,12 +310,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         }
                       })}
                       eventClick={(modelEvent) => {
-                        const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
-                        const isPrimaryServer = serverHost === currentServer?.host;
-                        const detailsLinkId = !isPrimaryServer
-                          ? federateId(instanceId, serverHost)
-                          : instanceId;
-                        setModalInstanceId(detailsLinkId);
+                        setModalInstanceId(modelEvent.event.id);
+                        // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
+                        // const isPrimaryServer = serverHost === currentServer?.host;
+                        // const detailsLinkId = !isPrimaryServer
+                        //   ? federateId(instanceId, serverHost)
+                        //   : instanceId;
+                        // setModalInstanceId(detailsLinkId);
                         // const groupLinkId = selectedGroup ?
                         //   (selectedGroup?.serverHost !== currentServer?.host
                         //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
@@ -328,7 +330,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     />
                   </div>
                 </Text>
-                <Dialog modal open={!!modalInstance} onOpenChange={(o) => setModalInstance(undefined)}>
+                <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
                   {/* <Dialog.Trigger asChild>
                     <Button>Show Dialog</Button>
                   </Dialog.Trigger> */}

@@ -110,6 +110,8 @@ export enum Permission {
   PUBLISH_MEDIA_GLOBALLY = 43,
   /** MODERATE_MEDIA - Allow the user to moderate events. */
   MODERATE_MEDIA = 44,
+  /** BUSINESS - Indicates the user is a business. Used purely for display purposes. */
+  BUSINESS = 9998,
   /**
    * RUN_BOTS - Allow the user to run bots. There is no enforcement of this permission (yet),
    * but it lets other users know that the user is allowed to run bots.
@@ -224,6 +226,9 @@ export function permissionFromJSON(object: any): Permission {
     case 44:
     case "MODERATE_MEDIA":
       return Permission.MODERATE_MEDIA;
+    case 9998:
+    case "BUSINESS":
+      return Permission.BUSINESS;
     case 9999:
     case "RUN_BOTS":
       return Permission.RUN_BOTS;
@@ -304,6 +309,8 @@ export function permissionToJSON(object: Permission): string {
       return "PUBLISH_MEDIA_GLOBALLY";
     case Permission.MODERATE_MEDIA:
       return "MODERATE_MEDIA";
+    case Permission.BUSINESS:
+      return "BUSINESS";
     case Permission.RUN_BOTS:
       return "RUN_BOTS";
     case Permission.ADMIN:

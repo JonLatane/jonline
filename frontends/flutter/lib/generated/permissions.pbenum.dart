@@ -50,6 +50,7 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission PUBLISH_MEDIA_LOCALLY = Permission._(42, _omitEnumNames ? '' : 'PUBLISH_MEDIA_LOCALLY');
   static const Permission PUBLISH_MEDIA_GLOBALLY = Permission._(43, _omitEnumNames ? '' : 'PUBLISH_MEDIA_GLOBALLY');
   static const Permission MODERATE_MEDIA = Permission._(44, _omitEnumNames ? '' : 'MODERATE_MEDIA');
+  static const Permission BUSINESS = Permission._(9998, _omitEnumNames ? '' : 'BUSINESS');
   static const Permission RUN_BOTS = Permission._(9999, _omitEnumNames ? '' : 'RUN_BOTS');
   static const Permission ADMIN = Permission._(10000, _omitEnumNames ? '' : 'ADMIN');
   static const Permission VIEW_PRIVATE_CONTACT_METHODS = Permission._(10001, _omitEnumNames ? '' : 'VIEW_PRIVATE_CONTACT_METHODS');
@@ -86,6 +87,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_MEDIA_LOCALLY,
     PUBLISH_MEDIA_GLOBALLY,
     MODERATE_MEDIA,
+    BUSINESS,
     RUN_BOTS,
     ADMIN,
     VIEW_PRIVATE_CONTACT_METHODS,

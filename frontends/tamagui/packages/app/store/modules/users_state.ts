@@ -146,35 +146,33 @@ export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
       }, 1);
     });
     builder.addCase(loadUserPosts.fulfilled, (state, action) => {
-      const { posts } = action.payload;
-      const newPostIds = new Set(posts.map(p => p.id));
-      if (!state.idPosts) state.idPosts = {};
-      const updatedUserPostIds = state.idPosts[federateUserId(action)]
+      const posts = federatedEntities(action.payload.posts, action);
+      const newPostIds = new Set(posts.map(federatedId));
+      const userId = federateUserId(action);
+      const updatedUserPostIds = state.idPosts[userId]
         ?.filter((p) => !newPostIds.has(p))
         || [];
-      updatedUserPostIds.push(...posts.map(p => p.id));
-      state.idPosts[federateUserId(action)] = updatedUserPostIds;
+      updatedUserPostIds.push(...newPostIds);
+      state.idPosts[userId] = updatedUserPostIds;
     });
     builder.addCase(loadUserReplies.fulfilled, (state, action) => {
-      const { posts: replies } = action.payload;
-      const newPostIds = new Set(replies.map(p => p.id));
-      if (!state.idReplies) state.idReplies = {};
+      const replies = federatedEntities(action.payload.posts, action);
+      const newPostIds = new Set(replies.map(federatedId));
       const updatedUserReplyIds = state.idReplies[federateUserId(action)]
         ?.filter((p) => !newPostIds.has(p))
         || [];
-      updatedUserReplyIds.push(...replies.map(p => p.id));
+      updatedUserReplyIds.push(...newPostIds);
       state.idReplies[federateUserId(action)] = updatedUserReplyIds;
     });
     builder.addCase(loadUserEvents.fulfilled, (state, action) => {
-      // state.status = "loaded";
-      const { events } = action.payload;
-      const newEventInstanceIds = new Set(events.map(p => p.id));
-      if (!state.idPosts) state.idPosts = {};
-      const updatedUserEventInstanceIds = state.idPosts[federateUserId(action)]
+      const events = federatedEntities(action.payload.events, action);
+      const userId = federateUserId(action);
+      const newEventInstanceIds = new Set(events.map(e => federateId(e.instances[0]!.id, action)));
+      const updatedUserEventInstanceIds = state.idEventInstances[userId]
         ?.filter((p) => !newEventInstanceIds.has(p))
         || [];
-      updatedUserEventInstanceIds.push(...events.map(p => p.id));
-      state.idEventInstances[federateUserId(action)] = updatedUserEventInstanceIds;
+      updatedUserEventInstanceIds.push(...newEventInstanceIds);
+      state.idEventInstances[userId] = updatedUserEventInstanceIds;
     });
     builder.addCase(followUnfollowUser.pending, (state, action) => {
       lockUser(state, federateUserId(action));

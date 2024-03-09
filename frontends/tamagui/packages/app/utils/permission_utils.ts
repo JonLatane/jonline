@@ -24,6 +24,7 @@ function _hasPermission(list: Permission[] | undefined, permission: Permission) 
 
   return list.includes(permission)
     || (![
+      Permission.BUSINESS,
       Permission.RUN_BOTS,
       Permission.UNRECOGNIZED,
       Permission.VIEW_PRIVATE_CONTACT_METHODS

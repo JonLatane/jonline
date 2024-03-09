@@ -25,7 +25,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const dispatch = useAppDispatch();
   const postsState = useRootSelector((state: RootState) => state.posts);
   const eventsState = useRootSelector((state: RootState) => state.events);
-  const media = useMedia();
+  const mediaQuery = useMedia();
   const app = useRootSelector((state: RootState) => state.app);
   const showEventsOnLatest = app.showEventsOnLatest ?? true;
 
@@ -81,7 +81,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
-  const eventCardWidth = media.gtSm ? 400 : 323;
+  const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
   const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
   return (
     <TabsNavigation
@@ -122,7 +122,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               {...standardAnimation}
             >
               <ScrollView horizontal w='100%'>
-                <XStack w={eventCardWidth} gap='$2' mx='auto' pl={media.gtMd ? '$5' : undefined} my='auto'>
+                <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
                   <FlipMove style={{ display: 'flex' }}>
 

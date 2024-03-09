@@ -55,7 +55,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         username: account.user.username,
         userId: account.user.id,
         password: reauthenticationPassword,
-        skipSelection: true
+        skipSelection: !isCurrentServer || !!currentAccountId
       }));
       if (actionSucceeded(action)) {
         setResult(action.payload);

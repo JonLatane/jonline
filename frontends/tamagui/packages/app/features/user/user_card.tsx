@@ -1,6 +1,6 @@
 import { Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia, useTheme } from '@jonline/ui';
-import { Bot, Shield } from "@tamagui/lucide-icons";
+import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
 import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
@@ -184,12 +184,12 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
 
   const footerContent = <YStack mt='$2' mr='$3' w='100%'>
     <XStack>
-      <Heading size='$1' f={1}>{user.followerCount} followers</Heading>
+      <Heading size='$1' f={1}>{user.followerCount} {user.followerCount === 1 ? 'follower' : 'followers'}</Heading>
       <Heading size='$1' f={1} ta='right'>following {user.followingCount}</Heading>
     </XStack>
     <XStack>
-      <Heading size='$1' f={1}>{user.groupCount} groups</Heading>
-      <Heading size='$1' f={1} ta='right'>{user.postCount} posts/replies</Heading>
+      <Heading size='$1' f={1}>{user.groupCount} {user.groupCount === 1 ? 'group' : 'groups'}</Heading>
+      <Heading size='$1' f={1} ta='right'>{user.postCount} {user.postCount === 1 ? 'post/reply' : 'posts/replies'}</Heading>
     </XStack>
     <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
       <Paragraph size='$1' o={0.5}>Account Created</Paragraph>
@@ -229,6 +229,16 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                 </Tooltip.Trigger>
                 <Tooltip.Content>
                   <Heading size='$2'>User is an admin.</Heading>
+                </Tooltip.Content>
+              </Tooltip> : undefined}
+            {hasPermission(user, Permission.BUSINESS)
+              ? <Tooltip placement="bottom-end">
+                <Tooltip.Trigger>
+                  <Building2 />
+                </Tooltip.Trigger>
+                <Tooltip.Content>
+                  <Heading size='$2' ta='center' als='center'>Business Account</Heading>
+                  {/* <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading> */}
                 </Tooltip.Content>
               </Tooltip> : undefined}
             {hasPermission(user, Permission.RUN_BOTS)

@@ -11,7 +11,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use crate::{protos::GetUsersRequest, rpcs, web::RocketState};
+use crate::{
+    protos::{GetUsersRequest, Permission},
+    rpcs,
+    web::RocketState,
+};
 
 use super::{jonline_path, tamagui_path, JonlineResponder, JonlineSummary};
 
@@ -47,14 +51,8 @@ pub async fn tamagui_file_or_username(
                             return tamagui_path(file.to_str().unwrap(), None).await;
                         }
 
-                        let username = Some(
-                            path
-                                .to_string()
-                                .split('/')
-                                .last()
-                                .unwrap()
-                                .to_string(),
-                        );
+                        let username =
+                            Some(path.to_string().split('/').last().unwrap().to_string());
                         let user = rpcs::get_users(
                             GetUsersRequest {
                                 username,
@@ -69,8 +67,13 @@ pub async fn tamagui_file_or_username(
 
                         let (page_title, description, avatar) = match user {
                             Some(user) => {
-                                let page_title =
-                                    format!("{} - User Profile", user.username.clone());
+                                let is_business =
+                                    user.permissions.contains(&(Permission::Business as i32));
+                                let page_title = format!(
+                                    "{} - {} Profile",
+                                    user.username.clone(),
+                                    if is_business { "Business" } else { "User" }
+                                );
                                 let description = user.bio.clone();
                                 let avatar =
                                     user.avatar.clone().map(|a| format!("/media/{}", a.id));
