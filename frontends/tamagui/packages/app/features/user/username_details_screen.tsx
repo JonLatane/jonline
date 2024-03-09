@@ -169,13 +169,13 @@ export function UsernameDetailsScreen() {
   }, [editMode, canEdit]);
 
   useEffect(() => {
-    if (inputUsername && !!accountOrServer.server && !loadingUser && (!user /*|| usersState.status == 'unloaded'*/) && !userLoadFailed) {
+    if (inputUsername && !!accountOrServer.server && !loadingUser && !user && !userLoadFailed) {
       setLoadingUser(true);
       dispatch(loadUsername({ ...accountOrServer, username: inputUsername! }))
       .then(() => setLoadingUser(false));
     }
-  }, [inputUsername, loadingUser, user, /*usersState.status,*/ userLoadFailed, !!accountOrServer.server]);
-  console.log('user', user, 'loadingUser', loadingUser, userLoadFailed, !!accountOrServer.server);
+  }, [inputUsername, loadingUser, user, userLoadFailed, !!accountOrServer.server]);
+  // console.log('user', user, 'loadingUser', loadingUser, userLoadFailed, !!accountOrServer.server);
   useEffect(() => {
     if (user && userPostData && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
@@ -183,7 +183,6 @@ export function UsernameDetailsScreen() {
   }, [user, userPostData, showScrollPreserver])
   const windowHeight = useWindowDimensions().height;
   const [saving, setSaving] = useState(false);
-  //= useRootSelector((state: RootState) => state.users.successMessage == userSaved);
   const toast = useToastController()
 
   const isBusiness = permissions.includes(Permission.BUSINESS);
