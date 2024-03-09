@@ -36,6 +36,7 @@ interface PostCardProps {
   selectedPostId?: string;
   onPressReply?: () => void;
   onEditingChange?: (editing: boolean) => void;
+  ignoreShrinkPreview?: boolean;
 }
 
 export const postBackgroundSize = (media: TamaguiMediaState) =>
@@ -54,7 +55,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   onPressParentPreview,
   selectedPostId,
   onPressReply,
-  onEditingChange
+  onEditingChange,
+  ignoreShrinkPreview
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const currentUser = accountOrServer.account?.user;
@@ -404,7 +406,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                 <YStack w='100%' px='$3' >
                   <AnimatePresence>
-                    {shrinkPreviews && isPreview ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
+                    {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
                       <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
                         {editing && !previewingEdits
                           ? <PostMediaManager
@@ -432,7 +434,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </AnimatePresence>
                 </YStack>
                 <AnimatePresence>
-                  {shrinkPreviews && isPreview ? undefined
+                  {shrinkPreviews  && !ignoreShrinkPreview && isPreview ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py='$2'>
                         {showEdit

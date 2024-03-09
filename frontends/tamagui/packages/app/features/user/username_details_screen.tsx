@@ -14,7 +14,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import EventCard from '../event/event_card';
+import { EventCard } from '../event/event_card';
 import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
@@ -349,7 +349,7 @@ export function UsernameDetailsScreen() {
                   {paginatedEvents.map((event) =>
                     <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                       <XStack mx='$1' px='$1' pb='$5'>
-                        <EventCard event={event} isPreview horizontal xs />
+                        <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
                       </XStack>
                     </span>)}
 
@@ -376,17 +376,17 @@ export function UsernameDetailsScreen() {
                 <FlipMove>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
-                      ? <div key='no-posts' style={{width: '100%', marginTop: 50, marginBottom: 150}}><Heading w='100%' size='$1' ta='center'>No posts yet</Heading></div>
+                      ? <div key='no-posts' style={{ width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'>No posts yet</Heading></div>
                       : postContext === PostContext.REPLY && userPosts.length === 0
-                        ? <div key='no-replies' style={{width: '100%', marginTop: 50, marginBottom: 150}}><Heading w='100%' size='$1' ta='center'>No replies yet</Heading></div>
+                        ? <div key='no-replies' style={{ width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'>No replies yet</Heading></div>
                         : undefined}
                   {postContext === PostContext.POST
                     ? userPosts.map((post) => {
-                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview /></div>;
+                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
                       // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                     })
                     : postContext === PostContext.REPLY ? userReplies.map((post) => {
-                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview /></div>;
+                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
                       // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                     })
                       : undefined}

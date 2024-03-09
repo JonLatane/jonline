@@ -37,6 +37,7 @@ interface Props {
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   onInstancesUpdated?: (instances: EventInstance[]) => void;
+  ignoreShrinkPreview?: boolean;
 }
 
 let newEventId = 0;
@@ -53,6 +54,7 @@ export const EventCard: React.FC<Props> = ({
   newRsvpMode,
   setNewRsvpMode,
   onInstancesUpdated,
+  ignoreShrinkPreview
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
@@ -778,7 +780,7 @@ export const EventCard: React.FC<Props> = ({
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%'>
                 <AnimatePresence>
-                  {shrinkPreviews && isPreview ? undefined :
+                  {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined :
                     <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                       px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
                       {primaryInstance
@@ -841,7 +843,7 @@ export const EventCard: React.FC<Props> = ({
                   </YStack>
                   : undefined}
                 <AnimatePresence>
-                  {shrinkPreviews && isPreview ? undefined
+                  {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
                         {showEdit
