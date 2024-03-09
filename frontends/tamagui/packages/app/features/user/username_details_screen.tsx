@@ -169,13 +169,13 @@ export function UsernameDetailsScreen() {
   }, [editMode, canEdit]);
 
   useEffect(() => {
-    if (inputUsername && !loadingUser && (!user /*|| usersState.status == 'unloaded'*/) && !userLoadFailed) {
+    if (inputUsername && !!accountOrServer.server && !loadingUser && (!user /*|| usersState.status == 'unloaded'*/) && !userLoadFailed) {
       setLoadingUser(true);
-      setTimeout(() => dispatch(loadUsername({ ...accountOrServer, username: inputUsername! })));
-    } else if (loadingUser && (user || userLoadFailed)) {
-      setLoadingUser(false);
+      dispatch(loadUsername({ ...accountOrServer, username: inputUsername! }))
+      .then(() => setLoadingUser(false));
     }
-  }, [inputUsername, loadingUser, user, /*usersState.status,*/ userLoadFailed]);
+  }, [inputUsername, loadingUser, user, /*usersState.status,*/ userLoadFailed, !!accountOrServer.server]);
+  console.log('user', user, 'loadingUser', loadingUser, userLoadFailed, !!accountOrServer.server);
   useEffect(() => {
     if (user && userPostData && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);

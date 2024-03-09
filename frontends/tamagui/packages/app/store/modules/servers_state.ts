@@ -80,13 +80,13 @@ setTimeout(async () => {
   }
 
   if (!store.getState().servers.currentServerId) {
-    const initialServer: JonlineServer = Platform.OS == 'web' && globalThis.window?.location
+    const initialServer: JonlineServer = Platform.OS == 'web' && globalThis.window?.location && false
       ? {
         host: window.location.hostname,
         secure: window.location.protocol === 'https:',
       }
       : {
-        host: 'jonline.io',
+        host: 'bullcity.social',
         secure: true,
       };
 
