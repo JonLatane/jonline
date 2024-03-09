@@ -229,7 +229,9 @@ export const EventCard: React.FC<Props> = ({
   }
 
   const maxTotalContentHeight = isPreview
-    ? (horizontal ? xs ? 225 : 350 : 500)
+    ? (horizontal 
+        ? xs ? 275 : 350 
+        : 500)
     - (event.info?.allowsRsvps ? 100 : 0)
     - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
@@ -788,7 +790,7 @@ export const EventCard: React.FC<Props> = ({
                         <XStack mx='$3' mt='$1'>
                           <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
                             readOnly={!editing || previewingEdits}
-                            preview={isPreview && horizontal}
+                            preview={isPreview}
                             link={isPreview ? eventLink : undefined}
                             setLocation={(location: Location) => {
                               if (editingInstance) {

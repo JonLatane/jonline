@@ -124,6 +124,10 @@ export const LocationControl: React.FC<Props> = ({
           <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
           <YStack gap="$3" h='100%'>
+            <Heading size='$2'>Location</Heading>
+            <Text fontSize='$1' my='auto' w='100%' maw={270} display='block'>
+              {value}
+            </Text>
             {/* {willAdaptEdit ?
               <Popover.Sheet.ScrollView f={1}> */}
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>OpenStreet</Paragraph><Paragraph lineHeight='$1' size='$2'>Map</Paragraph></YStack></Button>
