@@ -330,7 +330,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     />
                   </div>
                 </Text>
-                <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
+                <Dialog
+                  key={`modal-${modalInstanceId}`}
+                  modal open={!!modalInstance}
+                  onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
                   {/* <Dialog.Trigger asChild>
                     <Button>Show Dialog</Button>
                   </Dialog.Trigger> */}
