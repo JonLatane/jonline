@@ -371,8 +371,8 @@ export function UsernameDetailsScreen() {
             </XStack>
 
             <YStack maw={800} w='100%' als='center'>
-              <YStack ai='center'>
-                <FlipMove>
+              <YStack ai='center' w='100%'>
+                <FlipMove style={{width: '100%'}}>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
                       ? <div key='no-posts' style={{ width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'>No posts yet</Heading></div>
@@ -381,7 +381,7 @@ export function UsernameDetailsScreen() {
                         : undefined}
                   {postContext === PostContext.POST
                     ? userPosts.map((post) => {
-                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
+                      return <div key={`userpost-${post.id}`} style={{width: '100%'}}><PostCard post={post} isPreview ignoreShrinkPreview /></div>;
                       // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
                     })
                     : postContext === PostContext.REPLY ? userReplies.map((post) => {
