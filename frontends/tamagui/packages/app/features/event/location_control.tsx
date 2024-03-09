@@ -125,7 +125,7 @@ export const LocationControl: React.FC<Props> = ({
 
           <YStack gap="$3" h='100%'>
             <Heading size='$2'>Location</Heading>
-            <Text fontSize='$1' my='auto' w='100%' maw={270} display='block'>
+            <Text fontSize='$1' mb='$2' mx={0} w='100%' maw={170} display='block'>
               {value}
             </Text>
             {/* {willAdaptEdit ?
