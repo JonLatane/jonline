@@ -186,11 +186,12 @@ export function UsernameDetailsScreen() {
   //= useRootSelector((state: RootState) => state.users.successMessage == userSaved);
   const toast = useToastController()
 
+  const isBusiness = permissions.includes(Permission.BUSINESS);
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const realName = (user?.realName?.length ?? 0) > 0 ? user?.realName : undefined;
     let title = realName ?? username ?? 'User';
-    title += ` | Profile | ${serverName}`;
+    title += ` | ${isBusiness ? 'Business Profile' : 'Profile'} | ${serverName}`;
     setDocumentTitle(title)
   }, [user, username]);
 

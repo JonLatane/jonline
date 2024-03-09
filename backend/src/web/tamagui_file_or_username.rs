@@ -70,16 +70,16 @@ pub async fn tamagui_file_or_username(
                                 let is_business =
                                     user.permissions.contains(&(Permission::Business as i32));
                                 let page_title = format!(
-                                    "{} - {} Profile",
+                                    "{} - {}",
                                     user.username.clone(),
-                                    if is_business { "Business" } else { "User" }
+                                    if is_business { "Business Profile" } else { "Profile" }
                                 );
                                 let description = user.bio.clone();
                                 let avatar =
                                     user.avatar.clone().map(|a| format!("/media/{}", a.id));
                                 (page_title, Some(description), avatar)
                             }
-                            None => ("User Profile".to_string(), None, None),
+                            None => ("Profile".to_string(), None, None),
                         };
 
                         let title = Some(format!("{} - {}", page_title, server_name));
