@@ -1,4 +1,4 @@
-import { deletePost, federateId, getServerTheme, loadPostReplies, pinPost, unpinPost, updatePost } from "app/store";
+import { FederatedPost, deletePost, federateId, getServerTheme, loadPostReplies, starPost, unstarPost, updatePost } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
@@ -13,12 +13,13 @@ import { AuthorInfo } from "./author_info";
 import { ShareableToggle, VisibilityPicker } from "app/components";
 import { AccountOrServerContextProvider, useGroupContext } from "app/contexts";
 import { useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
-import { federatedEntity } from 'app/store/federation';
+import { federatedEntity, serverHost } from 'app/store/federation';
 import { GroupPostManager } from 'app/features/groups/group_post_manager';
 import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { PostMediaRenderer } from "./post_media_renderer";
+import { StarButton } from "./star_button";
 
 interface PostCardProps {
   // Note: Post may not be a FederatedPost if the Post is a reply. This could be better thought out...
@@ -44,7 +45,7 @@ export const postBackgroundSize = (media: TamaguiMediaState) =>
   media.gtLg ? 800 : media.gtMd ? 800 : media.gtSm ? 800 : media.gtXs ? 600 : 500;
 
 export const PostCard: React.FC<PostCardProps> = ({
-  post,
+  post: unfederatedPost,
   isPreview,
   // groupContext,
   replyPostIdPath,
@@ -60,10 +61,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   forceExpandPreview,
   forceShrinkPreview
 }) => {
-  const { dispatch, accountOrServer } = usePostDispatch(post);
+  const { dispatch, accountOrServer } = usePostDispatch(unfederatedPost);
   const currentUser = accountOrServer.account?.user;
   const server = accountOrServer.server;
-  const federatedPostId = federateId(post.id, server);
+  const post: FederatedPost = { ...unfederatedPost, serverHost: serverHost(server) };
+
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
@@ -309,21 +311,11 @@ export const PostCard: React.FC<PostCardProps> = ({
     </Dialog.Portal>
   </Dialog>;
 
-  const pinned = useAppSelector(state => state.app.pinnedPostIds.includes(federatedPostId));
   const shrinkPreviews = !!isPreview && (
     !!forceShrinkPreview || (
       appShrinkPreviews && !forceExpandPreview
     )
   );
-  function onPinPress() {
-    if (pinned) {
-      dispatch(unpinPost(federatedPostId));
-      toast.show(`Unpinned "${post.title}"`);
-    } else {
-      dispatch(pinPost(federatedPostId));
-      toast.show(`Pinned "${post.title}"`);
-    }
-  }
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
@@ -391,13 +383,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           {!post.replyToPostId && (post.link != '' || post.title != '')
             ? <Card.Header>
               <XStack ai='center'>
-                <Button transparent
-                  size='$2'
-                  p='$1'
-                  icon={!pinned ? Pin : PinOff}
-                  // color={primaryTextColor}
-                  onPress={onPinPress}
-                />
+                <StarButton post={post} />
                 <YStack f={1}>
                   {isPreview
                     ? <Anchor textDecorationLine='none'
@@ -420,8 +406,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                 {showServerInfo
                   ? <XStack my='auto'
-                   w={mediaQuery.gtXxxs  && !forceShrinkPreview? undefined : '$4'} 
-                   h={mediaQuery.gtXxxs  && !forceShrinkPreview? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
+                    w={mediaQuery.gtXxxs && !forceShrinkPreview ? undefined : '$4'}
+                    h={mediaQuery.gtXxxs && !forceShrinkPreview ? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
                     <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs || forceShrinkPreview} />
                   </XStack>
                   : undefined}
@@ -463,7 +449,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </AnimatePresence>
                 </YStack>
                 <AnimatePresence>
-                  {shrinkPreviews && !forceShrinkPreview? undefined
+                  {shrinkPreviews && !forceShrinkPreview ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py={!showEdit && !isAuthor ? 0 : '$2'}>
                         {showEdit

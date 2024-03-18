@@ -24,6 +24,7 @@ import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
+import { StarButton } from '../post/star_button';
 
 interface Props {
   event: FederatedEvent;
@@ -229,9 +230,9 @@ export const EventCard: React.FC<Props> = ({
   }
 
   const maxTotalContentHeight = isPreview
-    ? (horizontal 
-        ? xs ? 275 : 350 
-        : 500)
+    ? (horizontal
+      ? xs ? 275 : 350
+      : 500)
     - (event.info?.allowsRsvps ? 100 : 0)
     - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
@@ -720,6 +721,7 @@ export const EventCard: React.FC<Props> = ({
             ? <Card.Header p={0}>
               <YStack w='100%'>
                 <XStack ai='center' w='100%'>
+                  <StarButton post={instancePost} eventMargins />
                   <YStack key='primary-header' f={1} pt='$4' pb={0}>
                     <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
                       {headerLinks}

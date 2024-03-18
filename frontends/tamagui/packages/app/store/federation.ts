@@ -159,7 +159,7 @@ export function setFederated<T>(federated: Federated<T>, server: HasServer, valu
  * @param server 
  * @returns 
  */
-function serverHost(server: HasServer): string {
+export function serverHost(server: HasServer): string {
   if (typeof server === 'string') {
     return server;
   }

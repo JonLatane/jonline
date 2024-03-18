@@ -13,7 +13,7 @@ import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigati
 import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
-import { PinnedThreads } from "./pinned_threads";
+import { StarredPosts } from "./starred_posts";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -207,7 +207,7 @@ export function TabsNavigation({
                 <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
               </ScrollView>
               <XStack f={1} />
-              <PinnedThreads />
+              <StarredPosts />
               {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
               <XStack w={5} />
             </XStack>}

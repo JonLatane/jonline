@@ -33,11 +33,12 @@ pub fn get_events(
         request.to_owned().event_id,
         request.to_owned().event_instance_id,
         request.to_owned().author_user_id,
+        request.to_owned().post_id,
     ) {
         // TODO: implement the other listing types
-        (_, Some(event_id), _, _) => get_event_by_id(&user, &event_id, conn)?,
-        (_, _, Some(instance_id), _) => get_event_by_instance_id(&user, &instance_id, conn)?,
-        (EventListingType::GroupEvents, _, _, _) => match request.group_id {
+        (_, Some(event_id), _, _, _) => get_event_by_id(&user, &event_id, conn)?,
+        (_, _, Some(instance_id), _, _) => get_event_by_instance_id(&user, &instance_id, conn)?,
+        (EventListingType::GroupEvents, _, _, _, _) => match request.group_id {
             Some(group_id) => get_group_events(
                 group_id.to_db_id_or_err("group_id")?,
                 &user,
@@ -46,12 +47,13 @@ pub fn get_events(
             )?,
             _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
         },
-        (_, _, _, Some(author_user_id)) => get_user_events(
+        (_, _, _, Some(author_user_id), _) => get_user_events(
             author_user_id.to_db_id_or_err("author_user_id")?,
             user,
             conn,
             request.time_filter,
         )?,
+        (_, _, _, _, Some(_post_id)) => get_public_and_following_events(&user, conn, request.time_filter)?,
         _ => get_public_and_following_events(&user, conn, request.time_filter)?,
     };
     Ok(GetEventsResponse {

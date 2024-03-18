@@ -26,10 +26,10 @@ export type ServerTheme = {
   warningAnchorColor: string;
   darkMode: boolean;
 }
-export function useServerTheme(): ServerTheme {
+export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
   const server = useServer();
   const theme = useTheme();
-  return getServerTheme(server, theme);
+  return getServerTheme(specificServer ?? server, theme);
 }
 
 export function getServerTheme(server: JonlineServer | undefined, theme?: any): ServerTheme {

@@ -39,7 +39,7 @@ message GetEventsRequest {
   // If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   // only returns events where the given user's status matches one of the given statuses.
   repeated AttendanceStatus attendance_statuses = 7;
-  // (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT`.
+  // (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
   optional string post_id = 8;
   // (TODO) Finds events that have an instance with the given post ID. The Post should have a `PostContext` of `EVENT_INSTANCE`.
   optional string instance_post_id = 9;

@@ -172,9 +172,9 @@ export function PostDetailsScreen() {
           </Tooltip>
           <Tooltip placement="bottom-end">
             <Tooltip.Trigger>
-              <Button transparent={!chatUI} icon={ListEnd}
+              <Button  icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                opacity={!chatUI ? 0.5 : 1}
+                opacity={!chatUI ? 0.5 : 1} transparent
                 onPress={() => {
                   if (chatUI) {
                     scrollToBottom();

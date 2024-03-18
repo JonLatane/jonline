@@ -30,6 +30,8 @@ export interface EventsState {
   eventInstancePages: Federated<GroupedEventInstancePages>;
   failedEventIds: string[];
   failedInstanceIds: string[];
+  // Maps Post IDs to EventInstance IDs.
+  postInstances: Dictionary<string>;
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
@@ -54,6 +56,7 @@ const initialState: EventsState = {
   failedInstanceIds: [],
   eventInstancePages: createFederated({}),
   instanceEvents: {},
+  postInstances: {},
   ...eventsAdapter.getInitialState(),
 };
 
@@ -155,10 +158,14 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
 
 const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer) => {
   // console.log('merging event', event);
+  const federatedEventId = federateId(event.id, action);
   const oldEvent = selectEventById(state, federatedId(event));
   let instances = event.instances;
   instances.forEach(instance => {
-    state.instanceEvents[federateId(instance.id, action)] = federateId(event.id, action);
+    const federatedInstanceId = federateId(instance.id, action);
+    const federatedInstancePostId = federateId(instance.post!.id, action);
+    state.instanceEvents[federatedInstanceId] = federatedEventId;
+    state.postInstances[federatedInstancePostId] = federatedInstanceId;
   });
   if (oldEvent) {
     instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);

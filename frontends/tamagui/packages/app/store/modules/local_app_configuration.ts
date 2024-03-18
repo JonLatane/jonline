@@ -39,7 +39,7 @@ export type LocalAppConfiguration = {
   shrinkPreviews: boolean;
   dateTimeRenderer?: DateTimeRenderer;
   showBigCalendar: boolean;
-  pinnedPostIds: string[];
+  starredPostIds: string[];
 }
 
 const initialState: LocalAppConfiguration = {
@@ -68,7 +68,7 @@ const initialState: LocalAppConfiguration = {
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
   showBigCalendar: true,
-    pinnedPostIds: []
+    starredPostIds: []
 };
 
 setTimeout(async () => {
@@ -79,8 +79,8 @@ setTimeout(async () => {
 
     store.dispatch(setDateTimeRenderer(isSafari() ? 'native' : 'custom'))
   }
-  if (store.getState().app.pinnedPostIds === undefined) {
-    store.dispatch(setPinnedPostIds([]))
+  if (store.getState().app.starredPostIds === undefined) {
+    store.dispatch(setstarredPostIds([]))
   }
 }, 1000);
 
@@ -170,14 +170,14 @@ export const localAppSlice = createSlice({
     setImagePostBackgrounds: (state, action: PayloadAction<boolean>) => {
       state.imagePostBackgrounds = action.payload;
     },
-    setPinnedPostIds: (state, action: PayloadAction<string[]>) => {
-      state.pinnedPostIds = action.payload;
+    setstarredPostIds: (state, action: PayloadAction<string[]>) => {
+      state.starredPostIds = action.payload;
     },
-    pinPost: (state, action: PayloadAction<string>) => {
-      state.pinnedPostIds = [action.payload, ...state.pinnedPostIds];
+    starPost: (state, action: PayloadAction<string>) => {
+      state.starredPostIds = [action.payload, ...state.starredPostIds];
     },
-    unpinPost: (state, action: PayloadAction<string>) => {
-      state.pinnedPostIds = state.pinnedPostIds.filter((id) => id !== action.payload);
+    unstarPost: (state, action: PayloadAction<string>) => {
+      state.starredPostIds = state.starredPostIds.filter((id) => id !== action.payload);
     }
   },
   extraReducers: (builder) => {
@@ -189,7 +189,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
-  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setPinnedPostIds, pinPost, unpinPost
+  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setstarredPostIds, starPost, unstarPost
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;
