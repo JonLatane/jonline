@@ -61,6 +61,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   forceExpandPreview,
   forceShrinkPreview
 }) => {
+  const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = usePostDispatch(unfederatedPost);
   const currentUser = accountOrServer.account?.user;
   const server = accountOrServer.server;
@@ -69,8 +70,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
+
+  const shrinkServerInfo = isPreview && (!mediaQuery.gtXxxs || forceShrinkPreview);
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
-  const mediaQuery = useMedia();
+
   const groupContext = useGroupContext();
   const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
 
@@ -325,7 +328,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
             <AnimatePresence>
-              <Card f={1} theme="dark" size="$1" bordered id={componentKey}
+              <Card f={1} theme="dark" size="$1" bordered={false} id={componentKey}
                 margin='$0'
                 backgroundColor={selectedPostId == previewParent.id ? '$backgroundFocus' : undefined}
                 // marginBottom={replyPostIdPath ? '$0' : '$3'}
@@ -360,10 +363,11 @@ export const PostCard: React.FC<PostCardProps> = ({
           </XStack>
           : undefined}
         {/* <Theme inverse={selectedPostId == post.id}> */}
-        <Card size="$4" bordered
+        <Card size="$4"
+          bordered={!post.replyToPostId}
           // theme="dark"
 
-          borderColor={showServerInfo ? primaryColor : undefined}
+          borderColor={showServerInfo && !post.replyToPostId ? primaryColor : undefined}
           margin='$1'
           backgroundColor={selectedPostId == post.id ? '$backgroundFocus' : undefined}
           marginBottom={replyPostIdPath ? '$0' : '$3'}
@@ -406,9 +410,10 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                 {showServerInfo
                   ? <XStack my='auto'
-                    w={mediaQuery.gtXxxs && !forceShrinkPreview ? undefined : '$4'}
-                    h={mediaQuery.gtXxxs && !forceShrinkPreview ? undefined : '$4'} jc={mediaQuery.gtXxxs ? undefined : 'center'}>
-                    <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs || forceShrinkPreview} />
+                    w={shrinkServerInfo ? '$4' : undefined}
+                    h={shrinkServerInfo ? '$4' : undefined}
+                    jc={shrinkServerInfo ? 'center' : undefined}>
+                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
                   </XStack>
                   : undefined}
               </XStack>

@@ -11,9 +11,9 @@ import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
 export enum AppSection {
   HOME = 'home',
   POSTS = 'posts',
-  POST = 'post',
+  // POST = 'post',
   EVENTS = 'events',
-  EVENT = 'event',
+  // EVENT = 'event',
   PEOPLE = 'people',
   MEMBERS = 'members',
   MEMBER = 'member',
@@ -65,12 +65,12 @@ export function sectionTitle(section: AppSection): string {
       return 'Latest';
     case AppSection.POSTS:
       return 'Posts';
-    case AppSection.POST:
-      return 'Post';
+    // case AppSection.POST:
+    //   return 'Post';
     case AppSection.EVENTS:
       return 'Events';
-    case AppSection.EVENT:
-      return 'Event';
+    // case AppSection.EVENT:
+    //   return 'Event';
     case AppSection.PEOPLE:
       return 'People';
     case AppSection.PROFILE:
@@ -190,13 +190,13 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     navButton(isEvents, eventsLink, AppSection.EVENTS),
   ];
   const postsEventsRow = selectedGroup ?
-    inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+    inlineNavigation && reorderInlineNavigation && (/*appSection == AppSection.EVENT ||*/ appSection == AppSection.EVENTS)
       ? <>{latest}{events}{posts}</>
       : <>{latest}{posts}{events}</>
     : inlineNavigation && reorderInlineNavigation
-      ? (appSection == AppSection.EVENT || appSection == AppSection.EVENTS)
+      ? (/*appSection == AppSection.EVENT ||*/ appSection == AppSection.EVENTS)
         ? <>{events}{posts}</>
-        : (appSection == AppSection.POST || appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
+        : (/*appSection == AppSection.POST ||*/ appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
           ? <>{posts}{events}</>
           : <>{latest}{posts}{events}</>
       : <>{appSection === AppSection.HOME && inlineNavigation ? latest : undefined}{posts}{events}</>;

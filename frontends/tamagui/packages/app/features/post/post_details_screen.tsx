@@ -53,7 +53,7 @@ export function PostDetailsScreen() {
   const [shortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const groupId = useRootSelector((state: RootState) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
@@ -116,7 +116,7 @@ export function PostDetailsScreen() {
   const chatUI = app?.discussionChatUI;
 
   return (
-    <TabsNavigation appSection={AppSection.POST} selectedGroup={group}
+    <TabsNavigation appSection={AppSection.POSTS} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
       topChrome={
         <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
@@ -128,7 +128,11 @@ export function PostDetailsScreen() {
                   setInteractionType('post');
                   scrollToTop();
                 }}>
-                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>
+                {mediaQuery.gtSm
+                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
+                    {subjectPost?.title || 'Loading...'}
+                  </Paragraph>
+                  : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>}
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -136,18 +140,14 @@ export function PostDetailsScreen() {
             </Tooltip.Content>
           </Tooltip>
 
-          {mediaQuery.gtSm
-            ? <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
-              {subjectPost?.title || 'Loading...'}
-            </Paragraph>
-            : <XStack f={1} />}
+          <XStack f={1} />
 
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
                 transparent={interactionType !== 'discussion'}
                 onPress={() => setInteractionType('discussion')} mr='$2'>
-                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : undefined}>Discussion</Heading>
+                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : !chatUI ? navAnchorColor : undefined}>Discussion</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -162,7 +162,7 @@ export function PostDetailsScreen() {
                 transparent={interactionType !== 'chat'}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
-                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : undefined}>Chat</Heading>
+                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor : undefined}>Chat</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -172,9 +172,9 @@ export function PostDetailsScreen() {
           </Tooltip>
           <Tooltip placement="bottom-end">
             <Tooltip.Trigger>
-              <Button  icon={ListEnd}
+              <Button transparent={!chatUI} icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                opacity={!chatUI ? 0.5 : 1} transparent
+                opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
                     scrollToBottom();
@@ -204,8 +204,7 @@ export function PostDetailsScreen() {
             <Heading size='$3' ta='center'>It may either not exist, not be visible to you, or be hidden by moderators.</Heading>
           </>
           : <Spinner size='large' color={navColor} scale={2} />
-        :
-        <AccountOrServerContextProvider value={accountOrServer}>
+        : <AccountOrServerContextProvider value={accountOrServer}>
           <ConversationContextProvider value={conversationContext}>
             <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
               <ScrollView w='100%'>

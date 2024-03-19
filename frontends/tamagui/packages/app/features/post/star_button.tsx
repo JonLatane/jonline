@@ -52,7 +52,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
     p='$1'
     px={0}
     ml={eventMargins ? 5 : -15}
-    mr={eventMargins ? -10 : 3}
+    mr={eventMargins ? -12 : 3}
     onPress={onPress}
   >
     <ThemedStar {...{ starred, server: accountOrServer.server }} />

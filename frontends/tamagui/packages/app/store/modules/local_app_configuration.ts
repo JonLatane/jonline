@@ -80,7 +80,7 @@ setTimeout(async () => {
     store.dispatch(setDateTimeRenderer(isSafari() ? 'native' : 'custom'))
   }
   if (store.getState().app.starredPostIds === undefined) {
-    store.dispatch(setstarredPostIds([]))
+    store.dispatch(setStarredPostIds([]))
   }
 }, 1000);
 
@@ -170,7 +170,7 @@ export const localAppSlice = createSlice({
     setImagePostBackgrounds: (state, action: PayloadAction<boolean>) => {
       state.imagePostBackgrounds = action.payload;
     },
-    setstarredPostIds: (state, action: PayloadAction<string[]>) => {
+    setStarredPostIds: (state, action: PayloadAction<string[]>) => {
       state.starredPostIds = action.payload;
     },
     starPost: (state, action: PayloadAction<string>) => {
@@ -178,7 +178,21 @@ export const localAppSlice = createSlice({
     },
     unstarPost: (state, action: PayloadAction<string>) => {
       state.starredPostIds = state.starredPostIds.filter((id) => id !== action.payload);
-    }
+    },
+    moveStarredPostUp: (state, action: PayloadAction<string>) => {
+      const index = state.starredPostIds.indexOf(action.payload);
+      if (index > 0) {
+        const element = state.starredPostIds.splice(index, 1)[0]!;
+        state.starredPostIds.splice(index - 1, 0, element);
+      }
+    },
+    moveStarredPostDown: (state, action: PayloadAction<string>) => {
+      const index = state.starredPostIds.indexOf(action.payload);
+      if (index < state.starredPostIds.length - 1) {
+        const element = state.starredPostIds.splice(index, 1)[0]!;
+        state.starredPostIds.splice(index + 1, 0, element);
+      }
+    },
   },
   extraReducers: (builder) => {
   },
@@ -189,7 +203,8 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
-  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setstarredPostIds, starPost, unstarPost
+  setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
+  moveStarredPostDown, moveStarredPostUp
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

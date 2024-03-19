@@ -84,7 +84,7 @@ module.exports = function () {
     webpack(webpackConfig) {
       return {
         ...webpackConfig,
-        // Comment this out if you'd like to disable minification. Jonline typically
+        // Comment this out if you'd like to enable minification. Jonline typically
         // expects its HTML to come from a CDN which will do this, and leaving it unminified
         // on the server costs only about 300kB difference in first load JS. But it's
         // helpful for debugging, and non-minified JS is also meant to push the open web

@@ -39,6 +39,7 @@ interface Props {
   setNewRsvpMode?: (mode: RsvpMode) => void;
   onInstancesUpdated?: (instances: EventInstance[]) => void;
   ignoreShrinkPreview?: boolean;
+  forceShrinkPreview?: boolean;
 }
 
 let newEventId = 0;
@@ -55,7 +56,8 @@ export const EventCard: React.FC<Props> = ({
   newRsvpMode,
   setNewRsvpMode,
   onInstancesUpdated,
-  ignoreShrinkPreview
+  ignoreShrinkPreview,
+  forceShrinkPreview
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
@@ -386,9 +388,11 @@ export const EventCard: React.FC<Props> = ({
     {/* </YStack> */}
   </>;
 
-  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
+  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs || forceShrinkPreview;
   const serverInfoView = showServerInfo
-    ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
+    ? <XStack my='auto'
+      w={shrinkServerInfo ? '$4' : undefined}
+      h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
       <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
     </XStack>
     : undefined;
@@ -698,6 +702,10 @@ export const EventCard: React.FC<Props> = ({
       </Dialog.Content>
     </Dialog.Portal>
   </Dialog>;
+  const shrinkContent = isPreview && (
+    forceShrinkPreview ||
+    (shrinkPreviews && !ignoreShrinkPreview)
+  );
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
@@ -784,8 +792,8 @@ export const EventCard: React.FC<Props> = ({
               ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
               : <YStack key='footer-base' zi={1000} width='100%'>
                 <AnimatePresence>
-                  {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined :
-                    <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
+                  {shrinkContent ? undefined
+                    : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                       px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
                       {primaryInstance
                         ?
@@ -847,7 +855,7 @@ export const EventCard: React.FC<Props> = ({
                   </YStack>
                   : undefined}
                 <AnimatePresence>
-                  {shrinkPreviews && !ignoreShrinkPreview && isPreview ? undefined
+                  {shrinkContent ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
                         {showEdit

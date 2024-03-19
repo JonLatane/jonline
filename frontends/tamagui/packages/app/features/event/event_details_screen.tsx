@@ -1,5 +1,5 @@
 import { EventInstance } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
 import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
 import { RootState, federateId, federatedId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -33,7 +33,8 @@ export function EventDetailsScreen() {
 
   const instanceId = federateId(serverInstanceId, serverHost);
 
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
+  const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server, useTheme());
+  console.log('EventDetailsScreen', textColor);
   const app = useLocalConfiguration();
   const groupId = useAppSelector((state) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);
@@ -146,7 +147,7 @@ export function EventDetailsScreen() {
   const chatUI = app?.discussionChatUI;
 
   return (
-    <TabsNavigation appSection={AppSection.EVENT} selectedGroup={group}
+    <TabsNavigation appSection={AppSection.EVENTS} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
 
       topChrome={
@@ -159,7 +160,11 @@ export function EventDetailsScreen() {
                   setInteractionType('post');
                   scrollToTop();
                 }}>
-                <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Event</Heading>
+                {mediaQuery.gtSm
+                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
+                    {subjectPost?.title || 'Loading...'}
+                  </Paragraph>
+                  : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Event</Heading>}
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -167,18 +172,14 @@ export function EventDetailsScreen() {
             </Tooltip.Content>
           </Tooltip>
 
-          {mediaQuery.gtSm
-            ? <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.8} f={1}>
-              {subjectPost?.title || 'Loading...'}
-            </Paragraph>
-            : <XStack f={1} />}
+          <XStack f={1} />
 
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
                 transparent={interactionType !== 'discussion'}
                 onPress={() => setInteractionType('discussion')} mr='$2'>
-                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : undefined}>Discussion</Heading>
+                <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : !chatUI ? navAnchorColor : undefined}>Discussion</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -193,7 +194,7 @@ export function EventDetailsScreen() {
                 transparent={interactionType !== 'chat'}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
-                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : undefined}>Chat</Heading>
+                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor: undefined}>Chat</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>

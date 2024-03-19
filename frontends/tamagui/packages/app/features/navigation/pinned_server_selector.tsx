@@ -91,7 +91,8 @@ export function PinnedServerSelector({
 
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
-    backgroundColor={transparent ? undefined : '$backgroundHover'}
+    backgroundColor={transparent ? '$backgroundHover' : '$backgroundHover'}
+    o={transparent ? 0.5 : 1}
   >
     {/* <AnimatePresence> */}
     {configuringFederation ?
