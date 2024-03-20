@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Toolt
 import { reverseHorizontalAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, MessagesSquare } from "@tamagui/lucide-icons";
 import { useAppDispatch, useAppSelector, useFederatedDispatch, useServer } from "app/hooks";
-import { loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
+import { loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
@@ -36,12 +36,14 @@ function useStarredPostDetails(postId: string) {
       ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
       : undefined
   );
-  // useEffect(() => {
-  //   if(!basePost) {
-  //     console.log('StarredPosts: Fetching post', postId);
-  //     dispatch(fetchPost({ id: postId, serverHost }));
-  //   }
-  // }, [basePost]);
+
+  // const [loadedEvent, setLoadedEvent] = useState(false);
+  useEffect(() => {
+    if (basePost?.context === PostContext.EVENT_INSTANCE && !event) {
+      console.log('StarredPosts: Fetching event by postId', postId);
+      dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! }));
+    }
+  }, [basePost]);
 
   const serverEventInstanceId = eventInstanceId
     ? parseFederatedId(eventInstanceId!).id

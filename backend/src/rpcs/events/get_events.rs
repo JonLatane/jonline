@@ -53,7 +53,9 @@ pub fn get_events(
             conn,
             request.time_filter,
         )?,
-        (_, _, _, _, Some(_post_id)) => get_public_and_following_events(&user, conn, request.time_filter)?,
+        (_, _, _, _, Some(post_id)) => {
+            get_event_by_instance_post_id(&user, &post_id, conn)?
+        }
         _ => get_public_and_following_events(&user, conn, request.time_filter)?,
     };
     Ok(GetEventsResponse {
@@ -189,6 +191,23 @@ fn get_event_by_instance_id(
     get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
 }
 
+fn get_event_by_instance_post_id(
+    user: &Option<&models::User>,
+    instance_post_id: &str,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalableEvent>, Status> {
+    let instance = event_instances::table
+        .select(event_instances::all_columns)
+        .filter(
+            event_instances::post_id.eq(instance_post_id
+                .to_string()
+                .to_db_id_or_err("instance_post_id")?),
+        )
+        .first::<models::EventInstance>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))?;
+    get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
+}
+
 fn get_event_by_id(
     user: &Option<&models::User>,
     event_id: &str,
@@ -226,7 +245,12 @@ fn get_event_by_id(
                     .map(|(instance, instance_post, instance_author)| {
                         MarshalableEventInstance(
                             instance.clone(),
-                            MarshalablePost(instance_post.clone(), instance_author.clone(), None, vec![]),
+                            MarshalablePost(
+                                instance_post.clone(),
+                                instance_author.clone(),
+                                None,
+                                vec![],
+                            ),
                         )
                     })
                     .collect(),
