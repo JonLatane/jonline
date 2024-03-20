@@ -14,6 +14,7 @@ import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
 import { useHideNavigation } from '../navigation/use_hide_navigation'
 import { themedButtonBackground } from 'app/utils'
+import { scrollToCommentsBottom } from './conversation_manager'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
@@ -69,7 +70,8 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       setMedia([]);
       setReplyText('');
       if (chatUI && isClient) {
-        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        scrollToCommentsBottom(replyingToPath[0]!.split("@")[0]!);
+        // window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }
     });
   }

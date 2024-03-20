@@ -36,6 +36,8 @@ message GetPostsRequest {
   optional uint32 reply_depth = 4;
   // Only POST and REPLY are supported for now.
   optional PostContext context = 5;
+  // Returns expanded posts with the given IDs.
+  optional string post_ids = 9;
   // The listing type of the request. See `PostListingType` for more info.
   PostListingType listing_type = 10;
   // The page of results to return. Defaults to 0.

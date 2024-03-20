@@ -1,19 +1,19 @@
 import { Post } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
-import { useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, } from 'app/hooks';
-import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store';
+import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
+import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
 import moment, { Moment } from 'moment';
 import React, { useEffect, useReducer, useState } from 'react';
+import FlipMove from 'react-flip-move';
 import { ConversationContextType, useConversationContext } from './conversation_context';
 import PostCard from './post_card';
-import FlipMove from 'react-flip-move';
 import { usePostInteractionType } from './post_details_screen';
 
 interface ConversationManagerProps {
   post: FederatedPost | undefined;
   disableScrollPreserver?: boolean;
-  forceChatUI?: boolean;
+  forStarredPost?: boolean;
   conversationContext?: ConversationContextType;
 }
 
@@ -28,25 +28,18 @@ if (isClient) {
   });
 }
 
-export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, disableScrollPreserver, forceChatUI }) => {
+export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, disableScrollPreserver, forStarredPost }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { navColor, navTextColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
 
-  const bottomId = `conversation-bottom-${post?.id}`;
-  function scrollToBottom() {
-    if (!isClient) return;
-
-    document.getElementById(bottomId)
-      ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  }
   const [interactionType] = usePostInteractionType();
   const conversationContext = useConversationContext()!;
-  const commentList = useConversationCommentList({ post, disableScrollPreserver, forceChatUI, conversationContext });
-  return <YStack>
-    <AnimatePresence>
+  const commentList = useConversationCommentList({ post, disableScrollPreserver, forStarredPost, conversationContext });
+  return <YStack w='100%' key='comments'>
+    <FlipMove>
       {interactionType === 'post'
         ? <XStack animation='standard' {...standardAnimation}>
           <XStack f={1} />
@@ -87,7 +80,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
                 opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
-                    scrollToBottom();
+                    scrollToCommentsBottom(post?.id);
                   } else {
                     dispatch(setDiscussionChatUI(true))
                   }
@@ -100,20 +93,22 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
           <XStack f={1} />
         </XStack>
         : undefined}
-    </AnimatePresence>
-    {/* <XStack w='100%'>
-              <> */}
-    <YStack w='100%' key='comments'>
-      <FlipMove>
-        {/* <ConversationCommentList post={post} /> */}
-        {/* {commentList} */}
-      </FlipMove>
-    </YStack>
+      {/* <ConversationCommentList post={post} /> */}
+      {commentList}
+    </FlipMove>
   </YStack>;
 }
 
+const getBottomId = (postId: string | undefined) => `conversation-bottom-${postId}`;
+
+export function scrollToCommentsBottom(postId: string | undefined) {
+  if (!isClient) return;
+
+  document.querySelectorAll(`#${getBottomId(postId)}`)
+    ?.forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+}
 export function useConversationCommentList({
-  post, disableScrollPreserver, forceChatUI, conversationContext
+  post, disableScrollPreserver, forStarredPost, conversationContext
 }: ConversationManagerProps) {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   console.log('conversationContext', conversationContext);
@@ -121,35 +116,14 @@ export function useConversationCommentList({
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
   const rootPostId = post ? federatedId(post) : undefined;
   const app = useLocalConfiguration();
-  const postsState = useRootSelector((state: RootState) => state.posts);
-  // const post = useRootSelector((state: RootState) => selectPostById(state.posts, postId!));
-  const [loadingPost, setLoadingPost] = useState(false);
   const [loadingRepliesFor, setLoadingRepliesFor] = useState(undefined as string | undefined);
   const [collapsedReplies, setCollapsedReplies] = useState(new Set<string>());
-  const [expandAnimation, setExpandAnimation] = useState(true);
+  // const [expandAnimation, setExpandAnimation] = useState(true);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const chatUI = app?.discussionChatUI || forceChatUI;
+  const chatUI = app?.discussionChatUI;
   // const [chatUI, setChatUI] = useState(false);
   const [_, forceUpdate] = useReducer((x) => x + 1, 0);
-
-  const bottomId = `conversation-bottom-${post?.id}`;
-  function scrollToBottom() {
-    if (!isClient) return;
-
-    document.getElementById(bottomId)
-      ?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-    // if (isReplyTextFocused() && windowHeight > 0) {
-    //   window.scrollTo({ top: document.body.scrollHeight - _viewportHeight, behavior: 'smooth' });
-    // } else {
-    // window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    // }
-  }
-  function scrollToTop() {
-    if (!isClient) return;
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
 
   const autoRefresh = app?.autoRefreshDiscussions ?? true;
   useEffect(() => {
@@ -164,7 +138,7 @@ export function useConversationCommentList({
         setTimeout(() => {
           dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
             if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-              scrollToBottom();
+              scrollToCommentsBottom(post?.id);
             }
             // forceUpdate();
             setTimeout(() => {
@@ -254,16 +228,22 @@ export function useConversationCommentList({
         ? <div key='no-replies' style={{
           display: 'flex',
           width: '100%',
-          paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
-          paddingBottom: window.innerHeight / 2,
+          paddingTop: forStarredPost ? 50
+            : interactionType === 'post' ? 100
+              : window.innerHeight / 2 - 200,
+          paddingBottom: forStarredPost ? 50
+            : window.innerHeight / 2,
         }}>
           <Heading size='$3' mx='auto'>No replies yet.</Heading>
         </div>
         : <div key='no-replies' style={{
           display: 'flex',
           width: '100%',
-          paddingTop: interactionType === 'post' ? 100 : window.innerHeight / 2 - 200,
-          paddingBottom: window.innerHeight / 2,
+          paddingTop: forStarredPost ? 50
+            : interactionType === 'post' ? 100
+              : window.innerHeight / 2 - 200,
+          paddingBottom: forStarredPost ? 50
+            : window.innerHeight / 2,
         }}>
           <Spinner size='large' mx='auto' color={primaryColor} />
         </div>
@@ -303,9 +283,9 @@ export function useConversationCommentList({
             selectedPostId={replyPostIdPath[replyPostIdPath.length - 1]}
             collapseReplies={collapsedReplies.has(reply.id)}
             previewParent={showParentPreview ? parentPost : undefined}
-            onLoadReplies={() => setExpandAnimation(true)}
+            // onLoadReplies={() => setExpandAnimation(true)}
             toggleCollapseReplies={() => {
-              setExpandAnimation(collapsedReplies.has(reply.id));
+              // setExpandAnimation(collapsedReplies.has(reply.id));
               toggleCollapseReplies(reply.id);
             }}
             onPressReply={() => {
@@ -332,7 +312,11 @@ export function useConversationCommentList({
         {result}
       </div>;
     })}
-    <XStack key='bottom' id={bottomId} f={1} />
-    <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
+    <div key='bottom'>
+      <XStack key='bottom' id={getBottomId(post?.id)} f={1} />
+    </div>
+    <div key='scrollPreserver'>
+      <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
+    </div>
   </>;
 }

@@ -25,6 +25,7 @@ import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
 import { StarButton } from '../post/star_button';
+import { federatedId } from '../../store/federation';
 
 interface Props {
   event: FederatedEvent;
@@ -40,6 +41,7 @@ interface Props {
   onInstancesUpdated?: (instances: EventInstance[]) => void;
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
+  onPress?: () => void;
 }
 
 let newEventId = 0;
@@ -57,7 +59,8 @@ export const EventCard: React.FC<Props> = ({
   setNewRsvpMode,
   onInstancesUpdated,
   ignoreShrinkPreview,
-  forceShrinkPreview
+  forceShrinkPreview,
+  onPress
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
@@ -69,7 +72,6 @@ export const EventCard: React.FC<Props> = ({
 
   const mediaQuery = useMedia();
   const eventPost = federatedEntity(event.post!, server);
-  const instancePost = federatedEntity(event.instances[0]?.post!, server);
 
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = getServerTheme(server);
   const [editing, _setEditing] = useState(false);
@@ -113,6 +115,9 @@ export const EventCard: React.FC<Props> = ({
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
+  const instancePost = primaryInstance?.post
+    ? federatedEntity(primaryInstance?.post, server)
+    : undefined;
   function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
     if (editingInstance) {
       return getter(editingInstance);
@@ -245,7 +250,10 @@ export const EventCard: React.FC<Props> = ({
     (maxTotalContentHeight! - (maxTotalContentHeight! * (2 - numContentSections) * 0.25)) / numContentSections
     : undefined;
 
-  const detailsLink: LinkProps | undefined = isPreview ? eventLink : undefined;
+  const onPressDetails = onPress
+    ? { onPress, accessibilityRole: "link" } as LinkProps
+    : undefined;
+  const detailsLink: LinkProps | undefined = isPreview ? onPressDetails ?? eventLink : undefined;
   const postLink = eventPost.link ? useLink({ href: eventPost.link }) : undefined;
   const authorLinkProps = eventPost.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
@@ -388,12 +396,12 @@ export const EventCard: React.FC<Props> = ({
     {/* </YStack> */}
   </>;
 
-  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs || forceShrinkPreview;
+  const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
   const serverInfoView = showServerInfo
     ? <XStack my='auto'
       w={shrinkServerInfo ? '$4' : undefined}
       h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
-      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip={isPreview} />
     </XStack>
     : undefined;
   const headerLinksView = <YStack f={1} key='header-links-view'>
@@ -729,7 +737,9 @@ export const EventCard: React.FC<Props> = ({
             ? <Card.Header p={0}>
               <YStack w='100%'>
                 <XStack ai='center' w='100%'>
-                  <StarButton post={instancePost} eventMargins />
+                  {instancePost
+                    ? <StarButton post={instancePost} eventMargins />
+                    : undefined}
                   <YStack key='primary-header' f={1} pt='$4' pb={0}>
                     <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
                       {headerLinks}
@@ -929,10 +939,10 @@ export const EventCard: React.FC<Props> = ({
                               <XStack opacity={0.9}>
                                 <YStack marginVertical='auto' scale={0.75}>
                                   <Paragraph size="$1" ta='right'>
-                                    {instancePost.responseCount} comment{instancePost.responseCount == 1 ? '' : 's'}
+                                    {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
                                   </Paragraph>
-                                  {isPreview || instancePost.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                    {instancePost.replyCount} repl{instancePost.replyCount == 1 ? 'y' : 'ies'}
+                                  {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                    {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
                                   </Paragraph>}
                                 </YStack>
                               </XStack>

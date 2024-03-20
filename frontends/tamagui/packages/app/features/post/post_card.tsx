@@ -18,7 +18,7 @@ import { GroupPostManager } from 'app/features/groups/group_post_manager';
 import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
-import { PostMediaRenderer } from "./post_media_renderer";
+import { LinkProps, PostMediaRenderer } from "./post_media_renderer";
 import { StarButton } from "./star_button";
 
 interface PostCardProps {
@@ -165,11 +165,15 @@ export const PostCard: React.FC<PostCardProps> = ({
       ? federateId(groupContext.shortname, accountOrServer.server)
       : groupContext.shortname)
     : undefined;
-  const detailsLink = useLink({
+  const onPressDetails = onPress
+    ? { onPress, accessibilityRole: "link" } as LinkProps
+    : undefined;
+  const detailsPostLink = useLink({
     href: groupContext
       ? `/g/${detailsGroupId}/p/${detailsLinkId}`
       : `/post/${detailsLinkId}`,
   });
+  const detailsLink = onPressDetails ?? detailsPostLink;
   const showDetailsShadow = isPreview && post.content && post.content.length > 700;
 
   const detailsShadowProps = showDetailsShadow ? {
@@ -413,7 +417,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     w={shrinkServerInfo ? '$4' : undefined}
                     h={shrinkServerInfo ? '$4' : undefined}
                     jc={shrinkServerInfo ? 'center' : undefined}>
-                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip={isPreview} />
                   </XStack>
                   : undefined}
               </XStack>
@@ -454,7 +458,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   </AnimatePresence>
                 </YStack>
                 <AnimatePresence>
-                  {shrinkPreviews && !forceShrinkPreview ? undefined
+                  {shrinkPreviews ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py={!showEdit && !isAuthor ? 0 : '$2'}>
                         {showEdit

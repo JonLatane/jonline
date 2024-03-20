@@ -7,7 +7,7 @@ import { createParam } from 'solito'
 import { AppSection } from '../navigation/features_navigation'
 import { TabsNavigation } from '../navigation/tabs_navigation'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'
-import { ConversationManager } from './conversation_manager'
+import { ConversationManager, scrollToCommentsBottom } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
 import { federateId, getFederated } from '../../store/federation';
@@ -61,7 +61,8 @@ export function PostDetailsScreen() {
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   // const { dispatch, accountOrServer } = useCredentialDispatch();
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, federateId(serverPostId!, server)));
+  const federatedPostId = federateId(serverPostId!, server);
+  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, federatedPostId));
   const [loadingPost, setLoadingPost] = useState(false);
   const conversationContext = useStatefulConversationContext();
   const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;
@@ -107,9 +108,9 @@ export function PostDetailsScreen() {
     setDocumentTitle(title)
   }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
 
-  function scrollToBottom() {
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  }
+  // function scrollToBottom() {
+  //   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  // }
   function scrollToTop() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -177,10 +178,10 @@ export function PostDetailsScreen() {
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
-                    scrollToBottom();
+                    scrollToCommentsBottom(federatedPostId);
                   } else {
                     setInteractionType('chat');
-                    setTimeout(scrollToBottom, 1000);
+                    setTimeout(() => scrollToCommentsBottom(federatedPostId), 1000);
                   }
                 }} />
             </Tooltip.Trigger>

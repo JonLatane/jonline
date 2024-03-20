@@ -12,6 +12,7 @@ export type ServerNameAndLogoProps = {
   fallbackToHomeIcon?: boolean;
   disableWidthLimits?: boolean;
   textColor?: string;
+  disableTooltip?: boolean;
 };
 
 type SplitOnFirstEmojiRequest = { text: string; supportPipe?: boolean; };
@@ -24,7 +25,7 @@ export function splitOnFirstEmoji(
   text: string, supportPipe?: boolean
 ): SplitOnFirstEmojiResult {
   // const cacheKey = JSON.stringify({ text, supportPipe });
-  const cacheKey: SplitOnFirstEmojiRequest = { text, supportPipe };  
+  const cacheKey: SplitOnFirstEmojiRequest = { text, supportPipe };
   if (_splitOnFirstEmojiCache.has(cacheKey)) {
     return _splitOnFirstEmojiCache.get(cacheKey)!;
   }
@@ -60,6 +61,7 @@ export function ServerNameAndLogo({
   fallbackToHomeIcon = false,
   disableWidthLimits = false,
   textColor,
+  disableTooltip = false,
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
@@ -118,67 +120,73 @@ export function ServerNameAndLogo({
       : undefined}
   </YStack>;
 
-  return shrinkToSquare
-    ? <Tooltip>
-      <Tooltip.Trigger>
-        {displaySquareLogo
-          ? <XStack h='100%'
-            w='100%'
-            scale={1.1}
-            transform={[
-              // { translateY: 1.5 },
-              // { translateX: isSafari() ? 8.0 : 2.0 }
-            ]}>
-            <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-          </XStack>
-          : <XStack h={'100%'} w='100%' scale={1.1}>
-            <Heading m='auto' whiteSpace="nowrap" size='$9'>{serverNameEmoji ?? ''}</Heading>
-            {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
-          </XStack>}
-      </Tooltip.Trigger >
-      <Tooltip.Content>
-        {serverNameBreakdown}
-      </Tooltip.Content>
-    </Tooltip>
-    : <XStack
-      mr={'$2'}
-      h={'100%'} w='100%'
-      // gap='$5'
-      pl={displaySquareLogo ? '$1' : undefined}
-      maw={maxWidth}
-    >
-      {displayWideLogo
-        ?
-        <Tooltip>
-          <Tooltip.Trigger>
-            <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
-              <MediaRenderer serverOverride={server} forceImage
-                media={Media.create({ id: logo?.wideMediaId })} failQuietly />
-            </XStack>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            {serverNameBreakdown}
-          </Tooltip.Content>
-        </Tooltip>
-        : <>
-          {displaySquareLogo
-            ? <XStack
-              w={imageLogoSize}
-              h={imageLogoSize} ml='$2' mr='$1' my='auto'>
-              <MediaRenderer serverOverride={server} forceImage
-                media={Media.create({ id: logo?.squareMediaId })} failQuietly />
-            </XStack>
-            : hasEmoji
-              ? <Heading size={serverEmojiFontSize}
-                color={textColor}
-                my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
-              : fallbackToHomeIcon
-                ? <XStack my='auto' mr='$1'>
-                  <Home size={enlargeSmallText ? '$5' : '$2'} />
-                </XStack>
-                : undefined}
-
-          {serverNameBreakdown}
-        </>}
+  const squareLogo = displaySquareLogo
+    ? <XStack h='100%'
+      w='100%'
+      scale={1.1}
+      transform={[
+        // { translateY: 1.5 },
+        // { translateX: isSafari() ? 8.0 : 2.0 }
+      ]}>
+      <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+    </XStack>
+    : <XStack h={'100%'} w='100%' scale={1.1}>
+      <Heading m='auto' whiteSpace="nowrap" size='$9'>{serverNameEmoji ?? ''}</Heading>
+      {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
     </XStack>;
+
+  const wideLogo = <XStack
+    mr={'$2'}
+    h={'100%'} w='100%'
+    // gap='$5'
+    pl={displaySquareLogo ? '$1' : undefined}
+    maw={maxWidth}
+  >
+    {displayWideLogo
+      ?
+      <Tooltip>
+        <Tooltip.Trigger>
+          <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
+            <MediaRenderer serverOverride={server} forceImage
+              media={Media.create({ id: logo?.wideMediaId })} failQuietly />
+          </XStack>
+        </Tooltip.Trigger>
+        <Tooltip.Content>
+          {serverNameBreakdown}
+        </Tooltip.Content>
+      </Tooltip>
+      : <>
+        {displaySquareLogo
+          ? <XStack
+            w={imageLogoSize}
+            h={imageLogoSize} ml='$2' mr='$1' my='auto'>
+            <MediaRenderer serverOverride={server} forceImage
+              media={Media.create({ id: logo?.squareMediaId })} failQuietly />
+          </XStack>
+          : hasEmoji
+            ? <Heading size={serverEmojiFontSize}
+              color={textColor}
+              my='auto' ml='$2' mr='$2' whiteSpace="nowrap">{serverNameEmoji}</Heading>
+            : fallbackToHomeIcon
+              ? <XStack my='auto' mr='$1'>
+                <Home size={enlargeSmallText ? '$5' : '$2'} />
+              </XStack>
+              : undefined}
+
+        {serverNameBreakdown}
+      </>}
+  </XStack>;
+
+  return shrinkToSquare
+    ? disableTooltip
+      ? squareLogo
+      : <Tooltip>
+        <Tooltip.Trigger>
+          {squareLogo}
+        </Tooltip.Trigger >
+        <Tooltip.Content>
+          {serverNameBreakdown}
+        </Tooltip.Content>
+      </Tooltip>
+    : wideLogo;
 }
