@@ -282,6 +282,19 @@ jobs:
       with:
         custom_tag: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
         github_token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: ncipollo/release-action@v1
+      with:
+        name: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
+        artifacts: "release.tar.gz,foo/*.txt"
+        # bodyFile: "body.md"
+        # github_token: ${{ secrets.GITHUB_TOKEN }}
+        body: '*Jonline CI Release v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}*
+
+          Images are available on DockerHub:
+          - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+          - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+          '
+
 
     # # Print result using the env variable.
     # - run: |
