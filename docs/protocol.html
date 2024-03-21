@@ -2440,6 +2440,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>Only POST and REPLY are supported for now.</td>
         </tr>
         <tr>
+          <td>post_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Returns expanded posts with the given IDs.</td>
+        </tr>
+        <tr>
           <td>listing_type</td>
           <td><a href="#jonline-PostListingType">PostListingType</a></td>
           <td></td>
@@ -3299,13 +3305,13 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>post_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>(TODO) Finds the Event for the Post with the given ID. The Post should have a <code>PostContext</code> of <code>EVENT</code>.</td>
+          <td>(TODO) Finds the Event for the Post with the given ID. The Post should have a <code>PostContext</code> of <code>EVENT</code> or <code>EVENT_INSTANCE</code>.</td>
         </tr>
         <tr>
           <td>instance_post_id</td>
           <td><a href="#string">string</a></td>
-          <td>optional</td>
-          <td>(TODO) Finds events that have an instance with the given post ID. The Post should have a <code>PostContext</code> of <code>EVENT_INSTANCE</code>.</td>
+          <td>repeated</td>
+          <td>(TODO) Finds events that have an instance with the given post IDs. The Post should have a <code>PostContext</code> of <code>EVENT_INSTANCE</code>. Faciliates using the StarredPost APIs to get events.</td>
         </tr>
         <tr>
           <td>listing_type</td>

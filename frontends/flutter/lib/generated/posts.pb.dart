@@ -44,6 +44,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.String? groupId,
     $core.int? replyDepth,
     PostContext? context,
+    $core.String? postIds,
     PostListingType? listingType,
     $core.int? page,
   }) {
@@ -63,6 +64,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     if (context != null) {
       $result.context = context;
     }
+    if (postIds != null) {
+      $result.postIds = postIds;
+    }
     if (listingType != null) {
       $result.listingType = listingType;
     }
@@ -81,6 +85,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..a<$core.int>(4, _omitFieldNames ? '' : 'replyDepth', $pb.PbFieldType.OU3)
     ..e<PostContext>(5, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
+    ..aOS(9, _omitFieldNames ? '' : 'postIds')
     ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.ALL_ACCESSIBLE_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
     ..a<$core.int>(15, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
     ..hasRequiredFields = false
@@ -157,23 +162,33 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearContext() => clearField(5);
 
+  /// Returns expanded posts with the given IDs.
+  @$pb.TagNumber(9)
+  $core.String get postIds => $_getSZ(5);
+  @$pb.TagNumber(9)
+  set postIds($core.String v) { $_setString(5, v); }
+  @$pb.TagNumber(9)
+  $core.bool hasPostIds() => $_has(5);
+  @$pb.TagNumber(9)
+  void clearPostIds() => clearField(9);
+
   /// The listing type of the request. See `PostListingType` for more info.
   @$pb.TagNumber(10)
-  PostListingType get listingType => $_getN(5);
+  PostListingType get listingType => $_getN(6);
   @$pb.TagNumber(10)
   set listingType(PostListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(5);
+  $core.bool hasListingType() => $_has(6);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 
   /// The page of results to return. Defaults to 0.
   @$pb.TagNumber(15)
-  $core.int get page => $_getIZ(6);
+  $core.int get page => $_getIZ(7);
   @$pb.TagNumber(15)
-  set page($core.int v) { $_setUnsignedInt32(6, v); }
+  set page($core.int v) { $_setUnsignedInt32(7, v); }
   @$pb.TagNumber(15)
-  $core.bool hasPage() => $_has(6);
+  $core.bool hasPage() => $_has(7);
   @$pb.TagNumber(15)
   void clearPage() => clearField(15);
 }

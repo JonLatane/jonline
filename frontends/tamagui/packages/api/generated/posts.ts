@@ -210,6 +210,10 @@ export interface GetPostsRequest {
   context?:
     | PostContext
     | undefined;
+  /** Returns expanded posts with the given IDs. */
+  postIds?:
+    | string
+    | undefined;
   /** The listing type of the request. See `PostListingType` for more info. */
   listingType: PostListingType;
   /** The page of results to return. Defaults to 0. */
@@ -362,6 +366,7 @@ function createBaseGetPostsRequest(): GetPostsRequest {
     groupId: undefined,
     replyDepth: undefined,
     context: undefined,
+    postIds: undefined,
     listingType: 0,
     page: 0,
   };
@@ -383,6 +388,9 @@ export const GetPostsRequest = {
     }
     if (message.context !== undefined) {
       writer.uint32(40).int32(message.context);
+    }
+    if (message.postIds !== undefined) {
+      writer.uint32(74).string(message.postIds);
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
@@ -435,6 +443,13 @@ export const GetPostsRequest = {
 
           message.context = reader.int32() as any;
           continue;
+        case 9:
+          if (tag !== 74) {
+            break;
+          }
+
+          message.postIds = reader.string();
+          continue;
         case 10:
           if (tag !== 80) {
             break;
@@ -465,6 +480,7 @@ export const GetPostsRequest = {
       groupId: isSet(object.groupId) ? globalThis.String(object.groupId) : undefined,
       replyDepth: isSet(object.replyDepth) ? globalThis.Number(object.replyDepth) : undefined,
       context: isSet(object.context) ? postContextFromJSON(object.context) : undefined,
+      postIds: isSet(object.postIds) ? globalThis.String(object.postIds) : undefined,
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
       page: isSet(object.page) ? globalThis.Number(object.page) : 0,
     };
@@ -487,6 +503,9 @@ export const GetPostsRequest = {
     if (message.context !== undefined) {
       obj.context = postContextToJSON(message.context);
     }
+    if (message.postIds !== undefined) {
+      obj.postIds = message.postIds;
+    }
     if (message.listingType !== 0) {
       obj.listingType = postListingTypeToJSON(message.listingType);
     }
@@ -506,6 +525,7 @@ export const GetPostsRequest = {
     message.groupId = object.groupId ?? undefined;
     message.replyDepth = object.replyDepth ?? undefined;
     message.context = object.context ?? undefined;
+    message.postIds = object.postIds ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.page = object.page ?? 0;
     return message;

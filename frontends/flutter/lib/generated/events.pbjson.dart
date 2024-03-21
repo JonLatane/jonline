@@ -63,7 +63,7 @@ const GetEventsRequest$json = {
     {'1': 'attendee_id', '3': 6, '4': 1, '5': 9, '9': 5, '10': 'attendeeId', '17': true},
     {'1': 'attendance_statuses', '3': 7, '4': 3, '5': 14, '6': '.jonline.AttendanceStatus', '10': 'attendanceStatuses'},
     {'1': 'post_id', '3': 8, '4': 1, '5': 9, '9': 6, '10': 'postId', '17': true},
-    {'1': 'instance_post_id', '3': 9, '4': 1, '5': 9, '9': 7, '10': 'instancePostId', '17': true},
+    {'1': 'instance_post_id', '3': 9, '4': 3, '5': 9, '10': 'instancePostId'},
     {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.EventListingType', '10': 'listingType'},
   ],
   '8': [
@@ -74,7 +74,6 @@ const GetEventsRequest$json = {
     {'1': '_time_filter'},
     {'1': '_attendee_id'},
     {'1': '_post_id'},
-    {'1': '_instance_post_id'},
   ],
 };
 
@@ -86,12 +85,11 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     '5jZUlkiAEBEjkKC3RpbWVfZmlsdGVyGAUgASgLMhMuam9ubGluZS5UaW1lRmlsdGVySARSCnRp'
     'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
     'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
-    'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESLQoQaW5zdGFuY2'
-    'VfcG9zdF9pZBgJIAEoCUgHUg5pbnN0YW5jZVBvc3RJZIgBARI8CgxsaXN0aW5nX3R5cGUYCiAB'
-    'KA4yGS5qb25saW5lLkV2ZW50TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlQgsKCV9ldmVudF9pZE'
-    'IRCg9fYXV0aG9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQhQKEl9ldmVudF9pbnN0YW5jZV9pZEIO'
-    'CgxfdGltZV9maWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoKCF9wb3N0X2lkQhMKEV9pbnN0YW5jZV'
-    '9wb3N0X2lk');
+    'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESKAoQaW5zdGFuY2'
+    'VfcG9zdF9pZBgJIAMoCVIOaW5zdGFuY2VQb3N0SWQSPAoMbGlzdGluZ190eXBlGAogASgOMhku'
+    'am9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglfZXZlbnRfaWRCEQoPX2'
+    'F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3Rp'
+    'bWVfZmlsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZA==');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {

@@ -62,6 +62,7 @@ const GetPostsRequest$json = {
     {'1': 'group_id', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupId', '17': true},
     {'1': 'reply_depth', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'replyDepth', '17': true},
     {'1': 'context', '3': 5, '4': 1, '5': 14, '6': '.jonline.PostContext', '9': 4, '10': 'context', '17': true},
+    {'1': 'post_ids', '3': 9, '4': 1, '5': 9, '9': 5, '10': 'postIds', '17': true},
     {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.PostListingType', '10': 'listingType'},
     {'1': 'page', '3': 15, '4': 1, '5': 13, '10': 'page'},
   ],
@@ -71,6 +72,7 @@ const GetPostsRequest$json = {
     {'1': '_group_id'},
     {'1': '_reply_depth'},
     {'1': '_context'},
+    {'1': '_post_ids'},
   ],
 };
 
@@ -79,10 +81,11 @@ final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode(
     'Cg9HZXRQb3N0c1JlcXVlc3QSHAoHcG9zdF9pZBgBIAEoCUgAUgZwb3N0SWSIAQESKQoOYXV0aG'
     '9yX3VzZXJfaWQYAiABKAlIAVIMYXV0aG9yVXNlcklkiAEBEh4KCGdyb3VwX2lkGAMgASgJSAJS'
     'B2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARIzCgdjb2'
-    '50ZXh0GAUgASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dEgEUgdjb250ZXh0iAEBEjsKDGxpc3Rp'
-    'bmdfdHlwZRgKIAEoDjIYLmpvbmxpbmUuUG9zdExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRISCg'
-    'RwYWdlGA8gASgNUgRwYWdlQgoKCF9wb3N0X2lkQhEKD19hdXRob3JfdXNlcl9pZEILCglfZ3Jv'
-    'dXBfaWRCDgoMX3JlcGx5X2RlcHRoQgoKCF9jb250ZXh0');
+    '50ZXh0GAUgASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dEgEUgdjb250ZXh0iAEBEh4KCHBvc3Rf'
+    'aWRzGAkgASgJSAVSB3Bvc3RJZHOIAQESOwoMbGlzdGluZ190eXBlGAogASgOMhguam9ubGluZS'
+    '5Qb3N0TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEhIKBHBhZ2UYDyABKA1SBHBhZ2VCCgoIX3Bv'
+    'c3RfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIOCgxfcmVwbHlfZGVwdGhCCg'
+    'oIX2NvbnRleHRCCwoJX3Bvc3RfaWRz');
 
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = {
