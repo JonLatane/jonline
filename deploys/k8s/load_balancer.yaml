@@ -46,7 +46,7 @@ spec:
         app: jonline-lb
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.2.531
+        - image: docker.io/jonlatane/jonline:0.2.532
           name: jonline-lb
           env:
           - name: SERVERS

@@ -1649,7 +1649,7 @@ checksum = "b1a46d1a171d865aa5f83f92695765caa047a9b4cbae2cbf37dbd613a793fd4c"
 
 [[package]]
 name = "jonline"
-version = "0.2.531"
+version = "0.2.532"
 dependencies = [
  "anyhow",
  "async-compression",
