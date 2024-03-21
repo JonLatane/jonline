@@ -53,9 +53,7 @@ pub fn get_events(
             conn,
             request.time_filter,
         )?,
-        (_, _, _, _, Some(post_id)) => {
-            get_event_by_instance_post_id(&user, &post_id, conn)?
-        }
+        (_, _, _, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
         _ => get_public_and_following_events(&user, conn, request.time_filter)?,
     };
     Ok(GetEventsResponse {
@@ -191,21 +189,28 @@ fn get_event_by_instance_id(
     get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
 }
 
-fn get_event_by_instance_post_id(
+fn get_event_by_post_id(
     user: &Option<&models::User>,
-    instance_post_id: &str,
+    post_id: &str,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalableEvent>, Status> {
-    let instance = event_instances::table
-        .select(event_instances::all_columns)
-        .filter(
-            event_instances::post_id.eq(instance_post_id
-                .to_string()
-                .to_db_id_or_err("instance_post_id")?),
-        )
-        .first::<models::EventInstance>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))?;
-    get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
+    let post_db_id = post_id.to_string().to_db_id_or_err("post_id")?;
+    let event_id = match event_instances::table
+        .select(event_instances::event_id)
+        .filter(event_instances::post_id.eq(post_db_id))
+        .first::<i64>(conn)
+    {
+        Ok(event_id) => event_id,
+        Err(_) => match events::table
+            .select(events::id)
+            .filter(events::post_id.eq(post_db_id))
+            .first::<i64>(conn)
+        {
+            Ok(event_id) => event_id,
+            Err(_) => return Err(Status::new(Code::NotFound, "event_instance_not_found")),
+        },
+    };
+    get_event_by_id(user, &event_id.to_proto_id(), conn)
 }
 
 fn get_event_by_id(

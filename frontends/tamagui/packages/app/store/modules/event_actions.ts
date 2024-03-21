@@ -41,11 +41,11 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
   "events/loadPage",
   async (request) => {
     let client = await getCredentialClient(request);
-    let result = await client.getEvents({ 
-      listingType: defaultEventListingType, 
+    let result = await client.getEvents({
+      listingType: defaultEventListingType,
       ...request,
       timeFilter: request.filter
-     }, client.credential);
+    }, client.credential);
     return {
       ...result,
       events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })
@@ -53,12 +53,15 @@ export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, an
   }
 );
 
-export type LoadEvent = { id: string } & AccountOrServer;
+export type LoadEvent = { id?: string, postId?: string } & AccountOrServer;
 export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Event, LoadEvent>(
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    const response = await client.getEvents(GetEventsRequest.create({ eventId: request.id }), client.credential);
+    const response = await client.getEvents(GetEventsRequest.create({ 
+      eventId: request.id,
+      postId: request.postId
+     }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
     return event;

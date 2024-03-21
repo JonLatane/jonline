@@ -1,9 +1,9 @@
-import { Post, PostContext } from "@jonline/api";
+import { EventInstance, Post, PostContext } from "@jonline/api";
 import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { reverseHorizontalAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, MessagesSquare } from "@tamagui/lucide-icons";
 import { useAppDispatch, useAppSelector, useFederatedDispatch, useServer } from "app/hooks";
-import { loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
+import { FederatedEvent, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
@@ -38,22 +38,24 @@ function useStarredPostDetails(postId: string) {
   );
 
   // const [loadedEvent, setLoadedEvent] = useState(false);
-  useEffect(() => {
-    if (basePost?.context === PostContext.EVENT_INSTANCE && !event) {
-      console.log('StarredPosts: Fetching event by postId', postId);
-      dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! }));
-    }
-  }, [basePost]);
 
   const serverEventInstanceId = eventInstanceId
     ? parseFederatedId(eventInstanceId!).id
     : undefined;
   // const { id: serverEventInstanceId } = parseFederatedId(eventInstanceId!);
-  const eventWithSingleInstance = event && serverEventInstanceId ? {
-    ...event,
-    instances: [event.instances.find(i => i.id === serverEventInstanceId)!]
-  } : undefined;
+  const targetInstance: EventInstance | undefined = event?.instances?.find(i => i.id === serverEventInstanceId);
+  const eventWithSingleInstance: FederatedEvent | undefined = event && targetInstance
+    ? {
+      ...event,
+      instances: [targetInstance]
+    } : undefined;
 
+  useEffect(() => {
+    if (basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance) {
+      console.log('StarredPosts: Fetching event by postId', postId);
+      dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! }));
+    }
+  }, [basePost, eventWithSingleInstance]);
   return { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance };
 }
 

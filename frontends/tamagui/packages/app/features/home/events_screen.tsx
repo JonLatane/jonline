@@ -181,6 +181,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const minBigCalHeight = 150;
   const bigCalWidth = Math.max(minBigCalWidth, window.innerWidth - 40);
   const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85);
+  const starredPostIds = useAppSelector(state => state.app.starredPostIds);
   // const [bigCalWidth, setBigCalWidth] = useState(Math.max(minBigCalWidth, window.innerWidth));
   // const [bigCalHeight, setBigCalHeight] = useState(Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85));
   // useEffect(() => (window.innerWidth > minBigCalHeight)
@@ -291,7 +292,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       footerToolbar={{
                         start: 'today',
                         center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                        end: 'listDay',
+                        end: 'agendaWeek',
                       }}
                       plugins={[
                         daygridPlugin,
@@ -302,11 +303,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       ]}
                       height='100%'
                       events={allEvents.map((event) => {
+                        const starred = starredPostIds.includes(
+                          federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                        );
                         return {
                           id: federateId(event.instances[0]?.id ?? '', event.serverHost),
                           // id: event.instances[0]?.id ?? '',
                           // serverHost: event.serverHost,
-                          title: event.post?.title,
+                          title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
                           color: serverColors[event.serverHost],
                           start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
                           end: moment(event.instances[0]?.endsAt ?? 0).toDate()

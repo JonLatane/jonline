@@ -3,11 +3,12 @@ import React from "react";
 
 import { EventInstance, Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
-import { useFederatedAccountOrServer, useServer } from "app/hooks";
+import { useGroupContext } from "app/contexts/group_context";
+import { useAppSelector, useFederatedAccountOrServer, useServer } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import moment from "moment";
 import { useLink } from "solito/link";
-import { useGroupContext } from "app/contexts/group_context";
+import { ThemedStar } from "../post/star_button";
 
 interface Props {
   event: FederatedEvent;
@@ -52,6 +53,8 @@ export const InstanceTime: React.FC<Props> = ({
 
   const mx = linkToInstance ? 'auto' : undefined;
   const lh = 14;
+  const federatedPostId = federateId(instance.post?.id ?? '', server);
+  const starred = useAppSelector(state => state.app.starredPostIds.includes(federatedPostId));
 
   function dateView(date: string) {
     return <YStack>
@@ -79,42 +82,45 @@ export const InstanceTime: React.FC<Props> = ({
       : primaryAnchorColor;
   const key = `instance-time-${instance.id}`
   const opacity = linkToInstance || highlight ? undefined : 0.8;
-  const mainView = (startsAtDate == endsAtDate)
-    ? <YStack key={key}
-      className={highlight && !noAutoScroll ? 'highlighted-instance-time' : undefined}
-      backgroundColor={linkToInstance ? undefined : themeBgColor}
-      opacity={opacity}
-      px='$1' borderRadius='$3'>
-      <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
-        {startsAtDay}
-      </Paragraph>
-      <Paragraph size="$1" color={color} mx={mx} lineHeight={lh}>
-        {startsAtDate}
-      </Paragraph>
-      <XStack gap='$2' mx={mx}>
-        <Heading size="$2" color={color} lineHeight={lh}>
-          {moment.utc(startsAt).local().format('h:mma').replace(':00', '')}
-        </Heading>
-        <Heading size="$3" color={color} lineHeight={lh} fontWeight='900'>
+  const mainView = <XStack ai='center'>
+    {starred && linkToInstance ? <ThemedStar starred server={server} /> : undefined}
+    {(startsAtDate == endsAtDate)
+      ? <YStack f={1} key={key}
+        className={highlight && !noAutoScroll ? 'highlighted-instance-time' : undefined}
+        backgroundColor={linkToInstance ? undefined : themeBgColor}
+        opacity={opacity}
+        px='$1' borderRadius='$3'>
+        <Paragraph size="$2" color={color} fontWeight='800' mx={mx} lineHeight={lh}>
+          {startsAtDay}
+        </Paragraph>
+        <Paragraph size="$1" color={color} mx={mx} lineHeight={lh}>
+          {startsAtDate}
+        </Paragraph>
+        <XStack gap='$2' mx={mx}>
+          <Heading size="$2" color={color} lineHeight={lh}>
+            {moment.utc(startsAt).local().format('h:mma').replace(':00', '')}
+          </Heading>
+          <Heading size="$3" color={color} lineHeight={lh} fontWeight='900'>
+            -
+          </Heading>
+          <Heading size="$2" color={color} lineHeight={lh}>
+            {moment.utc(endsAt).local().format('h:mma').replace(':00', '')}
+          </Heading>
+        </XStack>
+      </YStack>
+      : <XStack f={1} gap={linkToInstance ? undefined : '$2'}
+        opacity={opacity}>
+        <YStack f={linkToInstance ? 1 : undefined}>
+          {startsAt ? dateView(startsAt) : undefined}
+        </YStack>
+        <Heading size="$3" color={color} my='auto' fontWeight='900'>
           -
         </Heading>
-        <Heading size="$2" color={color} lineHeight={lh}>
-          {moment.utc(endsAt).local().format('h:mma').replace(':00', '')}
-        </Heading>
-      </XStack>
-    </YStack>
-    : <XStack gap={linkToInstance ? undefined : '$2'}
-      opacity={opacity}>
-      <YStack f={linkToInstance ? 1 : undefined}>
-        {startsAt ? dateView(startsAt) : undefined}
-      </YStack>
-      <Heading size="$3" color={color} my='auto' fontWeight='900'>
-        -
-      </Heading>
-      <YStack f={linkToInstance ? 1 : undefined}>
-        {endsAt ? dateView(endsAt) : undefined}
-      </YStack>
-    </XStack>;
+        <YStack f={linkToInstance ? 1 : undefined}>
+          {endsAt ? dateView(endsAt) : undefined}
+        </YStack>
+      </XStack>}
+  </XStack>;
 
   if (linkToInstance) {
     return <Button key={key}

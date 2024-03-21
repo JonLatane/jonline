@@ -178,10 +178,10 @@ export function PostDetailsScreen() {
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
-                    scrollToCommentsBottom(federatedPostId);
+                    scrollToCommentsBottom(serverPostId);
                   } else {
                     setInteractionType('chat');
-                    setTimeout(() => scrollToCommentsBottom(federatedPostId), 1000);
+                    setTimeout(() => scrollToCommentsBottom(serverPostId), 1000);
                   }
                 }} />
             </Tooltip.Trigger>

@@ -227,7 +227,7 @@ export function UsernameDetailsScreen() {
   //   || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
-    <TabsNavigation appSection={AppSection.PROFILE} primaryEntity={user}
+    <TabsNavigation appSection={AppSection.PEOPLE} primaryEntity={user}
       bottomChrome={canEdit
         ? <YStack w='100%' paddingVertical='$2' alignContent='center'>
           <XStack mx='auto' px='$3' w='100%' maw={800}>

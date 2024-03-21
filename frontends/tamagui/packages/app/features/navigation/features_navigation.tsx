@@ -229,9 +229,15 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           : <Menu color={navTextColor} />));
     return <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
       // disabled={inlineNavigation}
-      onPress={inlineNavigation ? () =>
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-        : undefined}
+      onPress={appSection === AppSection.EVENTS && !location.toString().includes('/events')
+        ? () => eventsLink.onPress
+        : appSection === AppSection.POSTS && !location.toString().includes('/posts')
+          ? () => postsLink.onPress
+          : appSection === AppSection.PEOPLE && !location.toString().includes('/people')
+            ? () => peopleLink.onPress
+            : inlineNavigation
+              ? () => window.scrollTo({ top: 0, behavior: 'smooth' })
+              : undefined}
       // icon={inlineNavigation ? undefined : <Menu color={navTextColor} />}
       {...themedButtonBackground(navColor)}>
       <XStack gap='$2'>

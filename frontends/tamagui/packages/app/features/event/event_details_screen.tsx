@@ -8,7 +8,7 @@ import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
-import { ConversationContextProvider, ConversationManager, usePostInteractionType, useStatefulConversationContext } from '../post';
+import { ConversationContextProvider, ConversationManager, scrollToCommentsBottom, usePostInteractionType, useStatefulConversationContext } from '../post';
 import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
 import { AccountOrServerContextProvider } from 'app/contexts';
@@ -194,7 +194,7 @@ export function EventDetailsScreen() {
                 transparent={interactionType !== 'chat'}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
-                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor: undefined}>Chat</Heading>
+                <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor : undefined}>Chat</Heading>
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
@@ -209,10 +209,10 @@ export function EventDetailsScreen() {
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
-                    scrollToBottom();
+                    scrollToCommentsBottom(instancePostId);
                   } else {
                     setInteractionType('chat');
-                    setTimeout(scrollToBottom, 1000);
+                    setTimeout(() => scrollToCommentsBottom(instancePostId), 1000);
                   }
                 }} />
             </Tooltip.Trigger>

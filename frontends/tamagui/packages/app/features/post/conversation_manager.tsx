@@ -111,7 +111,7 @@ export function useConversationCommentList({
   post, disableScrollPreserver, forStarredPost, conversationContext
 }: ConversationManagerProps) {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
-  console.log('conversationContext', conversationContext);
+  // console.log('conversationContext', conversationContext);
   const { replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext!;
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
   const rootPostId = post ? federatedId(post) : undefined;
@@ -134,31 +134,32 @@ export function useConversationCommentList({
         const wasAtBottom = isClient && !showScrollPreserver &&
           document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
         const scrollYAtBottom = window.scrollY;
-        // console.log('wasAtBottom', wasAtBottom, document.body.scrollHeight, _viewportHeight, window.scrollY)
         setTimeout(() => {
-          dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
-            if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-              scrollToCommentsBottom(post?.id);
-            }
-            // forceUpdate();
+          if (rootPostId?.split('@')[0]) {
+            dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
+              if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
+                scrollToCommentsBottom(post?.id);
+              }
+              setTimeout(() => {
+                forceUpdate();
+              }, intervalSeconds * 1000);
+            });
+          } else {
             setTimeout(() => {
               forceUpdate();
             }, intervalSeconds * 1000);
-          });
+          }
         }, 1);
       }
     }
-  });//, [chatUI, autoRefresh]);
-
-  // const failedToLoadPost = rootPostId != undefined &&
-  //   postsState.failedPostIds.includes(rootPostId!);
+  });
 
   useEffect(() => {
     if (rootPostId && (replyPostIdPath.length == 0 || replyPostIdPath[0] != rootPostId)) {
       setReplyPostIdPath([rootPostId]);
     }
-    console.log('postId', post?.id, 'post.replyCount', post?.replyCount, 'post.replies.length', post?.replies.length, 'loadingReplies', loadingRepliesFor);
-    if (post && post.replyCount > 0 && post.replies.length === 0 && (!loadingRepliesFor || loadingRepliesFor != rootPostId)) {
+    // console.log('postId', post?.id, 'post.replyCount', post?.replyCount, 'post.replies.length', post?.replies.length, 'loadingReplies', loadingRepliesFor);
+    if (post && post?.id && post.replyCount > 0 && post.replies.length === 0 && (!loadingRepliesFor || loadingRepliesFor != rootPostId)) {
       setLoadingRepliesFor(rootPostId!);
       // console.log('loadReplies', rootPostId, post.replyCount, post.replies.length, loadingReplies);
       setTimeout(
