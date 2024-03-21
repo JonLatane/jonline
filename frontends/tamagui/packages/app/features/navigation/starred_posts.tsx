@@ -223,7 +223,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             icon={<ListEnd transform={[{ rotate: '180deg' }]} />}
                             onPress={() => {
                               dispatch(setDiscussionChatUI(false));
-                              scrollToCommentsTop(openedPostId.split('@')[0]!);
+                              scrollToCommentsTop(openedPostId);
                             }}
                             mr={0}>
                             <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
@@ -246,9 +246,9 @@ export function StarredPosts({ }: StarredPostsProps) {
                             onPress={() => {
                               dispatch(setDiscussionChatUI(true));
                               if (chatUI)
-                                scrollToCommentsBottom(openedPostId.split('@')[0]!);
+                                scrollToCommentsBottom(openedPostId);
                               else
-                                setTimeout(() => scrollToCommentsBottom(openedPostId.split('@')[0]!), 800);
+                                setTimeout(() => scrollToCommentsBottom(openedPostId), 800);
                             }}>
                             <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
                           </Button>
@@ -375,6 +375,7 @@ export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardPro
       <Paragraph size='$3' ta='center' o={0.5}>Post {postId} not found.</Paragraph>
     </XStack>;
   }
+  const chatUI = useAppSelector(state => state.app.discussionChatUI);
   const renderedCard = <XStack w='100%' key={`starred-post-${postId}`} ai='center' gap='$2'>
 
     <AnimatePresence>
@@ -388,7 +389,15 @@ export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardPro
             onPress={(e) => { e.stopPropagation(); moveUp(); }}
             icon={ChevronUp} />
 
-          <Button h='auto' px='$2' py='$1' onPress={() => onOpen?.(postId)}>
+          <Button h='auto' px='$2' py='$1' onPress={() => {
+            onOpen?.(postId);
+            setTimeout(
+              () => chatUI
+                ? scrollToCommentsBottom(postId)
+                : scrollToCommentsTop(postId),
+              2000
+            );
+          }}>
             <YStack ai='center'>
               <MessagesSquare size='$1' />
               <Paragraph size='$1' o={0.5}>{basePost?.responseCount}</Paragraph>

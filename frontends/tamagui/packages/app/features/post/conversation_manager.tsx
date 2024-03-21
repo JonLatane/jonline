@@ -99,21 +99,26 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   </YStack>;
 }
 
-const getTopId = (postId: string | undefined) => `conversation-top-${postId}`;
-const getBottomId = (postId: string | undefined) => `conversation-bottom-${postId}`;
+const regexp = new RegExp(/[@\.]/, 'g');
+const getTopId = (postId: string | undefined) => `conversation-top-${postId?.replaceAll(regexp, '-')}`;
+const getBottomId = (postId: string | undefined) => `conversation-bottom-${postId?.replaceAll(regexp, '-')}`;
 
 export function scrollToCommentsBottom(postId: string | undefined) {
   if (!isClient) return;
 
+  console.log('scrollToCommentsBottom', getBottomId(postId), document.querySelectorAll(`#${getBottomId(postId)}`));
+
   document.querySelectorAll(`#${getBottomId(postId)}`)
-    ?.forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
 }
 
 export function scrollToCommentsTop(postId: string | undefined) {
   if (!isClient) return;
 
+  console.log('scrollToCommentsTop', getTopId(postId), document.querySelectorAll(`#${getTopId(postId)}`));
+
   document.querySelectorAll(`#${getTopId(postId)}`)
-    ?.forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+    .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
 }
 export function useConversationCommentList({
   post, disableScrollPreserver, forStarredPost, conversationContext
@@ -233,7 +238,7 @@ export function useConversationCommentList({
   const [interactionType] = usePostInteractionType();
   return [
     <div key='top'>
-      <XStack key='top' id={getTopId(post?.id)} f={1} />
+      <XStack key='top' id={post ? getTopId(federatedId(post)) : undefined} />
     </div>,
     flattenedReplies.length == 0
       ? post && !loadingRepliesFor
@@ -325,7 +330,7 @@ export function useConversationCommentList({
       </div>;
     }),
     <div key='bottom'>
-      <XStack key='bottom' id={getBottomId(post?.id)} f={1} />
+      <XStack key='bottom' id={post ? getBottomId(federatedId(post)) : undefined} f={1} />
     </div>,
     <div key='scrollPreserver'>
       <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
