@@ -331,7 +331,7 @@ jobs:
           | [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                      | [About](https://jonline.io/about), [Protocol Docs](https://jonline.io/docs/protocol/)           | Development |
           | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | [About](https://BullCity.Social/about), [Protocol Docs](https://BullCity.Social/docs/protocol/) | "Stable"    |
           | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | [About](https://OakCity.Social/about), [Protocol Docs](https://OakCity.Social/docs/protocol/)   | "Stable"    |
-
+          
           ## Changelog
           
           This list's Markdown was generated with `git log -100 --pretty='- [*%ch*] %B'` at release time:
