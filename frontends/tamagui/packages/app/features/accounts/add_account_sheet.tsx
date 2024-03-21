@@ -9,6 +9,7 @@ import { TextInput } from 'react-native';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 import { useLink } from 'solito/link';
+import { current } from '@reduxjs/toolkit';
 
 export type AddAccountSheetProps = {
   server?: JonlineServer;
@@ -82,13 +83,14 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
       console.warn("Account not found after adding it. This is a bug.");
     }
   }
+  const skipAccountSelection = onAccountSelected !== undefined || currentServer?.host !== server?.host;
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
       ...server!,
       username: newAccountUser,
       password: newAccountPass,
-      skipSelection: onAccountSelected !== undefined,
+      skipSelection: skipAccountSelection,
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
@@ -103,7 +105,7 @@ export function AddAccountSheet({ server: specifiedServer, operation, button, on
       ...server!,
       username: newAccountUser,
       password: newAccountPass,
-      skipSelection: onAccountSelected !== undefined,
+      skipSelection: skipAccountSelection,
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
