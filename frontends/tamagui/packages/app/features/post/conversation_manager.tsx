@@ -99,12 +99,20 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   </YStack>;
 }
 
+const getTopId = (postId: string | undefined) => `conversation-top-${postId}`;
 const getBottomId = (postId: string | undefined) => `conversation-bottom-${postId}`;
 
 export function scrollToCommentsBottom(postId: string | undefined) {
   if (!isClient) return;
 
   document.querySelectorAll(`#${getBottomId(postId)}`)
+    ?.forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+}
+
+export function scrollToCommentsTop(postId: string | undefined) {
+  if (!isClient) return;
+
+  document.querySelectorAll(`#${getTopId(postId)}`)
     ?.forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }))
 }
 export function useConversationCommentList({
@@ -224,6 +232,9 @@ export function useConversationCommentList({
   let replyAboveCurrent: Post | undefined = undefined;
   const [interactionType] = usePostInteractionType();
   return <>
+    <div key='top'>
+      <XStack key='top' id={getTopId(post?.id)} f={1} />
+    </div>
     {flattenedReplies.length == 0
       ? post && !loadingRepliesFor
         ? <div key='no-replies' style={{
@@ -239,7 +250,7 @@ export function useConversationCommentList({
         </div>
         : <div key='no-replies' style={{
           display: 'flex',
-          width: '100%',
+          width: chatUI ? undefined : '100%',
           paddingTop: forStarredPost ? 50
             : interactionType === 'post' ? 100
               : window.innerHeight / 2 - 200,

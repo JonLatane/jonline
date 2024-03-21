@@ -90,7 +90,7 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       const event = federatedPayload(action);
-      eventsAdapter.upsertOne(state, event);
+      mergeEvent(state, event, action);
       setTimeout(() => {
         store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
       }, 1);
@@ -128,7 +128,10 @@ export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
     builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
-      state.failedEventIds.push(federateId((action.meta.arg as LoadEvent).id, action));
+      const eventId = (action.meta.arg as LoadEvent).id;
+      if (eventId) {
+        state.failedEventIds.push(federateId((action.meta.arg as LoadEvent).id ?? '', action));
+      }
     });
 
     builder.addCase(loadEventByInstance.rejected, (state, action) => {

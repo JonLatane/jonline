@@ -1,17 +1,17 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
-import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
-import { reverseHorizontalAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
-import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, MessagesSquare } from "@tamagui/lucide-icons";
-import { useAppDispatch, useAppSelector, useFederatedDispatch, useServer } from "app/hooks";
-import { FederatedEvent, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
+import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useMedia, useTheme } from "@jonline/ui";
+import { reverseHorizontalAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
+import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
+import { AccountOrServerContextProvider } from "app/contexts";
+import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
+import { FederatedEvent, accountID, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
-import { ConversationContextProvider, ConversationManager, PostCard, ReplyArea, scrollToCommentsBottom, useConversationCommentList, useStatefulConversationContext } from "../post";
-import { StarButton, ThemedStar } from "../post/star_button";
-import { AccountOrServerContextProvider } from "app/contexts";
 import { InstanceTime } from "../event/instance_time";
-import { themedButtonBackground } from 'app/utils';
+import { ConversationContextProvider, PostCard, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useStatefulConversationContext } from "../post";
+import { StarButton, ThemedStar } from "../post/star_button";
+import { useLink } from "solito/link";
 
 export type StarredPostsProps = {};
 function useStarredPostDetails(postId: string) {
@@ -23,7 +23,7 @@ function useStarredPostDetails(postId: string) {
       console.log('StarredPosts: Fetching post', postId);
       dispatch(loadPost({ ...accountOrServer, id: serverPostId! }));
     }
-  }, [basePost]);
+  }, [basePost, accountID(accountOrServer?.account), serverHost]);
 
   // const post = useAppSelector(state => state.posts.entities[postId]) as FederatedPost;
   const eventInstanceId = useAppSelector(state =>
@@ -62,17 +62,45 @@ function useStarredPostDetails(postId: string) {
 export function StarredPosts({ }: StarredPostsProps) {
   const mediaQuery = useMedia();
 
-  const { primaryTextColor, navColor, navTextColor } = useServerTheme();
   const starredPostIds = useAppSelector(state => (state.app.starredPostIds ?? []));
 
   const [open, setOpen] = useState(false);
   const [openedPostId, setOpenedPostId] = useState<string | undefined>(undefined);
+  const scrollToTop = (smooth?: boolean) => document.getElementById('starred-post-scroll-top')
+    ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : undefined });
   useEffect(() => {
-    document.getElementById('starred-post-scroll-top')
-      ?.scrollIntoView({ block: 'center' });
+    if (openedPostId && chatUI) {
+      // if (chatUI) {
+      setTimeout(() => scrollToCommentsBottom(openedPostId.split('@')[0]!), 1000)
+      // } else {
+      //   scrollToTop();
+      // }
+    } else {
+      scrollToTop();
+    }
   }, [openedPostId])
-
   const { serverHost, basePost, event, eventInstanceId, eventWithSingleInstance } = useStarredPostDetails(openedPostId ?? '');
+
+  useEffect(() => {
+  }, [openedPostId, basePost]);
+  const basePostLink = useLink({
+    href:
+      eventWithSingleInstance
+        ? `/event/${eventWithSingleInstance.instances[0]!.id}@${serverHost}`
+        : `/post/${basePost?.id}@${serverHost}`
+  });
+  const openedPostAccount = useFederatedAccountOrServer(basePost);
+
+  const serverTheme = useServerTheme();
+  const openedPostAccountTheme = getServerTheme(openedPostAccount?.server, useTheme());
+  const { primaryTextColor, navColor, navTextColor } = serverTheme;
+  const { primaryAnchorColor: openedPostPrimaryAnchorColor, navAnchorColor: openedPostNavAnchorColor } = openedPostAccountTheme;
+
+  // const openedPostAccount: AccountOrServer | undefined = useAppSelector(state =>
+  //   basePost
+  //     ? state.accounts.pinnedServers
+  //       .find(s => s.serverId.includes(basePost.serverHost))
+  //     : undefined);
 
   const chatUI = useAppSelector(state => state.app.discussionChatUI);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
@@ -125,27 +153,64 @@ export function StarredPosts({ }: StarredPostsProps) {
                 <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
                 <YStack gap="$3" h='100%' ai='center'>
-                  <XStack w='100%' ai='center' gap='$2'>
+                  <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                     {openedPostId
-                      ? <Button onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
+                      ? <div key='back'>
+                        <Button onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
+                      </div>
                       : undefined}
-                    <XStack f={1} />
+                    <div key='flex-1' style={{ flex: 1 }} />
                     {basePost
-                      ? <Paragraph size='$1' fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
-                        {event?.post?.title ?? basePost?.title ?? 'Loading...'}
-                      </Paragraph>
-                      : <Heading size='$5'>Starred</Heading>}
+                      ? <div key='post-name'>
+                        <Button onPress={() => scrollToTop(true)} >
+                          <YStack>
+                            <Paragraph size='$1'
+                              maw={Math.min(400, window.innerWidth - 200 - (eventWithSingleInstance ? 100 : 0))}
+                              overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
+                              fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
+                              {event?.post?.title ?? basePost?.title ?? 'Loading...'}
+                            </Paragraph>
+                            {openedPostAccount?.account
+                              ?
+                              <XStack o={0.5}>
+                                <Paragraph size='$1' fontWeight='bold' >
+                                  as&nbsp;
+                                </Paragraph>
+                                <Paragraph size='$1' fontWeight='bold' color={openedPostNavAnchorColor}>
+                                  {openedPostAccount.account?.user?.username ?? 'anonymous'}
+                                </Paragraph>
+                                <Paragraph size='$1' fontWeight='bold' >
+                                  @
+                                </Paragraph>
+                                <Paragraph size='$1' fontWeight='bold' color={openedPostPrimaryAnchorColor}>
+                                  {openedPostAccount.server!.host}
+                                </Paragraph>
+                              </XStack>
+                              : undefined}
+                          </YStack>
+                        </Button>
+                      </div>
+                      : <div key='starred-heading'>
+                        <Heading size='$5'>Starred</Heading>
+                      </div>}
+                    <div key='flex-2' style={{ flex: 1 }} />
+
                     {eventWithSingleInstance
-                      ? <InstanceTime instance={eventWithSingleInstance.instances[0]!} event={eventWithSingleInstance} />
-                      : undefined}
-                    {/* <Heading size='$5'>{
-                  basePost ? event?.post?.title ?? basePost.title
-                    : 'Starred'}
-                    </Heading> */}
-                    <XStack f={1} />
-                  </XStack>
-                  {openedPostId && basePost && basePost.responseCount > 0
-                    ? <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
+                      ? <div key='instance-time'>
+                        <InstanceTime instance={eventWithSingleInstance.instances[0]!} event={eventWithSingleInstance} />
+                      </div>
+                      : basePost
+                        ? undefined//<div key='flex-3' style={{ flex: 1 }} />
+                        : undefined}
+                    {basePost ? <Button
+                      size='$3' px='$1'
+                      // onPress={() => setOpen(false)}
+                      {...basePostLink}
+                      icon={PanelLeftOpen} /> : undefined}
+                  </FlipMove>
+                  {openedPostId && basePost //&& basePost.responseCount > 0
+                    ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
+                      w='100%' maw={800} mx='auto' mt='$1' ai='center'>
                       <XStack f={1} />
                       <Tooltip placement="bottom">
                         <Tooltip.Trigger>
@@ -153,7 +218,14 @@ export function StarredPosts({ }: StarredPostsProps) {
                             backgroundColor={chatUI ? undefined : navColor}
                             hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
                             transparent={chatUI}
-                            onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
+                            borderTopRightRadius={0} borderBottomRightRadius={0}
+
+                            icon={<ListEnd transform={[{ rotate: '180deg' }]} />}
+                            onPress={() => {
+                              dispatch(setDiscussionChatUI(false));
+                              scrollToCommentsTop(openedPostId.split('@')[0]!);
+                            }}
+                            mr={0}>
                             <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
                           </Button>
                         </Tooltip.Trigger>
@@ -169,8 +241,15 @@ export function StarredPosts({ }: StarredPostsProps) {
                             backgroundColor={!chatUI ? undefined : navColor}
                             hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                             transparent={!chatUI}
-                            borderTopRightRadius={0} borderBottomRightRadius={0}
-                            onPress={() => dispatch(setDiscussionChatUI(true))}>
+                            iconAfter={ListEnd}
+                            borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                            onPress={() => {
+                              dispatch(setDiscussionChatUI(true));
+                              if (chatUI)
+                                scrollToCommentsBottom(openedPostId.split('@')[0]!);
+                              else
+                                setTimeout(() => scrollToCommentsBottom(openedPostId.split('@')[0]!), 800);
+                            }}>
                             <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
                           </Button>
                         </Tooltip.Trigger>
@@ -179,29 +258,12 @@ export function StarredPosts({ }: StarredPostsProps) {
                           <Heading size='$1'>Sorted by time.</Heading>
                         </Tooltip.Content>
                       </Tooltip>
-                      <Tooltip placement="bottom-end">
-                        <Tooltip.Trigger>
-                          <Button h='$2'
-                            transparent={!chatUI} icon={ListEnd}
-                            borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                            opacity={!chatUI ? 0.5 : 1}
-                            onPress={() => {
-                              if (chatUI) {
-                                scrollToCommentsBottom(openedPostId.split('@')[0]!);
-                              } else {
-                                dispatch(setDiscussionChatUI(true))
-                              }
-                            }} />
-                        </Tooltip.Trigger>
-                        <Tooltip.Content>
-                          <Heading size='$2'>Go to newest.</Heading>
-                        </Tooltip.Content>
-                      </Tooltip>
                       <XStack f={1} />
                     </XStack>
                     : undefined}
+                  {/* </AnimatePresence> */}
                   <ScrollView
-                    w={Math.max(100, Math.min(650, window.innerWidth - 70))}
+                    w={Math.max(100, Math.min(650, window.innerWidth - 50))}
                     h={Math.max(100, Math.min(650, window.innerHeight - 280 - (showReplyArea ? mediaQuery.gtXxxs ? 200 : 100 : 0)))}
                   >
                     <FlipMove style={{ alignItems: 'center' }}>
@@ -273,8 +335,6 @@ export type StarredPostCardProps = {
 export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
-
-  const { primaryTextColor, navColor, navTextColor } = useServerTheme();
 
   const { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance } = useStarredPostDetails(postId);
 

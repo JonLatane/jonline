@@ -89,10 +89,11 @@ export function PinnedServerSelector({
         ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
         : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
 
+  const { transparentBackgroundColor } = useServerTheme();
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
-    backgroundColor={transparent ? '$backgroundHover' : '$backgroundHover'}
-    o={transparent ? 0.5 : 1}
+    backgroundColor={transparentBackgroundColor}
+    // o={transparent ? 1 : 1}
   >
     {/* <AnimatePresence> */}
     {configuringFederation ?

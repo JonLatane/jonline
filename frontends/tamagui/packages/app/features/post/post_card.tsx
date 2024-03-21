@@ -1,4 +1,4 @@
-import { FederatedPost, deletePost, federateId, getServerTheme, loadPostReplies, starPost, unstarPost, updatePost } from "app/store";
+import { FederatedPost, deletePost, federateId, getServerTheme, loadPostReplies, selectPostById, starPost, unstarPost, updatePost } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
@@ -13,7 +13,7 @@ import { AuthorInfo } from "./author_info";
 import { ShareableToggle, VisibilityPicker } from "app/components";
 import { AccountOrServerContextProvider, useGroupContext } from "app/contexts";
 import { useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
-import { federatedEntity, serverHost } from 'app/store/federation';
+import { federatedEntity, federatedId, serverHost } from 'app/store/federation';
 import { GroupPostManager } from 'app/features/groups/group_post_manager';
 import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
 import { postVisibilityDescription } from "./base_create_post_sheet";
@@ -65,7 +65,12 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { dispatch, accountOrServer } = usePostDispatch(unfederatedPost);
   const currentUser = accountOrServer.account?.user;
   const server = accountOrServer.server;
-  const post: FederatedPost = { ...unfederatedPost, serverHost: serverHost(server) };
+  const federatedPostId = federateId(unfederatedPost.id, server);
+
+  // For replies, as users may update them, we ultimately want to
+  // source the post from the store, necessarily the Post/Reply hierarchy.
+  const updatedPost = useAppSelector(state => selectPostById(state.posts, federatedPostId));
+  const post: FederatedPost = { ...(updatedPost ?? unfederatedPost), serverHost: serverHost(server) };
 
   const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = useCurrentAndPinnedServers();
@@ -104,6 +109,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   function saveEdits() {
     setSavingEdits(true);
+    console.log('saveEdits replyPostIdPath', replyPostIdPath);
     dispatch(updatePost({
       ...accountOrServer, ...post,
       content: editedContent,
@@ -111,6 +117,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       embedLink: editedEmbedLink,
       visibility: editedVisibility,
       shareable: editedShareable,
+      postIdPath: replyPostIdPath
     })).then(() => {
       setEditing(false);
       setSavingEdits(false);

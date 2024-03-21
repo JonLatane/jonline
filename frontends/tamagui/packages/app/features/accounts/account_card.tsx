@@ -368,10 +368,10 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
     </Card.Footer>
     <Card.Background>
       <XStack h='100%'>
-        <YStack h='100%' w={5}
+        <YStack h='100%' w={7}
           borderTopLeftRadius='$2' borderBottomLeftRadius='$2'
           backgroundColor={primaryColor} />
-        <YStack h='100%' w={5}
+        <YStack h='100%' w={3}
           backgroundColor={navColor} />
         <YStack f={1} />
       </XStack>
