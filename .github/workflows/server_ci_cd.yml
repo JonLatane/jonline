@@ -307,10 +307,12 @@ jobs:
         # bodyFile: "body.md"
         # github_token: ${{ secrets.GITHUB_TOKEN }}
         body: |-
-          # Jonline CI/CD Release 
-          
-          ## `v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}`
-          
+          # Jonline CI/CD Release
+
+          ### `v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}`
+
+          Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml).
+
           Images are available on DockerHub:
           
           - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
@@ -318,13 +320,12 @@ jobs:
           - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
           
           ## Deployments
-
+          
           Deployments will be brought up-to-date at the same time as this release is created.
           First, the Jonline.io deployment will be updated, then Bull City Social and Oak City Social.
           GitHub may leave these badges out of date. Refer to their "About" pages for the true currently deployed version,
           in case the badges are out of.
-
-
+          
           | Deployment | Links | Deployment Version |
           | --- | --- | --- |
           | [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                      | [About](https://jonline.io/about), [Protocol Docs](https://jonline.io/docs/protocol/)           | Development |
