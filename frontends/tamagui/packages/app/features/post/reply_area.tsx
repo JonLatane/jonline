@@ -8,7 +8,7 @@ import { RootState, actionFailed, getServerTheme, parseFederatedId, replyToPost,
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
-import { AddAccountSheet } from '../accounts/add_account_sheet'
+import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet'
 import { MediaRef } from '../media/media_chooser'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
@@ -176,7 +176,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}
-        <AddAccountSheet operation={chatUI ? 'Chat' : 'Comment'}
+        <SingleServerAccountsSheet operation={chatUI ? 'Chat' : 'Comment'}
           server={accountOrServer.server} />
       </YStack>
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />

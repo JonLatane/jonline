@@ -1,18 +1,19 @@
-import { EventListingType, TimeFilter } from '@jonline/api';
-import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar'
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import FullCalendar from "@fullcalendar/react";
-import interactionPlugin from "@fullcalendar/interaction";
 import daygridPlugin from "@fullcalendar/daygrid";
-import timegridPlugin from "@fullcalendar/timegrid";
-import multimonthPlugin from "@fullcalendar/multimonth";
+import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
+import multimonthPlugin from "@fullcalendar/multimonth";
+import FullCalendar from "@fullcalendar/react";
+import timegridPlugin from "@fullcalendar/timegrid";
+import { EventListingType, TimeFilter } from '@jonline/api';
+import { momentLocalizer } from 'react-big-calendar';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
-import { Input, AnimatePresence, Text, Button, DateTimePicker, Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions, Spinner, standardHorizontalAnimation, reverseStandardAnimation, useTheme, Dialog, Unspaced, Adapt, Sheet, ScrollView } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, parseFederatedId, selectAllServers, selectEventById, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import { Adapt, AnimatePresence, Button, DateTimePicker, Dialog, Heading, Input, ScrollView, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
+import { Calendar as CalendarIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -25,7 +26,6 @@ import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navi
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
-import { Calendar as CalendarIcon, X as XIcon } from '@tamagui/lucide-icons';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -39,7 +39,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
-  const { server: currentServer, primaryColor, primaryTextColor, navColor, navTextColor, darkMode } = useServerTheme();
+  const { server: currentServer, primaryColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
@@ -160,7 +160,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
-  console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
+  // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
   const setModalInstance = (e: FederatedEvent | undefined) => {
     setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
   }
@@ -190,6 +190,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // useEffect(() => (window.innerHeight - navigationHeight - 85 > minBigCalHeight)
   //   ? setBigCalHeight(window.innerHeight - navigationHeight - 85)
   //   : undefined, [bigCalHeight, window.innerHeight, navigationHeight]);
+
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -199,7 +200,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       showShrinkPreviews={!bigCalendar}
       loading={loadingEvents}
       topChrome={
-        <YStack w='100%' px='$2' key='filter-toolbar'>
+        <YStack w='100%' px='$2' key='filter-toolbar'
+          backgroundColor={transparentBackgroundColor}>
           <XStack w='100%' ai='center'>
 
             <Button onPress={() => setBigCalendar(!bigCalendar)}
@@ -259,7 +261,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <Heading size='$5' mb='$3'>No events found.</Heading>
                   <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                 </YStack>
-              : <YStack key={`calendar-rendering-${serializedTimeFilter}`} mx='$1'
+              : <YStack
+                key='calendar-rendering'
+                // key={`calendar-rendering-${serializedTimeFilter}`} 
+                mx='$1'
                 animation='standard' {...reverseStandardAnimation}
                 //  w='100%'
 
@@ -279,7 +284,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       // height: '100%'
                     }} >
                     <FullCalendar
-                      key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
+                      // key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
                       selectable
                       dateClick={({ date, view }) => {
                         view.calendar.changeView('listDay', date);
@@ -292,7 +297,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       footerToolbar={{
                         start: 'today',
                         center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                        end: 'agendaWeek',
+                        end: 'listMonth',
                       }}
                       plugins={[
                         daygridPlugin,

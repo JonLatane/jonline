@@ -4,7 +4,7 @@ import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useM
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { AddAccountSheet } from "../accounts/add_account_sheet";
+import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
@@ -89,10 +89,11 @@ export function PinnedServerSelector({
         ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
         : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
 
+  const { transparentBackgroundColor } = useServerTheme();
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
-    backgroundColor={transparent ? '$backgroundHover' : '$backgroundHover'}
-    o={transparent ? 0.5 : 1}
+    backgroundColor={transparentBackgroundColor}
+    // o={transparent ? 1 : 1}
   >
     {/* <AnimatePresence> */}
     {configuringFederation ?
@@ -271,7 +272,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
     </XStack>
     {simplified
       ? undefined
-      : <AddAccountSheet server={server}
+      : <SingleServerAccountsSheet server={server}
         selectedAccount={pinnedAccount}
         onAccountSelected={toggleAccountSelect}
         button={(onPress) =>

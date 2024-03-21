@@ -1041,6 +1041,7 @@ Valid GetPostsRequest formats:
 | group_id | [string](#string) | optional | Limits results to those in the given group ID. |
 | reply_depth | [uint32](#uint32) | optional | Only supported for depth=2 for now. |
 | context | [PostContext](#jonline-PostContext) | optional | Only POST and REPLY are supported for now. |
+| post_ids | [string](#string) | optional | Returns expanded posts with the given IDs. |
 | listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See `PostListingType` for more info. |
 | page | [uint32](#uint32) |  | The page of results to return. Defaults to 0. |
 
@@ -1403,8 +1404,8 @@ Valid GetEventsRequest formats:
 | time_filter | [TimeFilter](#jonline-TimeFilter) | optional | Filters returned `EventInstance`s by time. |
 | attendee_id | [string](#string) | optional | If set, only returns events that the given user is attending. If `attendance_statuses` is also set, returns events where that user&#39;s status is one of the given statuses. |
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
-| post_id | [string](#string) | optional | (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT`. |
-| instance_post_id | [string](#string) | optional | (TODO) Finds events that have an instance with the given post ID. The Post should have a `PostContext` of `EVENT_INSTANCE`. |
+| post_id | [string](#string) | optional | (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. |
+| instance_post_id | [string](#string) | repeated | (TODO) Finds events that have an instance with the given post IDs. The Post should have a `PostContext` of `EVENT_INSTANCE`. Faciliates using the StarredPost APIs to get events. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 
 

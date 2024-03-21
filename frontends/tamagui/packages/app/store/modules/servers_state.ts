@@ -19,6 +19,11 @@ export function serverID(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}:${server.host}`;
 }
 
+export function serverIDHost(serverId: string): string {
+  // console.log(serverId);
+  return serverId.split(':')[1]!;
+}
+
 export function serverUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}://${server.host}`;
 }

@@ -12,7 +12,7 @@ import { getCredentialClient, loadUser, loadUsername, loadUsersPage, resetAccess
 import { PinnedServer } from '../federation';
 import { JonlineAccount, JonlineServer } from "../types";
 import { createAccount, login } from "./account_actions";
-import { serverID, upsertServer } from './servers_state';
+import { serverID, serverIDHost, upsertServer } from './servers_state';
 
 export interface AccountsState {
   status: "unloaded" | "loading" | "loaded" | "errored";
@@ -32,8 +32,13 @@ export interface AccountsState {
 export function accountID(account: JonlineAccount | undefined): string | undefined {
   if (!account) return undefined;
 
-  return `${serverID(account.server)}-${account.user.id}`;
+  return `${serverID(account.server)}-${account.user?.id}`;
 }
+
+export function accountIDHost(accountId: string): string {
+  return accountId.split('-')[0]!.split(':')[1]!;
+}
+
 const accountsAdapter = createEntityAdapter<JonlineAccount>({
   selectId: (account) => accountID(account)!,
 });
@@ -61,14 +66,16 @@ export const accountsSlice = createSlice({
     },
     resetAccounts: () => initialState,
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
-      if (state.currentAccountId != accountID(action.payload)) {
+      const originalAccountId = state.currentAccountId;
+      const account = action.payload;
+      const accountId = accountID(account);
+
+      if (state.currentAccountId != accountId) {
         resetCredentialedData();
       }
       resetAccessTokens();
-      state.currentAccountId = accountID(action.payload);
+      state.currentAccountId = accountId;
 
-      // Verify that the account is still valid by loading the user data
-      const account = action.payload;
       if (account) {
         console.log("Verifying account is still valid");
         setTimeout(async () => {
@@ -83,6 +90,17 @@ export const accountsSlice = createSlice({
             store.dispatch(accountsSlice.actions.selectAccount(undefined));
           });
         }, 1);
+        state.pinnedServers = state.pinnedServers.map(s =>
+          accountId && serverIDHost(s.serverId) === accountIDHost(accountId)
+            ? { ...s, accountId }
+            : s
+        );
+      } else {
+        state.pinnedServers = state.pinnedServers.map(s =>
+          originalAccountId && serverIDHost(s.serverId) === accountIDHost(originalAccountId)
+            ? { ...s, accountId: undefined }
+            : s
+        );
       }
     },
     setExcludeCurrentServer: (state, action: PayloadAction<boolean>) => {

@@ -13,7 +13,7 @@ import { Federated, FederatedEntity, createFederated, federateId, federatedEntit
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { createEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
-import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost } from './post_actions';
+import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost, updatePost } from './post_actions';
 import { loadUserPosts, loadUserReplies } from "./user_actions";
 export * from './post_actions';
 
@@ -139,6 +139,26 @@ export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
       const federatedPost = federatedPayload(action);
       const oldPost = selectPostById(state, federatedId(federatedPost));
       postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
+    });
+    builder.addCase(updatePost.fulfilled, (state, action) => {
+      const federatedPost = federatedPayload(action);
+      const oldPost = selectPostById(state, federatedId(federatedPost));
+      postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
+      // if (action.meta.arg.postIdPath && action.meta.arg.postIdPath.length > 1) {
+      //   debugger;
+      //   const post = state.entities[action.meta.arg.postIdPath[0]!];
+      //   if (post) {
+      //     let parentPost: Post = { ...post };
+      //     for (const postId of action.meta.arg.postIdPath.slice(1, -1)) {
+      //       parentPost = parentPost.replies.find((reply) => reply.id === postId)!;
+      //     }
+      //     parentPost.replies = parentPost.replies.map(p => (
+      //       p.id === action.payload.id
+      //         ? action.payload
+      //         : p
+      //     ));
+      //   }
+      // }
     });
     builder.addCase(loadPost.rejected, (state, action) => {
       state.failedPostIds.push(federateId((action.meta.arg as LoadPost).id, action));

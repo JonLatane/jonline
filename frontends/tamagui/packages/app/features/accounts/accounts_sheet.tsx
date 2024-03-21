@@ -1,5 +1,5 @@
-import { Anchor, Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, useMedia } from '@jonline/ui';
-import { AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { Anchor, AnimatePresence, Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia } from '@jonline/ui';
+import { AlertCircle, AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, SeparatorVertical, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
@@ -15,7 +15,7 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { TutorialToggle } from '../navigation/tabs_tutorial';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { LoginMethod } from './add_account_sheet';
+import { LoginMethod } from './single_server_accounts_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
 import FlipMove from 'react-flip-move';
@@ -49,6 +49,14 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
   const dispatch = useAppDispatch();
   const { server: currentServer, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
+  const [addAccountServer, setAddAccountServer] = useState(currentServer);
+  const { primaryColor: addAccountServerPrimaryColor, primaryTextColor: addAccountServerPrimaryTextColor } = useServerTheme(addAccountServer);
+  useEffect(() => {
+    if (addAccountServer) {
+      document.getElementById('accounts-sheet-currently-adding-server')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [addAccountServer]);
   const account = useAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
@@ -127,12 +135,14 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     }
   }
 
+  const skipSelection = addAccountServer?.host !== currentServer?.host;
   function loginToServer() {
     dispatch(clearAccountAlerts());
     dispatch(login({
-      ...primaryServer!,
+      ...addAccountServer!,
       username: newAccountUser,
       password: newAccountPass,
+      skipSelection
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
@@ -144,9 +154,10 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   function createServerAccount() {
     dispatch(clearAccountAlerts());
     dispatch(createAccount({
-      ...primaryServer!,
+      ...addAccountServer!,
       username: newAccountUser,
       password: newAccountPass,
+      skipSelection
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
@@ -211,7 +222,11 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         {...themedButtonBackground(navColor, navTextColor)}
         // backgroundColor={navColor}
         h='auto'
-        icon={serversDiffer || browsingOnDiffers ? alertTriangle({ color: navTextColor }) : undefined}
+        icon={serversDiffer || browsingOnDiffers
+          ? alertTriangle({ color: navTextColor })
+          : accounts.some(a => a.needsReauthentication)
+            ? <AlertCircle color={navTextColor} />
+            : undefined}
         borderBottomLeftRadius={0} borderBottomRightRadius={0}
         px='$2'
         onPress={() => setOpen((x) => !x)}
@@ -413,9 +428,9 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                   {/* <> */}
                   <ScrollView horizontal>
                     <XStack gap='$3'>
-                      <FlipMove style={{display: 'flex'}}>
+                      <FlipMove style={{ display: 'flex' }}>
                         {servers.map((server, index) => {
-                          return <span key={`serverCard-${serverID(server)}`} style={{margin: 2}}>
+                          return <span key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
                             <ServerCard
                               // linkToServerInfo={onlyShowServer !== undefined}
                               server={server}
@@ -518,7 +533,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                   <Button
                     size="$3"
                     icon={Plus}
-                    disabled={currentServer === undefined}
+                    disabled={currentServer === undefined && servers.length === 0}
                     {...themedButtonBackground(primaryColor, primaryTextColor)}
                     onPress={() => {
                       setAddingAccount(true);
@@ -552,32 +567,50 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                       <XStack ai='center'
                         pl={mediaQuery.gtXs ? '$2' : 0}
                         pr={mediaQuery.gtXs ? '$4' : '$1'}>
-
-                        <XStack f={1} ai='center'>
-                          <ServerNameAndLogo server={currentServer} />
-                        </XStack>
-                        <Button
-                          alignSelf='center'
-                          size="$6"
-                          circular
-                          icon={ChevronDown}
-                          onPress={() => {
-                            setAddingAccount(false)
-                          }}
-                        />
-                        <XStack f={1} ai='center' o={0}>
-                          <Paragraph ml='auto' size='$1' > via</Paragraph>
-                          <XStack>
-                            <ServerNameAndLogo server={currentServer} />
-                          </XStack>
-                        </XStack>
+                        <ScrollView horizontal f={1}>
+                          <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                            {addAccountServer
+                              ? <div id='accounts-sheet-currently-adding-server'
+                                key={`serverCard-${serverID(addAccountServer)}`}
+                                style={{ margin: 2 }}>
+                                <ServerNameAndLogo server={addAccountServer} />
+                              </div>
+                              : undefined}
+                            {addAccountServer && servers.length > 1
+                              ? <div key='separator' style={{ margin: 2 }}>
+                                <SeparatorVertical size='$1' />
+                              </div>
+                              : undefined}
+                            {servers.filter(s => s.host != addAccountServer?.host)
+                              .map((server, index) =>
+                                <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
+                                  <Button onPress={() => setAddAccountServer(server)}>
+                                    <ServerNameAndLogo server={server} />
+                                  </Button>
+                                </div>
+                              )}
+                          </FlipMove>
+                        </ScrollView>
+                        <AnimatePresence>
+                          {addAccountServer?.host !== currentServer?.host
+                            ? <XStack
+                              animation='standard' {...standardHorizontalAnimation}
+                              o={0.5}
+                              ai='center' >
+                              <Paragraph ml='auto' size='$1' > via</Paragraph>
+                              <XStack>
+                                <ServerNameAndLogo server={currentServer} />
+                              </XStack>
+                            </XStack>
+                            : undefined}
+                        </AnimatePresence>
                       </XStack>
-                      <Heading size="$9">
+                      <Heading size="$9" mt='$3'>
                         {loginMethod === 'login' ? 'Login'
                           : loginMethod === 'create_account' ? 'Sign Up'
                             : 'Add Account'}
                       </Heading>
-                      <Heading size="$4">{primaryServer?.host}/</Heading>
+                      <Heading size="$4">{addAccountServer?.host}/</Heading>
                       <Sheet.ScrollView>
                         <YStack gap="$2" pb='$2' //pt={loginMethod ? undefined : '$3'}
                           maw={600} w='100%' als='center'
@@ -609,7 +642,11 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                                 ref={passwordRef}
                                 // autoFocus
                                 id='accounts-sheet-password-input'
-                                textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                                textContentType={//loginMethod === LoginMethod.Login
+                                  // ? 
+                                  "newPassword"
+                                  // : "password"
+                                }
                                 placeholder="Password"
                                 editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
                                 onKeyPress={(e) => {
@@ -633,20 +670,20 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                             ? <>
                               <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
                               <TamaguiMarkdown text={`
-${currentServer?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+${addAccountServer?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
 released under the AGPL. As a user, you have a fundamental right to view the source code of this software. If you suspect that the
 operator of this server is not using the official Jonline software, you can contact the [Free Software Foundation](https://www.fsf.org/)
 to evaluate support options.
                           `} />
-                              {(currentServer?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                              {(addAccountServer?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
                                 ? <>
                                   <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                                  <TamaguiMarkdown text={currentServer?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                                  <TamaguiMarkdown text={addAccountServer?.serverConfiguration?.serverInfo?.privacyPolicy} />
                                 </> : undefined}
-                              {(currentServer?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
+                              {(addAccountServer?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
                                 ? <>
                                   <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
-                                  <TamaguiMarkdown text={currentServer?.serverConfiguration?.serverInfo?.mediaPolicy} />
+                                  <TamaguiMarkdown text={addAccountServer?.serverConfiguration?.serverInfo?.mediaPolicy} />
                                 </> : undefined}
                             </>
                             : undefined}
@@ -661,13 +698,19 @@ to evaluate support options.
                                 disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
                                 Back
                               </Button>
-                              <Button flex={1} backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor} onPress={() => {
-                                if (loginMethod == LoginMethod.Login) {
-                                  loginToServer();
-                                } else {
-                                  createServerAccount();
-                                }
-                              }} disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
+                              <Button flex={1}
+                                {...themedButtonBackground(addAccountServerPrimaryColor, addAccountServerPrimaryTextColor)}
+                                // backgroundColor={primaryColor}
+                                //  hoverStyle={{ backgroundColor: primaryColor }} 
+                                //  color={primaryTextColor} 
+                                onPress={() => {
+                                  if (loginMethod == LoginMethod.Login) {
+                                    loginToServer();
+                                  } else {
+                                    createServerAccount();
+                                  }
+                                }}
+                                disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
                                 {loginMethod == LoginMethod.Login ? 'Login' : 'Sign Up'}
                               </Button>
                             </XStack>
@@ -682,7 +725,8 @@ to evaluate support options.
                                 Sign Up
                               </Button>
                               <Button flex={1}
-                                backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor}
+                                {...themedButtonBackground(addAccountServerPrimaryColor, addAccountServerPrimaryTextColor)}
+                                // backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor}
                                 onPress={() => {
                                   setLoginMethod(LoginMethod.Login);
                                   setTimeout(() => passwordRef.current.focus(), 100);

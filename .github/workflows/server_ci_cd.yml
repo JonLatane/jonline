@@ -268,6 +268,47 @@ jobs:
         file: ./deploys/docker/server/Dockerfile
         platforms: linux/amd64,linux/arm64
 
+  create_release:
+    name: Create GitHub Release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: 
+      - push_server
+      - push_preview_generator
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+    - name: Push tag v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      id: tag_version
+      uses: mathieudutour/github-tag-action@v6.2
+      with:
+        custom_tag: "${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create release v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      uses: ncipollo/release-action@v1
+      with:
+        name: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }} (Continuous Delivery)"
+        tag: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
+        makeLatest: true
+        # bodyFile: "body.md"
+        # github_token: ${{ secrets.GITHUB_TOKEN }}
+        body: '# Jonline CI Release
+
+          Images available on DockerHub:
+          
+          - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+
+          - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+          '
+
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server_external.yaml
   # have the same version number.
   deploy_to_jonlineio:

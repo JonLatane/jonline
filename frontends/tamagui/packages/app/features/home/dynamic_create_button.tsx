@@ -3,7 +3,7 @@ import { Heading, XStack, YStack } from '@jonline/ui';
 import { useAccountOrServer, useCredentialDispatch } from 'app/hooks';
 import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';
-import { AddAccountSheet } from '../accounts/add_account_sheet';
+import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import { CreateEventSheet } from '../event/create_event_sheet';
@@ -48,7 +48,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
             </YStack>
             : undefined
           : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
-            <AddAccountSheet operation='Post' />
+            <SingleServerAccountsSheet operation='Post' />
           </YStack>}
     </>
     ;

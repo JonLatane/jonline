@@ -11,7 +11,7 @@ import AccountCard from './account_card';
 import { useLink } from 'solito/link';
 import { current } from '@reduxjs/toolkit';
 
-export type AddAccountSheetProps = {
+export type SingleServerAccountsSheetProps = {
   server?: JonlineServer;
   operation?: string;
   button?: (onPress: () => void) => JSX.Element;
@@ -23,7 +23,7 @@ export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function AddAccountSheet({ server: specifiedServer, operation, button, onAccountSelected, selectedAccount }: AddAccountSheetProps) {
+export function SingleServerAccountsSheet({ server: specifiedServer, operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
   const mediaQuery = useMedia();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
