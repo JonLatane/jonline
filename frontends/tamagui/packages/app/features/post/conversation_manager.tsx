@@ -231,11 +231,11 @@ export function useConversationCommentList({
 
   let replyAboveCurrent: Post | undefined = undefined;
   const [interactionType] = usePostInteractionType();
-  return <>
+  return [
     <div key='top'>
       <XStack key='top' id={getTopId(post?.id)} f={1} />
-    </div>
-    {flattenedReplies.length == 0
+    </div>,
+    flattenedReplies.length == 0
       ? post && !loadingRepliesFor
         ? <div key='no-replies' style={{
           display: 'flex',
@@ -259,8 +259,8 @@ export function useConversationCommentList({
         }}>
           <Spinner size='large' mx='auto' color={primaryColor} />
         </div>
-      : undefined}
-    {flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
+      : undefined,
+    ...flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
       let stripeColor = navColor;
       const lastReplyToIndex = lastReplyTo ? postIdPath.indexOf(lastReplyTo!) : undefined;
       const showParentPreview = chatUI && parentPost?.id != post?.id
@@ -323,12 +323,12 @@ export function useConversationCommentList({
       return <div key={`post-reply-${reply.id}`}>
         {result}
       </div>;
-    })}
+    }),
     <div key='bottom'>
       <XStack key='bottom' id={getBottomId(post?.id)} f={1} />
-    </div>
+    </div>,
     <div key='scrollPreserver'>
       <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
     </div>
-  </>;
+  ];
 }
