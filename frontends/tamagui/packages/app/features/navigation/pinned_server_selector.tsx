@@ -4,7 +4,7 @@ import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useM
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { AddAccountSheet } from "../accounts/add_account_sheet";
+import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
@@ -271,7 +271,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
     </XStack>
     {simplified
       ? undefined
-      : <AddAccountSheet server={server}
+      : <SingleServerAccountsSheet server={server}
         selectedAccount={pinnedAccount}
         onAccountSelected={toggleAccountSelect}
         button={(onPress) =>

@@ -11,7 +11,7 @@ import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { AddAccountSheet } from '../accounts/add_account_sheet';
+import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet';
 import FlipMove from 'react-flip-move';
 
 export type GroupsSheetProps = {
@@ -141,7 +141,7 @@ export function GroupsSheet({
     <>
       {<YStack>
         {showServerInfo
-          ? <AddAccountSheet server={server}
+          ? <SingleServerAccountsSheet server={server}
             selectedAccount={account}
             onAccountSelected={toggleAccountSelect}
             button={(onPress) =>

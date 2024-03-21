@@ -292,7 +292,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       footerToolbar={{
                         start: 'today',
                         center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                        end: 'agendaWeek',
+                        end: 'listMonth',
                       }}
                       plugins={[
                         daygridPlugin,

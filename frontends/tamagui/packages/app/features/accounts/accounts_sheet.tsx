@@ -15,7 +15,7 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { TutorialToggle } from '../navigation/tabs_tutorial';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { LoginMethod } from './add_account_sheet';
+import { LoginMethod } from './single_server_accounts_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
 import FlipMove from 'react-flip-move';
