@@ -287,7 +287,7 @@ jobs:
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
         echo "git_log=<<EOF" >> $GITHUB_OUTPUT
-        echo "$(git log -100 --pretty=\'- [*%ch*] %B\')" >> $GITHUB_OUTPUT
+        echo "$(git log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
