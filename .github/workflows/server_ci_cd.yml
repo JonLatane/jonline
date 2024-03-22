@@ -326,6 +326,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: 
       - deploy_to_jonlineio
+      - push_server
       - push_preview_generator
       - test_rust_binaries
       - test_flutter_ui
