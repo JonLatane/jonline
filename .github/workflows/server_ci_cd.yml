@@ -390,9 +390,9 @@ jobs:
       run: |-
         be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/\"//g')"
         sha_short="$(git rev-parse --short HEAD)"
-        echo "be_version="${be_version}" >> $GITHUB_OUTPUT
+        echo "be_version=${be_version}" >> $GITHUB_OUTPUT
         echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
-        echo "full_version='${be_version}-${sha_short}'" >> $GITHUB_OUTPUT
+        echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
 
     - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
