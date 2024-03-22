@@ -388,16 +388,20 @@ jobs:
     - name: Extract Versioning Data
       id: vars
       run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')"
+        sha_short="$(git rev-parse --short HEAD)"
+        echo "be_version="${be_version}" >> $GITHUB_OUTPUT
+        echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
+        echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
+
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - name: Push tag v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - name: Push tag v${{ steps.vars.outputs.full_version }}
       # id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
-        custom_tag: "${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
+        custom_tag: "${{ steps.vars.outputs.full_version }}"
         github_token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Extract Changelog
@@ -418,26 +422,26 @@ jobs:
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
 
-    - name: Create release v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - name: Create release v${{ steps.vars.outputs.full_version }}
       uses: ncipollo/release-action@v1
       with:
-        name: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }} (CI/CD)"
-        tag: "v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
+        name: "v${{ steps.vars.outputs.full_version }} (CI/CD)"
+        tag: "v${{ steps.vars.outputs.full_version }}"
         makeLatest: true
         # bodyFile: "body.md"
         # github_token: ${{ secrets.GITHUB_TOKEN }}
         body: |-
           # Jonline CI/CD Release
 
-          ### `v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}`
+          ### `v${{ steps.vars.outputs.full_version }}`
 
           Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml).
 
           Images are available on DockerHub:
           
-          - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+          - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.full_version }})
           
-          - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }})
+          - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
           
           ## Deployments
           
