@@ -44,9 +44,9 @@ export function splitOnFirstEmoji(
       x => x.match(regex) || (supportPipe && x === '|')
     );
     if (fullySplitEmojiIndex !== -1) {
-      partBeforeEmoji = fullySplitString.slice(0, fullySplitEmojiIndex).join('');
+      partBeforeEmoji = fullySplitString.slice(0, fullySplitEmojiIndex).join('').trim();
       emoji = fullySplitString[fullySplitEmojiIndex];
-      partAfterEmoji = fullySplitString.slice(fullySplitEmojiIndex + 1).join('');
+      partAfterEmoji = fullySplitString.slice(fullySplitEmojiIndex + 1).join('').trim();
     }
   }
   const result: SplitOnFirstEmojiResult = [partBeforeEmoji, emoji, partAfterEmoji];
