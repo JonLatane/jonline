@@ -351,9 +351,9 @@ jobs:
     - name: Extract Changelog
       id: changelog
       run: |
-        echo "ci_changelog<<EOF" >> $GITHUB_OUTPUT
-        echo "$(git log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        echo "ci_changelog<<DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
+        git log -100 --pretty='- [*%ch*] %B') >> $GITHUB_OUTPUT
+        echo "DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
