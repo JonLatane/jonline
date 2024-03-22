@@ -352,9 +352,16 @@ jobs:
     - name: Extract Changelog
       id: changelog
       run: |
-        echo "ci_changelog<<DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
-        git --no-pager log -20 --pretty='- [*%ch*] %B' >> $GITHUB_OUTPUT
-        echo "DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
+        delimiter="$(openssl rand -hex 8)"
+        {
+          echo "ci_changelog<<${delimiter}"
+          git --no-pager log -100 --pretty='- [*%ch*] %B'
+          echo "${delimiter}"
+        } >> $GITHUB_OUTPUT
+      # run: |
+      #   echo "ci_changelog<<DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
+      #   git --no-pager log -100 --pretty='- [*%ch*] %B' >> $GITHUB_OUTPUT
+      #   echo "DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
@@ -395,7 +402,7 @@ jobs:
           
           ## Changelog
           
-          This list's Markdown was generated with `git log -20 --pretty='- [*%ch*] %B'` at release time:
+          This list's Markdown was generated with `git log -100 --pretty='- [*%ch*] %B'` at release time:
           
           ${{ steps.changelog.outputs.ci_changelog }}
 
