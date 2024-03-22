@@ -384,6 +384,8 @@ jobs:
     #   - test_tamagui_ui
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
 
     - name: Extract Versioning Data
       id: vars
@@ -398,7 +400,6 @@ jobs:
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
     - name: Push tag v${{ steps.vars.outputs.full_version }}
-      # id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
         custom_tag: "${{ steps.vars.outputs.full_version }}"
@@ -406,20 +407,11 @@ jobs:
 
     - name: Extract Changelog
       id: changelog
-      # run: |
-      #   delimiter="$(openssl rand -hex 8)"
-      #   {
-      #     echo "ci_changelog<<${delimiter}"
-      #     git --no-pager log -100 --pretty='- [*%ch*] %B'
-      #     echo "${delimiter}"
-      #   } >> $GITHUB_OUTPUT
       run: |
         delimiter="$(openssl rand -hex 32)"
         echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
-        echo "$(git --no-pager log --pretty='- [`%h` / *%ch*] %B')" | tee -a $GITHUB_OUTPUT
+        echo "$(git --no-pager log --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
         echo "${delimiter}" >> $GITHUB_OUTPUT
-        git --no-pager log --pretty='- [`%h` / *%ch*] %B'
-        cat $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
