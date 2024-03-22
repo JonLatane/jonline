@@ -80,10 +80,11 @@ A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to depl
 Why this goal for this project? The tl;dr is that it keeps our social media data decentralized and in the hands of people we at least kinda trust. See [Scaling Social Software via Federation](#scaling-social-software-via-federation) for more rants tho.
 
 ### Why Jonline vs. Mastodon/OpenSocial?
-* [Jonline's Docker images are currently 120MB](https://hub.docker.com/r/jonlatane/jonline/tags), [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags). Its BE is *fast* compared to any Rails BE.
+* [Jonline's Docker images are currently 120MB](https://hub.docker.com/r/jonlatane/jonline/tags), [Mastodon's are 500+MB](https://hub.docker.com/r/tootsuite/mastodon/tags), and [OpenSocial's are over 1GB](https://hub.docker.com/r/goalgorilla/open_social_docker/tags). Its BE is *fast* compared to any Rails BE. And being written in Rust, memory safety is built-in, and entire classes of backend errors that arise from using dynamic/GC'ed languages simply don't compile and thus go away (once you've written it so it *will* compile, as a developer).
 * Jonline supports Events. Others don't.
-* Jonline's UI and APIs are designed to let users browser federated Users, Groups, Posts and Events with ease in a way not supported in other "fediverse" apps.
+* Jonline's UI and APIs are designed to let users browse federated User Profiles, Groups, Posts and Events with ease in a way not supported in other "fediverse" apps.
 * Jonline servers serve up multiple UIs as well as the protocol docs.
+* [Jonline Protocol Docs](https://jonline.io/docs/protocol) are arguably *as* comprehensive and *more* concrete than [ActivityPub Protocol Docs](https://www.w3.org/TR/activitypub/). More comparison is below.
 * Jonline's server images are structured so you only need one LoadBalancer (the things you typically pay for) per deploy/website, and really only one web-facing container (though it defaults to 2) per deploy.
     * Within the containers themselves, everything is handled by a single Rust BE binary. No scripting runtime. So containers are small, even with useful Linux tools like `psql` and `grpcurl` built in. They start *really fast*, and Kubernetes failovers work very smoothly.
 * Jonline deploy scripts are designed to be so easy to deploy to Kubernetess you can be braindead and get it up and running for your website. Further, it's all just `Makefile`s and `kubectl` commands (though maybe that's a con for the reader 😁).
