@@ -1,3 +1,4 @@
+import { ServerTheme } from "app/store";
 
 export function themedButtonBackground(color: string | undefined, textColor?: string, opacity?: number) {
   return {
@@ -17,4 +18,19 @@ export function themedButtonBackground(color: string | undefined, textColor?: st
       opacity: opacity ?? 1,
     }
   }
+}
+
+export function highlightedButtonBackground(
+  theme: ServerTheme,
+  type?: 'primary' | 'nav',
+  highlighted: boolean = true,
+) {
+  return themedButtonBackground(
+    highlighted
+      ? type === 'primary' ? theme.primaryColor : theme.navColor
+      : undefined,
+    highlighted
+      ? type === 'primary' ? theme.primaryTextColor : theme.navTextColor
+      : undefined,
+  )
 }

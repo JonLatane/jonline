@@ -36,7 +36,7 @@ const MENU_SECTIONS = [
   AppSection.MEDIA,
 ];
 
-function menuIcon(section: AppSection, color?: string) {
+export function menuIcon(section: AppSection, color?: string) {
   switch (section) {
     // case AppSection.HOME:
     //   return <Circle color={color} />;

@@ -4,7 +4,7 @@ import { reverseHorizontalAnimation, standardFadeAnimation, standardHorizontalAn
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
-import { FederatedEvent, accountID, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedPost, accountID, federatedId, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
@@ -12,7 +12,10 @@ import { InstanceTime } from "../event/instance_time";
 import { ConversationContextProvider, PostCard, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useStatefulConversationContext } from "../post";
 import { StarButton, ThemedStar } from "../post/star_button";
 import { useLink } from "solito/link";
+import { AppSection, menuIcon } from "./features_navigation";
+import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 
+type StarredPostFilter = 'posts' | 'events' | undefined;
 export type StarredPostsProps = {};
 function useStarredPostDetails(postId: string) {
   const { id: serverPostId, serverHost } = parseFederatedId(postId, useServer()?.host);
@@ -65,7 +68,26 @@ export function StarredPosts({ }: StarredPostsProps) {
   const starredPostIds = useAppSelector(state => (state.app.starredPostIds ?? []));
 
   const [open, setOpen] = useState(false);
-  const [openedPostId, setOpenedPostId] = useState<string | undefined>(undefined);
+  // const [openedPostId, setOpenedPostId] = useState<string | undefined>(undefined);
+  const openedPostId = useAppSelector(state => state.app.openedStarredPostId);
+  const setOpenedPostId = (postId: string | undefined) =>
+    dispatch(setOpenedStarredPost(postId));
+  const [starredPostFilter, setStarredPostFilter] = useState<StarredPostFilter>(undefined);
+
+  const filteredPostIds = useAppSelector(state => {
+    if (starredPostFilter === 'posts') {
+      return starredPostIds.map(id => state.posts.entities[id])
+        .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
+        .map(p => federatedId(p!));
+    } else if (starredPostFilter === 'events') {
+      return starredPostIds.map(id => state.posts.entities[id])
+        .filter(p => p?.context === PostContext.EVENT_INSTANCE)
+        .map(p => federatedId(p!));
+    } else {
+      return starredPostIds;
+    }
+  });
+
   const scrollToTop = (smooth?: boolean) => document.getElementById('starred-post-scroll-top')
     ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : undefined });
   useEffect(() => {
@@ -155,11 +177,31 @@ export function StarredPosts({ }: StarredPostsProps) {
                 <YStack gap="$3" h='100%' ai='center'>
                   <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                     {openedPostId
-                      ? <div key='back'>
-                        <Button onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
-                      </div>
-                      : undefined}
-                    <div key='flex-1' style={{ flex: 1 }} />
+                      ? [
+                        <div key='back'>
+                          <Button onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
+                        </div>,
+                        <div key='flex-1' style={{ flex: 1 }} />
+                      ] : [
+                        <div key='posts-filter'>
+                          <Button icon={menuIcon(AppSection.POSTS)}
+                            onPress={() => setStarredPostFilter(
+                              starredPostFilter === 'posts' ? undefined : 'posts'
+                            )}
+                            transparent
+                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
+                          />
+                        </div>,
+                        <div key='events-filter' style={{ marginRight: 10 }}>
+                          <Button icon={menuIcon(AppSection.EVENTS)}
+                            onPress={() => setStarredPostFilter(
+                              starredPostFilter === 'events' ? undefined : 'events'
+                            )}
+                            transparent
+                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
+                          />
+                        </div>,
+                      ]}
                     {basePost
                       ? <div key='post-name'>
                         <Button onPress={() => scrollToTop(true)} >
@@ -190,8 +232,23 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </YStack>
                         </Button>
                       </div>
-                      : <div key='starred-heading'>
-                        <Heading size='$5'>Starred</Heading>
+                      : <div key='starred-heading' >
+                        <FlipMove>
+                          <div key='starred'>
+                            <Heading size='$5'>Starred</Heading>
+                          </div>
+                          {starredPostFilter === 'posts'
+                            ?
+                            <div key='starred-posts'>
+                              <Heading size='$3'>Posts</Heading>
+                            </div>
+                            : starredPostFilter === 'events'
+                              ?
+                              <div key='starred-events'>
+                                <Heading size='$3'>Events</Heading>
+                              </div>
+                              : undefined}
+                        </FlipMove>
                       </div>}
                     <div key='flex-2' style={{ flex: 1 }} />
 
@@ -279,18 +336,19 @@ export function StarredPosts({ }: StarredPostsProps) {
                         </div>
                         : undefined}
 
-                      {openedPostId && basePost
-                        ? <>
+                      {openedPostId// && basePost
+                        ? [
                           <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%' }}>
                             <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
-                          </div>
-                          {conversationCommentList}
-                        </>
-                        : starredPostIds.map((postId) =>
+                          </div>,
+                          basePost ? conversationCommentList : undefined
+                        ]
+                        : filteredPostIds.map((postId) =>
                           <div key={`starred-post-card-${postId}`} style={{ width: '100%' }}>
                             <XStack w='100%'
                               animation='standard' {...standardAnimation}>
-                              <StarredPostCard {...{ postId, onOpen: setOpenedPostId }} />
+                              <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
+                                unsortable={!!starredPostFilter} />
                             </XStack>
                           </div>)}
 
@@ -331,8 +389,9 @@ export type StarredPostCardProps = {
   postId: string;
   onOpen?: (postId: string) => void;
   fullSize?: boolean;
+  unsortable?: boolean;
 };
-export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardProps) {
+export function StarredPostCard({ postId, onOpen, fullSize, unsortable }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
 
@@ -382,7 +441,7 @@ export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardPro
       <XStack f={1} key='card-view'>
         {renderedCardView}
       </XStack>
-      {fullSize ? undefined :
+      {fullSize || unsortable ? undefined :
         <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
           <Button size='$2' circular
             disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5}
@@ -412,5 +471,6 @@ export function StarredPostCard({ postId, onOpen, fullSize }: StarredPostCardPro
       }
     </AnimatePresence>
   </XStack>
+
   return renderedCard;
 }

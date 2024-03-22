@@ -40,6 +40,7 @@ export type LocalAppConfiguration = {
   dateTimeRenderer?: DateTimeRenderer;
   showBigCalendar: boolean;
   starredPostIds: string[];
+  openedStarredPostId?: string | undefined;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -68,7 +69,7 @@ const initialState: LocalAppConfiguration = {
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
   showBigCalendar: true,
-    starredPostIds: []
+  starredPostIds: []
 };
 
 setTimeout(async () => {
@@ -179,6 +180,9 @@ export const localAppSlice = createSlice({
     unstarPost: (state, action: PayloadAction<string>) => {
       state.starredPostIds = state.starredPostIds.filter((id) => id !== action.payload);
     },
+    setOpenedStarredPost: (state, action: PayloadAction<string | undefined>) => {
+      state.openedStarredPostId = action.payload;
+    },
     moveStarredPostUp: (state, action: PayloadAction<string>) => {
       const index = state.starredPostIds.indexOf(action.payload);
       if (index > 0) {
@@ -204,7 +208,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
-  moveStarredPostDown, moveStarredPostUp
+  moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;
