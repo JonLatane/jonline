@@ -418,6 +418,7 @@ jobs:
         echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
         echo "$(git --no-pager log -100 --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
         echo "${delimiter}" >> $GITHUB_OUTPUT
+        cat $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
