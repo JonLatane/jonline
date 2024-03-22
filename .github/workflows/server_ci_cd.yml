@@ -404,7 +404,7 @@ jobs:
     name: Deploy to Bull City Social
     needs: 
       - deploy_to_jonlineio
-      - push_preview_generator
+      - create_github_release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -445,7 +445,7 @@ jobs:
     name: Deploy to Oak City Social
     needs:
     - deploy_to_jonlineio
-    - push_preview_generator
+    - create_github_release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
