@@ -394,7 +394,7 @@ jobs:
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
     - name: Push tag v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      id: tag_version
+      # id: tag_version
       uses: mathieudutour/github-tag-action@v6.2
       with:
         custom_tag: "${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
