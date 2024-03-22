@@ -28,12 +28,12 @@ pub fn create_account(
 
     let hashed_password = hash(request.password, DEFAULT_COST).unwrap();
 
-    let req_email: Option<serde_json::Value> = match request.email.map(|v| serde_json::to_value(v)) {
+    let req_email: Option<serde_json::Value> = match request.email.as_ref().map(|v| serde_json::to_value(v)) {
         None => None,
         Some(Err(_)) => None,
         Some(Ok(v)) => Some(v),
     };
-    let req_phone: Option<serde_json::Value> = match request.phone.map(|v| serde_json::to_value(v)) {
+    let req_phone: Option<serde_json::Value> = match request.phone.as_ref().map(|v| serde_json::to_value(v)) {
         None => None,
         Some(Err(_)) => None,
         Some(Ok(v)) => Some(v),
@@ -51,18 +51,29 @@ pub fn create_account(
         ))
         .get_result::<models::User>(conn);
 
-    match insert_result {
+    let result = match insert_result {
         Err(e) => {
             print!("Username already exists {:?}", e);
             Err(Status::new(Code::AlreadyExists, "username_already_exists"))
         },
         Ok(user) => {
-            let tokens = auth::generate_refresh_and_access_token(user.id, conn, request.expires_at);
+            let tokens = auth::generate_refresh_and_access_token(user.id, conn, &request.expires_at);
             Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
                 access_token: tokens.access_token,
                 user: Some(user.to_proto(&None, &None, None)),
             })
-        }
-    }
+        },
+    };
+
+    log::info!(
+        "CreateAccount::request: {:?}, result: {:?}",
+        CreateAccountRequest {
+            password: "<redacted>".to_string(),
+            ..request
+        },
+        result
+    );
+
+    result
 }

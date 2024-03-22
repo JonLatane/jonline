@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView,
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useAccount, useCredentialDispatch, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
-import { FederatedEvent, FederatedPost, RootState, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { AccountOrServer, FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -16,6 +16,7 @@ import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
 import { EventCard } from '../event/event_card';
 import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
+import { ResetPassword } from '../../store/modules/user_actions';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
@@ -309,8 +310,12 @@ export function UsernameDetailsScreen() {
                   </YStack>}
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
-                <XStack ac='center' jc='center'>
-                  <Heading size='$4' ta='center'>Permissions & Moderation</Heading>
+                <XStack ac='center' jc='center' w='100%'>
+                  <Heading size='$4' ta='center'>
+                    {isAdmin || isCurrentUser
+                      ? 'Settings, Permissions & Moderation'
+                      : 'Permissions & Moderation'}
+                  </Heading>
                   <XStack animation='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
@@ -375,7 +380,7 @@ export function UsernameDetailsScreen() {
                 <FlipMove style={{ width: '100%' }}>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
-                      ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center'o={0.5}>No posts yet</Heading></div>
+                      ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
                       : postContext === PostContext.REPLY && userPosts.length === 0
                         ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
                         : undefined}
@@ -409,7 +414,7 @@ export function UsernameDetailsScreen() {
 }
 
 interface UserVisibilityPermissionsProps {
-  user: User,
+  user: FederatedUser,
   defaultFollowModeration: Moderation,
   setDefaultFollowModeration: (v: Moderation) => void,
   visibility: Visibility,
@@ -420,11 +425,11 @@ interface UserVisibilityPermissionsProps {
 }
 
 const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ user, defaultFollowModeration, setDefaultFollowModeration, visibility, setVisibility, editMode, expanded = true, permissionsEditorProps }) => {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useFederatedDispatch(user);
   const { server } = accountOrServer;
   const mediaQuery = useMedia();
   const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
-  const account = useAccount();
+  const { account } = accountOrServer;
   const isCurrentUser = account && account?.user?.id == user.id;
   const isAdmin = hasAdminPermission(account?.user);
   const canEdit = isCurrentUser || isAdmin;
@@ -443,7 +448,13 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
   const confirmPasswordInvalid = resetUserPassword.length >= 8 && resetUserPassword !== confirmUserPassword;
   function doResetPassword() {
     dispatch(resetPassword({ userId: user.id, password: resetUserPassword, ...accountOrServer }))
-      .then(() => toast.show('Password reset.'));
+      .then((result) => {
+        if (actionSucceeded(result)) {
+          toast.show('Password reset.');
+        } else {
+          toast.show('Failed to reset password.');
+        }
+      });
   }
 
   return <AnimatePresence>
@@ -489,7 +500,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
         disabled={disableInputs} />
       <XStack h='$1' />
       <PermissionsEditor {...permissionsEditorProps} />
-      {isCurrentUser || isAdmin ?
+      {isCurrentUser || isAdmin || true ?
         <>
 
           <Dialog>
@@ -632,6 +643,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog>
+          {/* <ResetPasswordDialog user={user} /> */}
         </> : undefined}
     </YStack> : undefined}
   </AnimatePresence>;

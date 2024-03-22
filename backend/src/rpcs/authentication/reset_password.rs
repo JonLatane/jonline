@@ -48,7 +48,14 @@ pub fn reset_password(
             Err(Status::new(Code::Internal, "data_error"))
         }
     };
-    log::info!("DeleteUser::request: {:?}, result: {:?}", request, result);
+    log::info!(
+        "ResetPassword::request: {:?}, result: {:?}",
+        ResetPasswordRequest {
+            password: "<redacted>".to_string(),
+            ..request
+        },
+        result
+    );
 
     result
 }

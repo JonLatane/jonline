@@ -49,7 +49,7 @@ pub fn access_token(
                 let new_expiry =
                     SystemTime::now().add(Duration::from_secs(60 * 60 * 24 * LIFETIME_DAYS));
                 let new_token_pair =
-                    auth::generate_refresh_and_access_token(user_id, conn, Some(new_expiry.into()));
+                    auth::generate_refresh_and_access_token(user_id, conn, &Some(new_expiry.into()));
                 Ok(AccessTokenResponse {
                     access_token: new_token_pair.access_token,
                     refresh_token: new_token_pair.refresh_token,

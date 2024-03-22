@@ -44,7 +44,7 @@ pub fn login(
     let tokens = match verify(request.password, &user.password_salted_hash) {
         Err(_) => return Err(permission_denied),
         Ok(false) => return Err(permission_denied),
-        Ok(true) => auth::generate_refresh_and_access_token(user.id, conn, request.expires_at),
+        Ok(true) => auth::generate_refresh_and_access_token(user.id, conn, &request.expires_at),
     };
 
     log::info!("Logged in user {}, user_id={}", &request.username, user.id);

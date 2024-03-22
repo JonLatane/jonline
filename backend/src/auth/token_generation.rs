@@ -29,11 +29,13 @@ macro_rules! generate_token {
 pub fn generate_refresh_and_access_token(
     user_id: i64,
     conn: &mut PgPooledConnection,
-    expires_at: Option<Timestamp>,
+    expires_at: &Option<Timestamp>,
 ) -> RefreshTokenResponse {
     let refresh_token = generate_token!(512);
 
     let requested_expiration: Option<SystemTime> = expires_at
+        .as_ref()
+        .map(|x| x.clone())
         .map(SystemTime::try_from)
         .map(|x| x.ok())
         .flatten();
