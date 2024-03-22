@@ -235,17 +235,17 @@ export function StarredPosts({ }: StarredPostsProps) {
                       : <div key='starred-heading' >
                         <FlipMove>
                           <div key='starred'>
-                            <Heading size='$5'>Starred</Heading>
+                            <Heading size='$4'>Starred</Heading>
                           </div>
                           {starredPostFilter === 'posts'
                             ?
                             <div key='starred-posts'>
-                              <Heading size='$3'>Posts</Heading>
+                              <Heading size='$5'>Posts</Heading>
                             </div>
                             : starredPostFilter === 'events'
                               ?
                               <div key='starred-events'>
-                                <Heading size='$3'>Events</Heading>
+                                <Heading size='$5'>Events</Heading>
                               </div>
                               : undefined}
                         </FlipMove>

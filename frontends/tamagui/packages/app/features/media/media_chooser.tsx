@@ -139,7 +139,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
                 ? loadingMedia//mediaState.loadStatus != 'loading' && mediaState.loadStatus != 'unloaded'
                   ? <YStack width='100%' mx='auto' jc="center" ai="center">
                     <Heading size='$5' o={0.5} mb='$3'>No media found.</Heading>
-                    <Heading size='$3' o={0.5} ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    {/* <Heading size='$3' o={0.5} ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                   </YStack>
                   : undefined
                 : <>
