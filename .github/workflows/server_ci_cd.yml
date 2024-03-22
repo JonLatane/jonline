@@ -375,13 +375,13 @@ jobs:
     # permissions: write-all
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # needs: 
-    #   - deploy_to_jonlineio
-    #   - push_server
-    #   - push_preview_generator
-    #   - test_rust_binaries
-    #   - test_flutter_ui
-    #   - test_tamagui_ui
+    needs: 
+      - deploy_to_jonlineio
+      - push_server
+      - push_preview_generator
+      - test_rust_binaries
+      - test_flutter_ui
+      - test_tamagui_ui
     steps:
     - uses: actions/checkout@v3
       with:
@@ -452,7 +452,7 @@ jobs:
           
           ## Changelog
           
-          This list's Markdown was generated with `git log -100 --pretty='- [\`%h\` / *%ch*] %B'` at release time:
+          This list's Markdown was generated with `git log -100 --pretty='- [%h / *%ch*] %B'` at release time:
           
           ${{ steps.changelog.outputs.ci_changelog }}
 
@@ -461,13 +461,13 @@ jobs:
   # have the same version number.
   deploy_to_bullcitysocial:
     name: Deploy to Bull City Social
-    needs: #create_github_release
-    - deploy_to_jonlineio
-    - push_server
-    - push_preview_generator
-    - test_rust_binaries
-    - test_flutter_ui
-    - test_tamagui_ui
+    needs: create_github_release
+    # - deploy_to_jonlineio
+    # - push_server
+    # - push_preview_generator
+    # - test_rust_binaries
+    # - test_flutter_ui
+    # - test_tamagui_ui
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -506,13 +506,13 @@ jobs:
   # have the same version number.
   deploy_to_oakcitysocial:
     name: Deploy to Oak City Social
-    needs: #create_github_release
-    - deploy_to_jonlineio
-    - push_server
-    - push_preview_generator
-    - test_rust_binaries
-    - test_flutter_ui
-    - test_tamagui_ui
+    needs: create_github_release
+    # - deploy_to_jonlineio
+    # - push_server
+    # - push_preview_generator
+    # - test_rust_binaries
+    # - test_flutter_ui
+    # - test_tamagui_ui
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -555,13 +555,13 @@ jobs:
     # If you need to deploy Preview Generator ASAP for testing,
     # uncomment the next line and comment the one after.
     #needs: push_preview_generator
-    needs: #create_github_release
-    - deploy_to_jonlineio
-    - push_server
-    - push_preview_generator
-    - test_rust_binaries
-    - test_flutter_ui
-    - test_tamagui_ui
+    needs: create_github_release
+    # - deploy_to_jonlineio
+    # - push_server
+    # - push_preview_generator
+    # - test_rust_binaries
+    # - test_flutter_ui
+    # - test_tamagui_ui
     runs-on: ubuntu-latest
 
     steps:
