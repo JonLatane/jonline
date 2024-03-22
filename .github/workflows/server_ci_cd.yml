@@ -352,7 +352,7 @@ jobs:
       id: changelog
       run: |
         echo "ci_changelog<<DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
-        git log -20 --pretty='- [*%ch*] %B') >> $GITHUB_OUTPUT
+        git log -20 --pretty='- [*%ch*] %B' >> $GITHUB_OUTPUT
         echo "DGSGFHDGHSJGHHFJDKS" >> $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
