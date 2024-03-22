@@ -1,5 +1,5 @@
 digraph G {
-  size = "100000,100000";
+  size = "100,100";
   compound=true;
   subgraph cluster0 {
     label = "Jonline Rust Backend & Cluster"
