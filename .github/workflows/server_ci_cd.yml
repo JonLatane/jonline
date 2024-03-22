@@ -297,7 +297,7 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Create Changelog
       run: |
-        CHANGELOG="$(git log -100 --pretty='- [*%ch*] %B')"
+        CHANGELOG="$(git log -100 --pretty='- [*%ch*] %B\n')"
         echo "::set-output name=changelog::$CHANGELOG"
       id: changelog
     - name: display Changelog
