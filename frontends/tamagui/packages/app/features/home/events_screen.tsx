@@ -201,7 +201,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       loading={loadingEvents}
       topChrome={
         <YStack w='100%' px='$2' key='filter-toolbar'
-          backgroundColor={transparentBackgroundColor}>
+        // backgroundColor={transparentBackgroundColor}
+        >
           <XStack w='100%' ai='center'>
 
             <Button onPress={() => setBigCalendar(!bigCalendar)}

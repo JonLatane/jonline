@@ -91,7 +91,7 @@ export function TabsNavigation({
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
-  const { darkMode: systemDark } = useServerTheme();
+  const { darkMode: systemDark, transparentBackgroundColor } = useServerTheme();
   const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
@@ -224,7 +224,9 @@ export function TabsNavigation({
                 transparent />
             </XStack>
 
-            {topChrome}
+            <XStack w='100%' backgroundColor={transparentBackgroundColor}>
+              {topChrome}
+            </XStack>
           </YStack>
         </StickyBox>
 
