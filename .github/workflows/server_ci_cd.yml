@@ -410,7 +410,7 @@ jobs:
       #     echo "${delimiter}"
       #   } >> $GITHUB_OUTPUT
       run: |
-        delimiter="$(openssl rand -hex 8)"
+        delimiter="$(openssl rand -hex 32)"
         echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
         echo "$(git --no-pager log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_OUTPUT
         echo "${delimiter}" >> $GITHUB_OUTPUT
