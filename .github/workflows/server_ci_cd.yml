@@ -403,9 +403,7 @@ jobs:
   # have the same version number.
   deploy_to_bullcitysocial:
     name: Deploy to Bull City Social
-    needs: 
-      - deploy_to_jonlineio
-      - create_github_release
+    needs: create_github_release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -444,9 +442,7 @@ jobs:
   # have the same version number.
   deploy_to_oakcitysocial:
     name: Deploy to Oak City Social
-    needs:
-    - deploy_to_jonlineio
-    - create_github_release
+    needs: create_github_release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
@@ -537,13 +533,7 @@ jobs:
   deploy_preview_generator:
     name: Deploy Preview Generator
     if: github.ref == 'refs/heads/main'
-
-    needs: 
-      - test_rust_binaries
-      - push_preview_generator
-      - deploy_to_jonlineio
-      - deploy_to_bullcitysocial
-      - deploy_to_oakcitysocial
+    needs: create_github_release
     runs-on: ubuntu-latest
 
     steps:
