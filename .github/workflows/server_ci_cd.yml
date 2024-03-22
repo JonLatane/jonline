@@ -439,16 +439,19 @@ jobs:
           
           ## Deployments
           
-          Deployments will be brought up-to-date at the same time as this release is created.
-          First, the Jonline.io deployment will be updated, then Bull City Social and Oak City Social.
-          GitHub may leave these badges out of date. Refer to their "About" pages for the true currently deployed version,
-          in case the badges are out of.
+          Deployments will be brought up-to-date at around the same time as this release is created.
+
+          First, Jonline.io (and any other "development" deployments) will be updated.
+
+          Then, this release is created (so, Jonline.io should already be updated).
+
+          Finally, Bull City Social and Oak City Social (and any other "production" deployments) will be updated.
           
           | Deployment | Links | Deployment Version |
           | --- | --- | --- |
           | [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                      | [About](https://jonline.io/about), [Protocol Docs](https://jonline.io/docs/protocol/)           | Development |
-          | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | [About](https://BullCity.Social/about), [Protocol Docs](https://BullCity.Social/docs/protocol/) | "Stable"    |
-          | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | [About](https://OakCity.Social/about), [Protocol Docs](https://OakCity.Social/docs/protocol/)   | "Stable"    |
+          | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | [About](https://BullCity.Social/about), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production  |
+          | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | [About](https://OakCity.Social/about), [Protocol Docs](https://OakCity.Social/docs/protocol/)   | Production  |
           
           ## Changelog
           
