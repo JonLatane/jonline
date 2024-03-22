@@ -416,7 +416,7 @@ jobs:
       run: |
         delimiter="$(openssl rand -hex 32)"
         echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
-        echo "$(git --no-pager log -100 --pretty='- [`%h` / *%ch*] %B')" | tee -a $GITHUB_OUTPUT
+        echo "$(git --no-pager log --pretty='- [`%h` / *%ch*] %B')" | tee -a $GITHUB_OUTPUT
         echo "${delimiter}" >> $GITHUB_OUTPUT
         cat $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
