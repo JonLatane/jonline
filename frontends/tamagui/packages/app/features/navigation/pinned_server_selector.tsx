@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
@@ -131,10 +131,10 @@ export function PinnedServerSelector({
               </XStack>
             </Button>
 
-            <AnimatePresence>
+            {/* <AnimatePresence> */}
               {showShrinkPreviews
                 ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
-                  animation='standard' {...reverseStandardAnimation}
+                  // animation='standard' {...reverseHorizontalAnimation}
                   onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
                   <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
                     <Maximize2 size='$1' />
@@ -144,7 +144,7 @@ export function PinnedServerSelector({
                   </XStack>
                 </Button>
                 : undefined}
-            </AnimatePresence>
+            {/* </AnimatePresence> */}
           </>
         }
       </XStack>

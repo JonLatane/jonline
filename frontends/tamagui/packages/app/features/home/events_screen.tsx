@@ -455,33 +455,33 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 </XStack>
                 <PaginationIndicator {...pagination} />
               </YStack>
-              : <>
+              : [
 
                 <div key='reset' style={{ width: '100%', margin: 'auto' }}>
                   <PaginationResetIndicator {...pagination} />
-                </div>
+                </div>,
 
-                {firstPageLoaded || allEvents.length > 0
+                firstPageLoaded || allEvents.length > 0
                   ? allEvents.length === 0
                     ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
                       <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                        <Heading size='$5' mb='$3'>No events found.</Heading>
-                        <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                        <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
+                        <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                       </YStack>
                     </div>
                     : undefined
-                  : undefined}
-                {paginatedEvents.map((event) => {
+                  : undefined,
+                paginatedEvents.map((event) => {
                   return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                     <XStack w='100%'>
                       <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
                     </XStack>
                   </div>
-                })}
+                }),
                 <div key='pagedown' style={{ width: '100%', margin: 'auto' }}>
                   <PaginationIndicator {...pagination} />
                 </div>
-              </>}
+              ]}
         </FlipMove>
 
         {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}
