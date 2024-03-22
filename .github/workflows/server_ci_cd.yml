@@ -301,7 +301,7 @@ jobs:
         echo "ci_changelog<<EOF" >> $GITHUB_OUTPUT
         echo "$(git log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_OUTPUT
         echo "EOF" >> $GITHUB_OUTPUT
-    - name: display Changelog
+    - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
 
