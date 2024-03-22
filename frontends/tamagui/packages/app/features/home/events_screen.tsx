@@ -284,7 +284,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       // height: '100%'
                     }} >
                     <FullCalendar
-                      // key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
+                      key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
                       selectable
                       dateClick={({ date, view }) => {
                         view.calendar.changeView('listDay', date);
