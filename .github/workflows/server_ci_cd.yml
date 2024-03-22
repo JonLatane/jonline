@@ -458,7 +458,7 @@ jobs:
           
           ## Changelog
           
-          This list's Markdown was generated with `git log -100 --pretty='- [\\`%h\\` / *%ch*] %B'` at release time:
+          This list's Markdown was generated with `git log -100 --pretty='- [\`%h\` / *%ch*] %B'` at release time:
           
           ${{ steps.changelog.outputs.ci_changelog }}
 
