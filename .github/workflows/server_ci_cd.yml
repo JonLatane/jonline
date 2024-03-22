@@ -421,6 +421,8 @@ jobs:
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
         echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
+        echo "Rendered again..."
+        echo ${{ steps.changelog.outputs.ci_changelog }}
 
     - name: Create release v${{ steps.vars.outputs.full_version }}
       uses: ncipollo/release-action@v1
