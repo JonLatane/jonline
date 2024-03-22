@@ -86,12 +86,15 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
   const skipAccountSelection = onAccountSelected !== undefined || currentServer?.host !== server?.host;
   function loginToServer() {
     dispatch(clearAccountAlerts());
-    dispatch(login({
+    const loginRequest = {
       ...server!,
+      userId: undefined,
       username: newAccountUser,
       password: newAccountPass,
       skipSelection: skipAccountSelection,
-    })).then(action => {
+    };
+    debugger;
+    dispatch(login(loginRequest)).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
       } else {

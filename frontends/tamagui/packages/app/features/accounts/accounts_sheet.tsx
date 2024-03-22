@@ -140,6 +140,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     dispatch(clearAccountAlerts());
     dispatch(login({
       ...addAccountServer!,
+      userId: undefined,
       username: newAccountUser,
       password: newAccountPass,
       skipSelection

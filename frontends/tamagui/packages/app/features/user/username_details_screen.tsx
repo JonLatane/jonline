@@ -500,7 +500,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
         disabled={disableInputs} />
       <XStack h='$1' />
       <PermissionsEditor {...permissionsEditorProps} />
-      {isCurrentUser || isAdmin || true ?
+      {isCurrentUser || isAdmin ?
         <>
 
           <Dialog>
