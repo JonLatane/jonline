@@ -296,14 +296,14 @@ jobs:
         custom_tag: "${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}"
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Extract Changelog
-      run: |
-        echo "CI_CHANGELOG<<EOF" >> $GITHUB_ENV
-        echo "$(git log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_ENV
-        echo "EOF" >> $GITHUB_ENV
       id: changelog
+      run: |
+        echo "ci_changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$(git log -100 --pretty='- [*%ch*] %B')" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
     - name: display Changelog
       run: |
-        echo "The string is: ${{ env.CI_CHANGELOG }}"
+        echo "The string is: ${{ steps.changelog.outputs.ci_changelog }}"
 
 
     - name: Create release v${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
@@ -344,7 +344,7 @@ jobs:
           
           This list's Markdown was generated with `git log -100 --pretty='- [*%ch*] %B'` at release time:
           
-          ${{ env.CI_CHANGELOG }}
+          ${{ steps.changelog.outputs.ci_changelog }}
 
 
   # Note that the deploy expects that backend/Cargo.toml and deploys/k8s/server_external.yaml
