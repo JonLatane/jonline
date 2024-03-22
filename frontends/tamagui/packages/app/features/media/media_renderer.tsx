@@ -32,21 +32,20 @@ export const MediaRenderer: React.FC<Props> = ({ media, failQuietly = false, ser
 
   switch (type) {
     case 'image':
-      return <img style={{ height: '95%', width: '95%', objectFit: 'contain' }} src={mediaUrl} />;
+      return <img style={{ height: '100%', width: '100%', objectFit: 'contain' }} src={mediaUrl} />;
     case 'video':
       return <YStack w='100%' ac='center' jc='center' h='100%'>
         <ReactPlayerShim width='100%' style={{ maxHeight: mediaQuery.gtXs ? '500px' : '300px' }}
           height='100%' url={mediaUrl} controls muted />
       </YStack>;
     default:
+      // If all else fails, render it as an HTML object and rely on the tag's standard fallback.
+      return <object style={{ backgroundColor: 'white' }} data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
+        {failQuietly ? undefined : <YStack p='$3'>
+          <Paragraph size='$2' color={'black'}>
+            Media rendering is not supported in your browser for type <Text fontFamily='$mono' color={'black'}>{media.contentType}</Text>. <Anchor href={mediaUrl} color={navAnchorColor}>Download it instead.</Anchor>
+          </Paragraph>
+        </YStack>}
+      </object>;
   }
-
-  // If all else fails, render it as an HTML object and rely on the tag's standard fallback.
-  return <object style={{ backgroundColor: 'white' }} data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
-    {failQuietly ? undefined : <YStack p='$3'>
-      <Paragraph size='$2' color={'black'}>
-        Media rendering is not supported in your browser for type <Text fontFamily='$mono' color={'black'}>{media.contentType}</Text>. <Anchor href={mediaUrl} color={navAnchorColor}>Download it instead.</Anchor>
-      </Paragraph>
-    </YStack>}
-  </object>;
 };

@@ -399,9 +399,11 @@ export const EventCard: React.FC<Props> = ({
   const shrinkServerInfo = isPreview || !mediaQuery.gtXxxs;
   const serverInfoView = showServerInfo
     ? <XStack my='auto'
-      w={shrinkServerInfo ? '$4' : undefined}
-      h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
-      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip={isPreview} />
+      // pointerEvents={'none'}
+      overflow='hidden'
+      w={shrinkServerInfo ? '$5' : undefined}
+      h={shrinkServerInfo ? '$5' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
+      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
     </XStack>
     : undefined;
   const headerLinksView = <YStack f={1} key='header-links-view'>

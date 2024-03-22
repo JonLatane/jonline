@@ -424,7 +424,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     w={shrinkServerInfo ? '$4' : undefined}
                     h={shrinkServerInfo ? '$4' : undefined}
                     jc={shrinkServerInfo ? 'center' : undefined}>
-                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip={isPreview} />
+                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
                   </XStack>
                   : undefined}
               </XStack>

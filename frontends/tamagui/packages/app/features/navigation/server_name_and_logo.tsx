@@ -122,15 +122,18 @@ export function ServerNameAndLogo({
 
   const squareLogo = displaySquareLogo
     ? <XStack h='100%'
+      // pointerEvents="none"
+      overflow='hidden'
       w='100%'
-      scale={1.1}
+      // scale={1.1}
       transform={[
         // { translateY: 1.5 },
         // { translateX: isSafari() ? 8.0 : 2.0 }
       ]}>
       <MediaRenderer serverOverride={server} forceImage media={Media.create({ id: logo?.squareMediaId })} failQuietly />
     </XStack>
-    : <XStack h={'100%'} w='100%' scale={1.1}>
+    : <XStack h={'100%'} w='100%' //scale={1.1}
+    >
       <Heading m='auto' whiteSpace="nowrap" size='$9'>{serverNameEmoji ?? ''}</Heading>
       {/* <Paragraph size='$1' lineHeight='$1' my='auto'>{serverNameWithoutEmoji}</Paragraph> */}
     </XStack>;
@@ -146,7 +149,8 @@ export function ServerNameAndLogo({
       ?
       <Tooltip>
         <Tooltip.Trigger>
-          <XStack h='100%' scale={1.05} transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
+          <XStack h='100%' //scale={1.05} 
+            transform={[{ translateY: 1.0 }, { translateX: 2.0 }]}>
             <MediaRenderer serverOverride={server} forceImage
               media={Media.create({ id: logo?.wideMediaId })} failQuietly />
           </XStack>
