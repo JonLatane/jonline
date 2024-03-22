@@ -412,7 +412,7 @@ jobs:
       run: |
         delimiter="$(openssl rand -hex 32)"
         echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
-        echo "$(git --no-pager log -100 --pretty='- [%h / *%ch*] %B')" >> $GITHUB_OUTPUT
+        echo "$(git --no-pager log -100 --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
         echo "${delimiter}" >> $GITHUB_OUTPUT
     - name: Display Changelog (for debugging the CI/CD process)
       run: |
@@ -454,7 +454,7 @@ jobs:
           
           ## Changelog
           
-          This list's Markdown was generated with `git log -100 --pretty='- [%h / *%ch*] %B'` at release time:
+          This list's Markdown was generated with `git log -100 --pretty='- [\\\`%h\\\` / *%ch*] %B'` at release time:
           
           ${{ steps.changelog.outputs.ci_changelog }}
 
