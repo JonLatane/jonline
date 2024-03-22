@@ -69,8 +69,8 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               ? allPosts.length === 0
                 ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
                   <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                    <Heading size='$5' mb='$3'>No posts found.</Heading>
-                    <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
+                    <Heading size='$3' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                   </YStack>
                 </div>
                 : undefined

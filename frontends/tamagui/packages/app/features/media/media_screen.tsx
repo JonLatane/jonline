@@ -47,15 +47,15 @@ export function MediaScreen() {
           accountOrServer.account
             ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }} />
             : <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>You must be logged in to view media.</Heading>
-              <Heading size='$3' ta='center'>You can log in by clicking the button in the top right corner.</Heading>
+              <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
+              <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>
             </YStack>
         }
         {allMedia && allMedia.length == 0
           ? loadingMedia
             ? <YStack width='100%' maw={600} jc="center" ai="center">
-              <Heading size='$5' mb='$3'>No media found.</Heading>
-              <Heading size='$3' ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+              <Heading size='$5' o={0.5} mb='$3'>No media found.</Heading>
+              <Heading size='$3' o={0.5} ta='center'>The media you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
             </YStack>
             : undefined
           : <>

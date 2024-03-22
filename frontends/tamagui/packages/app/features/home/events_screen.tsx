@@ -256,11 +256,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 ? <YStack key='bigcalendar-loading' width='100%' maw={600} jc="center" ai="center" mx='auto'>
                   <Spinner color={primaryColor} />
                   {/* <Heading size='$5' mb='$3'>Loading...</Heading> */}
-                  <Heading size='$5' ta='center'>Loading events...</Heading>
+                  <Heading size='$5' o={0.5} ta='center'>Loading events...</Heading>
                 </YStack>
                 : <YStack key='bigcalendar-no-events' width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                  <Heading size='$5' mb='$3'>No events found.</Heading>
-                  <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                  <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
+                  <Heading size='$3' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                 </YStack>
               : <YStack
                 key='calendar-rendering'

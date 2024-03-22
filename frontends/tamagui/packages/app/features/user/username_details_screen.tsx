@@ -310,8 +310,8 @@ export function UsernameDetailsScreen() {
                   </YStack>}
               </YStack>
               <Button mt={-15} onPress={() => setShowUserSettings(!showUserSettings)} transparent>
-                <XStack ac='center' jc='center' w='100%'>
-                  <Heading size='$4' ta='center'>
+                <XStack ac='center' jc='center' ai='center' maw='100%'>
+                  <Heading size='$4' ta='center' f={1}>
                     {isAdmin || isCurrentUser
                       ? 'Settings, Permissions & Moderation'
                       : 'Permissions & Moderation'}
@@ -338,10 +338,10 @@ export function UsernameDetailsScreen() {
                     </XStack>
                     : undefined}
                   {allEvents.length == 0 && !loadingEvents
-                    ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
-                      <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
-                        <Heading size='$5' ta='center' mb='$3'>No events found.</Heading>
-                        <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                    ? <div style={{margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
+                      <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
+                        <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
+                        {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                       </YStack>
                     </div>
                     : undefined}

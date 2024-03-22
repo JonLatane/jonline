@@ -27,7 +27,6 @@ export type Login = JonlineServer & LoginRequest & SkipSelection;
 export const login = createAsyncThunk<JonlineAccount, Login>(
   "accounts/login",
   async (loginRequest) => {
-    debugger;
     const client = await getServerClient(loginRequest);
     const { refreshToken, accessToken, user } = await client.login({
       ...loginRequest,
