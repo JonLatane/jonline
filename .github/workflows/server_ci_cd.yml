@@ -533,6 +533,9 @@ jobs:
   deploy_preview_generator:
     name: Deploy Preview Generator
     if: github.ref == 'refs/heads/main'
+    # If you need to deploy Preview Generator ASAP for testing,
+    # uncomment the next line and comment the one after.
+    #needs: push_preview_generator
     needs: create_github_release
     runs-on: ubuntu-latest
 
