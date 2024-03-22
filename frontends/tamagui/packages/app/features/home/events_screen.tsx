@@ -179,8 +179,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const serializedTimeFilter = serializeTimeFilter(timeFilter);
   const minBigCalWidth = 150;
   const minBigCalHeight = 150;
-  const bigCalWidth = Math.max(minBigCalWidth, window.innerWidth - 40);
-  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85);
+  const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
+  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 75);
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
   // const [bigCalWidth, setBigCalWidth] = useState(Math.max(minBigCalWidth, window.innerWidth));
   // const [bigCalHeight, setBigCalHeight] = useState(Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85));
@@ -271,7 +271,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
                 width={bigCalWidth}
                 height={bigCalHeight}
-                p='$2'
+                // p='$2'
 
                 backgroundColor='whitesmoke'
                 borderRadius='$3'>
@@ -280,12 +280,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <div
                     style={{
                       display: 'block',
-                      width: bigCalWidth - 10,
-                      height: bigCalHeight - 10,
+                      width: bigCalWidth,//- 10,
+                      height: bigCalHeight,// - 10,
                       // height: '100%'
                     }} >
                     <FullCalendar
-                      key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
+                      // key={`calendar-rendering-${serializedTimeFilter}-${window.innerWidth}-${window.innerHeight}-${navigationHeight}-${allEvents.length}`}
                       selectable
                       dateClick={({ date, view }) => {
                         view.calendar.changeView('listDay', date);

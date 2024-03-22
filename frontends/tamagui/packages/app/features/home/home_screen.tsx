@@ -130,7 +130,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                       ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
                         <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
                           <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
-                          <Heading size='$3' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                          <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                         </YStack>
                       </div>
                       : undefined}
@@ -172,8 +172,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 ? allPosts.length === 0
                   ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
                     <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                      <Heading size='$5' mb='$3'>No posts found.</Heading>
-                      <Heading size='$3' ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
+                      <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
+                      <Heading size='$2' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading>
                     </YStack>
                   </div>
                   : undefined
