@@ -2,7 +2,7 @@ import { FederatedEvent, federateId } from "app/store";
 import React from "react";
 
 import { EventInstance } from "@jonline/api";
-import { Button, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
+import { Button, Heading, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, ExternalLink } from "@tamagui/lucide-icons";
 import { useAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
@@ -113,6 +113,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
           <YStack gap="$3" h='100%'>
             {/* {willAdaptEdit ?
           <Popover.Sheet.ScrollView f={1}> */}
+            <Heading size='$1'>Export</Heading>
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...icsLink}><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>ICS (iCal/Apple)</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
             <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...office365Link} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Office 365</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>

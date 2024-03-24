@@ -78,7 +78,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
   }
 
   return <YStack ai='center'
-
+    pt={5}
     ml={eventMargins ? 5 : -15}
     mr={eventMargins ? -12 : 3}
   >
