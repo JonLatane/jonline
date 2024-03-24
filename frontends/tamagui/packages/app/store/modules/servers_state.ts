@@ -183,7 +183,7 @@ const serversSlice = createSlice({
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
 
       if (state.currentServerId != serverID(action.payload!)) {
-        resetCredentialedData();
+        // resetCredentialedData(action.payload?.host);
       }
       state.currentServerId = serverID(action.payload!);
     },

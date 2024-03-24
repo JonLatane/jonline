@@ -2,7 +2,8 @@
 
 | CI Status | Information |
 |------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| ![Rust Build Badge](https://github.com/jonlatane/jonline/actions/workflows/backend.yml/badge.svg)    | [Rust Build Results](https://github.com/jonlatane/jonline/actions/workflows/backend.yml)    |
+| ![Server Build Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)    | [Server CI/CD](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)    |
+| ![Load Balancer Build Badge](https://github.com/jonlatane/jonline/actions/workflows/load_balancer_ci_cd.yml/badge.svg)    | [Load Balancer CI/CD](https://github.com/jonlatane/jonline/actions/workflows/load_balancer_ci_cd.yml)    |
 
 - [Jonline Backend](#jonline-backend)
   - [gRPC implementation](#grpc-implementation)

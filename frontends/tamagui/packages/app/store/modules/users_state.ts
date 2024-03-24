@@ -1,20 +1,17 @@
-import { Follow, User, UserListingType } from "@jonline/api";
+import { Follow, User } from "@jonline/api";
 import {
   Dictionary,
-  Draft,
   EntityAdapter,
   EntityId,
   PayloadAction,
-  Slice,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
 import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, notifyUserDeleted, store, upsertUserData } from "..";
-import { Federated, FederatedAction, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, setFederated } from '../federation';
+import { Federated, FederatedAction, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, parseFederatedId, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
-import { useAccountOrServer } from "app/hooks";
 
 export type FederatedUser = FederatedEntity<User>;
 export function federatedUsername(user: FederatedUser): string {
@@ -68,13 +65,34 @@ const initialState: UsersState = {
   ...usersAdapter.getInitialState(),
 };
 
-export const usersSlice: Slice<Draft<UsersState>, any, "users"> = createSlice({
+export const usersSlice = createSlice({
   name: "users",
   initialState: initialState,
   reducers: {
     upsertUser: usersAdapter.upsertOne,
     removeUser: usersAdapter.removeOne,
-    resetUsers: () => initialState,
+    resetUsers: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      const userIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      usersAdapter.removeMany(state, userIdsToRemove);
+
+      state.failedUsernames[action.payload.serverHost] = [];
+      state.failedUserIds = state.failedUserIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+
+      Object.keys(state.idPosts)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.idPosts[id]);
+      Object.keys(state.idReplies)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.idReplies[id]);
+      Object.keys(state.idEventInstances)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.idEventInstances[id]);
+
+      state.userPages.values[action.payload.serverHost] = {};
+    },
   },
   extraReducers: (builder) => {
     function accountUserId(action: PayloadAction<any, any, { arg: AccountOrServer }>) {

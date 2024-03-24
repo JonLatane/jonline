@@ -70,8 +70,8 @@ export const accountsSlice = createSlice({
       const account = action.payload;
       const accountId = accountID(account);
 
-      if (state.currentAccountId != accountId) {
-        resetCredentialedData();
+      if (state.currentAccountId != accountId || action.payload?.server.host) {
+        resetCredentialedData(account?.server.host);
       }
       resetAccessTokens();
       state.currentAccountId = accountId;
@@ -183,6 +183,7 @@ export const accountsSlice = createSlice({
           client.getCurrentUser({}, client.credential).then(user => {
             console.log("Account is still valid");
             store.dispatch(accountsSlice.actions.upsertAccount({ ...account, user }));
+            resetCredentialedData(action.payload.server.host);
           }).catch(() => {
             console.warn("Failed to load account user data, account may have been deleted.");
             store.dispatch(accountsSlice.actions.upsertAccount({ ...account, lastSyncFailed: true, needsReauthentication: true }));
@@ -202,6 +203,7 @@ export const accountsSlice = createSlice({
           pinned: true
         });
       }
+      setTimeout(() => resetCredentialedData(action.payload.server.host), 1);
     },
   },
   extraReducers: (builder) => {
@@ -216,7 +218,7 @@ export const accountsSlice = createSlice({
       }
       accountsAdapter.upsertOne(state, action.payload);
       state.successMessage = `Created account ${action.payload.user.username}`;
-      resetCredentialedData();
+      resetCredentialedData(action.payload.server.host);
     });
     builder.addCase(createAccount.rejected, (state, action) => {
       state.status = "errored";
@@ -235,7 +237,7 @@ export const accountsSlice = createSlice({
       }
       accountsAdapter.upsertOne(state, { ...action.payload, lastSyncFailed: false, needsReauthentication: false });
       state.successMessage = `Logged in as ${action.payload.user.username}`;
-      resetCredentialedData();
+      resetCredentialedData(action.payload.server.host);
     });
     builder.addCase(login.rejected, (state, action) => {
       state.status = "errored";

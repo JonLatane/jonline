@@ -1,17 +1,15 @@
 import { Media } from "@jonline/api";
-import { formatError } from "@jonline/ui";
 import {
   Dictionary,
-  Draft,
   EntityAdapter,
-  EntityId, Slice,
+  EntityId, PayloadAction,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
+import { Federated, FederatedEntity, createFederated, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { Federated, FederatedEntity, createFederated, federateId, federatedId, federatedEntities, federatedPayload, setFederated, getFederated } from '../federation';
+import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
 export * from './media_actions';
 
 export type FederatedMedia = FederatedEntity<Media>;
@@ -44,13 +42,23 @@ const initialState: MediaState = {
   ...mediaAdapter.getInitialState(),
 };
 
-export const mediaSlice: Slice<Draft<MediaState>, any, "media"> = createSlice({
+export const mediaSlice = createSlice({
   name: "media",
   initialState: initialState,
   reducers: {
     upsertMedia: mediaAdapter.upsertOne,
     removeMedia: mediaAdapter.removeOne,
-    resetMedia: () => initialState,
+    // resetMedia: () => initialState,
+
+    resetMedia: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      const mediaIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      mediaAdapter.removeMany(state, mediaIdsToRemove);
+      state.failedMediaIds = state.failedMediaIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.userMediaPages.values[action.payload.serverHost] = {};
+    },
     clearMediaAlerts: (state) => {
       // state.errorMessage = undefined;
       // state.error = undefined;
@@ -65,7 +73,7 @@ export const mediaSlice: Slice<Draft<MediaState>, any, "media"> = createSlice({
     });
     builder.addCase(loadMediaPage.fulfilled, (state, action) => {
       setFederated(state.pagesStatus, action, "loaded");
-      const federatedMedia =federatedEntities(action.payload.media, action)
+      const federatedMedia = federatedEntities(action.payload.media, action)
       mediaAdapter.upsertMany(state, federatedMedia);
 
       const mediaIds = federatedMedia.map(federatedId);

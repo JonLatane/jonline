@@ -1,15 +1,14 @@
-import { Post, Event } from "@jonline/api";
+import { Event, Post } from "@jonline/api";
 import {
   Dictionary,
-  Draft,
   EntityAdapter,
-  EntityId, PayloadAction, Slice,
+  EntityId, PayloadAction,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { createEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
@@ -48,7 +47,16 @@ export const postsSlice = createSlice({
   initialState: initialState,
   reducers: {
     removePost: postsAdapter.removeOne,
-    resetPosts: () => initialState,
+    // resetPosts: () => initialState,
+    resetPosts: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      const postIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      postsAdapter.removeMany(state, postIdsToRemove);
+      state.failedPostIds = state.failedPostIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.postPages.values[action.payload.serverHost] = {};
+    },
     upsertPost: (state, action: PayloadAction<FederatedPost>) => {
       if (action.payload.id) {
         postsAdapter.upsertOne(state, action.payload);

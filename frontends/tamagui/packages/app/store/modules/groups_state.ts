@@ -4,14 +4,13 @@ import {
   createEntityAdapter,
   createSlice,
   Dictionary,
-  Draft,
   EntityAdapter,
   EntityId,
-  Slice
+  PayloadAction
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, setFederated } from "../federation";
+import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, setFederated } from "../federation";
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
@@ -63,13 +62,32 @@ export function isGroupLocked(state: GroupsState, groupId: string): boolean {
   return state.mutatingGroupIds.includes(groupId);
 }
 
-export const groupsSlice: Slice<Draft<GroupsState>, any, "groups"> = createSlice({
+export const groupsSlice = createSlice({
   name: "groups",
   initialState: initialState,
   reducers: {
     upsertGroup: groupsAdapter.upsertOne,
     removeGroup: groupsAdapter.removeOne,
-    resetGroups: () => initialState,
+    resetGroups: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      const groupIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      groupsAdapter.removeMany(state, groupIdsToRemove);
+      state.failedShortnames = state.failedShortnames.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+
+      state.pages.values[action.payload.serverHost] = {};
+      Object.keys(state.groupPostPages)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.groupPostPages[id]);
+      Object.keys(state.groupEventPages)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.groupEventPages[id]);
+      Object.keys(state.postIdGroupPosts)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.postIdGroupPosts[id]);
+      // state.mutatingGroupIds = state.mutatingGroupIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createGroup.fulfilled, (state, action) => {

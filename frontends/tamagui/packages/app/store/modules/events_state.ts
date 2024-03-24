@@ -1,21 +1,19 @@
 import { Event, EventInstance, TimeFilter } from "@jonline/api";
-import { formatError } from "@jonline/ui";
 import {
   Dictionary,
-  Draft,
   EntityAdapter,
-  EntityId, PayloadAction, Slice,
+  EntityId, PayloadAction,
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
-import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
@@ -60,13 +58,25 @@ const initialState: EventsState = {
   ...eventsAdapter.getInitialState(),
 };
 
-export const eventsSlice: Slice<Draft<EventsState>, any, "events"> = createSlice({
+export const eventsSlice = createSlice({
   name: "events",
   initialState: initialState,
   reducers: {
     upsertEvent: eventsAdapter.upsertOne,
     removeEvent: eventsAdapter.removeOne,
-    resetEvents: () => initialState,
+    resetEvents: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      const eventsIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      eventsAdapter.removeMany(state, eventsIdsToRemove);
+      Object.keys(state.instanceEvents)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.instanceEvents[id]);
+      state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.eventInstancePages.values[action.payload.serverHost] = {};
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createEvent.fulfilled, (state, action) => {

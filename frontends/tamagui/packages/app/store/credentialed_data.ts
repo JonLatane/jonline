@@ -104,12 +104,12 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
 }
 
 // Reset store data that depends on selected server/account.
-export function resetCredentialedData() {
+export function resetCredentialedData(serverHost: string | undefined) {
   setTimeout(() => {
-    store.dispatch(resetMedia!());
-    store.dispatch(resetPosts!());
-    store.dispatch(resetEvents!());
-    store.dispatch(resetGroups!());
-    store.dispatch(resetUsers!());
+    store.dispatch(resetMedia({ serverHost }));
+    store.dispatch(resetPosts({ serverHost }));
+    store.dispatch(resetEvents({ serverHost }));
+    store.dispatch(resetGroups({ serverHost }));
+    store.dispatch(resetUsers({ serverHost }));
   }, 1);
 }
