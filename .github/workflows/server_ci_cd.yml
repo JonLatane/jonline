@@ -28,7 +28,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
@@ -60,7 +60,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
     
@@ -105,13 +105,13 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+    # - name: Extract Versioning Data
+    #   id: vars
+    #   run: |-
+    #     echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+    #     echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+    # - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    #   run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
     - uses: actions-rs/toolchain@v1
       with:
@@ -214,14 +214,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
 
     - name: Extract Versioning Data
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
@@ -279,14 +277,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
 
     - name: Extract Versioning Data
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
@@ -342,7 +338,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
     - uses: digitalocean/action-doctl@v2
       with:
@@ -395,7 +391,7 @@ jobs:
       id: vars
       run: |-
         be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/\"//g')"
-        sha_short="$(git rev-parse --short HEAD)"
+        sha_short="$(git rev-parse --short=7 HEAD)"
         echo "be_version=${be_version}" >> $GITHUB_OUTPUT
         echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
         echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
@@ -485,7 +481,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
     - uses: digitalocean/action-doctl@v2
       with:
@@ -530,7 +526,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
     - uses: digitalocean/action-doctl@v2
       with:
@@ -578,7 +574,7 @@ jobs:
       id: vars
       run: |-
         echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
     - uses: digitalocean/action-doctl@v2
       with:
