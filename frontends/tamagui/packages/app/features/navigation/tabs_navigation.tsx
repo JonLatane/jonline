@@ -230,7 +230,7 @@ export function TabsNavigation({
           </YStack>
         </StickyBox>
 
-        <XStack zi={1000} style={{ position: 'fixed' }} animation='standard' o={loading && hideNavigation ? 1 : 0}
+        <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }} animation='standard' o={loading && hideNavigation ? 1 : 0}
           top={dimensions.height / 2 - 50}>
           <XStack position='absolute'
             transform={[{ translateX: -17 }]}>

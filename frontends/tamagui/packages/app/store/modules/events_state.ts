@@ -75,7 +75,8 @@ export const eventsSlice = createSlice({
         .forEach(id => delete state.instanceEvents[id]);
       state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
       state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      state.eventInstancePages.values[action.payload.serverHost] = {};
+      delete state.eventInstancePages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
   },
   extraReducers: (builder) => {

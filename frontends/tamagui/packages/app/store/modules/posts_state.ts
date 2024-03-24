@@ -55,7 +55,8 @@ export const postsSlice = createSlice({
         .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
       postsAdapter.removeMany(state, postIdsToRemove);
       state.failedPostIds = state.failedPostIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      state.postPages.values[action.payload.serverHost] = {};
+      delete state.postPages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
     upsertPost: (state, action: PayloadAction<FederatedPost>) => {
       if (action.payload.id) {

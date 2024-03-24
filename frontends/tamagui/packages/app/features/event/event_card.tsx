@@ -414,15 +414,15 @@ export const EventCard: React.FC<Props> = ({
   const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
-        <Anchor key='details-link' textDecorationLine='none' {...detailsLink}>
-          <XStack>
-            <YStack f={1}>
+        <XStack>
+          <YStack f={1}>
+            <Anchor key='details-link' textDecorationLine='none' {...detailsLink}>
               <Heading size="$7" marginRight='auto'>{title}</Heading>
-              {postLinkView}
-            </YStack>
-            {serverInfoView}
-          </XStack>
-        </Anchor>
+            </Anchor>
+            {postLinkView}
+          </YStack>
+          {serverInfoView}
+        </XStack>
         <XStack mr='$2'>
           <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}

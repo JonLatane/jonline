@@ -76,7 +76,7 @@ export const groupsSlice = createSlice({
       groupsAdapter.removeMany(state, groupIdsToRemove);
       state.failedShortnames = state.failedShortnames.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
 
-      state.pages.values[action.payload.serverHost] = {};
+      delete state.pages.values[action.payload.serverHost];
       Object.keys(state.groupPostPages)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.groupPostPages[id]);
@@ -87,6 +87,7 @@ export const groupsSlice = createSlice({
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.postIdGroupPosts[id]);
       // state.mutatingGroupIds = state.mutatingGroupIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
   },
   extraReducers: (builder) => {

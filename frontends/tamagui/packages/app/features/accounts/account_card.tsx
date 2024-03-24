@@ -210,7 +210,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 value={reauthenticationPassword}
                 disabled={!enablePasswordInput}
                 o={enablePasswordInput ? 1 : 0.5}
-                textContentType="password"
+                textContentType="newPassword"
                 onChange={(e) => {
                   console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
                 }}

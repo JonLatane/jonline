@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -95,12 +95,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       <FlipMove style={{
         width: '100%',
         margin: 'auto',
-        display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 5,
+        display: 'flex', flexDirection: 'column', flex: 1,
+        justifyContent: 'center', alignItems: 'center', marginTop: 5,
         maxWidth: 1400
       }}>
-        {/* <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space> */}
-
-        <div key='latest-events-header' style={{width: '100%'}}>
+        <div key='latest-events-header' style={{ width: '100%' }}>
           <XStack w='100%' pt='$3' px='$3' ai='center'>
             <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
@@ -155,20 +154,16 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>
           : undefined}
 
-        {/* : undefined} */}
-        {/* </AnimatePresence> */}
-        {/* </AnimatePresence> */}
-
-        {/* <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
-          <YStack f={1} px='$3' w='100%' key={`post-list`}> */}
         <div key='latest-posts-header'>
-          <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
+          <Heading size='$5' pt='$10' mx='auto'>Posts</Heading>
         </div>
-        <div key='pagination-reset'>
-          <PaginationResetIndicator {...postPagination} />
-        </div>
+        {maxPagesToRender < postPagination.page + 1
+          ? <div key='pagination-reset' style={{ width: '100%' }}>
+            <PaginationResetIndicator {...postPagination} />
+          </div>
+          : undefined}
 
-        {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
+        {postsLoaded || allPosts.length > 0
           ? allPosts.length === 0
             ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
               <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
@@ -177,15 +172,15 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               </YStack>
             </div>
             : undefined
-          : undefined
-        }
+          : undefined}
         {paginatedPosts.map((post) => {
-          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`} style={{ width: '100%', maxWidth: 800 }}>
+          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
+            style={{ width: '100%', maxWidth: 800, padding: 18 }}>
             <PostCard post={post} isPreview />
           </div>;
         })}
 
-        <div key='pagination-next'>
+        <div key='pagination-next' style={{ width: '100%' }}>
           <PaginationIndicator {...postPagination} />
         </div>
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}

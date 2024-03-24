@@ -57,7 +57,8 @@ export const mediaSlice = createSlice({
         .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
       mediaAdapter.removeMany(state, mediaIdsToRemove);
       state.failedMediaIds = state.failedMediaIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      state.userMediaPages.values[action.payload.serverHost] = {};
+      delete state.userMediaPages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
     clearMediaAlerts: (state) => {
       // state.errorMessage = undefined;

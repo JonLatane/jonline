@@ -91,7 +91,8 @@ export const usersSlice = createSlice({
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.idEventInstances[id]);
 
-      state.userPages.values[action.payload.serverHost] = {};
+      delete state.userPages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
   },
   extraReducers: (builder) => {

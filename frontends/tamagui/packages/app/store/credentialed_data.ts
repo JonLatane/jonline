@@ -111,5 +111,5 @@ export function resetCredentialedData(serverHost: string | undefined) {
     store.dispatch(resetEvents({ serverHost }));
     store.dispatch(resetGroups({ serverHost }));
     store.dispatch(resetUsers({ serverHost }));
-  }, 1);
+  }, 1500);
 }

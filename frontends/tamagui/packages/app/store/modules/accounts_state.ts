@@ -70,9 +70,19 @@ export const accountsSlice = createSlice({
       const account = action.payload;
       const accountId = accountID(account);
 
-      if (state.currentAccountId != accountId || action.payload?.server.host) {
-        resetCredentialedData(account?.server.host);
-      }
+      setTimeout(() => {
+        const currentServerId = store.getState().servers.currentServerId;
+        if (!currentServerId) return;
+
+        const currentServerHost = serverIDHost(currentServerId);
+        console.log("Resetting credentialed data for", currentServerHost);
+        resetCredentialedData(currentServerHost);
+
+        if (currentServerHost !== action.payload?.server.host) {
+          resetCredentialedData(account?.server.host);
+        }
+      }, 1);
+
       resetAccessTokens();
       state.currentAccountId = accountId;
 
