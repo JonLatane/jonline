@@ -111,55 +111,59 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </Button>
             : undefined} */}
         </XStack>
-        <AnimatePresence>
-          {showEventsOnLatest &&
-            (eventsLoaded || allEvents.length > 0 || loadingEvents) ?
-            <YStack key='latest-events'
-              w='100%'
-              // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-              // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-              animation='standard'
-              {...standardAnimation}
-            >
-              <ScrollView horizontal w='100%'>
-                <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+        {/* <AnimatePresence> */}
+        {/* {showEventsOnLatest &&
+          (eventsLoaded || allEvents.length > 0 || loadingEvents) ? */}
+        <YStack key='latest-events'
+          w='100%'
+          // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
+          // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
+          // animation='standard'
+          // {...standardAnimation}
+        >
+          <ScrollView horizontal w='100%'>
+            <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
-                  <FlipMove style={{ display: 'flex' }}>
+              <FlipMove style={{ display: 'flex' }}>
 
-                    {allEvents.length == 0 && !loadingEvents
-                      ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
-                        <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
-                          <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
-                          {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                        </YStack>
-                      </div>
-                      : undefined}
-                    {paginatedEvents.map((event) =>
-                      <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                        <XStack mx='$1' px='$1' pb='$5'>
-                          <EventCard event={event} isPreview horizontal xs />
-                        </XStack>
-                      </span>)}
-                    {loadingEvents && allEvents.length == 0
-                      ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
-                        <Spinner size='large' color={navColor} />
+                {allEvents.length == 0 && !loadingEvents
+                  ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
+                    <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
+                      <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
+                      {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+                    </YStack>
+                  </div>
+                  : undefined}
+                {showEventsOnLatest
+                  ? paginatedEvents.map((event) =>
+                    <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                      <XStack mx='$1' px='$1' pb='$5'>
+                        <EventCard event={event} isPreview horizontal xs />
                       </XStack>
-                      : undefined}
-                    <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                      <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
-                        <YStack ai='center' py='$3' jc='center'>
-                          <Heading size='$4'>More</Heading>
-                          <Heading size='$5'>Events</Heading>
-                          <ChevronRight />
-                        </YStack>
-                      </Button>
-                    </div>
-                  </FlipMove>
-                </XStack>
-              </ScrollView>
-            </YStack>
-            : undefined}
-        </AnimatePresence>
+                    </span>)
+                  : undefined}
+                {loadingEvents && allEvents.length == 0
+                  ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                    <Spinner size='large' color={navColor} />
+                  </XStack>
+                  : undefined}
+                {showEventsOnLatest
+                  ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                    <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                      <YStack ai='center' py='$3' jc='center'>
+                        <Heading size='$4'>More</Heading>
+                        <Heading size='$5'>Events</Heading>
+                        <ChevronRight />
+                      </YStack>
+                    </Button>
+                  </div>
+                  : undefined}
+              </FlipMove>
+            </XStack>
+          </ScrollView>
+        </YStack>
+        {/* : undefined} */}
+        {/* </AnimatePresence> */}
         {/* </AnimatePresence> */}
 
         <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>

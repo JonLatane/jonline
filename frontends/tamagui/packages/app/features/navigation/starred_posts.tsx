@@ -289,7 +289,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             transparent={chatUI}
                             borderTopRightRadius={0} borderBottomRightRadius={0}
 
-                            icon={<ListEnd transform={[{ rotate: '180deg' }]} />}
+                            icon={<ListEnd color={chatUI ? undefined : navTextColor}  transform={[{ rotate: '180deg' }]} />}
                             onPress={() => {
                               dispatch(setDiscussionChatUI(false));
                               scrollToCommentsTop(openedPostId);
@@ -310,7 +310,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             backgroundColor={!chatUI ? undefined : navColor}
                             hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                             transparent={!chatUI}
-                            iconAfter={ListEnd}
+                            iconAfter={<ListEnd color={!chatUI ? undefined : navTextColor} />}
                             borderTopLeftRadius={0} borderBottomLeftRadius={0}
                             onPress={() => {
                               dispatch(setDiscussionChatUI(true));
