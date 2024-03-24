@@ -52,7 +52,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
         - [Web (Tamagui/React/Next.js) Frontend](#web-tamaguireactnextjs-frontend)
         - [Flutter Frontend](#flutter-frontend)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
-    - [Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing](#deployment-domain-and-tls-certificate-management-deploying-multiple-jonline-instances-to-different-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-k8s-namespace-load-balancing)
+    - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and (yet-incomplete) integrated cross-namespace load balancing](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-namespace-load-balancing)
   - [Motivations](#motivations)
     - [Scaling Social Software via Dumfederation](#scaling-social-software-via-dumfederation)
 
@@ -340,7 +340,7 @@ That's it! You've created Minio and Postgres servers along with an *unsecured Jo
 
 Simply `kubectl delete namespace jonline` to delete your deployment (or see below for more detailed management instructions).
 
-### Deployment, domain, and TLS certificate management; deploying multiple `jonline` instances to different namespaces in the same cluster; and (yet-incomplete) integrated cross-K8s-namespace load balancing
+### Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and (yet-incomplete) integrated cross-namespace load balancing
 
 [`deploys/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/Makefile), [`deploys/generated_certs/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/Makefile), and a few of Jonline's Rust binaries (mostly the main `jonline` server) provide the tools to update your deployment, point a domain at it, manage TLS certificates, and more.
 
