@@ -196,7 +196,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         <div key='flex-1' style={{ flex: 1 }} />
                       ] : [
                         <div key='posts-filter'>
-                          <Button icon={menuIcon(AppSection.POSTS)}
+                          <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : undefined)}
                             onPress={() => setStarredPostFilter(
                               starredPostFilter === 'posts' ? undefined : 'posts'
                             )}
@@ -205,7 +205,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                           />
                         </div>,
                         <div key='events-filter' style={{ marginRight: 10 }}>
-                          <Button icon={menuIcon(AppSection.EVENTS)}
+                          <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : undefined)}
                             onPress={() => setStarredPostFilter(
                               starredPostFilter === 'events' ? undefined : 'events'
                             )}

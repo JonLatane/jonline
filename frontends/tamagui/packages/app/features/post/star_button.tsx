@@ -28,7 +28,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
     ? getCachedServerClient(accountOrServer.server) ?? { client: undefined }
     : { client: undefined };
 
-  const pendingStarChange = useDebounceValue(starred, 3000);
+  const pendingStarChange = useDebounceValue(starred, 1500);
   const [firstStarred, setFirstStarred] = React.useState(starred);
   useEffect(() => {
     if (!accountOrServer.server) return;
