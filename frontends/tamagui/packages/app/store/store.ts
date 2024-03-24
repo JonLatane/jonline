@@ -85,11 +85,15 @@ export const actionFailed = (action: PayloadAction<any, string, any, any> | unde
 
 // Reset store data that depends on selected server/account.
 export function resetAllData() {
+  const serverHosts = store.getState().servers
+    .ids.map(id => (id as string).split(':')[1]);
   store.dispatch(resetServers());
   store.dispatch(resetAccounts());
-  store.dispatch(resetPosts!());
-  store.dispatch(resetGroups!());
-  store.dispatch(resetUsers!());
-  store.dispatch(resetMedia!());
+  serverHosts.forEach(serverHost => {
+    store.dispatch(resetPosts({ serverHost }));
+    store.dispatch(resetGroups({ serverHost }));
+    store.dispatch(resetUsers({ serverHost }));
+    store.dispatch(resetMedia({ serverHost }));
+  });
   store.dispatch(resetLocalConfiguration());
 }
