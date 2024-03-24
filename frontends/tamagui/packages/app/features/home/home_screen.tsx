@@ -92,110 +92,105 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       loading={loadingPosts || loadingEvents}
       bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space>
+      <FlipMove style={{
+        width: '100%',
+        margin: 'auto',
+        display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 5,
+        maxWidth: 1400
+      }}>
+        {/* <YStack f={1} w='100%' jc="center" ai="center" p="$0" mt='$3' maw={1400} space> */}
 
-        <XStack key='latest-events-header' w='100%' px='$3' ai='center'>
-          <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
-            <Heading size='$6'>Upcoming Events</Heading>
-            <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
-              <ChevronRight />
-            </XStack>
-          </Button>
-          {/* {eventsLoaded && allEvents.length === 0
-            ? <Button ml='auto' h='auto' transparent {...themedButtonBackground(navColor)}
-              {...allEventsLink}>
-              <YStack ai='center' w='100%'>
-                <Heading size='$1' color={navTextColor} textDecorationLine='none'>All</Heading>
-                <Heading size='$4' color={navTextColor} textDecorationLine='none'>Events</Heading>
-              </YStack>
+        <div key='latest-events-header' style={{width: '100%'}}>
+          <XStack w='100%' pt='$3' px='$3' ai='center'>
+            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+              <Heading size='$6'>Upcoming Events</Heading>
+              <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
+                <ChevronRight />
+              </XStack>
             </Button>
-            : undefined} */}
-        </XStack>
-        {/* <AnimatePresence> */}
-        {/* {showEventsOnLatest &&
-          (eventsLoaded || allEvents.length > 0 || loadingEvents) ? */}
-        <YStack key='latest-events'
-          w='100%'
-          // h={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 0}
-          // overflow={showEventsOnLatest && eventsLoaded && postsLoaded ? undefined : 'visible'}
-          // animation='standard'
-          // {...standardAnimation}
-        >
-          <ScrollView horizontal w='100%'>
-            <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+          </XStack>
+        </div>
+        {showEventsOnLatest
+          ? <div key='latest-events' style={{ width: '100%' }}>
+            <YStack w='100%'>
+              <ScrollView horizontal w='100%'>
+                <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
-              <FlipMove style={{ display: 'flex' }}>
+                  <FlipMove style={{ display: 'flex' }}>
 
-                {allEvents.length == 0 && !loadingEvents
-                  ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
-                    <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
-                      <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
-                      {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                    </YStack>
-                  </div>
-                  : undefined}
-                {showEventsOnLatest
-                  ? paginatedEvents.map((event) =>
-                    <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                      <XStack mx='$1' px='$1' pb='$5'>
-                        <EventCard event={event} isPreview horizontal xs />
+                    {allEvents.length == 0 && !loadingEvents
+                      ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
+                        <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
+                          <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
+                          {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+                        </YStack>
+                      </div>
+                      : undefined}
+                    {paginatedEvents.map((event) =>
+                      <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                        <XStack mx='$1' px='$1' pb='$5'>
+                          <EventCard event={event} isPreview horizontal xs />
+                        </XStack>
+                      </span>)}
+                    {loadingEvents && allEvents.length == 0
+                      ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                        <Spinner size='large' color={navColor} />
                       </XStack>
-                    </span>)
-                  : undefined}
-                {loadingEvents && allEvents.length == 0
-                  ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
-                    <Spinner size='large' color={navColor} />
-                  </XStack>
-                  : undefined}
-                {showEventsOnLatest
-                  ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                    <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
-                      <YStack ai='center' py='$3' jc='center'>
-                        <Heading size='$4'>More</Heading>
-                        <Heading size='$5'>Events</Heading>
-                        <ChevronRight />
-                      </YStack>
-                    </Button>
-                  </div>
-                  : undefined}
-              </FlipMove>
-            </XStack>
-          </ScrollView>
-        </YStack>
+                      : undefined}
+                    {showEventsOnLatest
+                      ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                        <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                          <YStack ai='center' py='$3' jc='center'>
+                            <Heading size='$4'>More</Heading>
+                            <Heading size='$5'>Events</Heading>
+                            <ChevronRight />
+                          </YStack>
+                        </Button>
+                      </div>
+                      : undefined}
+                  </FlipMove>
+                </XStack>
+              </ScrollView>
+            </YStack>
+          </div>
+          : undefined}
+
         {/* : undefined} */}
         {/* </AnimatePresence> */}
         {/* </AnimatePresence> */}
 
-        <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
-          <YStack f={1} px='$3' w='100%' key={`post-list`}>
-            <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
-            <PaginationResetIndicator {...postPagination} />
-            <FlipMove>
+        {/* <YStack f={1} w='100%' jc="center" ai="center" maw={800} space>
+          <YStack f={1} px='$3' w='100%' key={`post-list`}> */}
+        <div key='latest-posts-header'>
+          <Heading size='$5' mb='$3' mx='auto'>Posts</Heading>
+        </div>
+        <div key='pagination-reset'>
+          <PaginationResetIndicator {...postPagination} />
+        </div>
 
-              {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
-                ? allPosts.length === 0
-                  ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
-                    <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                      <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
-                      {/* <Heading size='$2' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                    </YStack>
-                  </div>
-                  : undefined
-                : undefined
-              }
-              {paginatedPosts.map((post) => {
-                return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`} style={{ width: '100%' }}>
-                  {/* <XStack w='100%'> */}
-                  <PostCard post={post} isPreview />
-                  {/* </XStack> */}
-                </div>;
-              })}
-            </FlipMove>
-            <PaginationIndicator {...postPagination} />
-          </YStack>
-        </YStack>
-        {showScrollPreserver ? <YStack h={100000} /> : undefined}
-      </YStack>
+        {(eventsLoaded && postsLoaded) || (allPosts.length > 0 || allEvents.length > 0)
+          ? allPosts.length === 0
+            ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
+              <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
+                {/* <Heading size='$2' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+              </YStack>
+            </div>
+            : undefined
+          : undefined
+        }
+        {paginatedPosts.map((post) => {
+          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`} style={{ width: '100%', maxWidth: 800 }}>
+            <PostCard post={post} isPreview />
+          </div>;
+        })}
+
+        <div key='pagination-next'>
+          <PaginationIndicator {...postPagination} />
+        </div>
+        {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
+        {/* </YStack> */}
+      </FlipMove>
     </TabsNavigation>
   )
 }
