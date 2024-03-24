@@ -39,11 +39,8 @@ message GetEventsRequest {
   // If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   // only returns events where the given user's status matches one of the given statuses.
   repeated AttendanceStatus attendance_statuses = 7;
-  // (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
+  // Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
   optional string post_id = 8;
-  // (TODO) Finds events that have an instance with the given post IDs. The Post should have a `PostContext` of `EVENT_INSTANCE`.
-  // Faciliates using the StarredPost APIs to get events.
-  repeated string instance_post_id = 9;
   // The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   EventListingType listing_type = 10;
 }

@@ -43,7 +43,7 @@ const initialState: PostsState = {
   ...postsAdapter.getInitialState(),
 };
 
-export const postsSlice: Slice<Draft<PostsState>, any, "posts"> = createSlice({
+export const postsSlice = createSlice({
   name: "posts",
   initialState: initialState,
   reducers: {

@@ -1,6 +1,6 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
 import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useMedia, useTheme } from "@jonline/ui";
-import { reverseHorizontalAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
+import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
@@ -14,6 +14,7 @@ import { StarButton, ThemedStar } from "../post/star_button";
 import { useLink } from "solito/link";
 import { AppSection, menuIcon } from "./features_navigation";
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
+import { Dictionary } from "@reduxjs/toolkit";
 
 type StarredPostFilter = 'posts' | 'events' | undefined;
 export type StarredPostsProps = {};
@@ -86,6 +87,17 @@ export function StarredPosts({ }: StarredPostsProps) {
     } else {
       return starredPostIds;
     }
+  });
+
+  const starredPostUnreadCounts: Dictionary<number> = useAppSelector(state => {
+    const counts = {} as Dictionary<number>;
+
+    state.app.starredPostIds.forEach(id => {
+      const lastUnreadCount = state.app.starredPostLastOpenedResponseCounts?.[id] ?? 0;
+      const currentCount = state.posts.entities[id]?.responseCount ?? 0;
+      counts[id] = currentCount - lastUnreadCount;
+    });
+    return counts;
   });
 
   const scrollToTop = (smooth?: boolean) => document.getElementById('starred-post-scroll-top')
@@ -390,10 +402,13 @@ export type StarredPostCardProps = {
   onOpen?: (postId: string) => void;
   fullSize?: boolean;
   unsortable?: boolean;
+  unreadCount?: number;
 };
-export function StarredPostCard({ postId, onOpen, fullSize, unsortable }: StarredPostCardProps) {
+export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
+
+  const { navColor, navTextColor } = useServerTheme();
 
   const { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance } = useStarredPostDetails(postId);
 
@@ -436,15 +451,18 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable }: Starre
   }
   const chatUI = useAppSelector(state => state.app.discussionChatUI);
   const renderedCard = <XStack w='100%' key={`starred-post-${postId}`} ai='center' gap='$2'>
-
     <AnimatePresence>
       <XStack f={1} key='card-view'>
         {renderedCardView}
       </XStack>
-      {fullSize || unsortable ? undefined :
+      {fullSize ? undefined :
         <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
-          <Button size='$2' circular
-            disabled={!canMoveUp} o={canMoveUp ? 1 : 0.5}
+          <Button key='moveUp' size='$2' circular
+            animation='standard'
+            disabled={unsortable || !canMoveUp}
+            o={unsortable ? 0 : canMoveUp ? 1 : 0.5}
+            transform={[{translateY: unsortable ? 10 : 0}]}
+            pointerEvents={unsortable ? 'none' : undefined}
             onPress={(e) => { e.stopPropagation(); moveUp(); }}
             icon={ChevronUp} />
 
@@ -458,19 +476,30 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable }: Starre
             );
           }}>
             <YStack ai='center'>
+              {(unreadCount ?? 0) > 0
+                ? <>
+                  <Paragraph size='$1' o={0.5}
+                    backgroundColor={navColor}
+                    color={navTextColor}
+                  >{unreadCount} unread</Paragraph>
+                  {/* <ListStart size='$1' /> */}
+                </>
+                : undefined}
               <MessagesSquare size='$1' />
               <Paragraph size='$1' o={0.5}>{basePost?.responseCount}</Paragraph>
             </YStack>
           </Button>
-
-          <Button size='$2' circular
-            disabled={!canMoveDown} o={canMoveDown ? 1 : 0.5}
+          <Button key='moveDown' size='$2' circular
+            animation='standard'
+            disabled={unsortable || !canMoveDown}
+            o={unsortable ? 0 : canMoveDown ? 1 : 0.5}
+            transform={[{translateY: unsortable ? -10 : 0}]}
+            pointerEvents={unsortable ? 'none' : undefined}
             onPress={(e) => { e.stopPropagation(); moveDown(); }}
             icon={ChevronDown} />
         </YStack>
-      }
-    </AnimatePresence>
-  </XStack>
+      }</AnimatePresence>
+  </XStack >
 
   return renderedCard;
 }

@@ -7,6 +7,12 @@ pub use update_post::update_post;
 mod delete_post;
 pub use delete_post::delete_post;
 
+mod star_post;
+pub use star_post::star_post;
+
+mod unstar_post;
+pub use unstar_post::unstar_post;
+
 mod get_posts;
 pub use get_posts::get_posts;
 

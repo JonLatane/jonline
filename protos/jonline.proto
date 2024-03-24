@@ -164,6 +164,11 @@ service Jonline {
   // (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
   rpc DeletePost(Post) returns (Post) {}
 
+  // Star a Post. *Unauthenticated.*
+  rpc StarPost(Post) returns (Post) {}
+  // Unstar a Post. *Unauthenticated.*
+  rpc UnstarPost(Post) returns (Post) {}
+
   // Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
   rpc GetGroupPosts(GetGroupPostsRequest) returns (GetGroupPostsResponse) {}
   // Cross-post a Post to a Group. *Authenticated.*

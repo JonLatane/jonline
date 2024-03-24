@@ -223,6 +223,8 @@ approach to predictable atomicity.
 | CreatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Creates a Post. *Authenticated.* |
 | UpdatePost | [Post](#jonline-Post) | [Post](#jonline-Post) | Updates a Post. *Authenticated.* |
 | DeletePost | [Post](#jonline-Post) | [Post](#jonline-Post) | (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* |
+| StarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Star a Post. *Unauthenticated.* |
+| UnstarPost | [Post](#jonline-Post) | [Post](#jonline-Post) | Unstar a Post. *Unauthenticated.* |
 | GetGroupPosts | [GetGroupPostsRequest](#jonline-GetGroupPostsRequest) | [GetGroupPostsResponse](#jonline-GetGroupPostsResponse) | Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* |
 | CreateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Cross-post a Post to a Group. *Authenticated.* |
 | UpdateGroupPost | [GroupPost](#jonline-GroupPost) | [GroupPost](#jonline-GroupPost) | Group Moderators: Approve/Reject a GroupPost. *Authenticated.* |
@@ -1122,6 +1124,7 @@ and Event Instances.
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the post was last updated. |
 | published_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the post was published (its visibility first changed to `SERVER_PUBLIC` or `GLOBAL_PUBLIC`). |
 | last_activity_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was last interacted with (replied to, etc.) |
+| unauthenticated_star_count | [int64](#int64) |  | The number of unauthenticated stars on the post. |
 
 
 

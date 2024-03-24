@@ -159,6 +159,9 @@ message Post {
   optional google.protobuf.Timestamp published_at = 22;
   // The time the post was last interacted with (replied to, etc.)
   google.protobuf.Timestamp last_activity_at = 23;
+
+  // The number of unauthenticated stars on the post.
+  int64 unauthenticated_star_count = 24;
 }
 
 // A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains

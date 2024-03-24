@@ -1,7 +1,7 @@
-import { FederatedPost, JonlineServer, getServerTheme, starPost, unstarPost, useServerTheme } from "app/store";
-import React from "react";
+import { FederatedPost, JonlineServer, getCachedServerClient, getServerClient, getServerTheme, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
+import React, { useEffect } from "react";
 
-import { Button, TamaguiMediaState, ZStack, useToastController } from '@jonline/ui';
+import { Button, Paragraph, Spinner, TamaguiMediaState, XStack, YStack, ZStack, useDebounce, useDebounceValue, useToastController } from '@jonline/ui';
 import { Pin, PinOff, Star } from "@tamagui/lucide-icons";
 
 import { useAppSelector } from "app/hooks";
@@ -23,20 +23,50 @@ export const StarButton: React.FC<StarButtonProps> = ({
   const federatedPostId = federatedId(post);
   const toast = useToastController();
   const starred = useAppSelector(state => state.app.starredPostIds.includes(federatedPostId));
+
+  const { client } = accountOrServer.server
+    ? getCachedServerClient(accountOrServer.server) ?? { client: undefined }
+    : { client: undefined };
+
+  const pendingStarChange = useDebounceValue(starred, 3000);
+  const [firstStarred, setFirstStarred] = React.useState(starred);
+  useEffect(() => {
+    if (!accountOrServer.server) return;
+    if (firstStarred === starred) return;
+
+    if (pendingStarChange) {
+      client?.starPost(post).then(post => {
+        const federatedPost: FederatedPost = {
+          ...post,
+          serverHost: accountOrServer.server!.host,
+        };
+        store.dispatch(upsertPost(federatedPost));
+      });
+    } else {
+      client?.unstarPost(post).then(post => {
+        const federatedPost: FederatedPost = {
+          ...post,
+          serverHost: accountOrServer.server!.host,
+        };
+        store.dispatch(upsertPost(federatedPost));
+      });
+    }
+    setFirstStarred(pendingStarChange);
+  }, [pendingStarChange]);
   const eventInstanceId = useAppSelector(state => state.events.postInstances[federatedPostId]);
   const serverEventInstanceId = parseFederatedId(federatedPostId).id;
   const event = useAppSelector(state =>
     post.context === PostContext.EVENT_INSTANCE
       ? state.events.entities[
       state.events.instanceEvents[
-        eventInstanceId ?? ''
+      eventInstanceId ?? ''
       ] ?? ''
       ]
       : undefined);
   const eventInstance = event?.instances.find(i => i.id === serverEventInstanceId);
-  const postTitle = event 
-  ? `${event?.post?.title}${eventInstance ? ` (${moment(eventInstance.startsAt).format('MMM D, h:mm a')})` : ''}`
-  : post.title;
+  const postTitle = event
+    ? `${event?.post?.title}${eventInstance ? ` (${moment(eventInstance.startsAt).format('MMM D, h:mm a')})` : ''}`
+    : post.title;
   function onPress() {
     if (starred) {
       dispatch(unstarPost(federatedPostId));
@@ -47,16 +77,33 @@ export const StarButton: React.FC<StarButtonProps> = ({
     }
   }
 
-  return <Button transparent
-    size='$2'
-    p='$1'
-    px={0}
+  return <YStack ai='center'
+
     ml={eventMargins ? 5 : -15}
     mr={eventMargins ? -12 : 3}
-    onPress={onPress}
   >
-    <ThemedStar {...{ starred, server: accountOrServer.server }} />
-  </Button>;
+    <Button transparent
+      size='$2'
+      p='$1'
+      px={0}
+      onPress={onPress}
+    >
+      <ThemedStar {...{ starred, server: accountOrServer.server }} />
+    </Button>
+    <ZStack w='$2' h='$2'>
+      <XStack animation='standard' mx='auto'
+        o={firstStarred != starred ? 0.5 : 0}
+      >
+        <Spinner size='small' />
+      </XStack>
+      <XStack animation='standard' mx='auto'
+        o={post.unauthenticatedStarCount > 0 ? 1 : 0}>
+        <Paragraph size='$1' ta='center'>
+          {post.unauthenticatedStarCount}
+        </Paragraph>
+      </XStack>
+    </ZStack>
+  </YStack>;
 };
 
 export type ThemedStarProps = {

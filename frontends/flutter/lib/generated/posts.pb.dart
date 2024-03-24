@@ -11,6 +11,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
@@ -270,6 +271,7 @@ class Post extends $pb.GeneratedMessage {
     $9.Timestamp? updatedAt,
     $9.Timestamp? publishedAt,
     $9.Timestamp? lastActivityAt,
+    $fixnum.Int64? unauthenticatedStarCount,
   }) {
     final $result = create();
     if (id != null) {
@@ -338,6 +340,9 @@ class Post extends $pb.GeneratedMessage {
     if (lastActivityAt != null) {
       $result.lastActivityAt = lastActivityAt;
     }
+    if (unauthenticatedStarCount != null) {
+      $result.unauthenticatedStarCount = unauthenticatedStarCount;
+    }
     return $result;
   }
   Post._() : super();
@@ -367,6 +372,7 @@ class Post extends $pb.GeneratedMessage {
     ..aOM<$9.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt', subBuilder: $9.Timestamp.create)
+    ..aInt64(24, _omitFieldNames ? '' : 'unauthenticatedStarCount')
     ..hasRequiredFields = false
   ;
 
@@ -616,6 +622,16 @@ class Post extends $pb.GeneratedMessage {
   void clearLastActivityAt() => clearField(23);
   @$pb.TagNumber(23)
   $9.Timestamp ensureLastActivityAt() => $_ensure(21);
+
+  /// The number of unauthenticated stars on the post.
+  @$pb.TagNumber(24)
+  $fixnum.Int64 get unauthenticatedStarCount => $_getI64(22);
+  @$pb.TagNumber(24)
+  set unauthenticatedStarCount($fixnum.Int64 v) { $_setInt64(22, v); }
+  @$pb.TagNumber(24)
+  $core.bool hasUnauthenticatedStarCount() => $_has(22);
+  @$pb.TagNumber(24)
+  void clearUnauthenticatedStarCount() => clearField(24);
 }
 
 /// A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains

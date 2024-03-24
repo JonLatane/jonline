@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, 
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAccount, useAccountOrServer, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useAccount, useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -115,8 +115,13 @@ export const EventCard: React.FC<Props> = ({
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
+  // const post = useAppSelector(state => state.posts.entities[event.postId]);
+  // Retrieve the Instance's post from the Posts store first.
+  const storedInstancePost = useAppSelector(state => primaryInstance?.post?.id
+    ? state.posts.entities[federateId(primaryInstance?.post?.id, server)]
+    : undefined);
   const instancePost = primaryInstance?.post
-    ? federatedEntity(primaryInstance?.post, server)
+    ? storedInstancePost ?? federatedEntity(primaryInstance?.post, server)
     : undefined;
   function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
     if (editingInstance) {

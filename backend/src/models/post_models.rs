@@ -30,6 +30,8 @@ pub fn get_group_post(
         .map_err(|_| Status::new(Code::NotFound, "group_post_not_found"))
 }
 
+// numeric_expr!(posts::unauthenticated_star_count);
+
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
 #[diesel(belongs_to(User))]
 #[diesel(treat_none_as_null = true)]
@@ -59,6 +61,8 @@ pub struct Post {
     pub updated_at: Option<SystemTime>,
     pub published_at: Option<SystemTime>,
     pub last_activity_at: SystemTime,
+
+    pub unauthenticated_star_count: i64
 }
 
 #[derive(Debug, Insertable)]

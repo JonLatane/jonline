@@ -5,9 +5,12 @@ import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
-import { federateId } from "../federation";
+import { federateId, parseFederatedId } from "../federation";
 import { isSafari } from "@jonline/ui";
 import { store } from "../store";
+// import { Dictionary } from "@fullcalendar/core/internal";
+import { Dictionary } from "@reduxjs/toolkit";
+import { getServerClient } from "../clients";
 
 export type DateTimeRenderer = 'custom' | 'native';
 
@@ -40,6 +43,7 @@ export type LocalAppConfiguration = {
   dateTimeRenderer?: DateTimeRenderer;
   showBigCalendar: boolean;
   starredPostIds: string[];
+  starredPostLastOpenedResponseCounts: Dictionary<number>;
   openedStarredPostId?: string | undefined;
 }
 
@@ -69,7 +73,8 @@ const initialState: LocalAppConfiguration = {
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
   showBigCalendar: true,
-  starredPostIds: []
+  starredPostIds: [],
+  starredPostLastOpenedResponseCounts: {},
 };
 
 setTimeout(async () => {
@@ -82,6 +87,12 @@ setTimeout(async () => {
   }
   if (store.getState().app.starredPostIds === undefined) {
     store.dispatch(setStarredPostIds([]))
+  }
+  if (store.getState().app.starredPostLastOpenedResponseCounts === undefined) {
+    store.dispatch(updateStarredPostLastOpenedResponseCount({
+      postId: 'data-migration-artifact',
+      count: 0
+    }))
   }
 }, 1000);
 
@@ -175,10 +186,12 @@ export const localAppSlice = createSlice({
       state.starredPostIds = action.payload;
     },
     starPost: (state, action: PayloadAction<string>) => {
+      const {serverHost} = parseFederatedId(action.payload);
       state.starredPostIds = [action.payload, ...state.starredPostIds];
     },
     unstarPost: (state, action: PayloadAction<string>) => {
       state.starredPostIds = state.starredPostIds.filter((id) => id !== action.payload);
+      delete state.starredPostLastOpenedResponseCounts[action.payload];
     },
     setOpenedStarredPost: (state, action: PayloadAction<string | undefined>) => {
       state.openedStarredPostId = action.payload;
@@ -197,6 +210,14 @@ export const localAppSlice = createSlice({
         state.starredPostIds.splice(index + 1, 0, element);
       }
     },
+    updateStarredPostLastOpenedResponseCount: (state, action: PayloadAction<{ postId: string, count: number }>) => {
+      if (state.starredPostLastOpenedResponseCounts === undefined) {
+        state.starredPostLastOpenedResponseCounts = {};
+      }
+      if (state.starredPostIds.includes(action.payload.postId)) {
+        state.starredPostLastOpenedResponseCounts[action.payload.postId] = action.payload.count;
+      }
+    }
   },
   extraReducers: (builder) => {
   },
@@ -208,7 +229,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
-  moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost
+  moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

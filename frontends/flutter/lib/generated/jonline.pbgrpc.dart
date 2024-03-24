@@ -137,6 +137,14 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeletePost',
       ($7.Post value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $7.Post.fromBuffer(value));
+  static final _$starPost = $grpc.ClientMethod<$7.Post, $7.Post>(
+      '/jonline.Jonline/StarPost',
+      ($7.Post value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $7.Post.fromBuffer(value));
+  static final _$unstarPost = $grpc.ClientMethod<$7.Post, $7.Post>(
+      '/jonline.Jonline/UnstarPost',
+      ($7.Post value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $7.Post.fromBuffer(value));
   static final _$getGroupPosts = $grpc.ClientMethod<$7.GetGroupPostsRequest, $7.GetGroupPostsResponse>(
       '/jonline.Jonline/GetGroupPosts',
       ($7.GetGroupPostsRequest value) => value.writeToBuffer(),
@@ -306,6 +314,14 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$7.Post> deletePost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deletePost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$7.Post> starPost($7.Post request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$starPost, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$7.Post> unstarPost($7.Post request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$unstarPost, request, options: options);
   }
 
   $grpc.ResponseFuture<$7.GetGroupPostsResponse> getGroupPosts($7.GetGroupPostsRequest request, {$grpc.CallOptions? options}) {
@@ -559,6 +575,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $7.Post.fromBuffer(value),
         ($7.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$7.Post, $7.Post>(
+        'StarPost',
+        starPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $7.Post.fromBuffer(value),
+        ($7.Post value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$7.Post, $7.Post>(
+        'UnstarPost',
+        unstarPost_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $7.Post.fromBuffer(value),
+        ($7.Post value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$7.GetGroupPostsRequest, $7.GetGroupPostsResponse>(
         'GetGroupPosts',
         getGroupPosts_Pre,
@@ -767,6 +797,14 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deletePost(call, await request);
   }
 
+  $async.Future<$7.Post> starPost_Pre($grpc.ServiceCall call, $async.Future<$7.Post> request) async {
+    return starPost(call, await request);
+  }
+
+  $async.Future<$7.Post> unstarPost_Pre($grpc.ServiceCall call, $async.Future<$7.Post> request) async {
+    return unstarPost(call, await request);
+  }
+
   $async.Future<$7.GetGroupPostsResponse> getGroupPosts_Pre($grpc.ServiceCall call, $async.Future<$7.GetGroupPostsRequest> request) async {
     return getGroupPosts(call, await request);
   }
@@ -850,6 +888,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$7.Post> createPost($grpc.ServiceCall call, $7.Post request);
   $async.Future<$7.Post> updatePost($grpc.ServiceCall call, $7.Post request);
   $async.Future<$7.Post> deletePost($grpc.ServiceCall call, $7.Post request);
+  $async.Future<$7.Post> starPost($grpc.ServiceCall call, $7.Post request);
+  $async.Future<$7.Post> unstarPost($grpc.ServiceCall call, $7.Post request);
   $async.Future<$7.GetGroupPostsResponse> getGroupPosts($grpc.ServiceCall call, $7.GetGroupPostsRequest request);
   $async.Future<$7.GroupPost> createGroupPost($grpc.ServiceCall call, $7.GroupPost request);
   $async.Future<$7.GroupPost> updateGroupPost($grpc.ServiceCall call, $7.GroupPost request);

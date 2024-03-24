@@ -30,11 +30,13 @@ impl Clone for JonlineService {
 type ReplyStreamResult<T> = Result<Response<T>, Status>;
 type ReplyStream = Pin<Box<dyn Stream<Item = Result<Post, Status>> + Send>>;
 
-
 macro_rules! auth_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
-        log::info!("Auth RPC called: {} (request/result hidden)", stringify!($rpc));
+        log::info!(
+            "Auth RPC called: {} (request/result hidden)",
+            stringify!($rpc)
+        );
         $rpc($request.into_inner(), &mut conn).map(Response::new)
     }};
 }
@@ -46,8 +48,16 @@ macro_rules! authenticated_rpc {
         let inner = $request.into_inner();
         let request_log = format!("{:?}", &inner);
         let result = $rpc(inner, &user, &mut conn);
-        let truncated_result = format!("{:?}", &result).chars().take(1000).collect::<String>();
-        log::info!("Authenticated RPC: {}\tRequest: {:?}\tResult: {:?}", stringify!($rpc), request_log, truncated_result);
+        let truncated_result = format!("{:?}", &result)
+            .chars()
+            .take(1000)
+            .collect::<String>();
+        log::info!(
+            "Authenticated RPC: {}\tRequest: {:?}\tResult: {:?}",
+            stringify!($rpc),
+            request_log,
+            truncated_result
+        );
         result.map(Response::new)
     }};
 }
@@ -59,8 +69,16 @@ macro_rules! unauthenticated_rpc {
         let inner = $request.into_inner();
         let request_log = format!("{:?}", &inner);
         let result = $rpc(inner, &user.as_ref(), &mut conn);
-        let truncated_result = format!("{:?}", &result).chars().take(1000).collect::<String>();
-        log::info!("Unauthenticated RPC: {}\tRequest: {:?}\tResult: {:?}", stringify!($rpc), request_log, truncated_result);
+        let truncated_result = format!("{:?}", &result)
+            .chars()
+            .take(1000)
+            .collect::<String>();
+        log::info!(
+            "Unauthenticated RPC: {}\tRequest: {:?}\tResult: {:?}",
+            stringify!($rpc),
+            request_log,
+            truncated_result
+        );
         result.map(Response::new)
     }};
 }
@@ -113,7 +131,10 @@ impl Jonline for JonlineService {
         auth_rpc!(self, rpcs::access_token, request)
     }
 
-    async fn reset_password(&self, request: Request<ResetPasswordRequest>) -> Result<Response<()>, Status> {
+    async fn reset_password(
+        &self,
+        request: Request<ResetPasswordRequest>,
+    ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::reset_password, request)
     }
 
@@ -199,10 +220,7 @@ impl Jonline for JonlineService {
         authenticated_rpc!(self, rpcs::get_members, request)
     }
 
-    async fn create_post(
-        &self,
-        request: Request<Post>,
-    ) -> Result<Response<Post>, Status> {
+    async fn create_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         authenticated_rpc!(self, rpcs::create_post, request)
     }
     async fn update_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
@@ -210,6 +228,14 @@ impl Jonline for JonlineService {
     }
     async fn delete_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         authenticated_rpc!(self, rpcs::delete_post, request)
+    }
+
+    async fn star_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
+        unauthenticated_rpc!(self, rpcs::star_post, request)
+    }
+    
+    async fn unstar_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
+        unauthenticated_rpc!(self, rpcs::unstar_post, request)
     }
 
     async fn create_group_post(
@@ -258,13 +284,22 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_events, request)
     }
 
-    async fn upsert_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<EventAttendance>, Status> {
+    async fn upsert_event_attendance(
+        &self,
+        request: Request<EventAttendance>,
+    ) -> Result<Response<EventAttendance>, Status> {
         unauthenticated_rpc!(self, rpcs::upsert_event_attendance, request)
     }
-    async fn delete_event_attendance(&self, request: Request<EventAttendance>) -> Result<Response<()>, Status> {
+    async fn delete_event_attendance(
+        &self,
+        request: Request<EventAttendance>,
+    ) -> Result<Response<()>, Status> {
         unauthenticated_rpc!(self, rpcs::delete_event_attendance, request)
     }
-    async fn get_event_attendances(&self, request: Request<GetEventAttendancesRequest>) -> Result<Response<EventAttendances>, Status> {
+    async fn get_event_attendances(
+        &self,
+        request: Request<GetEventAttendancesRequest>,
+    ) -> Result<Response<EventAttendances>, Status> {
         unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
     }
 
@@ -314,4 +349,3 @@ fn get_connection(pool: &PgPool) -> Result<PgPooledConnection, Status> {
         Ok(conn) => Ok(conn),
     }
 }
-

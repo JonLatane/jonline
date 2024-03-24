@@ -154,6 +154,7 @@ table! {
         updated_at -> Nullable<Timestamp>,
         published_at -> Nullable<Timestamp>,
         last_activity_at -> Timestamp,
+        unauthenticated_star_count -> Int8,
     }
 }
 

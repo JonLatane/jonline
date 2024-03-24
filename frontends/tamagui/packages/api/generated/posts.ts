@@ -1,4 +1,5 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
@@ -311,7 +312,11 @@ export interface Post {
     | string
     | undefined;
   /** The time the post was last interacted with (replied to, etc.) */
-  lastActivityAt: string | undefined;
+  lastActivityAt:
+    | string
+    | undefined;
+  /** The number of unauthenticated stars on the post. */
+  unauthenticatedStarCount: number;
 }
 
 /**
@@ -613,6 +618,7 @@ function createBasePost(): Post {
     updatedAt: undefined,
     publishedAt: undefined,
     lastActivityAt: undefined,
+    unauthenticatedStarCount: 0,
   };
 }
 
@@ -683,6 +689,9 @@ export const Post = {
     }
     if (message.lastActivityAt !== undefined) {
       Timestamp.encode(toTimestamp(message.lastActivityAt), writer.uint32(186).fork()).ldelim();
+    }
+    if (message.unauthenticatedStarCount !== 0) {
+      writer.uint32(192).int64(message.unauthenticatedStarCount);
     }
     return writer;
   },
@@ -848,6 +857,13 @@ export const Post = {
 
           message.lastActivityAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 24:
+          if (tag !== 192) {
+            break;
+          }
+
+          message.unauthenticatedStarCount = longToNumber(reader.int64() as Long);
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -881,6 +897,9 @@ export const Post = {
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
       publishedAt: isSet(object.publishedAt) ? globalThis.String(object.publishedAt) : undefined,
       lastActivityAt: isSet(object.lastActivityAt) ? globalThis.String(object.lastActivityAt) : undefined,
+      unauthenticatedStarCount: isSet(object.unauthenticatedStarCount)
+        ? globalThis.Number(object.unauthenticatedStarCount)
+        : 0,
     };
   },
 
@@ -952,6 +971,9 @@ export const Post = {
     if (message.lastActivityAt !== undefined) {
       obj.lastActivityAt = message.lastActivityAt;
     }
+    if (message.unauthenticatedStarCount !== 0) {
+      obj.unauthenticatedStarCount = Math.round(message.unauthenticatedStarCount);
+    }
     return obj;
   },
 
@@ -986,6 +1008,7 @@ export const Post = {
     message.updatedAt = object.updatedAt ?? undefined;
     message.publishedAt = object.publishedAt ?? undefined;
     message.lastActivityAt = object.lastActivityAt ?? undefined;
+    message.unauthenticatedStarCount = object.unauthenticatedStarCount ?? 0;
     return message;
   },
 };
@@ -1356,6 +1379,18 @@ function fromTimestamp(t: Timestamp): string {
   let millis = (t.seconds || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis).toISOString();
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {

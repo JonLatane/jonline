@@ -393,6 +393,24 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Star a Post. *Unauthenticated.* */
+    starPost: {
+      name: "StarPost",
+      requestType: Post,
+      requestStream: false,
+      responseType: Post,
+      responseStream: false,
+      options: {},
+    },
+    /** Unstar a Post. *Unauthenticated.* */
+    unstarPost: {
+      name: "UnstarPost",
+      requestType: Post,
+      requestStream: false,
+      responseType: Post,
+      responseStream: false,
+      options: {},
+    },
     /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
     getGroupPosts: {
       name: "GetGroupPosts",
@@ -642,6 +660,10 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   updatePost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
   /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* */
   deletePost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
+  /** Star a Post. *Unauthenticated.* */
+  starPost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
+  /** Unstar a Post. *Unauthenticated.* */
+  unstarPost(request: Post, context: CallContext & CallContextExt): Promise<DeepPartial<Post>>;
   /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(
     request: GetGroupPostsRequest,
@@ -804,6 +826,10 @@ export interface JonlineClient<CallOptionsExt = {}> {
   updatePost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
   /** (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.* */
   deletePost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
+  /** Star a Post. *Unauthenticated.* */
+  starPost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
+  /** Unstar a Post. *Unauthenticated.* */
+  unstarPost(request: DeepPartial<Post>, options?: CallOptions & CallOptionsExt): Promise<Post>;
   /** Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.* */
   getGroupPosts(
     request: DeepPartial<GetGroupPostsRequest>,

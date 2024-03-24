@@ -73,6 +73,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
             response_count: post.response_count,
             reply_count: post.reply_count,
             group_count: post.group_count,
+            unauthenticated_star_count: post.unauthenticated_star_count,
             current_group_post: group_post.as_ref().map(|gp| gp.to_proto()),
             media: match media_lookup {
                 Some(lookup) => post

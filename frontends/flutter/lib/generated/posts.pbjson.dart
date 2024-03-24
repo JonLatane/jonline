@@ -126,6 +126,7 @@ const Post$json = {
     {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 6, '10': 'updatedAt', '17': true},
     {'1': 'published_at', '3': 22, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 7, '10': 'publishedAt', '17': true},
     {'1': 'last_activity_at', '3': 23, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'lastActivityAt'},
+    {'1': 'unauthenticated_star_count', '3': 24, '4': 1, '5': 3, '10': 'unauthenticatedStarCount'},
   ],
   '8': [
     {'1': '_author'},
@@ -158,9 +159,10 @@ final $typed_data.Uint8List postDescriptor = $convert.base64Decode(
     'PgoKdXBkYXRlZF9hdBgVIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIBlIJdXBkYX'
     'RlZEF0iAEBEkIKDHB1Ymxpc2hlZF9hdBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3Rh'
     'bXBIB1ILcHVibGlzaGVkQXSIAQESRAoQbGFzdF9hY3Rpdml0eV9hdBgXIAEoCzIaLmdvb2dsZS'
-    '5wcm90b2J1Zi5UaW1lc3RhbXBSDmxhc3RBY3Rpdml0eUF0QgkKB19hdXRob3JCEwoRX3JlcGx5'
-    'X3RvX3Bvc3RfaWRCCAoGX3RpdGxlQgcKBV9saW5rQgoKCF9jb250ZW50QhUKE19jdXJyZW50X2'
-    'dyb3VwX3Bvc3RCDQoLX3VwZGF0ZWRfYXRCDwoNX3B1Ymxpc2hlZF9hdA==');
+    '5wcm90b2J1Zi5UaW1lc3RhbXBSDmxhc3RBY3Rpdml0eUF0EjwKGnVuYXV0aGVudGljYXRlZF9z'
+    'dGFyX2NvdW50GBggASgDUhh1bmF1dGhlbnRpY2F0ZWRTdGFyQ291bnRCCQoHX2F1dGhvckITCh'
+    'FfcmVwbHlfdG9fcG9zdF9pZEIICgZfdGl0bGVCBwoFX2xpbmtCCgoIX2NvbnRlbnRCFQoTX2N1'
+    'cnJlbnRfZ3JvdXBfcG9zdEINCgtfdXBkYXRlZF9hdEIPCg1fcHVibGlzaGVkX2F0');
 
 @$core.Deprecated('Use groupPostDescriptor instead')
 const GroupPost$json = {
