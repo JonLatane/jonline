@@ -202,15 +202,10 @@ export interface GetEventsRequest {
    * only returns events where the given user's status matches one of the given statuses.
    */
   attendanceStatuses: AttendanceStatus[];
-  /** (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. */
+  /** Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. */
   postId?:
     | string
     | undefined;
-  /**
-   * (TODO) Finds events that have an instance with the given post IDs. The Post should have a `PostContext` of `EVENT_INSTANCE`.
-   * Faciliates using the StarredPost APIs to get events.
-   */
-  instancePostId: string[];
   /** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
   listingType: EventListingType;
 }
@@ -472,7 +467,6 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     attendeeId: undefined,
     attendanceStatuses: [],
     postId: undefined,
-    instancePostId: [],
     listingType: 0,
   };
 }
@@ -504,9 +498,6 @@ export const GetEventsRequest = {
     writer.ldelim();
     if (message.postId !== undefined) {
       writer.uint32(66).string(message.postId);
-    }
-    for (const v of message.instancePostId) {
-      writer.uint32(74).string(v!);
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
@@ -587,13 +578,6 @@ export const GetEventsRequest = {
 
           message.postId = reader.string();
           continue;
-        case 9:
-          if (tag !== 74) {
-            break;
-          }
-
-          message.instancePostId.push(reader.string());
-          continue;
         case 10:
           if (tag !== 80) {
             break;
@@ -622,9 +606,6 @@ export const GetEventsRequest = {
         ? object.attendanceStatuses.map((e: any) => attendanceStatusFromJSON(e))
         : [],
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
-      instancePostId: globalThis.Array.isArray(object?.instancePostId)
-        ? object.instancePostId.map((e: any) => globalThis.String(e))
-        : [],
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
     };
   },
@@ -655,9 +636,6 @@ export const GetEventsRequest = {
     if (message.postId !== undefined) {
       obj.postId = message.postId;
     }
-    if (message.instancePostId?.length) {
-      obj.instancePostId = message.instancePostId;
-    }
     if (message.listingType !== 0) {
       obj.listingType = eventListingTypeToJSON(message.listingType);
     }
@@ -679,7 +657,6 @@ export const GetEventsRequest = {
     message.attendeeId = object.attendeeId ?? undefined;
     message.attendanceStatuses = object.attendanceStatuses?.map((e) => e) || [];
     message.postId = object.postId ?? undefined;
-    message.instancePostId = object.instancePostId?.map((e) => e) || [];
     message.listingType = object.listingType ?? 0;
     return message;
   },

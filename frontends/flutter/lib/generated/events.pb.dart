@@ -46,7 +46,6 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? attendeeId,
     $core.Iterable<AttendanceStatus>? attendanceStatuses,
     $core.String? postId,
-    $core.Iterable<$core.String>? instancePostId,
     EventListingType? listingType,
   }) {
     final $result = create();
@@ -74,9 +73,6 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (postId != null) {
       $result.postId = postId;
     }
-    if (instancePostId != null) {
-      $result.instancePostId.addAll(instancePostId);
-    }
     if (listingType != null) {
       $result.listingType = listingType;
     }
@@ -95,7 +91,6 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
     ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
     ..aOS(8, _omitFieldNames ? '' : 'postId')
-    ..pPS(9, _omitFieldNames ? '' : 'instancePostId')
     ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
     ..hasRequiredFields = false
   ;
@@ -189,7 +184,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
-  /// (TODO) Finds the Event for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
+  /// Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
   $core.String get postId => $_getSZ(7);
   @$pb.TagNumber(8)
@@ -199,18 +194,13 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   void clearPostId() => clearField(8);
 
-  /// (TODO) Finds events that have an instance with the given post IDs. The Post should have a `PostContext` of `EVENT_INSTANCE`.
-  /// Faciliates using the StarredPost APIs to get events.
-  @$pb.TagNumber(9)
-  $core.List<$core.String> get instancePostId => $_getList(8);
-
   /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
-  EventListingType get listingType => $_getN(9);
+  EventListingType get listingType => $_getN(8);
   @$pb.TagNumber(10)
   set listingType(EventListingType v) { setField(10, v); }
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(9);
+  $core.bool hasListingType() => $_has(8);
   @$pb.TagNumber(10)
   void clearListingType() => clearField(10);
 }
