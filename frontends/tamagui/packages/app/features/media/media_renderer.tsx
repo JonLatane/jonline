@@ -17,6 +17,8 @@ interface Props {
   isVisible?: boolean;
 }
 
+// MediaRenderers will always be styled with width=100% and height=100%.
+// Use them accordingly.
 export const MediaRenderer: React.FC<Props> = ({
   media,
   failQuietly = false,
@@ -53,21 +55,21 @@ export const MediaRenderer: React.FC<Props> = ({
     case 'image':
       if (!isVisible) return <></>;
 
-      return <FadeInView>
-        <img style={{ height: '100%', width: '100%', objectFit: 'contain' }}
+      return <FadeInView w='100%' h='100%'>
+        <img style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           src={mediaUrl} />
       </FadeInView>;
     case 'video':
-      return <FadeInView>
-        <YStack w='100%' ac='center' jc='center' h='100%'>
+      return <FadeInView w='100%' h='100%'>
+        <YStack w='100%' h='100%' ac='center' jc='center'>
           <ReactPlayerShim width='100%' style={{ maxHeight: mediaQuery.gtXs ? '500px' : '300px' }}
             height='100%' url={mediaUrl} controls muted />
         </YStack>
       </FadeInView>;
     default:
       // If all else fails, render it as an HTML object and rely on the tag's standard fallback.
-      return <FadeInView>
-        <object style={{ backgroundColor: 'white' }} data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
+      return <FadeInView w='100%' h='100%'>
+        <object style={{ width: '100%', height: '100%', backgroundColor: 'white' }} data={mediaUrl} type={media.contentType} width="100%" height={mediaQuery.gtXs ? '500px' : '350px'}>
           {failQuietly ? undefined : <YStack p='$3'>
             <Paragraph size='$2' color={'black'}>
               Media rendering is not supported in your browser for type <Text fontFamily='$mono' color={'black'}>{media.contentType}</Text>. <Anchor href={mediaUrl} color={navAnchorColor}>Download it instead.</Anchor>

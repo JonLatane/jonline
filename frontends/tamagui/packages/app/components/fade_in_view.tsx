@@ -1,11 +1,15 @@
-import { XStack, YStack, isWeb, standardFadeAnimation } from "@jonline/ui";
-import React, { PropsWithChildren, useEffect } from "react";
-import { Animated, ViewStyle } from "react-native";
+import { XStack, standardFadeAnimation } from "@jonline/ui";
+import React, { PropsWithChildren } from "react";
+import { DimensionValue, ViewStyle } from "react-native";
 
-export type FadeInViewProps = PropsWithChildren<{ style?: ViewStyle }>;
+export type FadeInViewProps = PropsWithChildren<{
+  style?: ViewStyle;
+  w?: DimensionValue;
+  h?: DimensionValue;
+}>;
 
 export const FadeInView: React.FC<FadeInViewProps> = props => {
-  return <XStack animation='slow' {...standardFadeAnimation}>
+  return <XStack animation='slow' {...standardFadeAnimation} width={props.w} height={props.h}>
     {props.children}
   </XStack>;
   // return <YStack {...standardFadeAnimation}>
