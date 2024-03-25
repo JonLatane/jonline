@@ -207,6 +207,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
             <Button onPress={() => setBigCalendar(!bigCalendar)}
               icon={CalendarIcon}
+              transparent
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
             {displayModeButton('upcoming', 'Upcoming')}
