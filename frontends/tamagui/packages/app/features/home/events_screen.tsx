@@ -251,19 +251,21 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         </AnimatePresence> */}
         <FlipMove style={{ width: '100%' }}>
           {bigCalendar
-            ? allEvents.length === 0 ?
-              loadingEvents || !firstPageLoaded
-                ? <YStack key='bigcalendar-loading' width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                  <Spinner color={primaryColor} />
-                  {/* <Heading size='$5' mb='$3'>Loading...</Heading> */}
-                  <Heading size='$5' o={0.5} ta='center'>Loading events...</Heading>
-                </YStack>
-                : <YStack key='bigcalendar-no-events' width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                  <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-                  {/* <Heading size='$3' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                </YStack>
-              : <YStack
-                key='calendar-rendering'
+            ?
+            // allEvents.length === 0 ?
+            //   loadingEvents || !firstPageLoaded
+            //     ? <YStack key='bigcalendar-loading' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+            //       <Spinner color={primaryColor} />
+            //       {/* <Heading size='$5' mb='$3'>Loading...</Heading> */}
+            //       <Heading size='$5' o={0.5} ta='center'>Loading events...</Heading>
+            //     </YStack>
+            //     : <YStack key='bigcalendar-no-events' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+            //       <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
+            //       {/* <Heading size='$3' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+            //     </YStack>
+            //   : 
+            <div key='calendar-rendering'>
+              <YStack
                 // key={`calendar-rendering-${serializedTimeFilter}`} 
                 mx='$1'
                 animation='standard' {...reverseStandardAnimation}
@@ -290,8 +292,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         }-${window.innerWidth
                         }-${window.innerHeight
                         }-${navigationHeight
-                        }-${
-                          allEvents.length}`}
+                        }-${allEvents.length}`}
                       selectable
                       dateClick={({ date, view }) => {
                         view.calendar.changeView('listDay', date);
@@ -431,39 +432,41 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   style={{ width: window.innerWidth, height: window.innerHeight - navigationHeight - 230}} />
               </Text> */}
               </YStack>
+            </div>
             : renderInColumns
-              ? <YStack gap='$2' width='100%' key='multi-column-rendering'>
-                <PaginationResetIndicator {...pagination} />
-                <XStack mx='auto' jc='center' flexWrap='wrap'>
-                  <AnimatePresence>
+              ? <div key='multi-column-rendering'>
+                <YStack gap='$2' width='100%' >
+                  <PaginationResetIndicator {...pagination} />
+                  <XStack mx='auto' jc='center' flexWrap='wrap'>
+                    <AnimatePresence>
 
-                    {/* <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}> */}
+                      {/* <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}> */}
 
-                    {firstPageLoaded || allEvents.length > 0
-                      ? allEvents.length === 0
-                        ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
-                          <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                            <Heading size='$5' mb='$3'>No events found.</Heading>
-                            {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                          </YStack>
-                        </XStack>
-                        : undefined
-                      : undefined}
-                    {paginatedEvents.map((event) => {
-                      return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)} animation='standard' {...standardAnimation}>
-                        <XStack w={eventCardWidth}
-                          mx='$1' px='$1'>
-                          <EventCard event={event} isPreview />
-                        </XStack>
-                      </XStack>;
-                    })}
-                    {/* </FlipMove> */}
-                  </AnimatePresence>
-                </XStack>
-                <PaginationIndicator {...pagination} />
-              </YStack>
+                      {firstPageLoaded || allEvents.length > 0
+                        ? allEvents.length === 0
+                          ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
+                            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                              <Heading size='$5' mb='$3'>No events found.</Heading>
+                              {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+                            </YStack>
+                          </XStack>
+                          : undefined
+                        : undefined}
+                      {paginatedEvents.map((event) => {
+                        return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)} animation='standard' {...standardAnimation}>
+                          <XStack w={eventCardWidth}
+                            mx='$1' px='$1'>
+                            <EventCard event={event} isPreview />
+                          </XStack>
+                        </XStack>;
+                      })}
+                      {/* </FlipMove> */}
+                    </AnimatePresence>
+                  </XStack>
+                  <PaginationIndicator {...pagination} />
+                </YStack>
+              </div>
               : [
-
                 <div key='reset' style={{ width: '100%', margin: 'auto' }}>
                   <PaginationResetIndicator {...pagination} />
                 </div>,
@@ -478,6 +481,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     </div>
                     : undefined
                   : undefined,
+
                 paginatedEvents.map((event) => {
                   return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                     <XStack w='100%'>
