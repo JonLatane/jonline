@@ -49,7 +49,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     }
   }, [firstPageLoaded]);
 
-  // console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
+  console.log(`Posts pagination: ${pagination}`);
 
   return (
     <TabsNavigation
