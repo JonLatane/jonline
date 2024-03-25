@@ -7,7 +7,7 @@ import {
   PayloadAction
 } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
-import { deleteClient, getServerClient, pinServer, resetCredentialedData, store } from "..";
+import { accountIDHost, deleteClient, getServerClient, pinServer, resetCredentialedData, selectAccount, store } from "..";
 import { JonlineServer } from "../types";
 import { FederatedServer } from "@jonline/api";
 
@@ -135,7 +135,7 @@ function initializeWithServer(initialServer: JonlineServer) {
               }
             }).catch(() => {
               console.error(`Failed to configure federated server ${host}`);
-             });
+            });
         }
       };
     }
@@ -181,11 +181,17 @@ const serversSlice = createSlice({
       state.error = undefined;
     },
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
+      const oldServerId = state.currentServerId;
+      const newServerId = serverID(action.payload!);
+      state.currentServerId = newServerId;
 
-      if (state.currentServerId != serverID(action.payload!)) {
-        // resetCredentialedData(action.payload?.host);
-      }
-      state.currentServerId = serverID(action.payload!);
+      setTimeout(() => {
+        const currentAccountId = store.getState().accounts.currentAccountId;
+        if (currentAccountId && newServerId && oldServerId != newServerId &&
+          accountIDHost(currentAccountId) !== serverIDHost(newServerId)) {
+          store.dispatch(selectAccount(undefined));
+        }
+      }, 1);
     },
     moveServerUp: (state, action: PayloadAction<string>) => {
       const index = state.ids.indexOf(action.payload);
