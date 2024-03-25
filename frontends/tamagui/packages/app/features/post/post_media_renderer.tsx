@@ -1,9 +1,10 @@
 import { getServerTheme } from "app/store";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useMediaUrl, usePostDispatch } from "app/hooks";
+import { useIsVisible, useMediaUrl, usePostDispatch } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
@@ -15,7 +16,7 @@ export interface PostMediaRendererProps {
   post: Post;
   isPreview?: boolean;
   groupContext?: Group;
-  hasBeenVisible?: boolean;
+  isVisible: boolean;
   smallPreview?: boolean;
   xsPreview?: boolean;
   detailsLink?: LinkProps;
@@ -31,7 +32,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   post,
   isPreview,
   groupContext,
-  hasBeenVisible = true,
+  isVisible,
   smallPreview,
   xsPreview,
   detailsLink: parentDetailsLink
@@ -68,6 +69,13 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
     }
   }
 
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  useEffect(() => {
+    if (isVisible && !hasBeenVisible) {
+      setHasBeenVisible(true);
+    }
+  }, [isVisible, hasBeenVisible]);
+
   const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
   const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
 
@@ -84,10 +92,6 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
 
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
 
-  // if (!embedComponent && (post?.media?.length ?? 0 === 0)) {
-  //   return <></>;
-  // }
-
   return <YStack zi={1000} width='100%'>
     {hasBeenVisible && embedComponent && false
       ? <FadeInView><div>{embedComponent}</div></FadeInView>
@@ -100,7 +104,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
           h={mediaQuery.gtXs ? '400px' : '260px'} >
           <XStack gap='$2'>
             {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
-              <MediaRenderer media={mediaRef} />
+              <MediaRenderer media={mediaRef} isVisible={isVisible} />
             </YStack>)}
           </XStack>
         </ScrollView>
@@ -117,7 +121,11 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
             // height={foregroundSize}
             resizeMode="contain"
             als="center"
-            source={{ uri: singleMediaPreviewUrl, height: singlePreviewSize, width: singlePreviewSize }}
+            source={{
+              uri: isVisible ? singleMediaPreviewUrl : undefined,
+              height: singlePreviewSize,
+              width: singlePreviewSize
+            }}
             borderRadius={10}
           /> : undefined}
       </YStack>

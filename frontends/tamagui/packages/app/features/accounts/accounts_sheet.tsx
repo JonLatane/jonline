@@ -270,6 +270,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
+        
       >
         <Sheet.Overlay />
         <Sheet.Frame>
