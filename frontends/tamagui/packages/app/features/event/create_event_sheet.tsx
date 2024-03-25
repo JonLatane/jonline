@@ -13,9 +13,10 @@ export const defaultEventInstance: () => EventInstance = () => EventInstance.cre
 
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
+  button?: (onPress: () => void) => JSX.Element;
 };
 
-export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
+export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
@@ -92,7 +93,7 @@ export function CreateEventSheet({ selectedGroup }: CreateEventSheetProps) {
 
   return <BaseCreatePostSheet
     entityName='Event'
-    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid }}
+    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid, button }}
     preview={(post, group) => {
       // console.log('previewEvent', previewEvent(post));
       return <EventCard event={previewEvent(post)} hideEditControls />;

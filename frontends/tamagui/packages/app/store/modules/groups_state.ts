@@ -136,14 +136,16 @@ export const groupsSlice = createSlice({
 
     builder.addCase(loadPostGroupPosts.fulfilled, (state, action) => {
       const { groupPosts } = action.payload;
-      state.postIdGroupPosts[action.meta.arg.postId] = groupPosts;
+      const postId = federateId(action.meta.arg.postId, action);
+      state.postIdGroupPosts[postId] = groupPosts;
     });
 
     builder.addCase(createGroupPost.fulfilled, (state, action) => {
       const groupPost = action.payload;
 
-      state.postIdGroupPosts[groupPost.postId] = [groupPost,
-        ...(state.postIdGroupPosts[groupPost.postId] ?? [])];
+      const postId = federateId(groupPost.postId, action);
+      state.postIdGroupPosts[postId] = [groupPost,
+        ...(state.postIdGroupPosts[postId] ?? [])];
 
       setTimeout(() => {
         store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
@@ -152,7 +154,8 @@ export const groupsSlice = createSlice({
     });
 
     builder.addCase(deleteGroupPost.fulfilled, (state, action) => {
-      const { postId, groupId } = action.meta.arg;
+      const { groupId } = action.meta.arg;
+      const postId = federateId(action.meta.arg.postId, action);
       state.postIdGroupPosts[postId] = (state.postIdGroupPosts[postId] ?? [])
         .filter(gp => gp.groupId !== groupId);
     });

@@ -122,6 +122,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
 
     if (isCurrentServer || allowServerSelection) {
       if (currentServer?.host != account.server.host) {
+
         dispatch(selectServer(account.server));
       }
       dispatch(selectAccount(account));

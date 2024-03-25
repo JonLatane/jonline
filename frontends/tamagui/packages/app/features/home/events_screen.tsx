@@ -13,7 +13,7 @@ import { Adapt, AnimatePresence, Button, DateTimePicker, Dialog, Heading, Input,
 import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
-import { Calendar as CalendarIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -39,7 +39,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
-  const { server: currentServer, primaryColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
+  const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
@@ -180,7 +180,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const minBigCalWidth = 150;
   const minBigCalHeight = 150;
   const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
-  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 75);
+  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
   // const [bigCalWidth, setBigCalWidth] = useState(Math.max(minBigCalWidth, window.innerWidth));
   // const [bigCalHeight, setBigCalHeight] = useState(Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85));
@@ -212,6 +212,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             {displayModeButton('upcoming', 'Upcoming')}
             {displayModeButton('all', 'All')}
             {displayModeButton('filtered', 'Filtered')}
+
+            <DynamicCreateButton selectedGroup={selectedGroup} showEvents
+              button={(onPress) =>
+                <Button onPress={onPress}
+                  icon={CalendarPlus}
+                  transparent
+                  {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
           </XStack>
           {/* <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
             <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
@@ -243,28 +250,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           </AnimatePresence>
         </YStack>
       }
-      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
+    // bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" mt={bigCalendar ? 0 : '$3'} px='$3' maw={maxWidth}>
-        {/* <AnimatePresence>
-         
-        </AnimatePresence> */}
+      <YStack f={1} w='100%' jc="center" ai="center" mt={bigCalendar ? 0 : '$3'}
+        px='$3'
+        maw={maxWidth}>
         <FlipMove style={{ width: '100%' }}>
           {bigCalendar
-            ?
-            // allEvents.length === 0 ?
-            //   loadingEvents || !firstPageLoaded
-            //     ? <YStack key='bigcalendar-loading' width='100%' maw={600} jc="center" ai="center" mx='auto'>
-            //       <Spinner color={primaryColor} />
-            //       {/* <Heading size='$5' mb='$3'>Loading...</Heading> */}
-            //       <Heading size='$5' o={0.5} ta='center'>Loading events...</Heading>
-            //     </YStack>
-            //     : <YStack key='bigcalendar-no-events' width='100%' maw={600} jc="center" ai="center" mx='auto'>
-            //       <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-            //       {/* <Heading size='$3' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-            //     </YStack>
-            //   : 
-            <div key='calendar-rendering'>
+            ? <div key='bigcalendar-rendering'>
               <YStack
                 // key={`calendar-rendering-${serializedTimeFilter}`} 
                 mx='$1'
@@ -354,12 +347,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 <Dialog
                   key={`modal-${modalInstanceId}`}
                   modal open={!!modalInstance}
+
                   onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
                   {/* <Dialog.Trigger asChild>
                     <Button>Show Dialog</Button>
                   </Dialog.Trigger> */}
 
-                  <Adapt when="sm" platform="touch">
+                  {/* <Adapt when="sm" platform="touch">
                     <Sheet animation="medium" zIndex={200000} modal dismissOnSnapToBottom>
                       <Sheet.Frame padding="$4" gap="$4">
                         <Sheet.ScrollView>
@@ -367,7 +361,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                             ? <EventCard event={modalInstance!} isPreview />
                             : undefined}
                         </Sheet.ScrollView>
-                        {/* <Adapt.Contents /> */}
                       </Sheet.Frame>
                       <Sheet.Overlay
                         animation="lazy"
@@ -375,7 +368,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         exitStyle={{ opacity: 0 }}
                       />
                     </Sheet>
-                  </Adapt>
+                  </Adapt> */}
 
                   <Dialog.Portal>
                     <Dialog.Overlay
@@ -393,12 +386,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       animateOnly={['transform', 'opacity']}
                       animation='standard'
                       maw={bigCalWidth}
+                      mah={bigCalHeight}
                       enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
                       exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
                       gap="$4"
                     >
                       {/* <Unspaced> */}
-                      <YStack gap='$2'>
+                      <YStack gap='$2' h='100%'>
                         <Dialog.Close asChild>
                           <Button
                             ml='auto' mr='$3' size='$1'
@@ -406,7 +400,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                             icon={XIcon}
                           />
                         </Dialog.Close>
-                        <ScrollView f={1} >
+                        <ScrollView f={1}>
                           {modalInstance
                             ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
                             : undefined}
@@ -446,7 +440,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         ? allEvents.length === 0
                           ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
                             <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                              <Heading size='$5' mb='$3'>No events found.</Heading>
+                              <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
                               {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                             </YStack>
                           </XStack>
@@ -493,9 +487,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <PaginationIndicator {...pagination} />
                 </div>
               ]}
+          {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}
         </FlipMove>
 
-        {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}
       </YStack >
     </TabsNavigation >
   )

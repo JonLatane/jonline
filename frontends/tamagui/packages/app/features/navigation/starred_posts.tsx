@@ -191,9 +191,9 @@ export function StarredPosts({ }: StarredPostsProps) {
                     {openedPostId
                       ? [
                         <div key='back'>
-                          <Button onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
+                          <Button circular size='$3' mr='$2' onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
                         </div>,
-                        <div key='flex-1' style={{ flex: 1 }} />
+                        // <div key='flex-1' style={{ flex: 1 }} />
                       ] : [
                         <div key='posts-filter'>
                           <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : undefined)}

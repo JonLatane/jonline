@@ -222,6 +222,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
       position={position}
       onPositionChange={setPosition}
       dismissOnSnapToBottom
+      zIndex={1000000}
     >
       <Sheet.Overlay />
       <Sheet.Frame>

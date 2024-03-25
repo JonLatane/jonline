@@ -7,9 +7,10 @@ import PostCard from './post_card';
 
 export type CreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
+  button?: (onPress: () => void) => JSX.Element;
 };
 
-export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
+export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps) {
   const { dispatch, accountOrServer } = useCredentialDispatch();
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_POSTS_LOCALLY);
@@ -37,7 +38,7 @@ export function CreatePostSheet({ selectedGroup }: CreatePostSheetProps) {
   }
 
   return <BaseCreatePostSheet
-    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate }}
+    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, button }}
     preview={(post) => <PostCard post={post} />}
     feedPreview={(post) => <PostCard post={post} isPreview />}
   />;

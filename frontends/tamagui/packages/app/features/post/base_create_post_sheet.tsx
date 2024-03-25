@@ -1,6 +1,6 @@
 import { Group, MediaReference, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
-import { ChevronDown, Cog, Image as ImageIcon } from '@tamagui/lucide-icons';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { CalendarPlus, ChevronDown, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCredentialDispatch } from 'app/hooks';
 import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
@@ -33,6 +33,7 @@ export type BaseCreatePostSheetProps = {
   invalid?: boolean;
   canPublishLocally?: boolean;
   canPublishGlobally?: boolean;
+  button?: (onPress: () => void) => JSX.Element;
 }
 
 export const postVisibilityDescription = (
@@ -72,7 +73,8 @@ export function BaseCreatePostSheet({
   invalid,
   onFreshOpen,
   canPublishLocally,
-  canPublishGlobally
+  canPublishGlobally,
+  button
 }: BaseCreatePostSheetProps) {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
@@ -83,13 +85,13 @@ export function BaseCreatePostSheet({
   const [renderType, setRenderType] = useState(RenderType.Edit);
   const [showSettings, _setShowSettings] = useState(true);
   const [showMedia, _setShowMedia] = useState(false);
-  const [renderSheet, setRenderSheet] = useState(true);
+  const [hasOpened, setHasOpened] = useState(true);
   function setOpen(v: boolean) {
     if (onFreshOpen && v && !open && title.length == 0) {
       onFreshOpen();
     }
-    if (v && !renderSheet) {
-      setRenderSheet(true);
+    if (v && !hasOpened) {
+      setHasOpened(true);
       setTimeout(() => _setOpen(true), 1);
     } else {
       _setOpen(v);
@@ -166,7 +168,7 @@ export function BaseCreatePostSheet({
   const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = useServerTheme();
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -183,7 +185,7 @@ export function BaseCreatePostSheet({
 
   useEffect(() => {
     if (open) {
-      setRenderSheet(true);
+      setHasOpened(true);
     } else {
       setTimeout(() => setShowSettings(true), 1000);
       // if (renderSheet) {
@@ -208,12 +210,22 @@ export function BaseCreatePostSheet({
 
   return (
     <>
-      <Button {...themedButtonBackground(primaryColor)} f={1}
-        disabled={server === undefined}
-        onPress={() => setOpen(!open)}>
-        <Heading size='$2' color={primaryTextColor}>Create {entityName}</Heading>
-      </Button>
-      {true && (open || renderSheet)
+      {button?.(() => setOpen(!open)) ??
+        <Button //{...themedButtonBackground(primaryColor)} 
+          w='$3'
+          p={0}
+          disabled={server === undefined}
+          transparent
+          onPress={() => setOpen(!open)}>
+          {entityName === 'Post'
+            ? <Plus color={primaryAnchorColor} />
+            : <CalendarPlus color={primaryAnchorColor} />}
+          {/* <Heading size='$2' ta='center' color={primaryTextColor}>
+            Create {entityName}
+          </Heading> */}
+        </Button>
+      }
+      {hasOpened //true && (open || renderSheet)
         ? <Sheet
           modal
           open={open}
@@ -228,17 +240,19 @@ export function BaseCreatePostSheet({
           <Sheet.Frame>
             <YStack h='100%'>
               <Sheet.Handle />
-              <Button
-                alignSelf='center'
-                size="$3"
-                circular
-                icon={ChevronDown}
-                mb='$2'
-                onPress={() => {
-                  setOpen(false)
-                }}
-              />
-              <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
+              <XStack als='center' w='100%' pr='$5' pl='$2' mb='$2' maw={800} ai='center'>
+                <Button
+                  // alignSelf='center'
+                  // my='auto'
+                  size="$2"
+                  mr='$2'
+                  circular
+                  icon={ChevronLeft}
+                  // mb='$2'
+                  onPress={() => {
+                    setOpen(false)
+                  }}
+                />
                 <Heading marginVertical='auto' f={1} size='$7'>Create {entityName}</Heading>
                 <Button {...themedButtonBackground(showSettings ? navColor : undefined)}
                   onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
@@ -252,7 +266,7 @@ export function BaseCreatePostSheet({
               {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
-              <XStack marginHorizontal='auto' marginVertical='$3'>
+              <XStack marginHorizontal='auto' marginTop='$3'>
                 <Button backgroundColor={showEditor ? navColor : undefined}
                   hoverStyle={{ backgroundColor: showEditor ? navColor : undefined }}
                   transparent={!showEditor}
@@ -260,25 +274,47 @@ export function BaseCreatePostSheet({
                   onPress={() => setRenderType(RenderType.Edit)}>
                   <Heading size='$4' color={showEditor ? navTextColor : textColor}>Edit</Heading>
                 </Button>
-                <Button backgroundColor={showFullPreview ? navColor : undefined}
-                  hoverStyle={{ backgroundColor: showFullPreview ? navColor : undefined }}
-                  transparent={!showFullPreview}
-                  borderRadius={0}
-                  disabled={disablePreview}
-                  opacity={disablePreview ? 0.5 : 1}
-                  // borderTopRightRadius={0} borderBottomRightRadius={0}
-                  onPress={() => setRenderType(RenderType.FullPreview)}>
-                  <Heading size='$4' color={showFullPreview ? navTextColor : textColor}>Preview</Heading>
-                </Button>
-                <Button backgroundColor={showShortPreview ? navColor : undefined}
-                  hoverStyle={{ backgroundColor: showShortPreview ? navColor : undefined }}
-                  transparent={!showShortPreview}
-                  borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                  disabled={disablePreview}
-                  opacity={disablePreview ? 0.5 : 1}
-                  onPress={() => setRenderType(RenderType.ShortPreview)}>
-                  <Heading size='$4' color={showShortPreview ? navTextColor : textColor}>Feed Preview</Heading>
-                </Button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button backgroundColor={showFullPreview ? navColor : undefined}
+                      hoverStyle={{ backgroundColor: showFullPreview ? navColor : undefined }}
+                      transparent={!showFullPreview}
+                      borderRadius={0}
+                      disabled={disablePreview}
+                      opacity={disablePreview ? 0.5 : 1}
+                      // borderTopRightRadius={0} borderBottomRightRadius={0}
+                      onPress={() => setRenderType(RenderType.FullPreview)}>
+                      <Heading size='$4' color={showFullPreview ? navTextColor : textColor}>Preview</Heading>
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Paragraph>
+                      {disablePreview
+                        ? `Enter a title to preview your ${entityName}.`
+                        : `Preview your ${entityName} as it will appear to others.`}
+                    </Paragraph>
+                  </Tooltip.Content>
+                </Tooltip>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button backgroundColor={showShortPreview ? navColor : undefined}
+                      hoverStyle={{ backgroundColor: showShortPreview ? navColor : undefined }}
+                      transparent={!showShortPreview}
+                      borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                      disabled={disablePreview}
+                      opacity={disablePreview ? 0.5 : 1}
+                      onPress={() => setRenderType(RenderType.ShortPreview)}>
+                      <Heading size='$4' color={showShortPreview ? navTextColor : textColor}>Feed Preview</Heading>
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Paragraph>
+                      {disablePreview
+                        ? `Enter a title to preview your ${entityName}.`
+                        : `Preview your ${entityName} as it will appear to others in feeds (i.e., shortened).`}
+                    </Paragraph>
+                  </Tooltip.Content>
+                </Tooltip>
               </XStack>
 
               {/* <AnimatePresence> */}
@@ -286,97 +322,99 @@ export function BaseCreatePostSheet({
               {/* <Sheet.ScrollView> */}
               <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center'>
                 {showEditor
-                  ? <YStack gap="$2" w='100%' px="$5">
-                    {/* <Heading size="$6">{server?.host}/</Heading> */}
-                    <Input textContentType="name" placeholder={`${entityName} Title (required)`}
-                      disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
-                      onFocus={() => setShowSettings(false)}
-                      // autoCapitalize='words'
-                      value={title}
-                      onChange={(data) => { setTitle(data.nativeEvent.text) }} />
-                    {additionalFields?.(previewPost, group)}
-                    <XStack gap='$2'>
-                      <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
-                        disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
+                  ? <Sheet.ScrollView>
+                    <YStack gap="$2" w='100%' px="$5" marginTop='$3'>
+                      {/* <Heading size="$6">{server?.host}/</Heading> */}
+                      <Input textContentType="name" placeholder={`${entityName} Title (required)`}
+                        disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
                         onFocus={() => setShowSettings(false)}
                         // autoCapitalize='words'
-                        value={link}
-                        onChange={(data) => { setLink(data.nativeEvent.text) }} />
+                        value={title}
+                        onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                      {additionalFields?.(previewPost, group)}
+                      <XStack gap='$2'>
+                        <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
+                          disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
+                          onFocus={() => setShowSettings(false)}
+                          // autoCapitalize='words'
+                          value={link}
+                          onChange={(data) => { setLink(data.nativeEvent.text) }} />
 
-                      <ZStack w='$4' ml='$2'>
-                        <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
-                          borderRadius={5}
-                          backgroundColor={showMedia ? primaryColor : navColor}
-                          color={showMedia ? primaryTextColor : navTextColor}>
-                          {media.length}
-                        </Paragraph>
-                        <Button {...themedButtonBackground(showMedia ? navColor : undefined)}
-                          onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
-                          <ImageIcon color={showMedia ? navTextColor : textColor} />
-                        </Button>
-                      </ZStack>
-                    </XStack>
-                    {/* <AnimatePresence> */}
-                    {showSettings
-                      ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
-                        animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
-                      >
-                        {visibility != Visibility.PRIVATE
-                          ? <XStack w='100%' mb='$2'>
-                            <GroupsSheet
-                              groupNamePrefix='Share to '
-                              noGroupSelectedText={publicVisibility(visibility)
-                                ? 'Share Everywhere' : 'Share To A Group'}
-                              selectedGroup={group}
-                              onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                            />
-                          </XStack>
-                          : undefined}
-                        {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
-                        <VisibilityPicker
-                          label='Post Visibility'
-                          visibility={visibility}
-                          onChange={setVisibility}
-                          canPublishGlobally={canPublishGlobally}
-                          canPublishLocally={canPublishLocally}
-                          visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
-                        <ToggleRow
-                          // key={`'create-post-shareable-${shareable}`} 
-                          name={
-                            publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                              `Allow sharing to ${group ? 'other ' : ''}Groups`
-                              : 'Allow sharing to other users'
-                          }
-                          value={shareable}
-                          setter={(v) => setShareable(v)}
-                          disabled={disableInputs || visibility == Visibility.PRIVATE} />
-                      </YStack> : undefined}
-                    {/* </AnimatePresence> */}
-                    {/* <AnimatePresence> */}
-                    {showMedia
-                      ? <PostMediaManager
-                        {...{ link, media, setMedia, embedLink, setEmbedLink }} /> : undefined}
-                    {/* </AnimatePresence> */}
+                        <ZStack w='$4' ml='$2'>
+                          <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
+                            borderRadius={5}
+                            backgroundColor={showMedia ? primaryColor : navColor}
+                            color={showMedia ? primaryTextColor : navTextColor}>
+                            {media.length}
+                          </Paragraph>
+                          <Button {...themedButtonBackground(showMedia ? navColor : undefined)}
+                            onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
+                            <ImageIcon color={showMedia ? navTextColor : textColor} />
+                          </Button>
+                        </ZStack>
+                      </XStack>
+                      {/* <AnimatePresence> */}
+                      {showSettings
+                        ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
+                          animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
+                        >
+                          {visibility != Visibility.PRIVATE
+                            ? <XStack w='100%' mb='$2'>
+                              <GroupsSheet
+                                groupNamePrefix='Share to '
+                                noGroupSelectedText={publicVisibility(visibility)
+                                  ? 'Share Everywhere' : 'Share To A Group'}
+                                selectedGroup={group}
+                                onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                              />
+                            </XStack>
+                            : undefined}
+                          {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
+                          <VisibilityPicker
+                            label='Post Visibility'
+                            visibility={visibility}
+                            onChange={setVisibility}
+                            canPublishGlobally={canPublishGlobally}
+                            canPublishLocally={canPublishLocally}
+                            visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
+                          <ToggleRow
+                            // key={`'create-post-shareable-${shareable}`} 
+                            name={
+                              publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                                `Allow sharing to ${group ? 'other ' : ''}Groups`
+                                : 'Allow sharing to other users'
+                            }
+                            value={shareable}
+                            setter={(v) => setShareable(v)}
+                            disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                        </YStack> : undefined}
+                      {/* </AnimatePresence> */}
+                      {/* <AnimatePresence> */}
+                      {showMedia
+                        ? <PostMediaManager
+                          {...{ link, media, setMedia, embedLink, setEmbedLink }} /> : undefined}
+                      {/* </AnimatePresence> */}
 
-                    <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
-                      onFocus={() => setShowSettings(false)}
-                      disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
-                      onChangeText={t => setContent(t)}
-                      // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-                      // onBlur={() => _replyTextFocused = false}
-                      placeholder={`Text content (optional). Markdown is supported.`} />
-                    {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                    {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
-                  </YStack>
+                      <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
+                        onFocus={() => setShowSettings(false)}
+                        disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
+                        onChangeText={t => setContent(t)}
+                        // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
+                        // onBlur={() => _replyTextFocused = false}
+                        placeholder={`Text content (optional). Markdown is supported.`} />
+                      {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                      {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
+                    </YStack>
+                  </Sheet.ScrollView>
                   : undefined}
                 {showFullPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto' p='$5'>{preview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5' marginTop='$3'>{preview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
                 {showShortPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto' p='$5'>{feedPreview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5' marginTop='$3'>{feedPreview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
               </XStack>

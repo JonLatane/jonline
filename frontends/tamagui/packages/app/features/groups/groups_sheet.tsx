@@ -1,6 +1,6 @@
 import { GroupListingType, Permission } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme } from '@jonline/ui';
-import { AtSign, Boxes, ChevronDown, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
+import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme, useDebounceValue } from '@jonline/ui';
+import { AtSign, Boxes, ChevronDown, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useServer } from 'app/hooks';
 import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
@@ -30,11 +30,12 @@ export type GroupsSheetProps = {
   hideInfoButtons?: boolean;
   topGroupIds?: string[];
   extraListItemChrome?: (group: FederatedGroup) => JSX.Element | undefined;
-  delayRenderingSheet?: boolean;
+  // delayRenderingSheet?: boolean; // Now it's always delayed. Remove this line.
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
   primaryEntity?: FederatedEntity<any>;
+  serverHostFilter?: string;
 }
 export function GroupsSheet({
   selectedGroup,
@@ -48,11 +49,12 @@ export function GroupsSheet({
   hideInfoButtons,
   topGroupIds,
   extraListItemChrome,
-  delayRenderingSheet,
+  // delayRenderingSheet,
   hideAdditionalGroups,
   hideLeaveButtons,
   groupNamePrefix,
-  primaryEntity
+  primaryEntity,
+  serverHostFilter
 }: GroupsSheetProps) {
   const [open, setOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -63,7 +65,6 @@ export function GroupsSheet({
   const { dispatch, accountOrServer } = useFederatedDispatch(selectedGroup);
   const { account: groupAccount, server: groupServer } = accountOrServer;
   const currentServer = useServer();
-  const [hasRenderedSheet, setHasRenderedSheet] = useState(false);
 
   const primaryEntityServer = useAppSelector(state => primaryEntity
     ? selectAllServers(state.servers).find(s => s.host === primaryEntity.serverHost)
@@ -86,28 +87,38 @@ export function GroupsSheet({
 
   const groupsState = useRootSelector((state: RootState) => state.groups);
 
+  const [hasOpened, setHasOpened] = useState(false);
   useEffect(() => {
-    if (open && !hasRenderedSheet) {
-      setHasRenderedSheet(true);
+    if (open && !hasOpened) {
+      setHasOpened(true);
     }
   }, [open]);
+  const openChanged = useDebounceValue(open, 3000);
+  useEffect(() => {
+    if (!openChanged) {
+      setHasOpened(false);
+    }
+  }, [openChanged])
 
   const { groups: allGroups } = useGroupPages(GroupListingType.ALL_GROUPS, 0, { disableLoading: extraListItemChrome !== undefined });
 
   const recentGroupIds = useRootSelector((state: RootState) => state.app.recentGroups ?? []);
 
-  const matchedGroups: FederatedGroup[] = allGroups.filter(g =>
-    g.name.toLowerCase().includes(searchText.toLowerCase()) ||
-    g.description.toLowerCase().includes(searchText.toLowerCase()));
+  const groupMatcher = (group: FederatedGroup) =>
+    (
+      group.name.toLowerCase().includes(searchText.toLowerCase()) ||
+      group.description.toLowerCase().includes(searchText.toLowerCase())
+    ) && (
+      serverHostFilter == undefined || group.serverHost === serverHostFilter
+    );
+  const matchedGroups: FederatedGroup[] = allGroups.filter(groupMatcher);
 
   const topGroups: FederatedGroup[] = [
     ...(selectedGroup != undefined ? [selectedGroup] : []),
     ...(
       (topGroupIds ?? []).filter(id => id != selectedGroup?.id)
         .map(id => allGroups.find(g => g.id == id)).filter(g => g != undefined) as FederatedGroup[]
-    ).filter(g =>
-      g.name.toLowerCase().includes(searchText.toLowerCase()) ||
-      g.description.toLowerCase().includes(searchText.toLowerCase())),
+    ).filter(groupMatcher),
   ];
 
   const recentGroups = recentGroupIds
@@ -123,8 +134,8 @@ export function GroupsSheet({
         (!(recentGroupIds || []).includes(g.id))),
   ];
 
-  const infoMarginLeft = -34;
-  const infoPaddingRight = 39;
+  const infoMarginLeft = showServerInfo ? -32 : -32;
+  const infoPaddingRight = showServerInfo ? 28 : 36;
   const onPress = () => setOpen((x) => !x);
 
   const toggleAccountSelect = (a: JonlineAccount) => {
@@ -175,11 +186,12 @@ export function GroupsSheet({
                 </XStack>
               </Button>} /> : undefined}
         <Button
-          icon={selectedGroup ? undefined : Boxes} circular={circular}
+          // circular={circular}
           paddingRight={selectedGroup && !hideInfoButtons ? infoPaddingRight : undefined}
           paddingLeft={selectedGroup && !hideInfoButtons ? '$2' : undefined}
           disabled={disabled}
           my='auto'
+          px={circular ? '$1' : undefined}
           h={circular ? undefined : 'auto'}
           mih='$3'
           o={disabled ? 0.5 : 1}
@@ -207,160 +219,166 @@ export function GroupsSheet({
               </Heading>
 
             </YStack>
-            : undefined}
+            : <YStack ai='center'>
+              <Boxes size='$1' />
+              <Paragraph size='$1' o={0.5}>Groups</Paragraph>
+            </YStack>}
         </Button>
       </YStack >}
-      {
-        delayRenderingSheet && !hasRenderedSheet && !open
-          ? undefined
-          : <Sheet
-            modal
-            open={open}
-            onOpenChange={setOpen}
-            snapPoints={[87]}
-            position={position}
-            onPositionChange={setPosition}
-            dismissOnSnapToBottom
-          >
-            <Sheet.Overlay />
-            <Sheet.Frame>
-              <Sheet.Handle />
-              <XStack gap='$4' paddingHorizontal='$3' mb='$2'>
-                <XStack f={1} />
-                <Button
-                  alignSelf='center'
-                  size="$3"
-                  mt='$1'
-                  circular
-                  icon={ChevronDown}
-                  onPress={() => setOpen(false)} />
-                <XStack f={1} />
+      {hasOpened
+        ? <Sheet
+          modal
+          open={open}
+          onOpenChange={setOpen}
+          snapPoints={[87]}
+          position={position}
+          onPositionChange={setPosition}
+          dismissOnSnapToBottom
+          zIndex={100000}
+        >
+          <Sheet.Overlay />
+          <Sheet.Frame>
+            <Sheet.Handle />
+            {/* <XStack gap='$4' paddingHorizontal='$3' mb='$2'>
+              <XStack f={1} />
+              <Button
+                alignSelf='center'
+                size="$3"
+                mt='$1'
+                circular
+                icon={ChevronDown}
+                onPress={() => setOpen(false)} />
+              <XStack f={1} />
+            </XStack> */}
+
+            <YStack gap="$3" mb='$2' maw={800} als='center' width='100%'>
+              {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
+              {itemTitle ? <Heading size="$7" paddingHorizontal='$3' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>{itemTitle}</Heading> : undefined}
+
+              <XStack gap="$3" paddingHorizontal='$3'>
+                <XStack w='100%' pr='$0'>
+
+                  <Button
+                    // alignSelf='center'
+                    // my='auto'
+                    size="$2"
+                    my='auto'
+                    mr='$2'
+                    circular
+                    icon={ChevronLeft}
+                    // mb='$2'
+                    onPress={() => {
+                      setOpen(false)
+                    }}
+                  />
+                  <XStack my='auto' ml='$3' mr={-34}>
+                    <Search />
+                  </XStack>
+                  <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
+                    paddingHorizontal={40} ref={searchInputRef}
+
+                    onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} >
+
+                  </Input>
+                  <Button icon={XIcon} ml={-44} mr='$3'
+                    onPress={() => {
+                      setSearchText('');
+                      searchInputRef.current?.focus();
+                    }}
+                    size='$2' circular marginVertical='auto'
+                    disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
+                </XStack>
+                {/* </Input> */}
               </XStack>
 
-              <YStack gap="$3" mb='$2' maw={800} als='center' width='100%'>
-                {title ? <Heading size={itemTitle ? '$2' : "$7"} paddingHorizontal='$3' mb={itemTitle ? -15 : '$3'}>{title}</Heading> : undefined}
-                {itemTitle ? <Heading size="$7" paddingHorizontal='$3' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>{itemTitle}</Heading> : undefined}
-
-                <XStack gap="$3" paddingHorizontal='$3'>
-                  <XStack w='100%' pr='$0'>
-                    <XStack my='auto' ml='$3' mr={-34}>
-                      <Search />
-                    </XStack>
-                    <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
-                      paddingHorizontal={40} ref={searchInputRef}
-
-                      onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} >
-
-                    </Input>
-                    <Button icon={XIcon} ml={-44} mr='$3'
-                      onPress={() => {
-                        setSearchText('');
-                        searchInputRef.current?.focus();
-                      }}
-                      size='$2' circular marginVertical='auto'
-                      disabled={searchText == ''} opacity={searchText == '' ? 0.5 : 1} />
-                  </XStack>
-                  {/* </Input> */}
-                </XStack>
-
-                <PinnedServerSelector show transparent simplified />
-              </YStack>
-              <Sheet.ScrollView p="$4" space>
-                <YStack maw={600} als='center' width='100%'>
+              {disableSelection ? undefined : <PinnedServerSelector show transparent simplified />}
+            </YStack>
+            <Sheet.ScrollView p="$4" space>
+              <FlipMove style={{maximumWidth: 600, width: '100%', alignSelf: 'center'}}>
+                {/* <YStack maw={600} als='center' width='100%'> */}
                   {topGroups.length > 0
-                    ?
-                    <>
-                      <YStack>
-                        <FlipMove>
-                          {topGroups.map((group, index) => {
-                            return <div key={`groupButton-${federatedId(group)}`}>
-                              <GroupButton
-                                group={group}
-                                groupPageForwarder={groupPageForwarder}
-                                onGroupSelected={onGroupSelected}
-                                selected={group.id == selectedGroup?.id}
-                                onShowInfo={() => {
-                                  setInfoGroupId(federatedId(group));
-                                  setInfoOpen(true);
-                                }}
-                                setOpen={setOpen}
-                                disabled={disableSelection}
-                                hideInfoButton={hideInfoButtons}
-                                extraListItemChrome={extraListItemChrome}
-                                hideLeaveButton={hideLeaveButtons}
-                              />
-                            </div>
-                          })}
-                        </FlipMove>
-                      </YStack>
-                    </>
+                    ? [
+                      ...topGroups.map((group, index) => {
+                        return <div key={`groupButton-${federatedId(group)}`}>
+                          <GroupButton
+                            group={group}
+                            groupPageForwarder={groupPageForwarder}
+                            onGroupSelected={onGroupSelected}
+                            selected={group.id == selectedGroup?.id}
+                            onShowInfo={() => {
+                              setInfoGroupId(federatedId(group));
+                              setInfoOpen(true);
+                            }}
+                            setOpen={setOpen}
+                            disabled={disableSelection}
+                            hideInfoButton={hideInfoButtons}
+                            extraListItemChrome={extraListItemChrome}
+                            hideLeaveButton={hideLeaveButtons}
+                          />
+                        </div>
+                      })
+                    ]
                     : undefined}
                   {recentGroups.length > 0
-                    ? <>
-                      <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
-                      <YStack>
-                        <FlipMove>
-                          {recentGroups.map((group, index) => {
-                            return <div key={`groupButton-${federatedId(group)}`}>
-                              <GroupButton
-                                group={group}
-                                groupPageForwarder={groupPageForwarder}
-                                onGroupSelected={onGroupSelected}
-                                selected={group.id == selectedGroup?.id}
-                                onShowInfo={() => {
-                                  setInfoGroupId(federatedId(group));
-                                  setInfoOpen(true);
-                                }}
-                                setOpen={setOpen}
-                                disabled={disableSelection}
-                                hideInfoButton={hideInfoButtons}
-                                extraListItemChrome={extraListItemChrome}
-                                hideLeaveButton={hideLeaveButtons}
-                              />
-                            </div>
-                          })}
-                        </FlipMove>
-                      </YStack>
-                    </>
+                    ? [
+                      <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>,
+                      ...recentGroups.map((group, index) => {
+                        return <div key={`groupButton-${federatedId(group)}`}>
+                          <GroupButton
+                            group={group}
+                            groupPageForwarder={groupPageForwarder}
+                            onGroupSelected={onGroupSelected}
+                            selected={group.id == selectedGroup?.id}
+                            onShowInfo={() => {
+                              setInfoGroupId(federatedId(group));
+                              setInfoOpen(true);
+                            }}
+                            setOpen={setOpen}
+                            disabled={disableSelection}
+                            hideInfoButton={hideInfoButtons}
+                            extraListItemChrome={extraListItemChrome}
+                            hideLeaveButton={hideLeaveButtons}
+                          />
+                        </div>
+                      })
+                    ]
                     : undefined}
                   {hideAdditionalGroups
                     ? undefined
                     : sortedGroups.length > 0
-                      ? <>
-                        {topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined}
-                        <YStack>
-                          <FlipMove>
-                            {sortedGroups.map((group, index) => {
-                              return <div key={`groupButton-${federatedId(group)}`}>
-                                <GroupButton
-                                  group={group}
-                                  groupPageForwarder={groupPageForwarder}
-                                  onGroupSelected={onGroupSelected}
-                                  selected={group.id == selectedGroup?.id}
-                                  onShowInfo={() => {
-                                    setInfoGroupId(federatedId(group));
-                                    setInfoOpen(true);
-                                  }}
-                                  setOpen={setOpen}
-                                  disabled={disableSelection}
-                                  hideInfoButton={hideInfoButtons}
-                                  extraListItemChrome={extraListItemChrome}
-                                  hideLeaveButton={hideLeaveButtons}
-                                />
-                              </div>
-                            })}
-                          </FlipMove>
-                        </YStack>
-                      </>
+                      ? [
+                        topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined,
+                        sortedGroups.map((group, index) => {
+                          return <div key={`groupButton-${federatedId(group)}`}>
+                            <GroupButton
+                              group={group}
+                              groupPageForwarder={groupPageForwarder}
+                              onGroupSelected={onGroupSelected}
+                              selected={group.id == selectedGroup?.id}
+                              onShowInfo={() => {
+                                setInfoGroupId(federatedId(group));
+                                setInfoOpen(true);
+                              }}
+                              setOpen={setOpen}
+                              disabled={disableSelection}
+                              hideInfoButton={hideInfoButtons}
+                              extraListItemChrome={extraListItemChrome}
+                              hideLeaveButton={hideLeaveButtons}
+                            />
+                          </div>
+                        })
+                      ]
                       : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
-                </YStack>
-              </Sheet.ScrollView>
-              {hasPermission(account?.user, Permission.CREATE_GROUPS)
-                ? <CreateGroupSheet />
-                : undefined}
-            </Sheet.Frame>
-          </Sheet>
-      }
+                {/* </YStack> */}
+              </FlipMove>
+            </Sheet.ScrollView>
+            {hasPermission(account?.user, Permission.CREATE_GROUPS) &&
+              (!serverHostFilter || serverHostFilter === server?.host)
+              ? <CreateGroupSheet />
+              : undefined}
+          </Sheet.Frame>
+        </Sheet>
+        : undefined}
       {
         selectedGroup && !hideInfoButtons
           ? <>

@@ -1,5 +1,5 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
-import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { useCredentialDispatch } from 'app/hooks';
 import { JonlineServer, RootState, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
@@ -46,25 +46,25 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useCredentialDispatch();
   const account = accountOrServer.account!;
-  const [open, _setOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(0);
 
   const [renderType, setRenderType] = useState(RenderType.Edit);
   const [showSettings, _setShowSettings] = useState(true);
   const [showMedia, _setShowMedia] = useState(false);
   const [showMediaContainer, setShowMediaContainer] = useState(false);
-  const [renderSheet, setRenderSheet] = useState(true);
-  function setOpen(v: boolean) {
-    // if (onFreshOpen && v && !open && title.length == 0) {
-    //   onFreshOpen();
-    // }
-    if (v && !renderSheet) {
-      setRenderSheet(true);
-      setTimeout(() => _setOpen(true), 1);
-    } else {
-      _setOpen(v);
+  const [hasOpened, setHasOpened] = useState(open);
+  useEffect(() => {
+    if (open && !hasOpened) {
+      setHasOpened(true);
     }
-  }
+  }, [hasOpened, open]);
+  const openChanged = useDebounceValue(open, 3000);
+  useEffect(() => {
+    if (!openChanged) {
+      setHasOpened(false);
+    }
+  }, [openChanged]);
 
   function setShowSettings(value: boolean) {
     _setShowSettings(value);
@@ -194,7 +194,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
 
   useEffect(() => {
     if (open) {
-      setRenderSheet(true);
+      setHasOpened(true);
     }
   }, [open]);
 
@@ -218,7 +218,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
         onPress={() => setOpen(!open)}>
         <Heading size='$2' color={primaryTextColor}>Create Group</Heading>
       </Button>
-      {true && (open || renderSheet)
+      {true && (open || hasOpened)
         ? <Sheet
           modal
           open={open}

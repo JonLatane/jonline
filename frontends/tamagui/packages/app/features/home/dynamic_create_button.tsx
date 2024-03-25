@@ -14,6 +14,7 @@ interface DynamicCreateButtonProps {
   selectedGroup?: FederatedGroup;
   showPosts?: boolean;
   showEvents?: boolean;
+  button?: (onPress: () => void) => JSX.Element;
   // replyingToPath: string[];
 }
 
@@ -21,6 +22,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   selectedGroup,
   showPosts,
   showEvents,
+  button
 }: DynamicCreateButtonProps) => {
   const accountOrServer = useAccountOrServer();
 
@@ -32,12 +34,19 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
 
   const hide = useHideNavigation();
 
+  if (button) {
+    return hide ? <></> :
+      doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} />
+        : doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} />
+          : <SingleServerAccountsSheet operation='Post' button={button} />
+  }
+
   return hide ? <></> :
     <>
       {canCreatePosts
-        ? <XStack w='100%' p='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
-          {doShowPosts ? <CreatePostSheet selectedGroup={selectedGroup} /> : undefined}
-          {doShowEvents ? <CreateEventSheet selectedGroup={selectedGroup} /> : undefined}
+        ? <XStack w='100%' px='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
+          {doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} /> : undefined}
+          {doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} /> : undefined}
         </XStack>
         : accountOrServer.account
           ? (showPosts || showEvents)
@@ -48,7 +57,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
             </YStack>
             : undefined
           : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
-            <SingleServerAccountsSheet operation='Post' />
+            <SingleServerAccountsSheet operation='Post' button={button} />
           </YStack>}
     </>
     ;

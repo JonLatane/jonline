@@ -72,7 +72,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
           {/* <Tooltip>
         <Tooltip.Trigger> */}
 
-          <Button h={tiny ? '$3' : 'auto'} icon={Calendar} iconAfter={ArrowRightFromLine} >
+          <Button my='auto' h={tiny ? '$3' : 'auto'} icon={Calendar} iconAfter={ArrowRightFromLine} >
             {tiny ? undefined : <YStack ai='center'>
               {anonymousRsvpPath
                 ? <>

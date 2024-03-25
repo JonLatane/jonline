@@ -1,7 +1,7 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
 import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
-import { JonlineServer, RootState, colorIntMeta, getServerClient, serversAdapter, setAllowServerSelection, setBrowsingServers, upsertServer, useRootSelector } from 'app/store';
+import { JonlineServer, RootState, colorIntMeta, getServerClient, pinServer, serverID, serversAdapter, setAllowServerSelection, setBrowsingServers, store, upsertServer, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -43,9 +43,9 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
               setPendingServer(server);
             }
           }).then(_client => {
-            // console.log("Got pending server", _client);
             setLoadedPendingServer(true);
             setLoadingPendingServer(false);
+            // console.log("Got pending server", _client);
           });
       }
     }
@@ -68,8 +68,12 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
     // debugger;
     await getServerClient(prototypeServer, { skipUpsert: false }).then(_client => {
       console.log("Got server client", _client);
-      setAddingServer(false);
+      setTimeout(() => {
+        store.dispatch(pinServer({ serverId: serverID(prototypeServer), pinned: true }));
+        setAddingServer(false);
+      }, 1500);
     });
+
     // });
   }
 
