@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -61,7 +61,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
 
-  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const eventPagination = usePaginatedRendering(allEvents, 7, {
+    pageParamHook: useEventPageParam,
+  });
   const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {

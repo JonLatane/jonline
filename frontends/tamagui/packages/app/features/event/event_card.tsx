@@ -867,7 +867,7 @@ export const EventCard: React.FC<Props> = ({
                       </YStack>
                     }
                   </AnimatePresence>
-                  {primaryInstance && (!isPreview || hasBeenVisible)
+                  {primaryInstance && (!isPreview || isVisible)
                     ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
                       <EventRsvpManager
                         key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
