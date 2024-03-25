@@ -20,8 +20,18 @@ export type AuthorInfoProps = {
   isVisible?: boolean;
   larger?: boolean;
   shrink?: boolean;
+  textColor?: string;
 }
-export const AuthorInfo = ({ post, author = post?.author, disableLink = false, detailsMargins = 0, isVisible = true, larger = false, shrink = false }: AuthorInfoProps) => {
+export const AuthorInfo = ({
+  post,
+  author = post?.author,
+  disableLink = false,
+  detailsMargins = 0,
+  isVisible = true,
+  larger = false,
+  shrink = false,
+  textColor
+}: AuthorInfoProps) => {
   const { dispatch, accountOrServer } = useProvidedDispatch();
   // const author = inputAuthor as Author;
   const server = accountOrServer.server;
@@ -32,7 +42,7 @@ export const AuthorInfo = ({ post, author = post?.author, disableLink = false, d
   const federatedAuthorName = authorName ? federateId(authorName, server) : undefined;
   // const { server, primaryColor, navColor } = useServerTheme();
   const mediaQuery = useMedia();
-  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ? 
+  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ?
     selectUserById(state.users, federatedAuthorId) : undefined);
   // const authorAvatar = useRootSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
   const authorLoadFailed = useRootSelector((state: RootState) => federatedAuthorId ? state.users.failedUserIds.includes(federatedAuthorId) : false);
@@ -67,14 +77,14 @@ export const AuthorInfo = ({ post, author = post?.author, disableLink = false, d
     }
   }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
   const avatarUrl = useMediaUrl(author?.avatar?.id ?? authorUser?.avatar?.id, accountOrServer);
-  const avatarSize = mediaQuery.gtXs 
-  ? shrink ? 30 : 50 
-  : shrink ? 18 : 26;
+  const avatarSize = mediaQuery.gtXs
+    ? shrink ? 30 : 50
+    : shrink ? 18 : 26;
   const avatarImage = <XStack p={0} w={avatarSize} h={avatarSize}>
     <Image
       width={avatarSize}
       height={avatarSize}
-      borderRadius={avatarSize/2}
+      borderRadius={avatarSize / 2}
       resizeMode="cover"
       als="flex-start"
       source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
@@ -105,7 +115,7 @@ export const AuthorInfo = ({ post, author = post?.author, disableLink = false, d
         {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
 
         <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
-          marginVertical='auto'>
+          marginVertical='auto' color={textColor}>
           {author ?? authorName
             ? disableLink
               ? `${author?.username ?? authorName}`
@@ -120,9 +130,9 @@ export const AuthorInfo = ({ post, author = post?.author, disableLink = false, d
             : undefined}
         </XStack>
         {author && hasAdminPermission(authorUser)
-          ? <PermissionIndicator permission={Permission.ADMIN} /> : undefined}
+          ? <PermissionIndicator permission={Permission.ADMIN} color={textColor} /> : undefined}
         {author && hasPermission(authorUser, Permission.RUN_BOTS)
-          ? <PermissionIndicator permission={Permission.RUN_BOTS} /> : undefined}
+          ? <PermissionIndicator permission={Permission.RUN_BOTS} color={textColor} /> : undefined}
       </XStack>
     </YStack>
   </XStack>;

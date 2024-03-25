@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { RefObject, useEffect, useMemo, useState } from "react";
+import { View } from "react-native";
 
 export function useIsVisible(ref/*: React.MutableRefObject<Element>*/, noisy?: boolean): boolean {
   const [isIntersecting, setIntersecting] = useState(false);
@@ -25,4 +26,26 @@ export function useIsVisible(ref/*: React.MutableRefObject<Element>*/, noisy?: b
   }, [ref.current]);
 
   return isIntersecting;
+}
+
+export default function useIsVisibleHorizontal(ref: RefObject<HTMLElement>) {
+  const [isIntersecting, setIntersecting] = useState(false)
+
+  const observer = useMemo(() => new IntersectionObserver(
+    ([entry]) => entry
+      ? setIntersecting(entry.isIntersecting)
+      : console.warn('useIsVisibleHorizontal: entry is null')
+  ), [ref])
+
+
+  useEffect(() => {
+    if (ref.current) {
+      observer.observe(ref.current)
+    } else {
+      console.warn('useIsVisibleHorizontal: ref.current is null')
+    }
+    return () => observer.disconnect()
+  }, [])
+
+  return isIntersecting
 }

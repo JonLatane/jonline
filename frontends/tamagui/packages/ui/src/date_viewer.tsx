@@ -7,11 +7,12 @@ export type DateViewerProps = {
   prefix?: string;
   disableTooltip?: boolean;
   updatedDate?: string;
+  textColor?: string;
 }
-export const DateViewer = ({ date, prefix, disableTooltip = false, updatedDate }: DateViewerProps) => {
+export const DateViewer = ({ date, prefix, disableTooltip = false, updatedDate, textColor }: DateViewerProps) => {
   if (!date) return <></>;
 
-  const component = <Heading size="$1" marginVertical='auto'>
+  const component = <Heading size="$1" marginVertical='auto' color={textColor}>
     {moment.utc(date).local().startOf('seconds').fromNow()}{updatedDate ? '*' : ''}
   </Heading>;
 

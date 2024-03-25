@@ -33,16 +33,38 @@ export function usePageParam() {
 
   return [page, setPage] as const;
 }
-export const maxPagesToRender = 3;
+
+const { useParam: _useEventPageParam, useUpdateParams: useUpdateEventPageParams } = createParam<{ eventPage: string | undefined }>()
+export function useEventPageParam() {
+  const updateParams = useUpdateEventPageParams();
+
+  const [pageParam] = _useEventPageParam('eventPage');
+  let parsedPage: number | undefined;
+  try {
+    parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
+  } catch (e) {
+    console.warn("Error parsing page param", e);
+  }
+
+  const page = parsedPage ?? 0;
+  const setPage = (p: number) => updateParams(
+    { eventPage: p === 0 ? undefined : (p + 1).toString() },
+    { web: { replace: true } }
+  );
+
+  return [page, setPage] as const;
+}
+export const maxPagesToRender = 2;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[],
   pageSize: number,
   args?: {
     itemIdResolver?: (item: FederatedEntity<T>) => string;
+    pageParamHook?: typeof useEventPageParam | typeof usePageParam;
   }
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
-  const [page, setPage] = usePageParam();
+  const [page, setPage] = args?.pageParamHook?.() ?? usePageParam();
 
   const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
   const upperBoundPage = page + 1;

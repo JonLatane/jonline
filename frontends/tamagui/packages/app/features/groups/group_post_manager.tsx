@@ -1,9 +1,9 @@
-import { useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
-import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { useAppSelector, useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, loadUser, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Spinner, Text, XStack, YStack, useTheme } from '@jonline/ui';
+import { Button, Paragraph, Spinner, Text, XStack, YStack, useTheme } from '@jonline/ui';
 
 
 import { themedButtonBackground } from "app/utils/themed_button_background";
@@ -12,6 +12,7 @@ import { useGroupContext } from "app/contexts/group_context";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { AuthorInfo } from "../post/author_info";
 import { GroupsSheet } from './groups_sheet';
+import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/contexts';
 
 interface Props {
   post: FederatedPost;
@@ -37,18 +38,19 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const title = `Share ${post.context == PostContext.EVENT ? 'Event' : 'Post'}`;
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
-  const groupPostData = useRootSelector((state: RootState) => state.groups.postIdGroupPosts[post.id]);
-  const knownGroupIds = useRootSelector((state: RootState) => state.groups.ids);
+  const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);
+  console.log('groupPostData', groupPostData);
+  const knownGroupIds = useAppSelector(state => state.groups.ids);
 
-  const maxErrors = 3;
+  const maxErrors = 1;
   const [errorCount, setErrorCount] = useState(0);
   useEffect(() => {
     // console.log('errorCount', errorCount);
     if (isVisible && !groupPostData && !loading && errorCount < maxErrors) {
+      setLoading(true);
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false))
         .catch(() => { setLoading(false); setErrorCount(errorCount + 1); });
-      setLoading(true);
     }
   }, [post, isVisible, loading, errorCount]);
 
@@ -64,12 +66,14 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     ? state.groups.entities[singleSharedGroupId]
     : undefined);
   const otherGroupCount = groupPostData
-    ? groupPostData.filter(g => knownGroupIds.includes(g.groupId)).length - (sharedToSelectedGroup ? 1 : 0)
+    ? Math.max(0,
+      groupPostData.filter(g => knownGroupIds.includes(g.groupId)).length - (sharedToSelectedGroup ? 1 : 0))
     : undefined;
   // return <></>;
 
   //TODO revert this:
   const groupsUnavailable = false;//!groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0);
+  // console.log('groupPostManager')
   return <XStack flexWrap='wrap' maw='100%'>
     {!selectedGroup && !singleSharedGroup && otherGroupCount
       ?
@@ -83,23 +87,29 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     </Text>
     {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
     <XStack>
-      {groupsUnavailable ? undefined :
-        <GroupsSheet
+      {groupsUnavailable
+        ? <Paragraph>Groups unavailable</Paragraph>
+        : <GroupsSheet
           title={title}
           itemTitle={post.title}
           selectedGroup={selectedGroup ?? singleSharedGroup}
           // onGroupSelected={() => { }}
           disabled={!groupPostData || groupsUnavailable}
-          topGroupIds={groupPostData?.map(gp => federateId(gp.groupId, server)) ?? []}
+          topGroupIds={groupPostData?.map(
+            gp => federateId(gp.groupId, server)) ?? []
+          }
+          serverHostFilter={server?.host}
           extraListItemChrome={(group) => {
-            const groupPost = groupPostData?.find(gp => gp.groupId == group.id);
+            const groupPost = group.serverHost === server?.host
+              ? groupPostData?.find(gp => gp.groupId == group.id)
+              : undefined;
 
             return <GroupPostChrome group={group} groupPost={groupPost} post={post} createViewHref={createViewHref} />
           }}
           disableSelection
           hideInfoButtons
-          delayRenderingSheet
-          hideAdditionalGroups={accountOrServer.account === undefined}
+          // delayRenderingSheet
+          // hideAdditionalGroups={accountOrServer.account === undefined}
           hideLeaveButtons
         />
       }
@@ -125,18 +135,30 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
 interface GroupPostChromeProps {
   group: FederatedGroup,
   groupPost: GroupPost | undefined;
-  post: Post;
+  post: FederatedPost;
   createViewHref?: (group: Group) => string;
 }
 
 export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, createViewHref, }) => {
   const { server } = useFederatedAccountOrServer(group);
-  const isPrimaryServer = server?.host === useServer()?.host;
+  const currentServer = useServer();
+  const isPrimaryServer = server?.host === currentServer?.host;
+  const isSameServer = group.serverHost === post.serverHost;
   const shared = groupPost != undefined;
+  const authorUser = useAppSelector(state => groupPost
+    ? state.users.entities[groupPost?.userId ?? '']
+    : undefined);
+  useEffect(() => {
+    if (groupPost && !authorUser) {
+      dispatch(loadUser({ userId: groupPost.userId, ...accountOrServer }));
+    }
+  }, [groupPost, authorUser]);
   const authorData = groupPost ? Post.fromPartial({
     createdAt: groupPost.createdAt,
     author: {
       userId: groupPost.userId,
+      username: authorUser?.username,
+      avatar: authorUser?.avatar,
     }
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
@@ -163,14 +185,22 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
       .then(() => setLoadingGroup(false));
     setLoadingGroup(true);
   }
+  const selected = groupPost?.groupId === group.id;
+  const textColor = selected ? navTextColor : undefined;
   return <YStack mx='auto' w='100%'>
-    <XStack gap='$1' my='$2' w='100%' flexWrap="wrap">
+    <XStack gap='$1' my='$2' px='$2' w='100%' flexWrap="wrap">
       <XStack f={1}>
         <XStack mx='auto'>
-          <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-            {shared ? "Shared by" : isPrimaryServer ? 'Not yet shared.' : 'Not shareable to other servers.'}
+          <Text my='auto' mr='$2' color={textColor}
+            fontSize={'$1'} fontFamily='$body'>
+            {shared ? "Shared by"
+              : isSameServer ? 'Not yet shared.'
+                : 'Not shareable to other servers.'}
           </Text>
-          {shared ? <AuthorInfo post={authorData!} /> : undefined}
+          {shared ?
+            <AccountOrServerContextProvider value={accountOrServer}>
+              <AuthorInfo post={authorData!} textColor={textColor} />
+            </AccountOrServerContextProvider> : undefined}
         </XStack>
       </XStack>
       <XStack mx='auto'>

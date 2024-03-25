@@ -93,7 +93,7 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
       password: newAccountPass,
       skipSelection: skipAccountSelection,
     };
-    debugger;
+    // debugger;
     dispatch(login(loginRequest)).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
@@ -154,17 +154,19 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
   const onPress = () => setOpen((x) => !x);
   return (
     <>
-      {button
-        ? button(onPress)
-        : <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
+      {button?.(onPress)
+        ?? <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
           disabled={server === undefined}
+          px='$1'
+          minWidth={80}
           onPress={onPress}>
-          <Heading size='$2' color={primaryTextColor}>
-            Login/Sign Up
-          </Heading>
-          {operation ? <Heading size='$1' color={primaryTextColor}>
-            to {operation}
-          </Heading> : undefined}
+          {mediaQuery.gtXs
+            ? <Heading size='$2' ta='center' color={primaryTextColor}>
+              Login/Sign Up<br />to {operation}
+            </Heading>
+            : <Heading size='$2' ta='center' color={primaryTextColor}>
+              Login/<br />Sign Up
+            </Heading>}
         </Button>}
       <Sheet
         modal
@@ -184,7 +186,18 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
           <XStack ai='center'
             pl={mediaQuery.gtXs ? '$2' : 0}
             pr={mediaQuery.gtXs ? '$4' : '$1'}>
-
+            <Button
+              // alignSelf='center'
+              // my='auto'
+              size="$2"
+              ml='$2'
+              circular
+              icon={ChevronLeft}
+              // mb='$2'
+              onPress={() => {
+                setOpen(false)
+              }}
+            />
             <XStack f={1} ai='center'>
               {isCurrentServer
                 ? <ServerNameAndLogo server={server} />
@@ -195,7 +208,7 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
                 </Button>
               }
             </XStack>
-            <Button
+            {/* <Button
               alignSelf='center'
               size="$6"
               circular
@@ -203,7 +216,7 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
               onPress={() => {
                 setOpen(false)
               }}
-            />
+            /> */}
             <XStack f={1} ai='center' o={isCurrentServer ? 0 : 0.5}>
               <Paragraph ml='auto' size='$1' > via</Paragraph>
               <XStack>

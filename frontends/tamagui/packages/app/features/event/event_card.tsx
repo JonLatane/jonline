@@ -1,10 +1,10 @@
-import { useIsVisible } from 'app/hooks/use_is_visible';
+import useIsVisibleHorizontal, { useIsVisible } from 'app/hooks/use_is_visible';
 import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, getServerTheme, updateEvent } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
-import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
+import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, Eye, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
@@ -195,9 +195,10 @@ export const EventCard: React.FC<Props> = ({
   }
 
   const window = useWindowDimensions();
-  const ref = React.createRef<TamaguiElement>();
+  const visibilityRef = React.createRef<HTMLDivElement>();
+  // const ref = React.createRef<TamaguiElement>();
   const instanceScrollRef = React.createRef<ScrollView>();
-  const isVisible = useIsVisible(ref);
+  const isVisible = useIsVisibleHorizontal(visibilityRef);
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
   useEffect(() => {
     if (isVisible && !hasBeenVisible) {
@@ -295,7 +296,7 @@ export const EventCard: React.FC<Props> = ({
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview;
+  const showBackgroundPreview = !!imagePreview && isVisible;
   //  && isPreview
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
 
@@ -408,7 +409,7 @@ export const EventCard: React.FC<Props> = ({
       overflow='hidden'
       w={shrinkServerInfo ? '$5' : undefined}
       h={shrinkServerInfo ? '$5' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
-      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+      <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip />
     </XStack>
     : undefined;
   const headerLinksView = <YStack f={1} key='header-links-view'>
@@ -427,7 +428,7 @@ export const EventCard: React.FC<Props> = ({
           <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
           </Anchor>
-          {primaryInstance ? <EventCalendarExporter tiny event={event} instance={primaryInstance} /> : undefined}
+          {primaryInstance && (!isPreview || isVisible) ? <EventCalendarExporter tiny event={event} instance={primaryInstance} /> : undefined}
         </XStack>
       </>
       : <>
@@ -723,265 +724,274 @@ export const EventCard: React.FC<Props> = ({
   );
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
-      <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
-        w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
-        <Card theme="dark" size="$4" bordered id={componentKey}
-          // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
-          animation='standard'
-          borderColor={showServerInfo ? primaryColor : undefined}
-          margin='$0'
-          marginBottom='$3'
-          marginTop='$3'
-          padding={0}
-          f={isPreview ? undefined : 1}
-          ref={ref!}
-          scale={1}
-          opacity={1}
-          y={0}
-        // borderColor={primaryAnchorColor}
-        >
-          {eventPost.link || eventPost.title
-            ? <Card.Header p={0}>
-              <YStack w='100%'>
-                <XStack ai='center' w='100%'>
-                  {instancePost
-                    ? <StarButton post={instancePost} eventMargins />
-                    : undefined}
-                  <YStack key='primary-header' f={1} pt='$4' pb={0}>
-                    <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
-                      {headerLinks}
+      <div ref={visibilityRef} style={{ width: isPreview && horizontal ? recommendedHorizontalSize : '100%' }}>
+        <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
+          w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
+          <Card theme="dark" size="$4" bordered id={componentKey}
+            // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
+            animation='standard'
+            borderColor={showServerInfo ? primaryColor : undefined}
+            margin='$0'
+            marginBottom='$3'
+            marginTop='$3'
+            padding={0}
+            f={isPreview ? undefined : 1}
+            // ref={ref}
+            scale={1}
+            opacity={1}
+            y={0}
+          // borderColor={primaryAnchorColor}
+          >
+            {eventPost.link || eventPost.title
+              ? <Card.Header p={0}>
+                <YStack w='100%'>
+                  <XStack ai='center' w='100%'>
+                    {/* {isVisible || true? <Eye size='$2' /> : undefined} */}
+                    {instancePost
+                      ? <StarButton post={instancePost} eventMargins />
+                      : undefined}
+                    <YStack key='primary-header' f={1} pt='$4' pb={0}>
+                      <YStack key='header-links' w='100%' pl='$4' pr={isPreview && showServerInfo ? 0 : '$4'}>
+                        {headerLinks}
+                      </YStack>
                     </YStack>
-                  </YStack>
 
-                  {/* {showServerInfo
+                    {/* {showServerInfo
                     ? <XStack my='auto' w={shrinkServerInfo ? '$4' : undefined} h={shrinkServerInfo ? '$4' : undefined} jc={shrinkServerInfo ? 'center' : undefined} mr='$2'>
                       <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
                     </XStack>
                     : undefined} */}
-                </XStack>
-                {!isPreview && (instances.length > 1 || editing)
-                  ? <XStack key='instances' w='100%' mt='$2' space>
+                  </XStack>
+                  {!isPreview && (instances.length > 1 || editing)
+                    ? <XStack key='instances' w='100%' mt='$2' space>
 
 
-                    {scrollInstancesVertically
-                      ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
-                        <AnimatePresence>
-                          {displayedInstances?.map((i) => renderInstance(i))}
-                        </AnimatePresence>
-                      </XStack>
-                      : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
-                        <XStack mt='$1' px='$3' key='instance-scroller-list'>
-                          <AnimatePresence key='instance-scroll-animator'>
+                      {scrollInstancesVertically
+                        ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
+                          <AnimatePresence>
                             {displayedInstances?.map((i) => renderInstance(i))}
                           </AnimatePresence>
                         </XStack>
-                      </ScrollView>}
+                        : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                          <XStack mt='$1' px='$3' key='instance-scroller-list'>
+                            <AnimatePresence key='instance-scroll-animator'>
+                              {displayedInstances?.map((i) => renderInstance(i))}
+                            </AnimatePresence>
+                          </XStack>
+                        </ScrollView>}
 
-                  </XStack>
-                  : undefined
-                }
-                <YStack w='100%' maw={800} mx='auto'>
-                  {editingInstance && editing && !previewingEdits
-                    ? <>
-                      <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
-                        <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
-
-                        <XStack ml='auto' my='auto'>
-                          <DateTimePicker value={editingInstance.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
-                        </XStack>
-                      </XStack>
-                      <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
-                        <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
-                        <XStack ml='auto' my='auto'>
-                          <DateTimePicker value={editingInstance.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
-                        </XStack>
-                      </XStack>
-                      {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
-                    </>
-                    : undefined}
-
-                </YStack>
-              </YStack>
-            </Card.Header>
-            : undefined}
-          <Card.Footer p={0} paddingTop='$2' >
-            {deleted
-              ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
-              : <YStack key='footer-base' zi={1000} width='100%'>
-                <AnimatePresence>
-                  {shrinkContent ? undefined
-                    : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
-                      px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
-                      {primaryInstance
-                        ?
-                        <XStack mx='$3' mt='$1'>
-                          <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                            readOnly={!editing || previewingEdits}
-                            preview={isPreview}
-                            link={isPreview ? eventLink : undefined}
-                            setLocation={(location: Location) => {
-                              if (editingInstance) {
-                                updateEditingInstance({ ...editingInstance, location });
-                              }
-                            }} />
-                        </XStack>
-                        : undefined}
-                      <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
-                        {editing && !previewingEdits
-                          ? <PostMediaManager
-                            key='media-edit'
-                            link={eventPost.link}
-                            media={editedMedia}
-                            setMedia={setEditedMedia}
-                            embedLink={editedEmbedLink}
-                            setEmbedLink={setEditedEmbedLink}
-                            disableInputs={savingEdits}
-                          />
-                          : <PostMediaRenderer
-                            key='media-view'
-                            smallPreview={horizontal && isPreview}
-                            xsPreview={xs && isPreview}
-                            {...{ detailsLink, isPreview, groupContext, hasBeenVisible }}
-                            post={{
-                              ...eventPost,
-                              media,
-                              embedLink
-                            }} />}
-                      </YStack>
-                      <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
-                        {contentView}
-                      </YStack>
-                      {editing && !previewingEdits
-                        ? <>
-                          <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
-                          <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
-                            disabled={!editedAllowRsvps}
-                            setter={setEditedAllowAnonymousRsvps} />
-                        </>
-                        : undefined}
-
-                    </YStack>
+                    </XStack>
+                    : undefined
                   }
-                </AnimatePresence>
-                {primaryInstance && (!isPreview || hasBeenVisible)
-                  ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
-                    <EventRsvpManager
-                      key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
-                      event={event!}
-                      instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                  <YStack w='100%' maw={800} mx='auto'>
+                    {editingInstance && editing && !previewingEdits
+                      ? <>
+                        <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
+                          <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+
+                          <XStack ml='auto' my='auto'>
+                            <DateTimePicker value={editingInstance.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
+                          </XStack>
+                        </XStack>
+                        <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
+                          <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                          <XStack ml='auto' my='auto'>
+                            <DateTimePicker value={editingInstance.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
+                          </XStack>
+                        </XStack>
+                        {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
+                      </>
+                      : undefined}
+
                   </YStack>
-                  : undefined}
-                <AnimatePresence>
-                  {shrinkContent ? undefined
-                    : <YStack animation='standard' {...standardAnimation}>
-                      <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
-                        {showEdit
-                          ? editing
-                            ? <>
-                              <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
-                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                Save
-                              </Button>
-                              <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
-                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                Cancel
-                              </Button>
-                              <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
-                                disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                {previewingEdits ? 'Edit' : 'Preview'}
-                              </Button>
-                            </>
-                            : <>
-                              <Button my='auto' key='edit-button' size='$2' icon={Edit}
-                                onPress={() => {
-                                  setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
-                                    setEditingInstance(selectedInstance)
-                                  }
-                                }} transparent
-                                disabled={deleting} o={deleting ? 0.5 : 1}>
-                                Edit
-                              </Button>
-
-                              {deleteDialog}
-                            </>
-                          : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
-
-                        <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
-                          <XStack key='visibility-edit' my='auto' ml='auto'>
-                            <VisibilityPicker
-                              id={`visibility-picker-${eventPost.id}${isPreview ? '-preview' : ''}`}
-                              label='Event Visibility'
-                              visibility={visibility}
-                              onChange={setEditedVisibility}
-                              visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                </YStack>
+              </Card.Header>
+              : undefined}
+            <Card.Footer p={0} paddingTop='$2' >
+              {deleted
+                ? <Paragraph key='deleted-notification' size='$1'>This event has been deleted.</Paragraph>
+                : <YStack key='footer-base' zi={1000} width='100%'>
+                  <AnimatePresence>
+                    {shrinkContent ? undefined
+                      : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
+                        px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
+                        {primaryInstance && (!isPreview || isVisible)
+                          ?
+                          <XStack mx='$3' mt='$1'>
+                            <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
                               readOnly={!editing || previewingEdits}
+                              preview={isPreview}
+                              link={isPreview ? eventLink : undefined}
+                              setLocation={(location: Location) => {
+                                if (editingInstance) {
+                                  updateEditingInstance({ ...editingInstance, location });
+                                }
+                              }} />
+                          </XStack>
+                          : undefined}
+                        <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
+                          {editing && !previewingEdits
+                            ? <PostMediaManager
+                              key='media-edit'
+                              link={eventPost.link}
+                              media={editedMedia}
+                              setMedia={setEditedMedia}
+                              embedLink={editedEmbedLink}
+                              setEmbedLink={setEditedEmbedLink}
+                              disableInputs={savingEdits}
                             />
-                          </XStack>
-                          <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
-                            <ShareableToggle value={shareable}
-                              setter={setEditedShareable}
-                              readOnly={!editing || previewingEdits} />
-                          </XStack>
-                          {isPrimaryServer
-                            ? <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                              <GroupPostManager post={eventPost} isVisible={isVisible}
+                            : <PostMediaRenderer
+                              key='media-view'
+                              smallPreview={horizontal && isPreview}
+                              xsPreview={xs && isPreview}
+
+                              {...{ detailsLink, isPreview, groupContext, isVisible }}
+                              post={{
+                                ...eventPost,
+                                media,
+                                embedLink
+                              }} />}
+                        </YStack>
+                        <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
+                          {contentView}
+                        </YStack>
+                        {editing && !previewingEdits
+                          ? <>
+                            <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
+                            <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
+                              disabled={!editedAllowRsvps}
+                              setter={setEditedAllowAnonymousRsvps} />
+                          </>
+                          : undefined}
+
+                      </YStack>
+                    }
+                  </AnimatePresence>
+                  {primaryInstance && (!isPreview || isVisible)
+                    ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
+                      <EventRsvpManager
+                        key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
+                        event={event!}
+                        instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                    </YStack>
+                    : undefined}
+                  <AnimatePresence>
+                    {shrinkContent ? undefined
+                      : <YStack animation='standard' {...standardAnimation}>
+                        <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
+                          {showEdit
+                            ? editing
+                              ? <>
+                                <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                  Save
+                                </Button>
+                                <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                  Cancel
+                                </Button>
+                                <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                  {previewingEdits ? 'Edit' : 'Preview'}
+                                </Button>
+                              </>
+                              : <>
+                                <Button my='auto' key='edit-button' size='$2' icon={Edit}
+                                  onPress={() => {
+                                    setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
+                                      setEditingInstance(selectedInstance)
+                                    }
+                                  }} transparent
+                                  disabled={deleting} o={deleting ? 0.5 : 1}>
+                                  Edit
+                                </Button>
+
+                                {deleteDialog}
+                              </>
+                            : isAuthor
+                              ? <XStack o={0.5}>{deleteDialog}</XStack>
+                              : undefined}
+
+                          <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                            <XStack key='visibility-edit' my='auto' ml='auto'>
+                              <VisibilityPicker
+                                id={`visibility-picker-${eventPost.id}${isPreview ? '-preview' : ''}`}
+                                label='Event Visibility'
+                                visibility={visibility}
+                                onChange={setEditedVisibility}
+                                visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                                readOnly={!editing || previewingEdits}
+                              />
+                            </XStack>
+                            <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
+                              <ShareableToggle value={shareable}
+                                setter={setEditedShareable}
+                                readOnly={!editing || previewingEdits} />
+                            </XStack>
+                            {/* {isPrimaryServer
+                              ?  */}
+                            <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
+                              <GroupPostManager
+                                post={eventPost}
+                                isVisible={isVisible}
                                 createViewHref={createGroupEventViewHref} />
                             </XStack>
-                            : undefined}
+                            {/* : undefined} */}
+                          </XStack>
                         </XStack>
-                      </XStack>
 
-                      <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
-                        <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
+                        <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
+                          <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
 
-                        <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                          <YStack key='discussion-anchor-root' h='100%'>
-                            <Button key='comments-link-button'
-                              opacity={isPreview ? 1 : 0.9}
-                              transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
-                              disabled={true}
-                              marginVertical='auto'
-                              px='$2'
-                            >
-                              <XStack opacity={0.9}>
-                                <YStack marginVertical='auto' scale={0.75}>
-                                  <Paragraph size="$1" ta='right'>
-                                    {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
-                                  </Paragraph>
-                                  {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                    {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
-                                  </Paragraph>}
-                                </YStack>
-                              </XStack>
-                            </Button>
-                          </YStack>
-                        </Anchor>
-                      </XStack>
-                    </YStack>}
-                </AnimatePresence>
-              </YStack>
-            }
-          </Card.Footer>
-          {imagePostBackgrounds ?
-            <Card.Background>
-              {(showBackgroundPreview) ?
-                <Image
-                  pos="absolute"
-                  width={backgroundSize}
-                  opacity={fancyPostBackgrounds ? 0.11 : 0.04}
-                  height={backgroundSize}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
-                  blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
-                  // borderRadius={5}
-                  borderBottomRightRadius={5}
-                />
-                : undefined}
-            </Card.Background>
-            : undefined}
-        </Card >
-      </YStack>
+                          <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                            <YStack key='discussion-anchor-root' h='100%'>
+                              <Button key='comments-link-button'
+                                opacity={isPreview ? 1 : 0.9}
+                                transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
+                                disabled={true}
+                                marginVertical='auto'
+                                px='$2'
+                              >
+                                <XStack opacity={0.9}>
+                                  <YStack marginVertical='auto' scale={0.75}>
+                                    <Paragraph size="$1" ta='right'>
+                                      {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
+                                    </Paragraph>
+                                    {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                      {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
+                                    </Paragraph>}
+                                  </YStack>
+                                </XStack>
+                              </Button>
+                            </YStack>
+                          </Anchor>
+                        </XStack>
+                      </YStack>}
+                  </AnimatePresence>
+                </YStack>
+              }
+            </Card.Footer>
+            {imagePostBackgrounds ?
+              <Card.Background>
+                {(showBackgroundPreview) ?
+                  <Image
+                    pos="absolute"
+                    width={backgroundSize}
+                    opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                    height={backgroundSize}
+                    resizeMode="cover"
+                    als="flex-start"
+                    source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
+                    blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                    // borderRadius={5}
+                    borderBottomRightRadius={5}
+                  />
+                  : undefined}
+              </Card.Background>
+              : undefined}
+          </Card >
+        </YStack>
+      </div>
     </AccountOrServerContextProvider>
   );
 };

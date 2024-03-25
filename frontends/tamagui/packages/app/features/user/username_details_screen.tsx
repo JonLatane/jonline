@@ -381,7 +381,7 @@ export function UsernameDetailsScreen() {
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
                       ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
-                      : postContext === PostContext.REPLY && userPosts.length === 0
+                      : postContext === PostContext.REPLY && userReplies.length === 0
                         ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
                         : undefined}
                   {postContext === PostContext.POST

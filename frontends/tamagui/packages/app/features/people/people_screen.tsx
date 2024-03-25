@@ -98,11 +98,11 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
                 ? <div key='no-people'>
                   {listingType == UserListingType.FOLLOW_REQUESTS ?
-                    <YStack width='100%' maw={600} jc="center" ai="center">
-                      <Heading size='$5' mb='$3'>No follow requests found.</Heading>
+                    <YStack mx='auto' width='100%' maw={600} jc="center" ai="center">
+                      <Heading size='$3'  o={0.5} mb='$3'>No follow requests found.</Heading>
                     </YStack> :
-                    <YStack width='100%' maw={600} jc="center" ai="center">
-                      <Heading size='$5' o={0.5} mb='$3'>No people found.</Heading>
+                    <YStack mx='auto' width='100%' maw={600} jc="center" ai="center">
+                      <Heading size='$3' o={0.5} mb='$3'>No people found.</Heading>
                       {/* <Heading size='$2' o={0.5} ta='center'>The people you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                       {allUsers.length > 0 ? <Heading size='$3' o={0.5} ta='center'>Try searching for something else.</Heading> : undefined}
                     </YStack>}

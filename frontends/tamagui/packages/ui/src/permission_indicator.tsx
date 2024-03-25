@@ -4,10 +4,11 @@ import { Heading, Tooltip } from "@jonline/ui";
 import { Bot, Shield } from '@tamagui/lucide-icons';
 
 export type PermissionIndicatorProps = {
-  permission: Permission
+  permission: Permission;
+  color?: string;
 }
 
-export const PermissionIndicator = ({ permission }: PermissionIndicatorProps) => {
+export const PermissionIndicator = ({ permission , color}: PermissionIndicatorProps) => {
   const descriptions = {
     [Permission.ADMIN]: <Heading size='$2'>User is an admin.</Heading>,
     [Permission.RUN_BOTS]: <>
@@ -18,8 +19,8 @@ export const PermissionIndicator = ({ permission }: PermissionIndicatorProps) =>
 
   return <Tooltip placement="bottom">
     <Tooltip.Trigger>
-      {permission == Permission.ADMIN ? <Shield /> : undefined}
-      {permission == Permission.RUN_BOTS ? <Bot /> : undefined}
+      {permission == Permission.ADMIN ? <Shield color={color}/> : undefined}
+      {permission == Permission.RUN_BOTS ? <Bot color={color}/> : undefined}
     </Tooltip.Trigger>
     <Tooltip.Content>
       {descriptions[permission]}

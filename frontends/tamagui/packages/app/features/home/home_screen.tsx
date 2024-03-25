@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -61,7 +61,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
 
-  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const eventPagination = usePaginatedRendering(allEvents, 7, {
+    pageParamHook: useEventPageParam,
+  });
   const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
@@ -90,7 +92,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       withServerPinning
       showShrinkPreviews
       loading={loadingPosts || loadingEvents}
-      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />}
+    //   bottomChrome={
+    //   <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
+    // }
     >
       <FlipMove style={{
         width: '100%',
@@ -99,14 +103,24 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         justifyContent: 'center', alignItems: 'center', marginTop: 5,
         maxWidth: 1400
       }}>
+        {/* <div key='create' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+          <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
+        </div> */}
         <div key='latest-events-header' style={{ width: '100%' }}>
-          <XStack w='100%' pt='$3' px='$3' ai='center'>
-            <Button mr='auto' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
+          <XStack w='100%' pt={0} px='$3' ai='center'
+          // flexDirection='row-reverse'
+          >
+
+            <Button mr='auto' my='$2' onPress={() => dispatch(setShowEventsOnLatest(!showEventsOnLatest))}>
               <Heading size='$6'>Upcoming Events</Heading>
               <XStack animation='quick' rotate={showEventsOnLatest ? '90deg' : '0deg'}>
                 <ChevronRight />
               </XStack>
             </Button>
+            <div style={{ flex: 1 }} />
+            <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
+              <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
+            </div>
           </XStack>
         </div>
         {showEventsOnLatest
@@ -158,7 +172,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           <Heading size='$5' pt='$10' mx='auto'>Posts</Heading>
         </div>
         {maxPagesToRender < postPagination.page + 1
-          ? <div key='pagination-reset' style={{ width: '100%' }}>
+          ? <div key='pagination-reset'
+            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
             <PaginationResetIndicator {...postPagination} />
           </div>
           : undefined}
@@ -175,12 +190,13 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           : undefined}
         {paginatedPosts.map((post) => {
           return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
-            style={{ width: '100%', maxWidth: 800, padding: 18 }}>
+            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
             <PostCard post={post} isPreview />
           </div>;
         })}
 
-        <div key='pagination-next' style={{ width: '100%' }}>
+        <div key='pagination-next'
+          style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
           <PaginationIndicator {...postPagination} />
         </div>
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}

@@ -175,6 +175,7 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
         size='$2'
         my='auto'
         ml='$2'
+        // mr='$2'
         circular
         icon={Info} onPress={() => onShowInfo()} />}
   </XStack>;

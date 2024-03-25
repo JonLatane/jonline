@@ -5,7 +5,7 @@ import { GestureResponderEvent, View } from "react-native";
 import { Post, Visibility } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Pin, PinOff, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
-import { TamaguiMarkdown } from "app/components";
+import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 import { AuthorInfo } from "./author_info";
@@ -246,7 +246,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   //   : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview;
+  const showBackgroundPreview = !!imagePreview && isVisible;
 
 
   const componentKey = useComponentKey('post-card');
@@ -330,6 +330,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       appShrinkPreviews && !forceExpandPreview
     )
   );
+  console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
@@ -424,7 +425,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     w={shrinkServerInfo ? '$4' : undefined}
                     h={shrinkServerInfo ? '$4' : undefined}
                     jc={shrinkServerInfo ? 'center' : undefined}>
-                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} />
+                    <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip />
                   </XStack>
                   : undefined}
               </XStack>
@@ -453,7 +454,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                               ...post,
                               media,
                               embedLink
-                            }, isPreview, groupContext, hasBeenVisible
+                            }, isPreview, groupContext, isVisible
                           }} />}
                       </YStack>
                       {isPreview
@@ -510,7 +511,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                               setter={setEditedShareable}
                               readOnly={!editing || previewingEdits} />
                           </XStack>
-                          {isPrimaryServer && !post?.replyToPostId
+                          {!post?.replyToPostId
                             ? <XStack maw='100%' mr={0} my='auto' ml='auto'>
                               <GroupPostManager post={federatedEntity(post, server)} isVisible={isVisible} />
                             </XStack>
@@ -562,18 +563,20 @@ export const PostCard: React.FC<PostCardProps> = ({
           {imagePostBackgrounds ?
             <Card.Background>
               {(showBackgroundPreview) ?
-                <Image
-                  pos="absolute"
-                  width={backgroundSize}
-                  opacity={fancyPostBackgrounds ? 0.11 : 0.04}
-                  height={backgroundSize}
-                  resizeMode="cover"
-                  als="flex-start"
-                  source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
-                  blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
-                  // borderRadius={5}
-                  borderBottomRightRadius={5}
-                />
+                <FadeInView>
+                  <Image
+                    pos="absolute"
+                    width={backgroundSize}
+                    opacity={fancyPostBackgrounds ? 0.11 : 0.04}
+                    height={backgroundSize}
+                    resizeMode="cover"
+                    als="flex-start"
+                    source={{ uri: previewUrl!, height: backgroundSize, width: backgroundSize }}
+                    blurRadius={fancyPostBackgrounds ? 1.5 : undefined}
+                    // borderRadius={5}
+                    borderBottomRightRadius={5}
+                  />
+                </FadeInView>
                 : undefined}
             </Card.Background>
             : undefined}

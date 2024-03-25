@@ -122,6 +122,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
 
     if (isCurrentServer || allowServerSelection) {
       if (currentServer?.host != account.server.host) {
+
         dispatch(selectServer(account.server));
       }
       dispatch(selectAccount(account));
@@ -210,7 +211,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 value={reauthenticationPassword}
                 disabled={!enablePasswordInput}
                 o={enablePasswordInput ? 1 : 0.5}
-                textContentType="newPassword"
+                textContentType="password"
                 onChange={(e) => {
                   console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
                 }}

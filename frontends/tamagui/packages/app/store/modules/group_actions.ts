@@ -4,7 +4,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, getCredentialClient } from "..";
+import { AccountOrServer, getCredentialClient, parseFederatedId } from "app/store";
 
 export const defaultGroupListingType = GroupListingType.ALL_GROUPS;
 
@@ -50,7 +50,9 @@ export const loadPostGroupPosts: AsyncThunk<GetGroupPostsResponse, LoadPostGroup
   async (request) => {
     const { postId } = request;
     const client = await getCredentialClient(request);
-    const result = await client.getGroupPosts({ postId }, client.credential);
+    const result = await client.getGroupPosts({
+      postId: parseFederatedId(postId).id
+    }, client.credential);
     return result;
   }
 );
@@ -63,7 +65,10 @@ export const loadGroupPostsPage: AsyncThunk<GetPostsResponse, LoadGroupPostsPage
     // debugger;
     const client = await getCredentialClient(request);
     // debugger;
-    const result = await client.getPosts({ groupId, listingType: PostListingType.GROUP_POSTS }, client.credential);
+    const result = await client.getPosts({
+      groupId: parseFederatedId(groupId).id,
+      listingType: PostListingType.GROUP_POSTS
+    }, client.credential);
     // debugger;
     return result;
   }

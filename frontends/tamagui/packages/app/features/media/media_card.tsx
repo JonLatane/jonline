@@ -1,7 +1,7 @@
 import React from "react";
 
 import { Permission } from "@jonline/api";
-import { AlertDialog, Button, Card, DateViewer, Heading, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
+import { AlertDialog, Button, Card, DateViewer, Heading, Paragraph, Theme, XStack, YStack, standardAnimation, useMedia } from "@jonline/ui";
 import { Trash } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from "app/components";
 import { useCredentialDispatch } from "app/hooks";
@@ -49,6 +49,7 @@ export const MediaCard: React.FC<Props> = ({ media, onSelect, selected = false }
               <MediaRenderer media={media} />
             </YStack>
 
+            <Paragraph size='$1' fontFamily='$mono'>{media.contentType}</Paragraph>
             <TamaguiMarkdown text={media.description} />
 
             <XStack>

@@ -166,11 +166,11 @@ const serversSlice = createSlice({
       }
     },
     removeServer: (state, action: PayloadAction<JonlineServer>) => {
-      if (state.currentServerId == serverID(action.payload)) {
-        state.currentServerId = serversAdapter.getSelectors().selectAll(state)
-          .filter(s => serverID(s) != serverID(action.payload)).map(serverID)[0];
-        //[serverID(action.payload)];//serversAdapter(state, serverID(action.payload));
-      }
+      // if (state.currentServerId === serverID(action.payload)) {
+      //   state.currentServerId = serversAdapter.getSelectors().selectAll(state)
+      //     .filter(s => serverID(s) !== serverID(action.payload)).map(serverID)[0];
+      //   //[serverID(action.payload)];//serversAdapter(state, serverID(action.payload));
+      // }
       deleteClient(action.payload);
       serversAdapter.removeOne(state, serverID(action.payload));
     },
@@ -183,6 +183,10 @@ const serversSlice = createSlice({
     selectServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
       const oldServerId = state.currentServerId;
       const newServerId = serverID(action.payload!);
+      if (newServerId === undefined && state.ids.length > 0) return;
+      if (!state.ids.includes(newServerId)) return;
+
+      // debugger;
       state.currentServerId = newServerId;
 
       setTimeout(() => {

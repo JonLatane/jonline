@@ -119,7 +119,8 @@ export function TabsNavigation({
 
   const measuredHomeButtonWidth = document.querySelector('#home-button')?.clientWidth ?? 0;
   const measuredHomeButtonHeight = document.querySelector('#home-button')?.clientHeight ?? 0;
-  return <Theme inverse={invert} key={`tabs-${appSection}-${appSubsection}`}>
+  return <Theme inverse={invert}// key={`tabs-${appSection}-${appSubsection}`}
+  >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
     <GroupContextProvider value={selectedGroup}>

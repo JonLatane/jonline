@@ -49,7 +49,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     }
   }, [firstPageLoaded]);
 
-  // console.log(`Current page: ${currentPage}, Total Posts: ${posts.length}`);
+  // console.log(`Posts pagination: ${pagination}`);
 
   return (
     <TabsNavigation
@@ -58,16 +58,24 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/posts`}
       withServerPinning
       showShrinkPreviews
-      bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts />}
+      // bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts />}
       loading={loadingPosts}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' mt='$3' maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' maw={800} space>
         <YStack w='100%'>
-          <PaginationResetIndicator {...pagination} />
           <FlipMove>
+
+            <div key='create' style={{display: 'flex' }}>
+              <div style={{ marginLeft: 'auto' }}>
+                <DynamicCreateButton selectedGroup={selectedGroup} showPosts />
+              </div>
+            </div>
+            <div key='pagination-reset'>
+              <PaginationResetIndicator {...pagination} />
+            </div>
             {firstPageLoaded || allPosts.length > 0
               ? allPosts.length === 0
-                ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
+                ? <div key='no-posts-found' style={{ width: '100%', marginLeft: 'auto', marginRight: 'auto' }}>
                   <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                     <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
                     {/* <Heading size='$2' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
@@ -83,8 +91,10 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
                 </XStack>
               </div>;
             })}
+            <div key='pagination'>
+              <PaginationIndicator {...pagination} />
+            </div>
           </FlipMove>
-          <PaginationIndicator {...pagination} />
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>
