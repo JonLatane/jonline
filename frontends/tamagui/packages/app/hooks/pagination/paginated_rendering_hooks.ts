@@ -33,7 +33,7 @@ export function usePageParam() {
 
   return [page, setPage] as const;
 }
-export const maxPagesToRender = 3;
+export const maxPagesToRender = 2;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[],
   pageSize: number,
