@@ -462,11 +462,25 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                   {viewingRecommendedServers
                     ? <XStack animation="quick" mt='$2' mb='$2' w='100%' {...standardAnimation}>
                       <ScrollView f={1} horizontal>
-                        <XStack>
+                        <FlipMove style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          // justifyContent: 'center',
+                          // width: '100%',
+                          // overflow: 'auto',
+                          // whiteSpace: 'nowrap',
+                          // overflowX: 'scroll',
+                          // overflowY: 'hidden',
+                          // scrollbarWidth: 'none',
+                          // msOverflowStyle: 'none',
+                          // '&::-webkit-scrollbar': { display: 'none' }
+
+                        }}>
                           {recommendedServerHosts.map((host, index) => {
                             const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
                             // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                            return <>
+                            return <div key={`server-${host}`}>
                               {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
                                 ? <XStack key='separator' my='auto'>
                                   <Tooltip>
@@ -482,9 +496,9 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                               <XStack my='auto' key={`recommended-server-${host}`}>
                                 <RecommendedServer host={host} tiny />
                               </XStack>
-                            </>;
+                            </div>;
                           })}
-                        </XStack>
+                        </FlipMove>
                       </ScrollView>
 
                       {allRecommendableServerHosts.length > recommendedServerHosts.length

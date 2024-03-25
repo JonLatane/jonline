@@ -158,7 +158,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           <Heading size='$5' pt='$10' mx='auto'>Posts</Heading>
         </div>
         {maxPagesToRender < postPagination.page + 1
-          ? <div key='pagination-reset' style={{ width: '100%' }}>
+          ? <div key='pagination-reset'
+            style={{ width: '100%', maxWidth: 800, padding: 18 }}>
             <PaginationResetIndicator {...postPagination} />
           </div>
           : undefined}
@@ -180,7 +181,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>;
         })}
 
-        <div key='pagination-next' style={{ width: '100%' }}>
+        <div key='pagination-next'
+          style={{ width: '100%', maxWidth: 800, padding: 18 }}>
           <PaginationIndicator {...postPagination} />
         </div>
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
