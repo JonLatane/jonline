@@ -446,7 +446,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         ? allEvents.length === 0
                           ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
                             <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                              <Heading size='$5' mb='$3'>No events found.</Heading>
+                              <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
                               {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                             </YStack>
                           </XStack>
