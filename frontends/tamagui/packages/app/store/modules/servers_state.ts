@@ -173,6 +173,12 @@ const serversSlice = createSlice({
       // }
       deleteClient(action.payload);
       serversAdapter.removeOne(state, serverID(action.payload));
+      setTimeout(() => {
+        store.dispatch(pinServer({
+          serverId: serverID(action.payload),
+          pinned: false
+        }))
+      }, 1)
     },
     resetServers: () => initialState,
     clearServerAlerts: (state) => {
