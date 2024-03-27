@@ -132,19 +132,19 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     ]
   );
 
-  const renderInColumns = mediaQuery.gtXs;
   const numberOfColumns = mediaQuery.gtXxxxl ? 6
     : mediaQuery.gtXxl ? 5
       : mediaQuery.gtLg ? 4
         : mediaQuery.gtMd ? 3
-          : 2;
+          : mediaQuery.gtXs ? 2 : 1;
+  const renderInColumns = numberOfColumns > 1;
   const pagination = usePaginatedRendering(
     allEvents,
     renderInColumns
       ? mediaQuery.gtXxxxl ? 12
         : mediaQuery.gtXxl ? 10
           : mediaQuery.gtLg ? 8 : 6
-      : 7
+      : 8
   );
   const paginatedEvents = pagination.results;
 
@@ -416,22 +416,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     </Dialog.Content>
                   </Dialog.Portal>
                 </Dialog>
-
-                {/* <Text fontFamily='$body' color='black' width='100%'>
-                <BigCalendar localizer={localizer}
-                  // events={[{title: 'test', start: new Date(), end: new Date()}]}
-                  events={allEvents.map((event) => {
-                    return {
-                      title: event.post?.title,
-                      color: 'red',
-                      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
-                    }
-                  })}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ width: window.innerWidth, height: window.innerHeight - navigationHeight - 230}} />
-              </Text> */}
               </YStack>
             </div>
             : renderInColumns
@@ -440,15 +424,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <PaginationResetIndicator {...pagination} />
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
                     <AnimatePresence>
-
-                      {/* <FlipMove style={{ display: 'flex', flexWrap: 'wrap' }}> */}
-
                       {firstPageLoaded || allEvents.length > 0
                         ? allEvents.length === 0
                           ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
                             <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                               <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
-                              {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                             </YStack>
                           </XStack>
                           : undefined
@@ -490,11 +470,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     </XStack>
                   </div>
                 }),
+
                 <div key='pagedown' style={{ width: '100%', margin: 'auto' }}>
                   <PaginationIndicator {...pagination} />
                 </div>
               ]}
-          {showScrollPreserver && !bigCalendar ? <YStack h={100000} /> : undefined}
+          {showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         </FlipMove>
 
       </YStack >

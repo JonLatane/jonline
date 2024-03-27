@@ -170,7 +170,7 @@ export const postsSlice = createSlice({
       // }
     });
     builder.addCase(loadPost.rejected, (state, action) => {
-      state.failedPostIds.push(federateId((action.meta.arg as LoadPost).id, action));
+      state.failedPostIds.push(federateId((action.meta.arg as LoadPost).id ?? '', action));
     });
     builder.addCase(loadPostReplies.fulfilled, (state, action) => {
       console.log('loaded post replies', action.payload)

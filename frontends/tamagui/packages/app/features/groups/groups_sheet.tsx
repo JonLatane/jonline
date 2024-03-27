@@ -294,11 +294,61 @@ export function GroupsSheet({
               {disableSelection ? undefined : <PinnedServerSelector show transparent simplified />}
             </YStack>
             <Sheet.ScrollView p="$4" space>
-              <FlipMove style={{maxWidth: 600, width: '100%', alignSelf: 'center'}}>
+              <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
                 {/* <YStack maw={600} als='center' width='100%'> */}
-                  {topGroups.length > 0
+                {topGroups.length > 0
+                  ? [
+                    ...topGroups.map((group, index) => {
+                      return <div key={`groupButton-${federatedId(group)}`}>
+                        <GroupButton
+                          group={group}
+                          groupPageForwarder={groupPageForwarder}
+                          onGroupSelected={onGroupSelected}
+                          selected={group.id == selectedGroup?.id}
+                          onShowInfo={() => {
+                            setInfoGroupId(federatedId(group));
+                            setInfoOpen(true);
+                          }}
+                          setOpen={setOpen}
+                          disabled={disableSelection}
+                          hideInfoButton={hideInfoButtons}
+                          extraListItemChrome={extraListItemChrome}
+                          hideLeaveButton={hideLeaveButtons}
+                        />
+                      </div>
+                    })
+                  ]
+                  : undefined}
+                {recentGroups.length > 0
+                  ? [
+                    <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>,
+                    ...recentGroups.map((group, index) => {
+                      return <div key={`groupButton-${federatedId(group)}`}>
+                        <GroupButton
+                          group={group}
+                          groupPageForwarder={groupPageForwarder}
+                          onGroupSelected={onGroupSelected}
+                          selected={group.id == selectedGroup?.id}
+                          onShowInfo={() => {
+                            setInfoGroupId(federatedId(group));
+                            setInfoOpen(true);
+                          }}
+                          setOpen={setOpen}
+                          disabled={disableSelection}
+                          hideInfoButton={hideInfoButtons}
+                          extraListItemChrome={extraListItemChrome}
+                          hideLeaveButton={hideLeaveButtons}
+                        />
+                      </div>
+                    })
+                  ]
+                  : undefined}
+                {hideAdditionalGroups
+                  ? undefined
+                  : sortedGroups.length > 0
                     ? [
-                      ...topGroups.map((group, index) => {
+                      topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined,
+                      sortedGroups.map((group, index) => {
                         return <div key={`groupButton-${federatedId(group)}`}>
                           <GroupButton
                             group={group}
@@ -318,57 +368,11 @@ export function GroupsSheet({
                         </div>
                       })
                     ]
-                    : undefined}
-                  {recentGroups.length > 0
-                    ? [
-                      <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>,
-                      ...recentGroups.map((group, index) => {
-                        return <div key={`groupButton-${federatedId(group)}`}>
-                          <GroupButton
-                            group={group}
-                            groupPageForwarder={groupPageForwarder}
-                            onGroupSelected={onGroupSelected}
-                            selected={group.id == selectedGroup?.id}
-                            onShowInfo={() => {
-                              setInfoGroupId(federatedId(group));
-                              setInfoOpen(true);
-                            }}
-                            setOpen={setOpen}
-                            disabled={disableSelection}
-                            hideInfoButton={hideInfoButtons}
-                            extraListItemChrome={extraListItemChrome}
-                            hideLeaveButton={hideLeaveButtons}
-                          />
-                        </div>
-                      })
-                    ]
-                    : undefined}
-                  {hideAdditionalGroups
-                    ? undefined
-                    : sortedGroups.length > 0
-                      ? [
-                        topGroups.length + recentGroups.length > 0 ? <Heading size='$4' mt='$3' als='center'>More Groups</Heading> : undefined,
-                        sortedGroups.map((group, index) => {
-                          return <div key={`groupButton-${federatedId(group)}`}>
-                            <GroupButton
-                              group={group}
-                              groupPageForwarder={groupPageForwarder}
-                              onGroupSelected={onGroupSelected}
-                              selected={group.id == selectedGroup?.id}
-                              onShowInfo={() => {
-                                setInfoGroupId(federatedId(group));
-                                setInfoOpen(true);
-                              }}
-                              setOpen={setOpen}
-                              disabled={disableSelection}
-                              hideInfoButton={hideInfoButtons}
-                              extraListItemChrome={extraListItemChrome}
-                              hideLeaveButton={hideLeaveButtons}
-                            />
-                          </div>
-                        })
-                      ]
-                      : <Heading size='$3' als='center'>No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}</Heading>}
+                    : <div key='noGroups' style={{ width: '100%', display: 'flex' }}>
+                      <Heading size='$3' mx='auto' o={0.5}>
+                        No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}
+                      </Heading>
+                    </div>}
                 {/* </YStack> */}
               </FlipMove>
             </Sheet.ScrollView>

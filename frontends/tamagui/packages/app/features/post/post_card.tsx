@@ -175,11 +175,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   const onPressDetails = onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
     : undefined;
-  const detailsPostLink = useLink({
+  const detailsPostLink = useLink?.({
     href: groupContext
-      ? `/g/${detailsGroupId}/p/${detailsLinkId}`
-      : `/post/${detailsLinkId}`,
-  });
+      ? `/g/${detailsGroupId || 'missing-id'}/p/${detailsLinkId || 'missing-id'}`
+      : `/post/${detailsLinkId || 'missing-id'}`,
+  }) ?? {};
   const detailsLink = onPressDetails ?? detailsPostLink;
   const showDetailsShadow = isPreview && post.content && post.content.length > 700;
 

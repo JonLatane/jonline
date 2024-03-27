@@ -4,8 +4,8 @@ import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnima
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
-import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
-import { useEffect, useState } from "react";
+import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
+import { use, useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
 import { InstanceTime } from "../event/instance_time";
@@ -15,6 +15,9 @@ import { useLink } from "solito/link";
 import { AppSection, menuIcon } from "./features_navigation";
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 import { Dictionary } from "@reduxjs/toolkit";
+import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
+import { ShortAccountSelectorButton } from "./pinned_server_selector";
+import { ServerNameAndLogo } from "./server_name_and_logo";
 
 type StarredPostFilter = 'posts' | 'events' | undefined;
 export type StarredPostsProps = {};
@@ -39,8 +42,9 @@ function useStarredPostDetails(postId: string) {
   }, [isServerReady, loadingServer, accountOrServer?.server?.host])
 
   const [loadingPost, setLoadingPost] = useState(false);
+  const hasFailedToLoadPost = useAppSelector(state => state.posts.failedPostIds.includes(postId));
   useEffect(() => {
-    if (!basePost && isServerReady && !loadingServer && !loadingPost) {
+    if (!basePost && isServerReady && !loadingServer && !loadingPost && !hasFailedToLoadPost && postId) {
       console.log('StarredPosts: Fetching post', postId);
       setLoadingPost(true);
       dispatch(loadPost({ ...accountOrServer, id: serverPostId! }))
@@ -182,10 +186,10 @@ export function StarredPosts({ }: StarredPostsProps) {
     <ConversationContextProvider value={conversationContext}>
       <AnimatePresence>
         {starredPostIds.length > 0
-          ? <XStack animation='standard' {...reverseHorizontalAnimation} exitStyle={{ x: 29, o: 0, }} >
+          ? <XStack key='starred-posts' animation='standard' {...reverseHorizontalAnimation} exitStyle={{ x: 29, o: 0, }} >
 
 
-            <Popover size="$5" allowFlip placement='bottom-end' keepChildrenMounted open={open} onOpenChange={setOpen}>
+            <Popover key='popover' size="$5" allowFlip placement='bottom-end' keepChildrenMounted open={open} onOpenChange={setOpen}>
               <Popover.Trigger asChild><Button transparent
                 // icon={Pin}
                 px='$2'
@@ -254,40 +258,40 @@ export function StarredPosts({ }: StarredPostsProps) {
                               fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
                               {event?.post?.title ?? basePost?.title ?? 'Loading...'}
                             </Paragraph>
-                            {openedPostAccount?.account
+                            {/* {openedPostAccount?.account
                               ?
                               <XStack o={0.5}>
-                                <Paragraph size='$1' fontWeight='bold' >
+                                <Paragraph key='as' size='$1' fontWeight='bold' >
                                   as&nbsp;
                                 </Paragraph>
-                                <Paragraph size='$1' fontWeight='bold' color={openedPostNavAnchorColor}>
+                                <Paragraph key='username' size='$1' fontWeight='bold' color={openedPostNavAnchorColor}>
                                   {openedPostAccount.account?.user?.username ?? 'anonymous'}
                                 </Paragraph>
-                                <Paragraph size='$1' fontWeight='bold' >
+                                <Paragraph key='at' size='$1' fontWeight='bold' >
                                   @
                                 </Paragraph>
-                                <Paragraph size='$1' fontWeight='bold' color={openedPostPrimaryAnchorColor}>
+                                <Paragraph key='host' size='$1' fontWeight='bold' color={openedPostPrimaryAnchorColor}>
                                   {openedPostAccount.server!.host}
                                 </Paragraph>
                               </XStack>
-                              : undefined}
+                              : undefined} */}
                           </YStack>
                         </Button>
                       </div>
-                      : <div key='starred-heading' >
-                        <FlipMove>
+                      : <div key='starred-heading' style={{ flex: 1 }}>
+                        <FlipMove style={{width: '100%'}}>
                           <div key='starred'>
                             <Heading size='$4'>Starred</Heading>
                           </div>
                           {starredPostFilter === 'posts'
                             ?
                             <div key='starred-posts'>
-                              <Heading size='$5'>Posts</Heading>
+                              <Heading size='$5' whiteSpace="nowrap">Posts</Heading>
                             </div>
                             : starredPostFilter === 'events'
                               ?
                               <div key='starred-events'>
-                                <Heading size='$5'>Events</Heading>
+                                <Heading size='$5' whiteSpace="nowrap">Events</Heading>
                               </div>
                               : undefined}
                         </FlipMove>
@@ -310,8 +314,8 @@ export function StarredPosts({ }: StarredPostsProps) {
                   {openedPostId && basePost //&& basePost.responseCount > 0
                     ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
                       w='100%' maw={800} mx='auto' mt='$1' ai='center'>
-                      <XStack f={1} />
-                      <Tooltip placement="bottom">
+                      <XStack key='spacer1' f={1} />
+                      <Tooltip key='discussionUI' placement="bottom">
                         <Tooltip.Trigger>
                           <Button h='$2'
                             backgroundColor={chatUI ? undefined : navColor}
@@ -334,7 +338,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         </Tooltip.Content>
                       </Tooltip>
 
-                      <Tooltip placement="bottom">
+                      <Tooltip key='chatUI' placement="bottom">
                         <Tooltip.Trigger>
                           <Button h='$2'
                             backgroundColor={!chatUI ? undefined : navColor}
@@ -357,7 +361,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                           <Heading size='$1'>Sorted by time.</Heading>
                         </Tooltip.Content>
                       </Tooltip>
-                      <XStack f={1} />
+                      <XStack key='spacer2' f={1} />
                     </XStack>
                     : undefined}
                   {/* </AnimatePresence> */}
@@ -408,15 +412,15 @@ export function StarredPosts({ }: StarredPostsProps) {
               </Popover.Content>
             </Popover >
 
-            <XStack pointerEvents="none" o={0.7}
+            <XStack key='count' pointerEvents="none" o={0.7}
               position='absolute' right={0} top={0}
               borderRadius={30} minWidth={20}
               backgroundColor={navColor} >
-              <XStack f={1} />
-              <Paragraph fontWeight='900' size='$3' ta='center' color={navTextColor}>
+              <XStack key='left-space' f={1} />
+              <Paragraph key='count-value' fontWeight='900' size='$3' ta='center' color={navTextColor}>
                 {starredPostIds.length}
               </Paragraph>
-              <XStack f={1} />
+              <XStack key='right-space' f={1} />
             </XStack>
           </XStack>
           : undefined}
@@ -451,6 +455,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   } = useStarredPostDetails(postId);
 
   const server = useFederatedAccountOrServer(serverHost)?.server;
+  const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
   const { navColor, navTextColor, navAnchorColor } = getServerTheme(server, useTheme());
 
   const { canMoveUp, canMoveDown } = useAppSelector(state => ({
@@ -490,67 +495,86 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
     </YStack>;
   } else {
     renderedCardView = <XStack w='100%'
+      pl='$5'
       animation='standard' {...standardAnimation} jc='center' ai='center'>
-      <StarButton post={{ ...Post.create({ id: serverPostId }), serverHost }} />
+      <XStack mb={-20}>
+        <StarButton post={{ ...Post.create({ id: serverPostId }), serverHost }} />
+      </XStack>
       {isServerReady && !loadingServer && !loadingPost
         ? <Paragraph size='$3' ta='center' o={0.5}>Post {postId} not found</Paragraph>
         : <>
           <Spinner color={navAnchorColor} />
           <Paragraph size='$3' ml='$2' o={0.5}>Post {postId} is loading...</Paragraph>
         </>}
+      <XStack w='$3' h='$3' ml='auto'>
+        <ServerNameAndLogo server={server} shrinkToSquare />
+      </XStack>
     </XStack>;
   }
   const chatUI = useAppSelector(state => state.app.discussionChatUI);
-  const renderedCard = <XStack w='100%' key={`starred-post-${postId}`} ai='center' gap='$2'>
-    <AnimatePresence>
-      <XStack f={1} key='card-view'>
-        {renderedCardView}
-      </XStack>
-      {fullSize ? undefined :
-        <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
-          <Button key='moveUp' size='$2' circular
-            animation='standard'
-            disabled={unsortable || !canMoveUp}
-            o={unsortable ? 0 : canMoveUp ? 1 : 0.5}
-            transform={[{ translateY: unsortable ? 10 : 0 }]}
-            pointerEvents={unsortable ? 'none' : undefined}
-            onPress={(e) => { e.stopPropagation(); moveUp(); }}
-            icon={ChevronUp} />
+  const renderedCard = <YStack w='100%' key={`starred-post-${postId}`}>
+    {server && (pinnedServer?.accountId || !basePost) ?
+      <XStack ml='auto' mr='$9' mb={-10}>
+        <ShortAccountSelectorButton {...{ server, pinnedServer }} />
+        {/* <SingleServerAccountsSheet
+          server={server}
 
-          <Button h='auto' px='$2' py='$1' onPress={() => {
-            onOpen?.(postId);
-            setTimeout(
-              () => chatUI
-                ? scrollToCommentsBottom(postId)
-                : scrollToCommentsTop(postId),
-              2000
-            );
-          }}>
-            <YStack ai='center'>
-              {(unreadCount ?? 0) > 0
-                ? <>
-                  <Paragraph size='$1' o={0.5}
-                    backgroundColor={navColor}
-                    color={navTextColor}
-                  >{unreadCount} unread</Paragraph>
-                  {/* <ListStart size='$1' /> */}
-                </>
-                : undefined}
-              <MessagesSquare size='$1' />
-              <Paragraph size='$1' o={0.5}>{basePost?.responseCount}</Paragraph>
-            </YStack>
-          </Button>
-          <Button key='moveDown' size='$2' circular
-            animation='standard'
-            disabled={unsortable || !canMoveDown}
-            o={unsortable ? 0 : canMoveDown ? 1 : 0.5}
-            transform={[{ translateY: unsortable ? -10 : 0 }]}
-            pointerEvents={unsortable ? 'none' : undefined}
-            onPress={(e) => { e.stopPropagation(); moveDown(); }}
-            icon={ChevronDown} />
-        </YStack>
-      }</AnimatePresence>
-  </XStack >
+          button={(onPress) => <ShortAccountSelectorButton {...{ server, pinnedServer, onPress }} />}
+        /> */}
+      </XStack>
+      : undefined}
+
+    <XStack w='100%' ai='center' gap='$2'>
+      <AnimatePresence>
+        <XStack f={1} key='card-view'>
+          {renderedCardView}
+        </XStack>
+        {fullSize ? undefined :
+          <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
+            <Button key='moveUp' size='$2' circular
+              animation='standard'
+              disabled={unsortable || !canMoveUp}
+              o={unsortable ? 0 : canMoveUp ? 1 : 0.5}
+              transform={[{ translateY: unsortable ? 10 : 0 }]}
+              pointerEvents={unsortable ? 'none' : undefined}
+              onPress={(e) => { e.stopPropagation(); moveUp(); }}
+              icon={ChevronUp} />
+
+            <Button h='auto' px='$2' py='$1' onPress={() => {
+              onOpen?.(postId);
+              setTimeout(
+                () => chatUI
+                  ? scrollToCommentsBottom(postId)
+                  : scrollToCommentsTop(postId),
+                2000
+              );
+            }}>
+              <YStack ai='center'>
+                {(unreadCount ?? 0) > 0
+                  ? <>
+                    <Paragraph size='$1' o={0.5}
+                      backgroundColor={navColor}
+                      color={navTextColor}
+                    >{unreadCount} unread</Paragraph>
+                    {/* <ListStart size='$1' /> */}
+                  </>
+                  : undefined}
+                <MessagesSquare size='$1' />
+                <Paragraph size='$1' o={0.5}>{basePost?.responseCount}</Paragraph>
+              </YStack>
+            </Button>
+            <Button key='moveDown' size='$2' circular
+              animation='standard'
+              disabled={unsortable || !canMoveDown}
+              o={unsortable ? 0 : canMoveDown ? 1 : 0.5}
+              transform={[{ translateY: unsortable ? -10 : 0 }]}
+              pointerEvents={unsortable ? 'none' : undefined}
+              onPress={(e) => { e.stopPropagation(); moveDown(); }}
+              icon={ChevronDown} />
+          </YStack>
+        }</AnimatePresence>
+    </XStack >
+  </YStack>;
 
   return renderedCard;
 }

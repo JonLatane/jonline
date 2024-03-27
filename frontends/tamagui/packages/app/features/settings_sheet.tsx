@@ -1,5 +1,5 @@
 import { Button, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
-import { AlertTriangle, ChevronDown, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { AlertTriangle, ChevronDown, ChevronLeft, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
 import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import moment from 'moment';
@@ -54,18 +54,20 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         <Sheet.Overlay />
         <Sheet.Frame>
           <Sheet.Handle />
-          <Button
-            alignSelf='center'
-            size="$6"
-            circular
-            icon={ChevronDown}
-            onPress={() => {
-              setOpen(false)
-            }}
-          />
+          <XStack w='100%' ai='center' gap='$2' px='$3' pb='$2'>
+            <Button
+              // alignSelf='center'
+              size="$3"
+              circular
+              icon={ChevronLeft}
+              onPress={() => {
+                setOpen(false)
+              }}
+            />
+            <Heading>Settings</Heading>
+          </XStack>
           <Sheet.ScrollView p="$4" space>
             <YStack maxWidth={800} width='100%' alignSelf='center' gap='$1'>
-              <Heading>Settings</Heading>
 
               <Heading size='$5' mt='$5'>Navigation</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>

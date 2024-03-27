@@ -90,8 +90,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     /> : <XStack></XStack>}
     <YStack f={1}>
       <XStack ai='center'>
-        <Heading size="$1" mr='$2'>{server?.host}/</Heading>
-        <Paragraph size='$1' mt='$1' mr='$1' o={0.6}>{user.id}</Paragraph>
+        <Heading size="$1" >{server?.host}/</Heading>
+        {showUserIds ? <Paragraph size='$1' ml='auto' mr='$2' o={0.6}>{user.id}</Paragraph> : undefined}
       </XStack>
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
       {editable && !editingDisabled && setUsername

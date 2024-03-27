@@ -1,6 +1,6 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
 import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
-import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { useCredentialDispatch } from 'app/hooks';
 import { JonlineServer, RootState, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
@@ -12,6 +12,7 @@ import { actionFailed } from 'app/store';
 import { pending, themedButtonBackground } from 'app/utils';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { groupUserPermissions } from './group_details_sheet';
+import FlipMove from 'react-flip-move';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -233,18 +234,18 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
           <Sheet.Frame>
             <YStack h='100%'>
               <Sheet.Handle />
-              <Button
-                alignSelf='center'
-                size="$3"
-                circular
-                icon={ChevronDown}
-                mb='$2'
-                onPress={() => {
-                  setOpen(false)
-                }}
-              />
-              <XStack als='center' w='100%' px='$5' mb='$2' maw={800}>
-                <Heading marginVertical='auto' f={1} size='$7'>Create Group</Heading>
+              <XStack als='center' ai='center' w='100%' px='$5' mb='$2' maw={800}>
+                <Button
+                  alignSelf='center'
+                  size="$3"
+                  circular
+                  icon={ChevronLeft}
+                  mr='$2'
+                  onPress={() => {
+                    setOpen(false)
+                  }}
+                />
+                <Heading marginVertical='auto' f={1} size='$7'>New Group</Heading>
                 <Button backgroundColor={showSettings ? navColor : undefined}
                   hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
                   onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
@@ -256,109 +257,107 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                   <Heading size='$1' color={primaryTextColor}>Create</Heading>
                 </Button>
               </XStack>
-              {error ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{error}</Heading> : undefined}
-              {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
+              <Sheet.ScrollView>
+                {error ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{error}</Heading> : undefined}
+                {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
-              <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
-                <YStack gap="$2" w='100%'>
-                  {/* <Heading size="$6">{server?.host}/</Heading> */}
-                  <XStack>
-                    <Input f={1}
-                      my='auto'
-                      textContentType="name" placeholder={`Group Name (required)`}
-                      disabled={disableInputs} opacity={disableInputs || name == '' ? 0.5 : 1}
-                      // onFocus={() => setShowSettings(false)}
-                      // autoCapitalize='words'
-                      value={name}
-                      onChange={(data) => { setName(data.nativeEvent.text) }} />
-                    <Button p='$0'
-                      ml='$2'
-                      {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined,)}
-                      onPress={() => setShowMedia(!showMedia)}
-                      height={hasAvatarUrl ? fullAvatarHeight : undefined}
-                    >
-                      {hasAvatarUrl
-                        ? <Image
-                          // mb='$3'
-                          // ml='$2'
+                <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
+                  <FlipMove style={{width: '100%'}}>
+                    {/* <YStack gap="$2" w='100%'> */}
+                    <div key='name-media' style={{width: '100%', marginBottom: 8}}>
+                      <XStack>
+                        <Input f={1}
                           my='auto'
-                          width={fullAvatarHeight}
-                          height={fullAvatarHeight}
-                          resizeMode="contain"
-                          als="center"
-                          source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
-                          borderRadius={10} />
-                        : <XStack px='$2'>
-                          <FileImage color={showMedia ? navTextColor : undefined} />
-                        </XStack>}
-                    </Button>
-                  </XStack>
-                  {/* <ZStack mt='$1' h={
-                    showMedia
-                      ? 95
-                      : showSettings
-                        ? mediaQuery.gtXs ? 215 : 230
-                        : 0}> */}
-                  {/* <AnimatePresence> */}
-                  {showSettings
-                    ? <YStack key='create-group-settings'
-                      animation='standard'
-                      p='$2'
-                      backgroundColor='$backgroundHover'
-                      borderRadius='$5'
-                      // touch={showSettings}
-
-                      {...standardAnimation}
-                    >
-                      <XStack mx='auto'>
-                        <VisibilityPicker
-                          label='Group Visibility'
-                          visibility={visibility}
-                          disabled={disableInputs}
-                          onChange={setVisibility}
-                          visibilityDescription={v => groupVisibilityDescription(v, server)} />
+                          textContentType="name" placeholder={`Group Name (required)`}
+                          disabled={disableInputs} opacity={disableInputs || name == '' ? 0.5 : 1}
+                          // onFocus={() => setShowSettings(false)}
+                          // autoCapitalize='words'
+                          value={name}
+                          onChange={(data) => { setName(data.nativeEvent.text) }} />
+                        <Button p='$0'
+                          ml='$2'
+                          {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined,)}
+                          onPress={() => setShowMedia(!showMedia)}
+                          height={hasAvatarUrl ? fullAvatarHeight : undefined}
+                        >
+                          {hasAvatarUrl
+                            ? <Image
+                              // mb='$3'
+                              // ml='$2'
+                              my='auto'
+                              width={fullAvatarHeight}
+                              height={fullAvatarHeight}
+                              resizeMode="contain"
+                              als="center"
+                              source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+                              borderRadius={10} />
+                            : <XStack px='$2'>
+                              <FileImage color={showMedia ? navTextColor : undefined} />
+                            </XStack>}
+                        </Button>
                       </XStack>
-                      <ToggleRow name='Require Membership Moderation'
-                        value={pending(defaultMembershipModeration)}
-                        setter={(v) => setDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                        disabled={disableInputs} />
-                      <ToggleRow name='Require Post Moderation'
-                        description='Hide all Posts shared to this Group until approved by a moderator.'
-                        value={pending(defaultPostModeration)}
-                        setter={(v) => setDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                        disabled={disableInputs} />
-                      <ToggleRow name='Require Event Moderation'
-                        description='Hide all Events shared to this Group until approved by a moderator.'
-                        value={pending(defaultEventModeration)}
-                        setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-                        disabled={disableInputs} />
-                      <PermissionsEditor label='Default Member Permissions'
-                        {...membershipPermissionsEditorProps} />
-                      <PermissionsEditor label='Non-Member Permissions'
-                        {...nonMemberPermissionsEditorProps} />
-                    </YStack>
-                    : undefined}
-                  {/* </AnimatePresence> */}
-                  {/* {showMediaContainer
-                      ? <AnimatePresence> */}
-                  {showMedia
-                    ? <SingleMediaChooser key='create-group-avatar-chooser'
-                      disabled={!showMedia}
-                      selectedMedia={avatar} setSelectedMedia={setAvatar} />
-                    : undefined}
-
-                  {/* </AnimatePresence>
+                    </div>
+                    {showSettings
+                      ? <div key='create-group-settings' style={{width: '100%', marginBottom: 8}}>
+                        <YStack key='create-group-settings'
+                          animation='standard'
+                          p='$2'
+                          backgroundColor='$backgroundHover'
+                          borderRadius='$5'
+                          // touch={showSettings}
+                          {...standardAnimation}
+                        >
+                          <XStack mx='auto'>
+                            <VisibilityPicker
+                              label='Group Visibility'
+                              visibility={visibility}
+                              disabled={disableInputs}
+                              onChange={setVisibility}
+                              visibilityDescription={v => groupVisibilityDescription(v, server)} />
+                          </XStack>
+                          <ToggleRow name='Require Membership Moderation'
+                            value={pending(defaultMembershipModeration)}
+                            setter={(v) => setDefaultMembershipModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                            disabled={disableInputs} />
+                          <ToggleRow name='Require Post Moderation'
+                            description='Hide all Posts shared to this Group until approved by a moderator.'
+                            value={pending(defaultPostModeration)}
+                            setter={(v) => setDefaultPostModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                            disabled={disableInputs} />
+                          <ToggleRow name='Require Event Moderation'
+                            description='Hide all Events shared to this Group until approved by a moderator.'
+                            value={pending(defaultEventModeration)}
+                            setter={(v) => setDefaultEventModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+                            disabled={disableInputs} />
+                          <PermissionsEditor label='Default Member Permissions'
+                            {...membershipPermissionsEditorProps} />
+                          <PermissionsEditor label='Non-Member Permissions'
+                            {...nonMemberPermissionsEditorProps} />
+                        </YStack>
+                      </div>
                       : undefined}
-                  </ZStack> */}
-                  <TextArea f={1} pt='$2' value={description} ref={textAreaRef}
-                    disabled={posting} opacity={posting || description == '' ? 0.5 : 1}
-                    onChangeText={t => setDescription(t)}
-                    placeholder={`Group description (optional). Markdown is supported.`} />
-                  {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                  {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
-                </YStack>
-              </XStack>
+                    {showMedia
+                      ? <div key='single-media-chooser' style={{width: '100%', marginBottom: 8}}>
+                        <SingleMediaChooser key='create-group-avatar-chooser'
+                          disabled={!showMedia}
+                          selectedMedia={avatar} setSelectedMedia={setAvatar} />
+                      </div>
+                      : undefined}
+
+                    <div key='description' style={{width: '100%', marginBottom: 8}}>
+                      <TextArea f={1} pt='$2' value={description} ref={textAreaRef}
+                        w='100%'
+                        disabled={posting} opacity={posting || description == '' ? 0.5 : 1}
+                        onChangeText={t => setDescription(t)}
+                        placeholder={`Group description (optional). Markdown is supported.`} />
+                    </div>
+                    {/* {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                    {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined} */}
+                    {/* </YStack> */}
+                  </FlipMove>
+                </XStack>
+              </Sheet.ScrollView>
             </YStack>
           </Sheet.Frame>
         </Sheet>
