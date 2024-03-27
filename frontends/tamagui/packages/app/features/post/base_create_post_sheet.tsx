@@ -87,12 +87,12 @@ export function BaseCreatePostSheet({
   const [showMedia, _setShowMedia] = useState(false);
   const [hasOpened, setHasOpened] = useState(true);
   function setOpen(v: boolean) {
-    if (onFreshOpen && v && !open && title.length == 0) {
+    if (onFreshOpen && v && !open && title.length === 0) {
       onFreshOpen();
     }
     if (v && !hasOpened) {
       setHasOpened(true);
-      setTimeout(() => _setOpen(true), 1);
+      _setOpen(true);
     } else {
       _setOpen(v);
     }
@@ -353,7 +353,6 @@ export function BaseCreatePostSheet({
                           </Button>
                         </ZStack>
                       </XStack>
-                      {/* <AnimatePresence> */}
                       {showSettings
                         ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
                           animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
@@ -369,7 +368,6 @@ export function BaseCreatePostSheet({
                               />
                             </XStack>
                             : undefined}
-                          {/* <Heading marginVertical='auto' f={1} size='$2'>Visibility</Heading> */}
                           <VisibilityPicker
                             label='Post Visibility'
                             visibility={visibility}
@@ -378,7 +376,6 @@ export function BaseCreatePostSheet({
                             canPublishLocally={canPublishLocally}
                             visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
                           <ToggleRow
-                            // key={`'create-post-shareable-${shareable}`} 
                             name={
                               publicVisibility(visibility) || visibility == Visibility.LIMITED ?
                                 `Allow sharing to ${group ? 'other ' : ''}Groups`
@@ -388,12 +385,9 @@ export function BaseCreatePostSheet({
                             setter={(v) => setShareable(v)}
                             disabled={disableInputs || visibility == Visibility.PRIVATE} />
                         </YStack> : undefined}
-                      {/* </AnimatePresence> */}
-                      {/* <AnimatePresence> */}
                       {showMedia
                         ? <PostMediaManager
                           {...{ link, media, setMedia, embedLink, setEmbedLink }} /> : undefined}
-                      {/* </AnimatePresence> */}
 
                       <TextArea f={1} pt='$2' value={content} ref={textAreaRef}
                         onFocus={() => setShowSettings(false)}
@@ -402,8 +396,6 @@ export function BaseCreatePostSheet({
                         // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
                         // onBlur={() => _replyTextFocused = false}
                         placeholder={`Text content (optional). Markdown is supported.`} />
-                      {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                      {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
                     </YStack>
                   </Sheet.ScrollView>
                   : undefined}
@@ -419,7 +411,6 @@ export function BaseCreatePostSheet({
                   : undefined}
               </XStack>
             </YStack>
-            {/* </Sheet.ScrollView> */}
           </Sheet.Frame>
         </Sheet>
         : undefined}

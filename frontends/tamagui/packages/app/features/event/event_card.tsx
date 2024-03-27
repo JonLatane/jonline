@@ -2,7 +2,7 @@ import useIsVisibleHorizontal, { useIsVisible } from 'app/hooks/use_is_visible';
 import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, getServerTheme, updateEvent } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Location } from "@jonline/api";
+import { Event, EventInstance, Location, Post } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, Eye, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
@@ -91,6 +91,17 @@ export const EventCard: React.FC<Props> = ({
   const [editedShareable, setEditedShareable] = useState(eventPost.shareable);
 
   const [editedInstances, setEditedInstances] = useState(event.instances);
+  useEffect(() => {
+    setEditedInstances(editedInstances.map(i => ({
+      ...i,
+      post: Post.create({
+        ...i.post,
+        visibility: editedVisibility,
+        shareable: editedShareable,
+      })
+    })))
+  }, [editedInstances?.map(i => i.id).join(','), editedVisibility, editedShareable]);
+
   const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
   const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
 
@@ -428,7 +439,11 @@ export const EventCard: React.FC<Props> = ({
           <Anchor f={1} key='instance-link' textDecorationLine='none' {...detailsLink}>
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
           </Anchor>
-          {primaryInstance && (!isPreview || isVisible) ? <EventCalendarExporter tiny event={event} instance={primaryInstance} /> : undefined}
+          {primaryInstance //&& (!isPreview || isVisible)
+            ? <EventCalendarExporter tiny event={event}
+              isVisible={!isPreview || isVisible}
+              instance={primaryInstance} />
+            : undefined}
         </XStack>
       </>
       : <>
@@ -505,6 +520,9 @@ export const EventCard: React.FC<Props> = ({
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
           endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
           location: editingInstance.location,
+          post: Post.create({
+            visibility: eventPost.visibility,
+          })
         });
         instances.push(repeatedInstance);
       });
@@ -815,13 +833,13 @@ export const EventCard: React.FC<Props> = ({
                     {shrinkContent ? undefined
                       : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                         px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
-                        {primaryInstance && (!isPreview || isVisible)
-                          ?
-                          <XStack mx='$3' mt='$1'>
+                        {primaryInstance// && (!isPreview || isVisible)
+                          ? <XStack mx='$3' mt='$1'>
                             <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
                               readOnly={!editing || previewingEdits}
                               preview={isPreview}
                               link={isPreview ? eventLink : undefined}
+                              isVisible={!isPreview || isVisible}
                               setLocation={(location: Location) => {
                                 if (editingInstance) {
                                   updateEditingInstance({ ...editingInstance, location });
@@ -867,12 +885,14 @@ export const EventCard: React.FC<Props> = ({
                       </YStack>
                     }
                   </AnimatePresence>
-                  {primaryInstance && (!isPreview || isVisible)
+                  {primaryInstance// && (!isPreview || isVisible)
                     ? <YStack key='rsvp-manager' maw={800} w='100%' px='$1' mx='auto' mt='$1'>
                       <EventRsvpManager
                         key={`rsvp-manager-${(editingInstance ?? primaryInstance)?.id}`}
                         event={event!}
-                        instance={editingInstance ?? primaryInstance} {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                        isVisible={!isPreview || isVisible}
+                        instance={editingInstance ?? primaryInstance}
+                        {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
                     </YStack>
                     : undefined}
                   <AnimatePresence>

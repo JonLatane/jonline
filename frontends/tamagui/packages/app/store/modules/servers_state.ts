@@ -178,7 +178,8 @@ const serversSlice = createSlice({
           serverId: serverID(action.payload),
           pinned: false
         }))
-      }, 1)
+      }, 1);
+      resetCredentialedData(action.payload.host);
     },
     resetServers: () => initialState,
     clearServerAlerts: (state) => {

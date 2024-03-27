@@ -19,7 +19,7 @@ export const PaginationIndicator: React.FC<Pagination<any> & {
 }) => {
     // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
     const ref = React.createRef<TamaguiElement>();
-    const isVisible = useIsVisible(ref, true);
+    const isVisible = useIsVisible(ref);
     // console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
     const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();

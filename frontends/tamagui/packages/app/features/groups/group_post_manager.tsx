@@ -39,7 +39,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);
-  console.log('groupPostData', groupPostData);
+  // console.log('groupPostData', groupPostData);
   const knownGroupIds = useAppSelector(state => state.groups.ids);
 
   const maxErrors = 1;
@@ -169,7 +169,16 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   const canUnshare = shared && (groupPost.userId === accountOrServer.account?.user?.id || hasAdminPermission(accountOrServer.account?.user) || hasAdminPermission(group.currentUserMembership));
   const [loadingGroup, setLoadingGroup] = useState(false);
 
-  const viewLink = useLink({ href: createViewHref?.(group) ?? `/g/${group.shortname}/p/${post.id}` });
+  const detailsPostId = !isPrimaryServer
+    ? federateId(post.id, accountOrServer.server)
+    : post.id;
+  const detailsGroupShortname =  !isPrimaryServer
+      ? federateId(group.shortname, accountOrServer.server)
+      : group.shortname;
+  const viewLink = useLink({
+    href: createViewHref?.(group)
+      ?? `/g/${detailsGroupShortname}/p/${detailsPostId}`
+  });
 
   // const [loadingGroups, setLoadingGroups] = useState([] as string[]);
   function shareToGroup(groupId: string) {

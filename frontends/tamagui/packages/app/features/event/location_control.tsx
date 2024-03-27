@@ -14,6 +14,7 @@ interface Props {
   readOnly?: boolean;
   preview?: boolean;
   link?: object;
+  isVisible?: boolean;
 }
 
 export const LocationControl: React.FC<Props> = ({
@@ -23,6 +24,7 @@ export const LocationControl: React.FC<Props> = ({
   readOnly,
   preview,
   link,
+  isVisible = true
 }) => {
   const mediaQuery = useMedia();
   const value = location.uniformlyFormattedAddress;
@@ -106,41 +108,44 @@ export const LocationControl: React.FC<Props> = ({
           </Popover.Sheet>
         </Adapt> */}
 
-        <Popover.Content
-          borderWidth={1}
-          borderColor="$borderColor"
-          enterStyle={{ y: -10, opacity: 0 }}
-          exitStyle={{ y: -10, opacity: 0 }}
-          elevate
-          animation={[
-            'quick',
-            {
-              opacity: {
-                overshootClamping: true,
+        {isVisible
+          ? <Popover.Content
+            borderWidth={1}
+            borderColor="$borderColor"
+            enterStyle={{ y: -10, opacity: 0 }}
+            exitStyle={{ y: -10, opacity: 0 }}
+            elevate
+            animation={[
+              'quick',
+              {
+                opacity: {
+                  overshootClamping: true,
+                },
               },
-            },
-          ]}
-        >
-          <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+            ]}
+          >
+            <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-          <YStack gap="$3" h='100%'>
-            <Heading size='$2'>Location</Heading>
-            <Text fontSize='$1' mb='$2' mx={0} w='100%' maw={170} display='block'>
-              {value}
-            </Text>
-            {/* {willAdaptEdit ?
+            <YStack gap="$3" h='100%'>
+              <Heading size='$2'>Location</Heading>
+              <Text fontSize='$1' mb='$2' mx={0} w='100%' maw={170} display='block'>
+                {value}
+              </Text>
+              {/* {willAdaptEdit ?
               <Popover.Sheet.ScrollView f={1}> */}
-            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>OpenStreet</Paragraph><Paragraph lineHeight='$1' size='$2'>Map</Paragraph></YStack></Button>
-            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Apple</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
-            <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
-            {/* </Popover.Sheet.ScrollView>
+              <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>OpenStreet</Paragraph><Paragraph lineHeight='$1' size='$2'>Map</Paragraph></YStack></Button>
+              <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Apple</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
+              <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Maps</Paragraph></YStack></Button>
+              {/* </Popover.Sheet.ScrollView>
               : <ScrollView h='$20'>
                 <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>
                 <Button my='auto' h='auto' px='$2' {...appleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Apple</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
                 <Button my='auto' h='auto' px='$2' {...googleMapsLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$2'>Google</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Maps</Paragraph></YStack></Button>
               </ScrollView>} */}
-          </YStack>
-        </Popover.Content>
+            </YStack>
+          </Popover.Content>
+          : undefined}
+
       </Popover >
       {/* <XStack my='auto' ml='auto' gap='$2'>
         <Button my='auto' h='auto' px='$2' {...osmLink} target='_blank'><YStack><Paragraph mx='auto' lineHeight='$1' size='$1'>OpenStreet</Paragraph><Paragraph mx='auto' lineHeight='$1' size='$1'>Map</Paragraph></YStack></Button>

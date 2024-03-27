@@ -53,7 +53,11 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
         EventInstance.create({
           location,
           startsAt: toProtoISOString(startsAt),
-          endsAt: toProtoISOString(endsAt)
+          endsAt: toProtoISOString(endsAt),
+          post: Post.create({
+            visibility: post.visibility,
+            shareable: post.shareable,
+          })
         }),
       ],
     });

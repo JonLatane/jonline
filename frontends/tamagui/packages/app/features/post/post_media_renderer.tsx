@@ -1,10 +1,10 @@
-import { getServerTheme } from "app/store";
+import { FederatedGroup, federateId, getServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useIsVisible, useMediaUrl, usePostDispatch } from "app/hooks";
+import { useIsVisible, useMediaUrl, usePostDispatch, useServer } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
@@ -15,7 +15,7 @@ import { postBackgroundSize } from "./post_card";
 export interface PostMediaRendererProps {
   post: Post;
   isPreview?: boolean;
-  groupContext?: Group;
+  groupContext?: FederatedGroup;
   isVisible: boolean;
   smallPreview?: boolean;
   xsPreview?: boolean;
@@ -40,10 +40,25 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const mediaQuery = useMedia();
   const { primaryColor, navColor } = getServerTheme(accountOrServer.server);
+
+  const currentServer = useServer();
+  const isPrimaryServer = !!currentServer &&
+    currentServer?.host === accountOrServer.server?.host;
+  const isGroupPrimaryServer = !!currentServer &&
+    currentServer?.host === groupContext?.serverHost;
+
+  const detailsLinkId = !isPrimaryServer
+    ? federateId(post.id, accountOrServer.server)
+    : post.id;
+  const detailsGroupShortname = groupContext
+    ? (!isGroupPrimaryServer
+      ? federateId(groupContext.shortname, accountOrServer.server)
+      : groupContext.shortname)
+    : undefined;
   const postDetailsLink = useLink({
     href: groupContext
-      ? `/g/${groupContext.shortname}/p/${post.id}`
-      : `/post/${post.id}`,
+      ? `/g/${detailsGroupShortname}/p/${detailsLinkId}`
+      : `/post/${detailsLinkId}`,
   });
   const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
 

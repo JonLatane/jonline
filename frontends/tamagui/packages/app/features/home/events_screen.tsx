@@ -9,9 +9,9 @@ import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
-import { Adapt, AnimatePresence, Button, DateTimePicker, Dialog, Heading, Input, ScrollView, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Adapt, AnimatePresence, Button, DateTimePicker, Dialog, Heading, Input, ScrollView, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
 import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
@@ -26,6 +26,7 @@ import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navi
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
+import { serverHost } from '../../store/federation';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -46,11 +47,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
   const [querySearch] = useParam('search');
   const updateParams = useUpdateParams();
-  const [searchText, _setSearchText] = useState(querySearch ?? '');
-  function setSearchText(text: string) {
-    _setSearchText(text);
-    updateParams({ search: text }, { web: { replace: true } });
-  };
+  const [searchText, setSearchText] = useState(querySearch ?? '');
+  const debouncedSearchText = useDebounceValue(
+    searchText.trim().toLowerCase(),
+    1000
+  );
+  useEffect(() => {
+    updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+  }, [debouncedSearchText])
   const endsAfter = queryEndsAfter ?? moment(pageLoadTime).toISOString(true);
   // useEffect(() => {
   //   if (!queryEndsAfter) {
@@ -59,11 +63,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // }, [endsAfter]);
 
 
-  const displayMode = queryEndsAfter === undefined
-    ? 'upcoming' as EventDisplayMode
-    : moment(queryEndsAfter).unix() === 0
-      ? 'all' as EventDisplayMode
-      : 'filtered' as EventDisplayMode;
+  const displayMode: EventDisplayMode = queryEndsAfter === undefined
+    ? 'upcoming'
+    : moment(queryEndsAfter).unix() === 0 && querySearch === undefined
+      ? 'all'
+      : 'filtered';
+  console.log('displayMode', displayMode, moment(queryEndsAfter).unix())
   const setDisplayMode = (mode: EventDisplayMode) => {
     switch (mode) {
       case 'upcoming':
@@ -74,20 +79,20 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         break;
       case 'all':
         updateParams({
-          endsAfter: moment(0).toISOString(true),
+          endsAfter: moment(0).toISOString(false),
           search: undefined
         });
         break;
       case 'filtered':
-        const search = searchText;
+        const search = searchText ?? '';
         if (displayMode === 'upcoming') {
           updateParams({
-            endsAfter: moment(pageLoadTime).toISOString(true),
+            endsAfter: moment(pageLoadTime).toISOString(false),
             search
           });
         } else if (displayMode === 'all') {
           updateParams({
-            endsAfter: moment(pageLoadTime).toISOString(true),
+            endsAfter: moment(1000).toISOString(false),
             search
           });
         } else {
@@ -109,26 +114,39 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-  const allEvents = allEventsUnfiltered?.filter((e) =>
-    displayMode === 'filtered'
-      ? !searchText?.trim()
-      || e.post?.title?.toLowerCase().includes(searchText.toLowerCase())
-      : true) ?? [];
+  const allEvents = useMemo(
+    () => allEventsUnfiltered?.filter((e) =>
+      displayMode === 'filtered'
+        ? !debouncedSearchText
+        || e.post?.title?.toLowerCase().includes(debouncedSearchText)
+        : true) ?? [],
+    [
+      //TODO there must be something better than length
+      // to cheaply "hash" unfiltered events on. At the very least,
+      // include pinned servers/accounts in the hash?
+      allEventsUnfiltered.length,
+      useAppSelector(state => state.accounts.pinnedServers),
+      timeFilter.toString(),
+      displayMode,
+      debouncedSearchText,
+    ]
+  );
 
   const renderInColumns = mediaQuery.gtXs;
-  const numberOfColumns = mediaQuery.gtXxxl ? 6
-    : mediaQuery.gtXl ? 5
+  const numberOfColumns = mediaQuery.gtXxxxl ? 6
+    : mediaQuery.gtXxl ? 5
       : mediaQuery.gtLg ? 4
         : mediaQuery.gtMd ? 3
           : 2;
-  const pagination = usePaginatedRendering(allEvents, renderInColumns
-    ? mediaQuery.gtXxxl ? 12
-      : mediaQuery.gtXl ? 10
-        : mediaQuery.gtLg ? 8 : 6
-    : 7);
-
+  const pagination = usePaginatedRendering(
+    allEvents,
+    renderInColumns
+      ? mediaQuery.gtXxxxl ? 12
+        : mediaQuery.gtXxl ? 10
+          : mediaQuery.gtLg ? 8 : 6
+      : 7
+  );
   const paginatedEvents = pagination.results;
-
 
   useEffect(() => {
     if (firstPageLoaded) {
@@ -136,7 +154,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     }
   }, [firstPageLoaded]);
 
-  useEffect(pagination.reset, [queryEndsAfter]);
+  useEffect(pagination.reset, [queryEndsAfter, debouncedSearchText]);
 
   function displayModeButton(associatedDisplayMode: EventDisplayMode, title: string) {
     return <SubnavButton title={title}
@@ -147,13 +165,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }} />;
   }
-  // console.log('numberOfColumns', numberOfColumns, 'renderInColumns', renderInColumns);
   const eventCardWidth = renderInColumns
     ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
     : undefined;
   const maxWidth = 2000;
-  // useEffect(() => { }, [pinnedServersHeight]);
-  // const [bigCalendar, setBigCalendar] = useState(false);
 
   const dispatch = useAppDispatch();
   const { showBigCalendar: bigCalendar, showPinnedServers } = useLocalConfiguration();
@@ -182,14 +197,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
   const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
-  // const [bigCalWidth, setBigCalWidth] = useState(Math.max(minBigCalWidth, window.innerWidth));
-  // const [bigCalHeight, setBigCalHeight] = useState(Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 85));
-  // useEffect(() => (window.innerWidth > minBigCalHeight)
-  //   ? setBigCalWidth(window.innerWidth)
-  //   : undefined, [bigCalWidth, window.innerWidth]);
-  // useEffect(() => (window.innerHeight - navigationHeight - 85 > minBigCalHeight)
-  //   ? setBigCalHeight(window.innerHeight - navigationHeight - 85)
-  //   : undefined, [bigCalHeight, window.innerHeight, navigationHeight]);
 
   return (
     <TabsNavigation
@@ -200,16 +207,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       showShrinkPreviews={!bigCalendar}
       loading={loadingEvents}
       topChrome={
-        <YStack w='100%' px='$2' key='filter-toolbar'
-        // backgroundColor={transparentBackgroundColor}
-        >
+        <YStack w='100%' px='$2' key='filter-toolbar'>
           <XStack w='100%' ai='center'>
-
             <Button onPress={() => setBigCalendar(!bigCalendar)}
               icon={CalendarIcon}
               transparent
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
+
             {displayModeButton('upcoming', 'Upcoming')}
             {displayModeButton('all', 'All')}
             {displayModeButton('filtered', 'Filtered')}
@@ -221,12 +226,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   transparent
                   {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
           </XStack>
-          {/* <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-            <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
-              <ChevronRight size='$1' />
-            </XStack>
-            <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
-          </Button> */}
           <AnimatePresence>
             {displayMode === 'filtered' ?
               <>
@@ -236,6 +235,13 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       f={1}
                       value={searchText}
                       onChange={(e) => setSearchText(e.nativeEvent.text)} />
+                    <XStack position='absolute' right={55}
+                      pointerEvents="none"
+                      animation='standard'
+                      o={searchText !== debouncedSearchText ? 1 : 0}
+                    >
+                      <Spinner />
+                    </XStack>
                     <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
                   </XStack>
                 </YStack>

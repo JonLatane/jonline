@@ -1,5 +1,5 @@
 import { UserListingType } from '@jonline/api';
-import { Button, Heading, Input, XStack, YStack, dismissScrollPreserver, needsScrollPreservers } from '@jonline/ui';
+import { Button, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useDebounceValue } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
 import { usePaginatedRendering, useServer, useUsersPage } from 'app/hooks';
 import { RootState, federatedId, getFederated, useRootSelector } from 'app/store';
@@ -35,14 +35,17 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
 
   const [searchParam] = useParam('search');
   const updateParams = useUpdateParams();
-  const [searchText, _setSearchText] = useState(searchParam ?? '');
-  function setSearchText(text: string) {
-    _setSearchText(text);
-    updateParams({ search: text }, { web: { replace: true } });
-  };
+  const [searchText, setSearchText] = useState(searchParam ?? '');
+  const debouncedSearchText = useDebounceValue(
+    searchText.trim().toLowerCase(),
+    1000
+  );
+  useEffect(() => {
+    updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+  }, [debouncedSearchText])
 
   const filteredUsers = allUsers?.filter((user) => {
-    return user.username.toLowerCase().includes(searchText.toLowerCase());
+    return user.username.toLowerCase().includes(debouncedSearchText);
   });
 
   const pagination = usePaginatedRendering(filteredUsers, 10);
@@ -53,7 +56,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
 
   const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
-  useEffect(pagination.reset, [searchText]);
+  useEffect(pagination.reset, [debouncedSearchText]);
   useEffect(() => {
     let title = isForGroupMembers ? 'Members' :
       listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
@@ -84,6 +87,13 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               f={1}
               value={searchText}
               onChange={(e) => setSearchText(e.nativeEvent.text)} />
+            <XStack position='absolute' right={55}
+              pointerEvents="none"
+              animation='standard'
+              o={searchText !== debouncedSearchText ? 1 : 0}
+            >
+              <Spinner />
+            </XStack>
             <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
 
           </XStack>
@@ -99,7 +109,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
                 ? <div key='no-people'>
                   {listingType == UserListingType.FOLLOW_REQUESTS ?
                     <YStack mx='auto' width='100%' maw={600} jc="center" ai="center">
-                      <Heading size='$3'  o={0.5} mb='$3'>No follow requests found.</Heading>
+                      <Heading size='$3' o={0.5} mb='$3'>No follow requests found.</Heading>
                     </YStack> :
                     <YStack mx='auto' width='100%' maw={600} jc="center" ai="center">
                       <Heading size='$3' o={0.5} mb='$3'>No people found.</Heading>

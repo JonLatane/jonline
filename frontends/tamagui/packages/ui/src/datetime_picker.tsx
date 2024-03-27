@@ -32,6 +32,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
       <Text fontSize='$2' fontFamily='$body'>
         <input type='datetime-local' name={componentKey} id={componentKey} min={supportDateInput(moment(0))}
           value={supportDateInput(moment(value))}
+          defaultValue={supportDateInput(moment(value))}
           onChange={(v) => v ? onChange(moment(v.target.value).toISOString(true)) : undefined}
           // onChange={(v) => setQueryEndsAfter(moment(v.target.value).toISOString(true))}
           style={{
@@ -51,6 +52,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
     <BaseDateTimePicker
       onChange={(v) => v ? onChange(moment(v).toISOString(true)) : undefined}
       value={value}
+      defaultValue={value}
       minDate={moment(0).toDate()}
       calendarIcon={<Calendar />}
       // clearIcon={<X />}

@@ -279,8 +279,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       : undefined;
     return selected && inlineNavigation ?
       !reorderInlineNavigation
-        ? <>{triggerButton()}</>
-        : <></>
+        ? triggerButton()
+        : undefined
       : <div key={`nav-${section}-${subsection}`}>
         <Popover.Close asChild>
           <Tooltip>
@@ -318,10 +318,12 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       </div>;
   }
 
-  const inlineSeparator = inlineNavSeparators
-    ? <XStack my='auto'>
-      <SeparatorVertical color={primaryTextColor} size='$1' />
-    </XStack>
+  const inlineSeparator = (index: number | string) => inlineNavSeparators
+    ? <div key={`separator-${index}`}>
+      <XStack my='auto'>
+        <SeparatorVertical color={primaryTextColor} size='$1' />
+      </XStack>
+    </div>
     : undefined;
 
 
@@ -340,9 +342,9 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         {/* <XStack w={selectedGroup ? 11 : 3.5} /> */}
         {/* <XStack gap='$2' ml='$1' my='auto'> */}
         {isPeopleRow && reorderInlineNavigation ? peopleRow : postsEventsRow}
-        {inlineSeparator}
+        {inlineSeparator(1)}
         {isPeopleRow && reorderInlineNavigation ? postsEventsRow : peopleRow}
-        {isMedia && reorderInlineNavigation ? undefined : inlineSeparator}
+        {isMedia && reorderInlineNavigation ? undefined : inlineSeparator(2)}
         {myDataRow}
         {/* </XStack> */}
 

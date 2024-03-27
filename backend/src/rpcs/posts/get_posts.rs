@@ -26,6 +26,10 @@ pub fn get_posts(
         request.to_owned().post_id,
         request.to_owned().author_user_id,
     ) {
+        (_, Some(post_id), _) => match request.reply_depth {
+            None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
+            Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
+        },
         (_, _, Some(_author_user_id)) => get_user_posts(request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
@@ -61,10 +65,6 @@ pub fn get_posts(
                 conn,
             )?
         }
-        (_, Some(post_id), _) => match request.reply_depth {
-            None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
-            Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
-        },
         (_, None, _) => get_public_and_following_posts(&user, conn),
     };
 
@@ -124,14 +124,6 @@ fn get_by_post_id(
     }
 
     Ok(result)
-    // match result {
-    //     Ok(post) => match (post.visibility(), user) {
-    //         (Visibility::GlobalPublic, _) => Ok(vec![post]),
-    //         (Visibility::ServerPublic, Some(_)) => Ok(vec![post]),
-    //         _ => Err(Status::new(Code::NotFound, "post_not_found")),
-    //     },
-    //     Err(_) => Err(Status::new(Code::NotFound, "post_not_found")),
-    // }
 }
 
 fn get_public_and_following_posts(

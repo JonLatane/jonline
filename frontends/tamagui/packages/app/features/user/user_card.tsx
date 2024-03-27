@@ -89,8 +89,10 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       source={{ uri: avatarUrl, height: 50, width: 50 }}
     /> : <XStack></XStack>}
     <YStack f={1}>
-      <Heading size="$1" mr='auto'>{server?.host}/</Heading>
-
+      <XStack ai='center'>
+        <Heading size="$1" mr='$2'>{server?.host}/</Heading>
+        <Paragraph size='$1' mt='$1' mr='$1' o={0.6}>{user.id}</Paragraph>
+      </XStack>
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
       {editable && !editingDisabled && setUsername
         ? <Input textContentType="name" f={1}
@@ -194,9 +196,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
       <Paragraph size='$1' o={0.5}>Account Created</Paragraph>
       <DateViewer date={user.createdAt} updatedDate={user.updatedAt} />
-      {showUserIds ? <XStack o={0.6}>
-        <Heading size='$1' mt='$1' mr='$1'>{user.id}</Heading>
-      </XStack> : undefined}
+      {/* {showUserIds ? <XStack o={0.6}>
+        <Paragraph size='$1' mt='$1' mr='$1'>{user.id}</Paragraph>
+      </XStack> : undefined} */}
     </YStack>
   </YStack>;
 

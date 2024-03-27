@@ -1,10 +1,10 @@
-import { FederatedEvent, accountOrServerId, getCredentialClient, getServerTheme, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, getServerTheme, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -20,6 +20,7 @@ export interface EventRsvpManagerProps {
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   isPreview?: boolean;
+  isVisible?: boolean;
 }
 
 export type RsvpMode = 'anonymous' | 'user' | undefined;
@@ -32,10 +33,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   newRsvpMode: givenNewRsvpMode,
   setNewRsvpMode: givenSetNewRsvpMode,
   isPreview,
+  isVisible,
 }) => {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
+  const currentServer = useServer();
   const { account, server } = accountOrServer;
+  const isPrimaryServer = !!currentServer &&
+    currentServer?.host === accountOrServer.server?.host;
   const theme = useTheme();
   const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server, theme);
 
@@ -318,14 +323,20 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const groupContext = useGroupContext();
 
   const linkToDetailsPageRsvps = isPreview && !browseRsvpsFromPreviews;
+  const linkInstanceId = isPrimaryServer 
+  ? instance.id 
+  : federateId(instance.id, server);
+  const linkGroupShortname = isPrimaryServer
+    ? groupContext?.shortname
+    : federateId(groupContext?.shortname ?? '', server);
   const rsvpDetailsBaseLink = groupContext
-    ? `/g/${groupContext.shortname}/e/${instance!.id}?section=rsvp`
-    : `/event/${instance!.id}?section=rsvp`;
+    ? `/g/${linkGroupShortname}/e/${linkInstanceId}?section=rsvp`
+    : `/event/${linkInstanceId}?section=rsvp`;
   const rsvpDetailsLinkWithToken = currentAnonRsvp
     ? `${rsvpDetailsBaseLink}&anonymousAuthToken=${currentAnonRsvp.anonymousAttendee?.authToken}`
     : rsvpDetailsBaseLink;
   const rsvpDetailsLink = useLink({ href: rsvpDetailsLinkWithToken });
-  const anonymousRsvpPath = `/event/${instance.id}@${event.serverHost}?anonymousAuthToken=${anonymousAuthToken}`;
+  const anonymousRsvpPath = `/event/${linkInstanceId}?anonymousAuthToken=${anonymousAuthToken}`;
   const isPast = isPastInstance(instance);
 
   function formatCount(rsvpCount: number, attendeeCount: number,) {

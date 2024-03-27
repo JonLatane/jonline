@@ -277,7 +277,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         Delete
       </Button>
     </Dialog.Trigger>
-    <Dialog.Portal zi={1000011}>
+    <Dialog.Portal zi={100000000011}>
       <Dialog.Overlay
         key="overlay"
         animation="quick"
@@ -330,7 +330,7 @@ export const PostCard: React.FC<PostCardProps> = ({
       appShrinkPreviews && !forceExpandPreview
     )
   );
-  console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
+  // console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>

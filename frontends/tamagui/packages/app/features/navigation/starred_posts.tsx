@@ -1,10 +1,10 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
-import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useMedia, useTheme } from "@jonline/ui";
+import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useTheme } from "@jonline/ui";
 import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
-import { FederatedEvent, FederatedPost, accountID, federatedId, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
 import EventCard from "../event/event_card";
@@ -22,14 +22,38 @@ function useStarredPostDetails(postId: string) {
   const { id: serverPostId, serverHost } = parseFederatedId(postId, useServer()?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const basePost = useAppSelector(state => state.posts.entities[postId]);
+  const isServerReady = accountOrServer?.server
+    ? !!getCachedServerClient(accountOrServer.server)
+    : false;
+  const [loadingServer, setLoadingServer] = useState(false);
   useEffect(() => {
-    if (!basePost) {
-      console.log('StarredPosts: Fetching post', postId);
-      dispatch(loadPost({ ...accountOrServer, id: serverPostId! }));
+    if (!loadingServer && !isServerReady && accountOrServer?.server) {
+      getServerClient(accountOrServer?.server).then(() => {
+        setTimeout(() =>
+          setLoadingServer(false),
+          1500
+        );
+      });
     }
-  }, [basePost, accountID(accountOrServer?.account), serverHost]);
 
-  // const post = useAppSelector(state => state.posts.entities[postId]) as FederatedPost;
+  }, [isServerReady, loadingServer, accountOrServer?.server?.host])
+
+  const [loadingPost, setLoadingPost] = useState(false);
+  useEffect(() => {
+    if (!basePost && isServerReady && !loadingServer && !loadingPost) {
+      console.log('StarredPosts: Fetching post', postId);
+      setLoadingPost(true);
+      dispatch(loadPost({ ...accountOrServer, id: serverPostId! }))
+        .then((result) => {
+          console.log('StarredPosts: Fetched post', postId, 'result', result);
+          setTimeout(() =>
+            setLoadingPost(false),
+            1500
+          );
+        });
+    }
+  }, [basePost, accountID(accountOrServer?.account), serverHost, isServerReady, loadingServer, loadingPost]);
+
   const eventInstanceId = useAppSelector(state =>
     basePost?.context === PostContext.EVENT_INSTANCE
       ? state.events.postInstances[postId]
@@ -41,7 +65,7 @@ function useStarredPostDetails(postId: string) {
       : undefined
   );
 
-  // const [loadedEvent, setLoadedEvent] = useState(false);
+  const [loadingEvent, setLoadingEvent] = useState(false);
 
   const serverEventInstanceId = eventInstanceId
     ? parseFederatedId(eventInstanceId!).id
@@ -55,12 +79,18 @@ function useStarredPostDetails(postId: string) {
     } : undefined;
 
   useEffect(() => {
-    if (basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance) {
+    if (isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent) {
       console.log('StarredPosts: Fetching event by postId', postId);
-      dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! }));
+      setLoadingEvent(true);
+      dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {
+        setTimeout(() =>
+          setLoadingEvent(false),
+          1500
+        );
+      });
     }
-  }, [basePost, eventWithSingleInstance]);
-  return { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance };
+  }, [basePost?.context, eventWithSingleInstance?.id, isServerReady, loadingEvent]);
+  return { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance, isServerReady, loadingServer, loadingPost, loadingEvent };
 }
 
 export function StarredPosts({ }: StarredPostsProps) {
@@ -289,7 +319,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             transparent={chatUI}
                             borderTopRightRadius={0} borderBottomRightRadius={0}
 
-                            icon={<ListEnd color={chatUI ? undefined : navTextColor}  transform={[{ rotate: '180deg' }]} />}
+                            icon={<ListEnd color={chatUI ? undefined : navTextColor} transform={[{ rotate: '180deg' }]} />}
                             onPress={() => {
                               dispatch(setDiscussionChatUI(false));
                               scrollToCommentsTop(openedPostId);
@@ -408,9 +438,20 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
 
-  const { navColor, navTextColor } = useServerTheme();
+  const {
+    basePost,
+    eventInstanceId,
+    serverPostId,
+    serverHost,
+    eventWithSingleInstance,
+    isServerReady,
+    loadingServer,
+    loadingPost,
+    loadingEvent
+  } = useStarredPostDetails(postId);
 
-  const { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance } = useStarredPostDetails(postId);
+  const server = useFederatedAccountOrServer(serverHost)?.server;
+  const { navColor, navTextColor, navAnchorColor } = getServerTheme(server, useTheme());
 
   const { canMoveUp, canMoveDown } = useAppSelector(state => ({
     canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,
@@ -434,7 +475,12 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   } else if (basePost) {
     renderedCardView = <YStack w='100%'>
       {basePost.context === PostContext.EVENT_INSTANCE
-        ? <Paragraph size='$1' o={0.5} mb={-10}>Event instance {eventInstanceId}</Paragraph>
+        ? loadingEvent
+          ? <XStack>
+            <Spinner color={navAnchorColor} />
+            <Paragraph ml='$2' size='$1' o={0.5} mb={-10}>Loading event data...</Paragraph>
+          </XStack>
+          : <Paragraph size='$1' o={0.5} mb={-10}>Post is for an Event Instance.</Paragraph>
         : undefined}
       <PostCard
         post={basePost}
@@ -446,7 +492,12 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
     renderedCardView = <XStack w='100%'
       animation='standard' {...standardAnimation} jc='center' ai='center'>
       <StarButton post={{ ...Post.create({ id: serverPostId }), serverHost }} />
-      <Paragraph size='$3' ta='center' o={0.5}>Post {postId} not found.</Paragraph>
+      {isServerReady && !loadingServer && !loadingPost
+        ? <Paragraph size='$3' ta='center' o={0.5}>Post {postId} not found</Paragraph>
+        : <>
+          <Spinner color={navAnchorColor} />
+          <Paragraph size='$3' ml='$2' o={0.5}>Post {postId} is loading...</Paragraph>
+        </>}
     </XStack>;
   }
   const chatUI = useAppSelector(state => state.app.discussionChatUI);
@@ -461,7 +512,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
             animation='standard'
             disabled={unsortable || !canMoveUp}
             o={unsortable ? 0 : canMoveUp ? 1 : 0.5}
-            transform={[{translateY: unsortable ? 10 : 0}]}
+            transform={[{ translateY: unsortable ? 10 : 0 }]}
             pointerEvents={unsortable ? 'none' : undefined}
             onPress={(e) => { e.stopPropagation(); moveUp(); }}
             icon={ChevronUp} />
@@ -493,7 +544,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
             animation='standard'
             disabled={unsortable || !canMoveDown}
             o={unsortable ? 0 : canMoveDown ? 1 : 0.5}
-            transform={[{translateY: unsortable ? -10 : 0}]}
+            transform={[{ translateY: unsortable ? -10 : 0 }]}
             pointerEvents={unsortable ? 'none' : undefined}
             onPress={(e) => { e.stopPropagation(); moveDown(); }}
             icon={ChevronDown} />
