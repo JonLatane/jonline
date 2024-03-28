@@ -27,6 +27,7 @@ import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 import { serverHost } from '../../store/federation';
+import { useHideNavigation } from "../navigation/use_hide_navigation";
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -179,6 +180,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const setModalInstance = (e: FederatedEvent | undefined) => {
     setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
   }
+  const hideNavigation = useHideNavigation();
 
   const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
     (result, server: JonlineServer) => {
@@ -292,21 +294,36 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         }-${window.innerWidth
                         }-${window.innerHeight
                         }-${navigationHeight
+                        }-${hideNavigation
                         }-${allEvents.length}`}
                       selectable
                       dateClick={({ date, view }) => {
                         view.calendar.changeView('listDay', date);
                       }}
 
-                      headerToolbar={{
-                        start: 'prev', end: 'next',
-                        center: 'title',
-                      }}
-                      footerToolbar={{
-                        start: 'today',
-                        center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                        end: 'listMonth',
-                      }}
+                      {...mediaQuery.short
+                        ? {
+                          headerToolbar: {
+                            start: 'prev,next, today',
+                            center: 'title',
+                            end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
+                          },
+                          // footerToolbar: {
+                          //   start: 'today',
+                          //   center: 'dayGridMonth,timeGridWeek,timeGridDay',
+                          //   end: 'listMonth',
+                          // }
+                        } : {
+                          headerToolbar: {
+                            start: 'prev', end: 'next',
+                            center: 'title',
+                          },
+                          footerToolbar: {
+                            start: 'today',
+                            center: 'dayGridMonth,timeGridWeek,timeGridDay',
+                            end: 'listMonth',
+                          }
+                        }}
                       plugins={[
                         daygridPlugin,
                         timegridPlugin,

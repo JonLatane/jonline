@@ -129,9 +129,10 @@ export function TabsNavigation({
         w='100%'
         backgroundColor={bgColor}
         minHeight={window.innerHeight} >
-        <StickyBox style={{ zIndex: 10, width: '100%', pointerEvents: hideNavigation ? 'none' : undefined }} className='blur'>
+        <StickyBox style={{ zIndex: 10, width: '100%', /*pointerEvents: hideNavigation ? 'none' : undefined*/ }} className='blur'>
           <YStack w='100%' id='jonline-top-navigation'>
             {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
+              pointerEvents={hideNavigation ? 'none' : undefined}
               backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
               {/* <XStack w={5} /> */}
               <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
@@ -217,9 +218,12 @@ export function TabsNavigation({
                 <TabsTutorial />
               </YStack> */}
 
-            <XStack w='100%' id='nav-pinned-server-selector'>
+            <XStack w='100%' id='nav-pinned-server-selector'
+            // pointerEvents={hideNavigation ? 'none' : undefined}
+            >
               <PinnedServerSelector
-                show={withServerPinning && !selectedGroup}
+                // show
+                show={(withServerPinning && !selectedGroup) || hideNavigation}
                 showShrinkPreviews={showShrinkPreviews}
                 affectsNavigation
                 transparent />

@@ -1,8 +1,8 @@
 import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
-import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
+import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
 import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
 import RecommendedServer from "../accounts/recommended_server";
@@ -42,7 +42,7 @@ export function PinnedServerSelector({
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
   const totalServerCount = availableServers.length;
-  const { showPinnedServers, viewingRecommendedServers, browsingServers, shrinkPreviews } = useLocalConfiguration();
+  const { showPinnedServers, viewingRecommendedServers, browsingServers, shrinkPreviews, hideNavigation } = useLocalConfiguration();
 
 
   const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
@@ -65,7 +65,7 @@ export function PinnedServerSelector({
       currentServer?.serverConfiguration?.serverInfo?.name ?? '...'
     )[0].replace(/\s*\|\s*/, ' ');
 
-  const disabled = useHideNavigation();
+  const disabled = false;//useHideNavigation();
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
@@ -113,6 +113,26 @@ export function PinnedServerSelector({
         {simplified
           ? undefined
           : <>
+
+            {hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
+              ? <Button key='hide-nav-button' py='$1' h='auto' transparent
+                // animation='standard' {...reverseHorizontalAnimation}
+                onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
+                <XStack position='absolute' animation='standard'
+                  o={hideNavigation ? 1 : 0}
+                  transform={[{ translateY: hideNavigation ? 0 : 10 }]}
+                  scale={hideNavigation ? 1 : 2}>
+                  <PanelBottomClose size='$1' />
+                </XStack>
+                <XStack position='absolute' animation='standard'
+                  o={hideNavigation ? 0 : 1}
+                  transform={[{ translateY: !hideNavigation ? 0 : 10 }]}
+                  scale={hideNavigation ? 0.2 : 1}>
+                  <PanelTopClose size='$1' />
+                </XStack>
+              </Button>
+              : undefined}
+
             <Button key='pinned-server-toggle' py='$1'
               pl='$2' pr='$1'
               h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>

@@ -329,7 +329,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
 
   // console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));
-  return inlineNavigation || true
+  return inlineNavigation
     ? <>
       <XStack key='feature-nav-spacer' w={selectedGroup ? 11 : 3.5} />
       <FlipMove key='feature-navigation'

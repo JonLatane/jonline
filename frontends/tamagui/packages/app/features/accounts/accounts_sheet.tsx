@@ -15,7 +15,7 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { TutorialToggle } from '../navigation/tabs_tutorial';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { LoginMethod } from './single_server_accounts_sheet';
+import { LoginMethod, SingleServerAccountsSheet } from './single_server_accounts_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
 import FlipMove from 'react-flip-move';
@@ -38,14 +38,9 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const primaryAccountOrServer = useFederatedAccountOrServer(primaryEntity);
   const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
   const [addingServer, setAddingServer] = useState(false);
-  const [addingAccount, setAddingAccount] = useState(false);
   const [position, setPosition] = useState(0);
-  const [addingAccountPosition, setAddingAccountPosition] = useState(0);
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
-  const [newAccountUser, setNewAccountUser] = useState('');
-  const [newAccountPass, setNewAccountPass] = useState('');
-  const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
 
   const [hasOpened, setHasOpened] = useState(open);
   useEffect(() => {
@@ -61,14 +56,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   }, [openChanged])
   const dispatch = useAppDispatch();
   const { server: currentServer, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
-  const [addAccountServer, setAddAccountServer] = useState(currentServer);
-  const { primaryColor: addAccountServerPrimaryColor, primaryTextColor: addAccountServerPrimaryTextColor } = useServerTheme(addAccountServer);
-  useEffect(() => {
-    if (addAccountServer) {
-      document.getElementById('accounts-sheet-currently-adding-server')
-        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [addAccountServer]);
+
   const account = useAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
@@ -80,8 +68,6 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const browsingOn = Platform.OS == 'web' ? window.location.hostname : undefined
   const effectiveServer = primaryAccountOrServer.server ?? currentServer;
 
-  const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
-  const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   const browsingOnDiffers = Platform.OS == 'web' &&
     effectiveServer?.host != browsingOn;
   //   serversState.server && serversState.server.host != browsingOn ||
@@ -117,75 +103,9 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     : [...new Set(currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [])];
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
-  const [authError, setAuthError] = useState(undefined as string | undefined);
-
-  async function onAccountAdded() {
-    setAddingAccount(false);
-    setOpen(false);
-
-    setTimeout(() => {
-      dispatch(clearAccountAlerts());
-
-      // setTimeout(() => {
-      setNewAccountUser('');
-      setNewAccountPass('');
-      setForceDisableAccountButtons(false);
-      setLoginMethod(undefined);
-      // }, 600);
-    }, 2000);
-
-    const accountEntities = store.getState().accounts.entities;
-    const account = store.getState().accounts.ids.map((id) => accountEntities[id])
-      .find(a => a && a.user.username === newAccountUser && a.server.host === currentServer?.host);
-
-    if (account) {
-      // if (onAccountSelected) {
-      //   onAccountSelected(account);
-      // }
-    } else {
-      console.warn("Account not found after adding it. This is a bug.");
-    }
-  }
-
-  const skipSelection = addAccountServer?.host !== currentServer?.host;
-  function loginToServer() {
-    dispatch(clearAccountAlerts());
-    dispatch(login({
-      ...addAccountServer!,
-      userId: undefined,
-      username: newAccountUser,
-      password: newAccountPass,
-      skipSelection
-    })).then(action => {
-      if (actionSucceeded(action)) {
-        onAccountAdded();
-      } else {
-        setForceDisableAccountButtons(false);
-      }
-    });
-  }
-  function createServerAccount() {
-    dispatch(clearAccountAlerts());
-    dispatch(createAccount({
-      ...addAccountServer!,
-      username: newAccountUser,
-      password: newAccountPass,
-      skipSelection
-    })).then(action => {
-      if (actionSucceeded(action)) {
-        onAccountAdded();
-      } else {
-        setForceDisableAccountButtons(false);
-      }
-    });
-  }
 
   const accountsLoading = accountsState.status == 'loading';
-  const newAccountValid = newAccountUser.length > 0 && newAccountPass.length >= 8;
   const [forceDisableAccountButtons, setForceDisableAccountButtons] = useState(false);
-  const disableLoginMethodButtons = newAccountUser == '';
-  const disableAccountInputs = accountsLoading || forceDisableAccountButtons;
-  const disableAccountButtons = accountsLoading || !newAccountValid || forceDisableAccountButtons;
 
   useEffect(() => {
     if (accountsLoading && !forceDisableAccountButtons) {
@@ -583,209 +503,25 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                         !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
 
 
-                    <Button
-                      size="$3"
-                      icon={Plus}
-                      disabled={currentServer === undefined && servers.length === 0}
-                      {...themedButtonBackground(primaryColor, primaryTextColor)}
-                      onPress={() => {
-                        setAddingAccount(true);
-                        setTimeout(() => usernameRef.current.focus(), 100);
-                      }}
-                    >
-                      Login/Sign Up
-                    </Button>
-                    <Sheet
-                      modal
-                      open={addingAccount}
-                      onOpenChange={setAddingAccount}
-                      // snapPoints={[80]}
-                      snapPoints={[81]} dismissOnSnapToBottom
-                      position={addingAccountPosition}
-                      onPositionChange={setAddingAccountPosition}
-                    // dismissOnSnapToBottom
-                    >
-                      <Sheet.Overlay />
-                      <Sheet.Frame padding="$5">
-                        <Sheet.Handle />
-                        {/* <Button
-                          alignSelf='center'
+                    <SingleServerAccountsSheet
+                      server={currentServer}
+                      // selectedGroup={selectedGroup}
+                      // primaryEntity={primaryEntity}
+                      button={onPress =>
+                        <Button
                           size="$3"
-                          circular
-                          icon={ChevronDown}
-                          onPress={() => {
-                            setAddingAccount(false)
-                          }}
-                        /> */}
-                        <XStack ai='center'
-                          pl={mediaQuery.gtXs ? '$2' : 0}
-                          pr={mediaQuery.gtXs ? '$4' : '$1'}>
-                          <ScrollView horizontal f={1}>
-                            <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                              {addAccountServer
-                                ? <div id='accounts-sheet-currently-adding-server'
-                                  key={`serverCard-${serverID(addAccountServer)}`}
-                                  style={{ margin: 2 }}>
-                                  <ServerNameAndLogo server={addAccountServer} />
-                                </div>
-                                : undefined}
-                              {addAccountServer && servers.length > 1
-                                ? <div key='separator' style={{ margin: 2 }}>
-                                  <SeparatorVertical size='$1' />
-                                </div>
-                                : undefined}
-                              {servers.filter(s => s.host != addAccountServer?.host)
-                                .map((server, index) =>
-                                  <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
-                                    <Button onPress={() => setAddAccountServer(server)}>
-                                      <ServerNameAndLogo server={server} />
-                                    </Button>
-                                  </div>
-                                )}
-                            </FlipMove>
-                          </ScrollView>
-                          <AnimatePresence>
-                            {addAccountServer?.host !== currentServer?.host
-                              ? <XStack
-                                animation='standard' {...standardHorizontalAnimation}
-                                o={0.5}
-                                ai='center' >
-                                <Paragraph ml='auto' size='$1' > via</Paragraph>
-                                <XStack>
-                                  <ServerNameAndLogo server={currentServer} />
-                                </XStack>
-                              </XStack>
-                              : undefined}
-                          </AnimatePresence>
-                        </XStack>
-                        <Heading size="$9" mt='$3'>
-                          {loginMethod === 'login' ? 'Login'
-                            : loginMethod === 'create_account' ? 'Sign Up'
-                              : 'Add Account'}
-                        </Heading>
-                        <Heading size="$4">{addAccountServer?.host}/</Heading>
-                        <Sheet.ScrollView>
-                          <YStack gap="$2"
-                            maw={600} w='100%' als='center'
-                            p='$2'
-                            pt='$3'
-                          >
-                            {/* <Heading size="$10">Add Account</Heading> */}
-                            <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                              editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
-                              autoCapitalize='none'
-                              value={newAccountUser}
-                              ref={usernameRef}
-                              // autoFocus={!loginMethod}
-                              onKeyPress={(e) => {
-                                if (e.nativeEvent.key === 'Enter') {
-                                  if (!loginMethod) {
-                                    setLoginMethod(LoginMethod.Login);
-                                    setTimeout(() => passwordRef.current.focus(), 100);
-                                  } else {
-                                    passwordRef.current.focus();
-                                  }
-                                }
-                              }}
-                              onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-                            {loginMethod
-                              ? <XStack w='100%' animation="quick" {...standardAnimation}>
-                                <Input secureTextEntry w='100%'
-                                  ref={passwordRef}
-                                  // autoFocus
-                                  id='accounts-sheet-password-input'
-                                  textContentType={//loginMethod === LoginMethod.Login
-                                    // ?
-                                    "newPassword"
-                                    // : "password"
-                                  }
-                                  placeholder="Password"
-                                  editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
-                                  onKeyPress={(e) => {
-                                    if (e.nativeEvent.key === 'Enter') {
-                                      if (loginMethod == LoginMethod.Login) {
-                                        loginToServer();
-                                      } else {
-                                        createServerAccount();
-                                      }
-                                    }
-                                  }}
-                                  value={newAccountPass}
-                                  onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} />
-                              </XStack>
-                              : undefined}
-                            {loginMethod && newAccountPass.length < 8 ? <Heading size="$2" color="red" alignSelf='center' ta='center'>Password must be at least 8 characters.</Heading> : undefined}
-                            {loginMethod === LoginMethod.CreateAccount
-                              ? <>
-                                <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
-                                <TamaguiMarkdown text={`
-                ${addAccountServer?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
-                released under the AGPL. As a user, you have a fundamental right to view the source code of this software. If you suspect that the
-                operator of this server is not using the official Jonline software, you can contact the [Free Software Foundation](https://www.fsf.org/)
-                to evaluate support options.
-                            `} />
-                                {(addAccountServer?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
-                                  ? <>
-                                    <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                                    <TamaguiMarkdown text={addAccountServer?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                                  </> : undefined}
-                                {(addAccountServer?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
-                                  ? <>
-                                    <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
-                                    <TamaguiMarkdown text={addAccountServer?.serverConfiguration?.serverInfo?.mediaPolicy} />
-                                  </> : undefined}
-                              </>
-                              : undefined}
-                            {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                            {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
-                            {loginMethod
-                              ? <XStack>
-                                <Button marginRight='$1'
-                                  onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
-                                  disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
-                                  Back
-                                </Button>
-                                <Button flex={1}
-                                  {...themedButtonBackground(addAccountServerPrimaryColor, addAccountServerPrimaryTextColor)}
-                                  // backgroundColor={primaryColor}
-                                  //  hoverStyle={{ backgroundColor: primaryColor }}
-                                  //  color={primaryTextColor}
-                                  onPress={() => {
-                                    if (loginMethod == LoginMethod.Login) {
-                                      loginToServer();
-                                    } else {
-                                      createServerAccount();
-                                    }
-                                  }}
-                                  disabled={disableAccountButtons} opacity={disableAccountButtons ? 0.5 : 1}>
-                                  {loginMethod == LoginMethod.Login ? 'Login' : 'Sign Up'}
-                                </Button>
-                              </XStack>
-                              : <XStack mt='$3'>
-                                <Button flex={2}
-                                  marginRight='$1'
-                                  onPress={() => {
-                                    setLoginMethod(LoginMethod.CreateAccount);
-                                    setTimeout(() => passwordRef.current.focus(), 100);
-                                  }}
-                                  disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                                  Sign Up
-                                </Button>
-                                <Button flex={1}
-                                  {...themedButtonBackground(addAccountServerPrimaryColor, addAccountServerPrimaryTextColor)}
-                                  // backgroundColor={primaryColor} hoverStyle={{ backgroundColor: primaryColor }} color={primaryTextColor}
-                                  onPress={() => {
-                                    setLoginMethod(LoginMethod.Login);
-                                    setTimeout(() => passwordRef.current.focus(), 100);
-                                  }}
-                                  disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                                  Login
-                                </Button>
-                              </XStack>}
-                          </YStack>
-                        </Sheet.ScrollView>
-                      </Sheet.Frame>
-                    </Sheet>
+                          icon={Plus}
+                          disabled={currentServer === undefined && servers.length === 0}
+                          {...themedButtonBackground(primaryColor, primaryTextColor)}
+                          onPress={onPress}
+                        // onPress={() => {
+                        //   setAddingAccount(true);
+                        //   setTimeout(() => usernameRef.current.focus(), 100);
+                        // }}
+                        >
+                          Login/Sign Up
+                        </Button>}
+                    />
                   </XStack>
                 </YStack>
               </div>

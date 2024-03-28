@@ -37,6 +37,7 @@ export type LocalAppConfiguration = {
   showHelp: boolean;
   showPinnedServers: boolean;
   autoHideNavigation: boolean;
+  hideNavigation: boolean;
   imagePostBackgrounds: boolean;
   fancyPostBackgrounds: boolean;
   shrinkPreviews: boolean;
@@ -68,6 +69,7 @@ const initialState: LocalAppConfiguration = {
   showHelp: true,
   showPinnedServers: true,
   autoHideNavigation: false,
+  hideNavigation: false,
   imagePostBackgrounds: true,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
@@ -167,6 +169,9 @@ export const localAppSlice = createSlice({
     setAutoHideNavigation: (state, action: PayloadAction<boolean>) => {
       state.autoHideNavigation = action.payload;
     },
+    setHideNavigation: (state, action: PayloadAction<boolean>) => {
+      state.hideNavigation = action.payload;
+    },
     setFancyPostBackgrounds: (state, action: PayloadAction<boolean>) => {
       state.fancyPostBackgrounds = action.payload;
     },
@@ -186,7 +191,7 @@ export const localAppSlice = createSlice({
       state.starredPostIds = action.payload;
     },
     starPost: (state, action: PayloadAction<string>) => {
-      const {serverHost} = parseFederatedId(action.payload);
+      const { serverHost } = parseFederatedId(action.payload);
       state.starredPostIds = [action.payload, ...state.starredPostIds];
     },
     unstarPost: (state, action: PayloadAction<string>) => {
@@ -227,7 +232,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
-  setShowHelp, setShowPinnedServers, setAutoHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
+  setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
   moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount
 } = localAppSlice.actions;
