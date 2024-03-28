@@ -1,8 +1,8 @@
-import { Button, Heading, Input, Paragraph, Sheet, standardAnimation, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ExternalLink } from '@tamagui/lucide-icons';
+import { Button, Heading, Input, Paragraph, ScrollView, Sheet, standardAnimation, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
+import { ChevronDown, ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
-import { useAppDispatch, useServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
+import { useAppDispatch, useCreationServer, useServer } from 'app/hooks';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector, selectAllServers } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -10,6 +10,7 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 import { useLink } from 'solito/link';
 import { current } from '@reduxjs/toolkit';
+import FlipMove from 'react-flip-move';
 
 export type SingleServerAccountsSheetProps = {
   server?: JonlineServer;
@@ -23,7 +24,7 @@ export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function SingleServerAccountsSheet({ server: specifiedServer, operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
+export function SingleServerAccountsSheet({ operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
   const mediaQuery = useMedia();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
@@ -36,12 +37,15 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
 
+  const { creationServer: addAccountServer, setCreationServer: setAddAccountServer } = useCreationServer();
+  const specifiedServer = addAccountServer;
+
 
   const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
   const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
-  const serversState = useRootSelector((state: RootState) => state.servers);
+  const servers = useRootSelector((state: RootState) => selectAllServers(state.servers))//.servers.ids.map(id => state.servers.entities[id]));
 
   const currentServer = useServer();
   const server = specifiedServer ?? currentServer;
@@ -151,7 +155,7 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
   //   setForceDisableAccountButtons(false);
   // }
   // console.log('rerender')
-  const onPress = () => setOpen((x) => !x);
+  const onPress = () => setOpen(true);
   return (
     <>
       {button?.(onPress)
@@ -198,25 +202,38 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
                 setOpen(false)
               }}
             />
-            <XStack f={1} ai='center'>
-              {isCurrentServer
-                ? <ServerNameAndLogo server={server} />
-                : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
-                  <XStack ai='center'>
-                    <ServerNameAndLogo server={server} />
-                  </XStack>
-                </Button>
-              }
-            </XStack>
-            {/* <Button
-              alignSelf='center'
-              size="$6"
-              circular
-              icon={ChevronDown}
-              onPress={() => {
-                setOpen(false)
-              }}
-            /> */}
+            <ScrollView horizontal f={1}>
+              <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                {addAccountServer
+                  ? <div id='accounts-sheet-currently-adding-server'
+                    key={`serverCard-${serverID(addAccountServer)}`}
+                    style={{ margin: 2 }}>
+                    {isCurrentServer
+                      ? <ServerNameAndLogo server={server} />
+                      : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
+                        <XStack ai='center'>
+                          <ServerNameAndLogo server={server} />
+                        </XStack>
+                      </Button>
+                    }
+                    {/* <ServerNameAndLogo server={addAccountServer} /> */}
+                  </div>
+                  : undefined}
+                {addAccountServer && servers.length > 1
+                  ? <div key='separator' style={{ margin: 2 }}>
+                    <SeparatorVertical size='$1' />
+                  </div>
+                  : undefined}
+                {servers.filter(s => s.host != addAccountServer?.host)
+                  .map((server, index) =>
+                    <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
+                      <Button onPress={() => dispatch(setAddAccountServer(server))}>
+                        <ServerNameAndLogo server={server} />
+                      </Button>
+                    </div>
+                  )}
+              </FlipMove>
+            </ScrollView>
             <XStack f={1} ai='center' o={isCurrentServer ? 0 : 0.5}>
               <Paragraph ml='auto' size='$1' > via</Paragraph>
               <XStack>
@@ -224,11 +241,9 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
               </XStack>
             </XStack>
           </XStack>
-          {/* </ZStack> */}
+
           {accountsOnServer.length > 0
             ? <XStack marginHorizontal='auto' marginVertical='$3'>
-              {/* <Tooltip placement="bottom">
-                <Tooltip.Trigger> */}
               <Button {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
                 transparent={addingAccount}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
@@ -238,14 +253,6 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
                 }}>
                 <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
               </Button>
-              {/* </Tooltip.Trigger>
-                <Tooltip.Content>
-                  <Heading size='$2'>Newest on bottom.</Heading>
-                  <Heading size='$1'>Sorted by time.</Heading>
-                </Tooltip.Content>
-              </Tooltip>
-              <Tooltip placement="bottom-end">
-                <Tooltip.Trigger> */}
               <Button {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
                 transparent={!addingAccount}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
@@ -256,11 +263,6 @@ export function SingleServerAccountsSheet({ server: specifiedServer, operation, 
                 }}>
                 <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
               </Button>
-              {/* </Tooltip.Trigger>
-                <Tooltip.Content>
-                  <Heading size='$2'>Go to newest.</Heading>
-                </Tooltip.Content>
-              </Tooltip> */}
             </XStack>
             : <Heading size='$9' ml='$5'>Add Account</Heading>}
           <Sheet.ScrollView>

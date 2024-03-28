@@ -2,7 +2,11 @@
 The easiest way to secure your Jonline distro is with Cert-Manager. There's also support for manually using your own certs, and using your own custom CA, though the latter is of course not useful for most use cases of Jonline 😁
 
 ## Use Cert-Manager (recommended)
-These instructions should at least get you a lazy wildcard setup for a domain managed by DigitalOcean. The following `make` commands should be run from inside this directory (`generated_certs`).
+Jonline's `make`-powered cert generation setup is built on Cert-Manager. You'll need to install it on your cluster via Helm to use them. Its existing tooling is designed to generate a wildcard cert setup (i.e., for `*.my.domain.tld`) for a domain managed by DigitalOcean Kubernetes Services (DOKS). 
+
+(This setup should be easy to extend to Google/Amazon/MS Kubernetes offerings, as the only provider-specific constructs are `PersistentVolumeClaim`s and `LoadBalancer`s. It's also worth noting that the wildcard is important but not necessary, if you'd like to setup certs yourself. However, Jonline features may eventually demand multiple subdomains, at which point you need wildcards or per-subdomain certs for access to them.)
+
+The following `make` commands should be run from inside this directory (`generated_certs`).
 
 ### Quick setup with Cert-Manager (DigitalOcean-specific for now)
 These steps are all based off of using [the `Makefile` in this directory](https://github.com/JonLatane/jonline/blob/main/generated_certs/Makefile).

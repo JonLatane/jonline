@@ -48,6 +48,11 @@ export interface ServersState {
   // On web, if this doesn't match the location.host, we'll show a warning in the
   // AccountsSheet.
   currentServerId?: string;
+
+  // When creating users (login/create account), posts, events, media, and groups,
+  // we need to know which server to send the request to.
+  // The account for the server is stored in the accounts module, in accounts.pinnedServers.
+  creationServerId?: string;
   // server?: JonlineServer;
   ids: EntityId[];
   entities: Dictionary<JonlineServer>;
@@ -204,6 +209,23 @@ const serversSlice = createSlice({
         }
       }, 1);
     },
+    selectCreationServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
+      // const oldServerId = state.currentServerId;
+      // const newServerId = serverID(action.payload!);
+      // if (newServerId === undefined && state.ids.length > 0) return;
+      // if (!state.ids.includes(newServerId)) return;
+
+      // // debugger;
+      state.creationServerId = serverID(action.payload!);
+
+      // setTimeout(() => {
+      //   const currentAccountId = store.getState().accounts.currentAccountId;
+      //   if (currentAccountId && newServerId && oldServerId != newServerId &&
+      //     accountIDHost(currentAccountId) !== serverIDHost(newServerId)) {
+      //     store.dispatch(selectAccount(undefined));
+      //   }
+      // }, 1);
+    },
     moveServerUp: (state, action: PayloadAction<string>) => {
       const index = state.ids.indexOf(action.payload);
       if (index > 0) {
@@ -260,6 +282,7 @@ export const {
   resetServers,
   moveServerUp,
   moveServerDown,
+  selectCreationServer
   // startConfiguringFederation,
   // finishConfiguringFederation
 } = serversSlice.actions;

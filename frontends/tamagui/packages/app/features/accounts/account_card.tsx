@@ -253,7 +253,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 <ZStack w='$12' h='$2'>
                   <Paragraph o={reauthenticationResult ? 1 : 0}
                     size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
-                    Reauthentication complete.
+                    Reauthenticated! 👏
                   </Paragraph>
                   <Paragraph o={reauthenticationResult ? 0 : 1}
                     size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>

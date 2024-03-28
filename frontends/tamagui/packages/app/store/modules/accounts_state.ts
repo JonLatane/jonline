@@ -177,6 +177,9 @@ export const accountsSlice = createSlice({
     pinAccount: (state, action: PayloadAction<JonlineAccount>) => {
       const account = action.payload;
       const existing = state.pinnedServers.find(s => s.serverId === serverID(account.server));
+      if (existing?.accountId !== accountID(account)) {
+        resetCredentialedData(action.payload.server.host);
+      }
       if (existing) {
         existing.accountId = accountID(account);
         // existing.pinned = ;

@@ -69,7 +69,7 @@ const initialState: LocalAppConfiguration = {
   showPinnedServers: true,
   autoHideNavigation: false,
   imagePostBackgrounds: true,
-  fancyPostBackgrounds: true,
+  fancyPostBackgrounds: false,
   shrinkPreviews: false,
   dateTimeRenderer: undefined,
   showBigCalendar: true,

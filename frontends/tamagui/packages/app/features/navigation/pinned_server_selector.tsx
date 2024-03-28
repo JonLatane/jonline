@@ -1,5 +1,5 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
-import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal } from '@tamagui/lucide-icons';
+import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
+import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
 import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
@@ -81,15 +81,19 @@ export function PinnedServerSelector({
 
   const description = excludeCurrentServer && pinnedServerCount === 0
     ? 'No servers are selected'
-    : excludeCurrentServer
-      ? totalServerCount === pinnedServerCount
-        ? `From ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
-        : `From ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`
-      : totalServerCount === pinnedServerCount
-        ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
-        : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
+    : pinnedServerCount === 0
+      ? `From ${shortServerName}`
+      : excludeCurrentServer
+        ? totalServerCount === pinnedServerCount
+          ? `From ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
+          : `From ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`
+        : totalServerCount === pinnedServerCount
+          ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
+          : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
 
   const { transparentBackgroundColor } = useServerTheme();
+  const renderPinnedServers = showPinnedServers || simplified && !disabled;
+  const childMargins = { paddingTop: 4, paddingBottom: 4 };
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
     backgroundColor={transparentBackgroundColor}
@@ -112,7 +116,7 @@ export function PinnedServerSelector({
             <Button key='pinned-server-toggle' py='$1'
               pl='$2' pr='$1'
               h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-              <XStack mr='auto' maw='100%'>
+              <XStack mr='auto' maw='100%' ai='center'>
                 <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
                   {description}
                 </Paragraph>
@@ -148,24 +152,23 @@ export function PinnedServerSelector({
           </>
         }
       </XStack>
-      {showPinnedServers || simplified && !disabled
-        ? <YStack w='100%' key='pinned-server-scroller-container' animation='standard' {...standardAnimation}>
-          <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-            <XStack mx='$3' my='$1' py='$1' ai='center' gap='$2' key='available-servers'>
-              <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
-                {availableServers.map(server => {
+      <ScrollView key='pinned-server-scroller' w='100%' horizontal>
+        <XStack mx='$3'
+          ai='center' gap='$2' key='available-servers'>
+          <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+            {renderPinnedServers
+              ? [
+                availableServers.map(server => {
                   let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                  return <XStack key={`server-${server.host}`} //animation='standard' {...standardHorizontalAnimation}
-                    mr='$2'>
+                  return <div key={`server-${server.host}`} style={{ display: 'flex', marginRight: 5, ...childMargins }}>
                     <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
-                  </XStack>;
-                })}
-
-                {recommendedServerHosts.length > 0
-                  ? <XStack key='recommended-servers-button' /*animation='standard' {...standardAnimation}*/>
-                    <Button h='auto' py='$1' mr='$2' size='$2'
+                  </div>;
+                }),
+                recommendedServerHosts.length > 0
+                  ? <div key='recommended-servers-button' style={{ display: 'flex', marginRight: -10, ...childMargins }}/*animation='standard' {...standardAnimation}*/>
+                    <Button h='auto' py='$1' mr='$1' size='$2'
                       onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                      <XStack>
+                      <XStack ai='center'>
                         <YStack my='auto' ai='center'>
                           <Heading size='$1'>
                             Recommended
@@ -174,48 +177,57 @@ export function PinnedServerSelector({
                             Servers{recommendedServerHosts.length ? ` (${recommendedServerHosts.length})` : undefined}
                           </Heading>
                         </YStack>
-                        <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                        {/* <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
                           <ChevronRight size='$1' />
-                        </XStack>
+                        </XStack> */}
+
+                        <ZStack w='$1' h='$1'>
+                          <XStack m='auto' animation='standard' o={viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
+                            <ChevronRight size='$1' />
+                          </XStack>
+                          <XStack m='auto' animation='standard' o={!viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
+                            <XIcon size='$1' />
+                          </XStack>
+                        </ZStack>
                       </XStack>
                     </Button>
-                  </XStack>
-                  : undefined}
-
-                {viewingRecommendedServers ?
+                  </div>
+                  : undefined,
+                viewingRecommendedServers ?
                   // <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
-                  <>
-                    {recommendedServerHosts.map((host, index) => {
-                      const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                      // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                      return <>
-                        {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
-                          ? <XStack key='separator' my='auto'>
-                            <Tooltip>
-                              <Tooltip.Trigger>
-                                <SeparatorHorizontal size='$5' />
-                              </Tooltip.Trigger>
-                              <Tooltip.Content>
-                                <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
-                              </Tooltip.Content>
-                            </Tooltip>
-                          </XStack>
-                          : undefined}
-                        <XStack my='auto' key={`server-${host}`}>
-                          <RecommendedServer host={host} tiny />
-                        </XStack>
-                      </>;
-                    })}
-                  </>
+                  recommendedServerHosts.map((host, index) => {
+                    const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
+                    // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                    return [
+                      precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                        ? <div key='separator' style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <SeparatorHorizontal size='$5' />
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
+                        : undefined,
+                      <div key={`server-${host}`} style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
+                        <RecommendedServer host={host} tiny />
+                      </div>
+                    ]
+                  })
                   // </XStack>
                   : recommendedServerHosts.length > 0
                     ? <XStack key='recommendedServerHosts-spacer' w='$10' />
-                    : undefined}
-              </FlipMove>
-            </XStack>
-          </ScrollView>
-        </YStack>
-        : undefined}
+                    : undefined
+              ]
+
+              : undefined}
+          </FlipMove>
+        </XStack>
+      </ScrollView>
+      {/* </YStack>
+        : undefined} */}
 
     </> : undefined}
     {/* </AnimatePresence> */}
@@ -302,7 +314,7 @@ export function ShortAccountSelectorButton({ server, pinnedServer, onPress }: Sh
   const avatarSize = 20;
   const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
 
-  return <Button onPress={onPress} h='auto' px='$2'
+  return <Button onPress={onPress} h='auto' py='$1' px='$2'
     borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
     o={pinned ? 1 : 0.5}
     disabled={!onPress}

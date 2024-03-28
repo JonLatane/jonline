@@ -1,10 +1,10 @@
 import { Anchor, AnimatePresence, Button, ColorTokens, Dialog, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useDebounce, useDebounceValue, useMedia } from '@jonline/ui';
-import { AlertCircle, AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, SeparatorVertical, Server, User as UserIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { AlertCircle, AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, SeparatorVertical, Server, User as UserIcon, X as XIcon, ArrowDownUp } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { FederatedEntity, FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedEntity, FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setSeparateAccountsByServer, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
@@ -241,7 +241,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
           : undefined}
       borderBottomLeftRadius={0} borderBottomRightRadius={0}
       px='$2'
-      onPress={() => setOpen((x) => !x)}
+      py='$1'
+      onPress={() => setOpen(true)}
     >
       {(avatarUrl && avatarUrl != '') ?
         <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
@@ -567,10 +568,21 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
               <div key='accounts-header'>
                 <YStack gap="$2" mt='$2'>
-                  <XStack mb='$2' ai='center'>
+                  <XStack mb='$2' ai='center' gap='$2'>
                     <Heading size='$5' f={1}>
                       Accounts
                     </Heading>
+
+
+                    <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
+                      icon={ArrowDownUp}
+                      transparent
+                      circular
+                      size='$2'
+                      {...themedButtonBackground(
+                        !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
+
+
                     <Button
                       size="$3"
                       icon={Plus}
@@ -781,36 +793,36 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
               {separateAccountsByServer
                 ? [
                   accountsOnPrimaryServer.length === 0
-                    ? <div key='no-accounts-on-server' style={{width: '100%', display: 'flex'}}>
+                    ? <div key='no-accounts-on-server' style={{ width: '100%', display: 'flex' }}>
                       <Heading size="$2" mx='auto' paddingVertical='$6' o={0.5}>No accounts added on {primaryServer?.host}.</Heading>
                     </div>
                     : undefined,
-                  accountsOnPrimaryServer.map((account) =>
+                  ...accountsOnPrimaryServer.map((account) =>
                     <div key={accountID(account)} style={{ marginBottom: 8 }}>
                       <AccountCard
                         account={account}
                         onProfileOpen={() => setOpen(false)}
                         totalAccounts={accountsOnPrimaryServer.length} />
                     </div>),
-                  accountsElsewhere.length > 0
+                  ...accountsElsewhere.length > 0
                     ? [
-                      <div key='acounts-elsewhere' style={{width: '100%', display: 'flex'}}>
+                      <div key='acounts-elsewhere' style={{ width: '100%', display: 'flex' }}>
                         <Heading mr='$3' pr='$3' size='$3'>Accounts Elsewhere</Heading>
                       </div>,
-                      accountsElsewhere.map((account) =>
+                      ...accountsElsewhere.map((account) =>
                         <div key={accountID(account)} style={{ marginBottom: 8 }}>
                           <AccountCard key={accountID(account)}
                             account={account}
                             totalAccounts={accountsOnPrimaryServer.length} />
                         </div>)
                     ]
-                    : undefined
+                    : []
                 ]
                 : [
                   displayedAccounts.length === 0
                     ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>
                     : undefined,
-                  displayedAccounts.map((account) =>
+                  ...displayedAccounts.map((account) =>
                     <div key={accountID(account)} style={{ marginBottom: 8 }}>
                       <AccountCard key={accountID(account)}
                         account={account}

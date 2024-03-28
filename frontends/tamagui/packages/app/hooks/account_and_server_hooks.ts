@@ -1,6 +1,6 @@
 import { Post } from '@jonline/api/index';
 import { useAccountOrServerContext } from 'app/contexts';
-import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, getCachedServerClient, selectAccountById, selectAllAccounts, selectAllServers, selectServerById, serverID } from 'app/store';
+import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, accountID, getCachedServerClient, selectAccountById, selectAllAccounts, selectAllServers, selectCreationServer, selectServerById, serverID } from 'app/store';
 import { useAppDispatch, useAppSelector } from "./store_hooks";
 import { server } from '../../../apps/expo/metro.config';
 
@@ -13,6 +13,17 @@ export function useAccountOrServer(): AccountOrServer {
     server: useServer()
   };
 }
+
+export const useCreationServer = () => {
+  const dispatch = useAppDispatch();
+  return useAppSelector(state => {
+    const creationServer = state.servers.creationServerId
+      ? selectServerById(state.servers, state.servers.creationServerId)
+      : undefined;
+    const setCreationServer = (s: JonlineServer | undefined) => dispatch(selectCreationServer(s));
+    return { creationServer, setCreationServer };
+  });
+};
 
 export function useCurrentAndPinnedServers(args?: { includeUnpinned?: boolean; }): AccountOrServer[] {
   const accountOrServer = useAccountOrServer();
@@ -33,7 +44,7 @@ export function useCurrentAndPinnedServers(args?: { includeUnpinned?: boolean; }
 }
 
 export function useFederatedAccountOrServer<T extends HasIdFromServer>(entity: FederatedEntity<T> | string | undefined): AccountOrServer {
-  const currentAndPinnedServers = useCurrentAndPinnedServers({includeUnpinned: true});
+  const currentAndPinnedServers = useCurrentAndPinnedServers({ includeUnpinned: true });
   const currentAccountOrServer = useAccountOrServer();
   if (!entity) return currentAccountOrServer;
 

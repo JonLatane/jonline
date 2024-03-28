@@ -80,7 +80,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
                 opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
                 onPress={() => {
                   if (chatUI) {
-                    scrollToCommentsBottom(post?.id);
+                    scrollToCommentsBottom(post ? federatedId(post) : undefined);
                   } else {
                     dispatch(setDiscussionChatUI(true))
                   }
@@ -99,14 +99,14 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   </YStack>;
 }
 
-const regexp = new RegExp(/[@\.]/, 'g');
+const regexp = new RegExp(/[^\w]/, 'g');
 const getTopId = (postId: string | undefined) => `conversation-top-${postId?.replaceAll(regexp, '-')}`;
 const getBottomId = (postId: string | undefined) => `conversation-bottom-${postId?.replaceAll(regexp, '-')}`;
 
 export function scrollToCommentsBottom(postId: string | undefined) {
   if (!isClient) return;
 
-  console.log('scrollToCommentsBottom', getBottomId(postId), document.querySelectorAll(`#${getBottomId(postId)}`));
+  console.log('scrollToCommentsBottom', postId, getBottomId(postId), document.querySelectorAll(`#${getBottomId(postId)}`));
 
   document.querySelectorAll(`#${getBottomId(postId)}`)
     .forEach(e => e.scrollIntoView({ block: 'center', behavior: 'smooth' }));
@@ -151,7 +151,7 @@ export function useConversationCommentList({
           if (rootPostId?.split('@')[0]) {
             dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
               if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
-                scrollToCommentsBottom(post?.id);
+                scrollToCommentsBottom(rootPostId);
               }
               setTimeout(() => {
                 forceUpdate();

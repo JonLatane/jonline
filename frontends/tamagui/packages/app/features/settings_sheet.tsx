@@ -209,10 +209,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </YStack>
               </YStack>
 
-              <Heading size='$5' mt='$5'>Accounts</Heading>
+              {/* <Heading size='$5' mt='$5'>Accounts</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Group Accounts by Server' value={app.separateAccountsByServer} setter={setSeparateAccountsByServer} disabled={!app.allowServerSelection} autoDispatch />
-              </YStack>
+              </YStack> */}
 
               <Heading size='$5' mt='$5'>Testing</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>

@@ -136,7 +136,7 @@ export function GroupsSheet({
 
   const infoMarginLeft = showServerInfo ? -32 : -32;
   const infoPaddingRight = showServerInfo ? 28 : 36;
-  const onPress = () => setOpen((x) => !x);
+  const onPress = () => setOpen(true);
 
   const toggleAccountSelect = (a: JonlineAccount) => {
     if (accountID(a) === accountID(account)) {

@@ -130,7 +130,7 @@ fn update_event_instances(
                     format!("failed_to_create_instance[{}]", request_instance.id),
                 ))
             }
-            Some((existing_instance, _existing_post)) => {
+            Some((existing_instance, existing_instance_post)) => {
                 let mut updated_instance = existing_instance.clone();
                 let starts_at = request_instance.starts_at.to_db()?;
                 let ends_at = request_instance.ends_at.to_db()?;
@@ -161,12 +161,14 @@ fn update_event_instances(
                     updated_instance.location = location;
                     updated_instance.updated_at = SystemTime::now().into();
                 }
+
                 // updated_instance.location = instance
                 //     .location
                 //     .as_ref()
                 //     .map(|c| serde_json::to_value(c).unwrap());
                 // updated_instance.info = json!({});
                 // updated_instance.post_id = None; //instance_post.as_ref().map(|p| p.id);
+
                 println!("Updating instance: {:?}", updated_instance);
                 updated_instance = diesel::update(&updated_instance)
                     .set(&updated_instance)
@@ -175,10 +177,27 @@ fn update_event_instances(
                         log::error!("Failed to update event instance: {:?}", e);
                         Status::new(Code::Internal, "failed_to_update_event_instance")
                     })?;
-                // let updated_post = existing_post;
+
+                let mut updated_instance_post = existing_instance_post.clone();
+                let visibility = request_instance
+                    .post
+                    .as_ref()
+                    .map(|p| p.visibility())
+                    .unwrap_or(Visibility::Private);
+                if visibility.to_string_visibility() != updated_instance_post.visibility {
+                    updated_instance_post.visibility = visibility.to_string_visibility();
+                }
+                println!("Updating instance post: {:?}", updated_instance);
+                diesel::update(&updated_instance_post)
+                    .set(&updated_instance_post)
+                    .get_result::<models::Post>(conn)
+                    .map_err(|e| {
+                        log::error!("Failed to update event instance post: {:?}", e);
+                        Status::new(Code::Internal, "failed_to_update_event_instance")
+                    })?;
+
                 println!("Returning instance: {}", existing_instance.id);
-                result_instance_data
-                    .push(updated_instance);
+                result_instance_data.push(updated_instance);
             }
         }
     }

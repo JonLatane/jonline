@@ -59,6 +59,7 @@ export function EventDetailsScreen() {
     ? selectPostById(state.posts, federateId(subjectInstance.post!.id, serverHost))
     : undefined);
   const instancePostId = instancePost?.id;
+  const federatedInstancePostId = federateId(instancePostId ?? '', serverHost);
 
   // = subjectInstances?.find(i => i.id == instanceId);
   useEffect(() => {
@@ -208,11 +209,12 @@ export function EventDetailsScreen() {
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
+                  debugger;
                   if (chatUI) {
-                    scrollToCommentsBottom(instancePostId);
+                    scrollToCommentsBottom(federatedInstancePostId);
                   } else {
                     setInteractionType('chat');
-                    setTimeout(() => scrollToCommentsBottom(instancePostId), 1000);
+                    setTimeout(() => scrollToCommentsBottom(federatedInstancePostId), 1000);
                   }
                 }} />
             </Tooltip.Trigger>
