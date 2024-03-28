@@ -24,12 +24,24 @@ export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function SingleServerAccountsSheet({ operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
+export function SingleServerAccountsSheet({ server: taggedServer, operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
   const mediaQuery = useMedia();
+  const dispatch = useAppDispatch();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
   // const [addingServer, setAddingServer] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const { creationServer: creationServer, setCreationServer: setCreationServer } = useCreationServer();
+  useEffect(() => {
+    if (open && taggedServer && (
+      !creationServer
+      || serverID(taggedServer) != serverID(creationServer)
+    )) {
+      setCreationServer(taggedServer); 
+    }
+  }
+    , [open, taggedServer]);
   const [addingAccount, setAddingAccount] = useState(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
   const [reauthenticating, setReauthenticating] = useState(false);
@@ -37,13 +49,11 @@ export function SingleServerAccountsSheet({ operation, button, onAccountSelected
   const [newAccountUser, setNewAccountUser] = useState('');
   const [newAccountPass, setNewAccountPass] = useState('');
 
-  const { creationServer: addAccountServer, setCreationServer: setAddAccountServer } = useCreationServer();
-  const specifiedServer = addAccountServer;
+  const specifiedServer = creationServer;
 
 
   const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
-  const dispatch = useAppDispatch();
   const app = useRootSelector((state: RootState) => state.app);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers))//.servers.ids.map(id => state.servers.entities[id]));
 
@@ -204,9 +214,9 @@ export function SingleServerAccountsSheet({ operation, button, onAccountSelected
             />
             <ScrollView horizontal f={1}>
               <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                {addAccountServer
+                {creationServer
                   ? <div id='accounts-sheet-currently-adding-server'
-                    key={`serverCard-${serverID(addAccountServer)}`}
+                    key={`serverCard-${serverID(creationServer)}`}
                     style={{ margin: 2 }}>
                     {isCurrentServer
                       ? <ServerNameAndLogo server={server} />
@@ -219,15 +229,15 @@ export function SingleServerAccountsSheet({ operation, button, onAccountSelected
                     {/* <ServerNameAndLogo server={addAccountServer} /> */}
                   </div>
                   : undefined}
-                {addAccountServer && servers.length > 1
+                {creationServer && servers.length > 1
                   ? <div key='separator' style={{ margin: 2 }}>
                     <SeparatorVertical size='$1' />
                   </div>
                   : undefined}
-                {servers.filter(s => s.host != addAccountServer?.host)
+                {servers.filter(s => s.host != creationServer?.host)
                   .map((server, index) =>
                     <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
-                      <Button onPress={() => dispatch(setAddAccountServer(server))}>
+                      <Button onPress={() => dispatch(setCreationServer(server))}>
                         <ServerNameAndLogo server={server} />
                       </Button>
                     </div>
