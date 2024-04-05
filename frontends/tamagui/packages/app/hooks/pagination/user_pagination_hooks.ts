@@ -1,7 +1,8 @@
 import { User, UserListingType } from "@jonline/api";
 import { AccountOrServer, FederatedUser, getUsersPage, loadUsersPage } from "app/store";
 import { useEffect, useState } from "react";
-import { useAccountOrServer, useCurrentAndPinnedServers } from "../account_and_server_hooks";
+import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
+import { useCurrentAccountOrServer } from '../account_or_server/use_current_account_or_server';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
 import { PaginationResults } from ".";
 
@@ -10,7 +11,7 @@ export function useUsersPage(
   page: number,
 ): PaginationResults<FederatedUser> {
   const dispatch = useAppDispatch();
-  const servers = useCurrentAndPinnedServers();
+  const servers = usePinnedAccountsAndServers();
 
   const [loadingUsers, setLoadingUsers] = useState(false);
   function reloadUsers() {

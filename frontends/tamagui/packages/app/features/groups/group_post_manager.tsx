@@ -1,4 +1,4 @@
-import { useAppSelector, useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { useAppSelector, useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
 import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, loadUser, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
@@ -141,7 +141,7 @@ interface GroupPostChromeProps {
 
 export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, createViewHref, }) => {
   const { server } = useFederatedAccountOrServer(group);
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const isPrimaryServer = server?.host === currentServer?.host;
   const isSameServer = group.serverHost === post.serverHost;
   const shared = groupPost != undefined;

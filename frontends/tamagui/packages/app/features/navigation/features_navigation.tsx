@@ -1,7 +1,7 @@
 import { Group, User, UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
-import { useAccountOrServer, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
+import { useCurrentAccountOrServer, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
 import { FederatedGroup, RootState, federateId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
@@ -119,7 +119,7 @@ export type FeaturesNavigationProps = {
 };
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
-  const { account, server } = useAccountOrServer();
+  const { account, server } = useCurrentAccountOrServer();
   const mediaQuery = useMedia();
   const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 

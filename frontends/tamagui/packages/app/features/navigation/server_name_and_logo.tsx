@@ -1,7 +1,7 @@
 import { Media } from "@jonline/api";
 import { Heading, Paragraph, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
 import { Home } from "@tamagui/lucide-icons";
-import { useServer } from "app/hooks";
+import { useCurrentServer } from "app/hooks";
 import { JonlineServer } from "app/store";
 import { MediaRenderer } from "../media/media_renderer";
 
@@ -65,7 +65,7 @@ export function ServerNameAndLogo({
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const server = selectedServer ?? currentServer;
 
   const serverName = server?.serverConfiguration?.serverInfo?.name ?? '...';

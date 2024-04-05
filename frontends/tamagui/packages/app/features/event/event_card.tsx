@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, 
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAccount, useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useCurrentAccount, useCurrentAccountOrServer, useAppSelector, useComponentKey, usePinnedAccountsAndServers, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -65,9 +65,9 @@ export const EventCard: React.FC<Props> = ({
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
   const server = accountOrServer.server;
-  const isPrimaryServer = useAccountOrServer().server?.host === server?.host;
-  const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const isPrimaryServer = useCurrentAccountOrServer().server?.host === server?.host;
+  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === groupContext?.serverHost;
+  const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
 
   const mediaQuery = useMedia();

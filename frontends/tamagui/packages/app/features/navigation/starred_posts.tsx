@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinn
 import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
 import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
-import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useServer } from "app/hooks";
+import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useCurrentServer } from "app/hooks";
 import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { createRef, use, useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
@@ -15,7 +15,7 @@ import { useLink } from "solito/link";
 import { AppSection, menuIcon } from "./features_navigation";
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 import { Dictionary } from "@reduxjs/toolkit";
-import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
+import { CreateAccountOrLoginSheet } from "../accounts/create_account_or_login_sheet";
 import { ShortAccountSelectorButton } from "./pinned_server_selector";
 import { ServerNameAndLogo } from "./server_name_and_logo";
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";
@@ -23,7 +23,7 @@ import useIsVisibleHorizontal from "app/hooks/use_is_visible";
 type StarredPostFilter = 'posts' | 'events' | undefined;
 export type StarredPostsProps = {};
 function useStarredPostDetails(postId: string, isVisible?: boolean) {
-  const { id: serverPostId, serverHost } = parseFederatedId(postId, useServer()?.host);
+  const { id: serverPostId, serverHost } = parseFederatedId(postId, useCurrentServer()?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const basePost = useAppSelector(state => state.posts.entities[postId]);
   const isServerReady = accountOrServer?.server

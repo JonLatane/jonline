@@ -1,7 +1,7 @@
 import { AnimatePresence, Button, ButtonProps, Heading, Paragraph, XStack, YStack, ZStack, standardAnimation, useForceUpdate, useMedia } from "@jonline/ui";
 import { CornerRightUp, HelpCircle, MoveUp } from '@tamagui/lucide-icons';
 import { DarkModeToggle, doesPlatformPreferDarkMode } from "app/components/dark_mode_toggle";
-import { useAccount, useAppDispatch, useLocalConfiguration } from "app/hooks";
+import { useCurrentAccount, useAppDispatch, useLocalConfiguration } from "app/hooks";
 import { serverID, setShowHelp, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import moment, { Moment } from "moment";
@@ -29,7 +29,7 @@ export function TabsTutorial({ }) {
   const showHelp = config.showHelp ?? true;
   const dispatch = useAppDispatch();
   const focueUpdate = useForceUpdate();
-  const account = useAccount();
+  const account = useCurrentAccount();
   const [hidingStarted, setHidingStarted] = useState(undefined as Moment | undefined);
 
   const startHidingHelp = () => {

@@ -4,7 +4,7 @@ import React from "react";
 import { EventInstance } from "@jonline/api";
 import { Button, Heading, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, ExternalLink } from "@tamagui/lucide-icons";
-import { useAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
+import { useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -28,7 +28,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
   const tiny = inputTiny || !mediaQuery.gtXs;
   const accountOrServer = useFederatedAccountOrServer(event);
   // const server = accountOrServer.server;
-  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
+  const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
   // const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer;
   const primaryInstanceIdString = instance.id;

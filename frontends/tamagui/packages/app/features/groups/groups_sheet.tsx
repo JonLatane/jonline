@@ -1,7 +1,7 @@
 import { GroupListingType, Permission } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme, useDebounceValue } from '@jonline/ui';
 import { AtSign, Boxes, ChevronDown, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useServer } from 'app/hooks';
+import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useCurrentServer } from 'app/hooks';
 import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -11,7 +11,7 @@ import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet';
+import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
 import FlipMove from 'react-flip-move';
 
 export type GroupsSheetProps = {
@@ -64,7 +64,7 @@ export function GroupsSheet({
   const [searchText, setSearchText] = useState('');
   const { dispatch, accountOrServer } = useFederatedDispatch(selectedGroup);
   const { account: groupAccount, server: groupServer } = accountOrServer;
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
 
   const primaryEntityServer = useAppSelector(state => primaryEntity
     ? selectAllServers(state.servers).find(s => s.host === primaryEntity.serverHost)
@@ -152,7 +152,7 @@ export function GroupsSheet({
     <>
       {<YStack>
         {showServerInfo
-          ? <SingleServerAccountsSheet server={server}
+          ? <CreateAccountOrLoginSheet server={server}
             selectedAccount={account}
             onAccountSelected={toggleAccountSelect}
             button={(onPress) =>

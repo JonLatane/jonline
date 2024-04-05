@@ -12,7 +12,7 @@ import { AuthorInfo } from "./author_info";
 
 import { ShareableToggle, VisibilityPicker } from "app/components";
 import { AccountOrServerContextProvider, useGroupContext } from "app/contexts";
-import { useAccountOrServer, useAppSelector, useComponentKey, useCurrentAndPinnedServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
+import { useCurrentAccountOrServer, useAppSelector, useComponentKey, usePinnedAccountsAndServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
 import { federatedEntity, federatedId, serverHost } from 'app/store/federation';
 import { GroupPostManager } from 'app/features/groups/group_post_manager';
 import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
@@ -72,15 +72,15 @@ export const PostCard: React.FC<PostCardProps> = ({
   const updatedPost = useAppSelector(state => selectPostById(state.posts, federatedPostId));
   const post: FederatedPost = { ...(updatedPost ?? unfederatedPost), serverHost: serverHost(server) };
 
-  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
 
   const shrinkServerInfo = isPreview && (!mediaQuery.gtXxxs || forceShrinkPreview);
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
 
   const groupContext = useGroupContext();
-  const isGroupPrimaryServer = useAccountOrServer().server?.host === groupContext?.serverHost;
+  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === groupContext?.serverHost;
 
   const theme = useTheme();
   const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);

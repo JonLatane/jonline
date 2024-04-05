@@ -1,5 +1,5 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useServer, } from 'app/hooks'
+import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useCurrentServer, } from 'app/hooks'
 import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
@@ -43,7 +43,7 @@ export function PostDetailsScreen() {
   const [pathPostId] = useParam('postId');
   // const [postId] = useParam('postId');
   // const [postId, erverHost] = (pathPostId ?? '').split('@');
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const { id: serverPostId, serverHost } = parseFederatedId(pathPostId ?? '', currentServer?.host);
 
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);

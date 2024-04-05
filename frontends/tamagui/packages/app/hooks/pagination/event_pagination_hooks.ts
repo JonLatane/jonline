@@ -1,5 +1,5 @@
 import { EventListingType, TimeFilter } from "@jonline/api";
-import { useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch } from "app/hooks";
+import { useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch } from "app/hooks";
 
 import { debounce, useDebounce } from "@jonline/ui";
 import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
@@ -32,7 +32,7 @@ export function useServerEventPages(
   params?: EventPageParams
 ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  const servers = useCurrentAndPinnedServers();
+  const servers = usePinnedAccountsAndServers();
   const eventsState = useRootSelector((state: RootState) => state.events);
   const [loading, setLoadingEvents] = useState(false);
 

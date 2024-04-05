@@ -1,6 +1,6 @@
 import { useTheme } from "@jonline/ui";
 import { JonlineServer } from '../store/types';
-import { useServer } from "./account_and_server_hooks";
+import { useCurrentServer } from './account_or_server/use_current_account_or_server';
 
 export type ServerTheme = {
   server?: JonlineServer;
@@ -28,7 +28,7 @@ export type ServerTheme = {
   darkMode: boolean;
 }
 export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
-  const server = useServer();
+  const server = useCurrentServer();
   const theme = useTheme();
   return getServerTheme(specificServer ?? server, theme);
 }

@@ -2,7 +2,7 @@ import { Anchor, AnimatePresence, Button, ColorTokens, Dialog, Heading, Image, I
 import { AlertCircle, AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, SeparatorVertical, Server, User as UserIcon, X as XIcon, ArrowDownUp } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
-import { useAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { useCurrentAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { FederatedEntity, FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setSeparateAccountsByServer, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
@@ -15,7 +15,7 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { TutorialToggle } from '../navigation/tabs_tutorial';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { LoginMethod, SingleServerAccountsSheet } from './single_server_accounts_sheet';
+import { LoginMethod, CreateAccountOrLoginSheet } from './create_account_or_login_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
 import FlipMove from 'react-flip-move';
@@ -57,7 +57,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const dispatch = useAppDispatch();
   const { server: currentServer, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
 
-  const account = useAccount();
+  const account = useCurrentAccount();
   const serversState = useRootSelector((state: RootState) => state.servers);
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers));
   const allowServerSelection = allowServerSelectionSetting || servers.length > 1;
@@ -503,7 +503,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                         !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
 
 
-                    <SingleServerAccountsSheet
+                    <CreateAccountOrLoginSheet
                       server={currentServer}
                       // selectedGroup={selectedGroup}
                       // primaryEntity={primaryEntity}

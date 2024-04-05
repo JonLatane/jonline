@@ -4,7 +4,7 @@ import React from "react";
 import { EventInstance, Group } from "@jonline/api";
 import { Button, Heading, Paragraph, XStack, YStack, useTheme } from "@jonline/ui";
 import { useGroupContext } from "app/contexts/group_context";
-import { useAppSelector, useFederatedAccountOrServer, useServer } from "app/hooks";
+import { useAppSelector, useFederatedAccountOrServer, useCurrentServer } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -20,7 +20,7 @@ interface Props {
 
 export const useInstanceLink = (event: FederatedEvent, instance: EventInstance, group?: Group) => {
   const { server } = useFederatedAccountOrServer(event);
-  const showServerInfo = server?.host !== useServer()?.host;
+  const showServerInfo = server?.host !== useCurrentServer()?.host;
   const detailsLinkId = showServerInfo
     ? federateId(instance!.id, server)
     : instance!.id;

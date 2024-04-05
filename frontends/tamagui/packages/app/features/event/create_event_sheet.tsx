@@ -3,7 +3,7 @@ import { DateTimePicker, Heading, Paragraph, XStack, supportDateInput, toProtoIS
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
-import { useCredentialDispatch } from 'app/hooks';
+import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
 import moment from 'moment';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 import EventCard from './event_card';
@@ -17,7 +17,7 @@ export type CreateEventSheetProps = {
 };
 
 export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProps) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useCreationDispatch();
   const [startsAt, setStartsAt] = useState('');
   const [endsAt, setEndsAt] = useState('');
   const [duration, _setDuration] = useState(0);
@@ -97,6 +97,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
 
   return <BaseCreatePostSheet
     entityName='Event'
+    requiredPermissions={[Permission.CREATE_EVENTS]}
     {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid, button }}
     preview={(post, group) => {
       // console.log('previewEvent', previewEvent(post));

@@ -19,7 +19,7 @@ export interface AccountsState {
   error?: Error;
   successMessage?: string;
   errorMessage?: string;
-  currentAccountId?: string;
+  // currentAccountId?: string;
   // account?: JonlineAccount;
   // Allows a user to be primarily signed into the above account,
   // but view data from other servers (and accounts on those servers).
@@ -51,6 +51,28 @@ const initialState: AccountsState = {
   ...accountsAdapter.getInitialState(),
 };
 
+function withAccountUnpinned(ps: PinnedServer, accountId: string) {
+  const serverHost = serverIDHost(ps.serverId);
+  const accountHost = accountIDHost(accountId);
+  return ps.accountId === accountId || serverHost === accountHost
+    ? { ...ps, accountId: undefined }
+    : ps;
+}
+function withServerAccountUnpinned(ps: PinnedServer, serverId: string) {
+  const pinnedServerHost = serverIDHost(ps.serverId);
+  const serverHost = serverIDHost(serverId);
+  return pinnedServerHost === serverHost
+    ? { ...ps, accountId: undefined }
+    : ps;
+}
+function withAccountPinned(ps: PinnedServer, accountId: string) {
+  const serverHost = serverIDHost(ps.serverId);
+  const accountHost = accountIDHost(accountId);
+
+  return serverHost === accountHost
+    ? { ...ps, accountId }
+    : ps;
+}
 export const accountsSlice = createSlice({
   name: "accounts",
   initialState: initialState,
@@ -59,14 +81,14 @@ export const accountsSlice = createSlice({
       accountsAdapter.upsertOne(state, action.payload);
     },
     removeAccount: (state, action: PayloadAction<string>) => {
-      if (state.currentAccountId === action.payload) {
-        state.currentAccountId = undefined;
-      }
+      state.pinnedServers = state.pinnedServers.map((ps) => withAccountUnpinned(ps, action.payload));
       accountsAdapter.removeOne(state, action);
     },
     resetAccounts: () => initialState,
+    deselectAccount: (state, action: PayloadAction<string>) => {
+      state.pinnedServers = state.pinnedServers.map((ps) => withAccountUnpinned(ps, action.payload));
+    },
     selectAccount: (state, action: PayloadAction<JonlineAccount | undefined>) => {
-      const originalAccountId = state.currentAccountId;
       const account = action.payload;
       const accountId = accountID(account);
 
@@ -84,20 +106,22 @@ export const accountsSlice = createSlice({
       }, 1);
 
       resetAccessTokens();
-      state.currentAccountId = accountId;
 
       if (account) {
-        console.log("Verifying account is still valid");
+        state.pinnedServers = state.pinnedServers.map((ps) => withAccountPinned(ps, accountID(account)!));
+      }
+
+      if (account) {
+        console.log(`Verifying account ${accountId} auth still works...`);
         setTimeout(async () => {
           const client = await getCredentialClient({ account, server: account.server })
-          console.log("Loaded client");
           client.getCurrentUser({}, client.credential).then(user => {
-            console.log("Account is still valid");
+            console.log(`Account auth still works!`);
             store.dispatch(accountsSlice.actions.upsertAccount({ ...account, user }));
           }).catch(() => {
-            console.warn("Failed to load account user data, account may have been deleted.");
+            console.warn(`Failed to load account user data for ${accountId}; user needs to reauthenticate.`);
             store.dispatch(accountsSlice.actions.upsertAccount({ ...account, lastSyncFailed: true, needsReauthentication: true }));
-            store.dispatch(accountsSlice.actions.selectAccount(undefined));
+
           });
         }, 1);
         state.pinnedServers = state.pinnedServers.map(s =>
@@ -106,11 +130,13 @@ export const accountsSlice = createSlice({
             : s
         );
       } else {
-        state.pinnedServers = state.pinnedServers.map(s =>
-          originalAccountId && serverIDHost(s.serverId) === accountIDHost(originalAccountId)
-            ? { ...s, accountId: undefined }
-            : s
-        );
+        debugger;
+        setTimeout(() => {
+          const currentServerId = store.getState().servers.currentServerId;
+          if (!currentServerId) return;
+
+          store.dispatch(unpinAccountByServerId(currentServerId));
+        }, 1);
       }
     },
     setExcludeCurrentServer: (state, action: PayloadAction<boolean>) => {
@@ -140,9 +166,14 @@ export const accountsSlice = createSlice({
         if (serverID(accountServer) === serverID(payloadServer) && accountUser.id == payloadUser.id) {
           account.needsReauthentication = true;
           account.lastSyncFailed = true;
-          if (state.currentAccountId === accountID(account)) {
-            state.currentAccountId = undefined;
-          }
+
+          // This is no longer necessary with the refactor to remove currentAccountId from AccountsState!
+          // The notion of "current account" in Jonline's store derives purely from 
+          // state.servers.currentServerId and state.accounts.pinnedServers.
+
+          // if (state.currentAccountId === accountID(account)) {
+          //   state.currentAccountId = undefined;
+          // }
         }
       }
     },
@@ -200,7 +231,6 @@ export const accountsSlice = createSlice({
           }).catch(() => {
             console.warn("Failed to load account user data, account may have been deleted.");
             store.dispatch(accountsSlice.actions.upsertAccount({ ...account, lastSyncFailed: true, needsReauthentication: true }));
-            store.dispatch(accountsSlice.actions.selectAccount(undefined));
           });
         }, 1);
       }
@@ -218,6 +248,20 @@ export const accountsSlice = createSlice({
       }
       setTimeout(() => resetCredentialedData(action.payload.server.host), 1);
     },
+    unpinAccountByServerId: (state, action: PayloadAction<string>) => {
+      const serverId = action.payload;
+      const existing = state.pinnedServers.find(s => s.serverId === serverId);
+      if (existing) {
+        existing.accountId = undefined;
+      } else {
+        state.pinnedServers.push({
+          serverId: serverId,
+          accountId: undefined,
+          pinned: true
+        });
+      }
+      setTimeout(() => resetCredentialedData(serverIDHost(serverId)), 1);
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(createAccount.pending, (state) => {
@@ -225,13 +269,14 @@ export const accountsSlice = createSlice({
       state.error = undefined;
     });
     builder.addCase(createAccount.fulfilled, (state, action) => {
+      const account = action.payload;
       state.status = "loaded";
       if (!action.meta.arg.skipSelection) {
-        state.currentAccountId = accountID(action.payload);
+        state.pinnedServers = state.pinnedServers.map((ps) => withAccountPinned(ps, accountID(account)!));
       }
-      accountsAdapter.upsertOne(state, action.payload);
-      state.successMessage = `Created account ${action.payload.user.username}`;
-      resetCredentialedData(action.payload.server.host);
+      accountsAdapter.upsertOne(state, account);
+      state.successMessage = `Created account ${account.user.username}`;
+      resetCredentialedData(account.server.host);
     });
     builder.addCase(createAccount.rejected, (state, action) => {
       state.status = "errored";
@@ -244,10 +289,14 @@ export const accountsSlice = createSlice({
       state.error = undefined;
     });
     builder.addCase(login.fulfilled, (state, action) => {
+      const account = action.payload;
       state.status = "loaded";
-      if (!action.meta.arg.skipSelection) {
-        state.currentAccountId = accountID(action.payload);
-      }
+
+      // if (!action.meta.arg.skipSelection) {
+      //   state.currentAccountId = accountID(action.payload);
+      // }
+      state.pinnedServers = state.pinnedServers.map((ps) => withAccountPinned(ps, accountID(account)!));
+
       accountsAdapter.upsertOne(state, { ...action.payload, lastSyncFailed: false, needsReauthentication: false });
       state.successMessage = `Logged in as ${action.payload.user.username}`;
       resetCredentialedData(action.payload.server.host);
@@ -293,7 +342,7 @@ export const accountsSlice = createSlice({
 export const { selectAccount, removeAccount, clearAccountAlerts,
   resetAccounts, upsertUserData, notifyUserDeleted,
   moveAccountUp, moveAccountDown,
-  pinServer, pinAccount, unpinAccount, setExcludeCurrentServer } = accountsSlice.actions;
+  pinServer, pinAccount, unpinAccount, unpinAccountByServerId, setExcludeCurrentServer } = accountsSlice.actions;
 
 export const { selectAll: selectAllAccounts, selectById: selectAccountById, selectTotal: selectAccountTotal } = accountsAdapter.getSelectors();
 export const accountsReducer = accountsSlice.reducer;

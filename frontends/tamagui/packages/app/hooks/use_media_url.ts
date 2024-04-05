@@ -1,5 +1,5 @@
 import { AccountOrServer, JonlineServer, serverUrl, frontendServerUrl } from 'app/store';
-import { useCredentialDispatch, useProvidedDispatch } from './account_and_server_hooks';
+import { useCredentialDispatch, useProvidedDispatch } from './credential_dispatch_hooks';
 
 export function useMediaUrl(mediaId?: string, override?: AccountOrServer): string | undefined {
   try {

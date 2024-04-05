@@ -1,18 +1,15 @@
-import { Button, Heading, Input, Paragraph, ScrollView, Sheet, standardAnimation, useMedia, XStack, YStack, ZStack } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-icons';
+import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
+import { ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
-import { useAppDispatch, useCreationServer, useServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector, selectAllServers } from 'app/store';
+import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
-import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
-import { useLink } from 'solito/link';
-import { current } from '@reduxjs/toolkit';
-import FlipMove from 'react-flip-move';
+import { CreationServerSelector } from './creation_server_selector';
 
-export type SingleServerAccountsSheetProps = {
+export type CreateAccountOrLoginSheetProps = {
   server?: JonlineServer;
   operation?: string;
   button?: (onPress: () => void) => JSX.Element;
@@ -24,7 +21,7 @@ export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function SingleServerAccountsSheet({ server: taggedServer, operation, button, onAccountSelected, selectedAccount }: SingleServerAccountsSheetProps) {
+export function CreateAccountOrLoginSheet({ server: taggedServer, operation, button, onAccountSelected, selectedAccount }: CreateAccountOrLoginSheetProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   // const [open, setOpen] = useState(false);
@@ -38,7 +35,7 @@ export function SingleServerAccountsSheet({ server: taggedServer, operation, but
       !creationServer
       || serverID(taggedServer) != serverID(creationServer)
     )) {
-      setCreationServer(taggedServer); 
+      setCreationServer(taggedServer);
     }
   }
     , [open, taggedServer]);
@@ -54,13 +51,9 @@ export function SingleServerAccountsSheet({ server: taggedServer, operation, but
 
   const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
   const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
-  const app = useRootSelector((state: RootState) => state.app);
-  const servers = useRootSelector((state: RootState) => selectAllServers(state.servers))//.servers.ids.map(id => state.servers.entities[id]));
 
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const server = specifiedServer ?? currentServer;
-  const isCurrentServer = server?.host == currentServer?.host;
-  const serverLink = useLink({ href: server ? `http://${server.host}` : '' });
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
@@ -149,22 +142,7 @@ export function SingleServerAccountsSheet({ server: taggedServer, operation, but
       setAddingAccount(true);
     }
   }, [accountsLoading, forceDisableAccountButtons, addingAccount, accountsOnServer.length]);
-  // if (accountsState.successMessage) {
-  //   setTimeout(() => {
-  //     // setOpen(false);
-  //     setTimeout(() => {
-  //       dispatch(clearAccountAlerts());
-  //       // setNewAccountUser('');
-  //       // setNewAccountPass('');
-  //       // setForceDisableAccountButtons(false);
-  //       // setLoginMethod(undefined);
-  //       // setReauthenticating(false);
-  //     }, 1000);
-  //   }, 1500);
-  // } else if (accountsState.errorMessage && forceDisableAccountButtons) {
-  //   setForceDisableAccountButtons(false);
-  // }
-  // console.log('rerender')
+
   const onPress = () => setOpen(true);
   return (
     <>
@@ -197,60 +175,8 @@ export function SingleServerAccountsSheet({ server: taggedServer, operation, but
         <Sheet.Frame>
           <Sheet.Handle />
           {/* <ZStack h='$6'> */}
-          <XStack ai='center'
-            pl={mediaQuery.gtXs ? '$2' : 0}
-            pr={mediaQuery.gtXs ? '$4' : '$1'}>
-            <Button
-              // alignSelf='center'
-              // my='auto'
-              size="$2"
-              ml='$2'
-              circular
-              icon={ChevronLeft}
-              // mb='$2'
-              onPress={() => {
-                setOpen(false)
-              }}
-            />
-            <ScrollView horizontal f={1}>
-              <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                {creationServer
-                  ? <div id='accounts-sheet-currently-adding-server'
-                    key={`serverCard-${serverID(creationServer)}`}
-                    style={{ margin: 2 }}>
-                    {isCurrentServer
-                      ? <ServerNameAndLogo server={server} />
-                      : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
-                        <XStack ai='center'>
-                          <ServerNameAndLogo server={server} />
-                        </XStack>
-                      </Button>
-                    }
-                    {/* <ServerNameAndLogo server={addAccountServer} /> */}
-                  </div>
-                  : undefined}
-                {creationServer && servers.length > 1
-                  ? <div key='separator' style={{ margin: 2 }}>
-                    <SeparatorVertical size='$1' />
-                  </div>
-                  : undefined}
-                {servers.filter(s => s.host != creationServer?.host)
-                  .map((server, index) =>
-                    <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
-                      <Button onPress={() => dispatch(setCreationServer(server))}>
-                        <ServerNameAndLogo server={server} />
-                      </Button>
-                    </div>
-                  )}
-              </FlipMove>
-            </ScrollView>
-            <XStack f={1} ai='center' o={isCurrentServer ? 0 : 0.5}>
-              <Paragraph ml='auto' size='$1' > via</Paragraph>
-              <XStack>
-                <ServerNameAndLogo server={currentServer} />
-              </XStack>
-            </XStack>
-          </XStack>
+          <CreationServerSelector onPressBack={() => setOpen(false)} />
+          {/* {newFunction(mediaQuery, setOpen, creationServer, isCurrentServer, server, serverLink, servers, dispatch, setCreationServer, currentServer)} */}
 
           {accountsOnServer.length > 0
             ? <XStack marginHorizontal='auto' marginVertical='$3'>

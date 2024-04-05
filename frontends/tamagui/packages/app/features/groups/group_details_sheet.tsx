@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextA
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
-import { useAccountOrServer, useCredentialDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl, useServer } from 'app/hooks';
+import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl, useCurrentServer } from 'app/hooks';
 import { FederatedGroup, RootState, actionFailed, deleteGroup, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
@@ -57,9 +57,9 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   const { dispatch, accountOrServer } = useFederatedDispatch(infoGroup);
   const { account, server } = accountOrServer;
   // const server = accountOrServer.server;
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const isPrimaryServer = currentServer?.host === accountOrServer.server?.host;
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
 
 

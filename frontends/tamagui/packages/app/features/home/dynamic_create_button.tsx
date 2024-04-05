@@ -1,9 +1,9 @@
 import { Permission } from '@jonline/api';
 import { Heading, XStack, YStack } from '@jonline/ui';
-import { useAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { useCurrentAccountOrServer, useCredentialDispatch } from 'app/hooks';
 import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';
-import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet';
+import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import { CreateEventSheet } from '../event/create_event_sheet';
@@ -24,7 +24,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   showEvents,
   button
 }: DynamicCreateButtonProps) => {
-  const accountOrServer = useAccountOrServer();
+  const accountOrServer = useCurrentAccountOrServer();
 
   const canCreatePosts = accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS);
   const canCreateEvents = accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_EVENTS);
@@ -38,7 +38,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
     return hide ? <></> :
       doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} />
         : doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} />
-          : <SingleServerAccountsSheet operation='Post' button={button} />
+          : <CreateAccountOrLoginSheet operation='Post' button={button} />
   }
 
   return hide ? <></> :
@@ -57,7 +57,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
             </YStack>
             : undefined
           : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
-            <SingleServerAccountsSheet operation='Post' button={button} />
+            <CreateAccountOrLoginSheet operation='Post' button={button} />
           </YStack>}
     </>
     ;

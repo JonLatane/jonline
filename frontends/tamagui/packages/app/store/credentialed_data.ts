@@ -56,7 +56,6 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
               console.log("failed to load access token");
               updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
               store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
-              store.dispatch(accountsSlice.actions.selectAccount(undefined))
 
               return undefined;
             });
@@ -84,7 +83,6 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
             console.error("failed to load current user", account.user.username, account.accessToken.token, e);
             updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
             store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
-            store.dispatch(accountsSlice.actions.selectAccount(undefined))
           });
         } else {
           metadata.append('authorization', account.accessToken.token);

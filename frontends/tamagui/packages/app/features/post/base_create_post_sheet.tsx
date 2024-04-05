@@ -1,9 +1,9 @@
-import { Group, MediaReference, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
 import { CalendarPlus, ChevronDown, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
-import { useCredentialDispatch } from 'app/hooks';
-import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useCreationAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { FederatedGroup, JonlineServer, RootState, getServerTheme, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
@@ -11,6 +11,8 @@ import { TextInput } from 'react-native';
 import { GroupsSheet } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
 import FlipMove from 'react-flip-move';
+import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
+import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -35,6 +37,7 @@ export type BaseCreatePostSheetProps = {
   canPublishLocally?: boolean;
   canPublishGlobally?: boolean;
   button?: (onPress: () => void) => JSX.Element;
+  requiredPermissions?: Permission[];
 }
 
 export const postVisibilityDescription = (
@@ -75,10 +78,11 @@ export function BaseCreatePostSheet({
   onFreshOpen,
   canPublishLocally,
   canPublishGlobally,
-  button
+  button,
+  requiredPermissions
 }: BaseCreatePostSheetProps) {
-  const mediaQuery = useMedia();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  // const mediaQuery = useMedia();
+  const accountOrServer = useCreationAccountOrServer();
   const account = accountOrServer.account!;
   const [open, _setOpen] = useState(false);
   const [position, setPosition] = useState(0);
@@ -169,7 +173,7 @@ export function BaseCreatePostSheet({
   const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = getServerTheme(accountOrServer?.server, useTheme());
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -184,6 +188,10 @@ export function BaseCreatePostSheet({
   const showFullPreview = fullPreview(renderType);
   const showShortPreview = shortPreview(renderType);
 
+  const canCreate = !requiredPermissions || (
+    account &&
+    !requiredPermissions.some(p => !account.user.permissions.includes(p))
+  );
   useEffect(() => {
     if (open) {
       setHasOpened(true);
@@ -207,24 +215,40 @@ export function BaseCreatePostSheet({
   const disablePreview = disableInputs || !valid;
   const disableCreate = disableInputs || !valid;
 
+  const availableCreationServers = useAvailableCreationServers(requiredPermissions);
+  const otherServerCount = availableCreationServers.filter(s => s.host != server?.host).length;
+  const serverText = server?.serverConfiguration?.serverInfo?.name ?? server?.host ?? 'this server';
+  const text = otherServerCount
+    ? `Create a new ${entityName} on ${serverText} or ${otherServerCount} other servers`
+    : `Create a new ${entityName} on ${serverText}`;
+
   // return <></>;
 
   return (
     <>
       {button?.(() => setOpen(!open)) ??
-        <Button //{...themedButtonBackground(primaryColor)} 
-          w='$3'
-          p={0}
-          disabled={server === undefined}
-          transparent
-          onPress={() => setOpen(!open)}>
-          {entityName === 'Post'
-            ? <Plus color={primaryAnchorColor} />
-            : <CalendarPlus color={primaryAnchorColor} />}
-          {/* <Heading size='$2' ta='center' color={primaryTextColor}>
+        <Tooltip>
+          <Tooltip.Trigger>
+            <Button //{...themedButtonBackground(primaryColor)} 
+              w='$3'
+              p={0}
+              disabled={server === undefined}
+              transparent
+              onPress={() => setOpen(!open)}>
+              {entityName === 'Post'
+                ? <Plus color={primaryAnchorColor} />
+                : <CalendarPlus color={primaryAnchorColor} />}
+              {/* <Heading size='$2' ta='center' color={primaryTextColor}>
             Create {entityName}
           </Heading> */}
-        </Button>
+            </Button>
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <Paragraph>
+              {text}
+            </Paragraph>
+          </Tooltip.Content>
+        </Tooltip>
       }
       {hasOpened //true && (open || renderSheet)
         ? <Sheet
@@ -259,11 +283,23 @@ export function BaseCreatePostSheet({
                   onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
                   <Cog color={showSettings ? navTextColor : textColor} />
                 </Button>
-                <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
-                  onPress={() => doCreate(previewPost, group, resetPost, () => setPosting(false))}>
-                  <Heading size='$1' color={primaryTextColor}>Create</Heading>
-                </Button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
+                      onPress={() => doCreate(previewPost, group, resetPost, () => setPosting(false))}>
+                      <Heading size='$1' color={primaryTextColor}>Create</Heading>
+                    </Button>
+                  </Tooltip.Trigger>
+                  {!canCreate
+                    ? <Tooltip.Content>
+                      <Paragraph>
+                        You do not have permission to create this {entityName}.
+                      </Paragraph>
+                    </Tooltip.Content>
+                    : undefined}
+                </Tooltip>
               </XStack>
+              <CreationServerSelector requiredPermissions={requiredPermissions} />
               {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 

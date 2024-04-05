@@ -1,7 +1,7 @@
 import { Permission } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
-import { colorMeta, useAppSelector, useCredentialDispatch, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { JonlineAccount, accountID, actionSucceeded, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useState } from "react";
@@ -21,8 +21,11 @@ interface Props {
 
 const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, onPress }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  const currentAccountId = useAppSelector(state => state.accounts.currentAccountId);
-  const selected = currentAccountId == accountID(account);
+  const currentAccountId = useCurrentAccountId();
+  // useAppSelector(state => state.accounts.pinnedServers.find(ps =>
+  //   ps.serverId === state.servers.currentServerId)?.accountId);
+  const selected = currentAccountId === accountID(account);
+  console.log('AccountCard selected', selected, 'currentAccountId', currentAccountId, 'accountID(account)', accountID(account));
   const pinned = useAppSelector(state => state.accounts.pinnedServers.map(ps => ps.accountId)).includes(accountID(account));
 
   const currentServer = currentAccountOrServer.server;

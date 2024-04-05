@@ -3,12 +3,12 @@ import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, ZStack,
 import { ChevronRight, Edit3 as Edit, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { useAccountOrServerContext } from 'app/contexts'
-import { useAccountOrServer, useAppDispatch } from 'app/hooks'
+import { useCurrentAccountOrServer, useAppDispatch } from 'app/hooks'
 import { RootState, actionFailed, getServerTheme, parseFederatedId, replyToPost, selectPostById, useRootSelector } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
 import StickyBox from 'react-sticky-box'
-import { SingleServerAccountsSheet } from '../accounts/single_server_accounts_sheet'
+import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet'
 import { MediaRef } from '../media/media_chooser'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
@@ -24,7 +24,7 @@ interface ReplyAreaProps {
 
 export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, onStopReplying }) => {
   const dispatch = useAppDispatch();
-  const currentAccountOrServer = useAccountOrServer();
+  const currentAccountOrServer = useCurrentAccountOrServer();
   const accountOrServer = useAccountOrServerContext() ?? currentAccountOrServer;
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server, useTheme());
   const [media, setMedia] = useState([] as MediaRef[]);
@@ -176,7 +176,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}
-        <SingleServerAccountsSheet operation={chatUI ? 'Chat' : 'Comment'}
+        <CreateAccountOrLoginSheet operation={chatUI ? 'Chat' : 'Comment'}
           server={accountOrServer.server} />
       </YStack>
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />

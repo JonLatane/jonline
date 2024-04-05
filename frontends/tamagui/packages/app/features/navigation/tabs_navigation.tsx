@@ -2,7 +2,7 @@ import { WebUserInterface } from "@jonline/api";
 import { Button, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, useMedia, useWindowDimensions } from "@jonline/ui";
 import { ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { GroupContextProvider } from 'app/contexts';
-import { useAppDispatch, useLocalConfiguration, useServer } from "app/hooks";
+import { useAppDispatch, useLocalConfiguration, useCurrentServer } from "app/hooks";
 import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
@@ -65,7 +65,7 @@ export function TabsNavigation({
   showShrinkPreviews
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const primaryServer = //onlyShowServer || 
     currentServer;
   const webUI = currentServer?.serverConfiguration?.serverInfo?.webUserInterface;

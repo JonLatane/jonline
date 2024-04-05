@@ -2,14 +2,15 @@ import { GroupListingType } from "@jonline/api";
 import { debounce, useDebounce } from "@jonline/ui";
 import { FederatedGroup, RootState, getServersMissingGroupsPage, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
-import { useCredentialDispatch, useCurrentAndPinnedServers } from "../account_and_server_hooks";
+import { useCredentialDispatch } from "../credential_dispatch_hooks";
+import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
 import { finishPagination } from './pagination_hooks';
 
 export type GroupPageParams = { onLoaded?: () => void, disableLoading?: boolean };
 
 export function useGroupPages(listingType: GroupListingType, throughPage: number, params?: GroupPageParams) {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
-  const servers = useCurrentAndPinnedServers();
+  const servers = usePinnedAccountsAndServers();
   const groupsState = useRootSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
 

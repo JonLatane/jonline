@@ -1,6 +1,6 @@
 import { Button, Heading, Progress, Text, XStack, YStack, isTouchable, isWebTouchable, useWindowDimensions } from '@jonline/ui';
 import { Upload } from '@tamagui/lucide-icons';
-import { useAccountOrServer } from 'app/hooks';
+import { useCurrentAccountOrServer } from 'app/hooks';
 import { getCredentialClient, serverUrl, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
@@ -16,7 +16,7 @@ interface MediaUploaderProps {
   onMediaUploaded?: (mediaId: string) => void;
 }
 export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUploading, uploadProgress, setUploadProgress, onMediaUploaded }) => {
-  const accountOrServer = useAccountOrServer();
+  const accountOrServer = useCurrentAccountOrServer();
   const { server, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [dragging, setDragging] = useState(false);

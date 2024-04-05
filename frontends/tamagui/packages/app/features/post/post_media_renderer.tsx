@@ -4,7 +4,7 @@ import { View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useIsVisible, useMediaUrl, usePostDispatch, useServer } from "app/hooks";
+import { useIsVisible, useMediaUrl, usePostDispatch, useCurrentServer } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
@@ -41,7 +41,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const mediaQuery = useMedia();
   const { primaryColor, navColor } = getServerTheme(accountOrServer.server);
 
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const isPrimaryServer = !!currentServer &&
     currentServer?.host === accountOrServer.server?.host;
   const isGroupPrimaryServer = !!currentServer &&

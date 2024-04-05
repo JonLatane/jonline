@@ -6,7 +6,7 @@ import { Pin, PinOff, Star } from "@tamagui/lucide-icons";
 
 import { useAppSelector } from "app/hooks";
 import { federatedId, parseFederatedId } from 'app/store/federation';
-import { useFederatedDispatch } from '../../hooks/account_and_server_hooks';
+import { useFederatedDispatch } from '../../hooks/credential_dispatch_hooks';
 import { PostContext } from "@jonline/api/index";
 import moment from "moment";
 

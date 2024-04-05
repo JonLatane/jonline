@@ -198,16 +198,20 @@ const serversSlice = createSlice({
       if (newServerId === undefined && state.ids.length > 0) return;
       if (!state.ids.includes(newServerId)) return;
 
-      // debugger;
       state.currentServerId = newServerId;
+      state.creationServerId = newServerId;
 
-      setTimeout(() => {
-        const currentAccountId = store.getState().accounts.currentAccountId;
-        if (currentAccountId && newServerId && oldServerId != newServerId &&
-          accountIDHost(currentAccountId) !== serverIDHost(newServerId)) {
-          store.dispatch(selectAccount(undefined));
-        }
-      }, 1);
+      // This is no longer necessary with the refactor to remove currentAccountId from AccountsState!
+      // The notion of "current account" in Jonline's store derives purely from 
+      // state.servers.currentServerId and state.accounts.pinnedServers.
+
+      // setTimeout(() => {
+      //   const currentAccountId = store.getState().accounts.pinnedServers.find(ps => ps.serverId === oldServerId)?.accountId;
+      //   if (currentAccountId && newServerId && oldServerId != newServerId &&
+      //     accountIDHost(currentAccountId) !== serverIDHost(newServerId)) {
+      //     store.dispatch(selectAccount(undefined));
+      //   }
+      // }, 1);
     },
     selectCreationServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
       // const oldServerId = state.currentServerId;

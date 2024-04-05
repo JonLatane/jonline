@@ -171,6 +171,9 @@ export const localAppSlice = createSlice({
     },
     setHideNavigation: (state, action: PayloadAction<boolean>) => {
       state.hideNavigation = action.payload;
+      // if (action.payload && ) {
+      //   state.autoHideNavigation = false;
+      // }
     },
     setFancyPostBackgrounds: (state, action: PayloadAction<boolean>) => {
       state.fancyPostBackgrounds = action.payload;

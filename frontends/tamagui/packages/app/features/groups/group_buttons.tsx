@@ -1,7 +1,7 @@
 import { Group } from '@jonline/api';
 import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
-import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
+import { useCurrentAccountOrServer, useAppDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, getServerTheme, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending, themedButtonBackground } from 'app/utils';
 import React from 'react';
@@ -29,8 +29,8 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
   const mediaQuery = useMedia();
   const { account } = accountOrServer;
   const server = accountOrServer.server;
-  const isPrimaryServer = useAccountOrServer().server?.host === accountOrServer.server?.host;
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
+  const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
   // const dispatch = useAppDispatch();
   const groupIdentifier = isPrimaryServer ? group.shortname : `${group.shortname}@${group.serverHost}`;

@@ -3,7 +3,9 @@ import { useAppDispatch } from "app/hooks";
 import { FederatedMedia, RootState, getHasMediaPage, getHasMoreMediaPages, getMediaPages, getServersMissingMediaPage, loadMediaPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
-import { useAccountOrServer, useCurrentAndPinnedServers, useProvidedDispatch } from '../account_and_server_hooks';
+import { useProvidedDispatch } from '../credential_dispatch_hooks';
+import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
+import { useCurrentAccountOrServer } from '../account_or_server/use_current_account_or_server';
 import { PaginationResults, finishPagination } from "./pagination_hooks";
 import { useAccountOrServerContext } from "app/contexts";
 
@@ -25,7 +27,7 @@ export function useServerMediaPages(
   // keep it simple.
   // const servers = useCurrentAndPinnedServers();
   const accountOrServerContext = useAccountOrServerContext();
-  const currentAccountOrServer = useAccountOrServer();
+  const currentAccountOrServer = useCurrentAccountOrServer();
   const accountOrServer = accountOrServerContext ?? currentAccountOrServer;
   const servers = accountOrServer.account ? [accountOrServer] : [];
   //END TODO

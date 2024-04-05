@@ -1,5 +1,5 @@
 import { Heading, YStack, dismissScrollPreserver, needsScrollPreservers, useWindowDimensions } from '@jonline/ui';
-import { useAccountOrServer } from 'app/hooks';
+import { useCurrentAccountOrServer } from 'app/hooks';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { RootState, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
@@ -13,7 +13,7 @@ import { MediaUploader } from './media_uploader';
 export function MediaScreen() {
 
   const mediaState = useRootSelector((state: RootState) => state.media);
-  const accountOrServer = useAccountOrServer();
+  const accountOrServer = useCurrentAccountOrServer();
   const { account } = accountOrServer;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());

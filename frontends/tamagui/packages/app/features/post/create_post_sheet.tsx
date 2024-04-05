@@ -1,5 +1,5 @@
 import { Group, Permission, Post } from '@jonline/api';
-import { useCredentialDispatch } from 'app/hooks';
+import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
 import { FederatedGroup, createGroupPost, createPost } from 'app/store';
 import React from 'react';
 import { BaseCreatePostSheet } from './base_create_post_sheet';
@@ -11,7 +11,7 @@ export type CreatePostSheetProps = {
 };
 
 export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps) {
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useCreationDispatch();
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_POSTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_POSTS_GLOBALLY);
@@ -38,6 +38,7 @@ export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps)
   }
 
   return <BaseCreatePostSheet
+    requiredPermissions={[Permission.CREATE_POSTS]}
     {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, button }}
     preview={(post) => <PostCard post={post} />}
     feedPreview={(post) => <PostCard post={post} isPreview />}

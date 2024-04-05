@@ -1,6 +1,6 @@
 import { Label, Paragraph, Switch, YStack } from '@jonline/ui';
 import { useComponentKey } from 'app/hooks';
-import { useAccount, useAppDispatch } from 'app/hooks';
+import { useCurrentAccount, useAppDispatch } from 'app/hooks';
 import React from 'react';
 
 
@@ -26,7 +26,7 @@ export function ShareableToggle({
 
   const label = value ? 'Shareable' : 'Not Shareable';
 
-  if (!useAccount()) {
+  if (!useCurrentAccount()) {
     return <></>;
   }
 

@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useServer } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -30,7 +30,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const showEventsOnLatest = app.showEventsOnLatest ?? true;
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const groupLinkId = !!selectedGroup
     ? (currentServer?.host === selectedGroup?.serverHost

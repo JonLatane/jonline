@@ -1,6 +1,6 @@
 import { EventInstance } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
-import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useServer } from 'app/hooks';
+import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
 import { RootState, federateId, federatedId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -25,7 +25,7 @@ export function EventDetailsScreen() {
   const [interactionType, setInteractionType] = usePostInteractionType();
   const updateParams = useUpdateParams();
 
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
 
   const { serverHost, id: serverInstanceId } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);

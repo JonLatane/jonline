@@ -1,5 +1,5 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
-import { useAccount, useProvidedDispatch } from 'app/hooks';
+import { useCurrentAccount, useProvidedDispatch } from 'app/hooks';
 import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
@@ -30,7 +30,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
   const mediaState = useRootSelector((state: RootState) => state.media);
   const app = useRootSelector((state: RootState) => state.app);
   const { dispatch, accountOrServer } = useProvidedDispatch();// useCredentialDispatch();
-  const account = useAccount();
+  const account = useCurrentAccount();
 
   // const media: Media[] | undefined = useRootSelector((state: RootState) =>
   //   accountOrServer.account

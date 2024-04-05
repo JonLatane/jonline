@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useServer } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
@@ -37,7 +37,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 }) => {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
-  const currentServer = useServer();
+  const currentServer = useCurrentServer();
   const { account, server } = accountOrServer;
   const isPrimaryServer = !!currentServer &&
     currentServer?.host === accountOrServer.server?.host;

@@ -1,10 +1,10 @@
 import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
-import { useAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useCurrentAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { SingleServerAccountsSheet } from "../accounts/single_server_accounts_sheet";
+import { CreateAccountOrLoginSheet } from "../accounts/create_account_or_login_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
@@ -69,7 +69,7 @@ export function PinnedServerSelector({
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
-  const accountId = accountID(useAccount());
+  const accountId = accountID(useCurrentAccount());
   function toggleExcludeCurrentServer() {
     const updatedValue = !excludeCurrentServer;
     dispatch(setExcludeCurrentServer(updatedValue));
@@ -304,7 +304,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
     </XStack>
     {simplified
       ? undefined
-      : <SingleServerAccountsSheet server={server}
+      : <CreateAccountOrLoginSheet server={server}
         selectedAccount={pinnedAccount}
         onAccountSelected={toggleAccountSelect}
         button={(onPress) =>

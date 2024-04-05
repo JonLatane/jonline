@@ -1,6 +1,6 @@
 import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
-import { colorMeta, useAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
+import { colorMeta, useCurrentAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
 import React from "react";
 import { useLink } from "solito/link";
@@ -17,7 +17,7 @@ interface Props {
 
 const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerInfo = false, disableHeightLimit, disableFooter = false, disablePress = false }) => {
   const dispatch = useAppDispatch();
-  const { account: currentAccount, server: currentServer } = useAccountOrServer();
+  const { account: currentAccount, server: currentServer } = useCurrentAccountOrServer();
   const selected = currentServer?.host == server.host;
   const serversState = useRootSelector((state: RootState) => state.servers);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
@@ -42,18 +42,18 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
     ? selectAccountById(state.accounts, pinnedAccountId)
     : undefined);
   function doSelectServer() {
-    if (selected) {
-      dispatch(selectAccount(undefined));
-    } else if (currentAccount && serverID(currentAccount.server) != serverID(server)) {
-      dispatch(selectAccount(undefined));
-    }
+    // if (selected) {
+    //   dispatch(selectAccount(undefined));
+    // } else if (currentAccount && serverID(currentAccount.server) != serverID(server)) {
+    //   dispatch(selectAccount(undefined));
+    // }
     if (linkToServerInfo) {
       infoLink.onPress();
     }
     dispatch(selectServer(server));
-    if (pinnedAccount) {
-      dispatch(selectAccount(pinnedAccount));
-    }
+    // if (pinnedAccount) {
+    //   dispatch(selectAccount(pinnedAccount));
+    // }
   }
 
   function doRemoveServer() {

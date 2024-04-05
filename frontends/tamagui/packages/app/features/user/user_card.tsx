@@ -3,7 +3,7 @@ import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Inpu
 import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
-import { useAccountOrServer, useAppDispatch, useCurrentAndPinnedServers, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { useCurrentAccountOrServer, useAppDispatch, usePinnedAccountsAndServers, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FederatedUser, RootState, followUnfollowUser, getServerTheme, isUserLocked, respondToFollowRequest, useRootSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
@@ -38,8 +38,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const accountOrServer = useFederatedAccountOrServer(user);
-  const isPrimaryServer = useAccountOrServer().server?.host === user.serverHost;
-  const currentAndPinnedServers = useCurrentAndPinnedServers();
+  const isPrimaryServer = useCurrentAccountOrServer().server?.host === user.serverHost;
+  const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
   const { account, server } = accountOrServer;
   const media = useMedia();

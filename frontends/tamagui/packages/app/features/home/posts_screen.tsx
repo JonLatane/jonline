@@ -1,6 +1,6 @@
 import { PostListingType } from '@jonline/api';
 import { Heading, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
-import { useCurrentAndPinnedServers, usePaginatedRendering } from 'app/hooks';
+import { usePinnedAccountsAndServers, usePaginatedRendering } from 'app/hooks';
 import { useGroupPostPages, usePostPages, useServerPostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
