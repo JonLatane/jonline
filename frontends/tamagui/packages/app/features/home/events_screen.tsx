@@ -442,7 +442,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <div id='pages-top'>
                     <PageChooser {...pagination} />
                   </div>
-                  {/* <PaginationResetIndicator {...pagination} /> */}
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
                     <AnimatePresence>
                       {firstPageLoaded || allEvents.length > 0
@@ -470,8 +469,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 </YStack>
               </div>
               : [
-                <div key='reset' style={{ width: '100%', margin: 'auto' }}>
-                  <PaginationResetIndicator {...pagination} />
+                <div id='pages-top' key='pagest-top'>
+                  <PageChooser {...pagination} />
                 </div>,
 
                 firstPageLoaded || allEvents.length > 0
@@ -494,7 +493,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 }),
 
                 <div key='pagedown' style={{ width: '100%', margin: 'auto' }}>
-                  <PaginationIndicator {...pagination} />
+                  <PageChooser {...pagination} pageTopId='pages-top' />
                 </div>
               ]}
           {showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
