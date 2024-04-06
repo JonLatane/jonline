@@ -10,6 +10,7 @@ export interface Pagination<T extends HasIdFromServer> {
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
+  setPage: (page: number) => void;
   reset(): void;
 }
 
@@ -54,7 +55,7 @@ export function useEventPageParam() {
 
   return [page, setPage] as const;
 }
-export const maxPagesToRender = 2;
+export const maxPagesToRender = 1;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[],
   pageSize: number,
@@ -106,7 +107,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     setTimeout(() => setLoadingPage(false), 1000);
   }
 
-  return { results, page, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
+  return { results, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
 }
 
 // export function useLoadablePaginatedRendering<T extends HasIdFromServer>(

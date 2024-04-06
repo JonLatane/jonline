@@ -28,6 +28,7 @@ import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 import { serverHost } from '../../store/federation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { PageChooser } from "./page_chooser";
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -438,7 +439,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             : renderInColumns
               ? <div key='multi-column-rendering'>
                 <YStack gap='$2' width='100%' >
-                  <PaginationResetIndicator {...pagination} />
+                  <PageChooser {...pagination} />
+                  {/* <PaginationResetIndicator {...pagination} /> */}
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
                     <AnimatePresence>
                       {firstPageLoaded || allEvents.length > 0
@@ -461,7 +463,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       {/* </FlipMove> */}
                     </AnimatePresence>
                   </XStack>
-                  <PaginationIndicator {...pagination} />
+                  <PageChooser {...pagination} />
+                  {/* <PaginationIndicator {...pagination} /> */}
                 </YStack>
               </div>
               : [

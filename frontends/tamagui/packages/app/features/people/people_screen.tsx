@@ -1,14 +1,15 @@
 import { UserListingType } from '@jonline/api';
 import { Button, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useDebounceValue } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
-import { usePaginatedRendering, useCurrentServer, useUsersPage } from 'app/hooks';
+import { useCurrentServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
 import { RootState, federatedId, getFederated, useRootSelector } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
-import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
+import { PageChooser } from '../home/page_chooser';
+import { PaginationIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
@@ -102,7 +103,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' maw={800} space>
         {<>
-          <PaginationResetIndicator {...pagination} />
+          <PageChooser {...pagination} />
+          {/* <PaginationResetIndicator {...pagination} /> */}
           <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} >
             {filteredUsers && filteredUsers.length == 0
               ? userPagesStatus != 'loading' && userPagesStatus != 'unloaded'
@@ -127,7 +129,8 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
               </div>;
             })}
           </FlipMove>
-          <PaginationIndicator {...pagination} />
+          <PageChooser {...pagination} />
+          {/* <PaginationIndicator {...pagination} /> */}
           {showScrollPreserver ? <YStack h={100000} /> : undefined}
 
         </>}

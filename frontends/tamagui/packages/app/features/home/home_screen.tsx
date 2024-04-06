@@ -12,6 +12,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
+import { PageChooser } from './page_chooser';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -101,7 +102,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         margin: 'auto',
         display: 'flex', flexDirection: 'column', flex: 1,
         justifyContent: 'center', alignItems: 'center', marginTop: 5,
-        maxWidth: 1400
+        maxWidth: 1400,
+        paddingBottom: 20
       }}>
         {/* <div key='create' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
           <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
@@ -168,15 +170,24 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>
           : undefined}
 
-        <div key='latest-posts-header'>
-          <Heading size='$5' pt='$10' mx='auto'>Posts</Heading>
+        <div key='latest-posts-header' style={{width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18}}>
+          <XStack ai='center' w='100%'>
+            <Heading size='$5' pr='$3' mr='auto'>Posts</Heading>
+            <PageChooser {...postPagination} width='auto' />
+          </XStack>
         </div>
-        {maxPagesToRender < postPagination.page + 1
+        {/* {postPagination.pageCount > 1 || true
+          ? <div key='page-chooser-top'
+            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+            <PageChooser {...postPagination} />
+          </div>
+          : undefined} */}
+        {/* {maxPagesToRender < postPagination.page + 1
           ? <div key='pagination-reset'
             style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
             <PaginationResetIndicator {...postPagination} />
           </div>
-          : undefined}
+          : undefined} */}
 
         {postsLoaded || allPosts.length > 0
           ? allPosts.length === 0
@@ -195,10 +206,17 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>;
         })}
 
+        {postPagination.pageCount > 1
+          ? <div key='page-chooser-bottom'
+            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+            <PageChooser {...postPagination} />
+          </div>
+          : undefined}
+        {/* 
         <div key='pagination-next'
           style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
           <PaginationIndicator {...postPagination} />
-        </div>
+        </div> */}
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         {/* </YStack> */}
       </FlipMove>

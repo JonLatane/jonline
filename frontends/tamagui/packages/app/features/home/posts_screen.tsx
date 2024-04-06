@@ -13,6 +13,7 @@ import { HomeScreenProps } from './home_screen';
 import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 import { DynamicCreateButton } from './dynamic_create_button';
 import FlipMove from 'react-flip-move';
+import { PageChooser } from './page_chooser';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
@@ -65,14 +66,21 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
         <YStack w='100%'>
           <FlipMove>
 
-            <div key='create' style={{display: 'flex' }}>
-              <div style={{ marginLeft: 'auto' }}>
-                <DynamicCreateButton selectedGroup={selectedGroup} showPosts />
-              </div>
+            <div key='create' style={{ display: 'flex' }}>
+              <XStack w='100%'>
+                <PageChooser {...pagination} width='auto' />
+                <XStack f={1} />
+                <XStack>
+                  <DynamicCreateButton selectedGroup={selectedGroup} showPosts />
+                </XStack>
+              </XStack>
+              {/* <div style={{ marginLeft: 'auto' }}>
+              </div> */}
             </div>
-            <div key='pagination-reset'>
+
+            {/* <div key='pagination-reset'>
               <PaginationResetIndicator {...pagination} />
-            </div>
+            </div> */}
             {firstPageLoaded || allPosts.length > 0
               ? allPosts.length === 0
                 ? <div key='no-posts-found' style={{ width: '100%', marginLeft: 'auto', marginRight: 'auto' }}>
@@ -91,9 +99,15 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
                 </XStack>
               </div>;
             })}
-            <div key='pagination'>
+            {pagination.pageCount > 1
+              ? <div key='page-chooser-bottom'
+                style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+                <PageChooser {...pagination} />
+              </div>
+              : undefined}
+            {/* <div key='pagination'>
               <PaginationIndicator {...pagination} />
-            </div>
+            </div> */}
           </FlipMove>
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
