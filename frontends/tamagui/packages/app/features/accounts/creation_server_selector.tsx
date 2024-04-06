@@ -1,6 +1,6 @@
-import { Button, Paragraph, ScrollView, useMedia, XStack } from '@jonline/ui';
+import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack } from '@jonline/ui';
 import { ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-icons';
-import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer } from 'app/hooks';
+import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey } from 'app/hooks';
 import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
 import FlipMove from 'react-flip-move';
@@ -36,6 +36,13 @@ export function CreationServerSelector({
   const [pl, pr] = onPressBack
     ? [mediaQuery.gtXs ? '$2' : 0, mediaQuery.gtXs ? '$4' : '$1']
     : ['$2', '$2'];
+  const selectorTopKey = useComponentKey('creation-server-selector-top');
+  const onSelectServer = (otherServer: JonlineServer) => {
+    dispatch(setCreationServer(otherServer));
+    setTimeout(() => {
+      document.getElementById(selectorTopKey)?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  };
   return <XStack ai='center'
     pl={pl}
     pr={pr}>
@@ -52,6 +59,7 @@ export function CreationServerSelector({
       : undefined}
     <ScrollView horizontal f={1}>
       <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+        <div id={selectorTopKey} key={selectorTopKey} />
         {server
           ? <div id='accounts-sheet-currently-adding-server'
             key={`serverCard-${serverID(server)}`}
@@ -74,20 +82,23 @@ export function CreationServerSelector({
         {disabled
           ? undefined
           : availableServers.filter(s => s.host != server?.host)
-            .map((server, index) => <div key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
-              <Button onPress={() => dispatch(setCreationServer(server))}>
-                <ServerNameAndLogo server={server} />
+            .map((otherServer, index) => <div key={`serverCard-${serverID(otherServer)}`} style={{ margin: 2 }}>
+              <Button onPress={() => onSelectServer(otherServer)}>
+                <ServerNameAndLogo server={otherServer} />
               </Button>
             </div>
             )}
       </FlipMove>
     </ScrollView>
-    <XStack f={1} ai='center' o={isCurrentServer ? 0 : 0.5}>
-      <Paragraph ml='auto' size='$1'> via</Paragraph>
-      <XStack>
-        <ServerNameAndLogo server={currentServer} />
+    {isCurrentServer
+      ? undefined :
+      <XStack ai='center' animation='standard' {...reverseHorizontalAnimation} o={0.5} >
+        <Paragraph ml='$2' size='$1'> via</Paragraph>
+        <XStack>
+          <ServerNameAndLogo server={currentServer} />
+        </XStack>
       </XStack>
-    </XStack>
+    }
   </XStack>;
 }
 export function useAvailableCreationServers(requiredPermissions: Permission[] | undefined) {
