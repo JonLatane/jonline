@@ -170,7 +170,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>
           : undefined}
 
-        <div key='latest-posts-header' style={{width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18}}>
+        <div id='latest-posts-header' key='latest-posts-header' style={{width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18}}>
           <XStack ai='center' w='100%'>
             <Heading size='$5' pr='$3' mr='auto'>Posts</Heading>
             <PageChooser {...postPagination} width='auto' />
@@ -209,7 +209,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         {postPagination.pageCount > 1
           ? <div key='page-chooser-bottom'
             style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-            <PageChooser {...postPagination} />
+            <PageChooser {...postPagination} pageTopId='latest-posts-header' />
           </div>
           : undefined}
         {/* 

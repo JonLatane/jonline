@@ -66,7 +66,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
         <YStack w='100%'>
           <FlipMove>
 
-            <div key='create' style={{ display: 'flex' }}>
+            <div id='pages-create' key='pages-create' style={{ display: 'flex' }}>
               <XStack w='100%'>
                 <PageChooser {...pagination} width='auto' />
                 <XStack f={1} />
@@ -102,7 +102,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
             {pagination.pageCount > 1
               ? <div key='page-chooser-bottom'
                 style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-                <PageChooser {...pagination} />
+                <PageChooser {...pagination} pageTopId='pages-create' />
               </div>
               : undefined}
             {/* <div key='pagination'>

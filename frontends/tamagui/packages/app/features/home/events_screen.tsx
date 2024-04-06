@@ -439,7 +439,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             : renderInColumns
               ? <div key='multi-column-rendering'>
                 <YStack gap='$2' width='100%' >
-                  <PageChooser {...pagination} />
+                  <div id='pages-top'>
+                    <PageChooser {...pagination} />
+                  </div>
                   {/* <PaginationResetIndicator {...pagination} /> */}
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
                     <AnimatePresence>
@@ -463,7 +465,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                       {/* </FlipMove> */}
                     </AnimatePresence>
                   </XStack>
-                  <PageChooser {...pagination} />
+                  <PageChooser {...pagination} pageTopId='pages-top' />
                   {/* <PaginationIndicator {...pagination} /> */}
                 </YStack>
               </div>
