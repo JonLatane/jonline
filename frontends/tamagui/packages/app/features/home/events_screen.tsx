@@ -139,14 +139,24 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       : mediaQuery.gtLg ? 4
         : mediaQuery.gtMd ? 3
           : mediaQuery.gtXs ? 2 : 1;
+
   const renderInColumns = numberOfColumns > 1;
+
+  const widthAdjustedPageSize = renderInColumns
+    ? numberOfColumns * 2
+    : 8;
+
+  const pageSize = renderInColumns
+    ? mediaQuery.gtMdHeight
+      ? Math.round(widthAdjustedPageSize * 2)
+      : mediaQuery.gtShort
+        ? Math.round(widthAdjustedPageSize * 1.5)
+        : widthAdjustedPageSize
+    : widthAdjustedPageSize;
+
   const pagination = usePaginatedRendering(
     allEvents,
-    renderInColumns
-      ? mediaQuery.gtXxxxl ? 12
-        : mediaQuery.gtXxl ? 10
-          : mediaQuery.gtLg ? 8 : 6
-      : 8
+    pageSize
   );
   const paginatedEvents = pagination.results;
 
@@ -437,37 +447,46 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
               </YStack>
             </div>
             : renderInColumns
-              ? <div key='multi-column-rendering'>
-                <YStack gap='$2' width='100%' >
-                  <div id='pages-top'>
-                    <PageChooser {...pagination} />
-                  </div>
+              ? [
+                <div key='pages-top' id='pages-top'>
+                  <PageChooser {...pagination} />
+                </div>,
+                <div key={`multi-column-rendering-page-${pagination.page}`}>
+                  {/* <YStack gap='$2' width='100%' > */}
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
-                    <AnimatePresence>
-                      {firstPageLoaded || allEvents.length > 0
-                        ? allEvents.length === 0
-                          ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }} animation='standard' {...standardAnimation}>
-                            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                              <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
-                            </YStack>
-                          </XStack>
-                          : undefined
-                        : undefined}
-                      {paginatedEvents.map((event) => {
-                        return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)} animation='standard' {...standardAnimation}>
-                          <XStack w={eventCardWidth}
-                            mx='$1' px='$1'>
-                            <EventCard event={event} isPreview />
-                          </XStack>
-                        </XStack>;
-                      })}
-                      {/* </FlipMove> */}
-                    </AnimatePresence>
+                    {/* <AnimatePresence> */}
+                    {firstPageLoaded || allEvents.length > 0
+                      ? allEvents.length === 0
+                        ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
+                        // animation='standard' {...standardAnimation}
+                        >
+                          <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                            <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
+                          </YStack>
+                        </XStack>
+                        : undefined
+                      : undefined}
+                    {paginatedEvents.map((event) => {
+                      return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
+                        animation='standard' {...standardAnimation}
+                      >
+                        <XStack w={eventCardWidth}
+                          mx='$1' px='$1'>
+                          <EventCard event={event} isPreview />
+                        </XStack>
+                      </XStack>;
+                    })}
+                    {/* </FlipMove> */}
+                    {/* </AnimatePresence> */}
                   </XStack>
-                  <PageChooser {...pagination} pageTopId='pages-top' />
+                  {/* <PageChooser {...pagination} pageTopId='pages-top' /> */}
                   {/* <PaginationIndicator {...pagination} /> */}
-                </YStack>
-              </div>
+                  {/* </YStack> */}
+                </div>,
+                <div key='pages-bottom' id='pages-top'>
+                  <PageChooser {...pagination} />
+                </div>,
+              ]
               : [
                 <div id='pages-top' key='pagest-top'>
                   <PageChooser {...pagination} />
