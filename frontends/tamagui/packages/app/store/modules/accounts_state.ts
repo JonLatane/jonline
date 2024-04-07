@@ -130,7 +130,7 @@ export const accountsSlice = createSlice({
             : s
         );
       } else {
-        debugger;
+        // debugger;
         setTimeout(() => {
           const currentServerId = store.getState().servers.currentServerId;
           if (!currentServerId) return;

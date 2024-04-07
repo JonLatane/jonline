@@ -302,7 +302,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         view.calendar.changeView('listDay', date);
                       }}
 
-                      {...mediaQuery.short
+                      {...mediaQuery.xShort
                         ? {
                           headerToolbar: {
                             start: 'prev,next, today',
