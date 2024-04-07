@@ -1,24 +1,22 @@
-import { Anchor, AnimatePresence, Button, ColorTokens, Dialog, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useDebounce, useDebounceValue, useMedia } from '@jonline/ui';
-import { AlertCircle, AlertTriangle, AtSign, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Info, LogIn, Plus, SeparatorHorizontal, SeparatorVertical, Server, User as UserIcon, X as XIcon, ArrowDownUp } from '@tamagui/lucide-icons';
-import { TamaguiMarkdown } from 'app/components';
+import { Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@jonline/ui';
+import { AlertCircle, Cpu, Router, AlertTriangle, ArrowDownUp, AtSign, ChevronDown, ChevronLeft, ChevronRight, Info, Plus, SeparatorHorizontal, Server } from '@tamagui/lucide-icons';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
-import { useCurrentAccount, useAppDispatch, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { FederatedEntity, FederatedGroup, JonlineAccount, JonlineServer, RootState, accountID, actionSucceeded, clearAccountAlerts, clearServerAlerts, createAccount, login, selectAccount, selectAllAccounts, selectAllServers, selectServer, serverID, setBrowsingServers, setSeparateAccountsByServer, setViewingRecommendedServers, store, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import { Platform, TextInput } from 'react-native';
+import FlipMove from 'react-flip-move';
+import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { physicallyHostingServerId } from '../about/about_screen';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { TutorialToggle } from '../navigation/tabs_tutorial';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { LoginMethod, CreateAccountOrLoginSheet } from './create_account_or_login_sheet';
+import { CreateAccountOrLoginSheet } from './create_account_or_login_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
-import FlipMove from 'react-flip-move';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -244,7 +242,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                   <ChevronLeft size='$1' />
                 </XStack>
                 <XStack m='auto' animation='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
-                  <Server size='$1' />
+                  <Router size='$1' />
                 </XStack>
                 <Theme inverse>
                   <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
