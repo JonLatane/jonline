@@ -219,7 +219,7 @@ export function BaseCreatePostSheet({
   const otherServerCount = availableCreationServers.filter(s => s.host != server?.host).length;
   const serverText = server?.serverConfiguration?.serverInfo?.name ?? server?.host ?? 'this server';
   const text = otherServerCount
-    ? `Create a new ${entityName} on ${serverText} or ${otherServerCount} other servers`
+    ? `Create a new ${entityName} on ${serverText} (or ${otherServerCount} other ${otherServerCount === 1 ? 'server' : 'servers'})`
     : `Create a new ${entityName} on ${serverText}`;
 
   // return <></>;

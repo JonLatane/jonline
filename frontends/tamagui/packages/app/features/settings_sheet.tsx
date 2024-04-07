@@ -1,7 +1,7 @@
 import { Button, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
 import { AlertTriangle, ChevronDown, ChevronLeft, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
@@ -125,6 +125,17 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   disabled={app.inlineFeatureNavigation === false}
                   value={app.shrinkFeatureNavigation}
                   setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
+              </YStack>
+              <Heading size='$5' mt='$3'>Home Screen</Heading>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                <ToggleRow name='Show Event Pages on Home'
+                  description='On the Home Screen, allow both Events and Posts to be paginated.'
+                  value={app.eventPagesOnHome} setter={setEventPagesOnHome} autoDispatch />
+                {/* <ToggleRow name='Blur Backgrounds'
+                  disabled={!app.imagePostBackgrounds}
+                  description='Blurred background images. Even more memory and CPU intensive!'
+                  value={app.fancyPostBackgrounds} setter={setFancyPostBackgrounds} autoDispatch /> */}
+
               </YStack>
               <Heading size='$5' mt='$3'>Post/Event/User Cards</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>

@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer, useLocalConfiguration } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -62,9 +62,15 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
 
+  const { eventPagesOnHome } = useLocalConfiguration();
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });
+  useEffect(() => {
+    if (!eventPagesOnHome && eventPagination.page > 0) {
+      eventPagination.setPage(0);
+    }
+  }, [eventPagesOnHome, eventPagination.page])
   const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
@@ -125,7 +131,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </div>
           </XStack>
         </div>
-        {showEventsOnLatest && allEvents.length > 0 ?
+        {showEventsOnLatest && allEvents.length > 0 && eventPagesOnHome?
           <div key='latest-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
 
             <PageChooser {...eventPagination} width='auto' />

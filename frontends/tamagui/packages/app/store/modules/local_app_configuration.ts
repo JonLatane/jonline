@@ -46,6 +46,7 @@ export type LocalAppConfiguration = {
   starredPostIds: string[];
   starredPostLastOpenedResponseCounts: Dictionary<number>;
   openedStarredPostId?: string | undefined;
+  eventPagesOnHome: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -77,6 +78,7 @@ const initialState: LocalAppConfiguration = {
   showBigCalendar: true,
   starredPostIds: [],
   starredPostLastOpenedResponseCounts: {},
+  eventPagesOnHome: false
 };
 
 setTimeout(async () => {
@@ -225,7 +227,11 @@ export const localAppSlice = createSlice({
       if (state.starredPostIds.includes(action.payload.postId)) {
         state.starredPostLastOpenedResponseCounts[action.payload.postId] = action.payload.count;
       }
-    }
+    },
+
+    setEventPagesOnHome: (state, action: PayloadAction<boolean>) => {
+      state.eventPagesOnHome = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
@@ -237,7 +243,8 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
-  moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount
+  moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount,
+  setEventPagesOnHome
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

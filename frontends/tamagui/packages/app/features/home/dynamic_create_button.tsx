@@ -1,6 +1,6 @@
 import { Permission } from '@jonline/api';
 import { Heading, XStack, YStack } from '@jonline/ui';
-import { useCurrentAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useCurrentAccount } from 'app/hooks';
 import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';
 import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
@@ -24,43 +24,46 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   showEvents,
   button
 }: DynamicCreateButtonProps) => {
-  const accountOrServer = useCurrentAccountOrServer();
+  const currentAccount = useCurrentAccount();
+  const accountsAndServers = usePinnedAccountsAndServers({ includeUnpinned: true });
 
-  const canCreatePosts = accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS);
-  const canCreateEvents = accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_EVENTS);
+  const canCreatePosts = accountsAndServers.some(aos =>
+    aos.account?.user?.permissions?.includes(Permission.CREATE_POSTS)
+  );
+  const canCreateEvents = accountsAndServers.some(aos =>
+    aos.account?.user?.permissions?.includes(Permission.CREATE_EVENTS)
+  );
+  // console.log("DynamicCreateButton canCreatePosts", canCreatePosts, "canCreateEvents", canCreateEvents,
+  //   accountsAndServers.map(aos => aos?.account?.user?.permissions));
 
   const doShowPosts = showPosts && canCreatePosts;
   const doShowEvents = showEvents && canCreateEvents;
 
-  const hide = false;//useHideNavigation();
 
   if (button) {
-    return hide ? <></> :
-      doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} />
-        : doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} />
-          : <CreateAccountOrLoginSheet operation='Post' button={button} />
+    return doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} />
+      : doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} />
+        : <CreateAccountOrLoginSheet operation='Post' button={button} />
   }
 
-  console.log("DynamicCreateButton hide", hide);
-  return hide ? <></> :
-    <>
-      {canCreatePosts
-        ? <XStack w='100%' px='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
-          {doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} /> : undefined}
-          {doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} /> : undefined}
-        </XStack>
-        : accountOrServer.account
-          ? (showPosts || showEvents)
-            ? <YStack w='100%' opacity={.92} paddingVertical='$2' /*backgroundColor='$background'*/ alignContent='center'>
-              <Heading size='$1'>You do not have permission to create{
-                showPosts && showEvents ? ' posts or events' : showPosts ? ' posts' : showEvents ? ' events' : ''
-              }.</Heading>
-            </YStack>
-            : undefined
-          : <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
-            <CreateAccountOrLoginSheet operation='Post' button={button} />
-          </YStack>}
-    </>
-    ;
+  // console.log("DynamicCreateButton hide", hide);
+  return doShowPosts || doShowEvents
+    ? <XStack w='100%' px='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
+      {doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} /> : undefined}
+      {doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} /> : undefined}
+    </XStack>
+    :
+    currentAccount
+      ? (showPosts || showEvents)
+        ? <YStack w='100%' opacity={.92} paddingVertical='$2' /*backgroundColor='$background'*/ alignContent='center'>
+          <Heading size='$1'>You do not have permission to create{
+            showPosts && showEvents ? ' posts or events' : showPosts ? ' posts' : showEvents ? ' events' : ''
+          }.</Heading>
+        </YStack>
+        : undefined
+      :
+      <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
+        <CreateAccountOrLoginSheet operation='Post' button={button} />
+      </YStack>;
 
 }
