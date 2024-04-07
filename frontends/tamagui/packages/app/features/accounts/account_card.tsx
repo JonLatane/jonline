@@ -25,7 +25,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   // useAppSelector(state => state.accounts.pinnedServers.find(ps =>
   //   ps.serverId === state.servers.currentServerId)?.accountId);
   const selected = currentAccountId === accountID(account);
-  console.log('AccountCard selected', selected, 'currentAccountId', currentAccountId, 'accountID(account)', accountID(account));
+  // console.log('AccountCard selected', selected, 'currentAccountId', currentAccountId, 'accountID(account)', accountID(account));
   const pinned = useAppSelector(state => state.accounts.pinnedServers.map(ps => ps.accountId)).includes(accountID(account));
 
   const currentServer = currentAccountOrServer.server;

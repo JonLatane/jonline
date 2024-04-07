@@ -32,7 +32,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   const doShowPosts = showPosts && canCreatePosts;
   const doShowEvents = showEvents && canCreateEvents;
 
-  const hide = useHideNavigation();
+  const hide = false;//useHideNavigation();
 
   if (button) {
     return hide ? <></> :
@@ -41,6 +41,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
           : <CreateAccountOrLoginSheet operation='Post' button={button} />
   }
 
+  console.log("DynamicCreateButton hide", hide);
   return hide ? <></> :
     <>
       {canCreatePosts

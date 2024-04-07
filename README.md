@@ -29,6 +29,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
+    - [Cost of Development](#cost-of-development)
     - [Cost of Operation](#cost-of-operation)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
@@ -57,7 +58,10 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
     - [Scaling Social Software via Dumfederation](#scaling-social-software-via-dumfederation)
 
 ## What is Jonline?
-Jonline is a network of, and a protocol for, social networks. It aims to be something like [Plex](https://www.plex.tv/), but as a social network released under the [AGPL](https://fossa.com/blog/open-source-software-licenses-101-agpl-license/) (and also, Kubernetes/LetsEncrypt/CertManager-friendly). Use cases include:
+
+Broadly speaking, Jonline is something of an "internet philosophy." It's my (Jon's) philosophy. It's a generally anti-capitalist tech approach that has a few perhaps obvious opinions on everything from user data privacy expectations, to cost of servers, through CI/CD, the BE, API design, user expectations for transparent permissions/moderation/visibility on things like People, Media, Groups, Posts, and Events, etc. Conveniently, things that meet my (Jon's) requirements for these these things can be described as "Jonline CI/CD,", "Jonline API Design,", "Jonline Events," and so forth.
+
+As a more traditional market product, Jonline is a network of, and a protocol for, social networks that meets my (Jon's) expectations of usability, transparency, and fairness. It's designed to scale as well as Mastodon or better, but really, it aims to be something more like [Plex](https://www.plex.tv/), but as a social network released under the [AGPL](https://fossa.com/blog/open-source-software-licenses-101-agpl-license/) (and also, Kubernetes/LetsEncrypt/CertManager-friendly). Use cases include:
 
 * Neighborhoods, communities, or cities
 * (Ex-)Coworkers wanting a private channel to chat
@@ -108,6 +112,9 @@ In addition to Users, Posts, and Events, which could all be "described" by Activ
 The hope is to build more useful business objects - yes, your boring SalesForce/NetSuite/SAP type stuff - into this social protocol. So Jonline Payments, Products, Subscriptions, and who knows what else could, eventually, be gradually implemented atop the Jonline protocol, with all the same clear, concise, documentation, cross-language portability, and other benefits it offers.
 
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
+
+### Cost of Development
+Jonline is basically all just built by me (Jon) for free. So, tl;dr: $0. All the code here is AGPL (or MIT for the APIs only). I've built this in my spare time because I think it should exist. It's designed to be easy to hack on as a single person or tiny team, and easy to maintain deployments with little human effort. If the development of Jonline or the maintenance of an NYC-sized Jonline instance ever required more than 10 people, I would consider this something of a failing. PRs from many contributors are absolutely welcome, but with things like the `xz` leak, there's something to be said for building a small, select set of contributors in the FOSS world.
 
 ### Cost of Operation
 Currently, Jonline's recommended DigitalOcean setup costs $24/mo for the server plus $13/mo per domain (due mostly to the LoadBalancer for each), totaling around $60/mo to run.

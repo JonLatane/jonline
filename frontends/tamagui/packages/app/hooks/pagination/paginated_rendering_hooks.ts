@@ -1,5 +1,5 @@
 import { FederatedEntity, HasIdFromServer } from "app/store";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createParam } from "solito";
 import { onPageLoaded } from './pagination_hooks';
 
@@ -106,6 +106,13 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     }
     setTimeout(() => setLoadingPage(false), 1000);
   }
+
+  useEffect(() => {
+    // if (page >= pageCount && !loadingPage) {
+    //   setPage(Math.max(0, pageCount - 1));
+    // }
+  },
+  [page, pageCount, loadingPage]);
 
   return { results, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
 }

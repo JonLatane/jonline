@@ -48,7 +48,7 @@ export function PostDetailsScreen() {
 
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const server = accountOrServer.server;
-  console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
+  // console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
 
   const [shortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();

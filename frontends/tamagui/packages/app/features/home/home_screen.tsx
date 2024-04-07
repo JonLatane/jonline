@@ -170,7 +170,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </div>
           : undefined}
 
-        <div id='latest-posts-header' key='latest-posts-header' style={{width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18}}>
+        {showEventsOnLatest && allEvents.length > 0 ?
+          <div key='latest-events-pagination' style={{ width: '100%', paddingLeft: 18, paddingRight: 18 }}>
+
+            <PageChooser {...eventPagination} width='auto' />
+          </div> : undefined}
+        <div id='latest-posts-header' key='latest-posts-header' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
           <XStack ai='center' w='100%'>
             <Heading size='$5' pr='$3' mr='auto'>Posts</Heading>
             <PageChooser {...postPagination} width='auto' />
