@@ -64,7 +64,7 @@ const initialState: LocalAppConfiguration = {
   showUserIds: false,
   showEventsOnLatest: true,
   recentGroups: [],
-  inlineFeatureNavigation: true,
+  inlineFeatureNavigation: undefined,
   shrinkFeatureNavigation: undefined,
   browseRsvpsFromPreviews: true,
   showHelp: true,
