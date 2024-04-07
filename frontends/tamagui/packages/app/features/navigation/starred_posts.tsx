@@ -172,6 +172,11 @@ export function StarredPosts({ }: StarredPostsProps) {
         ? `/event/${eventWithSingleInstance.instances[0]!.id}@${serverHost}`
         : `/post/${basePost?.id}@${serverHost}`
   });
+  const basePostLinkWithClose = {...basePostLink, onPress: (e) => {
+    basePostLink.onPress?.(e);
+    // setOpenedPostId(undefined);
+    setOpen(false);
+  }}
   const openedPostAccount = useFederatedAccountOrServer(basePost);
 
   const serverTheme = useServerTheme();
@@ -246,7 +251,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                   <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
                   <YStack gap="$3" h='100%' ai='center'>
-                    <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                    <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'none' }}>
                       {openedPostId
                         ? [
                           <div key='back'>
@@ -274,32 +279,15 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </div>,
                         ]}
                       {basePost
-                        ? <div key='post-name'>
+                        ? <div key='post-name' style={{flex: 1}}>
                           <Button onPress={() => scrollToTop(true)} >
                             <YStack>
                               <Paragraph size='$1'
-                                maw={Math.min(400, window.innerWidth - 200 - (eventWithSingleInstance ? 100 : 0))}
+                                maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
                                 overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
                                 fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
                                 {event?.post?.title ?? basePost?.title ?? 'Loading...'}
                               </Paragraph>
-                              {/* {openedPostAccount?.account
-                              ?
-                              <XStack o={0.5}>
-                                <Paragraph key='as' size='$1' fontWeight='bold' >
-                                  as&nbsp;
-                                </Paragraph>
-                                <Paragraph key='username' size='$1' fontWeight='bold' color={openedPostNavAnchorColor}>
-                                  {openedPostAccount.account?.user?.username ?? 'anonymous'}
-                                </Paragraph>
-                                <Paragraph key='at' size='$1' fontWeight='bold' >
-                                  @
-                                </Paragraph>
-                                <Paragraph key='host' size='$1' fontWeight='bold' color={openedPostPrimaryAnchorColor}>
-                                  {openedPostAccount.server!.host}
-                                </Paragraph>
-                              </XStack>
-                              : undefined} */}
                             </YStack>
                           </Button>
                         </div>
@@ -321,7 +309,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                                 : undefined}
                           </FlipMove>
                         </div>}
-                      <div key='flex-2' style={{ flex: 1 }} />
+                      {/* <div key='flex-2' style={{ flex: 1 }} /> */}
 
                       {eventWithSingleInstance
                         ? <div key='instance-time'>
@@ -330,16 +318,11 @@ export function StarredPosts({ }: StarredPostsProps) {
                         : basePost
                           ? undefined//<div key='flex-3' style={{ flex: 1 }} />
                           : undefined}
-                      {basePost ? <Button
-                        size='$3' px='$1'
-                        // onPress={() => setOpen(false)}
-                        {...basePostLink}
-                        icon={PanelLeftOpen} /> : undefined}
                     </FlipMove>
                     {openedPostId && basePost //&& basePost.responseCount > 0
                       ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
                         w='100%' maw={800} mx='auto' mt='$1' ai='center'>
-                        <XStack key='spacer1' f={1} />
+                        {/* <XStack key='spacer1' f={1} /> */}
                         <Tooltip key='discussionUI' placement="bottom">
                           <Tooltip.Trigger>
                             <Button h='$2'
@@ -387,6 +370,18 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </Tooltip.Content>
                         </Tooltip>
                         <XStack key='spacer2' f={1} />
+
+
+
+                        {/* {basePost ? */}
+                        <Button
+                          size='$3' px='$2' ml='$2'
+                          // onPress={() => setOpen(false)}
+                          {...basePostLinkWithClose}
+                          iconAfter={PanelLeftOpen} >
+                          <Heading size='$4'>Open</Heading>
+                        </Button>
+                        {/* : undefined} */}
                       </XStack>
                       : undefined}
                     {/* </AnimatePresence> */}
