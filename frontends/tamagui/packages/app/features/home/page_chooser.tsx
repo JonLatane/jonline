@@ -52,24 +52,26 @@ export const PageChooser: React.FC<Pagination<any> & {
     return <XStack ref={ref} w={width} h={height} ai='center'>
       <ScrollView f={1} horizontal>
         <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
-          {[...Array(pageCount).keys()].map((i) =>
-            <Button key={i} mr='$1'
-              {...highlightedButtonBackground(theme, 'nav', i === page)}
-              transparent={i !== page}
-              onPress={() => {
-                setPage(i)
-                // onSetPage?.();
-                if (pageTopId) {
-                  // setTimeout(() => {
+          {pageCount > 1 || page > 0
+            ? [...Array(pageCount).keys()].map((i) =>
+              <Button key={i} mr='$1'
+                {...highlightedButtonBackground(theme, 'nav', i === page)}
+                transparent={i !== page}
+                onPress={() => {
+                  setPage(i)
+                  // onSetPage?.();
+                  if (pageTopId) {
+                    // setTimeout(() => {
                     const pageTop = document.getElementById(pageTopId);
                     pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-                  // }, 300);
-                }
-              }}
-            >
-              {(i + 1).toString()}
-            </Button>
-          )}
+                    // }, 300);
+                  }
+                }}
+              >
+                {(i + 1).toString()}
+              </Button>
+            )
+            : undefined}
         </FlipMove>
       </ScrollView>
     </XStack>;
