@@ -280,7 +280,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         ]}
                       {basePost
                         ? <div key='post-name' style={{flex: 1}}>
-                          <Button onPress={() => scrollToTop(true)} >
+                          <Button transparent onPress={() => scrollToTop(true)} >
                             <YStack>
                               <Paragraph size='$1'
                                 maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
@@ -322,10 +322,10 @@ export function StarredPosts({ }: StarredPostsProps) {
                     {openedPostId && basePost //&& basePost.responseCount > 0
                       ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
                         w='100%' maw={800} mx='auto' mt='$1' ai='center'>
-                        {/* <XStack key='spacer1' f={1} /> */}
+                        <XStack key='spacer1' f={1} />
                         <Tooltip key='discussionUI' placement="bottom">
                           <Tooltip.Trigger>
-                            <Button h='$2'
+                            <Button h='$2' px='$2'
                               backgroundColor={chatUI ? undefined : navColor}
                               hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
                               transparent={chatUI}
@@ -348,7 +348,7 @@ export function StarredPosts({ }: StarredPostsProps) {
 
                         <Tooltip key='chatUI' placement="bottom">
                           <Tooltip.Trigger>
-                            <Button h='$2'
+                            <Button h='$2' px='$2'
                               backgroundColor={!chatUI ? undefined : navColor}
                               hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                               transparent={!chatUI}
@@ -375,7 +375,7 @@ export function StarredPosts({ }: StarredPostsProps) {
 
                         {/* {basePost ? */}
                         <Button
-                          size='$3' px='$2' ml='$2'
+                          h='$2' px='$2' ml='$2'
                           // onPress={() => setOpen(false)}
                           {...basePostLinkWithClose}
                           iconAfter={PanelLeftOpen} >
