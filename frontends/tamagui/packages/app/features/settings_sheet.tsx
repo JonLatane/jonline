@@ -1,4 +1,4 @@
-import { Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack } from '@jonline/ui';
+import { AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronDown, ChevronLeft, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useComponentKey } from 'app/hooks';
 import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
@@ -6,6 +6,7 @@ import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
+import FlipMove from 'react-flip-move';
 
 
 export type SettingsSheetProps = {
@@ -121,7 +122,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   <XStack f={1} />
                   <CheckboxWithLabel name='auto-popover-inline' id='auto-popover-inline'
                     label='Auto Popover/Inline'
-                    description='Use Popover or Inline based on screen size.'
+                    description='Automatically use Popover Navigation when the screen is narrow (i.e., on phone).'
                     checked={app.inlineFeatureNavigation === undefined}
                     defaultChecked={app.inlineFeatureNavigation === undefined}
                     value={app.inlineFeatureNavigation?.toString()}
@@ -131,7 +132,6 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </XStack>
 
 
-                <Heading size='$4' mt='$2' o={app.inlineFeatureNavigation === false ? 0.5 : 1}>Inline Navigation</Heading>
 
                 {/* <ToggleRow name='Auto Shrink Inline Navigation'
                   description='Automatically Shrink Inline Navigation based on screen size.'
@@ -139,25 +139,33 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   value={app.shrinkFeatureNavigation === undefined}
                   setter={(v) => setShrinkFeatureNavigation(v ? undefined : true)} autoDispatch /> */}
 
-                <ToggleRow name='Shrink Inline Navigation'
-                  description='Shrink inactive icons in the Inline Navigation UI.'
-                  disabled={app.inlineFeatureNavigation === false}
-                  value={app.shrinkFeatureNavigation}
-                  setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
-
-                <XStack w='100%' ai='center'>
-                  <XStack f={1} />
-                  <CheckboxWithLabel name='auto-shrink-inline' id='auto-popover-inline'
-                    label='Auto Shrink Inline Navigation'
-                    description='Automatically Shrink Inline Navigation based on screen size.'
-                    disabled={app.inlineFeatureNavigation === false}
-                    checked={app.shrinkFeatureNavigation === undefined}
-                    defaultChecked={app.shrinkFeatureNavigation === undefined}
-                    value={app.shrinkFeatureNavigation?.toString()}
-                    onCheckedChange={(v) => {
-                      dispatch(setShrinkFeatureNavigation(v ? undefined : true));
-                    }} />
-                </XStack>
+                <AnimatePresence>
+                  {app.inlineFeatureNavigation !== false
+                    ? <YStack key='inline-nav-options' animation='standard' {...standardAnimation}>
+                      <Heading size='$4' mt='$2'>Inline Navigation</Heading>
+                      <ToggleRow name='Shrink Inline Navigation'
+                        description='Shrink inactive icons in the Inline Navigation UI.'
+                        // disabled={app.inlineFeatureNavigation === false}
+                        value={app.shrinkFeatureNavigation}
+                        setter={(v) => setShrinkFeatureNavigation(v)} autoDispatch />
+                      <XStack w='100%' ai='center'>
+                        <XStack f={1} />
+                        <XStack f={1} >
+                          <CheckboxWithLabel name='auto-shrink-inline' id='auto-popover-inline'
+                            label='Auto Shrink Inline Navigation'
+                            description='Automatically Shrink Inline Navigation when the screen is narrow.'
+                            // disabled={app.inlineFeatureNavigation === false}
+                            checked={app.shrinkFeatureNavigation === undefined}
+                            defaultChecked={app.shrinkFeatureNavigation === undefined}
+                            value={app.shrinkFeatureNavigation?.toString()}
+                            onCheckedChange={(v) => {
+                              dispatch(setShrinkFeatureNavigation(v ? undefined : false));
+                            }} />
+                        </XStack>
+                      </XStack>
+                    </YStack>
+                    : undefined}
+                </AnimatePresence>
               </YStack>
               <Heading size='$5' mt='$3'>Home Screen</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
@@ -352,13 +360,16 @@ export function CheckboxWithLabel({
   // label = 'Accept terms and conditions',
   ...checkboxProps
 }: CheckboxProps & { size?: SizeTokens; label: string; description?: string; }) {
+  const mediaQuery = useMedia();
   const componentKey = useComponentKey('checkbox-with-label');
   const id = `checkbox-${componentKey}`
   return (
-    <XStack ai="center" gap="$4" o={checkboxProps.disabled ? 0.5 : 1}>
 
-      <Label htmlFor={id}>
-        <YStack>
+    // <XStack maw='100%'>
+    <Label ml='auto' htmlFor={id}>
+      <XStack ai="center" w={mediaQuery.gtXs ? 300 : 250} maw='100%' gap="$4" o={checkboxProps.disabled ? 0.5 : 1}>
+
+        <YStack f={1}>
           <Paragraph size='$3'>
             {label}
           </Paragraph>
@@ -368,13 +379,14 @@ export function CheckboxWithLabel({
             </Paragraph>
             : undefined}
         </YStack>
-      </Label>
 
-      <Checkbox id={id} name={id} size={'$5'} {...checkboxProps}>
-        <Checkbox.Indicator>
-          <Check />
-        </Checkbox.Indicator>
-      </Checkbox>
-    </XStack>
+        <Checkbox {...checkboxProps} id={id} name={id} size={'$6'}>
+          <Checkbox.Indicator>
+            <Check />
+          </Checkbox.Indicator>
+        </Checkbox>
+      </XStack>
+    </Label>
+    // </XStack>
   )
 }
