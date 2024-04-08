@@ -226,7 +226,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     account ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
   ];
 
-  function triggerButton() {
+  function triggerButton(forPopup?: boolean) {
     const icon = inlineNavigation && appSubsection
       ? undefined
       : (menuIcon(appSection, navTextColor)
@@ -234,13 +234,14 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           ? undefined
           : <Menu color={navTextColor} />));
     const triggerButtonLink =
-      appSection === AppSection.EVENTS && !location.toString().includes('/events')
-        ? eventsLink
-        : appSection === AppSection.POSTS && !location.toString().includes('/posts')
-          ? postsLink
-          : appSection === AppSection.PEOPLE && !location.toString().includes('/people')
-            ? peopleLink
-            : undefined;
+      forPopup ? undefined
+        : appSection === AppSection.EVENTS && !location.toString().includes('/events')
+          ? eventsLink
+          : appSection === AppSection.POSTS && !location.toString().includes('/posts')
+            ? postsLink
+            : appSection === AppSection.PEOPLE && !location.toString().includes('/people')
+              ? peopleLink
+              : undefined;
     return <div key={`nav-${appSection}-${appSubsection}`}>
       <Button scale={0.95} ml={selectedGroup ? -4 : -3} my='auto'
         // disabled={inlineNavigation}
@@ -277,6 +278,17 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           ? primaryTextColor
           : undefined)
       : undefined;
+
+    const triggerButtonLink =
+    // forPopup ? undefined  
+    appSection === AppSection.EVENTS && !location.toString().includes('/events')
+        ? eventsLink
+        : appSection === AppSection.POSTS && !location.toString().includes('/posts')
+          ? postsLink
+          : appSection === AppSection.PEOPLE && !location.toString().includes('/people')
+            ? peopleLink
+            : undefined;
+            const isDisabled = (selected && !triggerButtonLink) || disabled;
     return selected && inlineNavigation ?
       !reorderInlineNavigation
         ? triggerButton()
@@ -291,11 +303,11 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
                 my='auto'
                 size="$3"
-                disabled={selected || disabled}
-                o={selected || disabled ? 0.5 : 1}
+                disabled={isDisabled}
+                o={isDisabled ? 0.5 : 1}
                 backgroundColor={selected ? navColor : undefined}
                 hoverStyle={{ backgroundColor: '$colorTransparent' }}
-                {...link}
+                {...triggerButtonLink ?? link}
               >
                 <XStack gap='$2'>
                   {icon}
@@ -354,7 +366,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       <XStack w={selectedGroup ? 11 : 3.5} />
       <Popover size="$5">
         <Popover.Trigger asChild>
-          {triggerButton()}
+          {triggerButton(true)}
         </Popover.Trigger>
         <Popover.Content
           bw={1}

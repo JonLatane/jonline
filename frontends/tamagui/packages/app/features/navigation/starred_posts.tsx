@@ -1,7 +1,7 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
 import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useTheme } from "@jonline/ui";
 import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
-import { ChevronDown, ChevronLeft, ChevronUp, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
+import { ChevronDown, ChevronLeft, ChevronUp, Info, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useCurrentServer } from "app/hooks";
 import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
@@ -172,11 +172,13 @@ export function StarredPosts({ }: StarredPostsProps) {
         ? `/event/${eventWithSingleInstance.instances[0]!.id}@${serverHost}`
         : `/post/${basePost?.id}@${serverHost}`
   });
-  const basePostLinkWithClose = {...basePostLink, onPress: (e) => {
-    basePostLink.onPress?.(e);
-    // setOpenedPostId(undefined);
-    setOpen(false);
-  }}
+  const basePostLinkWithClose = {
+    ...basePostLink, onPress: (e) => {
+      basePostLink.onPress?.(e);
+      // setOpenedPostId(undefined);
+      setOpen(false);
+    }
+  }
   const openedPostAccount = useFederatedAccountOrServer(basePost);
 
   const serverTheme = useServerTheme();
@@ -279,7 +281,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </div>,
                         ]}
                       {basePost
-                        ? <div key='post-name' style={{flex: 1}}>
+                        ? <div key='post-name' style={{ flex: 1 }}>
                           <Button transparent onPress={() => scrollToTop(true)} >
                             <YStack>
                               <Paragraph size='$1'
@@ -292,22 +294,41 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </Button>
                         </div>
                         : <div key='starred-heading' style={{ flex: 1 }}>
-                          <FlipMove style={{ width: '100%' }}>
-                            <div key='starred'>
-                              <Heading size='$4'>Starred</Heading>
-                            </div>
-                            {starredPostFilter === 'posts'
-                              ?
-                              <div key='starred-posts'>
-                                <Heading size='$5' whiteSpace="nowrap">Posts</Heading>
-                              </div>
-                              : starredPostFilter === 'events'
-                                ?
-                                <div key='starred-events'>
-                                  <Heading size='$5' whiteSpace="nowrap">Events</Heading>
+
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <FlipMove style={{ width: '100%' }}>
+                                <div key='starred'>
+                                  <XStack ai='center' gap='$2'>
+                                    <Heading size='$4'>Starred</Heading>
+                                    <Info size={16} o={0.5} />
+                                  </XStack>
                                 </div>
-                                : undefined}
-                          </FlipMove>
+                                {starredPostFilter === 'posts'
+                                  ?
+                                  <div key='starred-posts'>
+                                    <Heading size='$5' whiteSpace="nowrap">Posts</Heading>
+                                  </div>
+                                  : starredPostFilter === 'events'
+                                    ?
+                                    <div key='starred-events'>
+                                      <Heading size='$5' whiteSpace="nowrap">Events</Heading>
+                                    </div>
+                                    : undefined}
+                              </FlipMove>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Paragraph size='$1' >
+                                Starred Posts/Events are stored only in your current browser.
+                              </Paragraph>
+                              <Paragraph size='$1' >
+                                The are never associated with your profile or any personal information.
+                              </Paragraph>
+                              <Paragraph size='$1' >
+                                Server star counts are anonymous.
+                              </Paragraph>
+                            </Tooltip.Content>
+                          </Tooltip>
                         </div>}
                       {/* <div key='flex-2' style={{ flex: 1 }} /> */}
 

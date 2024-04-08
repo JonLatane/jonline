@@ -21,6 +21,34 @@ export const animations = createAnimations({
     type: 'timing',
     duration: 100,
   },
+  '200ms': {
+    type: 'timing',
+    duration: 200,
+  },
+  '300ms': {
+    type: 'timing',
+    duration: 300,
+  },
+  '400ms': {
+    type: 'timing',
+    duration: 400,
+  },
+  '500ms': {
+    type: 'timing',
+    duration: 500,
+  },
+  '600ms': {
+    type: 'timing',
+    duration: 600,
+  },
+  '700ms': {
+    type: 'timing',
+    duration: 700,
+  },
+  '800ms': {
+    type: 'timing',
+    duration: 800,
+  },
   bouncy: {
     damping: 9,
     mass: 0.9,

@@ -193,20 +193,22 @@ export function TabsNavigation({
                 </XStack>
                 : undefined}
               <ScrollView horizontal>
-                {!scrollGroupsSheet
-                  ? <></>
-                  : <>
-                    {/* <XStack w={1} /> */}
-                    <XStack ml='$1' my='auto' className='main-groups-button'>
-                      <GroupsSheet key='main'
-                        selectedGroup={selectedGroup}
-                        groupPageForwarder={groupPageForwarder}
-                        primaryEntity={primaryEntity} />
-                    </XStack>
-                    {/* <XStack w={0} /> */}
-                  </>
-                }
-                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                <XStack ai='center'>
+                  {!scrollGroupsSheet
+                    ? <></>
+                    : <>
+                      {/* <XStack w={1} /> */}
+                      <XStack ml='$1' my='auto' className='main-groups-button'>
+                        <GroupsSheet key='main'
+                          selectedGroup={selectedGroup}
+                          groupPageForwarder={groupPageForwarder}
+                          primaryEntity={primaryEntity} />
+                      </XStack>
+                      {/* <XStack w={0} /> */}
+                    </>
+                  }
+                  <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                </XStack>
               </ScrollView>
               <XStack f={1} />
               <StarredPosts />

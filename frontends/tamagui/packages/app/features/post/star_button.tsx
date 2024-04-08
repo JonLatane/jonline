@@ -41,7 +41,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
           serverHost: accountOrServer.server!.host,
         };
         store.dispatch(upsertPost(federatedPost));
-      });
+      }).catch((e) => console.warn('Failed to star post on server', e));
     } else {
       client?.unstarPost(post).then(post => {
         const federatedPost: FederatedPost = {
@@ -49,7 +49,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
           serverHost: accountOrServer.server!.host,
         };
         store.dispatch(upsertPost(federatedPost));
-      });
+      }).catch((e) => console.warn('Failed to unstar post on server', e));
     }
     setFirstStarred(pendingStarChange);
   }, [pendingStarChange]);
@@ -86,6 +86,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
       size='$2'
       p='$1'
       px={0}
+      disabled={!post.id}
       onPress={onPress}
     >
       <ThemedStar {...{ starred, server: accountOrServer.server }} />
@@ -119,15 +120,26 @@ export const ThemedStar: React.FC<ThemedStarProps> = ({ starred, server, invertC
     <ZStack w='$2' h='$2' animation='standard' o={starred ? 0 : 1}>
       <Star o={0.5} />
     </ZStack>
-    <ZStack w='$2' h='$2' animation='standard' o={starred ? 1 : 0}>
+
+    <ZStack w='$2' h='$2' animation='200ms' o={starred ? 1 : 0}>
       <Star scale={0.7} transform={[{ translateY: 0.5 }]} color={!invertColors ? navColor : primaryAnchorColor} />
+    </ZStack>
+    <ZStack w='$2' h='$2' animation='400ms' o={starred ? 1 : 0}>
       <Star scale={0.3} transform={[{ translateY: 2 }]} color={!invertColors ? navColor : primaryAnchorColor} />
+    </ZStack>
+    <ZStack w='$2' h='$2' animation='600ms' o={starred ? 1 : 0}>
       <Star scale={0.1} transform={[{ translateY: 7 }]} color={!invertColors ? navColor : primaryAnchorColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' animation='slow' o={starred ? 1 : 0}>
-      <Star color={!invertColors ? primaryAnchorColor : navColor} />
+    <ZStack w='$2' h='$2' animation='100ms' o={starred ? 1 : 0}>
+      <Star scale={1} color={!invertColors ? primaryAnchorColor : navColor} />
+    </ZStack>
+    <ZStack w='$2' h='$2' animation='300ms' o={starred ? 1 : 0}>
       <Star scale={0.5} transform={[{ translateY: 1 }]} color={!invertColors ? primaryAnchorColor : navColor} />
+    </ZStack>
+    <ZStack w='$2' h='$2' animation='500ms' o={starred ? 1 : 0}>
       <Star scale={0.2} transform={[{ translateY: 2.5 }]} color={!invertColors ? primaryAnchorColor : navColor} />
+    </ZStack>
+    <ZStack w='$2' h='$2' animation='700ms' o={starred ? 1 : 0}>
       <Star scale={0.05} transform={[{ translateY: 12.5 }]} color={!invertColors ? primaryAnchorColor : navColor} />
     </ZStack>
   </ZStack>;

@@ -31,6 +31,7 @@ export interface GroupsState {
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
   failedShortnames: string[];
+  failedPostIdGroupPosts: string[];
   mutatingGroupIds: string[];
 }
 
@@ -48,6 +49,7 @@ const initialState: GroupsState = {
   groupPostPages: {},
   groupEventPages: {},
   postIdGroupPosts: {},
+  failedPostIdGroupPosts: [],
   mutatingGroupIds: [],
   ...groupsAdapter.getInitialState(),
 };
@@ -75,6 +77,7 @@ export const groupsSlice = createSlice({
         .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
       groupsAdapter.removeMany(state, groupIdsToRemove);
       state.failedShortnames = state.failedShortnames.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.failedPostIdGroupPosts = state.failedPostIdGroupPosts.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
 
       delete state.pages.values[action.payload.serverHost];
       Object.keys(state.groupPostPages)
@@ -138,6 +141,10 @@ export const groupsSlice = createSlice({
       const { groupPosts } = action.payload;
       const postId = federateId(action.meta.arg.postId, action);
       state.postIdGroupPosts[postId] = groupPosts;
+    });
+    builder.addCase(loadPostGroupPosts.rejected, (state, action) => {
+      const postId = federateId(action.meta.arg.postId, action);
+      state.failedPostIdGroupPosts = [postId, ...state.failedPostIdGroupPosts];
     });
 
     builder.addCase(createGroupPost.fulfilled, (state, action) => {

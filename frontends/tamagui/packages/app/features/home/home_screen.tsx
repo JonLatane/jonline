@@ -74,8 +74,20 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
-    if (isClient && window.scrollY > 0) {
+    // console.log('onHomePressed', document.getElementById('events-top'));
+    setTimeout(
+      () => document.getElementById('events-top')?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }),
+      1
+    );
+    if (window.scrollY > 0) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (postPagination.page > 0 || eventPagination.page > 0) {
+      setTimeout(() => {
+        postPagination.setPage(0);
+      }, 1);
+      setTimeout(() => {
+        eventPagination.setPage(0);
+      }, 1);
     } else {
       reloadPosts();
       reloadEvents();
@@ -131,7 +143,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </div>
           </XStack>
         </div>
-        {showEventsOnLatest && allEvents.length > 0 && eventPagesOnHome?
+        {showEventsOnLatest && allEvents.length > 0 && eventPagesOnHome ?
           <div key='latest-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
 
             <PageChooser {...eventPagination} width='auto' />
@@ -143,7 +155,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
                   <FlipMove style={{ display: 'flex' }}>
-
+                    <div id='events-top' />
                     {allEvents.length == 0 && !loadingEvents
                       ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
                         <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>

@@ -39,20 +39,20 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
   const selectedGroup = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);
+  const groupPostDataLoadFailed = useAppSelector(state => state.groups.failedPostIdGroupPosts.includes(federatedId(post)));
   // console.log('groupPostData', groupPostData);
   const knownGroupIds = useAppSelector(state => state.groups.ids);
 
-  const maxErrors = 1;
-  const [errorCount, setErrorCount] = useState(0);
+  // const maxErrors = 1;
+  // const [errorCount, setErrorCount] = useState(0);
   useEffect(() => {
     // console.log('errorCount', errorCount);
-    if (isVisible && !groupPostData && !loading && errorCount < maxErrors) {
+    if (isVisible && !groupPostData && !loading && !groupPostDataLoadFailed) {
       setLoading(true);
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
-        .then(() => setLoading(false))
-        .catch(() => { setLoading(false); setErrorCount(errorCount + 1); });
+        .then(() => setLoading(false));
     }
-  }, [post, isVisible, loading, errorCount]);
+  }, [post, isVisible, loading, groupPostDataLoadFailed]);
 
   const [loadingGroups, setLoadingGroups] = useState([] as string[]);
 
@@ -85,7 +85,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
       {sharedToSelectedGroup === true || singleSharedGroup ? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
-    {loading && errorCount < maxErrors ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
+    {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
     <XStack>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
@@ -172,9 +172,9 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   const detailsPostId = !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
     : post.id;
-  const detailsGroupShortname =  !isPrimaryServer
-      ? federateId(group.shortname, accountOrServer.server)
-      : group.shortname;
+  const detailsGroupShortname = !isPrimaryServer
+    ? federateId(group.shortname, accountOrServer.server)
+    : group.shortname;
   const viewLink = useLink({
     href: createViewHref?.(group)
       ?? `/g/${detailsGroupShortname}/p/${detailsPostId}`

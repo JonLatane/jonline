@@ -456,7 +456,7 @@ export function BaseCreatePostSheet({
                   : undefined}
                 {showShortPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto' p='$5' marginTop='$3'>{feedPreview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5' marginTop='$3' pointerEvents='none'>{feedPreview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
               </XStack>

@@ -1,5 +1,5 @@
 import { Button, Paragraph, ScrollView, Spinner, TamaguiElement, XStack } from '@jonline/ui';
-import { Pagination, maxPagesToRender } from 'app/hooks';
+import { Pagination, maxPagesToRender, useComponentKey } from 'app/hooks';
 import { useIsVisible } from 'app/hooks/use_is_visible';
 import { useServerTheme } from 'app/store';
 import { themedButtonBackground, highlightedButtonBackground } from 'app/utils';
@@ -24,6 +24,21 @@ export const PageChooser: React.FC<Pagination<any> & {
     // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
     const ref = React.createRef<TamaguiElement>();
     const isVisible = useIsVisible(ref);
+    const componentKey = useComponentKey('page-chooser');
+    const pageButtonId = (i: number) => `${componentKey}-page-${i}`;
+
+    useEffect(
+      () => {
+        if (pageTopId) return;
+
+        setTimeout(
+          () => document.getElementById(pageButtonId(page))
+            ?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }),
+          300
+        );
+      },
+      [page]
+    );
     // console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
     const theme = useServerTheme();
@@ -55,6 +70,7 @@ export const PageChooser: React.FC<Pagination<any> & {
           {pageCount > 1 || page > 0
             ? [...Array(pageCount).keys()].map((i) =>
               <Button key={i} mr='$1'
+                id={pageButtonId(i)}
                 {...highlightedButtonBackground(theme, 'nav', i === page)}
                 transparent={i !== page}
                 onPress={() => {
