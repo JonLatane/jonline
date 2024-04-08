@@ -197,7 +197,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     : inlineNavigation && reorderInlineNavigation
       ? (appSection == AppSection.EVENTS)
         ? [events, posts]
-        : (appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
+        : appSection === AppSection.HOME//(appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
           ? [posts, events]
           : [latest, posts, events]
       : [

@@ -253,6 +253,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                 </Theme>
               </ZStack>
             </Button>
+
+            <DarkModeToggle />
             <SettingsSheet size='$3' />
           </XStack>
           <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
@@ -356,7 +358,6 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                       : undefined}
                     <XStack f={1} />
 
-                    <DarkModeToggle />
 
                   </XStack>
                 </div>
