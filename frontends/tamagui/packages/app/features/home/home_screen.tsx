@@ -39,7 +39,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       : federateId(selectedGroup.shortname, selectedGroup.serverHost))
     : undefined;
   const eventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events' });
-  const allEventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events?endsAfter=1969-12-31T19%3A00%3A00.000-05%3A00' });
+  const allEventsLink = useLink({ href: selectedGroup ? `/g/${groupLinkId}/events` : '/events?endsAfter=1970-01-01T00%3A00%3A00.000Z' });
 
   const dimensions = useWindowDimensions();
 
@@ -177,9 +177,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                       : undefined}
                     {showEventsOnLatest
                       ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                        <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...eventsLink}>
+                        <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...allEventsLink}>
                           <YStack ai='center' py='$3' jc='center'>
-                            <Heading size='$4'>More</Heading>
+                            <Heading size='$4'>All</Heading>
                             <Heading size='$5'>Events</Heading>
                             <ChevronRight />
                           </YStack>

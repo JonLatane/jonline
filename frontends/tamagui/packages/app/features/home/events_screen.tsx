@@ -37,7 +37,10 @@ export function EventsScreen() {
 
 export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
 export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
+  const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
+  const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+
   const eventsState = useRootSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -146,7 +149,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     ? numberOfColumns * 2
     : 8;
 
-  const pageSize = renderInColumns
+  const pageSize = renderInColumns && shrinkPreviews
     ? mediaQuery.gtMdHeight
       ? Math.round(widthAdjustedPageSize * 2)
       : mediaQuery.gtShort
@@ -182,8 +185,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     : undefined;
   const maxWidth = 2000;
 
-  const dispatch = useAppDispatch();
-  const { showBigCalendar: bigCalendar, showPinnedServers } = useLocalConfiguration();
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
