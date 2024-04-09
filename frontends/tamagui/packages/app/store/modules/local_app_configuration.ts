@@ -74,7 +74,7 @@ const initialState: LocalAppConfiguration = {
   imagePostBackgrounds: true,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
-  dateTimeRenderer: undefined,
+  dateTimeRenderer: 'native',
   showBigCalendar: true,
   starredPostIds: [],
   starredPostLastOpenedResponseCounts: {},
@@ -83,11 +83,14 @@ const initialState: LocalAppConfiguration = {
 
 setTimeout(async () => {
   if (store.getState().app.dateTimeRenderer === undefined) {
-    while (!globalThis.navigator) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
+    // while (!globalThis.navigator) {
+    //   await new Promise((resolve) => setTimeout(resolve, 100));
+    // }
 
-    store.dispatch(setDateTimeRenderer(isSafari() ? 'native' : 'custom'))
+    store.dispatch(setDateTimeRenderer(
+      'native'
+      // isSafari() ? 'native' : 'custom'
+    ))
   }
   if (store.getState().app.starredPostIds === undefined) {
     store.dispatch(setStarredPostIds([]))

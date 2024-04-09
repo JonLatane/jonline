@@ -259,7 +259,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
                   </XStack>
                 </YStack>
-                <XStack key='endsAfterFilter' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
+                <XStack key='endsAfterFilter' pb='$2' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
                   animation='standard' {...standardAnimation}>
                   <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
                   <XStack ml='auto' my='auto'>

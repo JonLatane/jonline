@@ -1,14 +1,17 @@
+import 'react-calendar/dist/Calendar.css';
+import 'react-clock/dist/Clock.css';
+import 'react-datetime-picker/dist/DateTimePicker.css';
+
+import './datetime_picker.css';
+
 import moment from 'moment';
 import BaseDateTimePicker from 'react-datetime-picker';
 
 import { Label, Text, XStack, isSafari } from '@jonline/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
-import { useComponentKey, useLocalConfiguration } from 'app/hooks';
-import 'react-calendar/dist/Calendar.css';
-import 'react-clock/dist/Clock.css';
-import 'react-datetime-picker/dist/DateTimePicker.css';
-import './datetime_picker.css';
+import { useComponentKey, useLocalConfiguration, useServerTheme } from 'app/hooks';
+
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
 export const toProtoISOString = (localDateTimeInput: string) =>
@@ -27,9 +30,12 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
   const componentKey = useComponentKey('datetime-picker');
   const safari = isSafari();
+  const { darkMode } = useServerTheme();
   if (renderer === 'native') {
-    return <XStack ai='center' borderColor='$body' borderWidth={2} borderRadius='$2' pt='$1'>
-      <Text fontSize='$2' fontFamily='$body'>
+    return <XStack ai='center' borderColor='$body'
+      className={darkMode ? 'native-datetime-picker-dark' : undefined}
+      borderWidth={2} borderRadius='$2' pt='$1' px='$2'>
+      <Text fontSize='$2' fontFamily='$body' color={darkMode ? 'white' : 'black'}>
         <input type='datetime-local' name={componentKey} id={componentKey} min={supportDateInput(moment(0))}
           value={supportDateInput(moment(value))}
           defaultValue={supportDateInput(moment(value))}

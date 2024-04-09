@@ -169,8 +169,8 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               </YStack>
               <Heading size='$5' mt='$3'>Home Screen</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <ToggleRow name='Show Event Pages on Home'
-                  description='On the Home Screen, allow both Events and Posts to be paginated.'
+                <ToggleRow name='Paginate Events on Home'
+                  description='On the Home/Latest Screen (and Group Home/Latest screens), show pagination controls for bth Events and Posts.'
                   value={app.eventPagesOnHome} setter={setEventPagesOnHome} autoDispatch />
                 {/* <ToggleRow name='Blur Backgrounds'
                   disabled={!app.imagePostBackgrounds}
@@ -221,6 +221,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                <YStack ai='center' mx='center'>
+                  <DateTimePicker value={moment(0).toISOString()} onChange={(v) => { }} />
+                </YStack>
+
                 <XStack my='$2'>
                   <Label htmlFor='date-type-toggle' my='auto' f={1}>
                     <YStack w='100%'>
@@ -256,9 +260,6 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     </YStack>
                   </Label>
                 </XStack>
-                <YStack ai='center' mx='center'>
-                  <DateTimePicker value={moment(0).toISOString()} onChange={(v) => { }} />
-                </YStack>
               </YStack>
 
               {/* <Heading size='$5' mt='$5'>Accounts</Heading>
