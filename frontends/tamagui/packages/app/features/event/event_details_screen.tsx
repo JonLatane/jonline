@@ -34,7 +34,7 @@ export function EventDetailsScreen() {
   const instanceId = federateId(serverInstanceId, serverHost);
 
   const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server, useTheme());
-  console.log('EventDetailsScreen', textColor);
+  // console.log('EventDetailsScreen', textColor);
   const app = useLocalConfiguration();
   const groupId = useAppSelector((state) =>
     shortname ? state.groups.shortnameIds[shortname!] : undefined);

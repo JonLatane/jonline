@@ -48,7 +48,7 @@ export const InstanceTime: React.FC<Props> = ({
   const { server } = useFederatedAccountOrServer(event);
   const theme = useTheme();
   const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = getServerTheme(server, theme);
-  const group = useGroupContext();
+  const { selectedGroup: group } = useGroupContext();
   const instanceLink = useInstanceLink(event, instance, group);
 
   const mx = linkToInstance ? 'auto' : undefined;

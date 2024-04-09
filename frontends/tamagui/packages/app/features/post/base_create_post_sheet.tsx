@@ -8,7 +8,7 @@ import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
-import { GroupsSheet } from '../groups/groups_sheet';
+import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
 import FlipMove from 'react-flip-move';
 import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
@@ -224,6 +224,7 @@ export function BaseCreatePostSheet({
 
   // return <></>;
 
+  const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
   return (
     <>
       {button?.(() => setOpen(!open)) ??
@@ -402,7 +403,18 @@ export function BaseCreatePostSheet({
                           >
                             {visibility != Visibility.PRIVATE
                               ? <XStack w='100%' mb='$2'>
+                                <GroupsSheetButton
+                                  open={groupsSheetOpen}
+                                  setOpen={setGroupsSheetOpen}
+                                  groupNamePrefix='Share to '
+                                  noGroupSelectedText={publicVisibility(visibility)
+                                    ? 'Share Everywhere' : 'Share To A Group'}
+                                  selectedGroup={group}
+                                  onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                                />
                                 <GroupsSheet
+                                  open={groupsSheetOpen}
+                                  setOpen={setGroupsSheetOpen}
                                   groupNamePrefix='Share to '
                                   noGroupSelectedText={publicVisibility(visibility)
                                     ? 'Share Everywhere' : 'Share To A Group'}

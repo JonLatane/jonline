@@ -1,9 +1,9 @@
 import { useAppSelector, useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
-import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, loadUser, markGroupVisit, serverID, useRootSelector, useServerTheme } from "app/store";
+import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, loadUser, markGroupVisit, parseFederatedId, serverID, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Paragraph, Spinner, Text, XStack, YStack, useTheme } from '@jonline/ui';
+import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
 
 
 import { themedButtonBackground } from "app/utils/themed_button_background";
@@ -16,7 +16,6 @@ import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/cont
 
 interface Props {
   post: FederatedPost;
-  createViewHref?: (group: Group) => string;
   isVisible?: boolean;
 }
 
@@ -31,28 +30,34 @@ export function useMostRecentGroup(groups: FederatedGroup[]) {
   return groups[0];
 }
 
-export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisible = true }) => {
+export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { server } = accountOrServer;
   const { navColor, navTextColor, primaryAnchorColor } = getServerTheme(server, useTheme());
   const title = `Share ${post.context == PostContext.EVENT ? 'Event' : 'Post'}`;
-  const selectedGroup = useGroupContext();
+  const { selectedGroup, sharingPostId, setSharingPostId } = useGroupContext();
   const [loading, setLoading] = useState(false);
   const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);
   const groupPostDataLoadFailed = useAppSelector(state => state.groups.failedPostIdGroupPosts.includes(federatedId(post)));
   // console.log('groupPostData', groupPostData);
-  const knownGroupIds = useAppSelector(state => state.groups.ids);
+  // const knownGroupIds = useAppSelector(state => state.groups.ids);
 
   // const maxErrors = 1;
   // const [errorCount, setErrorCount] = useState(0);
+  const isVisibleDebounced = useDebounceValue(isVisible, 1500);
+  const [hasBeenVisible, setHasBeenVisible] = useState(isVisibleDebounced);
+  useEffect(
+    () => setHasBeenVisible(isVisibleDebounced || hasBeenVisible),
+    [isVisibleDebounced]
+  );
   useEffect(() => {
     // console.log('errorCount', errorCount);
-    if (isVisible && !groupPostData && !loading && !groupPostDataLoadFailed) {
+    if (hasBeenVisible && !groupPostData && !loading && !groupPostDataLoadFailed) {
       setLoading(true);
       dispatch(loadPostGroupPosts({ ...accountOrServer, postId: post.id }))
         .then(() => setLoading(false));
     }
-  }, [post, isVisible, loading, groupPostDataLoadFailed]);
+  }, [federatedId(post), hasBeenVisible, sharingPostId, loading, groupPostDataLoadFailed]);
 
   const [loadingGroups, setLoadingGroups] = useState([] as string[]);
 
@@ -67,7 +72,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     : undefined);
   const otherGroupCount = groupPostData
     ? Math.max(0,
-      groupPostData.filter(g => knownGroupIds.includes(g.groupId)).length - (sharedToSelectedGroup ? 1 : 0))
+      groupPostData/*.filter(g => knownGroupIds.includes(g.groupId))*/.length - (sharedToSelectedGroup ? 1 : 0))
     : undefined;
   // return <></>;
 
@@ -78,7 +83,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     {!selectedGroup && !singleSharedGroup && otherGroupCount
       ?
       <Text my='auto' fontSize={'$1'} fontFamily='$body'>
-        Shared to {otherGroupCount} group{otherGroupCount > 1 ? 's' : undefined}.
+        Shared to {otherGroupCount} group{(otherGroupCount ?? 0) !== 1 ? 's' : undefined}.
       </Text>
       : undefined}
     <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
@@ -89,7 +94,10 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
     <XStack>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
-        : <GroupsSheet
+        : <Button size='$2' my='$2' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}>
+          Share
+        </Button>
+        /*<GroupsSheet
           title={title}
           itemTitle={post.title}
           selectedGroup={selectedGroup ?? singleSharedGroup}
@@ -111,7 +119,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, createViewHref, isVisi
           // delayRenderingSheet
           // hideAdditionalGroups={accountOrServer.account === undefined}
           hideLeaveButtons
-        />
+        />*/
       }
       {selectedGroup && otherGroupCount && sharedToSelectedGroup === false
         ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>
@@ -136,10 +144,10 @@ interface GroupPostChromeProps {
   group: FederatedGroup,
   groupPost: GroupPost | undefined;
   post: FederatedPost;
-  createViewHref?: (group: Group) => string;
+  // createViewHref?: (group: Group) => string;
 }
 
-export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, createViewHref, }) => {
+export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, }) => {
   const { server } = useFederatedAccountOrServer(group);
   const currentServer = useCurrentServer();
   const isPrimaryServer = server?.host === currentServer?.host;
@@ -163,21 +171,33 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
   const { dispatch, accountOrServer } = useCredentialDispatch();
-  const { navColor, navTextColor, primaryAnchorColor } = getServerTheme(server, useTheme());
+  const { navColor, navTextColor, primaryAnchorColor, textColor: themeTextColor } = getServerTheme(server, useTheme());
 
   const canShare = !shared && hasPermission(group.currentUserMembership, Permission.CREATE_POSTS);
   const canUnshare = shared && (groupPost.userId === accountOrServer.account?.user?.id || hasAdminPermission(accountOrServer.account?.user) || hasAdminPermission(group.currentUserMembership));
   const [loadingGroup, setLoadingGroup] = useState(false);
 
-  const detailsPostId = !isPrimaryServer
-    ? federateId(post.id, accountOrServer.server)
-    : post.id;
   const detailsGroupShortname = !isPrimaryServer
     ? federateId(group.shortname, accountOrServer.server)
     : group.shortname;
+
+  const detailsPostId = !isPrimaryServer
+    ? federateId(post.id, accountOrServer.server)
+    : post.id;
+
+  const detailsEventInstanceId = useAppSelector(state => {
+    const instanceId = state.events.postInstances[federatedId(post)];
+    post.context === PostContext.EVENT_INSTANCE && instanceId
+      ? !isPrimaryServer
+        ? instanceId
+        : parseFederatedId(instanceId)?.id
+      : undefined
+  });
+
   const viewLink = useLink({
-    href: createViewHref?.(group)
-      ?? `/g/${detailsGroupShortname}/p/${detailsPostId}`
+    href: post.context === PostContext.EVENT_INSTANCE
+      ? `/g/${detailsGroupShortname}/e/${detailsEventInstanceId}`
+      : `/g/${detailsGroupShortname}/p/${detailsPostId}`
   });
 
   // const [loadingGroups, setLoadingGroups] = useState([] as string[]);
@@ -195,7 +215,9 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     setLoadingGroup(true);
   }
   const selected = groupPost?.groupId === group.id;
-  const textColor = selected ? navTextColor : undefined;
+  const textColor = //selected ? navTextColor : 
+    themeTextColor;
+  // debugger;
   return <YStack mx='auto' w='100%'>
     <XStack gap='$1' my='$2' px='$2' w='100%' flexWrap="wrap">
       <XStack f={1}>

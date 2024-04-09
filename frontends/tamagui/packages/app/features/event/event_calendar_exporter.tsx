@@ -32,17 +32,17 @@ export const EventCalendarExporter: React.FC<Props> = ({
   // const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer;
   const primaryInstanceIdString = instance.id;
-  const groupContext = useGroupContext();
+  const { selectedGroup } = useGroupContext();
 
   const detailsLinkId = showServerInfo
     ? federateId(primaryInstanceIdString, accountOrServer.server)
     : primaryInstanceIdString;
-  const groupLinkId = groupContext ?
+  const groupLinkId = selectedGroup ?
     (showServerInfo
-      ? federateId(groupContext.shortname, accountOrServer.server)
-      : groupContext.shortname)
+      ? federateId(selectedGroup.shortname, accountOrServer.server)
+      : selectedGroup.shortname)
     : undefined;
-  const eventLinkPath = groupContext
+  const eventLinkPath = selectedGroup
     ? `/g/${groupLinkId}/e/${detailsLinkId}`
     : `/event/${detailsLinkId}`;
 

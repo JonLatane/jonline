@@ -953,8 +953,7 @@ export const EventCard: React.FC<Props> = ({
                             <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
                               <GroupPostManager
                                 post={eventPost}
-                                isVisible={isVisible}
-                                createViewHref={createGroupEventViewHref} />
+                                isVisible={isVisible} />
                             </XStack>
                             {/* : undefined} */}
                           </XStack>

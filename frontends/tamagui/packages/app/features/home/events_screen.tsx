@@ -73,7 +73,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     : moment(queryEndsAfter).unix() === 0 && querySearch === undefined
       ? 'all'
       : 'filtered';
-  console.log('displayMode', displayMode, moment(queryEndsAfter).unix())
+  // console.log('displayMode', displayMode, moment(queryEndsAfter).unix())
   const setDisplayMode = (mode: EventDisplayMode) => {
     switch (mode) {
       case 'upcoming':
@@ -484,8 +484,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   {/* <PaginationIndicator {...pagination} /> */}
                   {/* </YStack> */}
                 </div>,
-                <div key='pages-bottom' id='pages-top'>
-                  <PageChooser {...pagination} />
+                <div key='pages-bottom' id='pages-bottom'>
+                  <PageChooser {...pagination} pageTopId='pages-top' />
                 </div>,
               ]
               : [
@@ -512,7 +512,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   </div>
                 }),
 
-                <div key='pagedown' style={{ width: '100%', margin: 'auto' }}>
+                <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
                   <PageChooser {...pagination} pageTopId='pages-top' />
                 </div>
               ]}

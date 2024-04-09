@@ -30,6 +30,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
 
   const pendingStarChange = useDebounceValue(starred, 1500);
   const [firstStarred, setFirstStarred] = React.useState(starred);
+  useEffect(() => setFirstStarred(starred), [federatedId(post)]);
   useEffect(() => {
     if (!accountOrServer.server) return;
     if (firstStarred === starred) return;

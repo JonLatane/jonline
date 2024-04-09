@@ -70,7 +70,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     if (!eventPagesOnHome && eventPagination.page > 0) {
       eventPagination.setPage(0);
     }
-  }, [eventPagesOnHome, eventPagination.page])
+  }, [eventPagesOnHome])
   const paginatedEvents = eventPagination.results;
 
   function onHomePressed() {
@@ -194,9 +194,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           : undefined}
 
         <div id='latest-posts-header' key='latest-posts-header' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-          <XStack ai='center' w='100%'>
+          <XStack ai='center' w='100%' overflow='hidden'>
             <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
-            <PageChooser {...postPagination} width='auto' />
+            {/* <XStack f={1}> */}
+              <PageChooser {...postPagination} width='auto' maxWidth='67%' />
+            {/* </XStack> */}
           </XStack>
         </div>
         {/* {postPagination.pageCount > 1 || true

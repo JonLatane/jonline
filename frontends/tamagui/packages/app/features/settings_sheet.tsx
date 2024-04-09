@@ -170,7 +170,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading size='$5' mt='$3'>Home Screen</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Paginate Events on Home'
-                  description='On the Home/Latest Screen (and Group Home/Latest screens), show pagination controls for bth Events and Posts.'
+                  description='On the Home/Latest Screen (and Group Home/Latest screens), show pagination controls for both Events and Posts.'
                   value={app.eventPagesOnHome} setter={setEventPagesOnHome} autoDispatch />
                 {/* <ToggleRow name='Blur Backgrounds'
                   disabled={!app.imagePostBackgrounds}
@@ -180,12 +180,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               </YStack>
               <Heading size='$5' mt='$3'>Post/Event/User Cards</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <ToggleRow name='Enable Backround Images'
-                  description='Show background images on Posts, Events, and People. Memory intensive depending on browser and device; may lead to crashes. Runs fine on my M1 Max MacBook Pro, crashes my iPhone 12 Pro.'
+                <ToggleRow name='Enable Background Images'
+                  description='Show background images on Posts, Events, and People. Turning this off may improve performance on much older devices.'
                   value={app.imagePostBackgrounds} setter={setImagePostBackgrounds} autoDispatch />
                 <ToggleRow name='Blur Backgrounds'
                   disabled={!app.imagePostBackgrounds}
-                  description='Blurred background images. Even more memory and CPU intensive!'
+                  description='Blurred background images. Turning this off may improve performance on older devices.'
                   value={app.fancyPostBackgrounds} setter={setFancyPostBackgrounds} autoDispatch />
 
               </YStack>
@@ -375,7 +375,7 @@ export function CheckboxWithLabel({
             {label}
           </Paragraph>
           {description
-            ? <Paragraph size='$2' o={0.5}>
+            ? <Paragraph size='$2' o={checkboxProps.checked ? 0.7 : 0.25}>
               {description}
             </Paragraph>
             : undefined}

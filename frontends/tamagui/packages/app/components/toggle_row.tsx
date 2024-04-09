@@ -22,7 +22,7 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
           {name}
         </Paragraph>
         {description
-          ? <Paragraph lineHeight='$1' size='$1' o={value ? 1 : 0.5}>
+          ? <Paragraph lineHeight='$1' size='$1' o={value ? 0.7 : 0.25}>
             {description}
           </Paragraph>
           : undefined}

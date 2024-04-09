@@ -8,12 +8,13 @@ import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
-import { GroupsSheet } from "../groups/groups_sheet";
+import { GroupsSheet, GroupsSheetButton } from "../groups/groups_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
 import { StarredPosts } from "./starred_posts";
+import { GroupDetailsSheet } from "../groups/group_details_sheet";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -89,6 +90,9 @@ export function TabsNavigation({
   const navColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.navigation;
   const navColor = `#${(navColorInt)?.toString(16).slice(-6) || '424242'}`;
 
+  const [sharingPostId, setSharingPostId] = useState<string | undefined>(undefined);
+  const [infoGroupId, setInfoGroupId] = useState<string | undefined>(undefined);
+  const groupContext = { selectedGroup, sharingPostId, setSharingPostId, infoGroupId, setInfoGroupId };
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
   const { darkMode: systemDark, transparentBackgroundColor } = useServerTheme();
@@ -119,11 +123,14 @@ export function TabsNavigation({
 
   const measuredHomeButtonWidth = document.querySelector('#home-button')?.clientWidth ?? 0;
   const measuredHomeButtonHeight = document.querySelector('#home-button')?.clientHeight ?? 0;
+
+  const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
+
   return <Theme inverse={invert}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 
-    <GroupContextProvider value={selectedGroup}>
+    <GroupContextProvider value={groupContext}>
 
       <YStack jc="center" ac='center' ai="center"
         w='100%'
@@ -183,9 +190,19 @@ export function TabsNavigation({
               {showServerInfo
                 ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                 : undefined}
+              <GroupsSheet key='main' isPrimaryNavigation
+                open={groupsSheetOpen}
+                setOpen={setGroupsSheetOpen}
+                selectedGroup={selectedGroup}
+                groupPageForwarder={groupPageForwarder}
+                primaryEntity={primaryEntity} />
+
+              <GroupDetailsSheet />
               {!scrollGroupsSheet
                 ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
-                  <GroupsSheet key='main'
+                  <GroupsSheetButton key='main' isPrimaryNavigation
+                    open={groupsSheetOpen}
+                    setOpen={setGroupsSheetOpen}
                     selectedGroup={selectedGroup}
                     groupPageForwarder={groupPageForwarder}
                     primaryEntity={primaryEntity} />
@@ -199,7 +216,9 @@ export function TabsNavigation({
                     : <>
                       {/* <XStack w={1} /> */}
                       <XStack ml='$1' my='auto' className='main-groups-button'>
-                        <GroupsSheet key='main'
+                        <GroupsSheetButton key='main' isPrimaryNavigation
+                          open={groupsSheetOpen}
+                          setOpen={setGroupsSheetOpen}
                           selectedGroup={selectedGroup}
                           groupPageForwarder={groupPageForwarder}
                           primaryEntity={primaryEntity} />

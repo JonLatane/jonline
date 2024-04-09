@@ -8,6 +8,7 @@ import FlipMove from 'react-flip-move';
 
 export const PageChooser: React.FC<Pagination<any> & {
   width?: string | number;
+  maxWidth?: string | number;
   height?: string | number;
   pageTopId?: string;
 }> = ({
@@ -18,6 +19,8 @@ export const PageChooser: React.FC<Pagination<any> & {
   hasNextPage = true,
   loadNextPage,
   width = '100%',
+
+  maxWidth = undefined,
   height = undefined,
   pageTopId
 }) => {
@@ -64,7 +67,7 @@ export const PageChooser: React.FC<Pagination<any> & {
       ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
       : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
-    return <XStack ref={ref} w={width} h={height} ai='center'>
+    return <XStack ref={ref} w={width} h={height} maxWidth={maxWidth} ai='center'>
       <ScrollView f={1} horizontal>
         <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
           {pageCount > 1 || page > 0
@@ -78,8 +81,8 @@ export const PageChooser: React.FC<Pagination<any> & {
                   // onSetPage?.();
                   if (pageTopId) {
                     // setTimeout(() => {
-                    const pageTop = document.getElementById(pageTopId);
-                    pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+                      const pageTop = document.getElementById(pageTopId);
+                      pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
                     // }, 300);
                   }
                 }}

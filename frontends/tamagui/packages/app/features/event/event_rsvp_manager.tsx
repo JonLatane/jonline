@@ -320,16 +320,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     .filter(a => !yourAttendances.some(b => b.id === a.id));
 
   const mainButtonHeight = '$4';
-  const groupContext = useGroupContext();
+  const { selectedGroup } = useGroupContext();
 
   const linkToDetailsPageRsvps = isPreview && !browseRsvpsFromPreviews;
-  const linkInstanceId = isPrimaryServer 
-  ? instance.id 
-  : federateId(instance.id, server);
+  const linkInstanceId = isPrimaryServer
+    ? instance.id
+    : federateId(instance.id, server);
   const linkGroupShortname = isPrimaryServer
-    ? groupContext?.shortname
-    : federateId(groupContext?.shortname ?? '', server);
-  const rsvpDetailsBaseLink = groupContext
+    ? selectedGroup?.shortname
+    : federateId(selectedGroup?.shortname ?? '', server);
+  const rsvpDetailsBaseLink = selectedGroup
     ? `/g/${linkGroupShortname}/e/${linkInstanceId}?section=rsvp`
     : `/event/${linkInstanceId}?section=rsvp`;
   const rsvpDetailsLinkWithToken = currentAnonRsvp

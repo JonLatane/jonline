@@ -79,8 +79,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   const shrinkServerInfo = isPreview && (!mediaQuery.gtXxxs || forceShrinkPreview);
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
 
-  const groupContext = useGroupContext();
-  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === groupContext?.serverHost;
+  const { selectedGroup } = useGroupContext();
+  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === selectedGroup?.serverHost;
 
   const theme = useTheme();
   const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
@@ -167,16 +167,16 @@ export const PostCard: React.FC<PostCardProps> = ({
   const detailsLinkId = !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
     : post.id;
-  const detailsGroupId = groupContext
+  const detailsGroupId = selectedGroup
     ? (!isGroupPrimaryServer
-      ? federateId(groupContext.shortname, accountOrServer.server)
-      : groupContext.shortname)
+      ? federateId(selectedGroup.shortname, accountOrServer.server)
+      : selectedGroup.shortname)
     : undefined;
   const onPressDetails = onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
     : undefined;
   const detailsPostLink = useLink?.({
-    href: groupContext
+    href: selectedGroup
       ? `/g/${detailsGroupId || 'missing-id'}/p/${detailsLinkId || 'missing-id'}`
       : `/post/${detailsLinkId || 'missing-id'}`,
   }) ?? {};
@@ -454,7 +454,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                               ...post,
                               media,
                               embedLink
-                            }, isPreview, groupContext, isVisible
+                            }, isPreview, groupContext: selectedGroup, isVisible
                           }} />}
                       </YStack>
                       {isPreview
@@ -502,7 +502,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                               label='Post Visibility'
                               visibility={visibility}
                               onChange={setEditedVisibility}
-                              visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'post')}
+                              visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server, 'post')}
                               readOnly={!editing || previewingEdits}
                             />
                           </XStack>}

@@ -14,6 +14,7 @@ import { } from '../post/post_card';
 import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
 import { groupVisibilityDescription } from './create_group_sheet';
 import { GroupJoinLeaveButton } from './group_buttons';
+import { useGroupContext } from 'app/contexts';
 
 
 export const groupUserPermissions = [
@@ -41,15 +42,16 @@ export const groupUserPermissions = [
 ];
 
 export type GroupDetailsSheetProps = {
-  selectedGroup?: FederatedGroup;
-  infoGroupId?: string;
-  infoOpen: boolean;
-  setInfoOpen: (infoOpen: boolean) => void;
+  // selectedGroup?: FederatedGroup;
+  // infoGroupId?: string;
+  // infoOpen: boolean;
+  // setInfoOpen: (infoOpen: boolean) => void;
   hideLeaveButtons?: boolean;
 }
 
 const { useParam, useUpdateParams } = createParam<{ shortname: string | undefined }>();
-export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInfoOpen, hideLeaveButtons }: GroupDetailsSheetProps) {
+export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) {
+  const {infoGroupId, setInfoGroupId, selectedGroup} = useGroupContext();
   const infoGroup = useRootSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
   // debugger;
@@ -80,7 +82,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   async function doDeleteGroup() {
     dispatch(deleteGroup({ ...accountOrServer, ...(infoRenderingGroup!) })).then((action) => {
       setDeleted(true);
-      setInfoOpen(false);
+      setInfoGroupId(undefined);
       setDeleting(false);
       // actionFailed
       return action;
@@ -216,8 +218,8 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
   return <EditingContextProvider value={editingContext}>
     <Sheet
       modal
-      open={infoOpen}
-      onOpenChange={setInfoOpen}
+      open={!!infoGroupId}
+      onOpenChange={(v) => v ? undefined : setInfoGroupId(undefined)}
       snapPoints={[81]}
       position={position}
       onPositionChange={setPosition}
@@ -250,7 +252,7 @@ export function GroupDetailsSheet({ infoGroupId, selectedGroup, infoOpen, setInf
             mb='$3'
             circular
             icon={ChevronDown}
-            onPress={() => setInfoOpen(false)} />
+            onPress={() => setInfoGroupId(undefined)} />
           <XStack f={1} />
 
           {showServerInfo
