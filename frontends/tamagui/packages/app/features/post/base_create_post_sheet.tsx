@@ -251,7 +251,7 @@ export function BaseCreatePostSheet({
           </Tooltip.Content>
         </Tooltip>
       }
-      {hasOpened //true && (open || renderSheet)
+      {true //true && (open || renderSheet)
         ? <Sheet
           modal
           open={open}
@@ -260,6 +260,7 @@ export function BaseCreatePostSheet({
           snapPoints={[95]} dismissOnSnapToBottom
           position={position}
           onPositionChange={setPosition}
+          zIndex={100000}
         // dismissOnSnapToBottom
         >
           <Sheet.Overlay />
@@ -402,7 +403,7 @@ export function BaseCreatePostSheet({
                             animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
                           >
                             {visibility != Visibility.PRIVATE
-                              ? <XStack w='100%' mb='$2'>
+                              ? <YStack w='100%' mb='$2' ai='center'>
                                 <GroupsSheetButton
                                   open={groupsSheetOpen}
                                   setOpen={setGroupsSheetOpen}
@@ -421,7 +422,7 @@ export function BaseCreatePostSheet({
                                   selectedGroup={group}
                                   onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
                                 />
-                              </XStack>
+                              </YStack>
                               : undefined}
                             <VisibilityPicker
                               label='Post Visibility'
