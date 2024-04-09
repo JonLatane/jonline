@@ -318,15 +318,17 @@ export function StarredPosts({ }: StarredPostsProps) {
                               </FlipMove>
                             </Tooltip.Trigger>
                             <Tooltip.Content>
-                              <Paragraph size='$1' >
-                                Starred Posts/Events are stored only in your current browser.
-                              </Paragraph>
-                              <Paragraph size='$1' >
-                                The are never associated with your profile or any personal information.
-                              </Paragraph>
-                              <Paragraph size='$1' >
-                                Server star counts are anonymous.
-                              </Paragraph>
+                              <YStack ai='flex-start'>
+                                <Paragraph size='$1' >
+                                  Starred Posts/Events are stored only in your current browser.
+                                </Paragraph>
+                                <Paragraph size='$1' >
+                                  They are <i>never</i> associated with any profile or any personal identifiable information (PII), even in server logs.
+                                </Paragraph>
+                                <Paragraph size='$1' >
+                                  Don't take Star Counts seriously. They are anonymous tallies, easily prone to manipulation, and don't affect who sees anything.
+                                </Paragraph>
+                              </YStack>
                             </Tooltip.Content>
                           </Tooltip>
                         </div>}

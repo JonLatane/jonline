@@ -83,6 +83,16 @@ macro_rules! unauthenticated_rpc {
     }};
 }
 
+macro_rules! unauthenticated_unlogged_rpc {
+    ($self: expr, $rpc:expr, $request:expr) => {{
+        let mut conn = get_connection(&$self.pool)?;
+        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok();
+        let inner = $request.into_inner();
+        let result = $rpc(inner, &user.as_ref(), &mut conn);
+        result.map(Response::new)
+    }};
+}
+
 #[tonic::async_trait]
 impl Jonline for JonlineService {
     async fn get_service_version(
@@ -231,11 +241,11 @@ impl Jonline for JonlineService {
     }
 
     async fn star_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
-        unauthenticated_rpc!(self, rpcs::star_post, request)
+        unauthenticated_unlogged_rpc!(self, rpcs::star_post, request)
     }
     
     async fn unstar_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
-        unauthenticated_rpc!(self, rpcs::unstar_post, request)
+        unauthenticated_unlogged_rpc!(self, rpcs::unstar_post, request)
     }
 
     async fn create_group_post(
