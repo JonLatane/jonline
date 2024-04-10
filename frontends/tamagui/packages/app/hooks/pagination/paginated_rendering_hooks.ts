@@ -15,7 +15,7 @@ export interface Pagination<T extends HasIdFromServer> {
 }
 
 const { useParam, useUpdateParams } = createParam<{ page: string | undefined }>()
-export function usePageParam() {
+export function usePageParam(): [number, (page: number) => void] {
   const updateParams = useUpdateParams();
 
   const [pageParam] = useParam('page');
@@ -36,7 +36,7 @@ export function usePageParam() {
 }
 
 const { useParam: _useEventPageParam, useUpdateParams: useUpdateEventPageParams } = createParam<{ eventPage: string | undefined }>()
-export function useEventPageParam() {
+export function useEventPageParam(): [number, (page: number) => void] {
   const updateParams = useUpdateEventPageParams();
 
   const [pageParam] = _useEventPageParam('eventPage');
