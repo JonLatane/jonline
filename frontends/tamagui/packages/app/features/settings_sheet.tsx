@@ -28,8 +28,12 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const accountCount = useAppSelector(state => selectAccountTotal(state.accounts));
   const serverCount = useAppSelector(state => selectServerTotal(state.servers));
 
-  const currentServerMatchesLocationHostname = useAppSelector(state => state.servers.currentServerId
-    && serverIDHost(state.servers.currentServerId) === location.hostname);
+  const currentServerIDHost = useAppSelector(state =>
+    state.servers.currentServerId
+      ? serverIDHost(state.servers.currentServerId)
+      : undefined
+  );
+  const currentServerMatchesLocationHostname = currentServerIDHost === location.hostname;
   const currentHostServer = useAppSelector(state => state.servers.entities[
     state.servers.ids.find(sid => serverIDHost(sid as string) === location.hostname) ?? 'no-server-has-this-id'
   ]);
@@ -276,7 +280,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$5' mt='$5'>Testing</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <ToggleRow name='Allow Server Changing'
+                <ToggleRow name='Server Changing'
                   description={
                     <>
                       {!currentHostServer ?
@@ -286,7 +290,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                         : undefined}
                       {!currentServerMatchesLocationHostname ?
                         <Paragraph size='$1'>
-                          The server at {location.hostname} will be selected if server changing is disabled.
+                          The server at {location.hostname} will be selected if Server Changing is disabled (currently, {currentServerIDHost} is selected).
                         </Paragraph>
                         : undefined}
                       <Paragraph size='$1' o={app.allowServerSelection ? 0.7 : 0.3}>
