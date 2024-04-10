@@ -419,6 +419,7 @@ export function BaseCreatePostSheet({
                                   groupNamePrefix='Share to '
                                   noGroupSelectedText={publicVisibility(visibility)
                                     ? 'Share Everywhere' : 'Share To A Group'}
+                                  serverHostFilter={server?.host}
                                   selectedGroup={group}
                                   onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
                                 />

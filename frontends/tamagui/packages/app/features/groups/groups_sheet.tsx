@@ -37,6 +37,7 @@ export type GroupsSheetProps = {
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
+  serverHostFilter?: string;
   primaryEntity?: FederatedEntity<any>;
   isPrimaryNavigation?: boolean;
 }
@@ -58,7 +59,8 @@ export function GroupsSheet({
   hideAdditionalGroups,
   hideLeaveButtons,
   primaryEntity,
-  isPrimaryNavigation
+  isPrimaryNavigation,
+  serverHostFilter: tagServerHostFilter
 }: GroupsSheetProps) {
   // const [open, setOpen] = useState(false);
   const openDebounced = useDebounceValue(open, 300);
@@ -108,7 +110,7 @@ export function GroupsSheet({
         topGroupIds: sharingGroupPostData?.map(gp => federateId(gp.groupId, sharingPostServerHost))
       }
       : {
-        serverHostFilter: undefined,
+        serverHostFilter: tagServerHostFilter,
         extraListItemChrome: undefined,
         topGroupIds: undefined
       };
