@@ -239,12 +239,21 @@ webui!(
     group_home,
     "/g/<_>",
     "g/[shortname].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("Group Home/Latest Page - {}", server_name)),
+            title: Some(format!("{}: Latest - {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -254,12 +263,21 @@ webui!(
     group_posts,
     "/g/<_>/posts",
     "g/[shortname]/posts.html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("Group Posts Page - {}", server_name)),
+            title: Some(format!("{}: Posts - {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -269,27 +287,48 @@ webui!(
     group_post,
     "/g/<_>/p/<_..>",
     "g/[shortname]/p/[postId].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
-        Some(JonlineSummary {
-            title: Some(format!("Group Post Details - {}", server_name)),
-            description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
-        })
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+
+        let post = match federated_path_component(&path, 4) {
+            Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
+            Some(FederatedId::Federated(_,_)) => None,
+            None => return None,
+        };
+
+        post_summary("Post".to_string(), post, server_name, server_logo, Some(group_name))
     }
 );
 webui!(
     group_events,
     "/g/<_>/events",
     "g/[shortname]/events.html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("Group Events Page - {}", server_name)),
+            title: Some(format!("{}: Events - {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -299,27 +338,48 @@ webui!(
     group_event,
     "/g/<_>/e/<_>",
     "g/[shortname]/e/[instanceId].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
-        Some(JonlineSummary {
-            title: Some(format!("Group Event Details - {}", server_name)),
-            description: None,
-            image: server_logo.or(Some("/favicon.ico".to_string())),
-        })
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+
+        let event = match federated_path_component(&path, 4) {
+            Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
+            Some(FederatedId::Federated(_,_)) => None,
+            None => return None,
+        };
+        let post = event.map(|e| e.post).flatten();
+        post_summary("Event".to_string(), post, server_name, server_logo, Some(group_name))
     }
 );
 webui!(
     group_members,
     "/g/<_>/members",
     "g/[shortname]/members.html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("Group Members - {}", server_name)),
+            title: Some(format!("{}: Members - {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -329,12 +389,21 @@ webui!(
     group_member,
     "/g/<_>/m/<_>",
     "g/[shortname]/m/[username].html",
-    |_connection: PgPooledConnection,
+    |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     path: Path| {
+        let shortname = path_component(&path, 2).unwrap();
+        let group_name = rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname),
+                ..Default::default()
+            },
+            &None,
+            &mut connection,
+        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("Group Member Details - {}", server_name)),
+            title: Some(format!("{} - Member Details - {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -347,19 +416,23 @@ fn post_summary(
     post: Option<Post>,
     server_name: String,
     server_logo: Option<String>,
-    _group_name: Option<String>,
+    group_name: Option<String>,
 ) -> Option<JonlineSummary> {
     let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
+    let server_and_group_name = match group_name {
+        Some(group_name) => format!("{} - {}", group_name, server_name),
+        None => server_name,
+    };
     let (title, description, image) = match post {
         Some(post) => {
             let title = post.title.map_or(
-                format!("{} Details - {}", entity_type, server_name),
+                format!("{} Details - {}", entity_type, server_and_group_name),
                 |title| {
                     format!(
                         "{} - {} Details - {}",
                         title.clone(),
                         entity_type,
-                        server_name
+                        server_and_group_name
                     )
                 },
             );
@@ -371,7 +444,7 @@ fn post_summary(
             (title, post.content.clone(), image)
         }
         None => (
-            format!("{} Details - {}", entity_type, server_name),
+            format!("{} Details - {}", entity_type, server_and_group_name),
             None,
             basic_logo,
         ),

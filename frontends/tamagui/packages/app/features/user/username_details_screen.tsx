@@ -1,23 +1,21 @@
-import { Moderation, Permission, PostContext, User, Visibility } from '@jonline/api';
+import { Moderation, Permission, PostContext, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useCurrentAccount, useCredentialDispatch, useFederatedDispatch, usePaginatedRendering, useEventPageParam } from 'app/hooks';
-import { AccountOrServer, FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { useAppSelector } from '../../hooks/store_hooks';
+import { EventCard } from '../event/event_card';
+import { PageChooser } from '../home/page_chooser';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { EventCard } from '../event/event_card';
-import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
-import { ResetPassword } from '../../store/modules/user_actions';
-import { PageChooser } from '../home/page_chooser';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
@@ -117,6 +115,9 @@ export function UsernameDetailsScreen() {
   const postPagination = usePaginatedRendering(allPosts, 7, {
     // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
   });
+  useEffect(() => {
+    postPagination.setPage(0);
+  }, [postContext, user?.id]);
   const paginatedPosts = postPagination.results;
 
   const [loadingEvents, setLoadingUserEvents] = useState(false);
@@ -395,7 +396,7 @@ export function UsernameDetailsScreen() {
                   <div key='posts-pagination'
                     style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
                   >
-                    <PageChooser {...postPagination} width='auto' />
+                    <PageChooser {...postPagination} noAutoScroll width='auto' />
                   </div>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
