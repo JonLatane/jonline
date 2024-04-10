@@ -144,7 +144,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </XStack>
         </div>
         {showEventsOnLatest && allEvents.length > 0 && eventPagesOnHome ?
-          <div key='latest-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
+          <div key='upcoming-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
 
             <PageChooser {...eventPagination} width='auto' />
           </div> : undefined}
@@ -197,7 +197,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           <XStack ai='center' w='100%' overflow='hidden'>
             <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
             {/* <XStack f={1}> */}
-              <PageChooser {...postPagination} width='auto' maxWidth='67%' />
+              <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />
             {/* </XStack> */}
           </XStack>
         </div>

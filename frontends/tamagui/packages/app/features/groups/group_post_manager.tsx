@@ -95,7 +95,9 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
         : <Button size='$2' my='$2' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}>
-          Share
+          {singleSharedGroup?.name
+            ?? (sharedToSelectedGroup ? selectedGroup?.name : undefined)
+            ?? 'Share'}
         </Button>
         /*<GroupsSheet
           title={title}
@@ -148,7 +150,8 @@ interface GroupPostChromeProps {
 }
 
 export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPost, post, }) => {
-  const { server } = useFederatedAccountOrServer(group);
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
+  const { server } = accountOrServer;
   const currentServer = useCurrentServer();
   const isPrimaryServer = server?.host === currentServer?.host;
   const isSameServer = group.serverHost === post.serverHost;
@@ -170,7 +173,6 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     }
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
   const { navColor, navTextColor, primaryAnchorColor, textColor: themeTextColor } = getServerTheme(server, useTheme());
 
   const canShare = !shared && hasPermission(group.currentUserMembership, Permission.CREATE_POSTS);
@@ -214,6 +216,22 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
       .then(() => setLoadingGroup(false));
     setLoadingGroup(true);
   }
+
+  const { selectedGroup } = useGroupContext();
+  const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);
+  const sharedToSelectedGroup = selectedGroup && groupPostData?.some(gp => gp.groupId == selectedGroup?.id);
+  const sharedToSingleGroup = groupPostData?.length == 1;
+  const singleSharedGroupId = sharedToSingleGroup
+    ? groupPostData[0]!.groupId
+    : undefined;
+  const singleSharedGroup = useRootSelector((state: RootState) => singleSharedGroupId
+    ? state.groups.entities[singleSharedGroupId]
+    : undefined);
+  const otherGroupCount = groupPostData
+    ? Math.max(0,
+      groupPostData/*.filter(g => knownGroupIds.includes(g.groupId))*/.length - (sharedToSelectedGroup ? 1 : 0))
+    : undefined;
+
   const selected = groupPost?.groupId === group.id;
   const textColor = //selected ? navTextColor : 
     themeTextColor;

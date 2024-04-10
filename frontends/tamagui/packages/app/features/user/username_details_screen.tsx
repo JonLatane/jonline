@@ -2,7 +2,7 @@ import { Moderation, Permission, PostContext, User, Visibility } from '@jonline/
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useCurrentAccount, useCredentialDispatch, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { useCurrentAccount, useCredentialDispatch, useFederatedDispatch, usePaginatedRendering, useEventPageParam } from 'app/hooks';
 import { AccountOrServer, FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -17,6 +17,7 @@ import { UserCard, useFullAvatarHeight } from './user_card';
 import { EventCard } from '../event/event_card';
 import { PaginationIndicator, PaginationResetIndicator } from '../home/pagination_indicator';
 import { ResetPassword } from '../../store/modules/user_actions';
+import { PageChooser } from '../home/page_chooser';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
@@ -111,6 +112,13 @@ export function UsernameDetailsScreen() {
     }
   }, [userId, userReplyData, loadingUserReplies]);
 
+  const [postContext, setPostContext] = useState(PostContext.POST);
+  const allPosts = postContext === PostContext.POST ? userPosts : userReplies;
+  const postPagination = usePaginatedRendering(allPosts, 7, {
+    // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
+  });
+  const paginatedPosts = postPagination.results;
+
   const [loadingEvents, setLoadingUserEvents] = useState(false);
   const userEventData: FederatedEvent[] | undefined = useRootSelector((state: RootState) => {
     return userId
@@ -133,13 +141,14 @@ export function UsernameDetailsScreen() {
     }
   }, [userId, userEventData, loadingEvents]);
   const allEvents = userEventData ?? [];
-  const eventPagination = usePaginatedRendering(allEvents, 7);
+  const eventPagination = usePaginatedRendering(allEvents, 7, {
+    pageParamHook: useEventPageParam,
+  });
   const paginatedEvents = eventPagination.results;
 
   const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
   const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
 
-  const [postContext, setPostContext] = useState(PostContext.POST);
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const fullAvatarHeight = useFullAvatarHeight();
   function resetFormData() {
@@ -326,7 +335,11 @@ export function UsernameDetailsScreen() {
             </YStack>
 
             <Heading size='$4' ta='center' mt='$2'>Upcoming Events</Heading>
-
+            <div key='upcoming-events-pagination'
+              style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
+            >
+              <PageChooser {...eventPagination} width='auto' />
+            </div>
             <ScrollView horizontal w='100%'>
               <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
@@ -338,7 +351,7 @@ export function UsernameDetailsScreen() {
                     </XStack>
                     : undefined}
                   {allEvents.length == 0 && !loadingEvents
-                    ? <div style={{margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
+                    ? <div style={{ margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
                       <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
                         <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
                         {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
@@ -347,9 +360,9 @@ export function UsernameDetailsScreen() {
                     : undefined}
 
 
-                  <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                  {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationResetIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
-                  </div>
+                  </div> */}
                   {paginatedEvents.map((event) =>
                     <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                       <XStack mx='$1' px='$1' pb='$5'>
@@ -357,9 +370,9 @@ export function UsernameDetailsScreen() {
                       </XStack>
                     </span>)}
 
-                  <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                  {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
-                  </div>
+                  </div> */}
                 </FlipMove>
               </XStack>
             </ScrollView>
@@ -378,22 +391,23 @@ export function UsernameDetailsScreen() {
             <YStack maw={800} w='100%' als='center'>
               <YStack ai='center' w='100%'>
                 <FlipMove style={{ width: '100%' }}>
+
+                  <div key='posts-pagination'
+                    style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
+                  >
+                    <PageChooser {...postPagination} width='auto' />
+                  </div>
                   {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
                     postContext === PostContext.POST && userPosts.length === 0
                       ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
                       : postContext === PostContext.REPLY && userReplies.length === 0
                         ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
                         : undefined}
-                  {postContext === PostContext.POST
-                    ? userPosts.map((post) => {
-                      return <div key={`userpost-${post.id}`} style={{ width: '100%' }}><PostCard post={post} isPreview forceExpandPreview /></div>;
-                      // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                    })
-                    : postContext === PostContext.REPLY ? userReplies.map((post) => {
-                      return <div key={`userpost-${post.id}`}><PostCard post={post} isPreview forceExpandPreview /></div>;
-                      // return <AsyncPostCard key={`userpost-${postId}`} postId={postId} />;
-                    })
-                      : undefined}
+                  {paginatedPosts.map((post) =>
+                    <div key={`userpost-${post.id}`} style={{ width: '100%' }}>
+                      <PostCard post={post} isPreview forceExpandPreview />
+                    </div>
+                  )}
                 </FlipMove>
               </YStack>
               {showScrollPreserver ? <YStack h={100000} /> : undefined}

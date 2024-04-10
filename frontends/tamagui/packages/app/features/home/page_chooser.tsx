@@ -11,6 +11,7 @@ export const PageChooser: React.FC<Pagination<any> & {
   maxWidth?: string | number;
   height?: string | number;
   pageTopId?: string;
+  noAutoScroll?: boolean;
 }> = ({
   page,
   setPage,
@@ -22,7 +23,8 @@ export const PageChooser: React.FC<Pagination<any> & {
 
   maxWidth = undefined,
   height = undefined,
-  pageTopId
+  pageTopId,
+  noAutoScroll = false,
 }) => {
     // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
     const ref = React.createRef<TamaguiElement>();
@@ -33,6 +35,7 @@ export const PageChooser: React.FC<Pagination<any> & {
     useEffect(
       () => {
         if (pageTopId) return;
+        if (noAutoScroll) return;
 
         setTimeout(
           () => document.getElementById(pageButtonId(page))
