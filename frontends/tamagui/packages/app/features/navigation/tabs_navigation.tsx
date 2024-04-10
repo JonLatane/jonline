@@ -115,7 +115,7 @@ export function TabsNavigation({
 
   useEffect(() => {
     if (selectedGroup && currentServer && recentGroupIds[0] != federatedId(selectedGroup)) {
-      dispatch(markGroupVisit({ group: selectedGroup, server: currentServer }));
+      dispatch(markGroupVisit({ group: selectedGroup }));
     }
   }, [selectedGroup?.id]);
 

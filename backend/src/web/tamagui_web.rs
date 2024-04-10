@@ -179,7 +179,7 @@ webui!(
      path: Path| {
         let post = match federated_path_component(&path, 2) {
             Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
-            Some(FederatedId::Federated(_,_)) => None,
+            Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };
 
@@ -196,7 +196,7 @@ webui!(
      path: Path| {
         let event = match federated_path_component(&path, 2) {
             Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
-            Some(FederatedId::Federated(_,_)) => None,
+            Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };
         let post = event.map(|e| e.post).flatten();
@@ -243,15 +243,8 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
+
         Some(JonlineSummary {
             title: Some(format!("{}: Latest - {}", group_name, server_name)),
             description: None,
@@ -267,15 +260,8 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
+
         Some(JonlineSummary {
             title: Some(format!("{}: Posts - {}", group_name, server_name)),
             description: None,
@@ -291,23 +277,21 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
 
         let post = match federated_path_component(&path, 4) {
             Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
-            Some(FederatedId::Federated(_,_)) => None,
+            Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };
 
-        post_summary("Post".to_string(), post, server_name, server_logo, Some(group_name))
+        post_summary(
+            "Post".to_string(),
+            post,
+            server_name,
+            server_logo,
+            Some(group_name),
+        )
     }
 );
 webui!(
@@ -326,7 +310,11 @@ webui!(
             },
             &None,
             &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        )
+        .ok()
+        .map(|r| r.groups.get(0).map(|g| g.name.clone()))
+        .flatten()
+        .unwrap_or("Group".to_string());
         Some(JonlineSummary {
             title: Some(format!("{}: Events - {}", group_name, server_name)),
             description: None,
@@ -334,6 +322,7 @@ webui!(
         })
     }
 );
+
 webui!(
     group_event,
     "/g/<_>/e/<_>",
@@ -342,23 +331,21 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
 
         let event = match federated_path_component(&path, 4) {
             Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
-            Some(FederatedId::Federated(_,_)) => None,
+            Some(FederatedId::Federated(_, _)) => None,
             None => return None,
         };
         let post = event.map(|e| e.post).flatten();
-        post_summary("Event".to_string(), post, server_name, server_logo, Some(group_name))
+        post_summary(
+            "Event".to_string(),
+            post,
+            server_name,
+            server_logo,
+            Some(group_name),
+        )
     }
 );
 webui!(
@@ -369,15 +356,8 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
+
         Some(JonlineSummary {
             title: Some(format!("{}: Members - {}", group_name, server_name)),
             description: None,
@@ -393,15 +373,8 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
-        let group_name = rpcs::get_groups(
-            crate::protos::GetGroupsRequest {
-                group_shortname: Some(shortname),
-                ..Default::default()
-            },
-            &None,
-            &mut connection,
-        ).ok().map(|r| r.groups.get(0).map(|g| g.name.clone())).flatten().unwrap_or("Group".to_string());
+        let group_name = group_name(&path, &mut connection);
+
         Some(JonlineSummary {
             title: Some(format!("{} - Member Details - {}", group_name, server_name)),
             description: None,
@@ -410,6 +383,25 @@ webui!(
     }
 );
 webui!(server, "/server/<_..>", "server/[id].html");
+
+fn group_name(path: &Path, connection: &mut PgPooledConnection) -> String {
+    match federated_path_component(&path, 2) {
+        Some(FederatedId::Local(shortname)) => rpcs::get_groups(
+            crate::protos::GetGroupsRequest {
+                group_shortname: Some(shortname.clone()),
+                ..Default::default()
+            },
+            &None,
+            connection,
+        )
+        .ok()
+        .map(|r| r.groups.get(0).map(|g| g.name.clone()))
+        .flatten()
+        .unwrap_or(shortname.clone()),
+        Some(FederatedId::Federated(ref shortname, _)) => shortname.clone(),
+        None => "Group".to_string(),
+    }
+}
 
 fn post_summary(
     entity_type: String,
@@ -457,10 +449,7 @@ fn post_summary(
     })
 }
 
-fn get_post(
-    post_id: String,
-    connection: &mut PgPooledConnection,
-) -> Option<Post> {
+fn get_post(post_id: String, connection: &mut PgPooledConnection) -> Option<Post> {
     let post = rpcs::get_posts(
         GetPostsRequest {
             post_id: Some(post_id),
@@ -475,10 +464,7 @@ fn get_post(
     post
 }
 
-fn get_event(
-    event_instance_id: String,
-    connection: &mut PgPooledConnection,
-) -> Option<Event> {
+fn get_event(event_instance_id: String, connection: &mut PgPooledConnection) -> Option<Event> {
     let event = rpcs::get_events(
         GetEventsRequest {
             event_instance_id: Some(event_instance_id),
@@ -501,17 +487,18 @@ enum FederatedId {
 fn federated_path_component(path: &Path, index: usize) -> Option<FederatedId> {
     let path_component = path_component(path, index);
     match path_component {
-        Some(path_component) if path_component.split('@').count() == 1 => Some(FederatedId::Local(path_component)),
+        Some(path_component) if path_component.split('@').count() == 1 => {
+            Some(FederatedId::Local(path_component))
+        }
         Some(path_component) => {
             let mut path_components = path_component.split('@');
             let username = path_components.next().unwrap().to_string();
             let domain = path_components.next().unwrap().to_string();
             Some(FederatedId::Federated(username, domain))
-        },
-        _ => None
+        }
+        _ => None,
     }
 }
-
 
 fn path_component(path: &Path, index: usize) -> Option<String> {
     let path_components = path.split('/').collect_vec();

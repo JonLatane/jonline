@@ -65,11 +65,12 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
   const sharedToSelectedGroup = selectedGroup && groupPostData?.some(gp => gp.groupId == selectedGroup?.id);
   const sharedToSingleGroup = groupPostData?.length == 1;
   const singleSharedGroupId = sharedToSingleGroup
-    ? groupPostData[0]!.groupId
+    ? federateId(groupPostData[0]!.groupId, server)
     : undefined;
   const singleSharedGroup = useRootSelector((state: RootState) => singleSharedGroupId
     ? state.groups.entities[singleSharedGroupId]
     : undefined);
+  // console.log('GroupPostManager singleSharedGroup', singleSharedGroupId, singleSharedGroup)
   const otherGroupCount = groupPostData
     ? Math.max(0,
       groupPostData/*.filter(g => knownGroupIds.includes(g.groupId))*/.length - (sharedToSelectedGroup ? 1 : 0))
@@ -207,7 +208,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     dispatch(createGroupPost({ ...accountOrServer, postId: post.id, groupId }))
       .then(() => {
         setLoadingGroup(false);
-        if (server) dispatch(markGroupVisit({ group, server }));
+        if (server) dispatch(markGroupVisit({ group }));
       });
     setLoadingGroup(true);
   }

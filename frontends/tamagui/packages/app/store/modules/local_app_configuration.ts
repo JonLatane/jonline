@@ -5,12 +5,13 @@ import { Platform } from 'react-native';
 import { JonlineServer } from "../types";
 import { Group } from "@jonline/api";
 import { serverID } from './servers_state';
-import { federateId, parseFederatedId } from "../federation";
+import { federatedId, federateId, parseFederatedId } from "../federation";
 import { isSafari } from "@jonline/ui";
 import { store } from "../store";
 // import { Dictionary } from "@fullcalendar/core/internal";
 import { Dictionary } from "@reduxjs/toolkit";
 import { getServerClient } from "../clients";
+import { FederatedGroup } from "./groups_state";
 
 export type DateTimeRenderer = 'custom' | 'native';
 
@@ -147,11 +148,11 @@ export const localAppSlice = createSlice({
     setShowEventsOnLatest: (state, action: PayloadAction<boolean>) => {
       state.showEventsOnLatest = action.payload;
     },
-    markGroupVisit: (state, action: PayloadAction<{ server: JonlineServer, group: Group }>) => {
+    markGroupVisit: (state, action: PayloadAction<{ group: FederatedGroup }>) => {
       if (!state.recentGroups) {
         state.recentGroups = [];
       }
-      const groupId = federateId(action.payload.group.id, action.payload.server);
+      const groupId = federatedId(action.payload.group);
       state.recentGroups = [groupId, ...state.recentGroups.filter((g) => g !== groupId)]
     },
     setInlineFeatureNavigation: (state, action: PayloadAction<boolean | undefined>) => {

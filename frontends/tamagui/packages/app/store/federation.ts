@@ -74,6 +74,16 @@ export function federatedPayload<T extends HasIdFromServer>(action: FederatedAct
 export function federatedId<T extends HasIdFromServer>(entity: FederatedEntity<T>): string {
   return _federateId(entity.id, entity.serverHost);
 }
+/**
+ * Get the server-aware ID of an entity.
+ * @param entity Any ServerEntity
+ * @returns a server-host-specific entity ID, e.g. "jonline.io@@a" or "localhost@@a"
+ */
+export function optFederatedId<T extends HasIdFromServer>(entity: FederatedEntity<T> | undefined): string | undefined {
+  if (!entity) return undefined;
+
+  return _federateId(entity.id, entity.serverHost);
+}
 
 /**
  * Get the server-aware ID of an entity.

@@ -1,8 +1,8 @@
 import { GroupListingType, Permission, PostContext } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme, useDebounceValue } from '@jonline/ui';
 import { AtSign, Boxes, ChevronDown, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useCurrentServer, usePaginatedRendering } from 'app/hooks';
-import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById, parseFederatedId, federateId } from 'app/store';
+import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useCurrentServer, usePaginatedRendering, useComponentKey } from 'app/hooks';
+import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById, parseFederatedId, federateId, optFederatedId } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -66,6 +66,9 @@ export function GroupsSheet({
   // const [open, setOpen] = useState(false);
   const openDebounced = useDebounceValue(open, 300);
   const { selectedGroup: uiSelectedGroup, sharingPostId, setSharingPostId, infoGroupId, setInfoGroupId } = useGroupContext();
+
+  const selectedGroupId = optFederatedId(selectedGroup);
+  const componentKey = useComponentKey('groups-sheet');
   const { sharingPost, sharingGroupPostData } = useAppSelector(
     state => sharingPostId
       ? {
@@ -181,14 +184,14 @@ export function GroupsSheet({
   ];
 
   const recentGroups = recentGroupIds
-    .map(id => allGroups.find(g => g.id === id))
-    .filter(g => g != undefined && g.id !== selectedGroup?.id
-      && !topGroups.some(tg => tg.id == g.id)
-      && matchedGroups.some(mg => mg.id === g.id)) as FederatedGroup[];
+    .map(id => allGroups.find(g => federatedId(g) === id))
+    .filter(g => g != undefined && federatedId(g) !== optFederatedId(selectedGroup)
+      && !topGroups.some(tg => federatedId(tg) == federatedId(g))
+      && matchedGroups.some(mg => federatedId(mg) === federatedId(g))) as FederatedGroup[];
 
   const sortedGroups: FederatedGroup[] = [
     ...matchedGroups
-      .filter(g => g.id !== selectedGroup?.id &&
+      .filter(g => (federatedId(g) !== optFederatedId(selectedGroup)) &&
         (!(topGroupIds || []).includes(federatedId(g))) &&
         (!(recentGroupIds || []).includes(federatedId(g)))),
   ];
@@ -198,90 +201,8 @@ export function GroupsSheet({
   useEffect(() => setPage(0), [allArrangedGroups.length])
   const pagination = usePaginatedRendering(allArrangedGroups, 7, { pageParamHook: () => [page, setPage] });
   const paginatedArrangedGroups = pagination.results;
-  const dataViewList = openDebounced
-    ? [
-      ...topGroups.map((group, index) => {
-        return <div key={`groupButton-${federatedId(group)}`}>
-          <GroupButton
-            group={group}
-            groupPageForwarder={groupPageForwarder}
-            onGroupSelected={onGroupSelected}
-            selected={group.id == selectedGroup?.id}
-            onShowInfo={() => {
-              setInfoGroupId(federatedId(group));
-              // setInfoOpen(true);
-            }}
-            setOpen={setOpen}
-            disabled={disableSelection}
-            hideInfoButton={hideInfoButtons}
-            extraListItemChrome={extraListItemChrome}
-            hideLeaveButton={hideLeaveButtons}
-          />
-        </div>
-      }),
-      ...recentGroups.length > 0
-        ? [
-          <div key='recent-groups'>
-            <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
-          </div>,
-          ...recentGroups.map((group, index) => {
-            return <div key={`groupButton-${federatedId(group)}`}>
-              <GroupButton
-                group={group}
-                groupPageForwarder={groupPageForwarder}
-                onGroupSelected={onGroupSelected}
-                selected={group.id == selectedGroup?.id}
-                onShowInfo={() => {
-                  setInfoGroupId(federatedId(group));
-                  // setInfoOpen(true);
-                }}
-                setOpen={setOpen}
-                disabled={disableSelection}
-                hideInfoButton={hideInfoButtons}
-                extraListItemChrome={extraListItemChrome}
-                hideLeaveButton={hideLeaveButtons}
-              />
-            </div>
-          })
-        ]
-        : [],
-      ...hideAdditionalGroups
-        ? []
-        : sortedGroups.length > 0
-          ? [
-            topGroups.length + recentGroups.length > 0 ?
-              <Heading size='$4' mt='$3' als='center'>More Groups</Heading>
-              : undefined,
-            sortedGroups.map((group, index) => {
-              return <div key={`groupButton-${federatedId(group)}`}>
-                <GroupButton
-                  group={group}
-                  groupPageForwarder={groupPageForwarder}
-                  onGroupSelected={onGroupSelected}
-                  selected={group.id == selectedGroup?.id}
-                  onShowInfo={() => {
-                    setInfoGroupId(federatedId(group));
-                    // setInfoOpen(true);
-                  }}
-                  setOpen={setOpen}
-                  disabled={disableSelection}
-                  hideInfoButton={hideInfoButtons}
-                  extraListItemChrome={extraListItemChrome}
-                  hideLeaveButton={hideLeaveButtons}
-                />
-              </div>
-            })
-          ]
-          : [
-            <div key='noGroups' style={{ width: '100%', display: 'flex' }}>
-              <Heading size='$3' mx='auto' o={0.5}>
-                No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}
-              </Heading>
-            </div>
-          ]
-    ]
-    : undefined;
 
+  const topPaginationId = `${componentKey}-top-pagination`;
   return <Sheet
     modal
     open={open}
@@ -365,35 +286,42 @@ export function GroupsSheet({
 
         {disableSelection || serverHostFilter ? undefined : <PinnedServerSelector show transparent simplified />}
       </YStack>
-      <Sheet.ScrollView p="$4" space>
+      <Sheet.ScrollView px="$4" py='$2'>
         <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
-          <div key='pagination'>
+          <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
             <PageChooser {...pagination} width='auto' maxWidth='100%' />
           </div>
           {openDebounced
             ? [
               ...paginatedArrangedGroups.map((group, index) => {
                 const prevGroup = index > 0 ? paginatedArrangedGroups[index - 1] : undefined;
-                const prevWasTop = prevGroup && topGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
+                const prevWasTop = !prevGroup || topGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
                 const isTop = topGroups.some(tg => federatedId(tg) == federatedId(group));
                 const prevWasRecent = prevGroup && recentGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
                 const isRecent = recentGroups.some(tg => federatedId(tg) == federatedId(group));
+
+                const moreGroupsHeader = index > 0
+                  ? <div key='more-groups'>
+                    <Heading size='$4' mt='$3' als='center'>More Groups</Heading>
+                  </div>
+                  : undefined;
+
                 return [
                   prevWasTop && !isTop
                     ? isRecent
                       ? <div key='recent-groups'>
                         <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
                       </div>
-                      : <div key='more-groups'>
-                        <Heading size='$4' mt='$3' als='center'>More Groups</Heading>
-                      </div>
-                    : undefined,
+                      : moreGroupsHeader
+                    : prevWasRecent && !isRecent
+                      ? moreGroupsHeader
+                      : undefined,
                   <div key={`groupButton-${federatedId(group)}`}>
                     <GroupButton
                       group={group}
                       groupPageForwarder={groupPageForwarder}
                       onGroupSelected={onGroupSelected}
-                      selected={group.id == selectedGroup?.id}
+                      selected={federatedId(group) === optFederatedId(selectedGroup)}
                       onShowInfo={() => {
                         setInfoGroupId(federatedId(group));
                         // setInfoOpen(true);
@@ -469,6 +397,10 @@ export function GroupsSheet({
               //     ]
             ]
             : undefined}
+
+          <div key='pagination-bottom' style={{ marginBottom: 5 }}>
+            <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId} />
+          </div>
         </FlipMove>
       </Sheet.ScrollView>
       {hasPermission(account?.user, Permission.CREATE_GROUPS) &&

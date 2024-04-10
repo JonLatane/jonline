@@ -1,3 +1,4 @@
+import { J } from '@fullcalendar/core/internal-common';
 import { Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
 import { useAppDispatch } from 'app/hooks';
 import React from 'react';
@@ -5,7 +6,7 @@ import React from 'react';
 
 export interface ToggleRowProps {
   name: string;
-  description?: string;
+  description?: string | JSX.Element;
   value: boolean | undefined;
   setter: (value: boolean) => any;
   disabled?: boolean;
@@ -21,11 +22,11 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
         <Paragraph size='$5' my='auto'>
           {name}
         </Paragraph>
-        {description
+        {typeof description === 'string'
           ? <Paragraph lineHeight='$1' size='$1' o={value ? 0.7 : 0.25}>
             {description}
           </Paragraph>
-          : undefined}
+          : description}
       </YStack>
     </Label>
     <Switch name={nameKey} size="$5" margin='auto'

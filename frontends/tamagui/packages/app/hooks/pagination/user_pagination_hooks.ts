@@ -15,15 +15,17 @@ export function useUsersPage(
 
   const [loadingUsers, setLoadingUsers] = useState(false);
   function reloadUsers() {
-    Promise.all(servers.map(pinnedServer =>
-      dispatch(loadUsersPage({ listingType, ...pinnedServer })))).then((results) => {
-        console.log("Loaded users", results);
-        setLoadingUsers(false);
-      });
+    Promise.all(
+      servers.map(pinnedServer =>
+        dispatch(loadUsersPage({ listingType, ...pinnedServer })))
+    ).then((results) => {
+      console.log("Loaded users", results);
+      setLoadingUsers(false);
+    });
   }
 
   const state = useAppSelector(state => state.users);
-  const {users, hadUndefinedServers} = getUsersPage(state, listingType, page, servers);
+  const { users, hadUndefinedServers } = getUsersPage(state, listingType, page, servers);
   useEffect(() => {
     if (listingType === UserListingType.EVERYONE && hadUndefinedServers && !loadingUsers) {
       console.log("Loading users...");

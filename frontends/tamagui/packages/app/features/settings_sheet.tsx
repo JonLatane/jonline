@@ -1,12 +1,13 @@
 import { AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
-import { AlertTriangle, Check, ChevronDown, ChevronLeft, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useComponentKey } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { AlertTriangle, Check, ChevronDown, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
+import { RootState, resetAllData, selectAccountTotal, selectServer, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
 import FlipMove from 'react-flip-move';
+import { selectAllServers, serverIDHost } from 'app/store';
 
 
 export type SettingsSheetProps = {
@@ -23,9 +24,15 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
   const dispatch = useAppDispatch();
-  const app = useRootSelector((state: RootState) => state.app);
-  const accountCount = useRootSelector((state: RootState) => selectAccountTotal(state.accounts));
-  const serverCount = useRootSelector((state: RootState) => selectServerTotal(state.servers));
+  const app = useAppSelector(state => state.app);
+  const accountCount = useAppSelector(state => selectAccountTotal(state.accounts));
+  const serverCount = useAppSelector(state => selectServerTotal(state.servers));
+
+  const currentServerMatchesLocationHostname = useAppSelector(state => state.servers.currentServerId
+    && serverIDHost(state.servers.currentServerId) === location.hostname);
+  const currentHostServer = useAppSelector(state => state.servers.entities[
+    state.servers.ids.find(sid => serverIDHost(sid as string) === location.hostname) ?? 'no-server-has-this-id'
+  ]);
 
   function doResetAllData() {
     resetAllData();
@@ -269,11 +276,39 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$5' mt='$5'>Testing</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <ToggleRow name='Allow Server Selection'
-                  description={`For testing purposes. Allows you to use ${location.hostname}'s frontend as though it were the frontend of a different Jonline server, by selecting it from the Accounts Sheet (from where this Settings Sheet was opened). ${serverCount !== 1 ? ' Delete other servers to disable this setting.' : ''}`}
-                  // disabled={serverCount !== 1}
-                  value={app.allowServerSelection} setter={setAllowServerSelection} autoDispatch />
-                <Paragraph size='$1' mt='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph>
+                <ToggleRow name='Allow Server Changing'
+                  description={
+                    <>
+                      {!currentHostServer ?
+                        <Paragraph size='$1'>
+                          Create a server for {location.hostname} to disable this setting. It shouldn't be possible to see this message!
+                        </Paragraph>
+                        : undefined}
+                      {!currentServerMatchesLocationHostname ?
+                        <Paragraph size='$1'>
+                          The server at {location.hostname} will be selected if server changing is disabled.
+                        </Paragraph>
+                        : undefined}
+                      <Paragraph size='$1' o={app.allowServerSelection ? 0.7 : 0.3}>
+                        For testing purposes.
+                        Allows you to use {location.hostname} as though you were browsing from a different Jonline server (i.e., with the same theme/default groups as {location.hostname === 'jonline.io' ? 'bullcity.social' : 'jonline.io'}).
+                      </Paragraph>
+                      <Paragraph size='$1' o={app.allowServerSelection ? 0.7 : 0.3}>
+                        After enabling this toggle, from the Accounts Sheet (behind/above this Settings Sheet),{' '}
+                        {!app.browsingServers ? <>first, browse servers by pressing <Router size='$1' />, then </> : undefined}
+                        simply select a server from the Accounts Sheet (behind/above this Settings Sheet).
+                      </Paragraph>
+                    </>
+                  }
+                  disabled={!currentHostServer}
+                  value={!currentServerMatchesLocationHostname || app.allowServerSelection}
+                  setter={v => {
+                    dispatch(setAllowServerSelection(v));
+                    if (!v && !currentServerMatchesLocationHostname) {
+                      dispatch(selectServer(currentHostServer));
+                    }
+                  }} />
+                {/* <Paragraph size='$1' mt='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5}>Servers can be selected in the Accounts sheet.</Paragraph> */}
                 <Paragraph size='$1' mb='$1' ta='right' opacity={app.allowServerSelection ? 1 : 0.5} ai='center'>An alert triangle (<AlertTriangle size='$1' style={{ transform: 'scale(0.8) translateY(7px)' }} />) will appear in the UI when a different server is selected.</Paragraph>
 
                 {/* <Heading size='$3' mt='$3'>Colors (Testing)</Heading>

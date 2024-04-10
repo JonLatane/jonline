@@ -13,11 +13,14 @@ export function getUsersPage(
   const users = [] as FederatedUser[];
   let hadUndefinedServers = false;
   for (const { server } of servers) {
+    if (!server) continue;
+
     const federatedPages = getFederated(state.userPages, server);
     const serverUserIds: string[] | undefined = (federatedPages[listingType] ?? [])[page];
     if (serverUserIds === undefined) {
       // return undefined;
       hadUndefinedServers = true;
+      // console.log("Undefined server", server);
       continue;
     }
     const serverUsers = serverUserIds.map(id => selectUserById(state, id)).filter(u => u) as User[];
