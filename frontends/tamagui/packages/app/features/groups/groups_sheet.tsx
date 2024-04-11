@@ -300,7 +300,7 @@ export function GroupsSheet({
                 const prevWasRecent = prevGroup && recentGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
                 const isRecent = recentGroups.some(tg => federatedId(tg) == federatedId(group));
 
-                const moreGroupsHeader = index > 0
+                const moreGroupsHeader = topGroups.length !== 0 || recentGroups.length !== 0
                   ? <div key='more-groups'>
                     <Heading size='$4' mt='$3' als='center'>More Groups</Heading>
                   </div>

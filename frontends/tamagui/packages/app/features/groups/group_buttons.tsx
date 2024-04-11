@@ -110,7 +110,19 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
 
               <YStack>
                 {showServerInfo
-                  ? <ServerNameAndLogo textColor={selected ? navTextColor : undefined} server={server} fallbackToHomeIcon />
+                  ? mediaQuery.gtXs
+                    ? <ServerNameAndLogo
+                      textColor={selected ? navTextColor : undefined}
+                      server={server}
+                      // fallbackToHomeIcon 
+                      />
+                    : <XStack mx='auto' w='$3' h='$3'>
+                      <ServerNameAndLogo shrinkToSquare
+                        // textColor={selected ? navTextColor : undefined}
+                        server={server}
+                        // fallbackToHomeIcon 
+                        />
+                    </XStack>
                   : undefined}
                 <XStack ml='auto'>
                   {hasAvatarUrl
