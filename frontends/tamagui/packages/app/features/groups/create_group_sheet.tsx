@@ -1,8 +1,8 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
-import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
-import { ChevronDown, ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
-import { useCredentialDispatch } from 'app/hooks';
-import { JonlineServer, RootState, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia, useTheme } from '@jonline/ui';
+import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
+import { useCreationDispatch } from 'app/hooks';
+import { JonlineServer, RootState, createGroup, getServerTheme, selectAllAccounts, serverID, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
@@ -10,9 +10,10 @@ import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker 
 import { useMediaUrl } from 'app/hooks';
 import { actionFailed } from 'app/store';
 import { pending, themedButtonBackground } from 'app/utils';
+import FlipMove from 'react-flip-move';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { groupUserPermissions } from './group_details_sheet';
-import FlipMove from 'react-flip-move';
+import { CreationServerSelector } from '../accounts/creation_server_selector';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -45,7 +46,7 @@ const shortPreview = (r: RenderType) => r == RenderType.ShortPreview;
 
 export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const mediaQuery = useMedia();
-  const { dispatch, accountOrServer } = useCredentialDispatch();
+  const { dispatch, accountOrServer } = useCreationDispatch();
   const account = accountOrServer.account!;
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState(0);
@@ -178,7 +179,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const [posting, setPosting] = useState(false);
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme();
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = getServerTheme(accountOrServer.server, useTheme());
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -257,15 +258,17 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                   <Heading size='$1' color={primaryTextColor}>Create</Heading>
                 </Button>
               </XStack>
+              <CreationServerSelector requiredPermissions={[Permission.CREATE_GROUPS]} />
+
               <Sheet.ScrollView>
                 {error ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{error}</Heading> : undefined}
                 {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
                 <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
-                  <FlipMove style={{width: '100%'}}>
+                  <FlipMove style={{ width: '100%' }}>
                     {/* <YStack gap="$2" w='100%'> */}
-                    <div key='name-media' style={{width: '100%', marginBottom: 8}}>
+                    <div key='name-media' style={{ width: '100%', marginBottom: 8 }}>
                       <XStack>
                         <Input f={1}
                           my='auto'
@@ -299,7 +302,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       </XStack>
                     </div>
                     {showSettings
-                      ? <div key='create-group-settings' style={{width: '100%', marginBottom: 8}}>
+                      ? <div key='create-group-settings' style={{ width: '100%', marginBottom: 8 }}>
                         <YStack key='create-group-settings'
                           animation='standard'
                           p='$2'
@@ -338,14 +341,14 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                       </div>
                       : undefined}
                     {showMedia
-                      ? <div key='single-media-chooser' style={{width: '100%', marginBottom: 8}}>
+                      ? <div key='single-media-chooser' style={{ width: '100%', marginBottom: 8 }}>
                         <SingleMediaChooser key='create-group-avatar-chooser'
                           disabled={!showMedia}
                           selectedMedia={avatar} setSelectedMedia={setAvatar} />
                       </div>
                       : undefined}
 
-                    <div key='description' style={{width: '100%', marginBottom: 8}}>
+                    <div key='description' style={{ width: '100%', marginBottom: 8 }}>
                       <TextArea f={1} pt='$2' value={description} ref={textAreaRef}
                         w='100%'
                         disabled={posting} opacity={posting || description == '' ? 0.5 : 1}

@@ -1,4 +1,4 @@
-import { Group, GroupPost, Membership } from "@jonline/api";
+import { Group, GroupListingType, GroupPost, Membership } from "@jonline/api";
 
 import {
   createEntityAdapter,
@@ -98,6 +98,11 @@ export const groupsSlice = createSlice({
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[federatedShortname(group)] = federatedId(group);
+      const pages = getFederated(state.pages, action) ?? {};
+      if (pages[GroupListingType.ALL_GROUPS]?.[0]) {
+        pages[GroupListingType.ALL_GROUPS][0].push(federatedId(group));
+        setFederated(state.pages, action, pages);
+      }
     });
     builder.addCase(updateGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);

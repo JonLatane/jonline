@@ -288,11 +288,12 @@ export function GroupsSheet({
       </YStack>
       <Sheet.ScrollView px="$4" py='$2'>
         <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
-          <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
-            <PageChooser {...pagination} width='auto' maxWidth='100%' />
-          </div>
+
           {openDebounced
             ? [
+              <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
+                <PageChooser {...pagination} width='auto' maxWidth='100%' />
+              </div>,
               ...paginatedArrangedGroups.map((group, index) => {
                 const prevGroup = index > 0 ? paginatedArrangedGroups[index - 1] : undefined;
                 const prevWasTop = !prevGroup || topGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
@@ -332,69 +333,9 @@ export function GroupsSheet({
                       extraListItemChrome={extraListItemChrome}
                       hideLeaveButton={hideLeaveButtons}
                     />
-                  </div>
+                  </div>,
                 ]
               }).flat(),
-              // ...recentGroups.length > 0
-              //   ? [
-              //     <div key='recent-groups'>
-              //       <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
-              //     </div>,
-              //     ...recentGroups.map((group, index) => {
-              //       return <div key={`groupButton-${federatedId(group)}`}>
-              //         <GroupButton
-              //           group={group}
-              //           groupPageForwarder={groupPageForwarder}
-              //           onGroupSelected={onGroupSelected}
-              //           selected={group.id == selectedGroup?.id}
-              //           onShowInfo={() => {
-              //             setInfoGroupId(federatedId(group));
-              //             // setInfoOpen(true);
-              //           }}
-              //           setOpen={setOpen}
-              //           disabled={disableSelection}
-              //           hideInfoButton={hideInfoButtons}
-              //           extraListItemChrome={extraListItemChrome}
-              //           hideLeaveButton={hideLeaveButtons}
-              //         />
-              //       </div>
-              //     })
-              //   ]
-              //   : [],
-              // ...hideAdditionalGroups
-              //   ? []
-              //   : sortedGroups.length > 0
-              //     ? [
-              //       topGroups.length + recentGroups.length > 0 ?
-              //         <Heading size='$4' mt='$3' als='center'>More Groups</Heading>
-              //         : undefined,
-              //       sortedGroups.map((group, index) => {
-              //         return <div key={`groupButton-${federatedId(group)}`}>
-              //           <GroupButton
-              //             group={group}
-              //             groupPageForwarder={groupPageForwarder}
-              //             onGroupSelected={onGroupSelected}
-              //             selected={group.id == selectedGroup?.id}
-              //             onShowInfo={() => {
-              //               setInfoGroupId(federatedId(group));
-              //               // setInfoOpen(true);
-              //             }}
-              //             setOpen={setOpen}
-              //             disabled={disableSelection}
-              //             hideInfoButton={hideInfoButtons}
-              //             extraListItemChrome={extraListItemChrome}
-              //             hideLeaveButton={hideLeaveButtons}
-              //           />
-              //         </div>
-              //       })
-              //     ]
-              //     : [
-              //       <div key='noGroups' style={{ width: '100%', display: 'flex' }}>
-              //         <Heading size='$3' mx='auto' o={0.5}>
-              //           No Groups {searchText != '' ? `Matched "${searchText}"` : 'Found'}
-              //         </Heading>
-              //       </div>
-              //     ]
             ]
             : undefined}
 

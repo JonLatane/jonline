@@ -13,6 +13,8 @@ import { hasAdminPermission, hasPermission } from '../../utils/permission_utils'
 import { AuthorInfo } from "../post/author_info";
 import { GroupsSheet } from './groups_sheet';
 import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/contexts';
+import { s } from '@fullcalendar/core/internal-common';
+import moment from 'moment';
 
 interface Props {
   post: FederatedPost;
@@ -188,17 +190,26 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     ? federateId(post.id, accountOrServer.server)
     : post.id;
 
-  const detailsEventInstanceId = useAppSelector(state => {
-    const instanceId = state.events.postInstances[federatedId(post)];
-    post.context === PostContext.EVENT_INSTANCE && instanceId
-      ? !isPrimaryServer
-        ? instanceId
-        : parseFederatedId(instanceId)?.id
-      : undefined
-  });
+  const detailsEventId = useAppSelector(state => state.events.postEvents[federatedId(post)]);
 
+  const detailsEventInstanceId = useAppSelector(state =>
+    detailsEventId
+      ? state.events.entities[detailsEventId]?.instances.filter(
+        i => moment(i.endsAt).isAfter(moment())
+      )[0]?.id
+      : undefined);
+  // useAppSelector(state => {
+  //   const instanceId = state.events.postInstances[federatedId(post)];
+  //   post.context === PostContext.EVENT_INSTANCE && instanceId
+  //     ? !isPrimaryServer
+  //       ? instanceId
+  //       : parseFederatedId(instanceId)?.id
+  //     : undefined
+  // });
+
+  // console.log('GroupPostChrome post.context', post.context, 'detailsEventInstanceId', detailsEventInstanceId)
   const viewLink = useLink({
-    href: post.context === PostContext.EVENT_INSTANCE
+    href: post.context === PostContext.EVENT && detailsEventInstanceId
       ? `/g/${detailsGroupShortname}/e/${detailsEventInstanceId}`
       : `/g/${detailsGroupShortname}/p/${detailsPostId}`
   });

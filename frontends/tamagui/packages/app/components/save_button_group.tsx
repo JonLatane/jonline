@@ -161,7 +161,9 @@ export function SaveButtonGroup({
                   Delete
                 </Button>
               </Dialog.Trigger>
-              <Dialog.Portal zi={1000011}>
+
+      {/* zIndex={1000000} */}
+              <Dialog.Portal zi={2000011}>
                 <Dialog.Overlay
                   key="overlay"
                   animation="quick"

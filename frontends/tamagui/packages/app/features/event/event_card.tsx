@@ -326,6 +326,12 @@ export const EventCard: React.FC<Props> = ({
 
   const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
   const [showPastInstances, setShowPastInstances] = useState(false);
+  const selectedInstanceIsPast = selectedInstance && moment(selectedInstance.startsAt).isBefore(moment());
+  useEffect(() => {
+    if (!showPastInstances && selectedInstanceIsPast) {
+      setShowPastInstances(true);
+    }
+  }, [selectedInstance])
 
   const canEasilySeeInstances = (instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2;
   const canEasilySeeAllPastInstances = canEasilySeeInstances(instances);
@@ -395,8 +401,9 @@ export const EventCard: React.FC<Props> = ({
     {hasPastInstances && !canEasilySeeAllPastInstances
       ? <Tooltip placement='bottom-start'>
         <Tooltip.Trigger>
-          <Button ml='$2' size='$3' my='auto'
+          <Button ml='$2' size='$3' my='auto' disabled={selectedInstanceIsPast}
             {...showPastInstances ? themedButtonBackground(navColor, navTextColor) : {}}
+            o={selectedInstanceIsPast ? 0.5 : 1}
             // color={showPastInstances ? navAnchorColor : undefined}
             circular={(displayedInstances?.length ?? 0) > 0} icon={History}
             onPress={() => setShowPastInstances(!showPastInstances)} >
