@@ -13,7 +13,7 @@ export const PageChooser: React.FC<Pagination<any> & {
   pageTopId?: string;
   noAutoScroll?: boolean;
 }> = ({
-  page,
+  page: currentPage,
   setPage,
   pageCount,
   loadingPage,
@@ -27,8 +27,8 @@ export const PageChooser: React.FC<Pagination<any> & {
   noAutoScroll = false,
 }) => {
     // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-    const ref = React.createRef<TamaguiElement>();
-    const isVisible = useIsVisible(ref);
+    // const ref = React.createRef<TamaguiElement>();
+    // const isVisible = useIsVisible(ref);
     const componentKey = useComponentKey('page-chooser');
     const pageButtonId = (i: number) => `${componentKey}-page-${i}`;
 
@@ -38,12 +38,12 @@ export const PageChooser: React.FC<Pagination<any> & {
         if (noAutoScroll) return;
 
         setTimeout(
-          () => document.getElementById(pageButtonId(page))
+          () => document.getElementById(pageButtonId(currentPage))
             ?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }),
           300
         );
       },
-      [page]
+      [currentPage]
     );
     // console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
@@ -63,24 +63,24 @@ export const PageChooser: React.FC<Pagination<any> & {
     const [fgColor, bgColor] = hasNextPage
       ? [navTextColor, navColor] : [undefined, '$backgroundFocus'];
 
-    const renderedPage = page + 1;
-    const lowerPage = Math.max(1, page + 2 - maxPagesToRender);
-    const upperPage = page + 1;
+    const renderedPage = currentPage + 1;
+    const lowerPage = Math.max(1, currentPage + 2 - maxPagesToRender);
+    const upperPage = currentPage + 1;
     const text = lowerPage === upperPage
       ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
       : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
-    return <XStack ref={ref} w={width} h={height} maxWidth={maxWidth} ai='center'>
+    return <XStack w={width} h={height} maxWidth={maxWidth} ai='center'>
       <ScrollView f={1} horizontal>
         <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
-          {pageCount > 1 || page > 0
-            ? [...Array(pageCount).keys()].map((i) =>
-              <Button key={i} mr='$1'
-                id={pageButtonId(i)}
-                {...highlightedButtonBackground(theme, 'nav', i === page)}
-                transparent={i !== page}
+          {pageCount > 1 || currentPage > 0
+            ? [...Array(pageCount).keys()].map((page) =>
+              <Button key={pageButtonId(page)} mr='$1'
+                id={pageButtonId(page)}
+                {...highlightedButtonBackground(theme, 'nav', page === currentPage)}
+                transparent={page !== currentPage}
                 onPress={() => {
-                  setPage(i)
+                  setPage(page)
                   // onSetPage?.();
                   if (pageTopId) {
                     // setTimeout(() => {
@@ -90,7 +90,7 @@ export const PageChooser: React.FC<Pagination<any> & {
                   }
                 }}
               >
-                {(i + 1).toString()}
+                {(page + 1).toString()}
               </Button>
             )
             : undefined}

@@ -162,18 +162,20 @@ export function SaveButtonGroup({
                 </Button>
               </Dialog.Trigger>
 
-      {/* zIndex={1000000} */}
-              <Dialog.Portal zi={2000011}>
+              {/* zIndex={1000000} */}
+              <Dialog.Portal zIndex={2000011}>
                 <Dialog.Overlay
                   key="overlay"
                   animation="quick"
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
+                  // zIndex={2000011}
                 />
                 <Dialog.Content
                   bordered
                   elevate
+                  // zIndex={2000011}
                   key="content"
                   animation={[
                     'quick',
@@ -193,9 +195,15 @@ export function SaveButtonGroup({
                 >
                   <YStack space>
                     <Dialog.Title>Delete {entityType}</Dialog.Title>
-                    <Dialog.Description>
-                      {deleteDialogText}
-                    </Dialog.Description>
+                    {typeof deleteDialogText === 'string'
+                      ? <Dialog.Description>
+                        {deleteDialogText}
+                      </Dialog.Description>
+                      : deleteDialogText
+                        ? <Dialog.Content>
+                          {deleteDialogText}
+                        </Dialog.Content>
+                        : undefined}
 
                     <XStack gap="$3" jc="flex-end">
                       <Dialog.Close asChild>

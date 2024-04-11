@@ -234,9 +234,7 @@ export function StarredPosts({ }: StarredPostsProps) {
               {hasOpened
                 ? <Popover.Content
                   borderWidth={1}
-                  // px={0}
-                  pr='$2'
-                  pl='$2'
+                  p='$2'
                   borderColor="$borderColor"
                   enterStyle={{ y: -10, opacity: 0 }}
                   exitStyle={{ y: -10, opacity: 0 }}
@@ -252,7 +250,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                 >
                   <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-                  <YStack gap="$3" h='100%' ai='center'>
+                  <YStack h='100%' ai='center'>
                     <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'none' }}>
                       {openedPostId
                         ? [

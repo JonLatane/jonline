@@ -15,6 +15,7 @@ import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, Paginat
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
+import { markGroupVisit } from "./local_app_configuration";
 
 export type FederatedGroup = FederatedEntity<Group>;
 export function federatedShortname(group: FederatedGroup): string {
@@ -97,17 +98,25 @@ export const groupsSlice = createSlice({
     builder.addCase(createGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[federatedShortname(group)] = federatedId(group);
+      const federatedGroupId = federatedId(group);
+      state.shortnameIds[federatedShortname(group)] = federatedGroupId;
       const pages = getFederated(state.pages, action) ?? {};
       if (pages[GroupListingType.ALL_GROUPS]?.[0]) {
-        pages[GroupListingType.ALL_GROUPS][0].push(federatedId(group));
+        pages[GroupListingType.ALL_GROUPS][0] = [federatedGroupId, ...pages[GroupListingType.ALL_GROUPS][0]];
         setFederated(state.pages, action, pages);
       }
+      setTimeout(() => {
+        store.dispatch(markGroupVisit({group}));
+      }, 1);
     });
     builder.addCase(updateGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);
+      const federatedGroupId = federatedId(group);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[federatedShortname(group)] = federatedId(group);
+      state.shortnameIds[federatedShortname(group)] = federatedGroupId;
+      setTimeout(() => {
+        store.dispatch(markGroupVisit({group}));
+      }, 1);
       setTimeout(() => {
         // TODO: Use separate dispatch to delete old shortname/ID link.
         //
@@ -115,7 +124,13 @@ export const groupsSlice = createSlice({
       }, 5000)
     });
     builder.addCase(deleteGroup.fulfilled, (state, action) => {
-      groupsAdapter.removeOne(state, action.meta.arg.id);
+      const federatedGroupId = federateId(action.meta.arg.id, action);
+      groupsAdapter.removeOne(state, federatedGroupId);
+      const pages = getFederated(state.pages, action);
+      if (pages?.[GroupListingType.ALL_GROUPS]?.[0]) {
+        pages[GroupListingType.ALL_GROUPS][0] = pages[GroupListingType.ALL_GROUPS][0]
+          .filter(id => id !== federatedGroupId);
+      }
     });
     builder.addCase(loadGroupsPage.pending, (state, action) => {
       setFederated(state.pagesStatus, action, "loading");
