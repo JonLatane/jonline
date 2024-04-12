@@ -20,7 +20,8 @@ export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps)
     post: Post,
     group: Group | undefined,
     resetPost: () => void,
-    onComplete: () => void
+    onComplete: () => void,
+    onErrored: (error: any) => void,
   ) {
     dispatch(createPost({ ...post, ...accountOrServer })).then((action) => {
       if (action.type == createPost.fulfilled.type) {

@@ -1,5 +1,5 @@
 import { useDebounce } from "@jonline/ui";
-import { useAppDispatch } from "app/hooks";
+import { useAppDispatch, useCreationAccountOrServer } from "app/hooks";
 import { FederatedMedia, RootState, getHasMediaPage, getHasMoreMediaPages, getMediaPages, getServersMissingMediaPage, loadMediaPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
@@ -27,7 +27,7 @@ export function useServerMediaPages(
   // keep it simple.
   // const servers = useCurrentAndPinnedServers();
   const accountOrServerContext = useAccountOrServerContext();
-  const currentAccountOrServer = useCurrentAccountOrServer();
+  const currentAccountOrServer = useCreationAccountOrServer();
   const accountOrServer = accountOrServerContext ?? currentAccountOrServer;
   const servers = accountOrServer.account ? [accountOrServer] : [];
   //END TODO

@@ -9,7 +9,6 @@ import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
-import { MediaRef } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
 import { AppSection } from '../navigation/features_navigation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
@@ -17,6 +16,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { RecommendedServer } from './recommended_server';
 import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
+import { MediaRef } from 'app/contexts';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 

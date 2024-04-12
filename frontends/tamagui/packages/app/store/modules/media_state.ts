@@ -7,7 +7,7 @@ import {
   createSlice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { Federated, FederatedEntity, createFederated, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
+import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { LoadMedia, deleteMedia, loadMedia, loadMediaPage } from './media_actions';
 export * from './media_actions';
@@ -117,7 +117,7 @@ export const mediaSlice = createSlice({
     });
     builder.addCase(deleteMedia.fulfilled, (state, action) => {
       setFederated(state.pagesStatus, action, "deleted");
-      mediaAdapter.removeOne(state, action.meta.arg.id);
+      mediaAdapter.removeOne(state, federateId(action.meta.arg.id, action));
       const userMediaPages: GroupedPages = getFederated(state.userMediaPages, action);
 
       for (const i in userMediaPages) {

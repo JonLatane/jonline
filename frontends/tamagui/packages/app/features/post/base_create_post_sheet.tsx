@@ -2,7 +2,7 @@ import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/ap
 import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
 import { CalendarPlus, ChevronDown, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
-import { useCreationAccountOrServer, useCredentialDispatch } from 'app/hooks';
+import { useCreationAccountOrServer, useCredentialDispatch, useCurrentServer } from 'app/hooks';
 import { FederatedGroup, JonlineServer, RootState, getServerTheme, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
@@ -21,7 +21,8 @@ export type BaseCreatePostSheetProps = {
     post: Post,
     group: Group | undefined,
     resetPost: () => void,
-    onComplete: () => void
+    onComplete: () => void,
+    onErrored: (error: any) => void,
   ) => void;
   preview: (
     post: Post,
@@ -83,7 +84,10 @@ export function BaseCreatePostSheet({
 }: BaseCreatePostSheetProps) {
   // const mediaQuery = useMedia();
   const accountOrServer = useCreationAccountOrServer();
+  // const currentServer = useCurrentServer();
+  const server = accountOrServer?.server;
   const account = accountOrServer.account!;
+
   const [open, _setOpen] = useState(false);
   const [position, setPosition] = useState(0);
 
@@ -170,10 +174,11 @@ export function BaseCreatePostSheet({
   const textAreaRef = React.createRef<TextInput>();
 
   const [posting, setPosting] = useState(false);
+  const [postingError, setPostingError] = useState(undefined as string | undefined);
   const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = getServerTheme(accountOrServer?.server, useTheme());
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = getServerTheme(server, useTheme());
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -288,7 +293,15 @@ export function BaseCreatePostSheet({
                 <Tooltip>
                   <Tooltip.Trigger>
                     <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
-                      onPress={() => doCreate(previewPost, group, resetPost, () => setPosting(false))}>
+                      onPress={() => doCreate(
+                        previewPost,
+                        group,
+                        resetPost,
+                        () => setPosting(false), 
+                        (e) => {
+                          console.error('Error creating post/event', e);
+                          setPostingError(e?.toString());
+                        })}>
                       <Heading size='$1' color={primaryTextColor}>Create</Heading>
                     </Button>
                   </Tooltip.Trigger>

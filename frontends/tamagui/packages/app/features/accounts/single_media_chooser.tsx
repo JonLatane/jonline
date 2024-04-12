@@ -3,10 +3,10 @@ import { Button, Heading, XStack, YStack } from '@jonline/ui';
 import { Camera, Trash } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
+import { MediaRef } from 'app/contexts';
 import { useServerTheme } from "app/store";
 import React from "react";
-import { MediaChooser, MediaRef } from "../media/media_chooser";
-import { } from "../post/post_card";
+import { MediaChooser } from "../media/media_chooser";
 
 interface Props {
   selectedMedia: MediaRef | undefined;
@@ -22,7 +22,7 @@ export const SingleMediaChooser: React.FC<Props> = ({ selectedMedia, setSelected
     <MediaChooser
       selectedMedia={selectedMedia ? [selectedMedia] : []}
       disabled={disabled}
-      onMediaSelected={media => { setSelectedMedia?.(media.length == 0 ? undefined : media[media.length -1 ]) }} >
+      onMediaSelected={media => { setSelectedMedia?.(media.length == 0 ? undefined : media[media.length - 1]) }} >
       <XStack>
         <Camera color={navTextColor} />
         <Heading color={navTextColor} ml='$3' my='auto' size='$1'>Choose {mediaUseName}</Heading>

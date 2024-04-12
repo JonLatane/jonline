@@ -68,7 +68,8 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
     post: Post,
     group: Group | undefined,
     resetPost: () => void,
-    onComplete: () => void
+    onComplete: () => void,
+    onErrored: (error: any) => void,
   ) {
     function doReset() {
       resetPost();

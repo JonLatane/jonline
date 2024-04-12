@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
 import FlipMove from "react-flip-move";
+import { useMediaContext } from "app/contexts";
 
 export enum AppSection {
   HOME = 'home',
@@ -146,7 +147,10 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       selectedGroup === undefined ? '/people' : `/g/${groupIdentifier}/members`
   });
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
-  const myMediaLink = useLink({ href: '/media' });
+
+  const myMediaLink = {
+    onPress: () => setMediaSheetOpen(true)
+  };
 
   const isLatest = appSection == AppSection.HOME;
   const isPosts = appSection == AppSection.POSTS;
@@ -222,6 +226,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   ];
   const isPeopleRow = isPeople || isFollowRequests;
 
+  const { setMediaSheetOpen } = useMediaContext();
   const myDataRow = [
     account ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
   ];
@@ -280,15 +285,15 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
       : undefined;
 
     const triggerButtonLink =
-    // forPopup ? undefined  
-    appSection === AppSection.EVENTS && !location.toString().includes('/events')
+      // forPopup ? undefined  
+      section === AppSection.EVENTS && !location.toString().includes('/events')
         ? eventsLink
-        : appSection === AppSection.POSTS && !location.toString().includes('/posts')
+        : section === AppSection.POSTS && !location.toString().includes('/posts')
           ? postsLink
-          : appSection === AppSection.PEOPLE && !location.toString().includes('/people')
+          : section === AppSection.PEOPLE && !location.toString().includes('/people')
             ? peopleLink
             : undefined;
-            const isDisabled = (selected && !triggerButtonLink) || disabled;
+    const isDisabled = (selected && !triggerButtonLink) || disabled;
     return selected && inlineNavigation ?
       !reorderInlineNavigation
         ? triggerButton()
