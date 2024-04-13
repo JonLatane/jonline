@@ -1,5 +1,5 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
-import { useCreationDispatch } from 'app/hooks';
+import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
 import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
@@ -13,6 +13,8 @@ import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { MediaRenderer } from './media_renderer';
 import { MediaUploader } from './media_uploader';
+import FlipMove from 'react-flip-move';
+import { PageChooser } from '../home/page_chooser';
 
 interface MediaSheetProps { }
 
@@ -35,6 +37,13 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
 
   const { results: allMedia, loading: loadingMedia, reload: reloadMedia, hasMorePages, firstPageLoaded } =
     useMediaPages();
+
+  const [page, setPage] = useState(0);
+  const pagination = usePaginatedRendering(allMedia, 10, { pageParamHook: () => [page, setPage] });
+
+  useEffect(() => {
+    pagination.setPage(0);
+  }, [server?.host, account?.user?.id])
 
   const uploadedMedia = useRootSelector(
     (state: RootState) => uploadedMediaId
@@ -120,95 +129,107 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                   </YStack>
                   : undefined
                 : <>
-                  <XStack gap='$0' flexWrap='wrap' als='center' jc='center' mx='auto'>
-                    {allMedia?.map((item) => {
+                  <FlipMove style={{ width: '100%', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {/* <XStack gap='$0' flexWrap='wrap' als='center' jc='center' mx='auto'> */}
+
+                    <div id={'media-pagination-top'} key='pagination-top' style={{ width: '100%', justifyContent: 'center', display: 'flex', marginBottom: 5 }}>
+                      <PageChooser {...pagination} width='auto' maxWidth='100%' />
+                    </div>
+                    {pagination.results.map((item) => {
                       const selectionIndex = selectedMedia.findIndex(selectedItem => selectedItem.id === item.id);
                       const selectionIndexBase1 = selectionIndex == -1 ? undefined : selectionIndex + 1;
                       const mediaName = item.name && item.name.length > 0 ? item.name : undefined;
                       const selected = selectedMedia.some(selectedItem => selectedItem.id === item.id);
                       const onSelect = isSelecting ? () => selectMedia(item) : undefined;
 
-                      return <YStack w={mediaQuery.gtXs ? '260px' : '105px'}
-                        key={`media-chooser-item-${item.id}-${selected}`}
-                        mih='160px'
-                        mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
-                        borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
-                        animation='standard' pressStyle={{ scale: 0.95 }}
-                        backgroundColor={selected ? navColor : undefined} onPress={onSelect}>
-                        {selectionIndexBase1
-                          ? <Paragraph zi={1000} px={5} position='absolute' top='$2' right='$2'
-                            borderRadius={5}
-                            backgroundColor={allMedia.length > 0 ? primaryColor : navColor} color={allMedia.length > 0 ? primaryTextColor : navTextColor}>
-                            {selectionIndexBase1}
-                          </Paragraph>
-                          : undefined}
-                        <YStack f={1} pointerEvents='none' w='100%' jc='center' ac='center'>
-                          <MediaRenderer media={item} />
-                        </YStack>
-                        {/* <MediaCard media={item}
+                      return <div key={`media-${server?.host}-${item.id}`} style={{ margin: 'auto', display: 'inline-block' }}>
+                        <YStack w={mediaQuery.gtXs ? '260px' : '105px'}
+                          key={`media-chooser-item-${item.id}-${selected}`}
+                          mih='160px'
+                          mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
+                          borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
+                          animation='standard' pressStyle={{ scale: 0.95 }}
+                          backgroundColor={selected ? navColor : undefined} onPress={onSelect}>
+                          {selectionIndexBase1
+                            ? <Paragraph zi={1000} px={5} position='absolute' top='$2' right='$2'
+                              borderRadius={5}
+                              backgroundColor={allMedia.length > 0 ? primaryColor : navColor} color={allMedia.length > 0 ? primaryTextColor : navTextColor}>
+                              {selectionIndexBase1}
+                            </Paragraph>
+                            : undefined}
+                          <YStack f={1} overflow='hidden' pointerEvents='none' w='100%' jc='center' ac='center'>
+                            <MediaRenderer media={item} />
+                          </YStack>
+                          {/* <MediaCard media={item}
                           selected={selectedMedia.includes(item.id)}
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}
                           chooser /> */}
-                        <XStack>
-                          {item.generated ?
-                            <YStack my='auto' ml='$2'><Wand2 size='$1' opacity={0.8} color={selected ? navTextColor : undefined} /></YStack>
-                            // <Paragraph size='$1' my='auto' ml='$2' color={selected?navTextColor:'$textColor'} ta='center'>Generated</Paragraph> 
-                            : undefined}
-                          <AlertDialog native>
-                            <AlertDialog.Trigger asChild my='$2' mr='$2'>
-                              <Button size='$2' onPress={(e) => e.stopPropagation()} circular icon={Trash} ml='auto' />
-                            </AlertDialog.Trigger>
+                          <XStack>
+                            {item.generated ?
+                              <YStack my='auto' ml='$2'><Wand2 size='$1' opacity={0.8} color={selected ? navTextColor : undefined} /></YStack>
+                              // <Paragraph size='$1' my='auto' ml='$2' color={selected?navTextColor:'$textColor'} ta='center'>Generated</Paragraph> 
+                              : undefined}
+                            <AlertDialog native>
+                              <AlertDialog.Trigger asChild my='$2' mr='$2'>
+                                <Button size='$2' onPress={(e) => e.stopPropagation()} circular icon={Trash} ml='auto' />
+                              </AlertDialog.Trigger>
 
-                            <AlertDialog.Portal zIndex={1000000}>
-                              <AlertDialog.Overlay
-                                key="overlay"
-                                animation="quick"
-                                {...overlayAnimation}
-                              />
-                              <AlertDialog.Content
-                                bordered
-                                elevate
-                                key="content"
-                                animation={[
-                                  'quick',
-                                  {
-                                    opacity: {
-                                      overshootClamping: true,
+                              <AlertDialog.Portal zIndex={1000000}>
+                                <AlertDialog.Overlay
+                                  key="overlay"
+                                  animation="quick"
+                                  {...overlayAnimation}
+                                />
+                                <AlertDialog.Content
+                                  bordered
+                                  elevate
+                                  key="content"
+                                  animation={[
+                                    'quick',
+                                    {
+                                      opacity: {
+                                        overshootClamping: true,
+                                      },
                                     },
-                                  },
-                                ]}
-                                // enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                                // exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                                x={0}
-                                scale={1}
-                                opacity={1}
-                                y={0}
-                              >
-                                <YStack space>
-                                  <AlertDialog.Title>Confirmation</AlertDialog.Title>
-                                  <AlertDialog.Description>
-                                    Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
-                                  </AlertDialog.Description>
+                                  ]}
+                                  // enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+                                  // exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+                                  x={0}
+                                  scale={1}
+                                  opacity={1}
+                                  y={0}
+                                >
+                                  <YStack space>
+                                    <AlertDialog.Title>Confirmation</AlertDialog.Title>
+                                    <AlertDialog.Description>
+                                      Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
+                                    </AlertDialog.Description>
 
-                                  <XStack gap="$3" justifyContent="flex-end">
-                                    <AlertDialog.Cancel asChild>
-                                      <Button>Cancel</Button>
-                                    </AlertDialog.Cancel>
-                                    <AlertDialog.Action asChild>
-                                      <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
-                                        setSelectedMedia(selectedMedia.filter((selectedItem) => selectedItem.id != item.id));
-                                        dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
-                                      }}>Delete</Button>
-                                    </AlertDialog.Action>
-                                  </XStack>
-                                </YStack>
-                              </AlertDialog.Content>
-                            </AlertDialog.Portal>
-                          </AlertDialog>
-                        </XStack>
-                      </YStack>;
+                                    <XStack gap="$3" justifyContent="flex-end">
+                                      <AlertDialog.Cancel asChild>
+                                        <Button>Cancel</Button>
+                                      </AlertDialog.Cancel>
+                                      <AlertDialog.Action asChild>
+                                        <Button backgroundColor={navColor} color={navTextColor} onPress={() => {
+                                          setSelectedMedia(selectedMedia.filter((selectedItem) => selectedItem.id != item.id));
+                                          dispatch(deleteMedia({ id: item.id, ...accountOrServer }));
+                                        }}>Delete</Button>
+                                      </AlertDialog.Action>
+                                    </XStack>
+                                  </YStack>
+                                </AlertDialog.Content>
+                              </AlertDialog.Portal>
+                            </AlertDialog>
+                          </XStack>
+                        </YStack>
+                      </div>;
+
                     })}
-                  </XStack>
+                    <div key='pagination-bottom' style={{ width: '100%', justifyContent: 'center', display: 'flex', marginBottom: 5 }}>
+                      <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={'media-pagination-top'} />
+                    </div>
+                    {/* </XStack> */}
+                  </FlipMove>
                 </>}
             </YStack>
           </Sheet.ScrollView>

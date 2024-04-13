@@ -1,7 +1,7 @@
 import { Group, User, UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
-import { useCurrentAccountOrServer, useCredentialDispatch, useLocalConfiguration } from "app/hooks";
+import { useCurrentAccountOrServer, useCredentialDispatch, useLocalConfiguration, useCurrentServer, usePinnedAccountsAndServers } from "app/hooks";
 import { FederatedGroup, RootState, federateId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { useEffect, useState } from "react";
@@ -120,7 +120,9 @@ export type FeaturesNavigationProps = {
 };
 
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
-  const { account, server } = useCurrentAccountOrServer();
+  // const { account, server } = useCurrentAccountOrServer();
+  const server = useCurrentServer();
+  const hasAccount = usePinnedAccountsAndServers().filter(aos => !!aos.account?.user?.id).length > 0;
   const mediaQuery = useMedia();
   const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
@@ -165,29 +167,30 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
   const { inlineNavigation, shrinkNavigation } = useInlineFeatureNavigation();
 
-  const reorderInlineNavigation = !mediaQuery.gtMd && account;// && !menuItems.includes(appSection));
-  const inlineNavSeparators = inlineNavigation && account?.user?.id /*&& mediaQuery.gtMd*/;
+  const reorderInlineNavigation = !mediaQuery.gtMd && hasAccount;// && !menuItems.includes(appSection));
+  const inlineNavSeparators = inlineNavigation && hasAccount /*&& mediaQuery.gtMd*/;
 
-  const { results: followRequests } = useUsersPage(UserListingType.FOLLOW_REQUESTS, 0);
+  // const { results: followRequests } = useUsersPage(UserListingType.FOLLOW_REQUESTS, 0);
   // useRootSelector((state: RootState) =>
   //   getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
+  const { results: followRequests } = useUsersPage(UserListingType.FOLLOW_REQUESTS, 0);
   const followRequestCount = followRequests?.length ?? 0;
   const followPageStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
-  const { dispatch, accountOrServer } = useCredentialDispatch();
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  useEffect(() => {
-    if (loadingUsers == undefined && !loadingUsers) {
-      if (!accountOrServer.server) return;
+  // const { dispatch, accountOrServer } = useCredentialDispatch();
+  // const [loadingUsers, setLoadingUsers] = useState(false);
+  // useEffect(() => {
+  //   if (loadingUsers == undefined && !loadingUsers) {
+  //     if (!accountOrServer.server) return;
 
-      console.log("Loading users...");
-      setLoadingUsers(true);
-      dispatch(loadUsersPage({ listingType: UserListingType.FOLLOW_REQUESTS, ...accountOrServer }));
-    } else if (followPageStatus == 'loaded' && loadingUsers) {
-      setLoadingUsers(false);
-      // dismissScrollPreserver(setShowScrollPreserver);
-    }
-  });
+  //     console.log("Loading users...");
+  //     setLoadingUsers(true);
+  //     dispatch(loadUsersPage({ listingType: UserListingType.FOLLOW_REQUESTS, ...accountOrServer }));
+  //   } else if (followPageStatus == 'loaded' && loadingUsers) {
+  //     setLoadingUsers(false);
+  //     // dismissScrollPreserver(setShowScrollPreserver);
+  //   }
+  // });
 
   const [latest, posts, events] = [
     navButton(isLatest, latestLink, AppSection.HOME),
@@ -211,7 +214,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         events
       ];
 
-  const showFollowRequests = account && (
+  const showFollowRequests = hasAccount && (
     (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
     || followRequestCount > 0
     || isPeople
@@ -228,7 +231,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
 
   const { setMediaSheetOpen } = useMediaContext();
   const myDataRow = [
-    account ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
+    hasAccount ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
   ];
 
   function triggerButton(forPopup?: boolean) {
