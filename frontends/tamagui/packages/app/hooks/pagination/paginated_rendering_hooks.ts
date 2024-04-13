@@ -55,6 +55,28 @@ export function useEventPageParam(): [number, (page: number) => void] {
 
   return [page, setPage] as const;
 }
+
+const { useParam: _usePostPageParam, useUpdateParams: useUpdatePostPageParams } = createParam<{ postPage: string | undefined }>()
+export function usePostPageParam(): [number, (page: number) => void] {
+  const updateParams = useUpdatePostPageParams();
+
+  const [pageParam] = _usePostPageParam('postPage');
+  let parsedPage: number | undefined;
+  try {
+    parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
+  } catch (e) {
+    console.warn("Error parsing page param", e);
+  }
+
+  const page = parsedPage ?? 0;
+  const setPage = (p: number) => updateParams(
+    { postPage: p === 0 ? undefined : (p + 1).toString() },
+    { web: { replace: true } }
+  );
+
+  return [page, setPage] as const;
+}
+
 export const maxPagesToRender = 1;
 export function usePaginatedRendering<T extends HasIdFromServer>(
   dataSet: FederatedEntity<T>[],

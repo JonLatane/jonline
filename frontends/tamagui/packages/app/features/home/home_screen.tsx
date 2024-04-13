@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType } from '@jonline/api';
 import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer, useLocalConfiguration } from 'app/hooks';
+import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer, useLocalConfiguration, usePostPageParam } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, setShowEventsOnLatest, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -54,6 +54,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
 
   const postPagination = usePaginatedRendering(allPosts, 7, {
+    pageParamHook: usePostPageParam,
     // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
   });
   const paginatedPosts = postPagination.results;
@@ -197,7 +198,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           <XStack ai='center' w='100%' overflow='hidden'>
             <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
             {/* <XStack f={1}> */}
-              <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />
+            <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />
             {/* </XStack> */}
           </XStack>
         </div>

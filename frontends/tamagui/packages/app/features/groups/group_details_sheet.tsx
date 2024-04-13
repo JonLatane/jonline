@@ -1,7 +1,7 @@
 import { Group, Moderation, Permission, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation, useToastController } from '@jonline/ui';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { ChevronDown, Cog, FileImage } from '@tamagui/lucide-icons';
+import { ChevronDown, ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
 import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl, useCurrentServer } from 'app/hooks';
 import { FederatedGroup, RootState, actionFailed, deleteGroup, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
@@ -51,7 +51,7 @@ export type GroupDetailsSheetProps = {
 
 const { useParam, useUpdateParams } = createParam<{ shortname: string | undefined }>();
 export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) {
-  const {infoGroupId, setInfoGroupId, selectedGroup} = useGroupContext();
+  const { infoGroupId, setInfoGroupId, selectedGroup } = useGroupContext();
   const infoGroup = useRootSelector((state: RootState) =>
     infoGroupId ? state.groups.entities[infoGroupId] : undefined);
   // debugger;
@@ -229,14 +229,22 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
       <Sheet.Overlay />
       <Sheet.Frame>
         <Sheet.Handle />
-        <XStack gap='$4' paddingHorizontal='$3'>
+        <XStack gap='$4' paddingHorizontal='$3' ai='center' w='100%'>
 
+          <Button
+            // alignSelf='center'
+            size="$2"
+            // mb='$3'
+            circular
+            icon={ChevronLeft}
+            onPress={() => setInfoGroupId(undefined)} />
+          {/* <XStack f={1} /> */}
           {showServerInfo
-            ? <XStack my='auto' jc='center'>
+            ? <XStack my='auto' f={2} >
               <ServerNameAndLogo server={server} />
             </XStack>
             : undefined}
-          <Button
+          {/* <Button
             disabled o={0}
             alignSelf='center'
             size="$3"
@@ -244,23 +252,17 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
             circular
           // icon={ChevronDown}
           // onPress={() => setInfoOpen(false)} 
-          />
-          <XStack f={1} />
-          <Button
-            alignSelf='center'
-            size="$4"
-            mb='$3'
-            circular
-            icon={ChevronDown}
-            onPress={() => setInfoGroupId(undefined)} />
+          /> */}
+
           <XStack f={1} />
 
           {showServerInfo
-            ? <XStack my='auto' ai='center' jc='center' o={0.5}>
+            ? <XStack my='auto' f={1} ai='center' jc='center' o={0.5}>
               <Paragraph size='$1' my='auto' mr='$2'>on</Paragraph>
               <ServerNameAndLogo server={currentServer} />
             </XStack>
             : undefined}
+
           <Button size='$3' backgroundColor={showSettings ? navColor : undefined}
             hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
             onPress={() => setShowSettings(!showSettings)} circular mr='$2' my='auto'>
@@ -401,7 +403,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
               onChangeText={setEditedDescription}
               placeholder={`Description (optional). Markdown is supported.`} />
             : //<Sheet.ScrollView p="$4" space>
-            <YStack maw={600} als='center' width='100%'>
+            <YStack maw={600} als='center' width='100%' px='$4'>
               <TamaguiMarkdown text={description} />
             </YStack>
             //</Sheet.ScrollView>

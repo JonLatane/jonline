@@ -1,4 +1,4 @@
-import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
+import { AlertDialog, Text, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
 import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
@@ -119,15 +119,15 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
             />
             <XStack f={1} />
             <XStack f={1}>
-            {
-              accountOrServer.account
-                ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
-                  onMediaUploaded={setUploadedMediaId} />
-                : <YStack width='100%' maw={600} jc="center" ai="center">
-                  <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
-                  <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>
-                </YStack>
-            }
+              {
+                accountOrServer.account
+                  ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
+                    onMediaUploaded={setUploadedMediaId} />
+                  : <YStack width='100%' maw={600} jc="center" ai="center">
+                    <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
+                    <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>
+                  </YStack>
+              }
             </XStack>
             {/* <XStack f={1} /> */}
             <Button transparent circular icon={Info}
@@ -176,9 +176,11 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                             </Paragraph>
                             : undefined}
                           {showInfo
-                            ? <XStack maw='100%'>
+                            ? <XStack maw='100%' ai='center'
+                            gap='$2'
+                              px='$1' mx='$1' pb='$1' >
                               <Tooltip >
-                                <Tooltip.Trigger maw='100%'>
+                                <Tooltip.Trigger maw='100%' f={1}>
                                   <Paragraph fontWeight='bold' size='$1' maw='100%' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>
                                     {item.name}
                                   </Paragraph>
@@ -189,14 +191,22 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                   </Paragraph>
                                 </Tooltip.Content>
                               </Tooltip>
+                              {mediaQuery.gtXs
+                              ? <Paragraph ml='auto' size='$1' fontFamily='$mono'>
+                                {item.contentType}
+                              </Paragraph>
+                              : undefined}
+
                             </XStack>
                             : undefined}
                           <YStack f={1} overflow='hidden' pointerEvents='none' w='100%' jc='center' ac='center'>
                             <MediaRenderer media={item} />
                           </YStack>
-                          {showInfo
-                            ? <XStack>
-                              <Paragraph size='$1' fontFamily='$mono'>{item.contentType}</Paragraph>
+                          {showInfo && !mediaQuery.gtXs
+                            ? <XStack mt='$1' mx='$1' px='$1'>
+                            <Paragraph ml='auto' size='$1' fontFamily='$mono'>
+                              {item.contentType}
+                            </Paragraph>
                             </XStack>
                             : undefined}
                           {/* <MediaCard media={item}
@@ -223,6 +233,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                   bordered
                                   elevate
                                   key="content"
+                                  maw={window.innerWidth - 20}
                                   animation={[
                                     'quick',
                                     {
@@ -239,9 +250,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                   y={0}
                                 >
                                   <YStack space>
-                                    <AlertDialog.Title>Confirmation</AlertDialog.Title>
+                                    <AlertDialog.Title>Really Delete?</AlertDialog.Title>
                                     <AlertDialog.Description>
-                                      Are you sure you want to delete {mediaName ?? 'this media'}? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
+                                      Are you sure you want to delete <Text fontFamily='$mono'>{mediaName ?? 'this media'}</Text>? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.
                                     </AlertDialog.Description>
 
                                     <XStack gap="$3" justifyContent="flex-end">
