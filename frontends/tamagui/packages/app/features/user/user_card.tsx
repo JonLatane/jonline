@@ -3,7 +3,8 @@ import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Inpu
 import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
-import { useCurrentAccountOrServer, useAppDispatch, usePinnedAccountsAndServers, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { MediaRef } from "app/contexts";
+import { useAppDispatch, useCurrentAccountOrServer, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { FederatedUser, RootState, followUnfollowUser, getServerTheme, isUserLocked, respondToFollowRequest, useRootSelector } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
@@ -12,7 +13,6 @@ import React from "react";
 import { GestureResponderEvent } from 'react-native';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
-import { MediaRef } from "../media/media_chooser";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { postBackgroundSize } from "../post/post_card";
 

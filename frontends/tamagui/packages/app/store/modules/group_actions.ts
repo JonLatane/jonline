@@ -1,4 +1,4 @@
-import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
+import { Empty, EventListingType, GetEventsResponse, GetGroupPostsResponse, GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, GetPostsResponse, Group, GroupListingType, GroupPost, Membership, Moderation, PostListingType, TimeFilter } from "@jonline/api";
 
 import {
   AsyncThunk,
@@ -90,9 +90,20 @@ export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Gro
   "groups/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    const response = await client.getGroups(GetGroupsRequest.create({ groupId: request.id }), client.credential);
+    const response = await client.getGroups(GetGroupsRequest.create({ groupId: parseFederatedId(request.id).id }), client.credential);
     const group = response.groups[0]!;
     return group;
+  }
+);
+
+
+export type LoadGroupMemberships = { id: string } & AccountOrServer;
+export const loadGroupMemberships: AsyncThunk<GetMembersResponse, LoadGroup, any> = createAsyncThunk<GetMembersResponse, LoadGroup>(
+  "groups/loadMemberships",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const response = await client.getMembers(GetMembersRequest.create({ groupId: parseFederatedId(request.id).id }), client.credential);
+    return response;
   }
 );
 

@@ -1,16 +1,11 @@
-import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
-import { useCreationServer, useCurrentAccount, useProvidedDispatch } from 'app/hooks';
-import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
+import { Button, Paragraph, XStack, useTheme } from '@jonline/ui';
+import { useCreationServer, useProvidedDispatch } from 'app/hooks';
+import { getServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
-import { Media, MediaReference } from '@jonline/api';
-import { overlayAnimation } from '@jonline/ui';
 
-import { Image as ImageIcon, Trash, Wand2 } from '@tamagui/lucide-icons';
+import { Image as ImageIcon } from '@tamagui/lucide-icons';
 
-import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
-import { MediaRenderer } from './media_renderer';
-import { MediaUploader } from './media_uploader';
 import { MediaRef, useMediaContext } from 'app/contexts';
 
 interface MediaChooserProps {

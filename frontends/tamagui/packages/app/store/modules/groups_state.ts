@@ -28,6 +28,7 @@ export interface GroupsState {
   // By GroupListingType -> page (as a number) -> groupIds
   pages: Federated<GroupedPages>;
   shortnameIds: Dictionary<string>;
+  groupMemberships: Dictionary<Membership>;
   groupPostPages: GroupedPages;
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
@@ -45,6 +46,7 @@ const groupsAdapter: EntityAdapter<FederatedGroup> = createEntityAdapter<Federat
 const initialState: GroupsState = {
   pagesStatus: createFederatedPagesStatus(),
   shortnameIds: {},
+  groupMemberships: {},
   failedShortnames: [],
   pages: createFederated({}),
   groupPostPages: {},

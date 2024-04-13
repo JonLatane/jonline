@@ -1,12 +1,11 @@
-import { useCredentialDispatch, useIsVisible, useProvidedDispatch } from "app/hooks";
-import { JonlineServer, RootState, getServerTheme, loadMedia, selectMediaById, useRootSelector, useServerTheme } from "app/store";
+import { useProvidedDispatch } from "app/hooks";
+import { JonlineServer, getServerTheme } from "app/store";
 import React, { useEffect, useState } from 'react';
-import { View } from 'react-native';
 
-import { Anchor, Paragraph, Text, XStack, YStack, useMedia } from "@jonline/ui";
+import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
+import { MediaRef } from "app/contexts";
 import ReactPlayer from 'react-player/lazy';
 import { useMediaUrl } from '../../hooks/use_media_url';
-import { MediaRef } from "./media_chooser";
 import { FadeInView } from "../post";
 
 interface Props {
