@@ -50,7 +50,7 @@ export function useMembersPage(
 ): PaginationResults<FederatedUser> {
   const dispatch = useAppDispatch();
   const { serverHost } = parseFederatedId(groupId);
-  const accountOrServer= useFederatedAccountOrServer(serverHost);
+  const accountOrServer = useFederatedAccountOrServer(serverHost);
 
   const [loadingMembers, setLoadingMembers] = useState(false);
   function reloadMembers() {
@@ -69,7 +69,7 @@ export function useMembersPage(
     }
   }, [users, loadingMembers]);
 
-  console.log("members page", groupId, page, users);
+  // console.log("members page", groupId, page, users);
   return {
     results: users,
     loading: loadingMembers,
