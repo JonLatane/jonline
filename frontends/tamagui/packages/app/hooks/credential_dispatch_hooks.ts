@@ -6,6 +6,7 @@ import { server } from '../../../apps/expo/metro.config';
 import { useCurrentAccountOrServer } from './account_or_server/use_current_account_or_server';
 import { useCreationAccountOrServer } from './account_or_server/use_creation_account_or_server';
 import { useFederatedAccountOrServer } from './account_or_server/use_federated_account_or_server';
+import { useProvidedAccountOrServer } from './account_or_server/use_provided_account_or_server';
 
 /**
  * An {@link AppDispatch} and the {@link AccountOrServer} to communicate with when dispatching actions.
@@ -60,18 +61,8 @@ export function useFederatedDispatch<T extends HasIdFromServer>(
  * @returns 
  */
 export function useProvidedDispatch(serverOverride?: JonlineServer): CredentialDispatch {
-  const currentAccountOrServer = useCurrentAccountOrServer();
-  const accountOrServerContext = useAccountOrServerContext();
-  const accountOrServer = accountOrServerContext ?? currentAccountOrServer;
   const dispatch = useAppDispatch();
-  if (serverOverride) {
-    if (serverOverride.host === accountOrServer.server?.host) {
-      return { dispatch, accountOrServer };
-    } else {
-      return { dispatch, accountOrServer: { account: undefined, server: serverOverride } };
-    }
-  }
-  return { dispatch, accountOrServer };
+  return { dispatch, accountOrServer: useProvidedAccountOrServer(serverOverride) };
 }
 
 export function usePostDispatch(post: Post): CredentialDispatch {

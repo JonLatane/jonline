@@ -1,8 +1,8 @@
-import { Button, Paragraph, ScrollView, Spinner, TamaguiElement, XStack } from '@jonline/ui';
-import { Pagination, maxPagesToRender, useComponentKey } from 'app/hooks';
-import { useIsVisible } from 'app/hooks/use_is_visible';
-import { useServerTheme } from 'app/store';
-import { themedButtonBackground, highlightedButtonBackground } from 'app/utils';
+import { Button, ScrollView, XStack, useTheme } from '@jonline/ui';
+import { useAccountOrServerContext } from 'app/contexts';
+import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServer, useProvidedDispatch } from 'app/hooks';
+import { getServerTheme } from 'app/store';
+import { highlightedButtonBackground } from 'app/utils';
 import React, { useEffect } from "react";
 import FlipMove from 'react-flip-move';
 
@@ -47,7 +47,8 @@ export const PageChooser: React.FC<Pagination<any> & {
     );
     // console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
-    const theme = useServerTheme();
+    const server = useProvidedAccountOrServer().server;
+    const theme = getServerTheme(server, useTheme());
     const { primaryColor, primaryTextColor, navColor, navTextColor } = theme;
     // debugger;
     // const [lastPageLoad, setLastPageLoad] = useState(Date.now());
@@ -84,8 +85,8 @@ export const PageChooser: React.FC<Pagination<any> & {
                   // onSetPage?.();
                   if (pageTopId) {
                     // setTimeout(() => {
-                      const pageTop = document.getElementById(pageTopId);
-                      pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+                    const pageTop = document.getElementById(pageTopId);
+                    pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
                     // }, 300);
                   }
                 }}
