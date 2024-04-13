@@ -1,4 +1,4 @@
-import { Group, GroupListingType, GroupPost, Membership } from "@jonline/api";
+import { Group, GroupListingType, GroupPost, Membership, Moderation } from "@jonline/api";
 
 import {
   createEntityAdapter,
@@ -28,7 +28,8 @@ export interface GroupsState {
   // By GroupListingType -> page (as a number) -> groupIds
   pages: Federated<GroupedPages>;
   shortnameIds: Dictionary<string>;
-  groupMemberships: Dictionary<Membership[]>;
+  // By group ID -> membership group moderation -> page (as a number) -> memberships
+  groupMembershipPages: Dictionary<Dictionary<Membership[][]>>;
   groupPostPages: GroupedPages;
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
@@ -46,7 +47,7 @@ const groupsAdapter: EntityAdapter<FederatedGroup> = createEntityAdapter<Federat
 const initialState: GroupsState = {
   pagesStatus: createFederatedPagesStatus(),
   shortnameIds: {},
-  groupMemberships: {},
+  groupMembershipPages: {},
   failedShortnames: [],
   pages: createFederated({}),
   groupPostPages: {},
@@ -277,18 +278,16 @@ export const groupsSlice = createSlice({
 
     builder.addCase(loadGroupMembers.fulfilled, (state, action) => {
       const actionServerHost = serverHost(action);
+      const page = action.meta.arg.page ?? 0;
+      const moderation = action.meta.arg.groupModeration ?? Moderation.MODERATION_UNKNOWN;
       const groupId = toFederatedId(parseFederatedId(action.meta.arg.id, actionServerHost));
       const memberships = action.payload.members
         .map(m => m.membership)
         .filter(m => m) as Membership[];
-      const memberIds = memberships.map(m => m.userId);
-      state.groupMemberships[groupId] = [
-        ...memberships,
-        ...(state.groupMemberships[groupId]
-          ?.filter(m => !memberIds.includes(m.userId))
-          ?? []
-        ),
-      ];
+
+      if (!state.groupMembershipPages[groupId]) state.groupMembershipPages[groupId] = {};
+      if (!state.groupMembershipPages[groupId]![moderation]) state.groupMembershipPages[groupId]![moderation] = [];
+      state.groupMembershipPages[groupId]![moderation]![page] = memberships;
     });
   },
 });

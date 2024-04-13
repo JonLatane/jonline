@@ -1,10 +1,11 @@
-import { User, UserListingType } from "@jonline/api";
-import { AccountOrServer, FederatedUser, getUsersPage, loadUsersPage } from "app/store";
+import { Moderation, User, UserListingType } from "@jonline/api";
+import { AccountOrServer, FederatedUser, getMembersPage, getUsersPage, loadGroupMembers, loadUsersPage, parseFederatedId, selectAllServers } from "app/store";
 import { useEffect, useState } from "react";
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
 import { useCurrentAccountOrServer } from '../account_or_server/use_current_account_or_server';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
 import { PaginationResults } from ".";
+import { useFederatedAccountOrServer } from "../account_or_server";
 
 export function useUsersPage(
   listingType: UserListingType,
@@ -42,3 +43,37 @@ export function useUsersPage(
   };
 }
 
+export function useMembersPage(
+  groupId: string,
+  page: number,
+  groupModeration?: Moderation
+): PaginationResults<FederatedUser> {
+  const dispatch = useAppDispatch();
+  const { serverHost } = parseFederatedId(groupId);
+  const accountOrServer= useFederatedAccountOrServer(serverHost);
+
+  const [loadingMembers, setLoadingMembers] = useState(false);
+  function reloadMembers() {
+    dispatch(loadGroupMembers({ id: groupId, ...accountOrServer })).then((results) => {
+      console.log("Loaded members", results);
+      setLoadingMembers(false);
+    });
+  }
+
+  const { users, hadUndefinedServers } = useAppSelector(state => getMembersPage(state, groupId, page, groupModeration))
+  useEffect(() => {
+    if (hadUndefinedServers && !loadingMembers && accountOrServer?.server) {
+      console.log("Loading members...");
+      setLoadingMembers(true);
+      reloadMembers();
+    }
+  }, [users, loadingMembers]);
+
+  console.log("members page", groupId, page, users);
+  return {
+    results: users,
+    loading: loadingMembers,
+    reload: reloadMembers,
+    firstPageLoaded: users !== undefined,
+  };
+}

@@ -32,6 +32,9 @@ export function getCachedServerClient(server: JonlineServer): ConfiguredClient |
 
 // Creates a client and upserts the server into the store.
 export async function getServerClient(server: JonlineServer, args?: JonlineClientCreationArgs): Promise<JonlineClient> {
+  // if (!server) {
+  //   debugger;
+  // }
   const serverId = serverID(server);
   const configuredClient = await getConfiguredServerClient(server, args);
   if (!configuredClient) throw "Failed to load client";

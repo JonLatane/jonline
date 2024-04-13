@@ -96,14 +96,28 @@ export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Gro
   }
 );
 
-
-export type LoadGroupMembers = { id: string } & AccountOrServer;
-export const loadGroupMembers: AsyncThunk<GetMembersResponse, LoadGroup, any> = createAsyncThunk<GetMembersResponse, LoadGroup>(
-  "groups/loadMemberships",
+export type LoadGroupMembers = { id: string, page?: number, groupModeration?: Moderation } & AccountOrServer;
+export const loadGroupMembers: AsyncThunk<GetMembersResponse, LoadGroupMembers, any> = createAsyncThunk<GetMembersResponse, LoadGroupMembers>(
+  "groups/loadMembers",
   async (request) => {
-    const client = await getCredentialClient(request);
-    const response = await client.getMembers(GetMembersRequest.create({ groupId: parseFederatedId(request.id).id }), client.credential);
-    return response;
+    try {
+      // debugger;
+      const client = await getCredentialClient(request);
+      // debugger;
+      const response = await client.getMembers(
+        GetMembersRequest.create({
+          groupId: parseFederatedId(request.id).id,
+          page: request.page,
+          groupModeration: request.groupModeration
+        }),
+        client.credential
+      );
+      return response;
+    } catch (t) {
+      console.error('error loading group members', t, request);
+      throw t;
+    }
+    // debugger;
   }
 );
 
