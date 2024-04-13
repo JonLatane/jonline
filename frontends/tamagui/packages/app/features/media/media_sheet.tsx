@@ -1,11 +1,11 @@
-import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
+import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
 import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { overlayAnimation } from '@jonline/ui';
 
-import { Trash, Wand2 } from '@tamagui/lucide-icons';
+import { Trash, Wand2, Info } from '@tamagui/lucide-icons';
 
 import { Permission } from '@jonline/api/index';
 import { AccountOrServerContextProvider, MediaRef, useMediaContext } from 'app/contexts';
@@ -15,6 +15,7 @@ import { MediaRenderer } from './media_renderer';
 import { MediaUploader } from './media_uploader';
 import FlipMove from 'react-flip-move';
 import { PageChooser } from '../home/page_chooser';
+import { highlightedButtonBackground } from 'app/utils';
 
 interface MediaSheetProps { }
 
@@ -26,10 +27,10 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   const mediaState = useRootSelector((state: RootState) => state.media);
   const app = useRootSelector((state: RootState) => state.app);
   const { dispatch, accountOrServer } = useCreationDispatch(); //useProvidedDispatch();// useCredentialDispatch();
-  const account = accountOrServer.account;
+  const { server, account } = accountOrServer;
 
-  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server, useTheme());
+  const serverTheme = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;//getServerTheme(accountOrServer.server, useTheme());
   const dimensions = useWindowDimensions();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
@@ -50,6 +51,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
       ? selectMediaById(state.media, uploadedMediaId) ?? { id: uploadedMediaId } as MediaRef
       : undefined
   );
+
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     if (uploadedMediaId
@@ -108,15 +111,30 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
             </YStack>
             : undefined}
 
-          {
-            accountOrServer.account
-              ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
-                onMediaUploaded={setUploadedMediaId} />
-              : <YStack width='100%' maw={600} jc="center" ai="center">
-                <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
-                <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>
-              </YStack>
-          }
+          <XStack w='100%' ai='center' px='$3'>
+            <Button transparent circular icon={Info} disabled
+              // onPress={() => setShowInfo(!showInfo)}
+              {...highlightedButtonBackground(serverTheme, 'nav', showInfo)}
+              o={0}
+            />
+            <XStack f={1} />
+            <XStack f={1}>
+            {
+              accountOrServer.account
+                ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
+                  onMediaUploaded={setUploadedMediaId} />
+                : <YStack width='100%' maw={600} jc="center" ai="center">
+                  <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
+                  <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>
+                </YStack>
+            }
+            </XStack>
+            {/* <XStack f={1} /> */}
+            <Button transparent circular icon={Info}
+              onPress={() => setShowInfo(!showInfo)}
+              {...highlightedButtonBackground(serverTheme, 'nav', showInfo)}
+            />
+          </XStack>
           {/* </XStack> */}
           <Sheet.ScrollView p="$4" space>
             <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
@@ -157,9 +175,30 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                               {selectionIndexBase1}
                             </Paragraph>
                             : undefined}
+                          {showInfo
+                            ? <XStack maw='100%'>
+                              <Tooltip >
+                                <Tooltip.Trigger maw='100%'>
+                                  <Paragraph fontWeight='bold' size='$1' maw='100%' whiteSpace='nowrap' overflow='hidden' textOverflow='ellipsis'>
+                                    {item.name}
+                                  </Paragraph>
+                                </Tooltip.Trigger>
+                                <Tooltip.Content>
+                                  <Paragraph>
+                                    {item.name}
+                                  </Paragraph>
+                                </Tooltip.Content>
+                              </Tooltip>
+                            </XStack>
+                            : undefined}
                           <YStack f={1} overflow='hidden' pointerEvents='none' w='100%' jc='center' ac='center'>
                             <MediaRenderer media={item} />
                           </YStack>
+                          {showInfo
+                            ? <XStack>
+                              <Paragraph size='$1' fontFamily='$mono'>{item.contentType}</Paragraph>
+                            </XStack>
+                            : undefined}
                           {/* <MediaCard media={item}
                           selected={selectedMedia.includes(item.id)}
                           onSelect={onMediaSelected ? () => selectMedia(item.id) : undefined}

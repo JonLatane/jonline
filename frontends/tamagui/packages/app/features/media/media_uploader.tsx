@@ -92,7 +92,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
     }
   }
   return (
-    <YStack mb={-19} maw={600} p='$5' als='center' overflow='hidden'>
+    <YStack mb={-19} p='$2' als='center' overflow='hidden' maw='100%'>
       <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>
         <FileUploader handleChange={handleUpload} name="file"
           label='Add Media'
@@ -102,12 +102,15 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
           <Button onPress={() => { }}
             backgroundColor={dragging ? primaryColor : navColor}
             opacity={0.95}
+            py='$1'
+            px='$2'
+            h='auto'
             hoverStyle={{ opacity: 1, backgroundColor: dragging ? primaryColor : navColor }}>
-            <XStack gap='$2'>
+            <XStack gap='$2' maw='100%'>
               <XStack my='auto'>
                 <Upload size={24} color={dragging ? primaryTextColor : navTextColor} />
               </XStack>
-              <YStack jc="center" ai="center" f={1} my='auto' p='$3'>
+              <YStack jc="center" ai="center" f={1} my='auto' >
                 <Heading size='$3' ta='center' color={dragging ? primaryTextColor : navTextColor}>
                   Upload Media
                 </Heading>

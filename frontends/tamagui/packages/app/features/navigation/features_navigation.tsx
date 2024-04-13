@@ -151,7 +151,10 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const followRequestsLink = useLink({ href: '/people/follow_requests' });
 
   const myMediaLink = {
-    onPress: () => setMediaSheetOpen(true)
+    onPress: () => {
+      if (popoverOpen) setPopoverOpen(false);
+      setMediaSheetOpen(true);
+    }
   };
 
   const isLatest = appSection == AppSection.HOME;
@@ -346,6 +349,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     </div>
     : undefined;
 
+  const [popoverOpen, setPopoverOpen] = useState(false);
+
 
 
   // console.log('inlineNavigation', inlineNavigation, 'reorderInlineNavigation', reorderInlineNavigation, menuItems.includes(appSection));
@@ -372,7 +377,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     </>
     : <>
       <XStack w={selectedGroup ? 11 : 3.5} />
-      <Popover size="$5">
+      <Popover size="$5" open={popoverOpen} onOpenChange={setPopoverOpen}>
         <Popover.Trigger asChild>
           {triggerButton(true)}
         </Popover.Trigger>
