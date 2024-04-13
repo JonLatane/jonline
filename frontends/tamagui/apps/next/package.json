@@ -17,15 +17,15 @@
     "raf": "^3.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-native": "0.72.10",
+    "react-native": "0.73.6",
     "react-native-web": "~0.19.10",
-    "react-native-web-lite": "^1.89.26",
+    "react-native-web-lite": "^1.94.4",
     "tamagui": "^1.94.4",
-    "vercel": "^33.4.1"
+    "vercel": "^34.0.0"
   },
   "devDependencies": {
     "@tamagui/next-plugin": "^1.94.4",
-    "@types/node": "^18.19.17",
+    "@types/node": "^18.19.31",
     "eslint-config-next": "^13.5.6"
   }
 }

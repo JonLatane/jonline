@@ -107,8 +107,8 @@ export function useInlineFeatureNavigation() {
   const { inlineFeatureNavigation, shrinkFeatureNavigation } = useLocalConfiguration();
 
   return {
-    shrinkNavigation: shrinkFeatureNavigation || shrinkFeatureNavigation == undefined && !mediaQuery.gtSm,
-    inlineNavigation: inlineFeatureNavigation || inlineFeatureNavigation == undefined && mediaQuery.gtXs
+    shrinkNavigation: shrinkFeatureNavigation || shrinkFeatureNavigation === undefined && !mediaQuery.gtSm,
+    inlineNavigation: inlineFeatureNavigation || inlineFeatureNavigation === undefined && mediaQuery.gtXxxs
   };
 }
 

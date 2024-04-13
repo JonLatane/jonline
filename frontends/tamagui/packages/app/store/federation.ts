@@ -109,6 +109,9 @@ export function parseFederatedId(federatedId: string, defaultServerHost?: string
     serverHost: serverHost ?? defaultServerHost ?? 'default',
   }
 }
+export function toFederatedId(federatedIdParsing: FederatedIDParsing): string {
+  return `${federatedIdParsing.id}@${federatedIdParsing.serverHost}`;
+}
 
 /**
  * Shortcut composing `federatedEntity` and `federatedId` (i.e. equivalent to `federatedId(federatedEntity(entity))`).

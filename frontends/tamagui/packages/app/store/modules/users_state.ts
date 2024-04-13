@@ -9,7 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, loadGroupMemberships, notifyUserDeleted, store, upsertUserData } from "..";
+import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, loadGroupMembers, notifyUserDeleted, store, upsertUserData } from "..";
 import { Federated, FederatedAction, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, parseFederatedId, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
 
@@ -250,7 +250,7 @@ export const usersSlice = createSlice({
       usersAdapter.upsertOne(state, user);
     });
 
-    builder.addCase(loadGroupMemberships.fulfilled, (state, action) => {
+    builder.addCase(loadGroupMembers.fulfilled, (state, action) => {
       const federatedUsers = action.payload.members.map(
         m => m.user ? federatedEntity(m.user, action) : undefined
       ).filter(u => u) as FederatedUser[];

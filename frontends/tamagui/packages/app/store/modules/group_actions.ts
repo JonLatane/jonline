@@ -97,8 +97,8 @@ export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Gro
 );
 
 
-export type LoadGroupMemberships = { id: string } & AccountOrServer;
-export const loadGroupMemberships: AsyncThunk<GetMembersResponse, LoadGroup, any> = createAsyncThunk<GetMembersResponse, LoadGroup>(
+export type LoadGroupMembers = { id: string } & AccountOrServer;
+export const loadGroupMembers: AsyncThunk<GetMembersResponse, LoadGroup, any> = createAsyncThunk<GetMembersResponse, LoadGroup>(
   "groups/loadMemberships",
   async (request) => {
     const client = await getCredentialClient(request);

@@ -10,11 +10,11 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, setFederated } from "../federation";
+import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, serverHost, setFederated, toFederatedId } from '../federation';
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
-import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
+import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
 import { markGroupVisit } from "./local_app_configuration";
 
 export type FederatedGroup = FederatedEntity<Group>;
@@ -28,7 +28,7 @@ export interface GroupsState {
   // By GroupListingType -> page (as a number) -> groupIds
   pages: Federated<GroupedPages>;
   shortnameIds: Dictionary<string>;
-  groupMemberships: Dictionary<Membership>;
+  groupMemberships: Dictionary<Membership[]>;
   groupPostPages: GroupedPages;
   groupEventPages: GroupedEventInstancePages;
   postIdGroupPosts: Dictionary<GroupPost[]>;
@@ -108,7 +108,7 @@ export const groupsSlice = createSlice({
         setFederated(state.pages, action, pages);
       }
       setTimeout(() => {
-        store.dispatch(markGroupVisit({group}));
+        store.dispatch(markGroupVisit({ group }));
       }, 1);
     });
     builder.addCase(updateGroup.fulfilled, (state, action) => {
@@ -117,7 +117,7 @@ export const groupsSlice = createSlice({
       groupsAdapter.upsertOne(state, group);
       state.shortnameIds[federatedShortname(group)] = federatedGroupId;
       setTimeout(() => {
-        store.dispatch(markGroupVisit({group}));
+        store.dispatch(markGroupVisit({ group }));
       }, 1);
       setTimeout(() => {
         // TODO: Use separate dispatch to delete old shortname/ID link.
@@ -273,6 +273,22 @@ export const groupsSlice = createSlice({
         group = { ...group, currentUserMembership: undefined };
       }
       groupsAdapter.upsertOne(state, group);
+    });
+
+    builder.addCase(loadGroupMembers.fulfilled, (state, action) => {
+      const actionServerHost = serverHost(action);
+      const groupId = toFederatedId(parseFederatedId(action.meta.arg.id, actionServerHost));
+      const memberships = action.payload.members
+        .map(m => m.membership)
+        .filter(m => m) as Membership[];
+      const memberIds = memberships.map(m => m.userId);
+      state.groupMemberships[groupId] = [
+        ...memberships,
+        ...(state.groupMemberships[groupId]
+          ?.filter(m => !memberIds.includes(m.userId))
+          ?? []
+        ),
+      ];
     });
   },
 });
