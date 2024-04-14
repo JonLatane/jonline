@@ -341,7 +341,10 @@ export function UsernameDetailsScreen() {
               <XStack w='100%' ai='center'>
 
                 <Button mr='auto' my='$2' onPress={() => setShowEvents(!showEvents)}>
-                  <Heading size='$6'>Upcoming Events</Heading>
+                  <YStack ai='center'>
+                    <Heading size='$1' lh='$1'>Upcoming</Heading>
+                    <Heading size='$3' lh='$1'>Events</Heading>
+                  </YStack>
                   <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
@@ -352,14 +355,17 @@ export function UsernameDetailsScreen() {
                   transparent
                   {...themedButtonBackground(
                     bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                  animation='standard' disabled={!showEvents} o={showEvents ? 1 : 0}
+                  animation='standard'
+                  disabled={!showEvents || allEvents.length === 0}
+                  o={!showEvents || allEvents.length === 0
+                    ? 0 : 1}
                 />
 
                 {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
               </XStack>
             </div>
             {showEvents
-              ? bigCalendar
+              ? bigCalendar && allEvents.length > 0
                 ? [
                   <div key='full-calendar'>
                     <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
