@@ -40,7 +40,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const [searchText, setSearchText] = useState(searchParam ?? '');
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
-    1000
+    300
   );
   useEffect(() => {
     updateParams({ search: debouncedSearchText }, { web: { replace: true } });

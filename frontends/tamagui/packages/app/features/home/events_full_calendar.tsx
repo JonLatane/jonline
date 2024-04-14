@@ -137,6 +137,13 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
   );
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
 
+  const startTimes = allEvents.map((event) => {
+    const instance = event.instances[0];
+    const startsAt = moment(instance?.startsAt ?? 0);
+    const startsAtTime = startsAt.format('HH:mm:ss');
+    return startsAtTime;
+  });
+  const modeStartTime = mode(startTimes);
   return (<>
     <YStack
       // key={`calendar-rendering-${serializedTimeFilter}`} 
@@ -169,7 +176,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
             dateClick={({ date, view }) => {
               view.calendar.changeView('listDay', date);
             }}
-
+            scrollTime={modeStartTime}
             {...weeklyOnly
               ? {
                 headerToolbar: {
@@ -324,3 +331,18 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
 }
 
 const localizer = momentLocalizer(moment);
+
+function mode(arr: string[]): string | undefined {
+  const numMapping = {};
+  let greatestFreq = 0;
+  let mode: string | undefined;
+  arr.forEach(function findMode(v) {
+    numMapping[v] = (numMapping[v] || 0) + 1;
+
+    if (greatestFreq < numMapping[v]) {
+      greatestFreq = numMapping[v];
+      mode = v;
+    }
+  });
+  return mode;
+}
