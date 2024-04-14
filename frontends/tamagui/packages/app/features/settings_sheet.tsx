@@ -334,7 +334,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     </Button>
                     {/* <Button onClick={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular /> */}
                   </Dialog.Trigger>
-                  <Dialog.Portal>
+                  <Dialog.Portal zIndex={20000000}>
                     <Dialog.Overlay
                       key="overlay"
                       animation="quick"
