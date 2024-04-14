@@ -101,8 +101,9 @@ export function CreationServerSelector({
     }
   </XStack>;
 }
+
 export function useAvailableCreationServers(requiredPermissions: Permission[] | undefined) {
-  const accountsAndServers = usePinnedAccountsAndServers();
+  const accountsAndServers = usePinnedAccountsAndServers({includeUnpinned: true});
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers)); //.servers.ids.map(id => state.servers.entities[id]));
 
   return requiredPermissions

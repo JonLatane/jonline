@@ -131,7 +131,11 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
           })}
 
           <div key='pages-bottom' id='pages-bottom' style={{ maxWidth: '100%' }}>
-            <PageChooser {...pagination} pageTopId='pages-top' />
+            <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
+              entityName={isForGroupMembers
+                ? { singular: 'member', plural: 'members' } :
+                { singular: 'person', plural: 'people' }}
+            />
           </div>
           {showScrollPreserver ? <YStack h={100000} /> : undefined}
         </FlipMove>

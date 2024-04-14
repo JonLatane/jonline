@@ -7,6 +7,8 @@ export interface Pagination<T extends HasIdFromServer> {
   results: FederatedEntity<T>[];
   page: number;
   pageCount: number;
+  pageSize: number;
+  resultCount: number;
   loadingPage: boolean;
   hasNextPage?: boolean;
   loadNextPage: () => void;
@@ -136,7 +138,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   },
   [page, pageCount, loadingPage]);
 
-  return { results, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
+  return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
 }
 
 // export function useLoadablePaginatedRendering<T extends HasIdFromServer>(

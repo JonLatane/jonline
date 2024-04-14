@@ -102,7 +102,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
             {pagination.pageCount > 1
               ? <div key='page-chooser-bottom'
                 style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-                <PageChooser {...pagination} pageTopId='pages-create' />
+                <PageChooser {...pagination} pageTopId='pages-create' showResultCounts
+                entityName={{ singular: 'post', plural: 'posts' }}
+                 />
               </div>
               : undefined}
             {/* <div key='pagination'>

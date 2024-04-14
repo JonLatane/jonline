@@ -340,7 +340,9 @@ export function GroupsSheet({
             : undefined}
 
           <div key='pagination-bottom' style={{ marginBottom: 5 }}>
-            <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId} />
+            <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId}
+              showResultCounts
+              entityName={{ singular: 'group', plural: 'groups' }} />
           </div>
         </FlipMove>
       </Sheet.ScrollView>

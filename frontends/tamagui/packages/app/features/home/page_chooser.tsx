@@ -1,4 +1,4 @@
-import { Button, ScrollView, XStack, useTheme } from '@jonline/ui';
+import { Button, Paragraph, ScrollView, XStack, YStack, useTheme } from '@jonline/ui';
 import { useAccountOrServerContext } from 'app/contexts';
 import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServer, useProvidedDispatch } from 'app/hooks';
 import { getServerTheme } from 'app/store';
@@ -6,16 +6,31 @@ import { highlightedButtonBackground } from 'app/utils';
 import React, { useEffect } from "react";
 import FlipMove from 'react-flip-move';
 
+export type Pluralizable = {
+  singular: string;
+  plural: string;
+}
+export function pluralize(
+  count: number,
+  { singular, plural }: Pluralizable = { singular: "result", plural: "results" }
+) {
+  return count === 1 ? singular : plural;
+}
+
 export const PageChooser: React.FC<Pagination<any> & {
   width?: string | number;
   maxWidth?: string | number;
   height?: string | number;
   pageTopId?: string;
   noAutoScroll?: boolean;
+  showResultCounts?: boolean;
+  entityName?: Pluralizable;
 }> = ({
   page: currentPage,
   setPage,
   pageCount,
+  resultCount,
+  pageSize,
   loadingPage,
   hasNextPage = true,
   loadNextPage,
@@ -25,6 +40,8 @@ export const PageChooser: React.FC<Pagination<any> & {
   height = undefined,
   pageTopId,
   noAutoScroll = false,
+  showResultCounts = false,
+  entityName
 }) => {
     // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
     // const ref = React.createRef<TamaguiElement>();
@@ -71,7 +88,7 @@ export const PageChooser: React.FC<Pagination<any> & {
       ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
       : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
-    return <XStack w={width} h={height} maxWidth={maxWidth} ai='center'>
+    return <YStack w={width} h={height} maxWidth={maxWidth} ai='center'>
       <ScrollView f={1} horizontal>
         <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
           {pageCount > 1 || currentPage > 0
@@ -97,5 +114,14 @@ export const PageChooser: React.FC<Pagination<any> & {
             : undefined}
         </FlipMove>
       </ScrollView>
-    </XStack>;
+      {showResultCounts && resultCount > 0
+        ? <Paragraph mx='auto' mt='$1' pt='$1' size='$2'>
+          {
+            Math.min(resultCount, (lowerPage - 1) * pageSize + 1)
+          }-{
+            Math.min(resultCount, (upperPage) * pageSize)
+          } of {resultCount} {pluralize(resultCount, entityName)}
+        </Paragraph>
+        : undefined}
+    </YStack>;
   };

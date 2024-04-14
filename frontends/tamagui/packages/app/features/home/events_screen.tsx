@@ -485,7 +485,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   {/* </YStack> */}
                 </div>,
                 <div key='pages-bottom' id='pages-bottom'>
-                  <PageChooser {...pagination} pageTopId='pages-top' />
+                  <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
+                    entityName={{ singular: 'event', plural: 'events' }} />
                 </div>,
               ]
               : [
@@ -513,7 +514,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                 }),
 
                 <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
-                  <PageChooser {...pagination} pageTopId='pages-top' />
+                  <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
+                    entityName={{ singular: 'event', plural: 'events' }} />
                 </div>
               ]}
           {showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}

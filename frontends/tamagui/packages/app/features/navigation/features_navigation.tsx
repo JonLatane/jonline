@@ -122,7 +122,7 @@ export type FeaturesNavigationProps = {
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
   // const { account, server } = useCurrentAccountOrServer();
   const server = useCurrentServer();
-  const hasAccount = usePinnedAccountsAndServers().filter(aos => !!aos.account?.user?.id).length > 0;
+  const hasAccount = usePinnedAccountsAndServers({includeUnpinned: true}).filter(aos => !!aos.account?.user?.id).length > 0;
   const mediaQuery = useMedia();
   const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
