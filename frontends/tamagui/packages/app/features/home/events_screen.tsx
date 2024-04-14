@@ -1,21 +1,16 @@
-import daygridPlugin from "@fullcalendar/daygrid";
-import interactionPlugin from "@fullcalendar/interaction";
-import listPlugin from "@fullcalendar/list";
-import multimonthPlugin from "@fullcalendar/multimonth";
-import FullCalendar from "@fullcalendar/react";
-import timegridPlugin from "@fullcalendar/timegrid";
 import { EventListingType, TimeFilter } from '@jonline/api';
 import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
-import { Adapt, AnimatePresence, Button, DateTimePicker, Dialog, Heading, Input, ScrollView, Sheet, Spinner, Text, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { useBigCalendar } from "app/hooks/configuration_hooks";
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import FlipMove from 'react-flip-move';
@@ -23,11 +18,10 @@ import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
-import { DynamicCreateButton } from './dynamic_create_button';
-import { HomeScreenProps } from './home_screen';
-import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
-import { serverHost } from '../../store/federation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { DynamicCreateButton } from './dynamic_create_button';
+import { EventsFullCalendar } from "./events_full_calendar";
+import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
@@ -39,7 +33,8 @@ export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
 export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
   const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
-  const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+  const { showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+  const { bigCalendar, setBigCalendar } = useBigCalendar();
 
   const eventsState = useRootSelector((state: RootState) => state.events);
 
@@ -185,7 +180,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     : undefined;
   const maxWidth = 2000;
 
-  const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
@@ -279,173 +273,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         <FlipMove style={{ width: '100%' }}>
           {bigCalendar
             ? <div key='bigcalendar-rendering'>
-              <YStack
-                // key={`calendar-rendering-${serializedTimeFilter}`} 
-                mx='$1'
-                animation='standard' {...reverseStandardAnimation}
-                //  w='100%'
-
-                width={bigCalWidth}
-                height={bigCalHeight}
-                // p='$2'
-
-                backgroundColor='whitesmoke'
-                borderRadius='$3'>
-
-                <Text fontFamily='$body' color='black' width='100%'>
-                  <div
-                    style={{
-                      display: 'block',
-                      width: bigCalWidth,//- 10,
-                      height: bigCalHeight,// - 10,
-                      // height: '100%'
-                    }} >
-                    <FullCalendar
-
-                      key={`calendar-rendering-${serializedTimeFilter
-                        }-${window.innerWidth
-                        }-${window.innerHeight
-                        }-${navigationHeight
-                        }-${hideNavigation
-                        }-${allEvents.length}`}
-                      selectable
-                      dateClick={({ date, view }) => {
-                        view.calendar.changeView('listDay', date);
-                      }}
-
-                      {...mediaQuery.xShort && mediaQuery.gtXs
-                        ? {
-                          headerToolbar: {
-                            start: 'prev,next, today',
-                            center: 'title',
-                            end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
-                          },
-                          // footerToolbar: {
-                          //   start: 'today',
-                          //   center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                          //   end: 'listMonth',
-                          // }
-                        } : {
-                          headerToolbar: {
-                            start: 'prev', end: 'next',
-                            center: 'title',
-                          },
-                          footerToolbar: {
-                            start: 'today',
-                            center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                            end: 'listMonth',
-                          }
-                        }}
-                      plugins={[
-                        daygridPlugin,
-                        timegridPlugin,
-                        multimonthPlugin,
-                        listPlugin,
-                        interactionPlugin
-                      ]}
-                      // width='100%'
-                      height='100%'
-                      events={allEvents.map((event) => {
-                        const starred = starredPostIds.includes(
-                          federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                        );
-                        return {
-                          id: federateId(event.instances[0]?.id ?? '', event.serverHost),
-                          // id: event.instances[0]?.id ?? '',
-                          // serverHost: event.serverHost,
-                          title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
-                          color: serverColors[event.serverHost],
-                          start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                          end: moment(event.instances[0]?.endsAt ?? 0).toDate()
-                        }
-                      })}
-                      eventClick={(modelEvent) => {
-                        setModalInstanceId(modelEvent.event.id);
-                        // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
-                        // const isPrimaryServer = serverHost === currentServer?.host;
-                        // const detailsLinkId = !isPrimaryServer
-                        //   ? federateId(instanceId, serverHost)
-                        //   : instanceId;
-                        // setModalInstanceId(detailsLinkId);
-                        // const groupLinkId = selectedGroup ?
-                        //   (selectedGroup?.serverHost !== currentServer?.host
-                        //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
-                        //     : selectedGroup.shortname)
-                        //   : undefined;
-                        // const href = selectedGroup
-                        //   ? `/g/${groupLinkId}/e/${detailsLinkId}`
-                        //   : `/event/${detailsLinkId}`;
-                        // window.location.pathname = href;
-                      }}
-                    />
-                  </div>
-                </Text>
-                <Dialog
-                  key={`modal-${modalInstanceId}`}
-                  modal open={!!modalInstance}
-
-                  onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
-                  {/* <Dialog.Trigger asChild>
-                    <Button>Show Dialog</Button>
-                  </Dialog.Trigger> */}
-
-                  {/* <Adapt when="sm" platform="touch">
-                    <Sheet animation="medium" zIndex={200000} modal dismissOnSnapToBottom>
-                      <Sheet.Frame padding="$4" gap="$4">
-                        <Sheet.ScrollView>
-                          {modalInstance
-                            ? <EventCard event={modalInstance!} isPreview />
-                            : undefined}
-                        </Sheet.ScrollView>
-                      </Sheet.Frame>
-                      <Sheet.Overlay
-                        animation="lazy"
-                        enterStyle={{ opacity: 0 }}
-                        exitStyle={{ opacity: 0 }}
-                      />
-                    </Sheet>
-                  </Adapt> */}
-
-                  <Dialog.Portal>
-                    <Dialog.Overlay
-                      key="overlay"
-                      animation="slow"
-                      opacity={0.5}
-                      enterStyle={{ opacity: 0 }}
-                      exitStyle={{ opacity: 0 }}
-                    />
-
-                    <Dialog.Content
-                      bordered
-                      elevate
-                      key="content"
-                      animateOnly={['transform', 'opacity']}
-                      animation='standard'
-                      maw={bigCalWidth}
-                      mah={bigCalHeight}
-                      enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                      exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                      gap="$4"
-                    >
-                      {/* <Unspaced> */}
-                      <YStack gap='$2' h='100%'>
-                        <Dialog.Close asChild>
-                          <Button
-                            ml='auto' mr='$3' size='$1'
-                            circular
-                            icon={XIcon}
-                          />
-                        </Dialog.Close>
-                        <ScrollView f={1}>
-                          {modalInstance
-                            ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
-                            : undefined}
-                        </ScrollView>
-                      </YStack>
-                    </Dialog.Content>
-                  </Dialog.Portal>
-                </Dialog>
-              </YStack>
+              <EventsFullCalendar events={allEvents} />
             </div>
             : renderInColumns
               ? [

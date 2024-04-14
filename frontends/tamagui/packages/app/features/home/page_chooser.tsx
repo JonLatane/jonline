@@ -89,7 +89,7 @@ export const PageChooser: React.FC<Pagination<any> & {
       : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
     return <YStack w={width} h={height} maxWidth={maxWidth} ai='center'>
-      <ScrollView f={1} horizontal>
+      <ScrollView f={1} w='100%' horizontal>
         <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
           {pageCount > 1 || currentPage > 0
             ? [...Array(pageCount).keys()].map((page) =>

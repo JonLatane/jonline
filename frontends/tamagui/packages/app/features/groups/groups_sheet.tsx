@@ -286,7 +286,7 @@ export function GroupsSheet({
 
         {disableSelection || serverHostFilter ? undefined : <PinnedServerSelector show transparent simplified />}
       </YStack>
-      <Sheet.ScrollView px="$4" py='$2'>
+      <Sheet.ScrollView px="$4" py='$2' w='100%'>
         <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
 
           {openDebounced
@@ -294,6 +294,13 @@ export function GroupsSheet({
               <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
                 <PageChooser {...pagination} width='auto' maxWidth='100%' />
               </div>,
+              paginatedArrangedGroups.length === 0
+                ? <div key='no-groups' style={{ width: '100%' }}>
+                  <YStack width='100%' maw={600} jc="center" ai="center">
+                    <Heading size='$5' o={0.5} mb='$3'>No groups found.</Heading>
+                  </YStack>
+                </div>
+                : undefined,
               ...paginatedArrangedGroups.map((group, index) => {
                 const prevGroup = index > 0 ? paginatedArrangedGroups[index - 1] : undefined;
                 const prevWasTop = !prevGroup || topGroups.some(tg => federatedId(tg) == federatedId(prevGroup));

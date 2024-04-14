@@ -1,7 +1,7 @@
 import { UserListingType } from '@jonline/api';
 import { Button, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useDebounceValue } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
-import { useCurrentServer, useMembersPage, usePaginatedRendering, useUsersPage } from 'app/hooks';
+import { useAppSelector, useCurrentServer, useMembersPage, usePaginatedRendering, useUsersPage } from 'app/hooks';
 import { RootState, federatedId, getFederated, useRootSelector } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -56,7 +56,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const server = useCurrentServer();
 
-  const userPagesStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
+  const userPagesStatus = useAppSelector(state => getFederated(state.users.pagesStatus, server));
 
   useEffect(pagination.reset, [debouncedSearchText]);
   useEffect(() => {
