@@ -46,19 +46,23 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
       document.getElementById(selectorTopKey)?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
-  const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
+  const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
+  // const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
 
-  const serverNameAndLogo = <YStack>
-    {showUser && creationServer
-      ? <ShortAccountSelectorButton {...{ server: creationServer, pinnedServer }} />
-      : undefined}
-    <ServerNameAndLogo server={server} />
-  </YStack>;
+  const serverNameAndLogo = (s: JonlineServer) => {
+    const pinnedServer = pinnedServers.find(ps => server && ps.serverId === serverID(s));
+    return <YStack>
+      {showUser && s
+        ? <ShortAccountSelectorButton {...{ server: s, pinnedServer }} />
+        : undefined}
+      <ServerNameAndLogo server={s} />
+    </YStack>
+  };
   const serverView = isCurrentServer
-    ? serverNameAndLogo
+    ? serverNameAndLogo(creationServer!)
     : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
       <XStack ai='center'>
-        {serverNameAndLogo}
+        {serverNameAndLogo(creationServer!)}
       </XStack>
     </Button>;
 
@@ -96,8 +100,10 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
           ? undefined
           : availableServers.filter(s => s.host != server?.host)
             .map((otherServer, index) => <div key={`serverCard-${serverID(otherServer)}`} style={{ margin: 2 }}>
-              <Button onPress={() => onSelectServer(otherServer)}>
-                <ServerNameAndLogo server={otherServer} />
+              <Button h='auto' px={0}
+                onPress={() => onSelectServer(otherServer)}>
+                {serverNameAndLogo(otherServer)}
+                {/* <ServerNameAndLogo server={otherServer} /> */}
               </Button>
             </div>
             )}

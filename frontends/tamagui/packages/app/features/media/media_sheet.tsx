@@ -100,6 +100,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
           {isSelecting
             ? undefined
             : <CreationServerSelector requiredPermissions={[Permission.CREATE_MEDIA]}
+              showUser
             />
           }
 
@@ -177,7 +178,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                             : undefined}
                           {showInfo
                             ? <XStack maw='100%' ai='center'
-                            gap='$2'
+                              gap='$2'
                               px='$1' mx='$1' pb='$1' >
                               <Tooltip >
                                 <Tooltip.Trigger maw='100%' f={1}>
@@ -192,10 +193,10 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 </Tooltip.Content>
                               </Tooltip>
                               {mediaQuery.gtXs
-                              ? <Paragraph ml='auto' size='$1' fontFamily='$mono'>
-                                {item.contentType}
-                              </Paragraph>
-                              : undefined}
+                                ? <Paragraph ml='auto' size='$1' fontFamily='$mono'>
+                                  {item.contentType}
+                                </Paragraph>
+                                : undefined}
 
                             </XStack>
                             : undefined}
@@ -204,9 +205,9 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                           </YStack>
                           {showInfo && !mediaQuery.gtXs
                             ? <XStack mt='$1' mx='$1' px='$1'>
-                            <Paragraph ml='auto' size='$1' fontFamily='$mono'>
-                              {item.contentType}
-                            </Paragraph>
+                              <Paragraph ml='auto' size='$1' fontFamily='$mono'>
+                                {item.contentType}
+                              </Paragraph>
                             </XStack>
                             : undefined}
                           {/* <MediaCard media={item}
