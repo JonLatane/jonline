@@ -214,21 +214,21 @@ const serversSlice = createSlice({
       // }, 1);
     },
     selectCreationServer: (state, action: PayloadAction<JonlineServer | undefined>) => {
-      // const oldServerId = state.currentServerId;
-      // const newServerId = serverID(action.payload!);
-      // if (newServerId === undefined && state.ids.length > 0) return;
-      // if (!state.ids.includes(newServerId)) return;
+      const creationServerId = serverID(action.payload!);
+      state.creationServerId = creationServerId;
 
-      // // debugger;
-      state.creationServerId = serverID(action.payload!);
-
-      // setTimeout(() => {
-      //   const currentAccountId = store.getState().accounts.currentAccountId;
-      //   if (currentAccountId && newServerId && oldServerId != newServerId &&
-      //     accountIDHost(currentAccountId) !== serverIDHost(newServerId)) {
-      //     store.dispatch(selectAccount(undefined));
-      //   }
-      // }, 1);
+      setTimeout(() => {
+        const pinnedServer = store.getState().accounts.pinnedServers.find(
+          ps => ps.serverId === creationServerId
+        );
+        if (!pinnedServer?.pinned) {
+          store.dispatch(pinServer({
+            serverId: creationServerId!,
+            accountId: pinnedServer?.accountId,
+            pinned: true
+          }));
+        }
+      }, 1);
     },
     moveServerUp: (state, action: PayloadAction<string>) => {
       const index = state.ids.indexOf(action.payload);

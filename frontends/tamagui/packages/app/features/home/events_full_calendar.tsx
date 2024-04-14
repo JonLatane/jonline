@@ -128,13 +128,16 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
   const minBigCalHeight = 150;
   const maxWidth = 2000;
   const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
+
+  const borderedScreenHeight =
+    Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20)
   const bigCalHeight = Math.min(
     weeklyOnly ? 350 : Number.MAX_SAFE_INTEGER,
-    Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20)
+    borderedScreenHeight
   );
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
 
-  return (//<>
+  return (<>
     <YStack
       // key={`calendar-rendering-${serializedTimeFilter}`} 
       mx='$1'
@@ -250,16 +253,17 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
           />
         </div>
       </Text>
-      <Dialog
-        key={`modal-${modalInstanceId}`}
-        modal open={!!modalInstance}
+    </YStack>
+    <Dialog
+      key={`modal-${modalInstanceId}`}
+      modal open={!!modalInstance}
 
-        onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
-        {/* <Dialog.Trigger asChild>
+      onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
+      {/* <Dialog.Trigger asChild>
                     <Button>Show Dialog</Button>
                   </Dialog.Trigger> */}
 
-        {/* <Adapt when="sm" platform="touch">
+      {/* <Adapt when="sm" platform="touch">
                     <Sheet animation="medium" zIndex={200000} modal dismissOnSnapToBottom>
                       <Sheet.Frame padding="$4" gap="$4">
                         <Sheet.ScrollView>
@@ -276,46 +280,46 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                     </Sheet>
                   </Adapt> */}
 
-        <Dialog.Portal>
-          <Dialog.Overlay
-            key="overlay"
-            animation="slow"
-            opacity={0.5}
-            enterStyle={{ opacity: 0 }}
-            exitStyle={{ opacity: 0 }}
-          />
+      <Dialog.Portal>
+        <Dialog.Overlay
+          key="overlay"
+          animation="slow"
+          opacity={0.5}
+          enterStyle={{ opacity: 0 }}
+          exitStyle={{ opacity: 0 }}
+        />
 
-          <Dialog.Content
-            bordered
-            elevate
-            key="content"
-            animateOnly={['transform', 'opacity']}
-            animation='standard'
-            maw={bigCalWidth}
-            mah={bigCalHeight}
-            enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-            exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-            gap="$4"
-          >
-            {/* <Unspaced> */}
-            <YStack gap='$2' h='100%'>
-              <Dialog.Close asChild>
-                <Button
-                  ml='auto' mr='$3' size='$1'
-                  circular
-                  icon={XIcon}
-                />
-              </Dialog.Close>
-              <ScrollView f={1}>
-                {modalInstance
-                  ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
-                  : undefined}
-              </ScrollView>
-            </YStack>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog>
-    </YStack>
+        <Dialog.Content
+          bordered
+          elevate
+          key="content"
+          animateOnly={['transform', 'opacity']}
+          animation='standard'
+          maw={bigCalWidth}
+          mah={borderedScreenHeight}
+          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+          gap="$4"
+        >
+          {/* <Unspaced> */}
+          <YStack gap='$2' h='100%'>
+            <Dialog.Close asChild>
+              <Button
+                ml='auto' mr='$3' size='$1'
+                circular
+                icon={XIcon}
+              />
+            </Dialog.Close>
+            <ScrollView f={1}>
+              {modalInstance
+                ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
+                : undefined}
+            </ScrollView>
+          </YStack>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog>
+  </>
   )
 }
 

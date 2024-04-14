@@ -1,25 +1,28 @@
-import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack } from '@jonline/ui';
+import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-icons';
-import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey } from 'app/hooks';
+import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey, useAppSelector } from 'app/hooks';
 import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
 import FlipMove from 'react-flip-move';
 import { useLink } from 'solito/link';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { Permission } from '@jonline/api';
+import { ShortAccountSelectorButton } from '../navigation/pinned_server_selector';
 
 
 export type CreationServerSelectorProps = {
   server?: JonlineServer;
   onPressBack?: () => void;
   requiredPermissions?: Permission[];
+  showUser?: boolean;
 };
 
-export function CreationServerSelector({
+export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
   server: taggedServer,
   onPressBack,
-  requiredPermissions
-}: CreationServerSelectorProps) {
+  requiredPermissions,
+  showUser
+}) => {
   const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
 
@@ -43,6 +46,22 @@ export function CreationServerSelector({
       document.getElementById(selectorTopKey)?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
   };
+  const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
+
+  const serverNameAndLogo = <YStack>
+    {showUser && creationServer
+      ? <ShortAccountSelectorButton {...{ server: creationServer, pinnedServer }} />
+      : undefined}
+    <ServerNameAndLogo server={server} />
+  </YStack>;
+  const serverView = isCurrentServer
+    ? serverNameAndLogo
+    : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
+      <XStack ai='center'>
+        {serverNameAndLogo}
+      </XStack>
+    </Button>;
+
   return <XStack ai='center'
     pl={pl}
     pr={pr}>
@@ -64,13 +83,7 @@ export function CreationServerSelector({
           ? <div id='accounts-sheet-currently-adding-server'
             key={`serverCard-${serverID(server)}`}
             style={{ margin: 2 }}>
-            {isCurrentServer
-              ? <ServerNameAndLogo server={server} />
-              : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
-                <XStack ai='center'>
-                  <ServerNameAndLogo server={server} />
-                </XStack>
-              </Button>}
+            {serverView}
             {/* <ServerNameAndLogo server={addAccountServer} /> */}
           </div>
           : undefined}
@@ -103,7 +116,7 @@ export function CreationServerSelector({
 }
 
 export function useAvailableCreationServers(requiredPermissions: Permission[] | undefined) {
-  const accountsAndServers = usePinnedAccountsAndServers({includeUnpinned: true});
+  const accountsAndServers = usePinnedAccountsAndServers({ includeUnpinned: true });
   const servers = useRootSelector((state: RootState) => selectAllServers(state.servers)); //.servers.ids.map(id => state.servers.entities[id]));
 
   return requiredPermissions

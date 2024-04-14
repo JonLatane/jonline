@@ -314,7 +314,7 @@ export function BaseCreatePostSheet({
                     : undefined}
                 </Tooltip>
               </XStack>
-              <CreationServerSelector requiredPermissions={requiredPermissions} />
+              <CreationServerSelector requiredPermissions={requiredPermissions} showUser />
               {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
