@@ -15,6 +15,8 @@ import { FederatedGroup } from "./groups_state";
 
 export type DateTimeRenderer = 'custom' | 'native';
 
+export type CalendarImplementation = 'fullcalendar' | 'big-calendar' | 'daypilot';
+
 export type LocalAppConfiguration = {
   showIntro: boolean;
   darkModeAuto: boolean;
@@ -48,6 +50,7 @@ export type LocalAppConfiguration = {
   starredPostLastOpenedResponseCounts: Dictionary<number>;
   openedStarredPostId?: string | undefined;
   eventPagesOnHome: boolean;
+  calendarImplementation: CalendarImplementation;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -79,7 +82,8 @@ const initialState: LocalAppConfiguration = {
   showBigCalendar: true,
   starredPostIds: [],
   starredPostLastOpenedResponseCounts: {},
-  eventPagesOnHome: false
+  eventPagesOnHome: false,
+  calendarImplementation: 'fullcalendar'
 };
 
 setTimeout(async () => {

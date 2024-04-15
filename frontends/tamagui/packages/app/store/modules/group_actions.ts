@@ -184,3 +184,12 @@ export const respondToMembershipRequest: AsyncThunk<Membership | undefined, Resp
       return undefined;
     }
   });
+
+
+export type UpdateMembership = Membership & AccountOrServer;
+export const updateMembership: AsyncThunk<Membership | undefined, UpdateMembership, any> = createAsyncThunk<Membership | undefined, UpdateMembership>(
+  "groups/updateMembership",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    return await client.updateMembership(request, client.credential);
+  });

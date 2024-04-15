@@ -142,7 +142,7 @@ service Jonline {
   // Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   rpc DeleteGroup(Group) returns (google.protobuf.Empty) {}
 
-  // Get Members (User+Membership) of a Group. *Authenticated.*
+  // Get Members (User+Membership) of a Group. *Publicly accessible **or** Authenticated.*
   rpc GetMembers(GetMembersRequest) returns (GetMembersResponse) {}
   // Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
   // Memberships and moderations are set to their defaults.

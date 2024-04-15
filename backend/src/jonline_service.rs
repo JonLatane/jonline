@@ -227,7 +227,7 @@ impl Jonline for JonlineService {
         &self,
         request: Request<GetMembersRequest>,
     ) -> Result<Response<GetMembersResponse>, Status> {
-        authenticated_rpc!(self, rpcs::get_members, request)
+        unauthenticated_rpc!(self, rpcs::get_members, request)
     }
 
     async fn create_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {

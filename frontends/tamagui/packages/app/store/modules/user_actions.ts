@@ -1,4 +1,4 @@
-import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, User, UserListingType } from "@jonline/api";
+import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, TimeFilter, User, UserListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -82,9 +82,9 @@ export const loadUserPosts: AsyncThunk<GetPostsResponse, LoadUserEntities, any> 
     let client = await getCredentialClient(request);
     // debugger;
     try {
-    const result = await client.getPosts({ authorUserId: request.userId.split('@')[0] }, client.credential);
-    return result;
-    } catch(e) {
+      const result = await client.getPosts({ authorUserId: request.userId.split('@')[0] }, client.credential);
+      return result;
+    } catch (e) {
       console.error('error loading user posts', e);
       throw e;
     }
@@ -98,11 +98,16 @@ export const loadUserReplies: AsyncThunk<GetPostsResponse, LoadUserEntities, any
     return result;
   }
 );
-export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEntities, any> = createAsyncThunk<GetEventsResponse, LoadUserEntities>(
+export type LoadUserEvents = LoadUserEntities & { timeFilter?: TimeFilter }
+export const loadUserEvents: AsyncThunk<GetEventsResponse, LoadUserEvents, any> = createAsyncThunk<GetEventsResponse, LoadUserEvents>(
   "users/loadEvents",
   async (request) => {
     let client = await getCredentialClient(request);
-    const result = await client.getEvents({ authorUserId: request.userId.split('@')[0] }, client.credential);
+    const result = await client.getEvents({
+      authorUserId: request.userId.split('@')[0],
+      // timeFilter: undefined,
+      timeFilter: request.timeFilter,
+    }, client.credential);
     return result;
   }
 );

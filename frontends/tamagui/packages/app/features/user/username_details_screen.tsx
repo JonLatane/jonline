@@ -1,5 +1,5 @@
-import { Moderation, Permission, PostContext, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
+import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
+import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle, Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
@@ -18,6 +18,7 @@ import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { EventsFullCalendar } from '../home/events_full_calendar';
+import moment from 'moment';
 
 const { useParam } = createParam<{ username: string, serverHost?: string }>()
 
@@ -138,14 +139,22 @@ export function UsernameDetailsScreen() {
         ?.filter(e => e !== undefined) as FederatedEvent[]
       : undefined
   });
+
+  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+
   useEffect(() => {
     if (userId && !userEventData && !loadingEvents) {
       setLoadingUserEvents(true);
-      dispatch(loadUserEvents({ ...accountOrServer, userId }))
+      dispatch(loadUserEvents({ ...accountOrServer, timeFilter, userId }))
         .then(() => setLoadingUserEvents(false));
     }
   }, [userId, userEventData, loadingEvents]);
-  const allEvents = userEventData ?? [];
+  const eventResults = userEventData ?? [];
+  const allEvents = bigCalendar
+    ? eventResults
+    : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });

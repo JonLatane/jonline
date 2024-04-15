@@ -27,12 +27,17 @@ export function ModerationPicker({
   }
   const description = moderationDescription(moderation);
 
-  return <YStack w='100%' maw={350}>
-    <Select native id={id ?? 'moderation-picker'} onValueChange={onValueSelected} value={moderation.toString()}>
-      <Select.Trigger w='100%' f={1} opacity={disabled ? 0.5 : 1} iconAfter={ChevronDown} {...{ disabled }}>
+  return <YStack w='100%' maw={350} opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : undefined}>
+    <Select native id={id ?? 'moderation-picker'}
+     value={moderation.toString()}
+      onValueChange={onValueSelected} 
+    // disabled={disabled}
+    >
+      <Select.Trigger w='100%' f={1}  iconAfter={ChevronDown}
+       disabled={disabled}>
         <Select.Value w='100%' placeholder="Choose Moderation" />
       </Select.Trigger>
-      <Select.Content zIndex={200000}>
+      <Select.Content zIndex={200000} >
         <Select.Viewport minWidth={200} w='100%'>
           <XStack w='100%'>
             <Select.Group gap="$0" w='100%'>

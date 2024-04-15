@@ -2312,6 +2312,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@daypilot/daypilot-lite-react@npm:^3.21.0":
+  version: 3.21.0
+  resolution: "@daypilot/daypilot-lite-react@npm:3.21.0"
+  dependencies:
+    create-react-class: "npm:>=15.0.0"
+  peerDependencies:
+    react: ">=16.0.0"
+    react-dom: ">=16.0.0"
+  checksum: 5632bad2520509dacb5db498a0ad2291362027ed71ea130afdf2c35a819f7adfbd53ed439178dea981f6bf9e3078f0cc7a32cb23b00e029679c20408f0b022d3
+  languageName: node
+  linkType: hard
+
 "@edge-runtime/format@npm:2.2.1":
   version: 2.2.1
   resolution: "@edge-runtime/format@npm:2.2.1"
@@ -7453,6 +7465,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "app@workspace:packages/app"
   dependencies:
+    "@daypilot/daypilot-lite-react": "npm:^3.21.0"
     "@fullcalendar/core": "npm:^6.1.11"
     "@fullcalendar/daygrid": "npm:^6.1.11"
     "@fullcalendar/interaction": "npm:^6.1.11"
@@ -9126,6 +9139,16 @@ __metadata:
     js-yaml: "npm:^3.13.1"
     parse-json: "npm:^4.0.0"
   checksum: 1d617668e1367b8d66617fb8a1bd8c13e9598534959ac0cc86195b1b0cbe7afbba2b9faa300c60b9d9d35409cf4f064b0f6e377f4ea036434e5250c69c76932f
+  languageName: node
+  linkType: hard
+
+"create-react-class@npm:>=15.0.0":
+  version: 15.7.0
+  resolution: "create-react-class@npm:15.7.0"
+  dependencies:
+    loose-envify: "npm:^1.3.1"
+    object-assign: "npm:^4.1.1"
+  checksum: e845cb275c6b59c1fc4c4037e3d5caf4f42a258ef21f5cd9c86cd7ef476f933998f5c363a9e4b36970f682c30b122637d41474742abc85d8b931aef8041da8a3
   languageName: node
   linkType: hard
 
@@ -14106,7 +14129,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"loose-envify@npm:^1.0.0, loose-envify@npm:^1.1.0, loose-envify@npm:^1.4.0":
+"loose-envify@npm:^1.0.0, loose-envify@npm:^1.1.0, loose-envify@npm:^1.3.1, loose-envify@npm:^1.4.0":
   version: 1.4.0
   resolution: "loose-envify@npm:1.4.0"
   dependencies:

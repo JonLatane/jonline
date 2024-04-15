@@ -15,6 +15,7 @@ import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { postBackgroundSize } from "../post/post_card";
+import { MembershipManager } from "./membership_manager";
 
 interface Props {
   user: FederatedUser;
@@ -271,6 +272,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                   </Anchor>
                 : footerContent}
             </AnimatePresence>
+            <MembershipManager user={user} />
           </YStack>
         </Card.Footer>
         {imagePostBackgrounds

@@ -374,7 +374,8 @@ export function GroupsSheetButton({
 }: GroupsSheetProps) {
   // const [open, setOpen] = useState(false);
   const { setInfoGroupId } = useGroupContext();
-  const { dispatch, accountOrServer } = useFederatedDispatch(selectedGroup);
+  console.log('GroupsSheetButton primaryEntity', primaryEntity)
+  const { dispatch, accountOrServer } = useFederatedDispatch(primaryEntity ?? selectedGroup);
   const { account, server: groupServer } = accountOrServer;
   const currentServer = useCurrentServer();
 

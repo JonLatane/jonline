@@ -1,5 +1,5 @@
-import { EventListingType, PostListingType } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
+import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ChevronRight, Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer, useLocalConfiguration, usePostPageParam, useAppSelector } from 'app/hooks';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
@@ -15,6 +15,7 @@ import { PaginationIndicator, PaginationResetIndicator } from './pagination_indi
 import { PageChooser } from './page_chooser';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { EventsFullCalendar } from './events_full_calendar';
+import moment from 'moment';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -64,11 +65,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   });
   const paginatedPosts = postPagination.results;
 
+  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+
   // Only load the first page of events on this screen.
-  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
-    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup);
+  const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
   const { eventPagesOnHome } = useLocalConfiguration();
+  const allEvents = bigCalendar
+    ? eventResults
+    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });

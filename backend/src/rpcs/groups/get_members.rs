@@ -13,15 +13,13 @@ use crate::schema::{follows, memberships, users};
 
 pub fn get_members(
     request: GetMembersRequest,
-    user: &models::User,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetMembersResponse, Status> {
     let group_id: i64 = request.group_id.to_db_id_or_err("group_id")?;
-    let (group, membership) = models::get_group_and_membership(group_id, Some(user.id), conn)?;
+    let (group, membership) = models::get_group_and_membership(group_id, user.map(|u| u.id), conn)?;
     match request.group_moderation() {
-        Moderation::Pending => {
-            validate_group_user_moderator(&Some(user), &group, &membership.as_ref())?
-        }
+        Moderation::Pending => validate_group_user_moderator(user, &group, &membership.as_ref())?,
         _ => {}
     };
     let passing_moderations = vec![Moderation::Approved, Moderation::Unmoderated];
@@ -79,7 +77,7 @@ fn get_all_members(
     group_moderations: Vec<Moderation>,
     page: i32,
     // request: GetMembersRequest,
-    user: &models::User,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> GetMembersResponse {
     let user_moderations_string = user_moderations
@@ -94,17 +92,19 @@ fn get_all_members(
     let target_follows_user_id = target_follows.field(follows::user_id);
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
+
+    let matched_user_id = user.map(|u| u.id);
     let members: Vec<Member> = memberships::table
         .inner_join(users::table)
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
-                .and(follows::user_id.nullable().eq(user.id))),
+                .and(follows::user_id.nullable().eq(matched_user_id))),
         )
         .left_join(
             target_follows.on(target_follows_user_id
                 .eq(users::id)
-                .and(target_follows_target_user_id.nullable().eq(user.id))),
+                .and(target_follows_target_user_id.nullable().eq(matched_user_id))),
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
@@ -164,7 +164,7 @@ fn get_members_by_username(
     page: i32,
     username: String,
     // request: GetMembersRequest,
-    user: &models::User,
+    user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> GetMembersResponse {
     let user_moderations_string = user_moderations
@@ -179,17 +179,19 @@ fn get_members_by_username(
     let target_follows_user_id = target_follows.field(follows::user_id);
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
+
+    let matched_user_id = user.map(|u| u.id);
     let members: Vec<Member> = memberships::table
         .inner_join(users::table)
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
-                .and(follows::user_id.nullable().eq(user.id))),
+                .and(follows::user_id.nullable().eq(matched_user_id))),
         )
         .left_join(
             target_follows.on(target_follows_user_id
                 .eq(users::id)
-                .and(target_follows_target_user_id.nullable().eq(user.id))),
+                .and(target_follows_target_user_id.nullable().eq(matched_user_id))),
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
