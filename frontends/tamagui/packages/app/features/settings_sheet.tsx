@@ -1,13 +1,14 @@
-import { AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronDown, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
-import { RootState, resetAllData, selectAccountTotal, selectServer, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { CalendarImplementation, RootState, resetAllData, selectAccountTotal, selectServer, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
 import FlipMove from 'react-flip-move';
 import { selectAllServers, serverIDHost } from 'app/store';
+import { EventsFullCalendar } from './home/events_full_calendar';
 
 
 export type SettingsSheetProps = {
@@ -229,6 +230,15 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </XStack>
               </YStack>
 
+              <Heading size='$5' mt='$3'>Calendar</Heading>
+              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                  <EventsFullCalendar events={[]} weeklyOnly />
+                  <RadioGroup value={app.calendarImplementation ?? 'big-calendar'} onValueChange={v => dispatch(setCalendarImplementation(v as CalendarImplementation))}>
+                    <RadioGroupItemWithLabel value="big-calendar" label='BigCalendar' />
+                    <RadioGroupItemWithLabel value="fullcalendar" label='Full Calendar' />
+                    <RadioGroupItemWithLabel value="daypilot" label='Daypilot Calendar' />
+                  </RadioGroup>
+              </YStack>
 
               <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
@@ -428,5 +438,25 @@ export function CheckboxWithLabel({
       </XStack>
     </Label>
     // </XStack>
+  )
+}
+
+
+export function RadioGroupItemWithLabel(props: {
+  size?: SizeTokens
+  value: string
+  label: string
+}) {
+  const id = `radiogroup-${props.value}`
+  return (
+    <XStack width={300} alignItems="center" gap="$4">
+      <RadioGroup.Item value={props.value} id={id} size={props.size}>
+        <RadioGroup.Indicator />
+      </RadioGroup.Item>
+
+      <Label size={props.size} htmlFor={id}>
+        {props.label}
+      </Label>
+    </XStack>
   )
 }

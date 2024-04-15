@@ -21,6 +21,7 @@ import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { styled } from 'tamagui';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export type EventsFullCalendarProps = {
@@ -166,6 +167,12 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
       end: moment(event.instances[0]?.endsAt ?? 0).toDate()
     }
   });
+  const renderingKey = `calendar-rendering-${window.innerWidth
+    }-${window.innerHeight
+    }-${navigationHeight
+    }-${hideNavigation
+    }-${allEvents.length
+    }-${modeStartTime}`;
   return (<>
     <YStack
       // key={`calendar-rendering-${serializedTimeFilter}`} 
@@ -188,14 +195,10 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
             // height: '100%'
           }} >
 
-          {calendarImplementation === 'fullcalendar'
+          {calendarImplementation === 'fullcalendar' //|| calendarImplementation === undefined
             ? <FullCalendar
 
-              key={`calendar-rendering-${window.innerWidth
-                }-${window.innerHeight
-                }-${navigationHeight
-                }-${hideNavigation
-                }-${allEvents.length}`}
+              key={renderingKey}
               selectable
               dateClick={({ date, view }) => {
                 view.calendar.changeView('listDay', date);
@@ -271,51 +274,50 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
             />
 
             : calendarImplementation === 'big-calendar' || calendarImplementation === undefined
-              ? <BigCalendar
-                localizer={localizer}
-                defaultDate={new Date()}
-                defaultView={weeklyOnly ? 'week' : undefined}
-                views={weeklyOnly ? ['week'] : undefined}
-                
-                formats={{
-                  timeGutterFormat: 'ha'
-                }}
-                events={allEvents.map((event) => {
-                  const starred = starredPostIds.includes(
-                    federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                  );
-                  return {
-                    id: federateId(event.instances[0]?.id ?? '', event.serverHost),
-                    serverHost: event.serverHost,
-                    title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
-                    
-                    // color: serverColors[event.serverHost],
-                    style: {
-                      backgroundColor: serverColors[event.serverHost],
-                      color: colorMeta(serverColors[event.serverHost]).textColor,
-                      // borderRadius: 10,
-                      // borderColor: 'blue',
-                    },
-                    selected: true,
-                    start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                    end: moment(event.instances[0]?.endsAt ?? 0).toDate()
-                  }
-                })}
-                scrollToTime={moment(modeStartTime).toDate()}
-                eventPropGetter={(event) => {
-                  console.log('BigCalendar EventPropGetter', event);
-                  return {
-                    style: {
-                      backgroundColor: serverColors[event.serverHost],
-                      color: colorMeta(serverColors[event.serverHost]).textColor,
+              ? <YStack key={renderingKey} w='100%' h='100%'>
+                <BigCalendar
+                  key={renderingKey}
+                  localizer={localizer}
+                  defaultDate={new Date()}
+                  defaultView={weeklyOnly ? 'week' : undefined}
+                  views={weeklyOnly ? ['week'] : undefined}
+                  formats={{
+                    // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
+                    timeGutterFormat: mediaQuery.gtXxs ? undefined : ' '
+
+                  }}
+
+                  events={allEvents.map((event) => {
+                    const starred = starredPostIds.includes(
+                      federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                    );
+                    return {
+                      id: federateId(event.instances[0]?.id ?? '', event.serverHost),
+                      serverHost: event.serverHost,
+                      title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
+                      selected: true,
+                      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
+                      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
                     }
-                  }
-                }}
-                onSelectEvent={(modelEvent) => {
-                  setModalInstanceId(modelEvent.id);
-                }}
-                style={{ width: '100%', height: '100%' }}
-              />
+                  })}
+                  scrollToTime={moment().toDate()}
+                  // scrollToTime={moment(modeStartTime).toDate()}
+                  eventPropGetter={(event) => {
+                    console.log('BigCalendar EventPropGetter', event);
+                    return {
+                      style: {
+                        backgroundColor: serverColors[event.serverHost],
+                        color: colorMeta(serverColors[event.serverHost]).textColor,
+                        fontSize: mediaQuery.gtXxs ? undefined : '11px'
+                      }
+                    }
+                  }}
+                  onSelectEvent={(modelEvent) => {
+                    setModalInstanceId(modelEvent.id);
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </YStack>
               : calendarImplementation === 'daypilot'
                 ? <YStack h='100%' overflow="hidden">
                   <DayPilotCalendar

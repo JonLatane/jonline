@@ -240,6 +240,9 @@ export const localAppSlice = createSlice({
     setEventPagesOnHome: (state, action: PayloadAction<boolean>) => {
       state.eventPagesOnHome = action.payload;
     },
+    setCalendarImplementation: (state, action: PayloadAction<CalendarImplementation>) => {
+      state.calendarImplementation = action.payload;
+    },
   },
   extraReducers: (builder) => {
   },
@@ -252,7 +255,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
   moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount,
-  setEventPagesOnHome
+  setEventPagesOnHome,setCalendarImplementation
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;
