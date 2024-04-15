@@ -14,7 +14,7 @@ import { createFederated, Federated, federatedEntities, FederatedEntity, federat
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
-import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup } from "./group_actions";
+import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup, updateMembership } from "./group_actions";
 import { markGroupVisit } from "./local_app_configuration";
 
 export type FederatedGroup = FederatedEntity<Group>;
@@ -273,6 +273,34 @@ export const groupsSlice = createSlice({
       } else if (action.meta.arg.userId === currentUserId) {
         group = { ...group, currentUserMembership: undefined };
       }
+      groupsAdapter.upsertOne(state, group);
+
+      if (state.groupMembershipPages[action.meta.arg.groupId]?.[Moderation.MODERATION_UNKNOWN]?.[0]) {
+        state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0] =
+          state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0]!.map(
+            m => m.userId === action.payload?.userId ? action.payload : m
+          );
+      }
+    });
+    builder.addCase(updateMembership.fulfilled, (state, action) => {
+      unlockGroup(state, federateId(action.meta.arg.groupId, action));
+      let group: FederatedGroup = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
+      // if (!state.groupMembershipPages[action.meta.arg.groupId]) return;
+
+      if (state.groupMembershipPages[action.meta.arg.groupId]?.[Moderation.MODERATION_UNKNOWN]?.[0]) {
+        state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0] =
+          state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0]!.map(
+            m => m.userId === action.payload?.userId ? action.payload : m
+          );
+      }
+      // if (action.meta.arg.accept) {
+      //   const result = action.payload as Membership;
+      //   const currentUserMembership = action.meta.arg.userId === currentUserId ? result : undefined;
+      //   group = { ...group, memberCount: (group.memberCount || 0) + 1, currentUserMembership };
+      //   groupsAdapter.upsertOne(state, group);
+      // } else if (action.meta.arg.userId === currentUserId) {
+      //   group = { ...group, currentUserMembership: undefined };
+      // }
       groupsAdapter.upsertOne(state, group);
     });
 

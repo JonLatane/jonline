@@ -304,7 +304,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                   scrollToTime={moment().toDate()}
                   // scrollToTime={moment(modeStartTime).toDate()}
                   eventPropGetter={(event) => {
-                    console.log('BigCalendar EventPropGetter', event);
+                    // console.log('BigCalendar EventPropGetter', event);
                     return {
                       style: {
                         backgroundColor: serverColors[event.serverHost],
