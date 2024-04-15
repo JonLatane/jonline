@@ -28,9 +28,10 @@ export type EventsFullCalendarProps = {
   // selectedGroup?: FederatedGroup;
   events: FederatedEvent[];
   weeklyOnly?: boolean;
+  width?: string | number;
   // timeFilter: TimeFilter;
 }
-export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: allEvents, weeklyOnly }: EventsFullCalendarProps) => {
+export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: allEvents, weeklyOnly, width }: EventsFullCalendarProps) => {
   const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
   const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
@@ -180,7 +181,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
       animation='standard' {...reverseStandardAnimation}
       //  w='100%'
 
-      width={bigCalWidth}
+      width={width ?? bigCalWidth}
       height={bigCalHeight}
       // p='$2'
 
@@ -190,7 +191,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
         <div
           style={{
             display: 'block',
-            width: bigCalWidth,//- 10,
+            width: width ?? bigCalWidth,//- 10,
             height: bigCalHeight,// - 10,
             // height: '100%'
           }} >

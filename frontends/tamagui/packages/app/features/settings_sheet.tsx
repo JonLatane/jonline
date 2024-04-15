@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronDown, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
 import { CalendarImplementation, RootState, resetAllData, selectAccountTotal, selectServer, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
@@ -20,7 +20,7 @@ export type SettingsSheetProps = {
 export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   // const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
-  const { primaryColor } = useServerTheme();
+  const { primaryColor, primaryAnchorColor } = useServerTheme();
 
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
@@ -230,14 +230,29 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 </XStack>
               </YStack>
 
-              <Heading size='$5' mt='$3'>Calendar</Heading>
-              <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                  <EventsFullCalendar events={[]} weeklyOnly />
-                  <RadioGroup value={app.calendarImplementation ?? 'big-calendar'} onValueChange={v => dispatch(setCalendarImplementation(v as CalendarImplementation))}>
-                    <RadioGroupItemWithLabel value="big-calendar" label='BigCalendar' />
-                    <RadioGroupItemWithLabel value="fullcalendar" label='Full Calendar' />
-                    <RadioGroupItemWithLabel value="daypilot" label='Daypilot Calendar' />
-                  </RadioGroup>
+              <Heading size='$5' mt='$3'>Calendar UI</Heading>
+              <YStack gap='$1' w='100%' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                <EventsFullCalendar events={[]} weeklyOnly width='100%' />
+                <RadioGroup value={app.calendarImplementation ?? 'big-calendar'} onValueChange={v => dispatch(setCalendarImplementation(v as CalendarImplementation))}>
+                  <RadioGroupItemWithLabel value="big-calendar"
+                    label={<YStack my='$2'>
+                      <Paragraph size='$5' fontFamily='$mono'>react-big-calendar</Paragraph>
+                      <Anchor target='_blank' href='https://github.com/jquense/react-big-calendar' color={primaryAnchorColor} size='$2'>https://github.com/jquense/react-big-calendar</Anchor>
+                    </YStack>} />
+                  <RadioGroupItemWithLabel value="fullcalendar"
+
+                    label={<YStack my='$2'>
+                      <Paragraph size='$5'>Full Calendar</Paragraph>
+                      <Anchor target='_blank' href='https://fullcalendar.io' color={primaryAnchorColor} size='$2'>https://fullcalendar.io</Anchor>
+                    </YStack>} />
+                  <RadioGroupItemWithLabel value="daypilot"
+                    label={<YStack my='$2'>
+                      <Paragraph size='$5'>Daypilot Calendar</Paragraph>
+                      <Anchor target='_blank' href='https://daypilot.org' color={primaryAnchorColor} size='$2'>https://daypilot.org</Anchor>
+                      <Paragraph size='$2'>TESTING - Unstable</Paragraph>
+                    </YStack>}
+                  />
+                </RadioGroup>
               </YStack>
 
               <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
@@ -445,7 +460,7 @@ export function CheckboxWithLabel({
 export function RadioGroupItemWithLabel(props: {
   size?: SizeTokens
   value: string
-  label: string
+  label: string | JSX.Element
 }) {
   const id = `radiogroup-${props.value}`
   return (
