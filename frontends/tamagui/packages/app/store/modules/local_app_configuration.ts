@@ -83,7 +83,7 @@ const initialState: LocalAppConfiguration = {
   starredPostIds: [],
   starredPostLastOpenedResponseCounts: {},
   eventPagesOnHome: false,
-  calendarImplementation: 'fullcalendar'
+  calendarImplementation: 'big-calendar'
 };
 
 setTimeout(async () => {
