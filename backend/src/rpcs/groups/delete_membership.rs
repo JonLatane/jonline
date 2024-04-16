@@ -26,6 +26,17 @@ pub fn delete_membership(
         validate_group_admin(&Some(current_user), &group, &membership.as_ref())?;
     }
 
+    if self_update {
+        match membership.as_ref() {
+            Some(m) => {
+                if m.group_moderation == Moderation::Rejected.to_string_moderation() {
+                    return Err(Status::new(Code::FailedPrecondition, "cannot_delete_rejected_membership"));
+                }
+            }
+            None => return Err(Status::new(Code::Internal, "data_error")),
+        }
+    }
+
     match diesel::delete(memberships::table)
         .filter(memberships::group_id.eq(request.group_id.to_db_id().unwrap()))
         .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))

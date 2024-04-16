@@ -4,12 +4,13 @@ import { useCurrentAccount, useAppDispatch, useAppSelector, useLocalConfiguratio
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { CreateAccountOrLoginSheet } from "../accounts/create_account_or_login_sheet";
+import { AuthSheet } from "../accounts/auth_sheet";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { useHideNavigation } from "./use_hide_navigation";
 import FlipMove from 'react-flip-move';
 import { ex } from "@fullcalendar/core/internal-common";
+import { AuthSheetButton } from "../accounts/auth_sheet_button";
 
 
 export type PinnedServerSelectorProps = {
@@ -304,9 +305,9 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
     </XStack>
     {simplified
       ? undefined
-      : <CreateAccountOrLoginSheet server={server}
-        selectedAccount={pinnedAccount}
-        onAccountSelected={toggleAccountSelect}
+      : <AuthSheetButton server={server}
+        // selectedAccount={pinnedAccount}
+        // onAccountSelected={toggleAccountSelect}
         button={(onPress) =>
           <ShortAccountSelectorButton {...{ server, pinnedServer, onPress }} />} />
     }

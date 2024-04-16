@@ -11,11 +11,12 @@ import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupDetailsSheet } from './group_details_sheet';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
+import { AuthSheet } from '../accounts/auth_sheet';
 import FlipMove from 'react-flip-move';
 import { useGroupContext } from 'app/contexts';
 import { GroupPostChrome } from './group_post_manager';
 import { PageChooser } from '../home/page_chooser';
+import { AuthSheetButton } from '../accounts/auth_sheet_button';
 
 export type GroupsSheetProps = {
   open: boolean;
@@ -421,9 +422,10 @@ export function GroupsSheetButton({
   return <XStack>
     <YStack>
       {showServerInfo
-        ? <CreateAccountOrLoginSheet server={server}
-          selectedAccount={account}
-          onAccountSelected={toggleAccountSelect}
+        ? <AuthSheetButton
+          server={server}
+          // selectedAccount={account}
+          // onAccountSelected={toggleAccountSelect}
           button={(onPress) =>
             <Button onPress={onPress} animation='standard' h='auto' px='$2'
               borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}

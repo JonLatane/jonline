@@ -11,7 +11,7 @@ import { TextInput } from 'react-native';
 import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
 import FlipMove from 'react-flip-move';
-import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
+import { AuthSheet } from '../accounts/auth_sheet';
 import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 
 export type BaseCreatePostSheetProps = {
@@ -129,6 +129,13 @@ export function BaseCreatePostSheet({
   const [shareable, setShareable] = useState(!selectedGroup);
   const [title, setTitle] = useState('');
   const [link, setLink] = useState('');
+  useEffect(() => {
+    if (link && !link.startsWith('http')) {
+      setLink(`https://${link}`);
+    } else if (link === 'https://' || link === 'http://') {
+      setLink('');
+    }
+  }, [link]);
   const [content, setContent] = useState('');
   const [embedLink, setEmbedLink] = useState(false);
   const [media, setMedia] = useState<MediaReference[]>([]);

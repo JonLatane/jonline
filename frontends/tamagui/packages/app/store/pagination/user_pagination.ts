@@ -53,7 +53,7 @@ export function getMembersPage(
     } as FederatedUser;
   })?.filter(u => u) as FederatedUser[] | undefined;
 
-  console.log("members page", groupId, page, memberships, users);
+  // console.log("members page", groupId, page, memberships, users);
 
   return {
     users: users ?? [],

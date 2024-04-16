@@ -8,11 +8,12 @@ import { RootState, actionFailed, getServerTheme, replyToPost, selectPostById, u
 import { themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
-import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet'
+import { AuthSheet } from '../accounts/auth_sheet'
 import { useHideNavigation } from '../navigation/use_hide_navigation'
 import { scrollToCommentsBottom } from './conversation_manager'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
+import { AuthSheetButton } from '../accounts/auth_sheet_button'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
@@ -174,7 +175,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}
-        <CreateAccountOrLoginSheet operation={chatUI ? 'Chat' : 'Comment'}
+        <AuthSheetButton operation={chatUI ? 'Chat' : 'Comment'}
           server={accountOrServer.server} />
       </YStack>
     : <Button mt='$3' circular icon={SendIcon} backgroundColor={primaryColor} onPress={() => { }} />

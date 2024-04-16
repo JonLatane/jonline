@@ -1,6 +1,6 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
 import { DateTimePicker, Heading, Paragraph, XStack, supportDateInput, toProtoISOString } from '@jonline/ui';
-import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage } from 'app/store';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
@@ -79,7 +79,10 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
 
     dispatch(createEvent({ ...previewEvent(post), ...accountOrServer })).then((action) => {
       if (action.type == createEvent.fulfilled.type) {
-        dispatch(loadEventsPage({ ...accountOrServer, listingType: EventListingType.ALL_ACCESSIBLE_EVENTS, page: 0 }));
+        // dispatch(loadEventsPage({ ...accountOrServer, listingType: EventListingType.ALL_ACCESSIBLE_EVENTS, page: 0 }));
+        if (accountOrServer.server?.host) {
+          dispatch(resetEvents({ serverHost: accountOrServer.server?.host }));
+        }
         const post = action.payload as Post;
         if (group) {
           dispatch(createGroupPost({ groupId: group.id, postId: (post).id, ...accountOrServer }))

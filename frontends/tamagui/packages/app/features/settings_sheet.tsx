@@ -55,6 +55,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         onPress={() => setOpen((x) => !x)}
       />
       <Sheet
+      zIndex={500001}
         modal
         open={open}
         onOpenChange={setOpen}
@@ -235,21 +236,21 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                 <EventsFullCalendar events={[]} weeklyOnly width='100%' />
                 <RadioGroup value={app.calendarImplementation ?? 'big-calendar'} onValueChange={v => dispatch(setCalendarImplementation(v as CalendarImplementation))}>
                   <RadioGroupItemWithLabel value="big-calendar"
-                    label={<YStack my='$2'>
+                    label={<YStack my='$2' w='100%'>
                       <Paragraph size='$5' fontFamily='$mono'>react-big-calendar</Paragraph>
                       <Anchor target='_blank' href='https://github.com/jquense/react-big-calendar' color={primaryAnchorColor} size='$2'>https://github.com/jquense/react-big-calendar</Anchor>
                     </YStack>} />
                   <RadioGroupItemWithLabel value="fullcalendar"
 
-                    label={<YStack my='$2'>
+                    label={<YStack my='$2' w='100%'>
                       <Paragraph size='$5'>Full Calendar</Paragraph>
                       <Anchor target='_blank' href='https://fullcalendar.io' color={primaryAnchorColor} size='$2'>https://fullcalendar.io</Anchor>
                     </YStack>} />
                   <RadioGroupItemWithLabel value="daypilot"
-                    label={<YStack my='$2'>
+                    label={<YStack my='$2' w='100%'>
                       <Paragraph size='$5'>Daypilot Calendar</Paragraph>
                       <Anchor target='_blank' href='https://daypilot.org' color={primaryAnchorColor} size='$2'>https://daypilot.org</Anchor>
-                      <Paragraph size='$2'>TESTING - Unstable</Paragraph>
+                      <Paragraph size='$2' maw='100%'>TESTING ONLY. Daypilot devs: heightSpec=Parent100Pct is not working as documented; this breaks scrolling for this calendar option.</Paragraph>
                     </YStack>}
                   />
                 </RadioGroup>

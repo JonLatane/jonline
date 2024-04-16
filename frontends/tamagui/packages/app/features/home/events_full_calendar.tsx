@@ -284,7 +284,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                   views={weeklyOnly ? ['week'] : undefined}
                   formats={{
                     // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
-                    timeGutterFormat: mediaQuery.gtXxs ? undefined : ' '
+                    timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
 
                   }}
 

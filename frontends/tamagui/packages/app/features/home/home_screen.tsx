@@ -160,7 +160,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               transparent
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-              animation='standard' disabled={!showEvents} o={showEvents ? 1 : 0}
+              animation='standard'
+              disabled={!showEvents || allEvents.length === 0}
+              o={showEvents && allEvents.length > 0 ? 1 : 0}
             />
 
             <div style={{ flex: 1 }} />
@@ -170,7 +172,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </XStack>
         </div>
         {showEvents
-          ? bigCalendar
+          ? bigCalendar && allEvents.length > 0
             ? [
               <div key='full-calendar' style={{ marginBottom: 10 }}>
                 <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />

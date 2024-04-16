@@ -14,9 +14,10 @@ import { physicallyHostingServerId } from '../about/about_screen';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { SettingsSheet } from '../settings_sheet';
 import AccountCard from './account_card';
-import { CreateAccountOrLoginSheet } from './create_account_or_login_sheet';
+import { AuthSheet } from './auth_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
+import { AuthSheetButton } from './auth_sheet_button';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -197,7 +198,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
           // 50, 
           91
         ]}
-        zIndex={100000}
+        zIndex={500000}
         position={position}
         onPositionChange={setPosition}
         dismissOnSnapToBottom
@@ -502,10 +503,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                         !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
 
 
-                    <CreateAccountOrLoginSheet
+                    <AuthSheetButton
                       server={currentServer}
-                      // selectedGroup={selectedGroup}
-                      // primaryEntity={primaryEntity}
                       button={onPress =>
                         <Button
                           size="$3"
@@ -513,10 +512,6 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                           disabled={currentServer === undefined && servers.length === 0}
                           {...themedButtonBackground(primaryColor, primaryTextColor)}
                           onPress={onPress}
-                        // onPress={() => {
-                        //   setAddingAccount(true);
-                        //   setTimeout(() => usernameRef.current.focus(), 100);
-                        // }}
                         >
                           Login/Sign Up
                         </Button>}

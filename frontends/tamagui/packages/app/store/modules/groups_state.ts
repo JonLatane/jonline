@@ -283,15 +283,21 @@ export const groupsSlice = createSlice({
       }
     });
     builder.addCase(updateMembership.fulfilled, (state, action) => {
-      unlockGroup(state, federateId(action.meta.arg.groupId, action));
-      let group: FederatedGroup = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
-      // if (!state.groupMembershipPages[action.meta.arg.groupId]) return;
+      const federatedGroupId = federateId(action.meta.arg.groupId, action);
+      unlockGroup(state, federatedGroupId);
+      if (!state.groupMembershipPages[federatedGroupId]) return;
 
-      if (state.groupMembershipPages[action.meta.arg.groupId]?.[Moderation.MODERATION_UNKNOWN]?.[0]) {
-        state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0] =
-          state.groupMembershipPages[action.meta.arg.groupId]![Moderation.MODERATION_UNKNOWN]![0]!.map(
-            m => m.userId === action.payload?.userId ? action.payload : m
+      const membership = action.payload;
+      if (state.groupMembershipPages[federatedGroupId]?.[Moderation.MODERATION_UNKNOWN]?.[0]) {
+        state.groupMembershipPages[federatedGroupId]![Moderation.MODERATION_UNKNOWN]![0] =
+          state.groupMembershipPages[federatedGroupId]![Moderation.MODERATION_UNKNOWN]![0]!.map(
+            m => m.userId === membership?.userId ? membership : m
           );
+      }
+
+      const group = groupsAdapter.getSelectors().selectById(state, federatedGroupId);
+      if (group && group.currentUserMembership?.userId === membership?.userId) {
+        groupsAdapter.upsertOne(state, { ...group, currentUserMembership: action.payload });
       }
       // if (action.meta.arg.accept) {
       //   const result = action.payload as Membership;
@@ -301,7 +307,7 @@ export const groupsSlice = createSlice({
       // } else if (action.meta.arg.userId === currentUserId) {
       //   group = { ...group, currentUserMembership: undefined };
       // }
-      groupsAdapter.upsertOne(state, group);
+      // groupsAdapter.upsertOne(state, group);
     });
 
     builder.addCase(loadGroupMembers.fulfilled, (state, action) => {

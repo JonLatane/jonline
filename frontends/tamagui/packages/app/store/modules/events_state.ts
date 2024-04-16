@@ -86,28 +86,14 @@ export const eventsSlice = createSlice({
     builder.addCase(createEvent.fulfilled, (state, action) => {
       const payload = federatedPayload(action);
       eventsAdapter.upsertOne(state, payload);
-      // console.log('created event from server', payload);
-      if (publicVisibility(action.payload.post?.visibility)) {
-        const serverEventPages = getFederated(state.eventInstancePages, action);
-        if (!serverEventPages[defaultEventListingType])
-          serverEventPages[defaultEventListingType] = {};
-
-        if (!serverEventPages[defaultEventListingType]![unfilteredTime])
-          serverEventPages[defaultEventListingType]![unfilteredTime] = [];
-        // serverEventPages[defaultEventListingType]![unfilteredTime] =
-        //   serverEventPages[defaultEventListingType]![unfilteredTime] ?? [];
-        const eventPages: string[][] = serverEventPages[defaultEventListingType]![unfilteredTime]!;
-        const firstPage = eventPages[0] || [];
-        eventPages[0] = [federatedId(payload), ...firstPage];
-        setFederated(state.eventInstancePages, action, serverEventPages);
-      }
+      setTimeout(() => store.dispatch(resetEvents({ serverHost: payload.serverHost })), 1);
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       const event = federatedPayload(action);
       mergeEvent(state, event, action);
-      setTimeout(() => {
-        store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
-      }, 1);
+      // setTimeout(() => {
+      //   store.dispatch(loadEventsPage({ page: 0, listingType: defaultEventListingType, filter: undefined }));
+      // }, 1);
     });
     builder.addCase(loadEventsPage.pending, (state, action) => {
       setFederated(state.pagesStatus, action, "loading");

@@ -8,37 +8,36 @@ import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import AccountCard from './account_card';
 import { CreationServerSelector } from './creation_server_selector';
+import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
 
-export type CreateAccountOrLoginSheetProps = {
-  server?: JonlineServer;
-  operation?: string;
-  button?: (onPress: () => void) => JSX.Element;
-  selectedAccount?: JonlineAccount;
-  onAccountSelected?: (account: JonlineAccount) => void;
+export type AuthSheetProps = {
+  // server?: JonlineServer;
+  // onAccountSelected?: (account: JonlineAccount) => void;
 }
 
 export enum LoginMethod {
   Login = 'login',
   CreateAccount = 'create_account',
 }
-export function CreateAccountOrLoginSheet({ server: taggedServer, operation, button, onAccountSelected, selectedAccount }: CreateAccountOrLoginSheetProps) {
+export function AuthSheet({}: AuthSheetProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   // const [open, setOpen] = useState(false);
   // const [browsingServers, setBrowsingServers] = useState(false);
   // const [addingServer, setAddingServer] = useState(false);
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
+  const {open: [open, setOpen]} = useAuthSheetContext();
 
   const { creationServer: creationServer, setCreationServer: setCreationServer } = useCreationServer();
-  useEffect(() => {
-    if (open && taggedServer && (
-      !creationServer
-      || serverID(taggedServer) != serverID(creationServer)
-    )) {
-      setCreationServer(taggedServer);
-    }
-  }
-    , [open, taggedServer]);
+  // useEffect(() => {
+  //   if (open && taggedServer && (
+  //     !creationServer
+  //     || serverID(taggedServer) != serverID(creationServer)
+  //   )) {
+  //     setCreationServer(taggedServer);
+  //   }
+  // }
+  //   , [open, taggedServer]);
   const [addingAccount, setAddingAccount] = useState(false);
   const [loginMethod, setLoginMethod] = useState<LoginMethod | undefined>(undefined);
   const [reauthenticating, setReauthenticating] = useState(false);
@@ -83,14 +82,14 @@ export function CreateAccountOrLoginSheet({ server: taggedServer, operation, but
       .find(a => a && a.user.username === newAccountUser && a.server.host === server?.host);
 
     if (account) {
-      if (onAccountSelected) {
-        onAccountSelected(account);
-      }
+      // if (onAccountSelected) {
+      //   onAccountSelected(account);
+      // }
     } else {
       console.warn("Account not found after adding it. This is a bug.");
     }
   }
-  const skipAccountSelection = onAccountSelected !== undefined || currentServer?.host !== server?.host;
+  // const skipAccountSelection = onAccountSelected !== undefined || currentServer?.host !== server?.host;
   function loginToServer() {
     dispatch(clearAccountAlerts());
     const loginRequest = {
@@ -98,7 +97,7 @@ export function CreateAccountOrLoginSheet({ server: taggedServer, operation, but
       userId: undefined,
       username: newAccountUser,
       password: newAccountPass,
-      skipSelection: skipAccountSelection,
+      skipSelection: false,//skipAccountSelection,
     };
     // debugger;
     dispatch(login(loginRequest)).then(action => {
@@ -115,7 +114,7 @@ export function CreateAccountOrLoginSheet({ server: taggedServer, operation, but
       ...server!,
       username: newAccountUser,
       password: newAccountPass,
-      skipSelection: skipAccountSelection,
+      skipSelection: false,//skipAccountSelection,
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
@@ -146,20 +145,6 @@ export function CreateAccountOrLoginSheet({ server: taggedServer, operation, but
   const onPress = () => setOpen(true);
   return (
     <>
-      {button?.(onPress)
-        ?? <Button {...themedButtonBackground(primaryColor, primaryTextColor)}
-          disabled={server === undefined}
-          px='$1'
-          minWidth={80}
-          onPress={onPress}>
-          {mediaQuery.gtXs
-            ? <Heading size='$2' ta='center' color={primaryTextColor}>
-              Login/Sign Up<br />to {operation}
-            </Heading>
-            : <Heading size='$2' ta='center' color={primaryTextColor}>
-              Login/<br />Sign Up
-            </Heading>}
-        </Button>}
       <Sheet
         modal
         open={open}
@@ -167,7 +152,7 @@ export function CreateAccountOrLoginSheet({ server: taggedServer, operation, but
         // snapPoints={[80]}
         snapPoints={[81]} dismissOnSnapToBottom
         position={position}
-        zIndex={100000}
+        zIndex={600000}
         onPositionChange={setPosition}
       // dismissOnSnapToBottom
       >
@@ -312,7 +297,11 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                     <YStack key={accountID(account)} mb='$2'>
                       <AccountCard account={account}
                         totalAccounts={accountsOnServer.length}
-                        onPress={onAccountSelected ? () => onAccountSelected(account) : undefined} />
+                        // onPress={
+                        //   onAccountSelected 
+                        //   ? () => onAccountSelected(account) : 
+                        //   undefined}
+                           />
                     </YStack>)}
                 </>
                   : undefined}

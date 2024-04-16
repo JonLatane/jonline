@@ -3,12 +3,13 @@ import { Heading, XStack, YStack } from '@jonline/ui';
 import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useCurrentAccount } from 'app/hooks';
 import { FederatedGroup, useServerTheme } from 'app/store';
 import React from 'react';
-import { CreateAccountOrLoginSheet } from '../accounts/create_account_or_login_sheet';
+import { AuthSheet } from '../accounts/auth_sheet';
 // import AccountCard from './account_card';
 // import ServerCard from './server_card';
 import { CreateEventSheet } from '../event/create_event_sheet';
 import { useHideNavigation } from '../navigation/use_hide_navigation';
 import { CreatePostSheet } from '../post/create_post_sheet';
+import { AuthSheetButton } from '../accounts/auth_sheet_button';
 
 interface DynamicCreateButtonProps {
   selectedGroup?: FederatedGroup;
@@ -43,7 +44,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
   if (button) {
     return doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} />
       : doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} />
-        : <CreateAccountOrLoginSheet operation='Post' button={button} />
+        : <AuthSheetButton operation='Post' button={button} />
   }
 
   // console.log("DynamicCreateButton hide", hide);
@@ -63,7 +64,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
         : undefined
       :
       <YStack w='100%' opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
-        <CreateAccountOrLoginSheet operation='Post' button={button} />
+        <AuthSheetButton operation='Post' button={button} />
       </YStack>;
 
 }

@@ -15,7 +15,7 @@ import { useLink } from "solito/link";
 import { AppSection, menuIcon } from "./features_navigation";
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 import { Dictionary } from "@reduxjs/toolkit";
-import { CreateAccountOrLoginSheet } from "../accounts/create_account_or_login_sheet";
+import { AuthSheet } from "../accounts/auth_sheet";
 import { ShortAccountSelectorButton } from "./pinned_server_selector";
 import { ServerNameAndLogo } from "./server_name_and_logo";
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";

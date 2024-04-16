@@ -26,7 +26,7 @@ export type PeopleScreenProps = HomeScreenProps & {
   listingType?: UserListingType;
 };
 
-const { useParam, useUpdateParams } = createParam<{ search: string }>()
+const { useParam, useUpdateParams } = createParam<{ search: string | undefined }>()
 export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
   const isForGroupMembers = listingType === undefined;
 
@@ -43,7 +43,12 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     300
   );
   useEffect(() => {
-    updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+    setTimeout(
+      () => updateParams(
+        { search: debouncedSearchText || undefined },
+        { web: { replace: true } }),
+
+      1);
   }, [debouncedSearchText])
 
   const filteredUsers = allUsers?.filter((user) => {

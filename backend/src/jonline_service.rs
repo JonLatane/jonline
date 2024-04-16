@@ -215,7 +215,7 @@ impl Jonline for JonlineService {
         &self,
         request: Request<Membership>,
     ) -> Result<Response<Membership>, Status> {
-        authenticated_rpc!(self, rpcs::create_membership, request)
+        authenticated_rpc!(self, rpcs::update_membership, request)
     }
     async fn delete_membership(
         &self,
