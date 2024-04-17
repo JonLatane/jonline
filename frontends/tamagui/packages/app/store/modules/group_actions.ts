@@ -96,6 +96,18 @@ export const loadGroup: AsyncThunk<Group, LoadGroup, any> = createAsyncThunk<Gro
   }
 );
 
+export type LoadGroupByShortname = { shortname: string } & AccountOrServer;
+export const loadGroupByShortname: AsyncThunk<Group, LoadGroupByShortname, any> = createAsyncThunk<Group, LoadGroupByShortname>(
+  "groups/loadByShortname",
+  async (request) => {
+    const client = await getCredentialClient(request);
+    const response = await client.getGroups(GetGroupsRequest.create({ groupShortname: parseFederatedId(request.shortname).id }), client.credential);
+    const group = response.groups[0]!;
+    // debugger;
+    return group;
+  }
+);
+
 export type LoadGroupMembers = { id: string, page?: number, groupModeration?: Moderation } & AccountOrServer;
 export const loadGroupMembers: AsyncThunk<GetMembersResponse, LoadGroupMembers, any> = createAsyncThunk<GetMembersResponse, LoadGroupMembers>(
   "groups/loadMembers",

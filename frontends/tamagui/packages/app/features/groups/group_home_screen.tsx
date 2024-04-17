@@ -1,7 +1,6 @@
-import { GetGroupsRequest, Group } from '@jonline/api'
 import { Spinner, YStack, useWindowDimensions } from '@jonline/ui'
-import { useCredentialDispatch, useFederatedDispatch, useCurrentServer } from 'app/hooks'
-import { FederatedGroup, RootState, federateId, loadGroupsPage, parseFederatedId, selectGroupById, useRootSelector, useServerTheme } from 'app/store'
+import { useAppSelector, useCurrentServer, useFederatedDispatch } from 'app/hooks'
+import { FederatedGroup, federateId, loadGroupByShortname, parseFederatedId, selectGroupById, useServerTheme } from 'app/store'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
@@ -19,32 +18,45 @@ export function GroupHomeScreen() {
     } />;
 }
 
-export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {
-  const [inputShortname] = useParam('shortname');
+export function useGroupFromPath(inputShortname: string | undefined): FederatedGroup | undefined {
   const currentServer = useCurrentServer();
   const { id: shortname, serverHost } = parseFederatedId(inputShortname ?? '', currentServer?.host);
   const federatedShortname = federateId(shortname, serverHost);
-  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
-  const shortnameIds = useRootSelector((state: RootState) => state.groups.shortnameIds);
+
+  const shortnameIds = useAppSelector(state => state.groups.shortnameIds);
   const groupId = shortnameIds[federatedShortname!];
-  const group = useRootSelector((state: RootState) =>
+  const group = useAppSelector(state =>
     groupId ? selectGroupById(state.groups, groupId) : undefined);
+  // debugger;
+
+  console.log('useGroupFromPath', shortname, federatedShortname, shortnameIds, groupId, group);
+  const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
   useEffect(() => {
-    if (!group && !loadingGroups) {
-      setLoadingGroups(true);
+    if (shortname && !group && !loadingGroups) {
+      // debugger;
       reloadGroups();
     }
-  }, [loadingGroups, group]);
+  }, [shortname, loadingGroups, group]);
 
   function reloadGroups() {
     if (!accountOrServer.server) return;
+    if (!shortname) return;
 
-    setTimeout(() =>
-      dispatch(loadGroupsPage({ ...accountOrServer, ...GetGroupsRequest.create() }))
-        .then(() => setLoadingGroups(false)), 1);
+    setLoadingGroups(true);
+    dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
+      .then(() => setLoadingGroups(false));
   }
+
+  return group;
+}
+
+export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {
+  const [inputShortname] = useParam('shortname');
+  const group = useGroupFromPath(inputShortname);
+  const { dispatch, accountOrServer } = useFederatedDispatch(group);
+
 
   const { server, primaryColor, navColor, navTextColor } = useServerTheme();
   const dimensions = useWindowDimensions();

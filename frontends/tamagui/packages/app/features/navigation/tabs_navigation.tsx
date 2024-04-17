@@ -85,7 +85,7 @@ export function TabsNavigation({
       //       webUI == WebUserInterface.FLUTTER_WEB
       //         ? '/tamagui'
       //         : 
-              '/'
+      '/'
   });
   const dispatch = useAppDispatch();
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
@@ -143,7 +143,7 @@ export function TabsNavigation({
     <AuthSheetContextProvider value={authSheetContext}>
       <MediaContextProvider value={mediaContext}>
         <GroupContextProvider value={groupContext}>
-          <NavigationContextProvider value={{ appSection, appSubsection, groupPageForwarder, groupPageReverse }}>
+          <NavigationContextProvider value={{ appSection, appSubsection, groupPageForwarder, groupPageReverse, primaryEntity }}>
             <YStack jc="center" ac='center' ai="center"
               w='100%'
               backgroundColor={bgColor}
@@ -205,8 +205,9 @@ export function TabsNavigation({
                     <GroupsSheet key='main' isPrimaryNavigation
                       open={groupsSheetOpen}
                       setOpen={setGroupsSheetOpen}
-                      selectedGroup={selectedGroup}
-                      primaryEntity={primaryEntity} />
+                    // selectedGroup={selectedGroup}
+                    // primaryEntity={primaryEntity}
+                    />
 
                     <GroupDetailsSheet />
 
@@ -218,27 +219,19 @@ export function TabsNavigation({
                       ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
                         <GroupsSheetButton key='main' isPrimaryNavigation
                           open={groupsSheetOpen}
-                          setOpen={setGroupsSheetOpen}
-                          selectedGroup={selectedGroup}
-                          primaryEntity={primaryEntity} />
+                          setOpen={setGroupsSheetOpen} />
 
                       </XStack>
                       : undefined}
                     <ScrollView horizontal>
                       <XStack ai='center'>
                         {!scrollGroupsSheet
-                          ? <></>
-                          : <>
-                            {/* <XStack w={1} /> */}
-                            <XStack ml='$1' my='auto' className='main-groups-button'>
-                              <GroupsSheetButton key='main' isPrimaryNavigation
-                                open={groupsSheetOpen}
-                                setOpen={setGroupsSheetOpen}
-                                selectedGroup={selectedGroup}
-                                primaryEntity={primaryEntity} />
-                            </XStack>
-                            {/* <XStack w={0} /> */}
-                          </>
+                          ? undefined
+                          : <XStack ml='$1' my='auto' className='main-groups-button'>
+                            <GroupsSheetButton key='main' isPrimaryNavigation
+                              open={groupsSheetOpen}
+                              setOpen={setGroupsSheetOpen} />
+                          </XStack>
                         }
                         <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
                       </XStack>

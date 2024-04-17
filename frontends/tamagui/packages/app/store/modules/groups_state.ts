@@ -14,7 +14,7 @@ import { createFederated, Federated, federatedEntities, FederatedEntity, federat
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
-import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup, updateMembership } from "./group_actions";
+import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupByShortname, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup, updateMembership } from "./group_actions";
 import { markGroupVisit } from "./local_app_configuration";
 
 export type FederatedGroup = FederatedEntity<Group>;
@@ -219,7 +219,12 @@ export const groupsSlice = createSlice({
     builder.addCase(loadGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[group.shortname] = group.id;
+      state.shortnameIds[federatedShortname(group)] = federatedId(group);
+    });
+    builder.addCase(loadGroupByShortname.fulfilled, (state, action) => {
+      const group = federatedPayload(action);
+      groupsAdapter.upsertOne(state, group);
+      state.shortnameIds[federatedShortname(group)] = federatedId(group);
     });
     builder.addCase(joinLeaveGroup.pending, (state, action) => {
       lockGroup(state, federateId(action.meta.arg.groupId, action));

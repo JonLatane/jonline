@@ -2,8 +2,8 @@ import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jo
 import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle, Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
-import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { useCurrentServer, useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federateId, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, parseFederatedId, resetPassword, selectGroupById, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -19,11 +19,28 @@ import { UserCard, useFullAvatarHeight } from './user_card';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { EventsFullCalendar } from '../home/events_full_calendar';
 import moment from 'moment';
+import { useGroupFromPath } from '../groups/group_home_screen';
 
-const { useParam } = createParam<{ username: string, serverHost?: string }>()
+const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
+const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
+
+export function usePathShortname() {
+  let pathShortname: string | undefined;
+  try {
+    [pathShortname] = useShortnameParam('shortname');
+  } catch (e) {
+    console.error(e);
+    pathShortname = undefined;
+  }
+  return pathShortname;
+}
 
 export function UsernameDetailsScreen() {
   const mediaQuery = useMedia();
+  const pathShortname = usePathShortname();
+  // const [pathShortname] = useShortnameParam('shortname');
+  const group = useGroupFromPath(pathShortname);
+
   const [pathUsername] = useParam('username');
   const [inputUsername, inputServerHost] = (pathUsername ?? '').split('@');
 
@@ -117,6 +134,7 @@ export function UsernameDetailsScreen() {
 
   const [postContext, setPostContext] = useState(PostContext.POST);
   const allPosts = postContext === PostContext.POST ? userPosts : userReplies;
+  const hasPosts = userPosts.length > 0 || userReplies.length > 0;
   const postPagination = usePaginatedRendering(allPosts, 7, {
     // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
   });
@@ -252,8 +270,9 @@ export function UsernameDetailsScreen() {
   //   || postsState.status == 'loading' || postsState.status == 'unloaded';
 
   return (
-    <TabsNavigation appSection={AppSection.PEOPLE} primaryEntity={user}
-      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/${pathUsername}`}
+    <TabsNavigation appSection={group ? AppSection.MEMBERS : AppSection.PEOPLE} primaryEntity={user}
+      selectedGroup={group}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/m/${pathUsername}`}
       groupPageReverse={`/${pathUsername}`}
       bottomChrome={canEdit
         ? <YStack w='100%' paddingVertical='$2' alignContent='center'>
@@ -348,124 +367,128 @@ export function UsernameDetailsScreen() {
               </YStack>
             </div>
 
-            <div key='upcoming-events-header' style={{ width: '100%' }}>
-              <XStack w='100%' ai='center'>
+            {!editMode && allEvents.length > 0 ? [
+              <div key='upcoming-events-header' style={{ width: '100%' }}>
+                <XStack w='100%' ai='center'>
 
-                <Button mr='auto' my='$2' onPress={() => setShowEvents(!showEvents)}>
-                  <YStack ai='center'>
-                    <Heading size='$1' lh='$1'>Upcoming</Heading>
-                    <Heading size='$3' lh='$1'>Events</Heading>
-                  </YStack>
-                  <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
-                    <ChevronRight />
-                  </XStack>
-                </Button>
+                  <Button mr='auto' my='$2' onPress={() => setShowEvents(!showEvents)}>
+                    <YStack ai='center'>
+                      <Heading size='$1' lh='$1'>Upcoming</Heading>
+                      <Heading size='$3' lh='$1'>Events</Heading>
+                    </YStack>
+                    <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
+                      <ChevronRight />
+                    </XStack>
+                  </Button>
 
-                <Button onPress={() => setBigCalendar(!bigCalendar)}
-                  icon={CalendarIcon}
-                  transparent
-                  {...themedButtonBackground(
-                    bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                  animation='standard'
-                  disabled={!showEvents || allEvents.length === 0}
-                  o={!showEvents || allEvents.length === 0
-                    ? 0 : 1}
-                />
+                  <Button onPress={() => setBigCalendar(!bigCalendar)}
+                    icon={CalendarIcon}
+                    transparent
+                    {...themedButtonBackground(
+                      bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+                    animation='standard'
+                    disabled={!showEvents || allEvents.length === 0}
+                    o={!showEvents || allEvents.length === 0
+                      ? 0 : 1}
+                  />
 
-                {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
-              </XStack>
-            </div>
-            {showEvents
-              ? bigCalendar && allEvents.length > 0
-                ? [
-                  <div key='full-calendar'>
-                    <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
-                  </div>
-                ]
-                : [
-                  <div key='upcoming-events-pagination'
-                    style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
-                  >
-                    <PageChooser {...eventPagination} width='auto' />
-                  </div>,
+                  {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
+                </XStack>
+              </div>,
+              showEvents
+                ? bigCalendar && allEvents.length > 0
+                  ? [
+                    <div key='full-calendar'>
+                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
+                    </div>
+                  ]
+                  : [
+                    <div key='upcoming-events-pagination'
+                      style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
+                    >
+                      <PageChooser {...eventPagination} width='auto' />
+                    </div>,
 
-                  <div key='upcoming-events' style={{ width: '100%' }}>
-                    <ScrollView horizontal w='100%'>
-                      <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+                    <div key='upcoming-events' style={{ width: '100%' }}>
+                      <ScrollView horizontal w='100%'>
+                        <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
-                        <FlipMove style={{ display: 'flex' }}>
+                          <FlipMove style={{ display: 'flex' }}>
 
-                          {loadingEvents && allEvents.length == 0
-                            ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
-                              <Spinner size='large' color={navColor} />
-                            </XStack>
-                            : undefined}
-                          {allEvents.length == 0 && !loadingEvents
-                            ? <div style={{ margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
-                              <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
-                                <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
-                                {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                              </YStack>
-                            </div>
-                            : undefined}
+                            {loadingEvents && allEvents.length == 0
+                              ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                                <Spinner size='large' color={navColor} />
+                              </XStack>
+                              : undefined}
+                            {allEvents.length == 0 && !loadingEvents
+                              ? <div style={{ margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
+                                <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
+                                  <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
+                                  {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+                                </YStack>
+                              </div>
+                              : undefined}
 
 
-                          {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                            {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationResetIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
                   </div> */}
-                          {paginatedEvents.map((event) =>
-                            <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                              <XStack mx='$1' px='$1' pb='$5'>
-                                <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
-                              </XStack>
-                            </span>)}
+                            {paginatedEvents.map((event) =>
+                              <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                                <XStack mx='$1' px='$1' pb='$5'>
+                                  <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
+                                </XStack>
+                              </span>)}
 
-                          {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                            {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
                   </div> */}
-                        </FlipMove>
-                      </XStack>
-                    </ScrollView>
-                  </div>]
-              : undefined}
+                          </FlipMove>
+                        </XStack>
+                      </ScrollView>
+                    </div>]
+                : undefined
+            ] : undefined}
 
-            <div key='latest-activity' style={{ width: '100%', display: 'flex', flexDirection: 'column', maxWidth: 800, alignSelf: 'center' }}>
-              <Heading size='$4' ta='center' my='$2' mx='auto'>Latest Activity</Heading>
+            {!editMode && hasPosts
+              ? <div key='latest-activity' style={{ width: '100%', display: 'flex', flexDirection: 'column', maxWidth: 800, alignSelf: 'center' }}>
+                <Heading size='$4' ta='center' my='$2' mx='auto'>Latest Activity</Heading>
 
-              <XStack jc='center'>
-                <Button borderTopRightRadius={0} borderBottomRightRadius={0}
-                  {...themedButtonBackground(postContext === PostContext.POST ? primaryColor : undefined, postContext === PostContext.POST ? primaryTextColor : undefined)}
-                  onPress={() => setPostContext(PostContext.POST)}>Posts</Button>
-                <Button borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                  {...themedButtonBackground(postContext === PostContext.REPLY ? primaryColor : undefined, postContext === PostContext.REPLY ? primaryTextColor : undefined)}
-                  onPress={() => setPostContext(PostContext.REPLY)}>Replies</Button>
-              </XStack>
+                <XStack jc='center'>
+                  <Button borderTopRightRadius={0} borderBottomRightRadius={0}
+                    {...themedButtonBackground(postContext === PostContext.POST ? primaryColor : undefined, postContext === PostContext.POST ? primaryTextColor : undefined)}
+                    onPress={() => setPostContext(PostContext.POST)}>Posts</Button>
+                  <Button borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                    {...themedButtonBackground(postContext === PostContext.REPLY ? primaryColor : undefined, postContext === PostContext.REPLY ? primaryTextColor : undefined)}
+                    onPress={() => setPostContext(PostContext.REPLY)}>Replies</Button>
+                </XStack>
 
-              <YStack maw={800} w='100%' als='center'>
-                <YStack ai='center' w='100%'>
-                  <FlipMove style={{ width: '100%' }}>
+                <YStack maw={800} w='100%' als='center'>
+                  <YStack ai='center' w='100%'>
+                    <FlipMove style={{ width: '100%' }}>
 
-                    <div key='posts-pagination'
-                      style={{ width: 'auto', maxWidth: '100%', marginTop: 10, marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
-                    >
-                      <PageChooser {...postPagination} noAutoScroll width='auto' />
-                    </div>
-                    {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
-                      postContext === PostContext.POST && userPosts.length === 0
-                        ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
-                        : postContext === PostContext.REPLY && userReplies.length === 0
-                          ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
-                          : undefined}
-                    {paginatedPosts.map((post) =>
-                      <div key={`userpost-${post.id}`} style={{ width: '100%' }}>
-                        <PostCard post={post} isPreview forceExpandPreview />
+                      <div key='posts-pagination'
+                        style={{ width: 'auto', maxWidth: '100%', marginTop: 10, marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
+                      >
+                        <PageChooser {...postPagination} noAutoScroll width='auto' />
                       </div>
-                    )}
-                  </FlipMove>
+                      {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
+                        postContext === PostContext.POST && userPosts.length === 0
+                          ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
+                          : postContext === PostContext.REPLY && userReplies.length === 0
+                            ? <div key='no-replies' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No replies yet</Heading></div>
+                            : undefined}
+                      {paginatedPosts.map((post) =>
+                        <div key={`userpost-${post.id}`} style={{ width: '100%' }}>
+                          <PostCard post={post} isPreview forceExpandPreview />
+                        </div>
+                      )}
+                    </FlipMove>
+                  </YStack>
+                  {showScrollPreserver ? <YStack h={100000} /> : undefined}
                 </YStack>
-                {showScrollPreserver ? <YStack h={100000} /> : undefined}
-              </YStack>
-            </div>
+              </div>
+              : <div key='no-activity-spacer' style={{ height: 20 }} />}
 
 
             <div key='visibility-permissions-toggle' style={{ width: '100%', maxWidth: 800, alignSelf: 'center' }}>

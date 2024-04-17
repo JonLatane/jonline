@@ -115,7 +115,7 @@ export const PageChooser: React.FC<Pagination<any> & {
         </FlipMove>
       </ScrollView>
       {showResultCounts && resultCount > 0
-        ? <Paragraph mx='auto' mt='$1' pt='$1' size='$2'>
+        ? <Paragraph mx='auto' mt='$1' pt='$1' size='$1'>
           {
             Math.min(resultCount, (lowerPage - 1) * pageSize + 1)
           }-{

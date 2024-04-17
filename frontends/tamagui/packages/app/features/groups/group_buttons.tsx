@@ -16,9 +16,6 @@ export type GroupButtonProps = {
   selected: boolean;
   setOpen: (open: boolean) => void;
   onShowInfo: () => void;
-  // Forwarder to link to a group page. Defaults to /g/:shortname.
-  // But, for instance, post pages can link to /g/:shortname/p/:id.
-  // groupPageForwarder?: (groupIdentifier: string) => string;
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;

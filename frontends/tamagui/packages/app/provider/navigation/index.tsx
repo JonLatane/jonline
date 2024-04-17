@@ -26,6 +26,7 @@ export function NavigationProvider({
               groupDetails: 'g/:shortname',
               groupPostDetails: 'g/:shortname/p/:postId',
               groupEventDetails: 'g/:shortname/e/:instanceId',
+              groupMemberDetails: 'g/:shortname/m/:username',
               people: 'people',
               followRequests: 'people/follow_requests',
               about: 'about',

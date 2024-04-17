@@ -1,5 +1,5 @@
 import { AppSection } from "app/features/navigation/features_navigation";
-import { FederatedGroup } from "app/store";
+import { FederatedEntity, FederatedGroup } from "app/store";
 import { createContext, useContext } from "react";
 import { AppSubsection } from '../features/navigation/features_navigation';
 
@@ -11,6 +11,8 @@ type NavigationContextType = {
   // But, for instance, post pages can link to /g/:shortname/p/:id.
   groupPageForwarder?: (groupIdentifier: string) => string;
   groupPageReverse?: string;
+
+  primaryEntity?: FederatedEntity<any>;
 };
 
 export const NavigationContext = createContext<NavigationContextType>({

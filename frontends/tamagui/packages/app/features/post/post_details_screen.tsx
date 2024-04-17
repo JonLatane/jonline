@@ -1,5 +1,5 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useCurrentServer, } from 'app/hooks'
+import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useCurrentServer, useAppSelector, } from 'app/hooks'
 import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
@@ -13,6 +13,7 @@ import { ReplyArea } from './reply_area'
 import { federateId, getFederated } from '../../store/federation';
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { ListEnd } from '@tamagui/lucide-icons'
+import { useGroupFromPath } from '../groups/group_home_screen'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -50,19 +51,16 @@ export function PostDetailsScreen() {
   const server = accountOrServer.server;
   // console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
 
-  const [shortname] = useParam('shortname');
+  const [pathShortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
+  const group = useGroupFromPath(pathShortname);
 
   const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
-  const groupId = useRootSelector((state: RootState) =>
-    shortname ? state.groups.shortnameIds[shortname!] : undefined);
-  const group = useRootSelector((state: RootState) =>
-    groupId ? selectGroupById(state.groups, groupId) : undefined);
-  // const { dispatch, accountOrServer } = useCredentialDispatch();
-  const postsState = useRootSelector((state: RootState) => state.posts);
+
+  const postsState = useAppSelector(state => state.posts);
   const federatedPostId = federateId(serverPostId!, server);
-  const subjectPost = useRootSelector((state: RootState) => selectPostById(state.posts, federatedPostId));
+  const subjectPost = useAppSelector(state => selectPostById(state.posts, federatedPostId));
   const [loadingPost, setLoadingPost] = useState(false);
   const conversationContext = useStatefulConversationContext();
   const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;
@@ -102,11 +100,11 @@ export function PostDetailsScreen() {
       title = 'Loading Post...';
     }
     title += ` - ${serverName}`;
-    if (shortname && shortname.length > 0 && group && group.name.length > 0) {
+    if (pathShortname && pathShortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
-  }, [serverName, subjectPost, failedToLoadPost, shortname, group?.name]);
+  }, [serverName, subjectPost, failedToLoadPost, pathShortname, group?.name]);
 
   // function scrollToBottom() {
   //   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });

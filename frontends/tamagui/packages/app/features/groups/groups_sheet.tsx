@@ -1,22 +1,21 @@
 import { GroupListingType, Permission, PostContext } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, Image, Theme, XStack, YStack, useTheme, useDebounceValue } from '@jonline/ui';
-import { AtSign, Boxes, ChevronDown, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppSelector, useCredentialDispatch, useFederatedDispatch, useGroupPages, useLocalConfiguration, useMediaUrl, useCurrentServer, usePaginatedRendering, useComponentKey } from 'app/hooks';
-import { FederatedEntity, FederatedGroup, JonlineAccount, RootState, accountID, federatedId, getServerTheme, pinAccount, selectGroupById, serverID, unpinAccount, useRootSelector, useServerTheme, selectAllGroups, selectAllServers, optServerID, selectAccountById, parseFederatedId, federateId, optFederatedId } from 'app/store';
+import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
+import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
+import { useGroupContext } from 'app/contexts';
+import { useNavigationContext } from 'app/contexts/navigation_context';
+import { useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering } from 'app/hooks';
+import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, getServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
+import FlipMove from 'react-flip-move';
 import { TextInput } from 'react-native';
+import { AuthSheetButton } from '../accounts/auth_sheet_button';
+import { PageChooser } from '../home/page_chooser';
 import { PinnedServerSelector } from '../navigation/pinned_server_selector';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
-import { GroupDetailsSheet } from './group_details_sheet';
-import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { AuthSheet } from '../accounts/auth_sheet';
-import FlipMove from 'react-flip-move';
-import { useGroupContext } from 'app/contexts';
 import { GroupPostChrome } from './group_post_manager';
-import { PageChooser } from '../home/page_chooser';
-import { AuthSheetButton } from '../accounts/auth_sheet_button';
 
 export type GroupsSheetProps = {
   open: boolean;
@@ -34,12 +33,12 @@ export type GroupsSheetProps = {
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
   serverHostFilter?: string;
-  primaryEntity?: FederatedEntity<any>;
+  // primaryEntity?: FederatedEntity<any>;
   isPrimaryNavigation?: boolean;
 }
 export function GroupsSheet({
   open, setOpen,
-  selectedGroup,
+  selectedGroup: tagSelectedGroup,
   noGroupSelectedText,
   onGroupSelected,
   disabled,
@@ -53,13 +52,14 @@ export function GroupsSheet({
   groupNamePrefix,
   hideAdditionalGroups,
   hideLeaveButtons,
-  primaryEntity,
+  // primaryEntity,
   isPrimaryNavigation,
   serverHostFilter: tagServerHostFilter
 }: GroupsSheetProps) {
-  // const [open, setOpen] = useState(false);
-  const openDebounced = useDebounceValue(open, 300);
-  const { selectedGroup: uiSelectedGroup, sharingPostId, setSharingPostId, infoGroupId, setInfoGroupId } = useGroupContext();
+  const { selectedGroup: navSelectedGroup, sharingPostId, setSharingPostId, infoGroupId, setInfoGroupId } = useGroupContext();
+  const selectedGroup = tagSelectedGroup ?? navSelectedGroup;
+
+  const { primaryEntity } = useNavigationContext();
 
   const selectedGroupId = optFederatedId(selectedGroup);
   const componentKey = useComponentKey('groups-sheet');
@@ -108,7 +108,7 @@ export function GroupsSheet({
         topGroupIds: sharingGroupPostData?.map(gp => federateId(gp.groupId, sharingPostServerHost))
       }
       : {
-        serverHostFilter: tagServerHostFilter,
+        serverHostFilter: tagServerHostFilter ?? selectedGroup?.serverHost ?? primaryEntity?.serverHost,
         extraListItemChrome: undefined,
         topGroupIds: undefined
       };
@@ -197,6 +197,7 @@ export function GroupsSheet({
   const paginatedArrangedGroups = pagination.results;
 
   const topPaginationId = `${componentKey}-top-pagination`;
+  const openDebounced = useDebounceValue(open, 300);
   return <Sheet
     modal
     open={open}
@@ -363,10 +364,11 @@ export function GroupsSheetButton({
   disabled,
   hideInfoButtons,
   groupNamePrefix,
-  primaryEntity,
+  // primaryEntity,
 }: GroupsSheetProps) {
   // const [open, setOpen] = useState(false);
   const { setInfoGroupId } = useGroupContext();
+  const { primaryEntity } = useNavigationContext();
   // console.log('GroupsSheetButton primaryEntity', primaryEntity)
   const { dispatch, accountOrServer } = useFederatedDispatch(primaryEntity ?? selectedGroup);
   const { account, server: groupServer } = accountOrServer;

@@ -13,6 +13,7 @@ import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { ListEnd } from '@tamagui/lucide-icons';
+import { useGroupFromPath } from '../groups/group_home_screen';
 
 const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
@@ -21,7 +22,7 @@ const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortnam
 export function EventDetailsScreen() {
   const mediaQuery = useMedia();
   const [pathInstanceId] = useParam('instanceId');
-  const [shortname] = useParam('shortname');
+  const [pathShortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
   const updateParams = useUpdateParams();
 
@@ -36,10 +37,8 @@ export function EventDetailsScreen() {
   const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server, useTheme());
   // console.log('EventDetailsScreen', textColor);
   const app = useLocalConfiguration();
-  const groupId = useAppSelector((state) =>
-    shortname ? state.groups.shortnameIds[shortname!] : undefined);
-  const group = useAppSelector((state) =>
-    groupId ? selectGroupById(state.groups, groupId) : undefined);
+  const group = useGroupFromPath(pathShortname);
+
   const eventsState = useAppSelector((state) => state.events);
   const postsState = useAppSelector((state) => state.posts);
 
@@ -133,7 +132,7 @@ export function EventDetailsScreen() {
       title = 'Loading Event...';
     }
     title += ` - Event - ${serverName}`;
-    if (shortname && shortname.length > 0 && group && group.name.length > 0) {
+    if (pathShortname && pathShortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
