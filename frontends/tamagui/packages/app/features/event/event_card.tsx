@@ -17,7 +17,7 @@ import { useLink } from "solito/link";
 // import { PostMediaRenderer } from "../post/post_media_renderer";
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
-import { AccountOrServerContextProvider } from 'app/contexts';
+import { AccountOrServerContextProvider, useGroupContext } from 'app/contexts';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { defaultEventInstance, } from "./create_event_sheet";
 import { EventCalendarExporter } from './event_calendar_exporter';
@@ -31,7 +31,7 @@ interface Props {
   event: FederatedEvent;
   selectedInstance?: EventInstance;
   isPreview?: boolean;
-  groupContext?: FederatedGroup;
+  // groupContext?: FederatedGroup;
   horizontal?: boolean;
   xs?: boolean;
   hideEditControls?: boolean;
@@ -50,7 +50,7 @@ export const EventCard: React.FC<Props> = ({
   event,
   selectedInstance = event.instances.find(isNotPastInstance) ?? event.instances[0],
   isPreview,
-  groupContext,
+  // groupContext,
   horizontal,
   xs,
   hideEditControls,
@@ -66,7 +66,8 @@ export const EventCard: React.FC<Props> = ({
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
   const server = accountOrServer.server;
   const isPrimaryServer = useCurrentAccountOrServer().server?.host === server?.host;
-  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === groupContext?.serverHost;
+  const { selectedGroup } = useGroupContext();
+  const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === selectedGroup?.serverHost;
   const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = !isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1);
 
@@ -224,14 +225,14 @@ export const EventCard: React.FC<Props> = ({
   const detailsLinkId = !isPrimaryServer
     ? federateId(primaryInstanceIdString, accountOrServer.server)
     : primaryInstanceIdString;
-  const groupLinkId = groupContext ?
+  const groupLinkId = selectedGroup ?
     (!isGroupPrimaryServer
-      ? federateId(groupContext.shortname, accountOrServer.server)
-      : groupContext.shortname)
+      ? federateId(selectedGroup.shortname, accountOrServer.server)
+      : selectedGroup.shortname)
     : undefined;
   const eventLink: LinkProps = useLink({
     href: primaryInstance ?
-      groupContext
+      selectedGroup
         ? `/g/${groupLinkId}/e/${detailsLinkId}`
         : `/event/${detailsLinkId}`
       : '.'
@@ -870,7 +871,7 @@ export const EventCard: React.FC<Props> = ({
                               smallPreview={horizontal && isPreview}
                               xsPreview={xs && isPreview}
 
-                              {...{ detailsLink, isPreview, groupContext, isVisible }}
+                              {...{ detailsLink, isPreview, groupContext: selectedGroup, isVisible }}
                               post={{
                                 ...eventPost,
                                 media,
@@ -946,7 +947,7 @@ export const EventCard: React.FC<Props> = ({
                                 label='Event Visibility'
                                 visibility={visibility}
                                 onChange={setEditedVisibility}
-                                visibilityDescription={v => postVisibilityDescription(v, groupContext, server, 'event')}
+                                visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server, 'event')}
                                 readOnly={!editing || previewingEdits}
                               />
                             </XStack>

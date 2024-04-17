@@ -7,6 +7,9 @@ import { passes, pending, themedButtonBackground } from 'app/utils';
 import React from 'react';
 import { useLink } from 'solito/link';
 import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
+import { useGroupContext } from 'app/contexts';
+import { AppSection } from '../navigation/features_navigation';
+import { useNavigationContext } from 'app/contexts/navigation_context';
 
 export type GroupButtonProps = {
   group: FederatedGroup;
@@ -15,7 +18,7 @@ export type GroupButtonProps = {
   onShowInfo: () => void;
   // Forwarder to link to a group page. Defaults to /g/:shortname.
   // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (groupIdentifier: string) => string;
+  // groupPageForwarder?: (groupIdentifier: string) => string;
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;
@@ -24,7 +27,7 @@ export type GroupButtonProps = {
   hideLeaveButton?: boolean;
 }
 
-export function GroupButton({ group, selected, setOpen, groupPageForwarder, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
+export function GroupButton({ group, selected, setOpen, onShowInfo, onGroupSelected, disabled, hideInfoButton, extraListItemChrome, hideLeaveButton }: GroupButtonProps) {
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const mediaQuery = useMedia();
   const { account } = accountOrServer;
@@ -34,8 +37,29 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
   // const dispatch = useAppDispatch();
   const groupIdentifier = isPrimaryServer ? group.shortname : `${group.shortname}@${group.serverHost}`;
-  const link = onGroupSelected ? { onPress: () => onGroupSelected(group) } :
-    useLink({ href: groupPageForwarder ? groupPageForwarder(groupIdentifier) : `/g/${groupIdentifier}` });
+  const { selectedGroup } = useGroupContext();
+  const { groupPageForwarder, groupPageReverse } = useNavigationContext();
+  const linkToGroup = useLink({
+    href: groupPageForwarder
+      ? groupPageForwarder(groupIdentifier)
+      : `/g/${groupIdentifier}`
+  });
+  const { appSection } = useNavigationContext();
+
+  const linkFromGroup = useLink({
+    href: groupPageReverse ?? (
+      selectedGroup && appSection == AppSection.POSTS ? `/posts` :
+        selectedGroup && appSection == AppSection.EVENTS ? `/events` :
+          selectedGroup && appSection == AppSection.MEMBERS ? `/people` :
+            '/'
+    )
+  });
+  const isSelected = selectedGroup && federatedId(group) === federatedId(selectedGroup)
+  const link = onGroupSelected
+    ? { onPress: () => onGroupSelected(group) }
+    : isSelected
+      ? linkFromGroup
+      : linkToGroup;
   const media = useMedia();
   const onPress = link.onPress;
   link.onPress = (e) => {
@@ -114,14 +138,14 @@ export function GroupButton({ group, selected, setOpen, groupPageForwarder, onSh
                     ? <ServerNameAndLogo
                       textColor={selected ? navTextColor : undefined}
                       server={server}
-                      // fallbackToHomeIcon 
-                      />
+                    // fallbackToHomeIcon 
+                    />
                     : <YStack mx='auto' w='$3' h='$3'>
                       <ServerNameAndLogo shrinkToSquare
                         // textColor={selected ? navTextColor : undefined}
                         server={server}
-                        // fallbackToHomeIcon 
-                        />
+                      // fallbackToHomeIcon 
+                      />
                     </YStack>
                   : undefined}
                 <XStack ml='auto'>

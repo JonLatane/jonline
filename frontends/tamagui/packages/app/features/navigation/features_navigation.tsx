@@ -11,6 +11,7 @@ import FlipMove from "react-flip-move";
 import { useMediaContext } from "app/contexts";
 
 export enum AppSection {
+  NONE = 'none',
   HOME = 'home',
   POSTS = 'posts',
   // POST = 'post',
@@ -63,6 +64,8 @@ export enum AppSubsection {
 
 export function sectionTitle(section: AppSection): string {
   switch (section) {
+    case AppSection.NONE:
+      return 'No AppSection';
     case AppSection.HOME:
       return 'Latest';
     case AppSection.POSTS:

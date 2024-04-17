@@ -119,6 +119,8 @@ export function PostDetailsScreen() {
   return (
     <TabsNavigation appSection={AppSection.POSTS} selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/p/${pathPostId}`}
+      groupPageReverse={`/post/${pathPostId}`}
       topChrome={
         <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
           <Tooltip placement="bottom">

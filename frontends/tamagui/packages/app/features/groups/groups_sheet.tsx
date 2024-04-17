@@ -22,20 +22,14 @@ export type GroupsSheetProps = {
   open: boolean;
   setOpen: (v: boolean) => void;
   selectedGroup?: FederatedGroup;
-  // Forwarder to link to a group page. Defaults to /g/:shortname.
-  // But, for instance, post pages can link to /g/:shortname/p/:id.
-  groupPageForwarder?: (groupIdentifier: string) => string;
-
   noGroupSelectedText?: string;
   onGroupSelected?: (group: FederatedGroup) => void;
-
   disabled?: boolean;
   title?: string;
   itemTitle?: string;
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
   extraListItemChrome?: (group: FederatedGroup) => JSX.Element | undefined;
-  // delayRenderingSheet?: boolean; // Now it's always delayed. Remove this line.
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;
@@ -46,7 +40,6 @@ export type GroupsSheetProps = {
 export function GroupsSheet({
   open, setOpen,
   selectedGroup,
-  groupPageForwarder,
   noGroupSelectedText,
   onGroupSelected,
   disabled,
@@ -328,7 +321,6 @@ export function GroupsSheet({
                   <div key={`groupButton-${federatedId(group)}`}>
                     <GroupButton
                       group={group}
-                      groupPageForwarder={groupPageForwarder}
                       onGroupSelected={onGroupSelected}
                       selected={federatedId(group) === optFederatedId(selectedGroup)}
                       onShowInfo={() => {

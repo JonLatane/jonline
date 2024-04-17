@@ -253,6 +253,8 @@ export function UsernameDetailsScreen() {
 
   return (
     <TabsNavigation appSection={AppSection.PEOPLE} primaryEntity={user}
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/${pathUsername}`}
+      groupPageReverse={`/${pathUsername}`}
       bottomChrome={canEdit
         ? <YStack w='100%' paddingVertical='$2' alignContent='center'>
           <XStack mx='auto' px='$3' w='100%' maw={800}>

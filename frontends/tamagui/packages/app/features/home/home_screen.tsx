@@ -137,7 +137,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         maxWidth: 1400,
         paddingBottom: 20
       }}>
-        {/* <div key='create' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+        {/* <div key='create' style={{ width: '100%', max<Width>: 800, paddingLeft: 18, paddingRight: 18 }}>
           <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
         </div> */}
         <div key='latest-events-header' style={{ width: '100%' }}>

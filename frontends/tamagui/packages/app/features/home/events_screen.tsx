@@ -211,6 +211,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       appSection={AppSection.EVENTS}
       selectedGroup={selectedGroup}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/events`}
+      groupPageReverse='/events'
       withServerPinning
       showShrinkPreviews={!bigCalendar}
       loading={loadingEvents}

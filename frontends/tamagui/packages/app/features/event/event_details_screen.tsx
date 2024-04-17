@@ -148,9 +148,11 @@ export function EventDetailsScreen() {
   const chatUI = app?.discussionChatUI;
 
   return (
-    <TabsNavigation appSection={AppSection.EVENTS} selectedGroup={group}
+    <TabsNavigation appSection={AppSection.EVENTS} 
+      selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
-
+      groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/e/${pathInstanceId}`}
+      groupPageReverse={`/event/${pathInstanceId}`}
       topChrome={
         <XStack w='100%' maw={800} mx='auto' mt='$1' ai='center'>
           <Tooltip placement="bottom">
