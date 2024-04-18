@@ -1,9 +1,11 @@
 import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
-import { AnimatePresence, Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
-import { ChevronRight, Calendar as CalendarIcon } from '@tamagui/lucide-icons';
-import { maxPagesToRender, useAppDispatch, useEventPageParam, useEventPages, usePaginatedRendering, usePostPages, useCurrentServer, useLocalConfiguration, usePostPageParam, useAppSelector } from 'app/hooks';
+import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
+import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePostPageParam, usePostPages } from 'app/hooks';
+import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
+import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { useLink } from 'solito/link';
@@ -11,11 +13,8 @@ import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
-import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
-import { PageChooser } from './page_chooser';
-import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { EventsFullCalendar } from './events_full_calendar';
-import moment from 'moment';
+import { PageChooser } from './page_chooser';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -167,7 +166,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
             <div style={{ flex: 1 }} />
             <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
-              <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
+              <DynamicCreateButton showPosts showEvents />
             </div>
           </XStack>
         </div>

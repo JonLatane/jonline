@@ -1,4 +1,4 @@
-import { Event, EventInstance, TimeFilter } from "@jonline/api";
+import { Event, EventInstance, EventListingType, TimeFilter } from "@jonline/api";
 import {
   Dictionary,
   EntityAdapter,
@@ -14,6 +14,7 @@ import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
+import { resetUserEvents, resetUsers } from "./users_state";
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
@@ -86,7 +87,31 @@ export const eventsSlice = createSlice({
     builder.addCase(createEvent.fulfilled, (state, action) => {
       const payload = federatedPayload(action);
       eventsAdapter.upsertOne(state, payload);
-      setTimeout(() => store.dispatch(resetEvents({ serverHost: payload.serverHost })), 1);
+      const instanceIds = payload.instances.map(instance => federateId(instance.id, action));
+      state.instanceEvents = {
+        ...state.instanceEvents,
+        ...Object.fromEntries(
+          instanceIds.map(instanceId => [instanceId, federateId(payload.id, action)])
+        )
+      };
+
+      const pagesStatus = getFederated(state.pagesStatus, action);
+      if (pagesStatus === 'loaded') {
+        // Append the Events to ALL pages for any/all timefilters, etc.
+        // This could be better done later, maybe. Refresh page data only without the
+        // rest of the EventsState maybe?
+        const eventInstancePages = getFederated(state.eventInstancePages, action);
+        for (const listingTypeStr of Object.keys(eventInstancePages)) {
+          const listingType = parseInt(listingTypeStr) as EventListingType;
+          for (const filterStr of Object.keys(eventInstancePages[listingType]!)) {
+            for (const pageStr of Object.keys(eventInstancePages[listingType]![filterStr]!)) {
+              eventInstancePages[listingType]![filterStr]![pageStr]!.unshift(...instanceIds);
+            }
+          }
+        }
+
+        setFederated(state.eventInstancePages, action, eventInstancePages);
+      }
     });
     builder.addCase(updateEvent.fulfilled, (state, action) => {
       const event = federatedPayload(action);

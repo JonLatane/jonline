@@ -228,7 +228,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
             {displayModeButton('all', 'All')}
             {displayModeButton('filtered', 'Filtered')}
 
-            <DynamicCreateButton selectedGroup={selectedGroup} showEvents
+            <DynamicCreateButton showEvents
               button={(onPress) =>
                 <Button onPress={onPress}
                   icon={CalendarPlus}

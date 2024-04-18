@@ -20,6 +20,7 @@ import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { EventsFullCalendar } from '../home/events_full_calendar';
 import moment from 'moment';
 import { useGroupFromPath } from '../groups/group_home_screen';
+import { DynamicCreateButton } from '../home/dynamic_create_button';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
@@ -104,7 +105,8 @@ export function UsernameDetailsScreen() {
   const userPostData: FederatedPost[] | undefined = useAppSelector((state) => {
     return userId
       ? state.users.idPosts[userId]
-        ?.map(postId => state.posts.entities[postId]!)
+        ?.map(postId => state.posts.entities[postId])
+        ?.filter(p => p !== undefined) as FederatedPost[]
       : undefined
   });
   const userPosts = userPostData ?? [];
@@ -143,20 +145,19 @@ export function UsernameDetailsScreen() {
   }, [postContext, user?.id]);
   const paginatedPosts = postPagination.results;
 
-  const [loadingEvents, setLoadingUserEvents] = useState(false);
-  const userEventData: FederatedEvent[] | undefined = useRootSelector((state: RootState) => {
-    return userId
-      ? state.users.idEventInstances[userId]
-        ?.map(instanceId => {
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const userEventIds = useAppSelector(state => userId ? state.users.idEventInstances[userId] : undefined);
+  const userEventData: FederatedEvent[] | undefined = useAppSelector(state => {
+    return userEventIds?.map(instanceId => {
           const eventId = state.events.instanceEvents[instanceId];
           if (!eventId) return undefined;
           const event = state.events.entities[eventId];
           if (!event) return undefined;
           return { ...event, instances: event.instances.filter(i => i.id === instanceId.split('@')[0]) };
         })
-        ?.filter(e => e !== undefined) as FederatedEvent[]
-      : undefined
+        ?.filter(e => e !== undefined) as FederatedEvent[] | undefined
   });
+  console.log("UsernameDetailsScreen userEventIds.length", userEventIds?.length, "userEventData.length", userEventData?.length);
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
@@ -164,11 +165,12 @@ export function UsernameDetailsScreen() {
 
   useEffect(() => {
     if (userId && !userEventData && !loadingEvents) {
-      setLoadingUserEvents(true);
+      setLoadingEvents(true);
       dispatch(loadUserEvents({ ...accountOrServer, timeFilter, userId }))
-        .then(() => setLoadingUserEvents(false));
+        .then(() => setLoadingEvents(false));
     }
   }, [userId, userEventData, loadingEvents]);
+  // console.log(userEventData);
   const eventResults = userEventData ?? [];
   const allEvents = bigCalendar
     ? eventResults
@@ -235,7 +237,7 @@ export function UsernameDetailsScreen() {
     let title = realName ?? username ?? 'User';
     title += ` | ${isBusiness ? 'Business Profile' : 'Profile'} | ${serverName}`;
     setDocumentTitle(title)
-  }, [user, username]);
+  });//, [user, username]);
 
   async function saveUser() {
     if (!canEdit && !user) return;
@@ -343,112 +345,127 @@ export function UsernameDetailsScreen() {
           }}>
 
             {/* <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'> */}
-            <div key='user-card'>
-              <YStack maw={800} w='100%' als='center'>
-                <UserCard
-                  editable editingDisabled={!editMode}
-                  user={user}
-                  username={username}
-                  setUsername={setUsername}
-                  avatar={avatar}
-                  setAvatar={setAvatar} />
-                <YStack als='center' w='100%' paddingHorizontal='$2' paddingTop='$3' gap>
-                  {editMode ?
-                    <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
-                      value={bio} onChangeText={t => setBio(t)}
-                      // size='$5'
-                      h='$14'
-                      placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
-                    />
-                    : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
-                      <TamaguiMarkdown text={bio!} />
-                    </YStack>}
-                </YStack>
+            <div key='user-card-and-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
+              <UserCard
+                editable editingDisabled={!editMode}
+                user={user}
+                username={username}
+                setUsername={setUsername}
+                avatar={avatar}
+                setAvatar={setAvatar} />
+              <YStack als='center' w='100%' paddingHorizontal='$2' paddingTop='$3' gap>
+                {editMode ?
+                  <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
+                    value={bio} onChangeText={t => setBio(t)}
+                    // size='$5'
+                    h='$14'
+                    placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
+                  />
+                  : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
+                    <TamaguiMarkdown text={bio!} />
+                  </YStack>}
               </YStack>
             </div>
 
-            {!editMode && allEvents.length > 0 ? [
-              <div key='upcoming-events-header' style={{ width: '100%' }}>
-                <XStack w='100%' ai='center'>
+            {!editMode
+              ? allEvents.length > 0 ? [
+                <div key='upcoming-events-header' style={{ width: '100%' }}>
+                  <XStack w='100%' ai='center'>
 
-                  <Button mr='auto' my='$2' onPress={() => setShowEvents(!showEvents)}>
-                    <YStack ai='center'>
-                      <Heading size='$1' lh='$1'>Upcoming</Heading>
-                      <Heading size='$3' lh='$1'>Events</Heading>
-                    </YStack>
-                    <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
-                      <ChevronRight />
-                    </XStack>
-                  </Button>
+                    <Button mr='$2' my='$2' onPress={() => setShowEvents(!showEvents)}>
+                      <YStack ai='center'>
+                        <Heading size='$1' lh='$1'>Upcoming</Heading>
+                        <Heading size='$3' lh='$1'>Events</Heading>
+                      </YStack>
+                      <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
+                        <ChevronRight />
+                      </XStack>
+                    </Button>
 
-                  <Button onPress={() => setBigCalendar(!bigCalendar)}
-                    icon={CalendarIcon}
-                    transparent
-                    {...themedButtonBackground(
-                      bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                    animation='standard'
-                    disabled={!showEvents || allEvents.length === 0}
-                    o={!showEvents || allEvents.length === 0
-                      ? 0 : 1}
-                  />
+                    <Button onPress={() => setBigCalendar(!bigCalendar)}
+                      icon={CalendarIcon}
+                      transparent
+                      {...themedButtonBackground(
+                        bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+                      animation='standard'
+                      disabled={!showEvents || allEvents.length === 0}
+                      o={!showEvents || allEvents.length === 0
+                        ? 0 : 1}
+                    />
+                    {isCurrentUser
+                      ? <>
+                        <XStack f={1} mr='auto' />
+                        <DynamicCreateButton showPosts showEvents hideIfUnusable />
+                      </>
+                      : undefined}
 
-                  {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
-                </XStack>
-              </div>,
-              showEvents
-                ? bigCalendar && allEvents.length > 0
-                  ? [
-                    <div key='full-calendar'>
-                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
-                    </div>
-                  ]
-                  : [
-                    <div key='upcoming-events-pagination'
-                      style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
-                    >
-                      <PageChooser {...eventPagination} width='auto' />
-                    </div>,
+                    {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
+                  </XStack>
+                </div>,
+                showEvents
+                  ? bigCalendar && allEvents.length > 0
+                    ? [
+                      <div key='full-calendar'>
+                        <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
+                      </div>
+                    ]
+                    : [
+                      <div key='upcoming-events-pagination'
+                        style={{ width: 'auto', maxWidth: '100%', marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
+                      >
+                        <PageChooser {...eventPagination} width='auto' />
+                      </div>,
 
-                    <div key='upcoming-events' style={{ width: '100%' }}>
-                      <ScrollView horizontal w='100%'>
-                        <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+                      <div key='upcoming-events' style={{ width: '100%' }}>
+                        <ScrollView horizontal w='100%'>
+                          <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
-                          <FlipMove style={{ display: 'flex' }}>
+                            <FlipMove style={{ display: 'flex' }}>
 
-                            {loadingEvents && allEvents.length == 0
-                              ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
-                                <Spinner size='large' color={navColor} />
-                              </XStack>
-                              : undefined}
-                            {allEvents.length == 0 && !loadingEvents
-                              ? <div style={{ margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
-                                <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
-                                  <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
-                                  {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                                </YStack>
-                              </div>
-                              : undefined}
+                              {loadingEvents && allEvents.length == 0
+                                ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                                  <Spinner size='large' color={navColor} />
+                                </XStack>
+                                : undefined}
+                              {allEvents.length == 0 && !loadingEvents
+                                ? <div style={{ margin: 'auto', width: window.innerWidth - 12 }} key='no-events-found'>
+                                  <YStack jc="center" ai="center" mx='auto' my='auto' px='$2'>
+                                    <Heading size='$1' ta='center' o={0.5}>No events yet</Heading>
+                                    {/* <Heading size='$3' ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+                                  </YStack>
+                                </div>
+                                : undefined}
 
 
-                            {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                              {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationResetIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
                   </div> */}
-                            {paginatedEvents.map((event) =>
-                              <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                                <XStack mx='$1' px='$1' pb='$5'>
-                                  <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
-                                </XStack>
-                              </span>)}
+                              {paginatedEvents.map((event) =>
+                                <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                                  <XStack mx='$1' px='$1' pb='$5'>
+                                    <EventCard event={event} isPreview horizontal xs ignoreShrinkPreview />
+                                  </XStack>
+                                </span>)}
 
-                            {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                              {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
                     <PaginationIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
                   </div> */}
-                          </FlipMove>
-                        </XStack>
-                      </ScrollView>
-                    </div>]
+                            </FlipMove>
+                          </XStack>
+                        </ScrollView>
+                      </div>]
+                  : undefined
+              ] : isCurrentUser && allEvents.length === 0
+                ? <div key='dynamic-create-buttons-no-events-yet' style={{ width: '100%' }}>
+                  <XStack w='100%' ai='center'>
+                    <XStack f={1} />
+                    <DynamicCreateButton showPosts showEvents hideIfUnusable />
+                  </XStack>
+                </div>
                 : undefined
-            ] : undefined}
+              : undefined}
+
+            {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> : undefined}
 
             {!editMode && hasPosts
               ? <div key='latest-activity' style={{ width: '100%', display: 'flex', flexDirection: 'column', maxWidth: 800, alignSelf: 'center' }}>
@@ -472,7 +489,7 @@ export function UsernameDetailsScreen() {
                       >
                         <PageChooser {...postPagination} noAutoScroll width='auto' />
                       </div>
-                      {loading ? <div key='spinner'><Spinner color={primaryAnchorColor} /></div> :
+                      {loading ? undefined :
                         postContext === PostContext.POST && userPosts.length === 0
                           ? <div key='no-posts' style={{ display: 'flex', width: '100%', marginTop: 50, marginBottom: 150 }}><Heading w='100%' size='$1' ta='center' o={0.5}>No posts yet</Heading></div>
                           : postContext === PostContext.REPLY && userReplies.length === 0
@@ -602,13 +619,13 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
           visibilityDescription={(v) => {
             switch (v) {
               case Visibility.PRIVATE:
-                return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+                return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'this'} profile.`;
               case Visibility.LIMITED:
-                return `Only followers can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+                return `Only followers can see ${isCurrentUser ? 'your' : 'this'} profile.`;
               case Visibility.SERVER_PUBLIC:
-                return `Anyone on this server can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+                return `Anyone on this server can see ${isCurrentUser ? 'your' : 'this'} profile.`;
               case Visibility.GLOBAL_PUBLIC:
-                return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'their'} profile.`;
+                return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'this'} profile.`;
               default:
                 return 'Unknown';
             }

@@ -9,7 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, loadGroupMembers, notifyUserDeleted, store, upsertUserData } from "..";
+import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createEvent, createFederatedPagesStatus, createPost, loadGroupMembers, notifyUserDeleted, store, upsertUserData } from "..";
 import { Federated, FederatedAction, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, parseFederatedId, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
 
@@ -81,18 +81,30 @@ export const usersSlice = createSlice({
       state.failedUsernames[action.payload.serverHost] = [];
       state.failedUserIds = state.failedUserIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
 
+      delete state.userPages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
+
+      setTimeout(() => {
+        store.dispatch(resetUserPosts(action.payload));
+        store.dispatch(resetUserEvents(action.payload));
+      }, 1);
+    },
+    resetUserEvents: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
+      Object.keys(state.idEventInstances)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.idEventInstances[id]);
+    },
+    resetUserPosts: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
+      if (!action.payload.serverHost) return;
+
       Object.keys(state.idPosts)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.idPosts[id]);
       Object.keys(state.idReplies)
         .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
         .forEach(id => delete state.idReplies[id]);
-      Object.keys(state.idEventInstances)
-        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-        .forEach(id => delete state.idEventInstances[id]);
-
-      delete state.userPages.values[action.payload.serverHost];
-      delete state.pagesStatus.values[action.payload.serverHost];
     },
   },
   extraReducers: (builder) => {
@@ -173,6 +185,34 @@ export const usersSlice = createSlice({
         || [];
       updatedUserPostIds.push(...newPostIds);
       state.idPosts[userId] = updatedUserPostIds;
+    });
+    builder.addCase(createPost.fulfilled, (state, action) => {
+      const serverUserId = action.payload.author?.userId;
+      if (!serverUserId) return;
+
+      const userId = federateId(serverUserId, action);
+      const postId = federatedId(federatedEntity(action.payload, action));
+      const currentUserPosts = state.idPosts[userId];
+      if (!currentUserPosts) return;
+
+      state.idPosts[userId] = [postId, ...currentUserPosts];
+    });
+    builder.addCase(createEvent.fulfilled, (state, action) => {
+      const serverUserId = action.payload.post?.author?.userId;
+      if (!serverUserId) return;
+
+      const userId = federateId(serverUserId, action);
+      // debugger;
+      // console.log('state.idEventInstances[userId]', state.idEventInstances[userId]);
+
+      const oldInstanceIds = state.idEventInstances[userId]?.map(id => id);
+      if (!oldInstanceIds) return;
+
+      const instanceIds = action.payload.instances.map(instance => federateId(instance.id, action));
+      const newInstanceIds = [...instanceIds, ...oldInstanceIds];
+      // console.log('UserState createEvent.fulfilled', userId, instanceIds, oldInstanceIds, newInstanceIds);
+      // debugger;
+      state.idEventInstances[userId] = newInstanceIds;
     });
     builder.addCase(loadUserReplies.fulfilled, (state, action) => {
       const replies = federatedEntities(action.payload.posts, action);
@@ -259,7 +299,7 @@ export const usersSlice = createSlice({
   },
 });
 
-export const { removeUser, resetUsers, upsertUser } = usersSlice.actions;
+export const { removeUser, resetUsers, resetUserEvents, resetUserPosts, upsertUser } = usersSlice.actions;
 
 export const { selectAll: selectAllUsers, selectById: selectUserById } = selectors;
 export const usersReducer = usersSlice.reducer;

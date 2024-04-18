@@ -136,7 +136,7 @@ export function EventDetailsScreen() {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
-  }, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
+  });//, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
 
   function scrollToBottom() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });

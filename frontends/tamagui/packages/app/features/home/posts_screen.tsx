@@ -72,7 +72,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
                 <PageChooser {...pagination} width='auto' />
                 <XStack f={1} />
                 <XStack>
-                  <DynamicCreateButton selectedGroup={selectedGroup} showPosts />
+                  <DynamicCreateButton showPosts />
                 </XStack>
               </XStack>
               {/* <div style={{ marginLeft: 'auto' }}>

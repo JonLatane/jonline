@@ -29,7 +29,7 @@ export function useGroupFromPath(inputShortname: string | undefined): FederatedG
     groupId ? selectGroupById(state.groups, groupId) : undefined);
   // debugger;
 
-  console.log('useGroupFromPath', shortname, federatedShortname, shortnameIds, groupId, group);
+  // console.log('useGroupFromPath', shortname, federatedShortname, shortnameIds, groupId, group);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const [loadingGroups, setLoadingGroups] = useState(false);
 

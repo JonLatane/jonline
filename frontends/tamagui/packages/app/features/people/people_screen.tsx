@@ -69,7 +69,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
     setDocumentTitle(title)
-  }, [isForGroupMembers, listingType, server?.serverConfiguration?.serverInfo?.name]);
+  });//, [isForGroupMembers, listingType, server?.serverConfiguration?.serverInfo?.name]);
 
 
 

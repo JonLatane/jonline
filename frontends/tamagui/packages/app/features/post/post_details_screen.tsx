@@ -104,7 +104,7 @@ export function PostDetailsScreen() {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
-  }, [serverName, subjectPost, failedToLoadPost, pathShortname, group?.name]);
+  });//, [serverName, subjectPost, failedToLoadPost, pathShortname, group?.name]);
 
   // function scrollToBottom() {
   //   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
