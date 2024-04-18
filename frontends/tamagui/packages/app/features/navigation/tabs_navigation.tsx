@@ -218,6 +218,7 @@ export function TabsNavigation({
                     {!scrollGroupsSheet
                       ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
                         <GroupsSheetButton key='main' isPrimaryNavigation
+                          selectedGroup={selectedGroup}
                           open={groupsSheetOpen}
                           setOpen={setGroupsSheetOpen} />
 
