@@ -7,7 +7,7 @@ import timegridPlugin from "@fullcalendar/timegrid";
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 // import { , momentLocalizer } from "react-big-calendar";
-import { DayPilot, DayPilotCalendar } from "@daypilot/daypilot-lite-react";
+import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
 import { Button, Dialog, ScrollView, Text, YStack, needsScrollPreservers, reverseStandardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
@@ -21,7 +21,6 @@ import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
-import { styled } from 'tamagui';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export type EventsFullCalendarProps = {

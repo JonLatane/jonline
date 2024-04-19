@@ -3,7 +3,7 @@ import { AlertCircle, Cpu, Router, AlertTriangle, ArrowDownUp, AtSign, ChevronDo
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
-import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setHasOpenedAccounts, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -35,7 +35,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const mediaQuery = useMedia();
   const [open, setOpen] = useState(false);
   const primaryAccountOrServer = useFederatedAccountOrServer(primaryEntity);
-  const { allowServerSelection: allowServerSelectionSetting, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
+  const { allowServerSelection: allowServerSelectionSetting, hasOpenedAccounts, separateAccountsByServer, browsingServers, viewingRecommendedServers } = useLocalConfiguration();
   const [addingServer, setAddingServer] = useState(false);
   const [position, setPosition] = useState(0);
   const [newServerHost, setNewServerHost] = useState('');
@@ -46,7 +46,11 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
     if (open && !hasOpened) {
       setHasOpened(true);
     }
+    if (open && !hasOpenedAccounts) {
+      dispatch(setHasOpenedAccounts(true));
+    }
   }, [hasOpened, open]);
+
   const openChanged = useDebounceValue(open, 3000);
   useEffect(() => {
     if (!openChanged) {

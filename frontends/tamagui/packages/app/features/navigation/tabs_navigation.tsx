@@ -1,24 +1,23 @@
-import { WebUserInterface } from "@jonline/api";
-import { Button, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, useMedia, useWindowDimensions } from "@jonline/ui";
-import { ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
+import { AnimatePresence, Button, Paragraph, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
+import { ChevronLeft, ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
 import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from 'app/contexts';
-import { useAppDispatch, useCurrentServer, useLocalConfiguration } from "app/hooks";
-import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
+import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/auth_sheet_context";
+import { NavigationContextProvider } from "app/contexts/navigation_context";
+import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
+import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setHasOpenedAccounts, useRootSelector, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
+import { AuthSheet } from "../accounts/auth_sheet";
 import { GroupDetailsSheet } from "../groups/group_details_sheet";
 import { GroupsSheet, GroupsSheetButton } from "../groups/groups_sheet";
+import { MediaSheet } from "../media/media_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
-import { MediaSheet } from "../media/media_sheet";
-import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/auth_sheet_context";
-import { AuthSheet } from "../accounts/auth_sheet";
-import { NavigationContext, NavigationContextProvider } from "app/contexts/navigation_context";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -73,6 +72,7 @@ export function TabsNavigation({
   const mediaContext = useNewMediaContext();
   const authSheetContext = useNewAuthSheetContext();
 
+  const { hasOpenedAccounts } = useLocalConfiguration();
   const currentServer = useCurrentServer();
   const primaryServer = //onlyShowServer || 
     currentServer;
@@ -128,6 +128,18 @@ export function TabsNavigation({
     }
   }, [selectedGroup?.id]);
 
+  const { creationServer, setCreationServer } = useCreationServer();
+  const primaryEntityServer = useAppSelector(state =>
+    primaryEntity
+      ? selectAllServers(state.servers).find(s => s.host === primaryEntity?.serverHost)
+      : undefined
+  );
+  useEffect(() => {
+    if (primaryEntityServer && creationServer?.host !== primaryEntityServer?.host) {
+      dispatch(setCreationServer(primaryEntityServer));
+    }
+  }, [primaryEntity?.serverHost]);
+
   const dimensions = useWindowDimensions();
 
   const measuredHomeButtonWidth = document.querySelector('#home-button')?.clientWidth ?? 0;
@@ -135,7 +147,27 @@ export function TabsNavigation({
 
   const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
   const [mediaSheetOpen, setMediaSheetOpen] = useState(false);
+  // const ref = useRef() as React.MutableRefObject<HTMLDivElement>;
 
+  // const isFullscreen = window.innerHeight == screen.height;
+  // const requestFullscreen = () => {
+  //   if (!ref.current) return;
+
+  //   const element = ref.current as any;
+  //   const goFullscreen = element.requestFullscreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
+
+  //   console.log("doRequeset", goFullscreen)
+  //   try {
+  //     goFullscreen.call(element);
+  //   } catch (e) {
+  //     console.warn('Failed to request fullscreen', e);
+  //   }
+  // };
+  // useEffect(() => {
+  //   if (!mediaQuery.gtXShort) {
+  //     requestFullscreen();
+  //   }
+  // }, [mediaQuery.gtXShort]);
   return <Theme inverse={invert}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -154,7 +186,7 @@ export function TabsNavigation({
                     pointerEvents={hideNavigation ? 'none' : undefined}
                     backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
                     {/* <XStack w={5} /> */}
-                    <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined}>
+                    <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} zi={9999}>
                       <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
                         selectedGroup={selectedGroup} />
                       <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}
@@ -199,6 +231,26 @@ export function TabsNavigation({
                         </YStack>
                       </Button>
                     </YStack>
+                    <AnimatePresence>
+                      {!hasOpenedAccounts
+                        ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
+                          <XStack>
+                            <XStack mt='$1' pt='$1'>
+                              <ChevronLeft color={primaryTextColor} size='$1' />
+                            </XStack>
+                            <YStack>
+                              <Paragraph color={primaryTextColor} size='$1'>Accounts, Servers,</Paragraph>
+                              <Paragraph color={primaryTextColor} size='$1'>and Settings</Paragraph>
+                            </YStack>
+                          </XStack>
+                          <Button size='$1' onPress={() => dispatch(setHasOpenedAccounts(true))}>Got it!</Button>
+                          {/* <XStack>
+                            <ChevronLeft color={primaryTextColor} size='$1' />
+                            <Paragraph color={primaryTextColor} size='$1'>Home/Latest</Paragraph>
+                          </XStack> */}
+                        </YStack>
+                        : undefined}
+                    </AnimatePresence>
                     {showServerInfo
                       ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                       : undefined}
@@ -230,6 +282,7 @@ export function TabsNavigation({
                           ? undefined
                           : <XStack ml='$1' my='auto' className='main-groups-button'>
                             <GroupsSheetButton key='main' isPrimaryNavigation
+                              selectedGroup={selectedGroup}
                               open={groupsSheetOpen}
                               setOpen={setGroupsSheetOpen} />
                           </XStack>
@@ -293,5 +346,10 @@ export function TabsNavigation({
         </GroupContextProvider>
       </MediaContextProvider>
     </AuthSheetContextProvider>
-  </Theme>;
+  </Theme>
+
+  {/* <XStack position='absolute' bottom={5} right={5} zi={9999}>
+      <Button icon={Fullscreen} onPress={() => requestFullscreen()} />
+    </XStack> */}
+  ;
 }

@@ -1,18 +1,16 @@
 import { PostListingType } from '@jonline/api';
-import { Heading, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
-import { usePinnedAccountsAndServers, usePaginatedRendering } from 'app/hooks';
-import { useGroupPostPages, usePostPages, useServerPostPages } from 'app/hooks/pagination/post_pagination_hooks';
-import { RootState, federatedId, useRootSelector, useServerTheme } from 'app/store';
+import { Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { usePaginatedRendering } from 'app/hooks';
+import { usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
+import { federatedId, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import StickyBox from "react-sticky-box";
+import FlipMove from 'react-flip-move';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
-import { HomeScreenProps } from './home_screen';
-import { PaginationIndicator, PaginationResetIndicator } from './pagination_indicator';
 import { DynamicCreateButton } from './dynamic_create_button';
-import FlipMove from 'react-flip-move';
+import { HomeScreenProps } from './home_screen';
 import { PageChooser } from './page_chooser';
 
 export function PostsScreen() {
@@ -104,8 +102,8 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               ? <div key='page-chooser-bottom'
                 style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
                 <PageChooser {...pagination} pageTopId='pages-create' showResultCounts
-                entityName={{ singular: 'post', plural: 'posts' }}
-                 />
+                  entityName={{ singular: 'post', plural: 'posts' }}
+                />
               </div>
               : undefined}
             {/* <div key='pagination'>
