@@ -147,6 +147,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     return startsAtTime;
   });
   const modeStartTime = mode(startTimes);
+  const scrollToTime = moment().subtract(30, 'minutes');
   const { calendarImplementation } = useLocalConfiguration();
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
   const convertedEvents = allEvents.map((event) => {
@@ -171,8 +172,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     }-${window.innerHeight
     }-${navigationHeight
     }-${hideNavigation
-    }-${allEvents.length
-    }-${modeStartTime}`;
+    }-${allEvents.length}`;
   return (<>
     <YStack
       // key={`calendar-rendering-${serializedTimeFilter}`} 
@@ -203,7 +203,8 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
               dateClick={({ date, view }) => {
                 view.calendar.changeView('listDay', date);
               }}
-              scrollTime={modeStartTime}
+              // scrollTime={modeStartTime}
+              scrollTime={scrollToTime.format('HH:mm:ss')}
               {...weeklyOnly
                 ? {
                   headerToolbar: {
@@ -300,7 +301,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                       end: moment(event.instances[0]?.endsAt ?? 0).toDate()
                     }
                   })}
-                  scrollToTime={moment().toDate()}
+                  scrollToTime={scrollToTime.toDate()}
                   // scrollToTime={moment(modeStartTime).toDate()}
                   eventPropGetter={(event) => {
                     // console.log('BigCalendar EventPropGetter', event);

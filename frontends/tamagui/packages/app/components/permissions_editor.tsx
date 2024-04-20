@@ -61,12 +61,12 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
     <Heading key='permissions-editor-heading' size='$3' marginVertical='auto' o={editMode ? 1 : 0.5}>
       {label ?? 'Permissions'}
     </Heading>
-    {description ? <Paragraph key='permissions-editor-description' size='$2' o={editMode ? 1 : 0.5}>
+    {description ? <Paragraph key='permissions-editor-description' size='$2' o={0.5}>
       {description}
     </Paragraph> : undefined}
-    <XStack key='permissions-editor-permissions' w='100%' gap='$2' flexWrap='wrap'>
+    <XStack key='permissions-editor-permissions' w='100%' gap='$2' flexWrap='wrap' ai='center'>
       {selectedPermissions.map((p: Permission) =>
-        <XStack key={`permission-${p}`} mb='$2' backgroundColor='$backgroundFocus' borderRadius='$2' px='$2' py={0} gap='$2' ai='center'>
+        <XStack key={`permission-${p}`} mb='$2' backgroundColor='$backgroundFocus' borderRadius='$2' px='$2' py='$1' gap='$2' ai='center'>
           <Paragraph size='$2'>{permissionName(p)}</Paragraph>
           {editMode
             ? <Button circular size='$1' icon={XIcon} disabled={disabled} o={disabled ? 0.5 : 1} onPress={() => deselectPermission(p)} />
