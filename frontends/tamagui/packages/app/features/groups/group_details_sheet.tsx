@@ -4,7 +4,7 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { ChevronDown, ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
 import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl, useCurrentServer } from 'app/hooks';
-import { FederatedGroup, RootState, actionFailed, deleteGroup, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedGroup, RootState, actionFailed, deleteGroup, federatedId, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
 import { createParam } from 'solito';
@@ -15,6 +15,8 @@ import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_
 import { groupVisibilityDescription } from './create_group_sheet';
 import { GroupJoinLeaveButton } from './group_buttons';
 import { useGroupContext } from 'app/contexts';
+import { useNavigationContext } from 'app/contexts/navigation_context';
+import { AppSection } from '../navigation/features_navigation';
 
 
 export const groupUserPermissions = [
@@ -65,6 +67,17 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
   const showServerInfo = !isPrimaryServer || currentAndPinnedServers.length > 1;
 
 
+  // const dispatch = useAppDispatch();
+  const groupIdentifier = infoGroup
+    ? isPrimaryServer ? infoGroup.shortname : `${infoGroup.shortname}@${infoGroup.serverHost}`
+    : undefined;
+  // const { groupPageForwarder, groupPageReverse } = useNavigationContext();
+  const linkToGroup = useLink({
+    href: `/g/${groupIdentifier}`
+  });
+  const linkToMembers = useLink({
+    href: `/g/${groupIdentifier}/members`
+  });
 
   const [queryShortname] = useParam('shortname');
   const updateParams = useUpdateParams();
@@ -214,7 +227,65 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
         : '')
     : name;
 
+  const { appSection } = useNavigationContext();
+  const groupNameAndLogo = <XStack f={1}>
+    {editing && !previewingEdits //&& infoRenderingGroup?.id != selectedGroup?.id
+      ? <Input textContentType="name" f={1}
+        my='auto'
+        mr='$2'
+        placeholder={`Group Name (required)`}
+        disabled={savingEdits} opacity={savingEdits || editedName == '' ? 0.5 : 1}
+        // autoCapitalize='words'
+        value={editedName}
+        onChange={(data) => { setEditedName(data.nativeEvent.text) }} />
+      : <Heading my='auto' f={1}>{displayedGroupName}</Heading>}
 
+
+    {editing && !previewingEdits
+      ?
+      <Button p='$0'
+        ml='$2'
+        my='auto'
+        mr='$2'
+        onPress={() => setShowMedia(!showMedia)}
+        height={hasAvatarUrl ? fullAvatarHeight : undefined}
+      >
+        {hasAvatarUrl
+          ? <Image
+            // mb='$3'
+            // ml='$2'
+            my='auto'
+            width={fullAvatarHeight}
+            height={fullAvatarHeight}
+            resizeMode="contain"
+            als="center"
+            source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+            borderRadius={10} />
+          : <XStack px='$2'>
+            <FileImage />
+          </XStack>}
+      </Button>
+      : hasAvatarUrl
+        ? <Image
+          // mb='$3'
+          // ml='$2'
+          mr='$2'
+          my='auto'
+          width={fullAvatarHeight}
+          height={fullAvatarHeight}
+          resizeMode="contain"
+          als="center"
+          source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
+          borderRadius={10} />
+        : groupNameEmoji
+          ? <Heading size='$10' my='auto' mx='$3' whiteSpace="nowrap">
+            {groupNameEmoji}
+          </Heading>
+          : undefined}
+  </XStack>;
+
+  const alreadyOnGroupPage = !!infoGroup && !!selectedGroup && federatedId(infoGroup) === federatedId(selectedGroup) && appSection === AppSection.HOME;
+  console.log('GroupDetailsSheet', 'alreadyOnGroupPage', alreadyOnGroupPage, !!infoGroup, !!selectedGroup, infoGroup && federatedId(infoGroup), selectedGroup && federatedId(selectedGroup), appSection);
   return <EditingContextProvider value={editingContext}>
     <Sheet
       modal
@@ -272,70 +343,24 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
 
         <YStack gap="$0" px='$4' maw={800} als='center' width='100%'>
           <XStack>
-            {editing && !previewingEdits //&& infoRenderingGroup?.id != selectedGroup?.id
-              ? <Input textContentType="name" f={1}
-                my='auto'
-                mr='$2'
-                placeholder={`Group Name (required)`}
-                disabled={savingEdits} opacity={savingEdits || editedName == '' ? 0.5 : 1}
-                // autoCapitalize='words'
-                value={editedName}
-                onChange={(data) => { setEditedName(data.nativeEvent.text) }} />
-              : <Heading my='auto' f={1}>{displayedGroupName}</Heading>}
 
-
-            {editing && !previewingEdits
-              ?
-              <Button p='$0'
-                ml='$2'
-                my='auto'
-                mr='$2'
-                onPress={() => setShowMedia(!showMedia)}
-                height={hasAvatarUrl ? fullAvatarHeight : undefined}
-              >
-                {hasAvatarUrl
-                  ? <Image
-                    // mb='$3'
-                    // ml='$2'
-                    my='auto'
-                    width={fullAvatarHeight}
-                    height={fullAvatarHeight}
-                    resizeMode="contain"
-                    als="center"
-                    source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
-                    borderRadius={10} />
-                  : <XStack px='$2'>
-                    <FileImage />
-                  </XStack>}
-              </Button>
-              : hasAvatarUrl
-                ? <Image
-                  // mb='$3'
-                  // ml='$2'
-                  mr='$2'
-                  my='auto'
-                  width={fullAvatarHeight}
-                  height={fullAvatarHeight}
-                  resizeMode="contain"
-                  als="center"
-                  source={{ uri: avatarUrl, height: fullAvatarHeight, width: fullAvatarHeight }}
-                  borderRadius={10} />
-                : groupNameEmoji
-                  ? <Heading size='$10' my='auto' mx='$3' whiteSpace="nowrap">
-                    {groupNameEmoji}
-                  </Heading>
-                  : undefined}
+            {editing || alreadyOnGroupPage
+              ? groupNameAndLogo
+              : <Button px='$1' h='auto' transparent {...linkToGroup} f={1}>
+                {groupNameAndLogo}
+              </Button>}
             {infoRenderingGroup
               ? <GroupJoinLeaveButton group={infoRenderingGroup} hideLeaveButton={hideLeaveButtons} />
               : undefined}
           </XStack>
-
-          <XStack>
-            <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading>
+          <XStack ai='center'>
+            {/* <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading> */}
             <XStack f={1} />
-            <Heading size='$1' marginVertical='auto'>
-              {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
-            </Heading>
+            <Button transparent {...linkToMembers}>
+              <Heading size='$1'>
+                {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
+              </Heading>
+            </Button>
           </XStack>
         </YStack>
         <Sheet.ScrollView>

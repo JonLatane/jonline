@@ -73,6 +73,14 @@ export function TabsNavigation({
   const authSheetContext = useNewAuthSheetContext();
 
   const { hasOpenedAccounts } = useLocalConfiguration();
+  const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
+  useEffect(() => {
+    if (!hasOpenedAccounts && !showAccountSheetGuide) {
+      setTimeout(() => setShowAccountSheetGuide(true), 5000);
+    } else if(hasOpenedAccounts && showAccountSheetGuide) {
+      setShowAccountSheetGuide(false);
+    }
+  }, [hasOpenedAccounts]);
   const currentServer = useCurrentServer();
   const primaryServer = //onlyShowServer || 
     currentServer;
@@ -232,7 +240,7 @@ export function TabsNavigation({
                       </Button>
                     </YStack>
                     <AnimatePresence>
-                      {!hasOpenedAccounts
+                      {showAccountSheetGuide
                         ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
                           <XStack>
                             <XStack mt='$1' pt='$1'>

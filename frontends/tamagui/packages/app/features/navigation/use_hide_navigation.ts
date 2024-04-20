@@ -22,7 +22,8 @@ export function useHideNavigation() {
   // const hideNavigation = hideNavigation;
   useEffect(() => {
     if (hideNavigation && !forceAutoHide && !autoHideSetting) {
-      dispatch(setHideNavigation(false));
+      setHide(false);
+      // dispatch(setHideNavigation(false));
     }
   }, [hideNavigation, mediaQuery.xShort]);
   function setHide(value: boolean) {
