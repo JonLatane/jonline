@@ -524,12 +524,15 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
                   <YStack gap='$3' mt='$3'>
                     {<PermissionsEditor label='Anonymous User Permissions'
+                      description='These permissions are granted to users who are not logged in.'
                       {...anonymousPermissionsEditorProps} />}
 
                     {<PermissionsEditor label='Default User Permissions'
+                      description='These permissions are granted to new users by default. (They may later be revoked.)'
                       {...defaultPermissionsEditorProps} />}
 
                     {<PermissionsEditor label='Basic User Permissions'
+                      description='Users with the "Grant Basic Permissions" permission can grant these permissions to other users.'
                       {...basicPermissionsEditorProps} />}
                   </YStack>
 
