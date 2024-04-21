@@ -1,10 +1,10 @@
-import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
+import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, getServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
-import { useCreationDispatch, useCreationServer, useCredentialDispatch } from 'app/hooks';
+import { useCreationDispatch, useCreationServer, useCredentialDispatch, useEventPageParam, useEventPages, useLocalConfiguration } from 'app/hooks';
 import moment from 'moment';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 import EventCard from './event_card';
@@ -104,6 +104,19 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { creationServer } = useCreationServer();
   const { navColor, navTextColor } = getServerTheme(creationServer, useTheme());
+  // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+
+  const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
+  useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
+
+const { eventPagesOnHome } = useLocalConfiguration();
+const allEvents = bigCalendar
+  ? eventResults
+  : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+
   return <BaseCreatePostSheet
     entityName='Event'
     requiredPermissions={[Permission.CREATE_EVENTS]}
@@ -127,7 +140,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
         // o={showEvents && allEvents.length > 0 ? 1 : 0}
         />
         {bigCalendar
-          ? <EventsFullCalendar events={[event]} scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+          ? <EventsFullCalendar events={[event, ...allEvents]} scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
           : <EventCard event={event} isPreview hideEditControls />}
         {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
       </YStack>

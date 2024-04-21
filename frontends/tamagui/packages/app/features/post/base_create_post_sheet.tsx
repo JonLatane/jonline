@@ -327,7 +327,7 @@ export function BaseCreatePostSheet({
               {/* {postsState.createPostStatus == "errored" && postsState.errorMessage ?
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
-              <XStack marginHorizontal='auto' marginTop='$3'>
+              <XStack ml='auto' mr={supportsSplitView ? '20%' : 'auto'} marginTop='$3'>
                 {supportsSplitView
                   ? undefined
                   : <Button

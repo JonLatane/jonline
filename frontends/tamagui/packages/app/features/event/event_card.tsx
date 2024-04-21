@@ -907,39 +907,43 @@ export const EventCard: React.FC<Props> = ({
                     {shrinkContent ? undefined
                       : <YStack animation='standard' {...standardAnimation}>
                         <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
-                          {showEdit
-                            ? editing
-                              ? <>
-                                <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
-                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                  Save
-                                </Button>
-                                <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
-                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                  Cancel
-                                </Button>
-                                <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
-                                  disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
-                                  {previewingEdits ? 'Edit' : 'Preview'}
-                                </Button>
-                              </>
-                              : <>
-                                <Button my='auto' key='edit-button' size='$2' icon={Edit}
-                                  onPress={() => {
-                                    setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
-                                      setEditingInstance(selectedInstance)
-                                    }
-                                  }} transparent
-                                  disabled={deleting} o={deleting ? 0.5 : 1}>
-                                  Edit
-                                </Button>
 
-                                {deleteDialog}
-                              </>
-                            : isAuthor
-                              ? <XStack o={0.5}>{deleteDialog}</XStack>
-                              : undefined}
+                          {event.id
+                            ? <>
+                              {showEdit
+                                ? editing
+                                  ? <>
+                                    <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                                      disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                      Save
+                                    </Button>
+                                    <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                                      disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                      Cancel
+                                    </Button>
+                                    <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                                      disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
+                                      {previewingEdits ? 'Edit' : 'Preview'}
+                                    </Button>
+                                  </>
+                                  : <>
+                                    <Button my='auto' key='edit-button' size='$2' icon={Edit}
+                                      onPress={() => {
+                                        setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
+                                          setEditingInstance(selectedInstance)
+                                        }
+                                      }} transparent
+                                      disabled={deleting} o={deleting ? 0.5 : 1}>
+                                      Edit
+                                    </Button>
 
+                                    {deleteDialog}
+                                  </>
+                                : isAuthor
+                                  ? <XStack o={0.5}>{deleteDialog}</XStack>
+                                  : undefined}
+                            </>
+                            : undefined}
                           <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                             <XStack key='visibility-edit' my='auto' ml='auto'>
                               <VisibilityPicker

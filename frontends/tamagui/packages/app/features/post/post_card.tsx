@@ -191,7 +191,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
-  const showEdit = isAuthor && !isPreview;
+  const showEdit = isAuthor && !isPreview && post.id;
 
   const [loadingReplies, setLoadingReplies] = useState(false);
   useEffect(() => {
@@ -494,7 +494,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                               {deleteDialog}
                             </>
-                          : isAuthor ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
+                          : isAuthor && post.id ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
                         <XStack gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
                           {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                             <VisibilityPicker
