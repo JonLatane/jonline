@@ -227,14 +227,15 @@ export const groupsSlice = createSlice({
       state.shortnameIds[federatedShortname(group)] = federatedId(group);
     });
     builder.addCase(joinLeaveGroup.pending, (state, action) => {
-      lockGroup(state, federateId(action.meta.arg.groupId, action));
+      lockGroup(state, federateId(parseFederatedId(action.meta.arg.groupId).id, action));
     });
     builder.addCase(joinLeaveGroup.rejected, (state, action) => {
-      unlockGroup(state, federateId(action.meta.arg.groupId, action));
+      unlockGroup(state, federateId(parseFederatedId(action.meta.arg.groupId).id, action));
     });
     builder.addCase(joinLeaveGroup.fulfilled, (state, action) => {
-      unlockGroup(state, federateId(action.meta.arg.groupId, action));
-      let group = groupsAdapter.getSelectors().selectById(state, action.meta.arg.groupId)!;
+      const federatedGroupId = federateId(parseFederatedId(action.meta.arg.groupId).id, action);
+      unlockGroup(state, federatedGroupId);
+      let group = groupsAdapter.getSelectors().selectById(state, federatedGroupId)!;
       // let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
       if (action.meta.arg.join) {
         const result = action.payload as Membership;

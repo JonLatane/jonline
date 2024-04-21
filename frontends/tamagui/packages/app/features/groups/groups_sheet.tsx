@@ -138,18 +138,18 @@ export function GroupsSheet({
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
   const searchInputRef = React.createRef<TextInput>();
 
-  const [hasOpened, setHasOpened] = useState(false);
-  useEffect(() => {
-    if (open && !hasOpened) {
-      setHasOpened(true);
-    }
-  }, [open]);
-  const openChanged = useDebounceValue(open, 3000);
-  useEffect(() => {
-    if (!openChanged) {
-      setHasOpened(false);
-    }
-  }, [openChanged])
+  // const [hasOpened, setHasOpened] = useState(false);
+  // useEffect(() => {
+  //   if (open && !hasOpened) {
+  //     setHasOpened(true);
+  //   }
+  // }, [open]);
+  // const openChanged = useDebounceValue(open, 3000);
+  // useEffect(() => {
+  //   if (!openChanged) {
+  //     setHasOpened(false);
+  //   }
+  // }, [openChanged])
 
   const { groups: pinnedServerGroups } = useGroupPages(GroupListingType.ALL_GROUPS, 0, { disableLoading: extraListItemChrome !== undefined });
   const serverHostFilteredGroups = useAppSelector(state => serverHostFilter
@@ -284,7 +284,7 @@ export function GroupsSheet({
       <Sheet.ScrollView px="$4" py='$2' w='100%'>
         <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
 
-          {openDebounced
+          {open
             ? [
               <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
                 <PageChooser {...pagination} width='auto' maxWidth='100%' />
@@ -337,14 +337,13 @@ export function GroupsSheet({
                   </div>,
                 ]
               }).flat(),
+              <div key='pagination-bottom' style={{ marginBottom: 5 }}>
+                <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId}
+                  showResultCounts
+                  entityName={{ singular: 'group', plural: 'groups' }} />
+              </div>
             ]
             : undefined}
-
-          <div key='pagination-bottom' style={{ marginBottom: 5 }}>
-            <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId}
-              showResultCounts
-              entityName={{ singular: 'group', plural: 'groups' }} />
-          </div>
         </FlipMove>
       </Sheet.ScrollView>
       {hasPermission(account?.user, Permission.CREATE_GROUPS) &&
@@ -386,18 +385,18 @@ export function GroupsSheetButton({
 
   const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
 
-  const [hasOpened, setHasOpened] = useState(false);
-  useEffect(() => {
-    if (open && !hasOpened) {
-      setHasOpened(true);
-    }
-  }, [open]);
-  const openChanged = useDebounceValue(open, 3000);
-  useEffect(() => {
-    if (!openChanged) {
-      setHasOpened(false);
-    }
-  }, [openChanged])
+  // const [hasOpened, setHasOpened] = useState(false);
+  // useEffect(() => {
+  //   if (open && !hasOpened) {
+  //     setHasOpened(true);
+  //   }
+  // }, [open]);
+  // const openChanged = useDebounceValue(open, 3000);
+  // useEffect(() => {
+  //   if (!openChanged) {
+  //     setHasOpened(false);
+  //   }
+  // }, [openChanged])
 
   const infoMarginLeft = showServerInfo ? -32 : -32;
   const infoPaddingRight = showServerInfo ? 28 : 36;

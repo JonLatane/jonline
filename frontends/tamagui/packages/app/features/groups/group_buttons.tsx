@@ -1,5 +1,5 @@
 import { Group } from '@jonline/api';
-import { Button, Heading, Image, Paragraph, Separator, Text, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Image, Paragraph, Separator, Spinner, Text, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
 import { useCurrentAccountOrServer, useAppDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
 import { FederatedGroup, RootState, federatedId, getServerTheme, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
@@ -257,6 +257,9 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
             : undefined}
         </YStack>
       </Button>
+      <XStack position='absolute' pointerEvents='none' top={20} animation='standard' o={isLocked ? 1 : 0}>
+        <Spinner />
+      </XStack>
     </XStack> : <></>;
 }
 
