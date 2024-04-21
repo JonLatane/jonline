@@ -75,9 +75,12 @@ export function TabsNavigation({
   const { hasOpenedAccounts } = useLocalConfiguration();
   const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
   useEffect(() => {
-    if (!hasOpenedAccounts && !showAccountSheetGuide) {
-      setTimeout(() => setShowAccountSheetGuide(true), 5000);
-    } else if(hasOpenedAccounts && showAccountSheetGuide) {
+    if (!loading && !hasOpenedAccounts && !showAccountSheetGuide) {
+      setTimeout(() => setShowAccountSheetGuide(true), 3000);
+    }
+  }, [hasOpenedAccounts, loading]);
+  useEffect(() => {
+    if(hasOpenedAccounts && showAccountSheetGuide) {
       setShowAccountSheetGuide(false);
     }
   }, [hasOpenedAccounts]);
