@@ -3402,6 +3402,36 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@formatjs/ecma402-abstract@npm:1.18.2":
+  version: 1.18.2
+  resolution: "@formatjs/ecma402-abstract@npm:1.18.2"
+  dependencies:
+    "@formatjs/intl-localematcher": "npm:0.5.4"
+    tslib: "npm:^2.4.0"
+  checksum: e761653887e4446188daa023f4cb7245790ed65eb56cef4821225467e63f271f1addff386cfcbb4eb73eb67704b1f3a2b35ea4082fcadd4d05cfa0b3be3d5577
+  languageName: node
+  linkType: hard
+
+"@formatjs/intl-localematcher@npm:0.5.4":
+  version: 0.5.4
+  resolution: "@formatjs/intl-localematcher@npm:0.5.4"
+  dependencies:
+    tslib: "npm:^2.4.0"
+  checksum: 780cb29b42e1ea87f2eb5db268577fcdc53da52d9f096871f3a1bb78603b4ba81d208ea0b0b9bc21548797c941ce435321f62d2522795b83b740f90b0ceb5778
+  languageName: node
+  linkType: hard
+
+"@formatjs/intl-segmenter@npm:^11.5.5":
+  version: 11.5.5
+  resolution: "@formatjs/intl-segmenter@npm:11.5.5"
+  dependencies:
+    "@formatjs/ecma402-abstract": "npm:1.18.2"
+    "@formatjs/intl-localematcher": "npm:0.5.4"
+    tslib: "npm:^2.4.0"
+  checksum: 727d2cc35e4aa0f8fee0e9f068b931f6562f7af92c5d47649a7b8f22427438557ee8460652ca49857d8d0ac60a222c4c52ce490d2509ce145efaae736ff9bcd0
+  languageName: node
+  linkType: hard
+
 "@fullcalendar/core@npm:^6.1.11":
   version: 6.1.11
   resolution: "@fullcalendar/core@npm:6.1.11"
@@ -7466,6 +7496,7 @@ __metadata:
   resolution: "app@workspace:packages/app"
   dependencies:
     "@daypilot/daypilot-lite-react": "npm:^3.21.0"
+    "@formatjs/intl-segmenter": "npm:^11.5.5"
     "@fullcalendar/core": "npm:^6.1.11"
     "@fullcalendar/daygrid": "npm:^6.1.11"
     "@fullcalendar/interaction": "npm:^6.1.11"

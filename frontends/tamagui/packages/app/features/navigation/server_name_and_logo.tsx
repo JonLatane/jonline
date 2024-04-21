@@ -4,6 +4,8 @@ import { Home } from "@tamagui/lucide-icons";
 import { useCurrentServer } from "app/hooks";
 import { JonlineServer } from "app/store";
 import { MediaRenderer } from "../media/media_renderer";
+import '@formatjs/intl-segmenter/polyfill'
+
 
 export type ServerNameAndLogoProps = {
   shrinkToSquare?: boolean;
