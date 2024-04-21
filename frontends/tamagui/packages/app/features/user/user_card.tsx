@@ -119,10 +119,10 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </YStack>
     {/* {showServerInfo
       ?  */}
-    <XStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
+    <YStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
       o={showServerInfo ? 1 : 0} >
       <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
-    </XStack>
+    </YStack>
     {/* : undefined} */}
   </XStack>;
 

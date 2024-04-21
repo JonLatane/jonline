@@ -131,7 +131,7 @@ export function GroupButton({ group, selected, setOpen, onShowInfo, onGroupSelec
 
               <YStack>
                 {showServerInfo
-                  ? mediaQuery.gtXs || false
+                  ? mediaQuery.gtXs
                     ? <ServerNameAndLogo
                       textColor={selected ? navTextColor : undefined}
                       server={server}
