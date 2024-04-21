@@ -268,7 +268,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         {...themedButtonBackground(navColor)}>
         <XStack gap='$2'>
           {icon}
-          <Heading f={1} size="$4" color={navTextColor}>
+          <Heading f={1} size="$4" color={navTextColor} textDecorationLine='none'>
             {subsectionTitle(appSubsection) ?? sectionTitle(appSection)}
           </Heading>
         </XStack>

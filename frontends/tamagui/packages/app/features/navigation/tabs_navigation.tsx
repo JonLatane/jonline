@@ -4,7 +4,7 @@ import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from '
 import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/auth_sheet_context";
 import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
-import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setHasOpenedAccounts, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setHasOpenedAccounts, store, useRootSelector, useServerTheme } from "app/store";
 import { useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
@@ -76,11 +76,15 @@ export function TabsNavigation({
   const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
   useEffect(() => {
     if (!loading && !hasOpenedAccounts && !showAccountSheetGuide) {
-      setTimeout(() => setShowAccountSheetGuide(true), 3000);
+      setTimeout(() => {
+        if (store.getState().app.hasOpenedAccounts) return;
+
+        setShowAccountSheetGuide(true);
+      }, 3000);
     }
   }, [hasOpenedAccounts, loading]);
   useEffect(() => {
-    if(hasOpenedAccounts && showAccountSheetGuide) {
+    if (hasOpenedAccounts && showAccountSheetGuide) {
       setShowAccountSheetGuide(false);
     }
   }, [hasOpenedAccounts]);
