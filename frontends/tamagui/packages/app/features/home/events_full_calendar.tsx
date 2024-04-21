@@ -27,10 +27,12 @@ export type EventsFullCalendarProps = {
   // selectedGroup?: FederatedGroup;
   events: FederatedEvent[];
   weeklyOnly?: boolean;
+  dayOnly?: boolean;
   width?: string | number;
+  scrollToTime?: string;
   // timeFilter: TimeFilter;
 }
-export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: allEvents, weeklyOnly, width }: EventsFullCalendarProps) => {
+export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: allEvents, weeklyOnly, width, scrollToTime: scrollToTimeParam }: EventsFullCalendarProps) => {
   const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
   const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
@@ -147,7 +149,10 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     return startsAtTime;
   });
   const modeStartTime = mode(startTimes);
-  const scrollToTime = moment().subtract(30, 'minutes');
+  const scrollToTime = (scrollToTimeParam
+    ? moment(scrollToTimeParam)
+    : moment()
+  ).subtract(30, 'minutes');
   const { calendarImplementation } = useLocalConfiguration();
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
   const convertedEvents = allEvents.map((event) => {

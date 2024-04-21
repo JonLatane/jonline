@@ -82,7 +82,7 @@ export function BaseCreatePostSheet({
   button,
   requiredPermissions
 }: BaseCreatePostSheetProps) {
-  // const mediaQuery = useMedia();
+  const mediaQuery = useMedia();
   const accountOrServer = useCreationAccountOrServer();
   // const currentServer = useCurrentServer();
   const server = accountOrServer?.server;
@@ -196,9 +196,11 @@ export function BaseCreatePostSheet({
   const accountsLoading = accountsState.status == 'loading';
   const valid = title.length > 0 && !invalid;
 
-  const showEditor = edit(renderType);
+  const supportsSplitView = mediaQuery.gtMd;
+  const showEditor = edit(renderType) || supportsSplitView;
   const showFullPreview = fullPreview(renderType);
   const showShortPreview = shortPreview(renderType);
+  const inSplitView = supportsSplitView && (showFullPreview || showShortPreview);
 
   const canCreate = !requiredPermissions || (
     account &&
@@ -279,7 +281,7 @@ export function BaseCreatePostSheet({
           <Sheet.Frame>
             <YStack h='100%'>
               <Sheet.Handle />
-              <XStack als='center' w='100%' pr='$5' pl='$2' mb='$2' maw={800} ai='center'>
+              <XStack als='center' w='100%' pr='$5' pl='$2' mb='$2' maw={inSplitView ? 1200 : 800} ai='center'>
                 <Button
                   // alignSelf='center'
                   // my='auto'
@@ -304,7 +306,7 @@ export function BaseCreatePostSheet({
                         previewPost,
                         group,
                         resetPost,
-                        () => setPosting(false), 
+                        () => setPosting(false),
                         (e) => {
                           console.error('Error creating post/event', e);
                           setPostingError(e?.toString());
@@ -326,23 +328,30 @@ export function BaseCreatePostSheet({
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
               <XStack marginHorizontal='auto' marginTop='$3'>
-                <Button backgroundColor={showEditor ? navColor : undefined}
-                  hoverStyle={{ backgroundColor: showEditor ? navColor : undefined }}
-                  transparent={!showEditor}
-                  borderTopRightRadius={0} borderBottomRightRadius={0}
-                  onPress={() => setRenderType(RenderType.Edit)}>
-                  <Heading size='$4' color={showEditor ? navTextColor : textColor}>Edit</Heading>
-                </Button>
+                {supportsSplitView
+                  ? undefined
+                  : <Button
+                    {...themedButtonBackground(showEditor ? navColor : undefined)}
+                    transparent={!showEditor}
+                    borderTopRightRadius={0}
+                    borderBottomRightRadius={0}
+                    onPress={() => setRenderType(RenderType.Edit)}>
+                    <Heading size='$4' color={showEditor ? navTextColor : textColor}>Edit</Heading>
+                  </Button>}
                 <Tooltip>
                   <Tooltip.Trigger>
                     <Button backgroundColor={showFullPreview ? navColor : undefined}
                       hoverStyle={{ backgroundColor: showFullPreview ? navColor : undefined }}
                       transparent={!showFullPreview}
-                      borderRadius={0}
+                      // borderRadius={0}
+                      borderTopLeftRadius={supportsSplitView ? undefined : 0}
+                      borderBottomLeftRadius={supportsSplitView ? undefined : 0}
+                      borderTopRightRadius={0}
+                      borderBottomRightRadius={0}
                       disabled={disablePreview}
                       opacity={disablePreview ? 0.5 : 1}
                       // borderTopRightRadius={0} borderBottomRightRadius={0}
-                      onPress={() => setRenderType(RenderType.FullPreview)}>
+                      onPress={() => setRenderType(renderType === RenderType.FullPreview ? RenderType.Edit : RenderType.FullPreview)}>
                       <Heading size='$4' color={showFullPreview ? navTextColor : textColor}>Preview</Heading>
                     </Button>
                   </Tooltip.Trigger>
@@ -362,7 +371,7 @@ export function BaseCreatePostSheet({
                       borderTopLeftRadius={0} borderBottomLeftRadius={0}
                       disabled={disablePreview}
                       opacity={disablePreview ? 0.5 : 1}
-                      onPress={() => setRenderType(RenderType.ShortPreview)}>
+                      onPress={() => setRenderType(renderType === RenderType.ShortPreview ? RenderType.Edit : RenderType.ShortPreview)}>
                       <Heading size='$4' color={showShortPreview ? navTextColor : textColor}>Feed Preview</Heading>
                     </Button>
                   </Tooltip.Trigger>
@@ -379,7 +388,7 @@ export function BaseCreatePostSheet({
               {/* <AnimatePresence> */}
               {/* </AnimatePresence> */}
               {/* <Sheet.ScrollView> */}
-              <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center'>
+              <XStack f={1} mb='$4' gap="$2" maw={inSplitView ? 1200 : 600} w='100%' als='center'>
                 {showEditor
                   ? <Sheet.ScrollView>
                     <FlipMove style={{ width: '100%', paddingLeft: 24, paddingRight: 24, marginTop: 12 }}>
@@ -490,7 +499,7 @@ export function BaseCreatePostSheet({
                   : undefined}
                 {showShortPreview
                   ? <Sheet.ScrollView>
-                    <YStack w='100%' my='auto' p='$5' marginTop='$3' pointerEvents='none'>{feedPreview(previewPost, group)}</YStack>
+                    <YStack w='100%' my='auto' p='$5' marginTop='$3'>{feedPreview(previewPost, group)}</YStack>
                   </Sheet.ScrollView>
                   : undefined}
               </XStack>

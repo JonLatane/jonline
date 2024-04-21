@@ -1,13 +1,18 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post } from '@jonline/api';
-import { DateTimePicker, Heading, Paragraph, XStack, supportDateInput, toProtoISOString } from '@jonline/ui';
-import { FederatedGroup, createEvent, createGroupPost, federatedEntity, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
+import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, getServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useEffect, useState } from 'react';
+// import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
-import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
+import { useCreationDispatch, useCreationServer, useCredentialDispatch } from 'app/hooks';
 import moment from 'moment';
 import { BaseCreatePostSheet } from '../post/base_create_post_sheet';
 import EventCard from './event_card';
 import { LocationControl } from './location_control';
+import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
+import { useBigCalendar } from 'app/hooks/configuration_hooks';
+import { themedButtonBackground } from 'app/utils';
+import { EventsFullCalendar } from '../home/events_full_calendar';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
@@ -96,7 +101,9 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       }
     });
   }
-
+  const { bigCalendar, setBigCalendar } = useBigCalendar();
+  const { creationServer } = useCreationServer();
+  const { navColor, navTextColor } = getServerTheme(creationServer, useTheme());
   return <BaseCreatePostSheet
     entityName='Event'
     requiredPermissions={[Permission.CREATE_EVENTS]}
@@ -105,7 +112,26 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       // console.log('previewEvent', previewEvent(post));
       return <EventCard event={previewEvent(post)} hideEditControls />;
     }}
-    feedPreview={(post, group) => <EventCard event={previewEvent(post)} isPreview hideEditControls />}
+    feedPreview={(post, group) => {
+      const event = previewEvent(post);
+      return <YStack>
+        <Button
+          onPress={() => setBigCalendar(!bigCalendar)} mb='$2'
+          icon={CalendarIcon}
+          transparent
+          {...themedButtonBackground(
+            bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+        // animation='standard'
+        // zi={100000}
+        // disabled={!showEvents || allEvents.length === 0}
+        // o={showEvents && allEvents.length > 0 ? 1 : 0}
+        />
+        {bigCalendar
+          ? <EventsFullCalendar events={[event]} scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+          : <EventCard event={event} isPreview hideEditControls />}
+        {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
+      </YStack>
+    }}
 
     onFreshOpen={() => {
       setStartsAt(supportDateInput(moment()));

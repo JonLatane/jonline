@@ -104,12 +104,12 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
           <YStack ac='flex-end' gap='$2' ml='$1'>
             <XStack jc='flex-end'>
               {serverIsExternal ?
-                <Button mx='$1' icon={<ExternalLink />} circular
+                <Button mx='$1' size='$3' icon={<ExternalLink />} circular
                   {...externalLink} target='_blank'
                   onPress={(e) => { e.stopPropagation(); }} />
                 : undefined}
               {isPreview && !linkToServerInfo
-                ? <Button ml='$1' icon={<Info />} circular {...infoLink}
+                ? <Button ml='$1' size='$3' icon={<Info />} circular {...infoLink}
                   onPress={(e) => { e.stopPropagation(); }} />
                 : undefined}
             </XStack>
