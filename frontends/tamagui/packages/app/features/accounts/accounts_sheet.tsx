@@ -192,381 +192,382 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
       {/* </XStack> */}
     </Button>
-    {hasOpened
-      ? <Sheet
-        modal
-        open={open}
-        onOpenChange={setOpen}
-        // snapPoints={[80]}
-        snapPoints={[
-          // 50, 
-          91
-        ]}
-        zIndex={500000}
-        position={position}
-        onPositionChange={setPosition}
-        dismissOnSnapToBottom
+    {/* {hasOpened
+      ?  */}
+    <Sheet
+      modal
+      open={open}
+      onOpenChange={setOpen}
+      // snapPoints={[80]}
+      snapPoints={[
+        // 50, 
+        91
+      ]}
+      zIndex={500000}
+      position={position}
+      onPositionChange={setPosition}
+      dismissOnSnapToBottom
 
-      >
-        <Sheet.Overlay />
-        <Sheet.Frame>
-          <Sheet.Handle />
-          {/* } */}
-          <XStack gap='$4'
-            h='$5' // paddingHorizontal='$3'
-            mx='$3'
-            mb='$2'
-            ai='center'>
-            <Button
-              alignSelf='center'
-              size="$3"
-              circular
-              icon={ChevronLeft}
-              onPress={() => setOpen(false)} />
-            <FlipMove style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div key='accounts'>
-                <Heading size='$7' mr='$2'>Accounts</Heading>
+    >
+      <Sheet.Overlay />
+      <Sheet.Frame>
+        <Sheet.Handle />
+        {/* } */}
+        <XStack gap='$4'
+          h='$5' // paddingHorizontal='$3'
+          mx='$3'
+          mb='$2'
+          ai='center'>
+          <Button
+            alignSelf='center'
+            size="$3"
+            circular
+            icon={ChevronLeft}
+            onPress={() => setOpen(false)} />
+          <FlipMove style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div key='accounts'>
+              <Heading size='$7' mr='$2'>Accounts</Heading>
+            </div>
+            {browsingServers
+              ? <div key='and-servers'>
+                <Heading size='$1'>& Servers</Heading>
               </div>
-              {browsingServers
-                ? <div key='and-servers'>
-                  <Heading size='$1'>& Servers</Heading>
-                </div>
-                : undefined}
-            </FlipMove>
-            {/* <XStack pointerEvents='none' o={0}><TutorialToggle onPress={() => setOpen(false)} /></XStack> */}
-            {/* <XStack f={1} />
+              : undefined}
+          </FlipMove>
+          {/* <XStack pointerEvents='none' o={0}><TutorialToggle onPress={() => setOpen(false)} /></XStack> */}
+          {/* <XStack f={1} />
             <XStack f={1} /> */}
-            <Button size='$3' circular p={0}
-              onPress={() => dispatch(setBrowsingServers(!browsingServers))}
-              animation='standard'
-            // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
-            // disabled={!(allowServerSelection || servers.length > 1)} 
-            >
-              <ZStack w='$2' h='$2'>
-                <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
-                  <ChevronLeft size='$1' />
+          <Button size='$3' circular p={0}
+            onPress={() => dispatch(setBrowsingServers(!browsingServers))}
+            animation='standard'
+          // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
+          // disabled={!(allowServerSelection || servers.length > 1)} 
+          >
+            <ZStack w='$2' h='$2'>
+              <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+                <ChevronLeft size='$1' />
+              </XStack>
+              <XStack m='auto' animation='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+                <Router size='$1' />
+              </XStack>
+              <Theme inverse>
+                <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
+                  transform={[{ translateX: 15 }, { translateY: 10 }]}
+                  backgroundColor={textColor}>
+                  <Paragraph size='$1' color={backgroundColor} mx='$1' fontWeight='bold'>{servers.length}</Paragraph>
                 </XStack>
-                <XStack m='auto' animation='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
-                  <Router size='$1' />
-                </XStack>
-                <Theme inverse>
-                  <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
-                    transform={[{ translateX: 15 }, { translateY: 10 }]}
-                    backgroundColor={textColor}>
-                    <Paragraph size='$1' color={backgroundColor} mx='$1' fontWeight='bold'>{servers.length}</Paragraph>
-                  </XStack>
-                </Theme>
-              </ZStack>
-            </Button>
+              </Theme>
+            </ZStack>
+          </Button>
 
-            <DarkModeToggle />
-            <SettingsSheet size='$3' />
-          </XStack>
-          <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
-            <FlipMove style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-              {/* <YStack maxWidth={800} gap width='100%' alignSelf='center'> */}
-              {browsingServers
-                ? <div key='server-header'>
-                  <XStack ai='center'>
-                    {browsingServers
-                      ? <Heading size='$5' marginRight='$2'>Servers</Heading>
-                      : undefined}
+          <DarkModeToggle />
+          <SettingsSheet size='$3' />
+        </XStack>
+        <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
+          <FlipMove style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
+            {/* <YStack maxWidth={800} gap width='100%' alignSelf='center'> */}
+            {browsingServers
+              ? <div key='server-header'>
+                <XStack ai='center'>
+                  {browsingServers
+                    ? <Heading size='$5' marginRight='$2'>Servers</Heading>
+                    : undefined}
 
-                    {browsingServers ? <Button
-                      size="$3"
-                      icon={Plus}
-                      marginLeft='auto'
-                      // circular
-                      onPress={() => setAddingServer((x) => !x)}
-                    >
-                      Add
-                    </Button> : undefined}
-                    <Sheet
-                      modal
-                      open={addingServer}
-                      onOpenChange={setAddingServer}
-                      // snapPoints={[80]}
-                      snapPoints={[81]} dismissOnSnapToBottom
-                      position={position}
-                      onPositionChange={setPosition}
-                    // dismissOnSnapToBottom
-                    >
-                      <Sheet.Overlay />
-                      <Sheet.Frame padding="$5">
-                        <Sheet.Handle />
-                        <Button
-                          alignSelf='center'
-                          size="$6"
-                          circular
-                          icon={ChevronDown}
-                          onPress={() => {
-                            setAddingServer(false)
-                          }}
-                        />
-                        <YStack gap="$2" maxWidth={600} width='100%' alignSelf='center'>
-                          <Heading size="$10" f={1}>Add Server</Heading>
-                          <YStack>
-                            <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
-                              editable={!serversLoading}
-                              opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
-                              value={newServerHost}
-                              onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
-                          </YStack>
-                          {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
-                          <XStack>
-                            <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
-                              <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
-                                defaultChecked
-                                onCheckedChange={(checked) => setNewServerSecure(checked)}
-                                disabled={disableSecureSelection} >
-                                <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
-                              </Switch>
-
-                              <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
-                                <Heading size="$2">Secure</Heading>
-                              </Label>
-                            </YStack>
-                            <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
-                              onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
-                              Add Server
-                            </Button>
-                          </XStack>
-                          {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
-                          {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
+                  {browsingServers ? <Button
+                    size="$3"
+                    icon={Plus}
+                    marginLeft='auto'
+                    // circular
+                    onPress={() => setAddingServer((x) => !x)}
+                  >
+                    Add
+                  </Button> : undefined}
+                  <Sheet
+                    modal
+                    open={addingServer}
+                    onOpenChange={setAddingServer}
+                    // snapPoints={[80]}
+                    snapPoints={[81]} dismissOnSnapToBottom
+                    position={position}
+                    onPositionChange={setPosition}
+                  // dismissOnSnapToBottom
+                  >
+                    <Sheet.Overlay />
+                    <Sheet.Frame padding="$5">
+                      <Sheet.Handle />
+                      <Button
+                        alignSelf='center'
+                        size="$6"
+                        circular
+                        icon={ChevronDown}
+                        onPress={() => {
+                          setAddingServer(false)
+                        }}
+                      />
+                      <YStack gap="$2" maxWidth={600} width='100%' alignSelf='center'>
+                        <Heading size="$10" f={1}>Add Server</Heading>
+                        <YStack>
+                          <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                            editable={!serversLoading}
+                            opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
+                            value={newServerHost}
+                            onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                         </YStack>
-                      </Sheet.Frame>
-                    </Sheet>
-                  </XStack>
-                </div>
-                : undefined}
+                        {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
+                        <XStack>
+                          <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
+                            <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
+                              defaultChecked
+                              onCheckedChange={(checked) => setNewServerSecure(checked)}
+                              disabled={disableSecureSelection} >
+                              <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
+                            </Switch>
 
-              {!browsingServers ?
-                <div key='primary-server-logo'>
-                  <XStack w='100%' mx='auto'
-                    ai='center'
-                    mt={allowServerSelection ? '$3' : undefined}>
-                    <XStack f={1} />
-                    <YStack
-                      ai='center'
-                      // w='100%'
-                      pl='$1'
-                      pr='$2'>
-                      <ServerNameAndLogo enlargeSmallText />
-
-                      <Heading size='$3' als='center' ta='center'>
-                        {currentServer ? currentServer.host : '<None>'}{serversDiffer ? ' is selected' : ''}
-                      </Heading>
-
-                    </YStack>
-                    {currentServerInfoLink
-                      ? <Button size='$3' my='auto' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
-                      : undefined}
-                    <XStack f={1} />
-
-
-                  </XStack>
-                </div>
-                : undefined}
-
-              {servers.length === 0
-                ?
-                <div key='no-servers'>
-                  <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading>
-                </div>
-                : undefined}
-
-              <div key='servers'>
-                <ScrollView horizontal>
-                  <XStack gap='$3'>
-                    <FlipMove style={{ display: 'flex' }}>
-                      {browsingServers
-                        ? servers.map((server, index) => {
-                          return <span key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
-                            <ServerCard
-                              // linkToServerInfo={onlyShowServer !== undefined}
-                              server={server}
-                              isPreview />
-                          </span>;
-                        })
-                        : undefined}
-                    </FlipMove>
-                  </XStack>
-                </ScrollView>
-              </div>
-
-              {recommendedServerHosts.length > 0
-                ? [
-                  <div key='recommended-servers-link'>
-                    <Button mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                      <XStack>
-                        <Heading size='$1'>{browsingServers ? 'All ' : ''}Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
-                        <XStack animation='quick' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
-                          <ChevronRight size='$1' />
-                        </XStack>
-                      </XStack>
-                    </Button>
-                  </div>,
-                  viewingRecommendedServers
-                    ?
-                    <div key='recommended-servers'>
-                      <XStack mt='$2' mb='$2' w='100%'>
-                        <ScrollView f={1} horizontal>
-                          <FlipMove style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            // justifyContent: 'center',
-                            // width: '100%',
-                            // overflow: 'auto',
-                            // whiteSpace: 'nowrap',
-                            // overflowX: 'scroll',
-                            // overflowY: 'hidden',
-                            // scrollbarWidth: 'none',
-                            // msOverflowStyle: 'none',
-                            // '&::-webkit-scrollbar': { display: 'none' }
-
-                          }}>
-                            {recommendedServerHosts.map((host, index) => {
-                              const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                              // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                              return <div key={`server-${host}`}>
-                                {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
-                                  ? <XStack key='separator' my='auto'>
-                                    <Tooltip>
-                                      <Tooltip.Trigger>
-                                        <SeparatorHorizontal size='$5' />
-                                      </Tooltip.Trigger>
-                                      <Tooltip.Content>
-                                        <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
-                                      </Tooltip.Content>
-                                    </Tooltip>
-                                  </XStack>
-                                  : undefined}
-                                <XStack my='auto' key={`recommended-server-${host}`}>
-                                  <RecommendedServer host={host} tiny />
-                                </XStack>
-                              </div>;
-                            })}
-                          </FlipMove>
-                        </ScrollView>
-
-                        {allRecommendableServerHosts.length > recommendedServerHosts.length
-                          ? <Button ml='auto' my='auto' onPress={() => dispatch(setBrowsingServers(true))}>
-                            <YStack ai='center'>
-                              <Paragraph size='$2' lineHeight={15} fontWeight='700'>{allRecommendableServerHosts.length - recommendedServerHosts.length}</Paragraph>
-                              <Paragraph size='$1' lineHeight={15}>more</Paragraph>
-                            </YStack>
+                            <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
+                              <Heading size="$2">Secure</Heading>
+                            </Label>
+                          </YStack>
+                          <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
+                            onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
+                            Add Server
                           </Button>
-                          : undefined}
-                      </XStack>
-                    </div>
-                    : undefined
-                ]
-                : undefined}
+                        </XStack>
+                        {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
+                        {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
+                      </YStack>
+                    </Sheet.Frame>
+                  </Sheet>
+                </XStack>
+              </div>
+              : undefined}
 
-              {serversDiffer
-                ? <div key='servers-differ'>
-                  <XStack>
-                    <XStack my='auto'>{alertTriangle()}</XStack>
-                    <YStack my='auto' f={1}>
-                      {/* <Heading whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
+            {!browsingServers ?
+              <div key='primary-server-logo'>
+                <XStack w='100%' mx='auto'
+                  ai='center'
+                  mt={allowServerSelection ? '$3' : undefined}>
+                  <XStack f={1} />
+                  <YStack
+                    ai='center'
+                    // w='100%'
+                    pl='$1'
+                    pr='$2'>
+                    <ServerNameAndLogo enlargeSmallText />
+
+                    <Heading size='$3' als='center' ta='center'>
+                      {currentServer ? currentServer.host : '<None>'}{serversDiffer ? ' is selected' : ''}
+                    </Heading>
+
+                  </YStack>
+                  {currentServerInfoLink
+                    ? <Button size='$3' my='auto' ml='$2' onPress={(e) => { e.stopPropagation(); currentServerInfoLink.onPress(e); }} icon={<Info />} circular />
+                    : undefined}
+                  <XStack f={1} />
+
+
+                </XStack>
+              </div>
+              : undefined}
+
+            {servers.length === 0
+              ?
+              <div key='no-servers'>
+                <Heading size="$2" alignSelf='center' paddingVertical='$6'>No servers added.</Heading>
+              </div>
+              : undefined}
+
+            <div key='servers'>
+              <ScrollView horizontal>
+                <XStack gap='$3'>
+                  <FlipMove style={{ display: 'flex' }}>
+                    {browsingServers
+                      ? servers.map((server, index) => {
+                        return <span key={`serverCard-${serverID(server)}`} style={{ margin: 2 }}>
+                          <ServerCard
+                            // linkToServerInfo={onlyShowServer !== undefined}
+                            server={server}
+                            isPreview />
+                        </span>;
+                      })
+                      : undefined}
+                  </FlipMove>
+                </XStack>
+              </ScrollView>
+            </div>
+
+            {recommendedServerHosts.length > 0
+              ? [
+                <div key='recommended-servers-link'>
+                  <Button mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                    <XStack>
+                      <Heading size='$1'>{browsingServers ? 'All ' : ''}Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
+                      <XStack animation='quick' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
+                        <ChevronRight size='$1' />
+                      </XStack>
+                    </XStack>
+                  </Button>
+                </div>,
+                viewingRecommendedServers
+                  ?
+                  <div key='recommended-servers'>
+                    <XStack mt='$2' mb='$2' w='100%'>
+                      <ScrollView f={1} horizontal>
+                        <FlipMove style={{
+                          display: 'flex',
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          // justifyContent: 'center',
+                          // width: '100%',
+                          // overflow: 'auto',
+                          // whiteSpace: 'nowrap',
+                          // overflowX: 'scroll',
+                          // overflowY: 'hidden',
+                          // scrollbarWidth: 'none',
+                          // msOverflowStyle: 'none',
+                          // '&::-webkit-scrollbar': { display: 'none' }
+
+                        }}>
+                          {recommendedServerHosts.map((host, index) => {
+                            const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
+                            // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                            return <div key={`server-${host}`}>
+                              {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                                ? <XStack key='separator' my='auto'>
+                                  <Tooltip>
+                                    <Tooltip.Trigger>
+                                      <SeparatorHorizontal size='$5' />
+                                    </Tooltip.Trigger>
+                                    <Tooltip.Content>
+                                      <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                                    </Tooltip.Content>
+                                  </Tooltip>
+                                </XStack>
+                                : undefined}
+                              <XStack my='auto' key={`recommended-server-${host}`}>
+                                <RecommendedServer host={host} tiny />
+                              </XStack>
+                            </div>;
+                          })}
+                        </FlipMove>
+                      </ScrollView>
+
+                      {allRecommendableServerHosts.length > recommendedServerHosts.length
+                        ? <Button ml='auto' my='auto' onPress={() => dispatch(setBrowsingServers(true))}>
+                          <YStack ai='center'>
+                            <Paragraph size='$2' lineHeight={15} fontWeight='700'>{allRecommendableServerHosts.length - recommendedServerHosts.length}</Paragraph>
+                            <Paragraph size='$1' lineHeight={15}>more</Paragraph>
+                          </YStack>
+                        </Button>
+                        : undefined}
+                    </XStack>
+                  </div>
+                  : undefined
+              ]
+              : undefined}
+
+            {serversDiffer
+              ? <div key='servers-differ'>
+                <XStack>
+                  <XStack my='auto'>{alertTriangle()}</XStack>
+                  <YStack my='auto' f={1}>
+                    {/* <Heading whiteSpace='nowrap' maw={200} overflow='hidden' als='center'>
                           {primaryServer?.serverConfiguration?.serverInfo?.name}
                         </Heading> */}
-                      <Heading size='$3' als='center' marginTop='$2' textAlign='center'>
-                        Viewing/interacting with data on {primaryEntity.host}
-                      </Heading>
-                    </YStack>
-                  </XStack>
-                </div>
-                : undefined}
-              {browsingOnDiffers
-                ? <div key='browsing-on-differs' style={{ width: '100%', display: 'flex' }}>
-                  <XStack mx='auto' gap='$2'>
-                    <XStack my='auto'>{alertTriangle()}</XStack>
-                    <Heading size='$3' my='auto' als='center' textAlign='center'>
-                      Browsing via {browsingOn}
+                    <Heading size='$3' als='center' marginTop='$2' textAlign='center'>
+                      Viewing/interacting with data on {primaryEntity.host}
                     </Heading>
-                  </XStack>
-                </div>
-                : undefined}
-
-              <div key='accounts-header'>
-                <YStack gap="$2" mt='$2'>
-                  <XStack mb='$2' ai='center' gap='$2'>
-                    <Heading size='$5' f={1}>
-                      Accounts
-                    </Heading>
-
-
-                    <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
-                      icon={ArrowDownUp}
-                      transparent
-                      circular
-                      size='$2'
-                      {...themedButtonBackground(
-                        !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
-
-
-                    <AuthSheetButton
-                      server={currentServer}
-                      button={onPress =>
-                        <Button
-                          size="$3"
-                          icon={Plus}
-                          disabled={currentServer === undefined && servers.length === 0}
-                          {...themedButtonBackground(primaryColor, primaryTextColor)}
-                          onPress={onPress}
-                        >
-                          Login/Sign Up
-                        </Button>}
-                    />
-                  </XStack>
-                </YStack>
+                  </YStack>
+                </XStack>
               </div>
+              : undefined}
+            {browsingOnDiffers
+              ? <div key='browsing-on-differs' style={{ width: '100%', display: 'flex' }}>
+                <XStack mx='auto' gap='$2'>
+                  <XStack my='auto'>{alertTriangle()}</XStack>
+                  <Heading size='$3' my='auto' als='center' textAlign='center'>
+                    Browsing via {browsingOn}
+                  </Heading>
+                </XStack>
+              </div>
+              : undefined}
 
-              {separateAccountsByServer
-                ? [
-                  accountsOnPrimaryServer.length === 0
-                    ? <div key='no-accounts-on-server' style={{ width: '100%', display: 'flex' }}>
-                      <Heading size="$2" mx='auto' paddingVertical='$6' o={0.5}>No accounts added on {primaryServer?.host}.</Heading>
-                    </div>
-                    : undefined,
-                  ...accountsOnPrimaryServer.map((account) =>
-                    <div key={accountID(account)} style={{ marginBottom: 8 }}>
-                      <AccountCard
-                        account={account}
-                        onProfileOpen={() => setOpen(false)}
-                        totalAccounts={accountsOnPrimaryServer.length} />
-                    </div>),
-                  ...accountsElsewhere.length > 0
-                    ? [
-                      <div key='acounts-elsewhere' style={{ width: '100%', display: 'flex' }}>
-                        <Heading mr='$3' pr='$3' size='$3'>Accounts Elsewhere</Heading>
-                      </div>,
-                      ...accountsElsewhere.map((account) =>
-                        <div key={accountID(account)} style={{ marginBottom: 8 }}>
-                          <AccountCard key={accountID(account)}
-                            account={account}
-                            totalAccounts={accountsOnPrimaryServer.length} />
-                        </div>)
-                    ]
-                    : []
-                ]
-                : [
-                  displayedAccounts.length === 0
-                    ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>
-                    : undefined,
-                  ...displayedAccounts.map((account) =>
-                    <div key={accountID(account)} style={{ marginBottom: 8 }}>
-                      <AccountCard key={accountID(account)}
-                        account={account}
-                        totalAccounts={displayedAccounts.length} />
-                    </div>)
-                ]}
-            </FlipMove>
-          </Sheet.ScrollView>
-        </Sheet.Frame>
-      </Sheet>
-      : undefined}
+            <div key='accounts-header'>
+              <YStack gap="$2" mt='$2'>
+                <XStack mb='$2' ai='center' gap='$2'>
+                  <Heading size='$5' f={1}>
+                    Accounts
+                  </Heading>
+
+
+                  <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
+                    icon={ArrowDownUp}
+                    transparent
+                    circular
+                    size='$2'
+                    {...themedButtonBackground(
+                      !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
+
+
+                  <AuthSheetButton
+                    server={currentServer}
+                    button={onPress =>
+                      <Button
+                        size="$3"
+                        icon={Plus}
+                        disabled={currentServer === undefined && servers.length === 0}
+                        {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        onPress={onPress}
+                      >
+                        Login/Sign Up
+                      </Button>}
+                  />
+                </XStack>
+              </YStack>
+            </div>
+
+            {separateAccountsByServer
+              ? [
+                accountsOnPrimaryServer.length === 0
+                  ? <div key='no-accounts-on-server' style={{ width: '100%', display: 'flex' }}>
+                    <Heading size="$2" mx='auto' paddingVertical='$6' o={0.5}>No accounts added on {primaryServer?.host}.</Heading>
+                  </div>
+                  : undefined,
+                ...accountsOnPrimaryServer.map((account) =>
+                  <div key={accountID(account)} style={{ marginBottom: 8 }}>
+                    <AccountCard
+                      account={account}
+                      onProfileOpen={() => setOpen(false)}
+                      totalAccounts={accountsOnPrimaryServer.length} />
+                  </div>),
+                ...accountsElsewhere.length > 0
+                  ? [
+                    <div key='acounts-elsewhere' style={{ width: '100%', display: 'flex' }}>
+                      <Heading mr='$3' pr='$3' size='$3'>Accounts Elsewhere</Heading>
+                    </div>,
+                    ...accountsElsewhere.map((account) =>
+                      <div key={accountID(account)} style={{ marginBottom: 8 }}>
+                        <AccountCard key={accountID(account)}
+                          account={account}
+                          totalAccounts={accountsOnPrimaryServer.length} />
+                      </div>)
+                  ]
+                  : []
+              ]
+              : [
+                displayedAccounts.length === 0
+                  ? <Heading size="$2" alignSelf='center' paddingVertical='$6'>No accounts added.</Heading>
+                  : undefined,
+                ...displayedAccounts.map((account) =>
+                  <div key={accountID(account)} style={{ marginBottom: 8 }}>
+                    <AccountCard key={accountID(account)}
+                      account={account}
+                      totalAccounts={displayedAccounts.length} />
+                  </div>)
+              ]}
+          </FlipMove>
+        </Sheet.ScrollView>
+      </Sheet.Frame>
+    </Sheet>
+    {/* : undefined} */}
   </>;
 }
