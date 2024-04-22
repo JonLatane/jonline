@@ -285,7 +285,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
   </XStack>;
 
   const alreadyOnGroupPage = !!infoGroup && !!selectedGroup && federatedId(infoGroup) === federatedId(selectedGroup) && appSection === AppSection.HOME;
-  console.log('GroupDetailsSheet', 'alreadyOnGroupPage', alreadyOnGroupPage, !!infoGroup, !!selectedGroup, infoGroup && federatedId(infoGroup), selectedGroup && federatedId(selectedGroup), appSection);
+  // console.log('GroupDetailsSheet', 'alreadyOnGroupPage', alreadyOnGroupPage, !!infoGroup, !!selectedGroup, infoGroup && federatedId(infoGroup), selectedGroup && federatedId(selectedGroup), appSection);
   return <EditingContextProvider value={editingContext}>
     <Sheet
       modal

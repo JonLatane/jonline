@@ -41,7 +41,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
-  const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
+  const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navLightColor, navTextColor, transparentBackgroundColor } = useServerTheme();
   const dimensions = useWindowDimensions();
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
@@ -149,6 +149,12 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     return startsAtTime;
   });
   const modeStartTime = mode(startTimes);
+  const earliestDate = moment.min(
+    allEvents.map((event) => moment(event.instances[0]?.startsAt ?? 0).startOf('day'))
+  );
+  const latestDate = moment.max(
+    allEvents.map((event) => moment(event.instances[0]?.endsAt ?? 0).endOf('day'))
+  );
   const scrollToTime = (scrollToTimeParam
     ? moment(scrollToTimeParam)
     : moment()
@@ -178,6 +184,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     }-${navigationHeight
     }-${hideNavigation
     }-${allEvents.length}`;
+
   return (<>
     <YStack
       // key={`calendar-rendering-${serializedTimeFilter}`} 
@@ -284,6 +291,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                 <BigCalendar
                   key={renderingKey}
                   localizer={localizer}
+
                   defaultDate={new Date()}
                   defaultView={weeklyOnly ? 'week' : undefined}
                   views={weeklyOnly ? ['week'] : undefined}
@@ -320,6 +328,20 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                   }}
                   onSelectEvent={(modelEvent) => {
                     setModalInstanceId(modelEvent.id);
+                  }}
+                  dayPropGetter={(date) => {
+                    return {
+                      style: {
+                        // borderColor: 'black',
+                        backgroundColor: moment(date).isBefore(earliestDate)
+                          || moment(date).isAfter(latestDate)
+                          ? '#F0F0F0'
+                          : moment(date).startOf('day').unix() === moment().startOf('day').unix()
+                            ? `${navLightColor}44`
+                            : '#FFFFFF'
+                      }
+                    }
+
                   }}
                   style={{ width: '100%', height: '100%' }}
                 />
@@ -401,7 +423,8 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
           key="content"
           animateOnly={['transform', 'opacity']}
           animation='standard'
-          maw={bigCalWidth}
+          // maw={bigCalWidth}
+          w={Math.min(800,bigCalWidth)}
           mah={borderedScreenHeight}
           enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
           exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}

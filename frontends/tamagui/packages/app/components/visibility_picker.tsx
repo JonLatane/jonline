@@ -59,6 +59,7 @@ export function VisibilityPicker({
   const name = useComponentKey('visibility');
 
   return <YStack w='100%' maw={350}>
+    {readOnly ? undefined : <Heading size='$1'>Visibility</Heading>}
     {/* <style>
       select {
         width: 100%;

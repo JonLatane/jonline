@@ -351,7 +351,7 @@ export function BaseCreatePostSheet({
                       disabled={disablePreview}
                       opacity={disablePreview ? 0.5 : 1}
                       // borderTopRightRadius={0} borderBottomRightRadius={0}
-                      onPress={() => setRenderType(renderType === RenderType.FullPreview ? RenderType.Edit : RenderType.FullPreview)}>
+                      onPress={() => setRenderType(renderType === RenderType.FullPreview && inSplitView ? RenderType.Edit : RenderType.FullPreview)}>
                       <Heading size='$4' color={showFullPreview ? navTextColor : textColor}>Preview</Heading>
                     </Button>
                   </Tooltip.Trigger>
@@ -371,7 +371,7 @@ export function BaseCreatePostSheet({
                       borderTopLeftRadius={0} borderBottomLeftRadius={0}
                       disabled={disablePreview}
                       opacity={disablePreview ? 0.5 : 1}
-                      onPress={() => setRenderType(renderType === RenderType.ShortPreview ? RenderType.Edit : RenderType.ShortPreview)}>
+                      onPress={() => setRenderType(renderType === RenderType.ShortPreview && inSplitView ? RenderType.Edit : RenderType.ShortPreview)}>
                       <Heading size='$4' color={showShortPreview ? navTextColor : textColor}>Feed Preview</Heading>
                     </Button>
                   </Tooltip.Trigger>
