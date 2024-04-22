@@ -29,7 +29,7 @@
     "react-dom": "^18.2.0",
     "react-refresh": "^0.14.0",
     "react-native-svg": "13.14.0",
-    "react-native-web": "~0.19.10"
+    "react-native-web": "~0.19.11"
   },
   "dependencies": {
     "@babel/runtime": "^7.24.4",
