@@ -23,27 +23,43 @@ export type CreateEventSheetProps = {
 
 export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCreationDispatch();
-  const [startsAt, setStartsAt] = useState('');
-  const [endsAt, setEndsAt] = useState('');
+  const [startsAt, _setStartsAt] = useState('');
+  const [endsAt, _setEndsAt] = useState('');
   const [duration, _setDuration] = useState(0);
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
 
-  useEffect(() => {
-    if (startsAt && endsAt) {
+  function setStartsAt(v: string) {
+    _setStartsAt(v);
+    if (v && duration) {
+      const start = moment(v);
+      const end = start.add(duration, 'minutes');
+      _setEndsAt(supportDateInput(end));
+    }
+  }
+  function setEndsAt(v: string) {
+    _setEndsAt(v);
+    if (startsAt) {
       const start = moment(startsAt);
-      const end = moment(endsAt);
+      const end = moment(v);
       _setDuration(end.diff(start, 'minutes'));
     }
-  }, [endsAt]);
-  useEffect(() => {
-    if (startsAt && duration) {
-      const start = moment(startsAt);
-      const end = start.add(duration, 'minutes');
-      setEndsAt(supportDateInput(end));
-    }
-  }, [startsAt]);
+  }
+  // useEffect(() => {
+  //   if (startsAt && endsAt) {
+  //     const start = moment(startsAt);
+  //     const end = moment(endsAt);
+  //     _setDuration(end.diff(start, 'minutes'));
+  //   }
+  // }, [endsAt]);
+  // useEffect(() => {
+  //   if (startsAt && duration) {
+  //     const start = moment(startsAt);
+  //     const end = start.add(duration, 'minutes');
+  //     setEndsAt(supportDateInput(end));
+  //   }
+  // }, [startsAt]);
 
 
   const [location, setLocation] = useState(Location.create({}));
@@ -110,12 +126,12 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
 
   const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
-  useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
+    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-const { eventPagesOnHome } = useLocalConfiguration();
-const allEvents = bigCalendar
-  ? eventResults
-  : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+  const { eventPagesOnHome } = useLocalConfiguration();
+  const allEvents = bigCalendar
+    ? eventResults
+    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
 
   return <BaseCreatePostSheet
     entityName='Event'
@@ -140,7 +156,8 @@ const allEvents = bigCalendar
         // o={showEvents && allEvents.length > 0 ? 1 : 0}
         />
         {bigCalendar
-          ? <EventsFullCalendar events={[event, ...allEvents]} scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+          ? <EventsFullCalendar events={[event, ...allEvents]}
+            scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
           : <EventCard event={event} isPreview hideEditControls />}
         {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
       </YStack>

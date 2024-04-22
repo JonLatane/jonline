@@ -11,7 +11,7 @@ import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
 import { Button, Dialog, ScrollView, Text, YStack, needsScrollPreservers, reverseStandardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { X as XIcon } from '@tamagui/lucide-icons';
@@ -53,6 +53,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     searchText.trim().toLowerCase(),
     1000
   );
+  const hasNewEvent = allEvents.some(e => !e.id);
   useEffect(() => {
     updateParams({ search: debouncedSearchText }, { web: { replace: true } });
   }, [debouncedSearchText])
@@ -183,7 +184,8 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     }-${window.innerHeight
     }-${navigationHeight
     }-${hideNavigation
-    }-${allEvents.length}`;
+    }-${allEvents.length
+    }-${scrollToTimeParam}`;
 
   return (<>
     <YStack
@@ -292,7 +294,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                   key={renderingKey}
                   localizer={localizer}
 
-                  defaultDate={new Date()}
+                  // defaultDate={new Date()}
                   defaultView={weeklyOnly ? 'week' : undefined}
                   views={weeklyOnly ? ['week'] : undefined}
                   formats={{
@@ -315,12 +317,17 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                     }
                   })}
                   scrollToTime={scrollToTime.toDate()}
+                  defaultDate={scrollToTime.toDate()}
                   // scrollToTime={moment(modeStartTime).toDate()}
                   eventPropGetter={(event) => {
                     // console.log('BigCalendar EventPropGetter', event);
+                    const serverEventId = parseFederatedId(event.id).id;
                     return {
                       style: {
-                        backgroundColor: serverColors[event.serverHost],
+                        backgroundColor: hasNewEvent && serverEventId
+                        ? `${serverColors[event.serverHost]}33`
+                        : serverColors[event.serverHost],
+                        // opacity: hasNewEvent && !event.id ? 0.5 : 1,
                         color: colorMeta(serverColors[event.serverHost]).textColor,
                         fontSize: mediaQuery.gtXxs ? undefined : '11px'
                       }
