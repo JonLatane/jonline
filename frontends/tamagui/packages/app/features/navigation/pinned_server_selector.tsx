@@ -1,16 +1,13 @@
-import { AnimatePresence, Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, reverseHorizontalAnimation, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, useMedia, useTheme } from "@jonline/ui";
+import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
-import { useCurrentAccount, useAppDispatch, useAppSelector, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useAppDispatch, useAppSelector, useCurrentAccount, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, getServerTheme, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import { AuthSheet } from "../accounts/auth_sheet";
+import FlipMove from 'react-flip-move';
+import { AuthSheetButton } from "../accounts/auth_sheet_button";
 import RecommendedServer from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
-import { useHideNavigation } from "./use_hide_navigation";
-import FlipMove from 'react-flip-move';
-import { ex } from "@fullcalendar/core/internal-common";
-import { AuthSheetButton } from "../accounts/auth_sheet_button";
 
 
 export type PinnedServerSelectorProps = {
@@ -97,7 +94,7 @@ export function PinnedServerSelector({
   const childMargins = { paddingTop: 4, paddingBottom: 4 };
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
-    backgroundColor={transparentBackgroundColor}
+    // backgroundColor={transparentBackgroundColor}
   // o={transparent ? 1 : 1}
   >
     {/* <AnimatePresence> */}
@@ -264,10 +261,9 @@ export type PinnableServerProps = {
 };
 export function PinnableServer({ server, pinnedServer, simplified }: PinnableServerProps) {
   const pinned = !!pinnedServer?.pinned;
-  const theme = useTheme();
   const dispatch = useAppDispatch();
   const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = getServerTheme(server, theme);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   const onPress = () => {
     const updatedValue: PinnedServer = pinnedServer
       ? { ...pinnedServer, pinned: !pinnedServer.pinned }
@@ -329,7 +325,7 @@ export type ShortAccountSelectorButtonProps = {
 };
 export function ShortAccountSelectorButton({ server, pinnedServer, onPress }: ShortAccountSelectorButtonProps) {
   const pinned = !!pinnedServer?.pinned;
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
   const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
   const avatarSize = 20;

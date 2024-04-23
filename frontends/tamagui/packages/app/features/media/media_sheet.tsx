@@ -1,6 +1,6 @@
 import { AlertDialog, Text, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
-import { RootState, deleteMedia, getServerTheme, selectMediaById, useRootSelector } from 'app/store';
+import { RootState, deleteMedia, useServerTheme, selectMediaById, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { overlayAnimation } from '@jonline/ui';
@@ -29,8 +29,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   const { dispatch, accountOrServer } = useCreationDispatch(); //useProvidedDispatch();// useCredentialDispatch();
   const { server, account } = accountOrServer;
 
-  const serverTheme = getServerTheme(server, useTheme());
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;//getServerTheme(accountOrServer.server, useTheme());
+  const serverTheme = useServerTheme(server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;//useServerTheme(accountOrServer.server);
   const dimensions = useWindowDimensions();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);

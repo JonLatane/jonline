@@ -1,24 +1,23 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
-import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, useDebounce, useDebounceValue, useMedia, useTheme } from "@jonline/ui";
-import { reverseHorizontalAnimation, reverseStandardAnimation, standardFadeAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
-import { ChevronDown, ChevronLeft, ChevronUp, Info, ListEnd, ListStart, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
+import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia, useTheme } from "@jonline/ui";
+import { reverseHorizontalAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
+import { Dictionary } from "@reduxjs/toolkit";
+import { ChevronDown, ChevronLeft, ChevronUp, Info, ListEnd, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
-import { useAppDispatch, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch, useCurrentServer } from "app/hooks";
-import { FederatedEvent, FederatedPost, accountID, federatedId, getCachedServerClient, getServerClient, getServerTheme, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
-import { createRef, use, useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
+import useIsVisibleHorizontal from "app/hooks/use_is_visible";
+import { FederatedEvent, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
+import { highlightedButtonBackground } from "app/utils";
+import { createRef, useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
+import { useLink } from "solito/link";
 import EventCard from "../event/event_card";
 import { InstanceTime } from "../event/instance_time";
 import { ConversationContextProvider, PostCard, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useStatefulConversationContext } from "../post";
 import { StarButton, ThemedStar } from "../post/star_button";
-import { useLink } from "solito/link";
 import { AppSection, menuIcon } from "./features_navigation";
-import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
-import { Dictionary } from "@reduxjs/toolkit";
-import { AuthSheet } from "../accounts/auth_sheet";
 import { ShortAccountSelectorButton } from "./pinned_server_selector";
 import { ServerNameAndLogo } from "./server_name_and_logo";
-import useIsVisibleHorizontal from "app/hooks/use_is_visible";
 
 type StarredPostFilter = 'posts' | 'events' | undefined;
 export type StarredPostsProps = {};
@@ -182,7 +181,7 @@ export function StarredPosts({ }: StarredPostsProps) {
   const openedPostAccount = useFederatedAccountOrServer(basePost);
 
   const serverTheme = useServerTheme();
-  const openedPostAccountTheme = getServerTheme(openedPostAccount?.server, useTheme());
+  const openedPostAccountTheme = useServerTheme(openedPostAccount?.server);
   const { primaryTextColor, navColor, navTextColor } = serverTheme;
   const { primaryAnchorColor: openedPostPrimaryAnchorColor, navAnchorColor: openedPostNavAnchorColor } = openedPostAccountTheme;
 
@@ -505,7 +504,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
 
   const server = useFederatedAccountOrServer(serverHost)?.server;
   const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
-  const { navColor, navTextColor, navAnchorColor } = getServerTheme(server, useTheme());
+  const { navColor, navTextColor, navAnchorColor } = useServerTheme(server);
 
   const { canMoveUp, canMoveDown } = useAppSelector(state => ({
     canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,

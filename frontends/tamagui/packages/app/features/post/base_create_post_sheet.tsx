@@ -1,18 +1,17 @@
 import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
-import { CalendarPlus, ChevronDown, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
+import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { CalendarPlus, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from 'app/components';
-import { useCreationAccountOrServer, useCredentialDispatch, useCurrentServer } from 'app/hooks';
-import { FederatedGroup, JonlineServer, RootState, getServerTheme, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { useCreationAccountOrServer } from 'app/hooks';
+import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
+import FlipMove from 'react-flip-move';
 import { TextInput } from 'react-native';
+import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
-import FlipMove from 'react-flip-move';
-import { AuthSheet } from '../accounts/auth_sheet';
-import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -185,7 +184,7 @@ export function BaseCreatePostSheet({
   const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = useServerTheme(server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;

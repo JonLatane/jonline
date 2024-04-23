@@ -1,7 +1,7 @@
 import { EventInstance } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
 import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
-import { RootState, federateId, federatedId, getServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
+import { RootState, federateId, federatedId, useServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -34,7 +34,7 @@ export function EventDetailsScreen() {
 
   const instanceId = federateId(serverInstanceId, serverHost);
 
-  const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server, useTheme());
+  const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
   // console.log('EventDetailsScreen', textColor);
   const app = useLocalConfiguration();
   const group = useGroupFromPath(pathShortname);

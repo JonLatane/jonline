@@ -1,20 +1,18 @@
-import { useAppSelector, useCredentialDispatch, useFederatedAccountOrServer, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
-import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, getServerTheme, loadPostGroupPosts, loadUser, markGroupVisit, parseFederatedId, serverID, useRootSelector, useServerTheme } from "app/store";
+import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
+import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, loadPostGroupPosts, loadUser, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { Group, GroupPost, Permission, Post, PostContext } from "@jonline/api";
-import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
+import { GroupPost, Permission, Post, PostContext } from "@jonline/api";
+import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue } from '@jonline/ui';
 
 
-import { themedButtonBackground } from "app/utils/themed_button_background";
-import { useLink } from "solito/link";
+import { AccountOrServerContextProvider } from 'app/contexts';
 import { useGroupContext } from "app/contexts/group_context";
+import { themedButtonBackground } from "app/utils/themed_button_background";
+import moment from 'moment';
+import { useLink } from "solito/link";
 import { hasAdminPermission, hasPermission } from '../../utils/permission_utils';
 import { AuthorInfo } from "../post/author_info";
-import { GroupsSheet } from './groups_sheet';
-import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/contexts';
-import { s } from '@fullcalendar/core/internal-common';
-import moment from 'moment';
 
 interface Props {
   post: FederatedPost;
@@ -35,7 +33,7 @@ export function useMostRecentGroup(groups: FederatedGroup[]) {
 export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { server } = accountOrServer;
-  const { navColor, navTextColor, primaryAnchorColor } = getServerTheme(server, useTheme());
+  const { navColor, navTextColor, primaryAnchorColor } = useServerTheme(server);
   const title = `Share ${post.context == PostContext.EVENT ? 'Event' : 'Post'}`;
   const { selectedGroup, sharingPostId, setSharingPostId } = useGroupContext();
   const [loading, setLoading] = useState(false);
@@ -176,7 +174,7 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
     }
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
-  const { navColor, navTextColor, primaryAnchorColor, textColor: themeTextColor } = getServerTheme(server, useTheme());
+  const { navColor, navTextColor, primaryAnchorColor, textColor: themeTextColor } = useServerTheme(server);
 
   const canShare = !shared && hasPermission(group.currentUserMembership, Permission.CREATE_POSTS);
   const canUnshare = shared && (groupPost.userId === accountOrServer.account?.user?.id || hasAdminPermission(accountOrServer.account?.user) || hasAdminPermission(group.currentUserMembership));

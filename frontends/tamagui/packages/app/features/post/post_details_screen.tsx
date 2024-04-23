@@ -1,19 +1,19 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { useAppDispatch, useCredentialDispatch, useFederatedDispatch, useHash, useLocalConfiguration, useCurrentServer, useAppSelector, } from 'app/hooks'
-import { RootState, getServerTheme, loadPost, parseFederatedId, selectGroupById, selectPostById, setDiscussionChatUI, useRootSelector, useServerTheme } from 'app/store'
+import { ListEnd } from '@tamagui/lucide-icons'
+import { AccountOrServerContextProvider } from 'app/contexts'
+import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
+import { loadPost, parseFederatedId, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
+import { federateId } from '../../store/federation'
+import { useGroupFromPath } from '../groups/group_home_screen'
 import { AppSection } from '../navigation/features_navigation'
 import { TabsNavigation } from '../navigation/tabs_navigation'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'
 import { ConversationManager, scrollToCommentsBottom } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
-import { federateId, getFederated } from '../../store/federation';
-import { AccountOrServerContextProvider } from 'app/contexts'
-import { ListEnd } from '@tamagui/lucide-icons'
-import { useGroupFromPath } from '../groups/group_home_screen'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -55,7 +55,7 @@ export function PostDetailsScreen() {
   const [interactionType, setInteractionType] = usePostInteractionType();
   const group = useGroupFromPath(pathShortname);
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = getServerTheme(accountOrServer.server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
 
   const postsState = useAppSelector(state => state.posts);

@@ -2,7 +2,7 @@ import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonl
 import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia, useTheme } from '@jonline/ui';
 import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { useCreationDispatch } from 'app/hooks';
-import { JonlineServer, RootState, createGroup, getServerTheme, selectAllAccounts, serverID, useRootSelector } from 'app/store';
+import { JonlineServer, RootState, createGroup, useServerTheme, selectAllAccounts, serverID, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 // import { PostMediaManager } from '../posts/post_media_manager';
@@ -179,7 +179,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const [posting, setPosting] = useState(false);
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = getServerTheme(accountOrServer.server, useTheme());
+  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme(accountOrServer.server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;

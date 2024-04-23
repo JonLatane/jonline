@@ -1,18 +1,18 @@
-import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, getServerTheme, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
-import { AttendanceStatus, Event, EventAttendance, EventInstance, Permission } from "@jonline/api";
+import { AttendanceStatus, EventAttendance, EventInstance, Permission } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useComponentKey, useCredentialDispatch, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from "app/hooks";
+import { useGroupContext } from "app/contexts/group_context";
+import { useAnonymousAuthToken, useComponentKey, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
 import { createParam } from "solito";
 import { useLink } from "solito/link";
-import { useGroupContext } from "app/contexts/group_context";
-import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 import { EventCalendarExporter } from "./event_calendar_exporter";
+import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
@@ -41,8 +41,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   const { account, server } = accountOrServer;
   const isPrimaryServer = !!currentServer &&
     currentServer?.host === accountOrServer.server?.host;
-  const theme = useTheme();
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server, theme);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme(server);
 
   const isEventOwner = account && account?.user?.id === event?.post?.author?.userId;
 

@@ -1,7 +1,7 @@
 import { Button, Paragraph, ScrollView, XStack, YStack, useTheme } from '@jonline/ui';
 import { useAccountOrServerContext } from 'app/contexts';
 import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServer, useProvidedDispatch } from 'app/hooks';
-import { getServerTheme } from 'app/store';
+import { useServerTheme } from 'app/store';
 import { highlightedButtonBackground } from 'app/utils';
 import React, { useEffect } from "react";
 import FlipMove from 'react-flip-move';
@@ -65,7 +65,7 @@ export const PageChooser: React.FC<Pagination<any> & {
     // console.log(`pagination indication isVisible=${isVisible} loadingPage=${loadingPage} hasNextPage=${hasNextPage} page=${page}`)
 
     const server = useProvidedAccountOrServer().server;
-    const theme = getServerTheme(server, useTheme());
+    const theme = useServerTheme(server);
     const { primaryColor, primaryTextColor, navColor, navTextColor } = theme;
     // debugger;
     // const [lastPageLoad, setLastPageLoad] = useState(Date.now());

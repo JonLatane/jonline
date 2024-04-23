@@ -1,6 +1,6 @@
 import { Button, Paragraph, XStack, useTheme } from '@jonline/ui';
 import { useCreationServer, useProvidedDispatch } from 'app/hooks';
-import { getServerTheme } from 'app/store';
+import { useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 
@@ -23,7 +23,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
 
 
   const { mediaSheetOpen, setMediaSheetOpen, isSelecting, isMultiselect, selectedMedia: contextSelectedMedia, setSelectedMedia, setSelecting, setMultiselect } = useMediaContext();
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
 
   const [open, setOpen] = useState(false);
   useEffect(() => {

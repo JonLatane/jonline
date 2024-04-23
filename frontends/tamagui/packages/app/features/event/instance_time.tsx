@@ -1,4 +1,4 @@
-import { FederatedEvent, federateId, getServerTheme } from "app/store";
+import { FederatedEvent, federateId, useServerTheme } from "app/store";
 import React from "react";
 
 import { EventInstance, Group } from "@jonline/api";
@@ -46,8 +46,7 @@ export const InstanceTime: React.FC<Props> = ({
 }) => {
   const { startsAt, endsAt } = instance;
   const { server } = useFederatedAccountOrServer(event);
-  const theme = useTheme();
-  const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = getServerTheme(server, theme);
+  const { primaryColor, primaryAnchorColor, navAnchorColor, textColor, backgroundColor: themeBgColor } = useServerTheme(server);
   const { selectedGroup: group } = useGroupContext();
   const instanceLink = useInstanceLink(event, instance, group);
 

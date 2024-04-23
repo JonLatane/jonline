@@ -1,14 +1,14 @@
-import { FederatedPost, JonlineServer, getCachedServerClient, getServerClient, getServerTheme, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
+import { FederatedPost, JonlineServer, getCachedServerClient, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
 import React, { useEffect } from "react";
 
-import { Button, Paragraph, Spinner, TamaguiMediaState, XStack, YStack, ZStack, useDebounce, useDebounceValue, useToastController } from '@jonline/ui';
-import { Pin, PinOff, Star } from "@tamagui/lucide-icons";
+import { Button, Paragraph, Spinner, XStack, YStack, ZStack, useDebounceValue, useToastController } from '@jonline/ui';
+import { Star } from "@tamagui/lucide-icons";
 
+import { PostContext } from "@jonline/api/index";
 import { useAppSelector } from "app/hooks";
 import { federatedId, parseFederatedId } from 'app/store/federation';
-import { useFederatedDispatch } from '../../hooks/credential_dispatch_hooks';
-import { PostContext } from "@jonline/api/index";
 import moment from "moment";
+import { useFederatedDispatch } from '../../hooks/credential_dispatch_hooks';
 
 interface StarButtonProps {
   post: FederatedPost;

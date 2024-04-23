@@ -1,6 +1,6 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
-import { FederatedGroup, createEvent, createGroupPost, federatedEntity, getServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
+import { FederatedGroup, createEvent, createGroupPost, federatedEntity, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
@@ -119,7 +119,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   }
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { creationServer } = useCreationServer();
-  const { navColor, navTextColor } = getServerTheme(creationServer, useTheme());
+  const { navColor, navTextColor } = useServerTheme(creationServer);
   // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);

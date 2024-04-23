@@ -1,11 +1,11 @@
-import { Button, Heading, Progress, Text, XStack, YStack, isTouchable, isWebTouchable, useTheme, useWindowDimensions } from '@jonline/ui';
+import { Button, Heading, Progress, Text, XStack, YStack, isTouchable, isWebTouchable, useWindowDimensions } from '@jonline/ui';
 import { Upload } from '@tamagui/lucide-icons';
-import { useCreationAccountOrServer, useCurrentAccountOrServer } from 'app/hooks';
-import { getCredentialClient, getServerTheme, serverUrl, useServerTheme } from 'app/store';
+import { useCreationAccountOrServer } from 'app/hooks';
+import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
+import { getCredentialClient, serverUrl, useServerTheme } from 'app/store';
 import React, { useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
 import { resizeImage } from './resize_media';
-import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 
 
 interface MediaUploaderProps {
@@ -18,7 +18,7 @@ interface MediaUploaderProps {
 export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUploading, uploadProgress, setUploadProgress, onMediaUploaded }) => {
   const accountOrServer = useCreationAccountOrServer();
   const { server } = accountOrServer;
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
   const dimensions = useWindowDimensions();
   const [dragging, setDragging] = useState(false);
 

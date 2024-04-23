@@ -1,10 +1,10 @@
-import { FederatedPost, deletePost, federateId, getServerTheme, loadPostReplies, selectPostById, starPost, unstarPost, updatePost } from "app/store";
+import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById, updatePost, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, Visibility } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
-import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Pin, PinOff, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
@@ -12,10 +12,10 @@ import { AuthorInfo } from "./author_info";
 
 import { ShareableToggle, VisibilityPicker } from "app/components";
 import { AccountOrServerContextProvider, useGroupContext } from "app/contexts";
-import { useCurrentAccountOrServer, useAppSelector, useComponentKey, usePinnedAccountsAndServers, useIsVisible, useLocalConfiguration, useMediaUrl, usePostDispatch } from "app/hooks";
-import { federatedEntity, federatedId, serverHost } from 'app/store/federation';
 import { GroupPostManager } from 'app/features/groups/group_post_manager';
 import { ServerNameAndLogo } from "app/features/navigation/server_name_and_logo";
+import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useIsVisible, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers, usePostDispatch } from "app/hooks";
+import { federatedEntity, serverHost } from 'app/store/federation';
 import { postVisibilityDescription } from "./base_create_post_sheet";
 import { PostMediaManager } from "./post_media_manager";
 import { LinkProps, PostMediaRenderer } from "./post_media_renderer";
@@ -82,8 +82,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { selectedGroup } = useGroupContext();
   const isGroupPrimaryServer = useCurrentAccountOrServer().server?.host === selectedGroup?.serverHost;
 
-  const theme = useTheme();
-  const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = getServerTheme(server, theme);
+  const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme(server);
   // const postsStatus = useRootSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {

@@ -1,4 +1,4 @@
-import { FederatedGroup, federateId, getServerTheme } from "app/store";
+import { FederatedGroup, federateId, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 import { View } from "react-native";
 
@@ -39,7 +39,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const mediaQuery = useMedia();
-  const { primaryColor, navColor } = getServerTheme(accountOrServer.server);
+  const { primaryColor, navColor } = useServerTheme(accountOrServer.server);
 
   const currentServer = useCurrentServer();
   const isPrimaryServer = !!currentServer &&

@@ -4,7 +4,7 @@ import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/l
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';
 import { useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering } from 'app/hooks';
-import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, getServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector } from 'app/store';
+import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -135,7 +135,7 @@ export function GroupsSheet({
   const account = primaryEntity ? primaryEntityAccount : groupAccount;
   const server = primaryEntityServer ?? groupServer;
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
   const searchInputRef = React.createRef<TextInput>();
 
   // const [hasOpened, setHasOpened] = useState(false);
@@ -383,7 +383,7 @@ export function GroupsSheetButton({
     (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
   const circular = !selectedGroup && !noGroupSelectedText && !showServerInfo;
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
 
   // const [hasOpened, setHasOpened] = useState(false);
   // useEffect(() => {

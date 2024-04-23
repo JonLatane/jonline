@@ -2,12 +2,12 @@ import { Permission } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
-import { JonlineAccount, accountID, actionSucceeded, getCredentialClient, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
+import { useRequestResult } from "app/hooks/use_request_result";
+import { JonlineAccount, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
-import { useRequestResult } from "app/hooks/use_request_result";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
@@ -96,8 +96,8 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   // const primaryColorMeta = colorMeta(navColor);
   // const navColorMeta = colorMeta(navColor);
 
+  const { primaryColor, primaryTextColor, navColor, navTextColor, primaryAnchorColor, navAnchorColor } = useServerTheme(account.server);
   const theme = useTheme();
-  const { primaryColor, primaryTextColor, navColor, navTextColor, primaryAnchorColor, navAnchorColor } = getServerTheme(account.server, theme);
 
   const backgroundColor = theme.background.val;
   const { luma: themeBgLuma } = colorMeta(backgroundColor);

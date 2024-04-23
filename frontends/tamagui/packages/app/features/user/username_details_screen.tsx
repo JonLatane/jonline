@@ -1,26 +1,26 @@
 import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, isWeb, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle, Calendar as CalendarIcon } from '@tamagui/lucide-icons';
+import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
+import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useCurrentServer, useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
-import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federateId, federatedId, getFederated, getServerTheme, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, parseFederatedId, resetPassword, selectGroupById, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
+import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
+import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import moment from 'moment';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { useAppSelector } from '../../hooks/store_hooks';
 import { EventCard } from '../event/event_card';
+import { useGroupFromPath } from '../groups/group_home_screen';
+import { DynamicCreateButton } from '../home/dynamic_create_button';
+import { EventsFullCalendar } from '../home/events_full_calendar';
 import { PageChooser } from '../home/page_chooser';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
-import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
-import { EventsFullCalendar } from '../home/events_full_calendar';
-import moment from 'moment';
-import { useGroupFromPath } from '../groups/group_home_screen';
-import { DynamicCreateButton } from '../home/dynamic_create_button';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
@@ -53,7 +53,7 @@ export function UsernameDetailsScreen() {
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { showEvents, setShowEvents } = useShowEvents();
 
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = getServerTheme(server);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   const usernameIds = useAppSelector(state => getFederated(state.users.usernameIds, server));
   const userId: string | undefined = useRootSelector((state: RootState) =>
     inputUsername
@@ -149,13 +149,13 @@ export function UsernameDetailsScreen() {
   const userEventIds = useAppSelector(state => userId ? state.users.idEventInstances[userId] : undefined);
   const userEventData: FederatedEvent[] | undefined = useAppSelector(state => {
     return userEventIds?.map(instanceId => {
-          const eventId = state.events.instanceEvents[instanceId];
-          if (!eventId) return undefined;
-          const event = state.events.entities[eventId];
-          if (!event) return undefined;
-          return { ...event, instances: event.instances.filter(i => i.id === instanceId.split('@')[0]) };
-        })
-        ?.filter(e => e !== undefined) as FederatedEvent[] | undefined
+      const eventId = state.events.instanceEvents[instanceId];
+      if (!eventId) return undefined;
+      const event = state.events.entities[eventId];
+      if (!event) return undefined;
+      return { ...event, instances: event.instances.filter(i => i.id === instanceId.split('@')[0]) };
+    })
+      ?.filter(e => e !== undefined) as FederatedEvent[] | undefined
   });
   console.log("UsernameDetailsScreen userEventIds.length", userEventIds?.length, "userEventData.length", userEventData?.length);
 

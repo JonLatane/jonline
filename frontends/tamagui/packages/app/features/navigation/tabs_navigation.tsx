@@ -119,8 +119,13 @@ export function TabsNavigation({
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
-  const { darkMode: systemDark, transparentBackgroundColor } = useServerTheme();
-  const invert = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
+  const { darkMode: systemDark } = useServerTheme();
+  const inverse = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
+
+  const { transparentBackgroundColor } = useServerTheme(currentServer, inverse);
+
+  console.log('TabsNavigation darkMode', systemDark, 'inverse', inverse, 'transparentBackgroundColor', transparentBackgroundColor);
+
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
@@ -183,7 +188,7 @@ export function TabsNavigation({
   //     requestFullscreen();
   //   }
   // }, [mediaQuery.gtXShort]);
-  return <Theme inverse={invert}// key={`tabs-${appSection}-${appSubsection}`}
+  return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
 

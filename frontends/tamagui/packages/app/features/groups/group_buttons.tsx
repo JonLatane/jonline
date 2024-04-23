@@ -1,15 +1,15 @@
 import { Group } from '@jonline/api';
-import { Button, Heading, Image, Paragraph, Separator, Spinner, Text, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Button, Heading, Image, Paragraph, Spinner, Text, XStack, YStack, useMedia } from '@jonline/ui';
 import { Info, Users2 } from '@tamagui/lucide-icons';
-import { useCurrentAccountOrServer, useAppDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl } from 'app/hooks';
-import { FederatedGroup, RootState, federatedId, getServerTheme, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
+import { useGroupContext } from 'app/contexts';
+import { useNavigationContext } from 'app/contexts/navigation_context';
+import { useCurrentAccountOrServer, useFederatedDispatch, useMediaUrl, usePinnedAccountsAndServers } from 'app/hooks';
+import { FederatedGroup, RootState, federatedId, isGroupLocked, joinLeaveGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending, themedButtonBackground } from 'app/utils';
 import React from 'react';
 import { useLink } from 'solito/link';
-import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
-import { useGroupContext } from 'app/contexts';
 import { AppSection } from '../navigation/features_navigation';
-import { useNavigationContext } from 'app/contexts/navigation_context';
+import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
 
 export type GroupButtonProps = {
   group: FederatedGroup;
@@ -63,7 +63,7 @@ export function GroupButton({ group, selected, setOpen, onShowInfo, onGroupSelec
     setOpen(false);
     onPress?.(e);
   }
-  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
+  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
 
   const avatarUrl = useMediaUrl(group.avatar?.id);
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
@@ -223,7 +223,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const { account } = accountOrServer;
   const server = accountOrServer.server;
-  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
+  const { textColor, primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
 
   const joined = passes(group.currentUserMembership?.userModeration)
     && passes(group.currentUserMembership?.groupModeration);

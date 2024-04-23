@@ -1,22 +1,22 @@
 import { Group, Moderation, Permission, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Image, Input, Paragraph, Sheet, TextArea, XStack, YStack, standardAnimation, useToastController } from '@jonline/ui';
 import { PayloadAction } from '@reduxjs/toolkit';
-import { ChevronDown, ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
+import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
 import { EditingContextProvider, PermissionsEditor, PermissionsEditorProps, SaveButtonGroup, TamaguiMarkdown, ToggleRow, VisibilityPicker, useEditableState, useStatefulEditingContext } from 'app/components';
-import { useCurrentAccountOrServer, useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch, useMediaUrl, useCurrentServer } from 'app/hooks';
-import { FederatedGroup, RootState, actionFailed, deleteGroup, federatedId, getServerTheme, updateGroup, useRootSelector, useServerTheme } from 'app/store';
+import { useGroupContext } from 'app/contexts';
+import { useNavigationContext } from 'app/contexts/navigation_context';
+import { useCurrentServer, useFederatedDispatch, useMediaUrl, usePinnedAccountsAndServers } from 'app/hooks';
+import { RootState, actionFailed, deleteGroup, federatedId, updateGroup, useRootSelector, useServerTheme } from 'app/store';
 import { passes, pending } from 'app/utils';
 import React, { useState } from 'react';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
-import { } from '../post/post_card';
+import { AppSection } from '../navigation/features_navigation';
 import { ServerNameAndLogo, splitOnFirstEmoji } from '../navigation/server_name_and_logo';
+import { } from '../post/post_card';
 import { groupVisibilityDescription } from './create_group_sheet';
 import { GroupJoinLeaveButton } from './group_buttons';
-import { useGroupContext } from 'app/contexts';
-import { useNavigationContext } from 'app/contexts/navigation_context';
-import { AppSection } from '../navigation/features_navigation';
 
 
 export const groupUserPermissions = [
@@ -88,7 +88,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
   const editingContext = useStatefulEditingContext(canEditGroup);
   const { editing, setEditing, previewingEdits, setPreviewingEdits, savingEdits, setSavingEdits, deleting, setDeleting } = editingContext;
 
-  const { textColor, navColor, navTextColor, navAnchorColor } = getServerTheme(server);
+  const { textColor, navColor, navTextColor, navAnchorColor } = useServerTheme(server);
 
   const homeLink = useLink({ href: '/' });
 

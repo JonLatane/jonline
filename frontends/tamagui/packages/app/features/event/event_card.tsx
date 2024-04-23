@@ -1,5 +1,5 @@
 import useIsVisibleHorizontal, { useIsVisible } from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, getServerTheme, updateEvent } from "app/store";
+import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, useServerTheme, updateEvent } from "app/store";
 import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post } from "@jonline/api";
@@ -74,7 +74,7 @@ export const EventCard: React.FC<Props> = ({
   const mediaQuery = useMedia();
   const eventPost = federatedEntity(event.post!, server);
 
-  const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = getServerTheme(server);
+  const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = useServerTheme(server);
   const [editing, _setEditing] = useState(false);
   function setEditing(value: boolean) {
     _setEditing(value);

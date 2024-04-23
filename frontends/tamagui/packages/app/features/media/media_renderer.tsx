@@ -1,5 +1,5 @@
 import { useProvidedDispatch } from "app/hooks";
-import { JonlineServer, getServerTheme } from "app/store";
+import { JonlineServer, useServerTheme } from "app/store";
 import React, { useEffect, useState } from 'react';
 
 import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
@@ -27,7 +27,7 @@ export const MediaRenderer: React.FC<Props> = ({
 }) => {
   const { dispatch, accountOrServer } = useProvidedDispatch(serverOverride);
   const server = accountOrServer.server;
-  const { navAnchorColor } = getServerTheme(server);
+  const { navAnchorColor } = useServerTheme(server);
   const mediaQuery = useMedia();
 
   const [hasBeenVisible, setHasBeenVisible] = useState(false);

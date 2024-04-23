@@ -1,12 +1,12 @@
 import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia, useTheme } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
 import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
 import { MediaRef, useGroupContext } from "app/contexts";
-import { useAppDispatch, useCurrentAccountOrServer, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
+import { useAppDispatch, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
 import { useMediaUrl } from "app/hooks/use_media_url";
-import { FederatedUser, RootState, followUnfollowUser, getServerTheme, isUserLocked, respondToFollowRequest, useRootSelector } from "app/store";
+import { FederatedUser, RootState, followUnfollowUser, isUserLocked, respondToFollowRequest, useRootSelector, useServerTheme } from "app/store";
 import { passes, pending } from "app/utils/moderation_utils";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
 import React from "react";
@@ -53,8 +53,8 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
 
   const isAdmin = hasAdminPermission(account?.user);
   const isCurrentUser = account && account?.user?.id == user.id;
-  const theme = useTheme();
-  const { primaryColor, navColor, primaryTextColor, navTextColor, textColor } = getServerTheme(server, theme);
+  // const theme = useTheme();
+  const { primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme(server);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
   const followRequested = user.currentUserFollow && !following;
@@ -62,15 +62,15 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const followRequestReceived = user.targetCurrentUserFollow && !followsCurrentUser;
   const isLocked = useRootSelector((state: RootState) => isUserLocked(state.users, user.id));
   const usernameForLink = isPrimaryServer ? user.username : `${user.username}@${user.serverHost}`;
-  const {selectedGroup} = useGroupContext();
+  const { selectedGroup } = useGroupContext();
   const selectedGroupShortnameForLink = selectedGroup?.serverHost === currentServer?.host
     ? selectedGroup?.shortname
     : `${selectedGroup?.shortname}@${selectedGroup?.serverHost}`;
-  const detailsLink = useLink({ 
-    href: selectedGroup 
-    ? `/g/${selectedGroupShortnameForLink}/m/${usernameForLink}` 
-  : `/${usernameForLink}` 
-});
+  const detailsLink = useLink({
+    href: selectedGroup
+      ? `/g/${selectedGroupShortnameForLink}/m/${usernameForLink}`
+      : `/${usernameForLink}`
+  });
   const fullAvatarHeight = useFullAvatarHeight();
 
   const requiresPermissionToFollow = pending(user.defaultFollowModeration);

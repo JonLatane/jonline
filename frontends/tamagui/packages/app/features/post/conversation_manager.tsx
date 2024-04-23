@@ -2,7 +2,7 @@ import { Post } from '@jonline/api';
 import { AnimatePresence, Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { FederatedPost, RootState, federatedId, getServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
+import { FederatedPost, RootState, federatedId, useServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
 import moment, { Moment } from 'moment';
 import React, { useEffect, useReducer, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -30,7 +30,7 @@ if (isClient) {
 
 export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, disableScrollPreserver, forStarredPost }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
-  const { navColor, navTextColor } = getServerTheme(accountOrServer.server);
+  const { navColor, navTextColor } = useServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const chatUI = app?.discussionChatUI;
@@ -126,7 +126,7 @@ export function useConversationCommentList({
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   // console.log('conversationContext', conversationContext);
   const { replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext!;
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(accountOrServer.server);
   const rootPostId = post ? federatedId(post) : undefined;
   const app = useLocalConfiguration();
   const [loadingRepliesFor, setLoadingRepliesFor] = useState(undefined as string | undefined);

@@ -4,16 +4,15 @@ import { ChevronRight, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { MediaRef, useAccountOrServerContext } from 'app/contexts'
 import { useAppDispatch, useCurrentAccountOrServer } from 'app/hooks'
-import { RootState, actionFailed, getServerTheme, replyToPost, selectPostById, useRootSelector } from 'app/store'
+import { RootState, actionFailed, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
 import { themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { TextInput } from 'react-native'
-import { AuthSheet } from '../accounts/auth_sheet'
+import { AuthSheetButton } from '../accounts/auth_sheet_button'
 import { useHideNavigation } from '../navigation/use_hide_navigation'
 import { scrollToCommentsBottom } from './conversation_manager'
 import { PostMediaManager } from './post_media_manager'
 import { PostMediaRenderer } from './post_media_renderer'
-import { AuthSheetButton } from '../accounts/auth_sheet_button'
 
 interface ReplyAreaProps {
   replyingToPath: string[];
@@ -25,7 +24,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const dispatch = useAppDispatch();
   const currentAccountOrServer = useCurrentAccountOrServer();
   const accountOrServer = useAccountOrServerContext() ?? currentAccountOrServer;
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(accountOrServer.server, useTheme());
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(accountOrServer.server);
   const [media, setMedia] = useState([] as MediaRef[]);
   const [embedLink, setEmbedLink] = useState(false);
 

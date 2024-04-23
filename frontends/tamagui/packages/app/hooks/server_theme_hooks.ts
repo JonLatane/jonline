@@ -1,4 +1,5 @@
 import { useTheme } from "@jonline/ui";
+
 import { JonlineServer } from '../store/types';
 import { useCurrentServer } from './account_or_server/use_current_account_or_server';
 
@@ -27,10 +28,11 @@ export type ServerTheme = {
   warningAnchorColor: string;
   darkMode: boolean;
 }
-export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
-  const server = useCurrentServer();
-  const theme = useTheme();
-  return getServerTheme(specificServer ?? server, theme);
+
+export function useServerTheme(specificServer?: JonlineServer, inverse?: boolean): ServerTheme {
+  const currentServer = useCurrentServer();
+  const theme = useTheme({ inverse });
+  return getServerTheme(specificServer ?? currentServer, theme);
 }
 
 export function getServerTheme(server: JonlineServer | undefined, theme?: any): ServerTheme {

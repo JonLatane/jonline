@@ -2,7 +2,7 @@ import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YSt
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, getServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, useServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
@@ -30,7 +30,7 @@ export function AuthSheetButton({ server: taggedServer, operation, button }: Aut
   const currentServer = useCurrentServer();
   const server = specifiedServer ?? currentServer;
 
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = getServerTheme(server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme(server);
 
   const onPress = () => {
     if (taggedServer) setCreationServer(taggedServer);

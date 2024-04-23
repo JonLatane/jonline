@@ -10,7 +10,8 @@ import BaseDateTimePicker from 'react-datetime-picker';
 import { Label, Text, XStack, isSafari } from '@jonline/ui';
 
 import { Calendar } from '@tamagui/lucide-icons';
-import { useComponentKey, useLocalConfiguration, useServerTheme } from 'app/hooks';
+import { useComponentKey, useLocalConfiguration } from 'app/hooks';
+import { useServerTheme } from 'app/hooks/server_theme_hooks';
 
 
 export const supportDateInput = (m: moment.Moment) => m.local().format('YYYY-MM-DDTHH:mm');
