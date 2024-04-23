@@ -16,6 +16,7 @@ export function resetAccessTokens() {
 }
 export async function getCredentialClient(accountOrServer: AccountOrServer, args?: JonlineClientCreationArgs): Promise<JonlineCredentialClient> {
   const { account: account, server } = accountOrServer;
+  // debugger;
   if (!account) {
     return getServerClient(server!, args);
   } else {
@@ -25,8 +26,25 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
-    // console.log("expired:", expired);
-    if (expired && !account.needsReauthentication) {
+    console.log(server?.host, "token expired:", expired);
+
+    function loadCurrentUser() {
+
+      console.log("loading current user...");
+      // Update the current user asynchronously.
+      client.getCurrentUser({}, { metadata: Metadata({ authorization: updatedAccount.accessToken.token }) }).then(user => {
+        console.log("loaded current user");
+        updatedAccount = { ...updatedAccount, user, lastSyncFailed: false, needsReauthentication: false };
+        store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
+        // debugger;
+      }).catch((e) => {
+        console.error("failed to load current user", updatedAccount.user.username, updatedAccount.accessToken.token, e);
+        updatedAccount = { ...updatedAccount, lastSyncFailed: true, needsReauthentication: true };
+        store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
+        // debugger;
+      });
+    }
+    if (expired) {
       let newAccessToken: ExpirableToken | undefined = undefined;
       let newRefreshToken: ExpirableToken | undefined = undefined;
       console.log("blocking on access token refresh:", _accessFetchLock)
@@ -48,12 +66,20 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
           const accessTokenResult = await client
             .accessToken({ refreshToken: account.refreshToken!.token })
             .then((result) => {
-              updatedAccount = { ...account, lastSyncFailed: false, needsReauthentication: false };
+              updatedAccount = {
+                ...account,
+                accessToken: result.accessToken ?? account.accessToken,
+                refreshToken: result.refreshToken ?? account.refreshToken,
+                lastSyncFailed: false,
+                needsReauthentication: false
+              };
+              // debugger;
               store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
               return result;
             })
-            .catch(() => {
-              console.log("failed to load access token");
+            .catch((e) => {
+              console.log("failed to load access token", e);
+              // debugger;
               updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
               store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
 
@@ -69,21 +95,11 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
           _newAccessToken = newAccessToken;
           newRefreshToken = fetchedRefreshToken!;
           _newRefreshToken = newRefreshToken;
-          updatedAccount = { ...account, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
+          updatedAccount = { ...updatedAccount, accessToken: newAccessToken!, refreshToken: newRefreshToken ?? account.refreshToken! };
           store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
           metadata.append('authorization', account.accessToken.token);
 
-          console.log("loading current user...");
-          // Update the current user asynchronously.
-          client.getCurrentUser({}, { metadata: Metadata({ authorization: account.accessToken.token }) }).then(user => {
-            console.log("loaded current user");
-            updatedAccount = { ...account, user, lastSyncFailed: false, needsReauthentication: false };
-            store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
-          }).catch((e) => {
-            console.error("failed to load current user", account.user.username, account.accessToken.token, e);
-            updatedAccount = { ...account, lastSyncFailed: true, needsReauthentication: true };
-            store.dispatch(accountsSlice.actions.upsertAccount(updatedAccount));
-          });
+          loadCurrentUser();
         } else {
           metadata.append('authorization', account.accessToken.token);
         }
@@ -94,8 +110,12 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
         _accessFetchLock = false;
       }
     } else {
+      if (updatedAccount.lastSyncFailed || updatedAccount.needsReauthentication) {
+        loadCurrentUser();
+      }
       metadata.append('authorization', account.accessToken.token);
     }
+    // debugger;
     // setCookie('jonline_access_token', account.accessToken.token);
     return { ...client, credential: { metadata } };
   }

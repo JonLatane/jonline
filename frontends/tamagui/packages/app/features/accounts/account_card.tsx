@@ -2,7 +2,7 @@ import { Permission } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
-import { JonlineAccount, accountID, actionSucceeded, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
+import { JonlineAccount, accountID, actionSucceeded, getCredentialClient, getServerTheme, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useState } from "react";
 import { TextInput } from "react-native";
@@ -158,6 +158,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
       </YStack>
       <Heading mx='$2' size='$7' color={selected ? navTextColor : undefined}>/</Heading>
     </>
+  function reauth() {
+    getCredentialClient({ account, server: account.server });
+  }
   return <Card theme="dark" size="$4" bordered
     animation='standard'
     // w={250}
@@ -239,32 +242,37 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 </Paragraph>
               </Button>
             </XStack>
-            : <Button mt='$2' mr='auto' h='auto' py='$3' onPress={(e) => {
-              e.stopPropagation();
-              setShowReauthenticate(true);
-              setTimeout(() => passwordRef.current?.focus(), 100);
-            }}>
-              <XStack gap='$2' ai='center'>
-                <ZStack w='$2' h='$2'>
-                  <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
-                    <Check color={navAnchorColor} />
-                  </XStack>
-                  <YStack animation='standard' o={reauthenticationResult ? 0 : 1}>
-                    <AlertCircle color={navAnchorColor} />
-                  </YStack>
-                </ZStack>
-                <ZStack w='$12' h='$2'>
-                  <Paragraph o={reauthenticationResult ? 1 : 0}
-                    size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
-                    Reauthenticated! 👏
-                  </Paragraph>
-                  <Paragraph o={reauthenticationResult ? 0 : 1}
-                    size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
-                    Reauthentication required.
-                  </Paragraph>
-                </ZStack>
-              </XStack>
-            </Button>
+            : <XStack ai='center'>
+              <Button mt='$2' mr='auto' h='auto' py='$3' onPress={(e) => {
+                e.stopPropagation();
+                setShowReauthenticate(true);
+                setTimeout(() => passwordRef.current?.focus(), 100);
+              }}>
+                <XStack gap='$2' ai='center'>
+                  <ZStack w='$2' h='$2'>
+                    <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
+                      <Check color={navAnchorColor} />
+                    </XStack>
+                    <YStack animation='standard' o={reauthenticationResult ? 0 : 1}>
+                      <AlertCircle color={navAnchorColor} />
+                    </YStack>
+                  </ZStack>
+                  <ZStack w='$12' h='$2'>
+                    <Paragraph o={reauthenticationResult ? 1 : 0}
+                      size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
+                      Reauthenticated! 👏
+                    </Paragraph>
+                    <Paragraph o={reauthenticationResult ? 0 : 1}
+                      size='$1' color={primaryAnchorColor} alignSelf="center" my='auto'>
+                      Reauthentication required.
+                    </Paragraph>
+                  </ZStack>
+                </XStack>
+              </Button>
+              <Button onPress={() => reauth()}>
+                <Paragraph size='$1'>Quick Reauth</Paragraph>
+              </Button>
+            </XStack>
           : undefined}
 
       </YStack>
