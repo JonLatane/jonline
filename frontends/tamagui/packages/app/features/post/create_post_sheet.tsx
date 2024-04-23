@@ -1,9 +1,10 @@
 import { Group, Permission, Post } from '@jonline/api';
 import { useCreationDispatch, useCredentialDispatch } from 'app/hooks';
-import { FederatedGroup, createGroupPost, createPost } from 'app/store';
+import { FederatedGroup, FederatedPost, createGroupPost, createPost } from 'app/store';
 import React from 'react';
 import { BaseCreatePostSheet } from './base_create_post_sheet';
 import PostCard from './post_card';
+import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/contexts';
 
 export type CreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -41,7 +42,11 @@ export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps)
   return <BaseCreatePostSheet
     requiredPermissions={[Permission.CREATE_POSTS]}
     {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, button }}
-    preview={(post) => <PostCard post={post} />}
-    feedPreview={(post) => <PostCard post={post} isPreview />}
+    preview={(post) => <AccountOrServerContextProvider value={accountOrServer}>
+      <PostCard post={post} />
+    </AccountOrServerContextProvider>}
+    feedPreview={(post) => <AccountOrServerContextProvider value={accountOrServer}>
+      <PostCard post={post} isPreview />
+    </AccountOrServerContextProvider>}
   />;
 }
