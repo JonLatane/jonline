@@ -2,7 +2,9 @@ import 'react-calendar/dist/Calendar.css';
 import 'react-clock/dist/Clock.css';
 import 'react-datetime-picker/dist/DateTimePicker.css';
 
-import './datetime_picker.css';
+import './css/react-datetime-picker-patches.css';
+import './css/react-big-calendar-patches.css';
+import './css/native-datetime-picker-patches.css';
 
 import moment from 'moment';
 import BaseDateTimePicker from 'react-datetime-picker';

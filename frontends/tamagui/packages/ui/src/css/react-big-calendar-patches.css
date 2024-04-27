@@ -1,0 +1,4 @@
+/* Make the react-big-calendar toolbar better on small screens*/
+.rbc-calendar .rbc-toolbar {
+  flex-direction: row!important;
+}

@@ -1,3 +1,8 @@
+/* Make the react-big-calendar toolbar better on small screens*/
+.rbc-calendar .rbc-toolbar {
+  flex-direction: row!important;
+}
+/* Invert the Chrome <input type="datetime-local" .../>'s calendar icon in dark mode */
 .native-datetime-picker-dark ::-webkit-calendar-picker-indicator {
   filter: invert(1);
   /* margin: 0px;
