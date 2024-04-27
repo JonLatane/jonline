@@ -1,5 +1,6 @@
 export * from './animations';
 export * from 'tamagui';
+export * from '@tamagui/theme';
 export * from '@tamagui/toast';
 export * from './permission_indicator';
 export * from './MyComponent';

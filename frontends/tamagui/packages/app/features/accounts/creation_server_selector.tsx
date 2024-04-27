@@ -111,12 +111,16 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
     </ScrollView>
     {isCurrentServer
       ? undefined :
-      <XStack ai='center' animation='standard' {...reverseHorizontalAnimation} o={0.5} >
-        <Paragraph ml='$2' size='$1'> via</Paragraph>
+      <YStack //ai='flex-end'//'center'
+        animation='standard' {...reverseHorizontalAnimation} o={0.5}
+      >
+        <XStack ml='$2' pl='$1'>
+          <Paragraph pl='$1' size='$1'>via</Paragraph>
+        </XStack>
         <XStack>
           <ServerNameAndLogo server={currentServer} />
         </XStack>
-      </XStack>
+      </YStack>
     }
   </XStack>;
 }

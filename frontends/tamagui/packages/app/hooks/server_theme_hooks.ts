@@ -1,8 +1,11 @@
-import { useTheme } from "@jonline/ui";
+import { useTheme } from '@jonline/ui';
 
+import { LocalAppConfiguration } from 'app/store';
 import { JonlineServer } from '../store/types';
 import { useCurrentServer } from './account_or_server/use_current_account_or_server';
+import { useLocalConfiguration } from './store_hooks';
 
+export type TamaguiTheme = ReturnType<typeof useTheme>
 export type ServerTheme = {
   server?: JonlineServer;
 
@@ -27,15 +30,36 @@ export type ServerTheme = {
 
   warningAnchorColor: string;
   darkMode: boolean;
+
+  inverse: boolean;
 }
 
-export function useServerTheme(specificServer?: JonlineServer, inverse?: boolean): ServerTheme {
+export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
   const currentServer = useCurrentServer();
-  const theme = useTheme({ inverse });
-  return getServerTheme(specificServer ?? currentServer, theme);
+  const configuration = useLocalConfiguration();
+  return getServerTheme(
+    specificServer ?? currentServer,
+    configuration
+  );
 }
 
-export function getServerTheme(server: JonlineServer | undefined, theme?: any): ServerTheme {
+function getServerTheme(
+  server: JonlineServer | undefined,
+  app: LocalAppConfiguration
+): ServerTheme {
+
+  const baseTheme = useTheme();
+  const baseBackgroundColor = baseTheme?.background?.val ?? '#FFFFFF';
+  const { luma: baseThemeBgLuma } = colorMeta(baseBackgroundColor);
+  const systemDark = baseThemeBgLuma <= 0.5;
+  const inverse = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
+
+
+  const theme = useTheme({ inverse });
+  const backgroundColor = theme?.background?.val ?? '#FFFFFF';
+  const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
+  const darkMode = themeBgLuma <= 0.5;
+
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;
 
@@ -53,9 +77,6 @@ export function getServerTheme(server: JonlineServer | undefined, theme?: any): 
   } = colorIntMeta(navColorInt);
 
 
-  const backgroundColor = theme?.background?.val ?? '#FFFFFF';
-  const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
-  const darkMode = themeBgLuma <= 0.5;
   const transparentBackgroundColor = darkMode ? '#000A' : '#FFFA';
   const primaryBgColor = darkMode ? primaryDarkColor : primaryLightColor;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
@@ -79,6 +100,8 @@ export function getServerTheme(server: JonlineServer | undefined, theme?: any): 
     navColor, navTextColor, navDarkColor, navLightColor,
     navBgColor, navAnchorColor,
     transparentBackgroundColor,
+
+    inverse
   };
 }
 

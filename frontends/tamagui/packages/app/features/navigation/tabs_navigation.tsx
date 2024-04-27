@@ -103,6 +103,20 @@ export function TabsNavigation({
       '/'
   });
   const dispatch = useAppDispatch();
+  // Start the push notification service worker
+  // useEffect(() => {
+  //   if ('serviceWorker' in navigator) {
+  //     navigator.serviceWorker
+  //       .register('/service-worker.js', { scope: '/' })
+  //       .then((registration) => {
+  //         console.log('Jonline Web Push /service-worker.js launched with scope', registration.scope);
+  //         // registration.pushManager.subscribe({
+  //         //   userVisibleOnly: true,
+  //         //   applicationServerKey,
+  //         // });
+  //       });
+  //   }
+  // }, []);
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
   const app = useRootSelector((state: RootState) => state.app);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
@@ -119,12 +133,10 @@ export function TabsNavigation({
 
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
-  const { darkMode: systemDark } = useServerTheme();
-  const inverse = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
 
-  const { transparentBackgroundColor } = useServerTheme(currentServer, inverse);
+  const { transparentBackgroundColor, darkMode: systemDark, inverse } = useServerTheme(currentServer);
 
-  console.log('TabsNavigation darkMode', systemDark, 'inverse', inverse, 'transparentBackgroundColor', transparentBackgroundColor);
+  // console.log('TabsNavigation darkMode', systemDark, 'inverse', inverse, 'transparentBackgroundColor', transparentBackgroundColor);
 
   const dark = app.darkModeAuto ? systemDark : app.darkMode;
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';

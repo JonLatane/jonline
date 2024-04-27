@@ -296,7 +296,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
 
                   // defaultDate={new Date()}
                   defaultView={weeklyOnly ? 'week' : undefined}
-                  views={weeklyOnly ? ['week'] : undefined}
+                  views={weeklyOnly ? ['week'] : undefined}//mediaQuery.gtSm ? undefined : ['month', 'week', 'agenda']}
                   formats={{
                     // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
                     timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
@@ -318,15 +318,14 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                   })}
                   scrollToTime={scrollToTime.toDate()}
                   defaultDate={scrollToTime.toDate()}
-                  // scrollToTime={moment(modeStartTime).toDate()}
                   eventPropGetter={(event) => {
                     // console.log('BigCalendar EventPropGetter', event);
                     const serverEventId = parseFederatedId(event.id).id;
                     return {
                       style: {
                         backgroundColor: hasNewEvent && serverEventId
-                        ? `${serverColors[event.serverHost]}33`
-                        : serverColors[event.serverHost],
+                          ? `${serverColors[event.serverHost]}33`
+                          : serverColors[event.serverHost],
                         // opacity: hasNewEvent && !event.id ? 0.5 : 1,
                         color: colorMeta(serverColors[event.serverHost]).textColor,
                         fontSize: mediaQuery.gtXxs ? undefined : '11px'
@@ -431,7 +430,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
           animateOnly={['transform', 'opacity']}
           animation='standard'
           // maw={bigCalWidth}
-          w={Math.min(800,bigCalWidth)}
+          w={Math.min(800, bigCalWidth)}
           mah={borderedScreenHeight}
           enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
           exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}

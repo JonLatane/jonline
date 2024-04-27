@@ -35,6 +35,9 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
   // if (!server) {
   //   debugger;
   // }
+  if (server.host === 'default') {
+    throw 'Server host is default';
+  }
   const serverId = serverID(server);
   const configuredClient = await getConfiguredServerClient(server, args);
   if (!configuredClient) throw "Failed to load client";
