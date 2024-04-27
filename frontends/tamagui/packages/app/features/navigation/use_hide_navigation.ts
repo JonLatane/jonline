@@ -14,50 +14,54 @@ export function useHideNavigation() {
     still: Direction.Still
   })
   const dispatch = useAppDispatch();
-  const { showPinnedServers, autoHideNavigation: autoHideSetting, hideNavigation } = useLocalConfiguration();
-  const forceAutoHide = mediaQuery.xShort;
-  const autoHide = forceAutoHide || autoHideSetting;
+  const { showPinnedServers,
+    autoHideNavigation: autoHideSetting,
+    hideNavigation: hide
+  } = useLocalConfiguration();
+
   const [hideLock, setHideLock] = useState(false);
-  // const [hide, _setHide] = useState(false);
-  // const hideNavigation = hideNavigation;
-  useEffect(() => {
-    if (hideNavigation && !forceAutoHide && !autoHideSetting) {
-      setHide(false);
-      // dispatch(setHideNavigation(false));
-    }
-  }, [hideNavigation, mediaQuery.xShort]);
   function setHide(value: boolean) {
     setHideLock(true);
     dispatch(setHideNavigation(value));
     setTimeout(() => setHideLock(false), 1000);
   }
+
+  const forceAutoHide = mediaQuery.xShort;
+  const autoHide = forceAutoHide || autoHideSetting;
+
+  useEffect(() => {
+    if (hide && !autoHide) {
+      setHide(false);
+    }
+  }, [hide, autoHide]);
+
   const [lastScrollDir, setLastScrollDir] = useState(Direction.Still);
   useEffect(() => {
-    if (!hideLock) {
+    if (autoHide && !hideLock) {
       const atTop = scrollPosition.top === 0;
       const directionChanged = scrollDir !== lastScrollDir
       const isUp = scrollDir === Direction.Up;
       const isDown = scrollDir === Direction.Down;
 
-      if (!hideNavigation && autoHide && isDown && directionChanged) {
+      if (!hide && isDown && directionChanged) {
         setHide(true);
-      } else if (hideNavigation && autoHide && !mediaQuery.xShort && (isUp || atTop)) {
+      } else if (hide && (isUp || atTop)) {
         setHide(false);
       }
     }
     setLastScrollDir(scrollDir);
-  }, [autoHide, scrollDir, lastScrollDir, hideNavigation, hideLock, scrollPosition]);
+  }, [autoHide, scrollDir, lastScrollDir, hide, hideLock, scrollPosition]);
 
-  const hideDebounce = useDebounceValue(hideNavigation, 1000);
+  const hideDebounce = useDebounceValue(hide, 1000);
   useEffect(() => {
     if (hideDebounce && showPinnedServers) {
       dispatch(setShowPinnedServers(false));
     }
-    if (hideDebounce !== hideNavigation) {
+    if (hideDebounce !== hide) {
       dispatch(setHideNavigation(hideDebounce));
     }
   }, [hideDebounce]);
 
 
-  return hideNavigation;
+  return hide;
 }
