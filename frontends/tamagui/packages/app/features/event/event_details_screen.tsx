@@ -1,19 +1,19 @@
 import { EventInstance } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia, useTheme } from '@jonline/ui';
-import { useAppSelector, useFederatedDispatch, useLocalConfiguration, useCurrentServer } from 'app/hooks';
-import { RootState, federateId, federatedId, useServerTheme, loadEventByInstance, parseFederatedId, selectEventById, selectGroupById, selectPostById, serverID, useRootSelector } from 'app/store';
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardHorizontalAnimation, useMedia } from '@jonline/ui';
+import { ListEnd } from '@tamagui/lucide-icons';
+import { AccountOrServerContextProvider } from 'app/contexts';
+import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
+import { federateId, loadEventByInstance, parseFederatedId, selectEventById, selectPostById, serverID, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
+import { useGroupFromPath } from '../groups/group_home_screen';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { ConversationContextProvider, ConversationManager, scrollToCommentsBottom, usePostInteractionType, useStatefulConversationContext } from '../post';
 import { ReplyArea } from '../post/reply_area';
 import { RsvpMode } from './event_rsvp_manager';
-import { AccountOrServerContextProvider } from 'app/contexts';
-import { ListEnd } from '@tamagui/lucide-icons';
-import { useGroupFromPath } from '../groups/group_home_screen';
 
 const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortname: string | undefined }>()
 
@@ -22,7 +22,6 @@ const { useParam, useUpdateParams } = createParam<{ instanceId: string, shortnam
 export function EventDetailsScreen() {
   const mediaQuery = useMedia();
   const [pathInstanceId] = useParam('instanceId');
-  const [pathShortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
   const updateParams = useUpdateParams();
 
@@ -37,7 +36,7 @@ export function EventDetailsScreen() {
   const { textColor, backgroundColor, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
   // console.log('EventDetailsScreen', textColor);
   const app = useLocalConfiguration();
-  const group = useGroupFromPath(pathShortname);
+  const { group, pathShortname } = useGroupFromPath();
 
   const eventsState = useAppSelector((state) => state.events);
   const postsState = useAppSelector((state) => state.posts);
@@ -147,7 +146,7 @@ export function EventDetailsScreen() {
   const chatUI = app?.discussionChatUI;
 
   return (
-    <TabsNavigation appSection={AppSection.EVENTS} 
+    <TabsNavigation appSection={AppSection.EVENTS}
       selectedGroup={group}
       primaryEntity={subjectPost ?? { serverHost: serverHost ?? currentServer?.host }}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/e/${pathInstanceId}`}

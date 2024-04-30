@@ -10,7 +10,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { createFederated, Federated, federatedEntities, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, serverHost, setFederated, toFederatedId } from '../federation';
+import { createFederated, Federated, federatedEntities, federatedEntity, FederatedEntity, federatedId, federatedPayload, federateId, getFederated, parseFederatedId, serverHost, setFederated, toFederatedId } from '../federation';
 import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, PaginatedIds } from "../pagination";
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
@@ -102,7 +102,7 @@ export const groupsSlice = createSlice({
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
       const federatedGroupId = federatedId(group);
-      state.shortnameIds[federatedShortname(group)] = federatedGroupId;
+      state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedGroupId;
       const pages = getFederated(state.pages, action) ?? {};
       if (pages[GroupListingType.ALL_GROUPS]?.[0]) {
         pages[GroupListingType.ALL_GROUPS][0] = [federatedGroupId, ...pages[GroupListingType.ALL_GROUPS][0]];
@@ -116,7 +116,7 @@ export const groupsSlice = createSlice({
       const group = federatedPayload(action);
       const federatedGroupId = federatedId(group);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[federatedShortname(group)] = federatedGroupId;
+      state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedGroupId;
       setTimeout(() => {
         store.dispatch(markGroupVisit({ group }));
       }, 1);
@@ -142,7 +142,7 @@ export const groupsSlice = createSlice({
       setFederated(state.pagesStatus, action, "loaded");
       const groups = federatedEntities(action.payload.groups, action);
       groupsAdapter.upsertMany(state, groups);
-      groups.forEach(group => state.shortnameIds[federatedShortname(group)] = federatedId(group));
+      groups.forEach(group => state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedId(group));
 
       const page = action.meta.arg.page || 0;
       const listingType = action.meta.arg.listingType ?? defaultGroupListingType;
@@ -219,12 +219,14 @@ export const groupsSlice = createSlice({
     builder.addCase(loadGroup.fulfilled, (state, action) => {
       const group = federatedPayload(action);
       groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[federatedShortname(group)] = federatedId(group);
+      state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedId(group);
     });
     builder.addCase(loadGroupByShortname.fulfilled, (state, action) => {
-      const group = federatedPayload(action);
-      groupsAdapter.upsertOne(state, group);
-      state.shortnameIds[federatedShortname(group)] = federatedId(group);
+      action.payload.forEach(serverGroup => {
+        const group = federatedEntity(serverGroup, action);
+        groupsAdapter.upsertOne(state, group);
+        state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedId(group);  
+      });
     });
     builder.addCase(joinLeaveGroup.pending, (state, action) => {
       lockGroup(state, federateId(parseFederatedId(action.meta.arg.groupId).id, action));

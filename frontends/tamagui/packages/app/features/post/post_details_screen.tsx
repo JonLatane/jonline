@@ -51,9 +51,8 @@ export function PostDetailsScreen() {
   const server = accountOrServer.server;
   // console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
 
-  const [pathShortname] = useParam('shortname');
   const [interactionType, setInteractionType] = usePostInteractionType();
-  const group = useGroupFromPath(pathShortname);
+  const { group, pathShortname } = useGroupFromPath();
 
   const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
   const app = useLocalConfiguration();

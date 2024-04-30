@@ -25,22 +25,9 @@ import { UserCard, useFullAvatarHeight } from './user_card';
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
 
-export function usePathShortname() {
-  let pathShortname: string | undefined;
-  try {
-    [pathShortname] = useShortnameParam('shortname');
-  } catch (e) {
-    console.error(e);
-    pathShortname = undefined;
-  }
-  return pathShortname;
-}
-
 export function UsernameDetailsScreen() {
   const mediaQuery = useMedia();
-  const pathShortname = usePathShortname();
-  // const [pathShortname] = useShortnameParam('shortname');
-  const group = useGroupFromPath(pathShortname);
+  const { group, pathShortname } = useGroupFromPath();
 
   const [pathUsername] = useParam('username');
   const [inputUsername, inputServerHost] = (pathUsername ?? '').split('@');

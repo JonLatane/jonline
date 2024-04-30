@@ -268,8 +268,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       }
     // bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" mt={bigCalendar ? 0 : '$3'}
-        mb={bigCalendar && mediaQuery.xShort ? '$5' : 0}
+      <YStack f={1} w='100%' jc="center" ai="center"
+        mt={bigCalendar ? mediaQuery.xShort ? '$15' : 0 : '$3'}
+        mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
+        // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         px='$3'
         maw={maxWidth}>
         <FlipMove style={{ width: '100%' }}>

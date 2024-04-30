@@ -85,7 +85,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   pageSize: number,
   args?: {
     itemIdResolver?: (item: FederatedEntity<T>) => string;
-    pageParamHook?: typeof useEventPageParam | typeof usePageParam;
+    pageParamHook?: typeof usePageParam;
   }
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);

@@ -17,14 +17,19 @@ interface Props {
 
 const recommendedServerCache = new Map<string, any>();
 
-export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit = false, tiny = false, pinAfterAdding = false }) => {
-  const dispatch = useAppDispatch();
+export type JonlineServerInfo = {
+  existingServer: JonlineServer | undefined;
+  pendingServer: JonlineServer | undefined;
+  prototypeServer: JonlineServer;
+}
+export function useJonlineServerInfo(host: string): JonlineServerInfo {
   const existingServer = useRootSelector(
     (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host);
   const prototypeServer: JonlineServer = {
     host,
     secure: true,
   };
+
   const [pendingServer, setPendingServer] = React.useState(existingServer);
   const [loadingPendingServer, setLoadingPendingServer] = React.useState(false);
   const [loadedPendingServer, setLoadedPendingServer] = React.useState(false);
@@ -51,7 +56,13 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
     }
   }, [existingServer === undefined, pendingServer === undefined, loadingPendingServer, loadedPendingServer]);
 
+  return { existingServer, pendingServer, prototypeServer };
+}
+export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit = false, tiny = false, pinAfterAdding = false }) => {
+  const dispatch = useAppDispatch();
   const [addingServer, setAddingServer] = React.useState(false);
+
+  const { existingServer, pendingServer, prototypeServer } = useJonlineServerInfo(host);
 
   const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {
