@@ -69,11 +69,14 @@ function useGroupFromShortname(inputShortname: string | undefined): GroupFromPat
   useEffect(() => {
     if (shortname && !group && !loading && !hasLoadedByShortname && !!accountOrServer.server) {
       setLoading(true);
-      dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
-        .then(() => {
-          setHasLoadedByShortname(true);
-          setLoading(false);
-        });
+      // TODO: this is a grosssssss hack
+      setTimeout(() => {
+        dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
+          .then(() => {
+            setHasLoadedByShortname(true);
+            setLoading(false);
+          });
+      }, 300);
     }
   }, [shortname, loading, group, !!accountOrServer.server]);
 
@@ -115,12 +118,12 @@ export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComp
           Please check the URL and try again.
         </Paragraph>
         : <>
-        <XStack my='$5'>
-          <Spinner my='auto' size='large' color={navColor} scale={2} />
-        </XStack>
-        <Paragraph color={navAnchorColor}>
-          Loading group "{pathShortname}..."
-        </Paragraph>
+          <XStack my='$5'>
+            <Spinner my='auto' size='large' color={navColor} scale={2} />
+          </XStack>
+          <Paragraph color={navAnchorColor}>
+            Loading group "{pathShortname}..."
+          </Paragraph>
         </>}
 
     </YStack>
