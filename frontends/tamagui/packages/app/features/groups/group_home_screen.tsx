@@ -69,16 +69,13 @@ function useGroupFromShortname(inputShortname: string | undefined): GroupFromPat
   useEffect(() => {
     if (shortname && !group && !loading && !hasLoadedByShortname && !!accountOrServer.server) {
       setLoading(true);
-      // TODO: this is a grosssssss hack
-      setTimeout(() => {
-        dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
-          .then(() => {
-            setHasLoadedByShortname(true);
-            setLoading(false);
-          });
-      }, 300);
+      dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
+        .then(() => {
+          setHasLoadedByShortname(true);
+          setLoading(false);
+        });
     }
-  }, [shortname, loading, group, !!accountOrServer.server]);
+  }, [shortname, loading, group, hasLoadedByShortname, !!accountOrServer.server]);
 
   return { group, loading, failedToLoad: !group && hasLoadedByShortname, pathShortname: inputShortname, serverHost };
 }
