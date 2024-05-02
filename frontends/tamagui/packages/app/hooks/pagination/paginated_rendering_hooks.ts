@@ -1,4 +1,4 @@
-import { FederatedEntity, HasIdFromServer } from "app/store";
+import { FederatedEntity, HasIdFromServer, federatedId } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { createParam } from "solito";
 import { onPageLoaded } from './pagination_hooks';
@@ -139,7 +139,12 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     }
 
     return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
-  }, [dataSet.length, pageSize, page, loadingPage]);
+  }, [
+    dataSet.map(federatedId).join(),
+    pageSize,
+    page,
+    loadingPage
+  ]);
 
   return result;
 }
