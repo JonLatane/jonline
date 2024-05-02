@@ -1,5 +1,5 @@
 import { FederatedEntity, HasIdFromServer } from "app/store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createParam } from "solito";
 import { onPageLoaded } from './pagination_hooks';
 
@@ -90,55 +90,58 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
   const [page, setPage] = args?.pageParamHook?.() ?? usePageParam();
-
-  const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
-  const upperBoundPage = page + 1;
-  const results = dataSet.slice(lowerBoundPage * pageSize, upperBoundPage * pageSize);
-  const hasNextPage = dataSet.length > upperBoundPage * pageSize;
-
   const [loadingPage, setLoadingPage] = useState(false);
-
-  const lastItem = results[results.length - 1];
-  const onPageLoaded = args?.itemIdResolver && lastItem
-    ? (page: number) => setTimeout(
-      () => document.getElementById(args.itemIdResolver!(lastItem))
-        ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
-      3000
-    ) : undefined;
-
-  const reset = () => {
-    if (loadingPage) return;
-    if (results.length === 0) return;
-
-    setLoadingPage(true);
-    const startPage = 0;
-    setPage(startPage);
-    setTimeout(() => setLoadingPage(false), 1000);
-  };
-
-  function loadNextPage() {
-    if (loadingPage) return;
-    setLoadingPage(true);
-    const targetPage = page + 1;
-    const maxPage = Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1));
-    if (targetPage < maxPage) {
-      setPage(maxPage);
-      onPageLoaded?.(maxPage);
-    } else {
-      setPage(targetPage);
-      onPageLoaded?.(targetPage);
-    }
-    setTimeout(() => setLoadingPage(false), 1000);
-  }
 
   useEffect(() => {
     // if (page >= pageCount && !loadingPage) {
     //   setPage(Math.max(0, pageCount - 1));
     // }
   },
-  [page, pageCount, loadingPage]);
+    [page, pageCount, loadingPage]);
 
-  return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
+  const result = useMemo(() => {
+    const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
+    const upperBoundPage = page + 1;
+    const results = dataSet.slice(lowerBoundPage * pageSize, upperBoundPage * pageSize);
+    const hasNextPage = dataSet.length > upperBoundPage * pageSize;
+
+    const lastItem = results[results.length - 1];
+    const onPageLoaded = args?.itemIdResolver && lastItem
+      ? (page: number) => setTimeout(
+        () => document.getElementById(args.itemIdResolver!(lastItem))
+          ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+        3000
+      ) : undefined;
+
+    const reset = () => {
+      if (loadingPage) return;
+      if (results.length === 0) return;
+
+      setLoadingPage(true);
+      const startPage = 0;
+      setPage(startPage);
+      setTimeout(() => setLoadingPage(false), 1000);
+    };
+
+    function loadNextPage() {
+      if (loadingPage) return;
+      setLoadingPage(true);
+      const targetPage = page + 1;
+      const maxPage = Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1));
+      if (targetPage < maxPage) {
+        setPage(maxPage);
+        onPageLoaded?.(maxPage);
+      } else {
+        setPage(targetPage);
+        onPageLoaded?.(targetPage);
+      }
+      setTimeout(() => setLoadingPage(false), 1000);
+    }
+
+    return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
+  }, [dataSet.length, pageSize, page, loadingPage]);
+
+  return result;
 }
 
 // export function useLoadablePaginatedRendering<T extends HasIdFromServer>(

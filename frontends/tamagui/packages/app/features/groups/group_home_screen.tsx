@@ -65,10 +65,14 @@ function useGroupFromShortname(inputShortname: string | undefined): GroupFromPat
   const [loading, setLoading] = useState(false);
 
   const [hasLoadedByShortname, setHasLoadedByShortname] = useState(false);
-  useEffect(() => setHasLoadedByShortname(false), [shortname, serverHost]);
+  useEffect(
+    () => setHasLoadedByShortname(false),
+    [shortname, serverHost, accountOrServer?.account?.user?.id]
+  );
   useEffect(() => {
     if (shortname && !group && !loading && !hasLoadedByShortname && !!accountOrServer.server) {
       setLoading(true);
+      // console.log("loading group data from server ", accountOrServer.server.host)
       dispatch(loadGroupByShortname({ shortname, ...accountOrServer }))
         .then(() => {
           setHasLoadedByShortname(true);
@@ -77,7 +81,12 @@ function useGroupFromShortname(inputShortname: string | undefined): GroupFromPat
     }
   }, [shortname, loading, group, hasLoadedByShortname, !!accountOrServer.server]);
 
-  return { group, loading, failedToLoad: !group && hasLoadedByShortname, pathShortname: inputShortname, serverHost };
+  return {
+    group,
+    loading,
+    failedToLoad: !group && hasLoadedByShortname,
+    pathShortname: inputShortname, serverHost
+  };
 }
 
 export const BaseGroupHomeScreen: React.FC<GroupHomeScreenProps> = ({ screenComponent }: GroupHomeScreenProps) => {

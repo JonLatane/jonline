@@ -15,6 +15,7 @@ import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from './events_full_calendar';
 import { PageChooser } from './page_chooser';
+import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -65,8 +66,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const paginatedPosts = postPagination.results;
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
-  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
-  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  const timeFilter: TimeFilter = useUpcomingEventsFilter();
 
   // Only load the first page of events on this screen.
   const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =

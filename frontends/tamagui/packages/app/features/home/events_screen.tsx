@@ -23,6 +23,7 @@ import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from "./events_full_calendar";
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
+import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -55,7 +56,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   useEffect(() => {
     updateParams({ search: debouncedSearchText }, { web: { replace: true } });
   }, [debouncedSearchText])
-  const endsAfter = queryEndsAfter ?? moment(pageLoadTime).toISOString(true);
   // useEffect(() => {
   //   if (!queryEndsAfter) {
   //     setQueryEndsAfter(moment(pageLoadTime).toISOString(true));
@@ -63,7 +63,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   // }, [endsAfter]);
 
 
-  const displayMode: EventDisplayMode = queryEndsAfter === undefined
+  const upcomingTimeFilter: TimeFilter = useUpcomingEventsFilter();
+  const upcomingEndsAfter = moment(upcomingTimeFilter.endsAfter).toISOString(false);
+
+
+  const endsAfter = queryEndsAfter ?? upcomingEndsAfter;
+  const displayMode: EventDisplayMode = queryEndsAfter === undefined || queryEndsAfter == upcomingEndsAfter
     ? 'upcoming'
     : moment(queryEndsAfter).unix() === 0 && querySearch === undefined
       ? 'all'
@@ -73,7 +78,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     switch (mode) {
       case 'upcoming':
         updateParams({
-          endsAfter: undefined,
+          endsAfter: upcomingEndsAfter,
           search: undefined
         });
         break;
@@ -114,8 +119,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
+  const allEventsWithNonBigCalendarUpcomingFilter = displayMode === 'upcoming' &&  !bigCalendar
+    ? allEventsUnfiltered.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+    : allEventsUnfiltered
+
   const allEvents = useMemo(
-    () => allEventsUnfiltered?.filter((e) =>
+    () => allEventsWithNonBigCalendarUpcomingFilter?.filter((e) =>
       displayMode === 'filtered'
         ? !debouncedSearchText
         || e.post?.title?.toLowerCase().includes(debouncedSearchText)

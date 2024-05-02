@@ -15,6 +15,7 @@ import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, d
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 import { resetUserEvents, resetUsers } from "./users_state";
+import { toProtoISOString } from "@jonline/ui/src";
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
@@ -33,6 +34,7 @@ export interface EventsState {
   postEvents: Dictionary<string>;
   // Maps Post IDs to EventInstance IDs.
   postInstances: Dictionary<string>;
+  upcomingEventsTimeFilter?: TimeFilter;
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
@@ -82,6 +84,16 @@ export const eventsSlice = createSlice({
       delete state.eventInstancePages.values[action.payload.serverHost];
       delete state.pagesStatus.values[action.payload.serverHost];
     },
+    setUpcomingEventsTimeFilter: (state, action: PayloadAction<{ timeFilter: TimeFilter }>) => {
+      state.upcomingEventsTimeFilter = action.payload.timeFilter;
+      // if (!state.upcomingEventsTimeFilter) {
+      //   const pageLoadTime = moment(Date.now()).toISOString(true);
+      //   const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+      //   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+      //   state.upcomingEventsTimeFilter = timeFilter;
+      // }
+      // return state.upcomingEventsTimeFilter;
+    }
   },
   extraReducers: (builder) => {
     builder.addCase(createEvent.fulfilled, (state, action) => {
@@ -204,7 +216,7 @@ const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
 
-export const { removeEvent, resetEvents } = eventsSlice.actions;
+export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;
