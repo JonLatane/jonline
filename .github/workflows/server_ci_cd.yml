@@ -459,8 +459,9 @@ jobs:
     needs: 
       - deploy_jonlineio_server
       - deploy_jonlineio_preview_generator
-      # - push_server
-      # - push_preview_generator
+      - push_server
+      - push_preview_generator
+      - test_consistency
       - test_rust_binaries
       - test_flutter_ui
       - test_tamagui_ui
