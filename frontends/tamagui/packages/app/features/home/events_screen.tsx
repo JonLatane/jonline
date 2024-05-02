@@ -119,7 +119,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-  const allEventsWithNonBigCalendarUpcomingFilter = displayMode === 'upcoming' &&  !bigCalendar
+  const allEventsWithNonBigCalendarUpcomingFilter = displayMode === 'upcoming' && !bigCalendar
     ? allEventsUnfiltered.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
     : allEventsUnfiltered
 
@@ -215,6 +215,68 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
   const starredPostIds = useAppSelector(state => state.app.starredPostIds);
 
+  const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
+  const filterBarFlex = oneLineFilterBar ? { f: 1 } : { w: '100%' };
+
+  const searchFilterBar =
+    <YStack {...filterBarFlex} px='$2' py='$2' key='search-toolbar'>
+      <XStack w='100%' ai='center' gap='$2' mx='$2'>
+        <Input placeholder='Search'
+          f={1}
+          value={searchText}
+          onChange={(e) => setSearchText(e.nativeEvent.text)} />
+        <XStack position='absolute' right={55}
+          pointerEvents="none"
+          animation='standard'
+          o={searchText !== debouncedSearchText ? 1 : 0}
+        >
+          <Spinner />
+        </XStack>
+        <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
+      </XStack>
+    </YStack>;
+  const endsAfterFilterBar =
+    <XStack key='endsAfterFilter' pb={oneLineFilterBar ? undefined : '$2'}  {...filterBarFlex} flexWrap={oneLineFilterBar ? undefined : 'wrap'} maw={800} px='$2' mx='auto' ai='center'
+      animation='standard' {...standardAnimation}>
+      <Heading size='$3' mb='$3' my='auto'>Ends After</Heading>
+      <XStack ml='auto' my='auto'>
+        <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
+      </XStack>
+    </XStack>;
+  const filterBar = <>
+    {searchFilterBar}
+    {endsAfterFilterBar}
+  </>;
+  const responsiveFilterBar = oneLineFilterBar
+    ? <XStack w='100%' ai='center'>
+      {filterBar}
+    </XStack>
+    : filterBar;
+  const topChrome = <YStack w='100%' px='$2' key='filter-toolbar'>
+    <XStack w='100%' ai='center'>
+      <Button onPress={() => setBigCalendar(!bigCalendar)}
+        icon={CalendarIcon}
+        transparent
+        {...themedButtonBackground(
+          bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
+
+      {displayModeButton('upcoming', 'Upcoming')}
+      {displayModeButton('all', 'All')}
+      {displayModeButton('filtered', 'Filtered')}
+
+      <DynamicCreateButton showEvents
+        button={(onPress) =>
+          <Button onPress={onPress}
+            icon={CalendarPlus}
+            transparent
+            {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
+    </XStack>
+    <AnimatePresence>
+      {displayMode === 'filtered'
+        ? responsiveFilterBar
+        : undefined}
+    </AnimatePresence>
+  </YStack>;
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -224,57 +286,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       withServerPinning
       showShrinkPreviews={!bigCalendar}
       loading={loadingEvents}
-      topChrome={
-        <YStack w='100%' px='$2' key='filter-toolbar'>
-          <XStack w='100%' ai='center'>
-            <Button onPress={() => setBigCalendar(!bigCalendar)}
-              icon={CalendarIcon}
-              transparent
-              {...themedButtonBackground(
-                bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
-
-            {displayModeButton('upcoming', 'Upcoming')}
-            {displayModeButton('all', 'All')}
-            {displayModeButton('filtered', 'Filtered')}
-
-            <DynamicCreateButton showEvents
-              button={(onPress) =>
-                <Button onPress={onPress}
-                  icon={CalendarPlus}
-                  transparent
-                  {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
-          </XStack>
-          <AnimatePresence>
-            {displayMode === 'filtered' ?
-              <>
-                <YStack w='100%' px='$2' py='$2' key='search-toolbar'>
-                  <XStack w='100%' ai='center' gap='$2' mx='$2'>
-                    <Input placeholder='Search'
-                      f={1}
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.nativeEvent.text)} />
-                    <XStack position='absolute' right={55}
-                      pointerEvents="none"
-                      animation='standard'
-                      o={searchText !== debouncedSearchText ? 1 : 0}
-                    >
-                      <Spinner />
-                    </XStack>
-                    <Button circular disabled={searchText.length === 0} o={searchText.length === 0 ? 0.5 : 1} icon={XIcon} size='$2' onPress={() => setSearchText('')} mr='$2' />
-                  </XStack>
-                </YStack>
-                <XStack key='endsAfterFilter' pb='$2' w='100%' flexWrap='wrap' maw={800} px='$2' mx='auto' ai='center'
-                  animation='standard' {...standardAnimation}>
-                  <Heading size='$5' mb='$3' my='auto'>Ends After</Heading>
-                  <XStack ml='auto' my='auto'>
-                    <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
-                  </XStack>
-                </XStack>
-              </>
-              : undefined}
-          </AnimatePresence>
-        </YStack>
-      }
+      topChrome={topChrome}
     // bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showEvents />}
     >
       <YStack f={1} w='100%' jc="center" ai="center"
