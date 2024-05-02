@@ -667,7 +667,7 @@ export const GetGroupsResponse = {
     for (const v of message.groups) {
       Group.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       writer.uint32(16).bool(message.hasNextPage);
     }
     return writer;
@@ -715,7 +715,7 @@ export const GetGroupsResponse = {
     if (message.groups?.length) {
       obj.groups = message.groups.map((e) => Group.toJSON(e));
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       obj.hasNextPage = message.hasNextPage;
     }
     return obj;
@@ -921,7 +921,7 @@ export const GetMembersResponse = {
     for (const v of message.members) {
       Member.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       writer.uint32(16).bool(message.hasNextPage);
     }
     return writer;
@@ -969,7 +969,7 @@ export const GetMembersResponse = {
     if (message.members?.length) {
       obj.members = message.members.map((e) => Member.toJSON(e));
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       obj.hasNextPage = message.hasNextPage;
     }
     return obj;

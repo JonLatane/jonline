@@ -148,10 +148,10 @@ export const Media = {
     if (message.moderation !== 0) {
       writer.uint32(56).int32(message.moderation);
     }
-    if (message.generated === true) {
+    if (message.generated !== false) {
       writer.uint32(64).bool(message.generated);
     }
-    if (message.processed === true) {
+    if (message.processed !== false) {
       writer.uint32(72).bool(message.processed);
     }
     if (message.createdAt !== undefined) {
@@ -295,10 +295,10 @@ export const Media = {
     if (message.moderation !== 0) {
       obj.moderation = moderationToJSON(message.moderation);
     }
-    if (message.generated === true) {
+    if (message.generated !== false) {
       obj.generated = message.generated;
     }
-    if (message.processed === true) {
+    if (message.processed !== false) {
       obj.processed = message.processed;
     }
     if (message.createdAt !== undefined) {
@@ -345,7 +345,7 @@ export const MediaReference = {
     if (message.name !== undefined) {
       writer.uint32(26).string(message.name);
     }
-    if (message.generated === true) {
+    if (message.generated !== false) {
       writer.uint32(32).bool(message.generated);
     }
     return writer;
@@ -415,7 +415,7 @@ export const MediaReference = {
     if (message.name !== undefined) {
       obj.name = message.name;
     }
-    if (message.generated === true) {
+    if (message.generated !== false) {
       obj.generated = message.generated;
     }
     return obj;
@@ -532,7 +532,7 @@ export const GetMediaResponse = {
     for (const v of message.media) {
       Media.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       writer.uint32(16).bool(message.hasNextPage);
     }
     return writer;
@@ -580,7 +580,7 @@ export const GetMediaResponse = {
     if (message.media?.length) {
       obj.media = message.media.map((e) => Media.toJSON(e));
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       obj.hasNextPage = message.hasNextPage;
     }
     return obj;

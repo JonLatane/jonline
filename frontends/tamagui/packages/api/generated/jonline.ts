@@ -311,7 +311,7 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
-    /** Get Members (User+Membership) of a Group. *Authenticated.* */
+    /** Get Members (User+Membership) of a Group. *Publicly accessible **or** Authenticated.* */
     getMembers: {
       name: "GetMembers",
       requestType: GetMembersRequest,
@@ -631,7 +631,7 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
    * Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
    */
   deleteGroup(request: Group, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
-  /** Get Members (User+Membership) of a Group. *Authenticated.* */
+  /** Get Members (User+Membership) of a Group. *Publicly accessible **or** Authenticated.* */
   getMembers(
     request: GetMembersRequest,
     context: CallContext & CallContextExt,
@@ -797,7 +797,7 @@ export interface JonlineClient<CallOptionsExt = {}> {
    * Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
    */
   deleteGroup(request: DeepPartial<Group>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
-  /** Get Members (User+Membership) of a Group. *Authenticated.* */
+  /** Get Members (User+Membership) of a Group. *Publicly accessible **or** Authenticated.* */
   getMembers(
     request: DeepPartial<GetMembersRequest>,
     options?: CallOptions & CallOptionsExt,

@@ -654,13 +654,13 @@ export const Post = {
     for (const v of message.media) {
       MediaReference.encode(v!, writer.uint32(82).fork()).ldelim();
     }
-    if (message.mediaGenerated === true) {
+    if (message.mediaGenerated !== false) {
       writer.uint32(88).bool(message.mediaGenerated);
     }
-    if (message.embedLink === true) {
+    if (message.embedLink !== false) {
       writer.uint32(96).bool(message.embedLink);
     }
-    if (message.shareable === true) {
+    if (message.shareable !== false) {
       writer.uint32(104).bool(message.shareable);
     }
     if (message.context !== 0) {
@@ -935,13 +935,13 @@ export const Post = {
     if (message.media?.length) {
       obj.media = message.media.map((e) => MediaReference.toJSON(e));
     }
-    if (message.mediaGenerated === true) {
+    if (message.mediaGenerated !== false) {
       obj.mediaGenerated = message.mediaGenerated;
     }
-    if (message.embedLink === true) {
+    if (message.embedLink !== false) {
       obj.embedLink = message.embedLink;
     }
-    if (message.shareable === true) {
+    if (message.shareable !== false) {
       obj.shareable = message.shareable;
     }
     if (message.context !== 0) {

@@ -798,7 +798,7 @@ export const ExternalCDNConfig = {
     if (message.backendHost !== "") {
       writer.uint32(18).string(message.backendHost);
     }
-    if (message.secureMedia === true) {
+    if (message.secureMedia !== false) {
       writer.uint32(24).bool(message.secureMedia);
     }
     if (message.mediaIpv4Allowlist !== undefined) {
@@ -807,7 +807,7 @@ export const ExternalCDNConfig = {
     if (message.mediaIpv6Allowlist !== undefined) {
       writer.uint32(42).string(message.mediaIpv6Allowlist);
     }
-    if (message.cdnGrpc === true) {
+    if (message.cdnGrpc !== false) {
       writer.uint32(48).bool(message.cdnGrpc);
     }
     return writer;
@@ -890,7 +890,7 @@ export const ExternalCDNConfig = {
     if (message.backendHost !== "") {
       obj.backendHost = message.backendHost;
     }
-    if (message.secureMedia === true) {
+    if (message.secureMedia !== false) {
       obj.secureMedia = message.secureMedia;
     }
     if (message.mediaIpv4Allowlist !== undefined) {
@@ -899,7 +899,7 @@ export const ExternalCDNConfig = {
     if (message.mediaIpv6Allowlist !== undefined) {
       obj.mediaIpv6Allowlist = message.mediaIpv6Allowlist;
     }
-    if (message.cdnGrpc === true) {
+    if (message.cdnGrpc !== false) {
       obj.cdnGrpc = message.cdnGrpc;
     }
     return obj;
@@ -926,7 +926,7 @@ function createBaseFeatureSettings(): FeatureSettings {
 
 export const FeatureSettings = {
   encode(message: FeatureSettings, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.visible === true) {
+    if (message.visible !== false) {
       writer.uint32(8).bool(message.visible);
     }
     if (message.defaultModeration !== 0) {
@@ -996,7 +996,7 @@ export const FeatureSettings = {
 
   toJSON(message: FeatureSettings): unknown {
     const obj: any = {};
-    if (message.visible === true) {
+    if (message.visible !== false) {
       obj.visible = message.visible;
     }
     if (message.defaultModeration !== 0) {
@@ -1036,7 +1036,7 @@ function createBasePostSettings(): PostSettings {
 
 export const PostSettings = {
   encode(message: PostSettings, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.visible === true) {
+    if (message.visible !== false) {
       writer.uint32(8).bool(message.visible);
     }
     if (message.defaultModeration !== 0) {
@@ -1117,7 +1117,7 @@ export const PostSettings = {
 
   toJSON(message: PostSettings): unknown {
     const obj: any = {};
-    if (message.visible === true) {
+    if (message.visible !== false) {
       obj.visible = message.visible;
     }
     if (message.defaultModeration !== 0) {

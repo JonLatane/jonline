@@ -1079,10 +1079,10 @@ export const ContactMethod = {
     if (message.visibility !== 0) {
       writer.uint32(16).int32(message.visibility);
     }
-    if (message.supportedByServer === true) {
+    if (message.supportedByServer !== false) {
       writer.uint32(24).bool(message.supportedByServer);
     }
-    if (message.verified === true) {
+    if (message.verified !== false) {
       writer.uint32(32).bool(message.verified);
     }
     return writer;
@@ -1149,10 +1149,10 @@ export const ContactMethod = {
     if (message.visibility !== 0) {
       obj.visibility = visibilityToJSON(message.visibility);
     }
-    if (message.supportedByServer === true) {
+    if (message.supportedByServer !== false) {
       obj.supportedByServer = message.supportedByServer;
     }
-    if (message.verified === true) {
+    if (message.verified !== false) {
       obj.verified = message.verified;
     }
     return obj;
@@ -1284,7 +1284,7 @@ export const GetUsersResponse = {
     for (const v of message.users) {
       User.encode(v!, writer.uint32(10).fork()).ldelim();
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       writer.uint32(16).bool(message.hasNextPage);
     }
     return writer;
@@ -1332,7 +1332,7 @@ export const GetUsersResponse = {
     if (message.users?.length) {
       obj.users = message.users.map((e) => User.toJSON(e));
     }
-    if (message.hasNextPage === true) {
+    if (message.hasNextPage !== false) {
       obj.hasNextPage = message.hasNextPage;
     }
     return obj;
