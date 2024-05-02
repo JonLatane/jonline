@@ -217,7 +217,7 @@ export function AuthSheet({ }: AuthSheetProps) {
 
               {addingAccount
                 ? <div key='add-account-panel' style={{ width: '100%' }}>
-                  <YStack gap="$2" w='100%'>
+                  <YStack gap="$2" w='100%' pb='$3'>
                     <Heading size="$6">{server?.host}/</Heading>
                     <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
                       editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
