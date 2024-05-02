@@ -320,6 +320,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - build_rust_binaries
+      - test_consistency
 
     steps:
     - uses: actions/checkout@v3
