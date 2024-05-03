@@ -140,7 +140,11 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
 
     return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
   }, [
-    dataSet.map(federatedId).join(),
+    dataSet.length,
+    dataSet[0]?.id,
+    dataSet[0]?.serverHost,
+    dataSet[dataSet.length - 1]?.id,
+    dataSet[dataSet.length - 1]?.serverHost,
     pageSize,
     page,
     loadingPage
