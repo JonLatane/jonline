@@ -492,15 +492,15 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                       Accounts
                     </Heading>
 
-
-                    <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
-                      icon={ArrowDownUp}
-                      transparent
-                      circular
-                      size='$2'
-                      {...themedButtonBackground(
-                        !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
-
+                    {accounts.length > 1
+                      ? <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
+                        icon={ArrowDownUp}
+                        transparent
+                        circular
+                        size='$2'
+                        {...themedButtonBackground(
+                          !separateAccountsByServer ? navColor : undefined, !separateAccountsByServer ? navTextColor : undefined)} />
+                      : undefined}
 
                     <AuthSheetButton
                       server={currentServer}
