@@ -2,14 +2,13 @@ import { UserListingType } from '@jonline/api';
 import { Button, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useDebounceValue } from '@jonline/ui';
 import { X as XIcon } from '@tamagui/lucide-icons';
 import { useAppSelector, useCurrentServer, useMembersPage, usePaginatedRendering, useUsersPage } from 'app/hooks';
-import { RootState, federatedId, getFederated, useRootSelector } from 'app/store';
+import { federatedId, getFederated } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
 import { PageChooser } from '../home/page_chooser';
-import { PaginationIndicator } from '../home/pagination_indicator';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
@@ -35,18 +34,24 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     // { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
     : useUsersPage(listingType, 0);
 
-  const [searchParam] = useParam('search');
+  const [searchParamValue] = useParam('search');
+  const searchParam = searchParamValue ?? '';
   const updateParams = useUpdateParams();
-  const [searchText, setSearchText] = useState(searchParam ?? '');
+  const [searchText, setSearchText] = useState(searchParam);
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
     300
   );
   useEffect(() => {
     setTimeout(
-      () => updateParams(
-        { search: debouncedSearchText || undefined },
-        { web: { replace: true } }),
+      () => {
+        if (searchParam !== debouncedSearchText) {
+          updateParams(
+            { search: debouncedSearchText || undefined },
+            { web: { replace: true } }
+          )
+        }
+      },
 
       1);
   }, [debouncedSearchText])

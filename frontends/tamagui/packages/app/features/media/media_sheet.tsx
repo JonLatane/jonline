@@ -43,7 +43,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   const pagination = usePaginatedRendering(allMedia, 10, { pageParamHook: () => [page, setPage] });
 
   useEffect(() => {
-    pagination.setPage(0);
+    if (page !== 0) pagination.setPage(0);
   }, [server?.host, account?.user?.id])
 
   const uploadedMedia = useRootSelector(

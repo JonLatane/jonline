@@ -423,10 +423,6 @@ export function UsernameDetailsScreen() {
                                 </div>
                                 : undefined}
 
-
-                              {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                    <PaginationResetIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
-                  </div> */}
                               {paginatedEvents.map((event) =>
                                 <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                                   <XStack mx='$1' px='$1' pb='$5'>
@@ -434,9 +430,6 @@ export function UsernameDetailsScreen() {
                                   </XStack>
                                 </span>)}
 
-                              {/* <div key='next-page' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                    <PaginationIndicator {...eventPagination} width={eventCardWidth * 0.5} height={eventCardWidth * 0.75} />
-                  </div> */}
                             </FlipMove>
                           </XStack>
                         </ScrollView>

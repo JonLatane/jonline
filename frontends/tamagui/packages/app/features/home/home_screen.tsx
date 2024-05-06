@@ -63,6 +63,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     pageParamHook: usePostPageParam,
     // itemIdResolver: (oldLastPost) => `post-${federatedId(oldLastPost)}`
   });
+  // const setPostsPage = postPagination.setPage;
+  // postPagination.setPage = function (p) {
+  //   debugger;
+  //   setPostsPage(p);
+  // }
   const paginatedPosts = postPagination.results;
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
@@ -242,12 +247,6 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             <PageChooser {...postPagination} />
           </div>
           : undefined} */}
-        {/* {maxPagesToRender < postPagination.page + 1
-          ? <div key='pagination-reset'
-            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-            <PaginationResetIndicator {...postPagination} />
-          </div>
-          : undefined} */}
 
         {postsLoaded || allPosts.length > 0
           ? allPosts.length === 0
@@ -272,11 +271,6 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               entityName={{ singular: 'post', plural: 'posts' }} />
           </div>
           : undefined}
-        {/* 
-        <div key='pagination-next'
-          style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-          <PaginationIndicator {...postPagination} />
-        </div> */}
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         {/* </YStack> */}
       </FlipMove>

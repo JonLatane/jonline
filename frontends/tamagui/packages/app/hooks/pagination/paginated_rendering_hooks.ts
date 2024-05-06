@@ -11,7 +11,6 @@ export interface Pagination<T extends HasIdFromServer> {
   resultCount: number;
   loadingPage: boolean;
   hasNextPage?: boolean;
-  loadNextPage: () => void;
   setPage: (page: number) => void;
   reset(): void;
 }
@@ -20,7 +19,8 @@ const { useParam, useUpdateParams } = createParam<{ page: string | undefined }>(
 export function usePageParam(): [number, (page: number) => void] {
   const updateParams = useUpdateParams();
 
-  const [pageParam] = useParam('page');
+  const [pageParam, config] = useParam('page');
+  console.log('pageParam', pageParam, config)
   let parsedPage: number | undefined;
   try {
     parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
@@ -29,10 +29,13 @@ export function usePageParam(): [number, (page: number) => void] {
   }
 
   const page = parsedPage ?? 0;
-  const setPage = (p: number) => updateParams(
-    { page: p === 0 ? undefined : (p + 1).toString() },
-    { web: { replace: true } }
-  );
+  const setPage = (p: number) => {
+    // debugger;
+    updateParams(
+      { page: p === 0 ? undefined : (p + 1).toString() },
+      { web: { replace: true } }
+    );
+  }
 
   return [page, setPage] as const;
 }
@@ -63,6 +66,7 @@ export function usePostPageParam(): [number, (page: number) => void] {
   const updateParams = useUpdatePostPageParams();
 
   const [pageParam] = _usePostPageParam('postPage');
+  console.log('postPageParam', pageParam)
   let parsedPage: number | undefined;
   try {
     parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
@@ -71,10 +75,13 @@ export function usePostPageParam(): [number, (page: number) => void] {
   }
 
   const page = parsedPage ?? 0;
-  const setPage = (p: number) => updateParams(
-    { postPage: p === 0 ? undefined : (p + 1).toString() },
-    { web: { replace: true } }
-  );
+  const setPage = (p: number) => {
+    // debugger;
+    updateParams(
+      { postPage: p === 0 ? undefined : (p + 1).toString() },
+      { web: { replace: true } }
+    );
+  }
 
   return [page, setPage] as const;
 }
@@ -89,7 +96,13 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   }
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
-  const [page, setPage] = args?.pageParamHook?.() ?? usePageParam();
+  const standardPageParams = usePageParam();
+  const [page, setPage] = args?.pageParamHook?.() ?? standardPageParams;
+  // function setPage(p: number) {
+  //   debugger;
+  //   _setPage(p);
+  //   debugger;
+  // }
   const [loadingPage, setLoadingPage] = useState(false);
 
   useEffect(() => {
@@ -123,22 +136,18 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
       setTimeout(() => setLoadingPage(false), 1000);
     };
 
-    function loadNextPage() {
-      if (loadingPage) return;
-      setLoadingPage(true);
-      const targetPage = page + 1;
-      const maxPage = Math.max(0, Math.min(pageCount - 1, maxPagesToRender - 1));
-      if (targetPage < maxPage) {
-        setPage(maxPage);
-        onPageLoaded?.(maxPage);
-      } else {
-        setPage(targetPage);
-        onPageLoaded?.(targetPage);
-      }
-      setTimeout(() => setLoadingPage(false), 1000);
-    }
 
-    return { results, pageSize, resultCount: dataSet.length, page, setPage, pageCount, loadingPage, hasNextPage, loadNextPage, reset };
+    return {
+      results,
+      pageSize,
+      resultCount: dataSet.length,
+      page,
+      setPage,
+      pageCount,
+      loadingPage,
+      hasNextPage,
+      reset
+    };
   }, [
     [dataSet.map(federatedId)],
     // dataSet.length,

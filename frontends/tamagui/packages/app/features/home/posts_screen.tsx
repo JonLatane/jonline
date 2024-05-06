@@ -77,9 +77,6 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               </div> */}
             </div>
 
-            {/* <div key='pagination-reset'>
-              <PaginationResetIndicator {...pagination} />
-            </div> */}
             {firstPageLoaded || allPosts.length > 0
               ? allPosts.length === 0
                 ? <div key='no-posts-found' style={{ width: '100%', marginLeft: 'auto', marginRight: 'auto' }}>
@@ -106,9 +103,6 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
                 />
               </div>
               : undefined}
-            {/* <div key='pagination'>
-              <PaginationIndicator {...pagination} />
-            </div> */}
           </FlipMove>
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}

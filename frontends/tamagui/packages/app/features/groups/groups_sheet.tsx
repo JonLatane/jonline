@@ -193,7 +193,11 @@ export function GroupsSheet({
   const allArrangedGroups = [...topGroups, ...recentGroups, ...hideAdditionalGroups ? [] : sortedGroups];
   const [page, setPage] = useState(0);
   useEffect(() => setPage(0), [allArrangedGroups.length])
-  const pagination = usePaginatedRendering(allArrangedGroups, 7, { pageParamHook: () => [page, setPage] });
+  const pagination = usePaginatedRendering(
+    allArrangedGroups,
+    7,
+    { pageParamHook: () => [page, setPage] }
+  );
   const paginatedArrangedGroups = pagination.results;
 
   const topPaginationId = `${componentKey}-top-pagination`;

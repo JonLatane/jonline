@@ -46,16 +46,19 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
-  const [querySearch] = useParam('search');
+  const [querySearchParam] = useParam('search');
+  const querySearch = querySearchParam ?? '';
   const updateParams = useUpdateParams();
-  const [searchText, setSearchText] = useState(querySearch ?? '');
+  const [searchText, setSearchText] = useState(querySearch);
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
     1000
   );
   const hasNewEvent = allEvents.some(e => !e.id);
   useEffect(() => {
-    updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+    if (querySearch !== debouncedSearchText) {
+      updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+    }
   }, [debouncedSearchText])
   const endsAfter = queryEndsAfter ?? moment(pageLoadTime).toISOString(true);
   // useEffect(() => {

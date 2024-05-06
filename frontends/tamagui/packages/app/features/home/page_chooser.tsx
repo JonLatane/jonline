@@ -31,9 +31,7 @@ export const PageChooser: React.FC<Pagination<any> & {
   pageCount,
   resultCount,
   pageSize,
-  loadingPage,
   hasNextPage = true,
-  loadNextPage,
   width = '100%',
 
   maxWidth = undefined,

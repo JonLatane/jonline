@@ -3,7 +3,7 @@ import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
-import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, reverseStandardAnimation, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
 import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
@@ -11,6 +11,7 @@ import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/luc
 import { SubnavButton } from 'app/components/subnav_button';
 import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
+import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import FlipMove from 'react-flip-move';
@@ -23,7 +24,6 @@ import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from "./events_full_calendar";
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
-import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -46,15 +46,17 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
-  const [querySearch] = useParam('search');
+  const [querySearchParam] = useParam('search');
+  const querySearch = querySearchParam ?? '';
   const updateParams = useUpdateParams();
-  const [searchText, setSearchText] = useState(querySearch ?? '');
+  const [searchText, setSearchText] = useState(querySearch);
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
     1000
   );
   useEffect(() => {
-    updateParams({ search: debouncedSearchText }, { web: { replace: true } });
+    if (querySearch !== debouncedSearchText)
+      updateParams({ search: debouncedSearchText }, { web: { replace: true } });
   }, [debouncedSearchText])
   // useEffect(() => {
   //   if (!queryEndsAfter) {
@@ -333,9 +335,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     {/* </FlipMove> */}
                     {/* </AnimatePresence> */}
                   </XStack>
-                  {/* <PageChooser {...pagination} pageTopId='pages-top' /> */}
-                  {/* <PaginationIndicator {...pagination} /> */}
-                  {/* </YStack> */}
                 </div>,
                 <div key='pages-bottom' id='pages-bottom'>
                   <PageChooser {...pagination} pageTopId='pages-top' showResultCounts

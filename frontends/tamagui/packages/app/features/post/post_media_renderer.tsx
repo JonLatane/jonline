@@ -5,7 +5,7 @@ import { View } from "react-native";
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
 import { useIsVisible, useMediaUrl, usePostDispatch, useCurrentServer } from "app/hooks";
-import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
+import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, XEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
 import { FadeInView } from 'app/components';
@@ -67,24 +67,24 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   if (embedSupported) {
     const url = new URL(post.link!);
     const hostname = url.hostname.split(':')[0]!;
-    if (hostname.endsWith('twitter.com')) {
-      embedComponent = <TwitterEmbed url={post.link!} />;
+    if (hostname.endsWith('twitter.com') || hostname.endsWith('t.co') || hostname.endsWith('x.com')) {
+      embedComponent = <XEmbed url={post.link!} />;
     } else if (hostname.endsWith('instagram.com')) {
-      embedComponent = <InstagramEmbed url={post.link!} />;
+      embedComponent = <InstagramEmbed width='100%' url={post.link!} />;
     } else if (hostname.endsWith('facebook.com')) {
-      embedComponent = <FacebookEmbed url={post.link!} />;
+      embedComponent = <FacebookEmbed width='100%' url={post.link!} />;
     } else if (hostname.endsWith('youtube.com')) {
-      embedComponent = <YouTubeEmbed url={post.link!} />;
+      embedComponent = <YouTubeEmbed width='100%' url={post.link!} />;
     } else if (hostname.endsWith('tiktok.com')) {
-      embedComponent = <TikTokEmbed url={post.link!} />;
+      embedComponent = <TikTokEmbed width='100%' url={post.link!} />;
     } else if (hostname.endsWith('pinterest.com')) {
-      embedComponent = <PinterestEmbed url={post.link!} />;
+      embedComponent = <PinterestEmbed width='100%' url={post.link!} />;
     } else if (hostname.endsWith('linkedin.com')) {
-      embedComponent = <LinkedInEmbed url={post.link!} />;
+      embedComponent = <LinkedInEmbed width='100%' url={post.link!} />;
     }
   }
   embedComponent = embedComponent
-    ? <YStack mx='auto' ai='center'>{embedComponent}</YStack>
+    ? <YStack mx='auto' width='100%' ai='center'>{embedComponent}</YStack>
     : undefined;
 
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
