@@ -292,9 +292,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
             />
 
             : calendarImplementation === 'big-calendar' || calendarImplementation === undefined
-              ? <YStack key={renderingKey} w='100%' h='100%'>
+              ? <YStack w='100%' h='100%'>
                 <BigCalendar
-                  key={renderingKey}
+                  // key={renderingKey}
                   localizer={localizer}
 
                   // defaultDate={new Date()}
