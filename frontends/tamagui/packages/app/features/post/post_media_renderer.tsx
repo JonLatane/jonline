@@ -83,6 +83,9 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       embedComponent = <LinkedInEmbed url={post.link!} />;
     }
   }
+  embedComponent = embedComponent
+    ? <YStack mx='auto' ai='center'>{embedComponent}</YStack>
+    : undefined;
 
   const [hasBeenVisible, setHasBeenVisible] = useState(false);
   useEffect(() => {
@@ -108,7 +111,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
 
   return <YStack zi={1000} width='100%'>
-    {hasBeenVisible && embedComponent && false
+    {hasBeenVisible && embedComponent
       ? <FadeInView><div>{embedComponent}</div></FadeInView>
       : embedComponent
         ? <Spinner color={primaryColor} />
