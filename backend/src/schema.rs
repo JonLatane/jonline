@@ -159,6 +159,24 @@ table! {
 }
 
 table! {
+    push_token_posts (id) {
+        id -> Int8,
+        push_token_id -> Int8,
+        post_id -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
+    push_tokens (id) {
+        id -> Int8,
+        token -> Varchar,
+        user_id -> Nullable<Int8>,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
     server_configurations (id) {
         id -> Int8,
         active -> Bool,
@@ -255,6 +273,9 @@ joinable!(groups -> media (avatar_media_id));
 joinable!(memberships -> groups (group_id));
 joinable!(memberships -> users (user_id));
 joinable!(posts -> users (user_id));
+joinable!(push_token_posts -> posts (post_id));
+joinable!(push_token_posts -> push_tokens (push_token_id));
+joinable!(push_tokens -> users (user_id));
 joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
 joinable!(user_devices -> users (user_id));
 joinable!(user_posts -> posts (post_id));
@@ -273,6 +294,8 @@ allow_tables_to_appear_in_same_query!(
     media,
     memberships,
     posts,
+    push_token_posts,
+    push_tokens,
     server_configurations,
     user_access_tokens,
     user_devices,

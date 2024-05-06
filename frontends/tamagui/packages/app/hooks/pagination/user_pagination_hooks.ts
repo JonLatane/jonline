@@ -1,6 +1,6 @@
 import { Moderation, User, UserListingType } from "@jonline/api";
 import { AccountOrServer, FederatedUser, getMembersPage, getUsersPage, loadGroupMembers, loadUsersPage, parseFederatedId, selectAllServers } from "app/store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
 import { useCurrentAccountOrServer } from '../account_or_server/use_current_account_or_server';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
@@ -26,7 +26,13 @@ export function useUsersPage(
   }
 
   const state = useAppSelector(state => state.users);
-  const { users, hadUndefinedServers } = getUsersPage(state, listingType, page, servers);
+  const { users, hadUndefinedServers } = useMemo(
+    () => getUsersPage(state, listingType, page, servers),
+    [
+      state.ids,
+      servers.map(s => s.server?.host),
+      listingType
+    ])
   useEffect(() => {
     if (listingType === UserListingType.EVERYONE && hadUndefinedServers && !loadingUsers) {
       console.log("Loading users...");

@@ -2,7 +2,7 @@ import { PostListingType } from "@jonline/api";
 import { useDebounce } from "@jonline/ui";
 import { useAppDispatch, useCredentialDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
 import { useFederatedDispatch } from '../credential_dispatch_hooks';
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
@@ -33,7 +33,14 @@ export function useServerPostPages(
   const postsState = useRootSelector((state: RootState) => state.posts);
   const [loading, setLoading] = useState(false);
 
-  const results: FederatedPost[] = getPostsPages(postsState, listingType, throughPage, servers);
+  const results: FederatedPost[] = useMemo(
+    () => getPostsPages(postsState, listingType, throughPage, servers),
+    [
+      postsState.ids,
+      servers.map(s => [s.account?.user?.id, s.server?.host]),,
+      listingType
+    ]
+  );
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0, servers);
   const hasMorePages = getHasMorePostPages(postsState, listingType, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);

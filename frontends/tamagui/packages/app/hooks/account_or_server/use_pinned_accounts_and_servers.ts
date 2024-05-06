@@ -1,11 +1,13 @@
 import { AccountOrServer, accountID, selectAllAccounts, selectAllServers, serverID, unpinAccount } from 'app/store';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useCurrentAccountOrServer } from './use_current_account_or_server';
 
 
 
 export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; }): AccountOrServer[] {
+  const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
+  const dispatch = useAppDispatch();
   const accountOrServer = useCurrentAccountOrServer();
   const { server } = accountOrServer;
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
@@ -17,8 +19,6 @@ export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; 
     }))
     .filter(aos => aos.server)
   );
-  const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
-  const dispatch = useAppDispatch();
   const pinnedAccountNeedsReauthentication = pinnedAccountsAndServers
     .some(aos => aos.account?.needsReauthentication);
   // console.log('pinnedAccountNeedsReauthentication', pinnedAccountNeedsReauthentication);

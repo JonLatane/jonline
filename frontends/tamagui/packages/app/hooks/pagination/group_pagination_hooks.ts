@@ -1,9 +1,9 @@
 import { GroupListingType } from "@jonline/api";
-import { debounce, useDebounce } from "@jonline/ui";
-import { FederatedGroup, RootState, getServersMissingGroupsPage, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
-import { useEffect, useState } from "react";
-import { useCredentialDispatch } from "../credential_dispatch_hooks";
+import { useDebounce } from "@jonline/ui";
+import { FederatedGroup, RootState, getGroupsPages, getHasGroupsPage, getHasMoreGroupPages, getServersMissingGroupsPage, loadGroupsPage, someUnloaded, useRootSelector } from "app/store";
+import { useEffect, useMemo, useState } from "react";
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
+import { useCredentialDispatch } from "../credential_dispatch_hooks";
 import { finishPagination } from './pagination_hooks';
 
 export type GroupPageParams = { onLoaded?: () => void, disableLoading?: boolean };
@@ -14,9 +14,16 @@ export function useGroupPages(listingType: GroupListingType, throughPage: number
   const groupsState = useRootSelector((state: RootState) => state.groups);
   const [loadingGroups, setLoadingGroups] = useState(false);
 
-  const groups: FederatedGroup[] = getGroupsPages(groupsState, listingType, throughPage, servers);
+  const groups: FederatedGroup[] = useMemo(
+    () => getGroupsPages(groupsState, listingType, throughPage, servers),
+    [
+      groupsState.ids,
+      servers.map(s => [s.account?.user?.id, s.server?.host]),,
+      listingType
+    ]
+  );
 
-  const debounceReload = useDebounce(reload, 1000, {leading: true});
+  const debounceReload = useDebounce(reload, 1000, { leading: true });
   useEffect(() => {
     if (!loadingGroups && !params?.disableLoading && someUnloaded(groupsState.pagesStatus, servers)) {
       setLoadingGroups(true);

@@ -3,11 +3,12 @@ import { useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatc
 
 import { debounce, useDebounce } from "@jonline/ui";
 import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { PaginationResults } from "./pagination_hooks";
 import { PostPageParams } from "./post_pagination_hooks";
 import { finishPagination, onPageLoaded } from "./pagination_hooks";
+import { serverHost } from '../../store/federation';
 
 export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
 
@@ -38,7 +39,15 @@ export function useServerEventPages(
 
   const timeFilter = serializeTimeFilter(params?.timeFilter);
 
-  const results: FederatedEvent[] = getEventsPages(eventsState, listingType, timeFilter, throughPage, servers);
+  const results: FederatedEvent[] = useMemo(
+    () => getEventsPages(eventsState, listingType, timeFilter, throughPage, servers),
+    [
+      eventsState.ids, 
+      servers.map(s => [s.account?.user?.id, s.server?.host]),
+      timeFilter,
+      listingType
+    ]
+  );
 
   const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
   const someUnloadedServers = someUnloaded(eventsState.pagesStatus, servers);
