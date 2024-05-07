@@ -1,4 +1,4 @@
-import { EventInstance } from "@jonline/api/index";
+import { EventInstance } from "@jonline/api";
 import moment from "moment";
 
 export function isNotPastInstance(i: EventInstance) {

@@ -1,8 +1,9 @@
 import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
-import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, toProtoISOString, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePostPageParam, usePostPages } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
+import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
@@ -15,7 +16,6 @@ import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from './events_full_calendar';
 import { PageChooser } from './page_chooser';
-import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -166,7 +166,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
               animation='standard'
               disabled={!showEvents || allEvents.length === 0}
-              o={showEvents && allEvents.length > 0 ? 1 : 0}
+              o={showEvents ? 1 : 0}
             />
 
             <div style={{ flex: 1 }} />
@@ -176,7 +176,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           </XStack>
         </div>
         {showEvents
-          ? bigCalendar && allEvents.length > 0
+          ? bigCalendar
             ? [
               <div key='full-calendar' style={{ marginBottom: 10 }}>
                 <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />

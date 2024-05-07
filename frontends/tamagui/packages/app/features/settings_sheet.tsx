@@ -1,14 +1,14 @@
+import { Event } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
-import { AlertTriangle, Check, ChevronDown, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
+import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
-import { CalendarImplementation, RootState, resetAllData, selectAccountTotal, selectServer, selectServerTotal, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setSeparateAccountsByServer, setShowUserIds, setShrinkFeatureNavigation, useRootSelector, useServerTheme } from 'app/store';
+import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
-import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
-import FlipMove from 'react-flip-move';
-import { selectAllServers, serverIDHost } from 'app/store';
+import { federatedEntity } from '../store/federation';
 import { EventsFullCalendar } from './home/events_full_calendar';
+import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
 
 
 export type SettingsSheetProps = {
@@ -55,7 +55,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
         onPress={() => setOpen((x) => !x)}
       />
       <Sheet
-      zIndex={500001}
+        zIndex={500001}
         modal
         open={open}
         onOpenChange={setOpen}
@@ -233,7 +233,23 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$5' mt='$3'>Calendar UI</Heading>
               <YStack gap='$1' w='100%' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
-                <EventsFullCalendar events={[]} weeklyOnly width='100%' />
+                <EventsFullCalendar weeklyOnly width='100%' disableSelection
+                  events={[
+                    federatedEntity(
+                      Event.create({
+                        post: {
+                          title: 'Example Event'
+                        },
+                        instances: [
+                          {
+                            startsAt: moment().toISOString(),
+                            endsAt: moment().add(1, 'hour').toISOString()
+                          }
+                        ]
+                      }),
+                      currentHostServer
+                    )
+                  ]} />
                 <RadioGroup value={app.calendarImplementation ?? 'big-calendar'} onValueChange={v => dispatch(setCalendarImplementation(v as CalendarImplementation))}>
                   <RadioGroupItemWithLabel value="big-calendar"
                     label={<YStack my='$2' w='100%'>

@@ -10,7 +10,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
-import { Button, Dialog, ScrollView, Text, YStack, needsScrollPreservers, reverseStandardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
+import { Button, Dialog, Heading, ScrollView, Text, YStack, needsScrollPreservers, reverseStandardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
 import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
@@ -30,9 +30,16 @@ export type EventsFullCalendarProps = {
   dayOnly?: boolean;
   width?: string | number;
   scrollToTime?: string;
+  disableSelection?: boolean;
   // timeFilter: TimeFilter;
 }
-export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: allEvents, weeklyOnly, width, scrollToTime: scrollToTimeParam }: EventsFullCalendarProps) => {
+export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
+  events: allEvents,
+  weeklyOnly,
+  width,
+  scrollToTime: scrollToTimeParam,
+  disableSelection
+}: EventsFullCalendarProps) => {
   const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
   const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
@@ -116,9 +123,6 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
-  const setModalInstance = (e: FederatedEvent | undefined) => {
-    setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
-  }
   const hideNavigation = useHideNavigation();
 
   const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
@@ -190,8 +194,10 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
     }-${allEvents.length
     }-${scrollToTimeParam}`;
 
+  const isEmpty = allEvents.length === 0;
   return (<>
-    <YStack
+
+    <YStack zi={1}
       // key={`calendar-rendering-${serializedTimeFilter}`} 
       mx='$1'
       animation='standard' {...reverseStandardAnimation}
@@ -203,7 +209,17 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
 
       backgroundColor='whitesmoke'
       borderRadius='$3'>
-      <Text fontFamily='$body' color='black' width='100%'>
+
+      {isEmpty
+        ? <YStack zi={2} position='absolute' top={100} left='50%'
+          transform='translate(-50%, 0)'
+        >
+          <Heading color='black' size='$12' ta='center'>No Events.</Heading>
+        </YStack>
+        : undefined}
+      <Text fontFamily='$body' color='black' width='100%'
+        pointerEvents={isEmpty ? 'none' : undefined}
+        opacity={isEmpty ? 0.4 : 1}>
         <div
           style={{
             display: 'block',
@@ -271,7 +287,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
               // width='100%'
               height='100%'
               events={convertedEvents}
-              eventClick={(modelEvent) => {
+              eventClick={disableSelection ? undefined : (modelEvent) => {
                 setModalInstanceId(modelEvent.event.id);
                 // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
                 // const isPrimaryServer = serverHost === currentServer?.host;
@@ -335,7 +351,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                       }
                     }
                   }}
-                  onSelectEvent={(modelEvent) => {
+                  onSelectEvent={disableSelection ? undefined : (modelEvent) => {
                     setModalInstanceId(modelEvent.id);
                   }}
                   dayPropGetter={(date) => {
@@ -373,7 +389,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
                         end: moment(event.instances[0]?.endsAt ?? 0).utc(false).toDate()
                       }
                     })}
-                    onEventClick={(args) => {
+                    onEventClick={disableSelection ? undefined : (args: any) => {
                       console.log('DayPilotCalendar onEvent Click', args);
                       // debugger;
                       setModalInstanceId(args?.e?.data?.id);
@@ -395,7 +411,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({ events: 
       key={`modal-${modalInstanceId}`}
       modal open={!!modalInstance}
 
-      onOpenChange={(o) => o ? null : setModalInstance(undefined)}>
+      onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
       {/* <Dialog.Trigger asChild>
                     <Button>Show Dialog</Button>
                   </Dialog.Trigger> */}

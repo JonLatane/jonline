@@ -1,4 +1,4 @@
-import { Post } from '@jonline/api/index';
+import { Post } from '@jonline/api';
 import { useAccountOrServerContext } from 'app/contexts';
 import { AccountOrServer, AppDispatch, FederatedEntity, HasIdFromServer, JonlineServer, pinServer } from 'app/store';
 import { useAppDispatch } from "./store_hooks";

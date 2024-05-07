@@ -4,7 +4,7 @@ import React, { useEffect } from "react";
 import { Button, Paragraph, Spinner, XStack, YStack, ZStack, useDebounceValue, useToastController } from '@jonline/ui';
 import { Star } from "@tamagui/lucide-icons";
 
-import { PostContext } from "@jonline/api/index";
+import { PostContext } from "@jonline/api";
 import { useAppSelector } from "app/hooks";
 import { federatedId, parseFederatedId } from 'app/store/federation';
 import moment from "moment";

@@ -1,21 +1,21 @@
-import { AlertDialog, Text, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, XStack, YStack, needsScrollPreservers, useMedia, useTheme, useWindowDimensions } from '@jonline/ui';
+import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, Text, Tooltip, XStack, YStack, useMedia, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
-import { RootState, deleteMedia, useServerTheme, selectMediaById, useRootSelector } from 'app/store';
+import { RootState, deleteMedia, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { overlayAnimation } from '@jonline/ui';
 
-import { Trash, Wand2, Info } from '@tamagui/lucide-icons';
+import { Info, Trash, Wand2 } from '@tamagui/lucide-icons';
 
-import { Permission } from '@jonline/api/index';
+import { Permission } from '@jonline/api';
 import { AccountOrServerContextProvider, MediaRef, useMediaContext } from 'app/contexts';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
+import { highlightedButtonBackground } from 'app/utils';
+import FlipMove from 'react-flip-move';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
+import { PageChooser } from '../home/page_chooser';
 import { MediaRenderer } from './media_renderer';
 import { MediaUploader } from './media_uploader';
-import FlipMove from 'react-flip-move';
-import { PageChooser } from '../home/page_chooser';
-import { highlightedButtonBackground } from 'app/utils';
 
 interface MediaSheetProps { }
 

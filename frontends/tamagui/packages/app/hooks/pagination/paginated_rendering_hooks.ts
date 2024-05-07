@@ -1,7 +1,6 @@
 import { FederatedEntity, HasIdFromServer, federatedId } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { createParam } from "solito";
-import { onPageLoaded } from './pagination_hooks';
 
 export interface Pagination<T extends HasIdFromServer> {
   results: FederatedEntity<T>[];
@@ -20,7 +19,7 @@ export function usePageParam(): [number, (page: number) => void] {
   const updateParams = useUpdateParams();
 
   const [pageParam, config] = useParam('page');
-  console.log('pageParam', pageParam, config)
+  // console.log('pageParam', pageParam, config)
   let parsedPage: number | undefined;
   try {
     parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);
@@ -66,7 +65,7 @@ export function usePostPageParam(): [number, (page: number) => void] {
   const updateParams = useUpdatePostPageParams();
 
   const [pageParam] = _usePostPageParam('postPage');
-  console.log('postPageParam', pageParam)
+  // console.log('postPageParam', pageParam)
   let parsedPage: number | undefined;
   try {
     parsedPage = Math.max(0, parseInt(pageParam ?? '1') - 1);

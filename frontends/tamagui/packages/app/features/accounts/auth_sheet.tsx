@@ -1,16 +1,16 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
+import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
 import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, useServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
+import { accountID, actionSucceeded, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
+import FlipMove from 'react-flip-move';
 import { TextInput } from 'react-native';
+import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 import { CreationServerSelector } from './creation_server_selector';
-import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
-import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import FlipMove from 'react-flip-move';
 
 export type AuthSheetProps = {
   // server?: JonlineServer;
@@ -64,19 +64,23 @@ export function AuthSheet({ }: AuthSheetProps) {
   const accountsOnServer = server ? accounts.filter(a => serverID(a.server) == serverID(server!)) : [];
 
   async function onAccountAdded() {
-    setOpen(false);
+    // setOpen(false);
 
+    setAddingAccount(false);
+
+    // setTimeout(() => {
+    setNewAccountUser('');
+    setNewAccountPass('');
+    setForceDisableAccountButtons(false);
+    setLoginMethod(undefined);
+    setReauthenticating(false);
+    // setTimeout(() => setOpen(false), 600);
+    // }, 600);
     setTimeout(() => {
-      setAddingAccount(false);
+      setOpen(false);
+    }, 700);
+    setTimeout(() => {
       dispatch(clearAccountAlerts());
-
-      // setTimeout(() => {
-      setNewAccountUser('');
-      setNewAccountPass('');
-      setForceDisableAccountButtons(false);
-      setLoginMethod(undefined);
-      setReauthenticating(false);
-      // }, 600);
     }, 2000);
 
     const accountEntities = store.getState().accounts.entities;
