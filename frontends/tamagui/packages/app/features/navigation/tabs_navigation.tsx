@@ -74,8 +74,9 @@ export function TabsNavigation({
 
   const { hasOpenedAccounts } = useLocalConfiguration();
   const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
+  const [forceHideAccountSheetGuide, setForceHideAccountSheetGuide] = useState(false);
   useEffect(() => {
-    if (!loading && !hasOpenedAccounts && !showAccountSheetGuide) {
+    if (!loading && !hasOpenedAccounts && !showAccountSheetGuide && !forceHideAccountSheetGuide) {
       setTimeout(() => {
         if (store.getState().app.hasOpenedAccounts) return;
 
@@ -275,7 +276,12 @@ export function TabsNavigation({
                               <Paragraph color={primaryTextColor} size='$1'>and Settings</Paragraph>
                             </YStack>
                           </XStack>
-                          <Button size='$1' onPress={() => dispatch(setHasOpenedAccounts(true))}>Got it!</Button>
+                          <Button size='$1' 
+                          onPress={() => {
+                            setForceHideAccountSheetGuide(true);
+                            setShowAccountSheetGuide(false);
+                            // dispatch(setHasOpenedAccounts(true));
+                            }}>Got it!</Button>
                           {/* <XStack>
                             <ChevronLeft color={primaryTextColor} size='$1' />
                             <Paragraph color={primaryTextColor} size='$1'>Home/Latest</Paragraph>
