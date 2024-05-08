@@ -40,7 +40,7 @@ export function useGroupFromPath(): GroupFromPath {
       ? result.group?.shortname
       : federateId(result.group?.shortname ?? '', result.serverHost)
     : undefined;
-  console.log("resultShortname", resultShortname);
+  // console.log("resultShortname", resultShortname);
   useEffect(() => {
     if (resultShortname && resultShortname !== inputShortname) {
       setTimeout(

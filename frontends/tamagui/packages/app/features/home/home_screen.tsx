@@ -136,7 +136,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       <FlipMove style={{
         width: '100%',
         margin: 'auto',
-        display: 'flex', flexDirection: 'column', flex: 1,
+        flex: 1,
+        display: 'flex', flexDirection: 'column', 
         justifyContent: 'center', alignItems: 'center', marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20

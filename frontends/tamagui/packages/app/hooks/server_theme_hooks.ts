@@ -123,7 +123,8 @@ export function colorIntMeta(colorInt: number): ColorMeta {
   const color = '#' + colorInt.toString(16).slice(-6);
   return colorMeta(color);
 }
-export function colorMeta(color: string): ColorMeta {
+export function colorMeta(sourceColor?: string): ColorMeta {
+  const color = sourceColor || '#000000';
   if (_colorMetas.has(color)) {
     return _colorMetas[color];
   }

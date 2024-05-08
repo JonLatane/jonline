@@ -62,11 +62,18 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
   const [loadingGroups, setLoadingGroups] = useState([] as string[]);
 
   // This is undefined if data isn't loaded, true if shared, false if not shared.
-  const sharedToSelectedGroup = selectedGroup && groupPostData?.some(gp => gp.groupId == selectedGroup?.id);
-  const sharedToSingleGroup = groupPostData?.length == 1;
-  const singleSharedGroupId = sharedToSingleGroup
-    ? federateId(groupPostData[0]!.groupId, server)
+  const sharedToSelectedGroup = selectedGroup
+    ? groupPostData?.some(gp => gp.groupId == selectedGroup?.id)
     : undefined;
+  const sharedToSingleGroup = groupPostData?.length == 1;
+  const singleSharedGroupId = selectedGroup
+    ? federatedId(selectedGroup)
+    // ? federatedId(selectedGroup)
+    // : undefined
+    : sharedToSingleGroup
+      ? federateId(groupPostData[0]!.groupId, server)
+      : undefined;
+  // console.log('singleSharedGroupId', singleSharedGroupId);
   const singleSharedGroup = useRootSelector((state: RootState) => singleSharedGroupId
     ? state.groups.entities[singleSharedGroupId]
     : undefined);
@@ -88,7 +95,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       </Text>
       : undefined}
     <Text my='auto' mr='$2' fontSize={'$1'} fontFamily='$body'>
-      {sharedToSelectedGroup === true || singleSharedGroup ? 'In ' : undefined}
+      {sharedToSelectedGroup === true || (sharedToSelectedGroup === undefined && singleSharedGroup) ? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
     {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
@@ -100,29 +107,6 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
             ?? (sharedToSelectedGroup ? selectedGroup?.name : undefined)
             ?? 'Share'}
         </Button>
-        /*<GroupsSheet
-          title={title}
-          itemTitle={post.title}
-          selectedGroup={selectedGroup ?? singleSharedGroup}
-          // onGroupSelected={() => { }}
-          disabled={!groupPostData || groupsUnavailable}
-          topGroupIds={groupPostData?.map(
-            gp => federateId(gp.groupId, server)) ?? []
-          }
-          serverHostFilter={server?.host}
-          extraListItemChrome={(group) => {
-            const groupPost = group.serverHost === server?.host
-              ? groupPostData?.find(gp => gp.groupId == group.id)
-              : undefined;
-
-            return <GroupPostChrome group={group} groupPost={groupPost} post={post} createViewHref={createViewHref} />
-          }}
-          disableSelection
-          hideInfoButtons
-          // delayRenderingSheet
-          // hideAdditionalGroups={accountOrServer.account === undefined}
-          hideLeaveButtons
-        />*/
       }
       {selectedGroup && otherGroupCount && sharedToSelectedGroup === false
         ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>

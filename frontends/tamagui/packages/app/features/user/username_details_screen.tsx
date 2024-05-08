@@ -144,7 +144,7 @@ export function UsernameDetailsScreen() {
     })
       ?.filter(e => e !== undefined) as FederatedEvent[] | undefined
   });
-  console.log("UsernameDetailsScreen userEventIds.length", userEventIds?.length, "userEventData.length", userEventData?.length);
+  // console.log("UsernameDetailsScreen userEventIds.length", userEventIds?.length, "userEventData.length", userEventData?.length);
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
