@@ -1,6 +1,6 @@
 import { AlertDialog, Button, Heading, Paragraph, Sheet, Spinner, Text, Tooltip, XStack, YStack, useMedia, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
-import { RootState, deleteMedia, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
+import { RootState, deleteMedia, loadMedia, loadMediaPage, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
 import { overlayAnimation } from '@jonline/ui';
@@ -123,7 +123,11 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
               {
                 accountOrServer.account
                   ? <MediaUploader {...{ uploading, setUploading, uploadProgress, setUploadProgress }}
-                    onMediaUploaded={setUploadedMediaId} />
+                    onMediaUploaded={(mediaId) => {
+                      dispatch(loadMediaPage({ ...accountOrServer })).then(() => {
+                        setUploadedMediaId(mediaId);
+                      });
+                    }} />
                   : <YStack width='100%' maw={600} jc="center" ai="center">
                     <Heading size='$5' o={0.5} mb='$3'>You must be logged in to view media.</Heading>
                     <Heading size='$3' o={0.5} ta='center'>You can log in by clicking the button in the top right corner.</Heading>

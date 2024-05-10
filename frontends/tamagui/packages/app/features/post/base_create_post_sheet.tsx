@@ -12,6 +12,7 @@ import { TextInput } from 'react-native';
 import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';
 import { PostMediaManager } from './post_media_manager';
+import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/contexts';
 
 export type BaseCreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
@@ -473,10 +474,12 @@ export function BaseCreatePostSheet({
                         </div>
                         : undefined}
                       {showMedia
-                        ? <div key='post-media-manager' style={{ width: '100%', marginBottom: 5 }}>
+                        ? <AccountOrServerContextProvider value={accountOrServer}>
+                          <div key='post-media-manager' style={{ width: '100%', marginBottom: 5 }}>
                           <PostMediaManager
                             {...{ link, media, setMedia, embedLink, setEmbedLink }} />
-                        </div> : undefined}
+                        </div>
+                        </AccountOrServerContextProvider> : undefined}
 
                       <div key='content'>
                         <TextArea w='100%' pt='$2' value={content} ref={textAreaRef}

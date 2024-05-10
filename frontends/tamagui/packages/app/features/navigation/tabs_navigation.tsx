@@ -201,6 +201,8 @@ export function TabsNavigation({
   //     requestFullscreen();
   //   }
   // }, [mediaQuery.gtXShort]);
+
+  const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -251,6 +253,7 @@ export function TabsNavigation({
                         {...homeProps}
                       >
                         <YStack
+                          o={excludeCurrentServer ? 0.5 : 1}
                           my={shrinkHomeButton ? 'auto' : undefined}
                           h={shrinkHomeButton ? '$3' : undefined}
                           w={shrinkHomeButton ? '100%' : undefined}

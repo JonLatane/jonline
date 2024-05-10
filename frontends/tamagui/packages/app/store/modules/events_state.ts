@@ -213,6 +213,7 @@ const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer
   if (oldEvent) {
     instances = oldEvent.instances.filter(oi => !instances.find(ni => ni.id == oi.id)).concat(event.instances);
   }
+  event.instances.sort((a, b) => moment.utc(a.startsAt).unix() - moment.utc(b.startsAt).unix());
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
 

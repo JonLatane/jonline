@@ -43,8 +43,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
   const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
   const dimensions = useWindowDimensions();
-  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
-  // const [endsAfter, setEndsAfter] = useState<string>(pageLoadTime);
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
   const [querySearchParam] = useParam('search');
   const querySearch = querySearchParam ?? '';
@@ -52,7 +50,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const [searchText, setSearchText] = useState(querySearch);
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
-    1000
+    300
   );
   useEffect(() => {
     if (querySearch !== debouncedSearchText)
@@ -72,7 +70,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const endsAfter = queryEndsAfter ?? upcomingEndsAfter;
   const displayMode: EventDisplayMode = queryEndsAfter === undefined || queryEndsAfter == upcomingEndsAfter
     ? 'upcoming'
-    : moment(queryEndsAfter).unix() === 0 && querySearch === undefined
+    : moment(queryEndsAfter).unix() === 0 && querySearchParam === undefined
       ? 'all'
       : 'filtered';
   // console.log('displayMode', displayMode, moment(queryEndsAfter).unix())
@@ -94,7 +92,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         const search = searchText ?? '';
         if (displayMode === 'upcoming') {
           updateParams({
-            endsAfter: moment(pageLoadTime).toISOString(false),
+            endsAfter: moment(upcomingEndsAfter).toISOString(false),
             search
           });
         } else if (displayMode === 'all') {
@@ -121,6 +119,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
+  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const allEventsWithNonBigCalendarUpcomingFilter = displayMode === 'upcoming' && !bigCalendar
     ? allEventsUnfiltered.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
     : allEventsUnfiltered
