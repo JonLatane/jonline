@@ -49,9 +49,27 @@ table! {
 }
 
 table! {
+    federated_profiles (id) {
+        id -> Int8,
+        user_id -> Int8,
+        federated_user_id -> Int8,
+        created_at -> Timestamp,
+    }
+}
+
+table! {
     federated_servers (id) {
         id -> Int8,
         server_location -> Varchar,
+    }
+}
+
+table! {
+    federated_users (id) {
+        id -> Int8,
+        remote_user_id -> Varchar,
+        server_host -> Varchar,
+        created_at -> Timestamp,
     }
 }
 
@@ -266,6 +284,8 @@ joinable!(event_instances -> posts (post_id));
 joinable!(events -> posts (post_id));
 joinable!(federated_accounts -> federated_servers (federated_server_id));
 joinable!(federated_accounts -> users (user_id));
+joinable!(federated_profiles -> federated_users (federated_user_id));
+joinable!(federated_profiles -> users (user_id));
 joinable!(group_posts -> groups (group_id));
 joinable!(group_posts -> posts (post_id));
 joinable!(group_posts -> users (user_id));
@@ -287,7 +307,9 @@ allow_tables_to_appear_in_same_query!(
     event_instances,
     events,
     federated_accounts,
+    federated_profiles,
     federated_servers,
+    federated_users,
     follows,
     group_posts,
     groups,

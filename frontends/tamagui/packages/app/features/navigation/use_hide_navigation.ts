@@ -14,7 +14,8 @@ export function useHideNavigation() {
     still: Direction.Still
   })
   const dispatch = useAppDispatch();
-  const { showPinnedServers,
+  const { alwaysShowHideButton,
+    showPinnedServers,
     autoHideNavigation: autoHideSetting,
     hideNavigation: hide
   } = useLocalConfiguration();
@@ -30,7 +31,7 @@ export function useHideNavigation() {
   const autoHide = forceAutoHide || autoHideSetting;
 
   useEffect(() => {
-    if (hide && !autoHide) {
+    if (hide && !autoHide && !alwaysShowHideButton) {
       setHide(false);
     }
   }, [hide, autoHide]);

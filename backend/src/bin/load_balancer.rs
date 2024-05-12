@@ -154,7 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Cloning the acceptor will not clone the configuration.
     let acceptor = TlsAcceptor::from(Arc::new(config));
 
-    load_secrets().await;
+    // load_secrets().await;
 
     // We start a classic TCP server, passing all connections to the
     // handle_connection async function

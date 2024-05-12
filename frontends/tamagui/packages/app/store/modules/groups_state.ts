@@ -236,6 +236,7 @@ export const groupsSlice = createSlice({
     });
     builder.addCase(joinLeaveGroup.fulfilled, (state, action) => {
       const federatedGroupId = federateId(parseFederatedId(action.meta.arg.groupId).id, action);
+      console.log('joinLeaveGroup.fulfilled', federatedGroupId);
       unlockGroup(state, federatedGroupId);
       let group = groupsAdapter.getSelectors().selectById(state, federatedGroupId)!;
       // let currentUser = usersAdapter.getSelectors().selectById(state, action.meta.arg.account!.user.id);
@@ -257,6 +258,7 @@ export const groupsSlice = createSlice({
         }
         group = { ...group, currentUserMembership: undefined };
       }
+      console.log('saving group with membership', group.currentUserMembership);
       groupsAdapter.upsertOne(state, group);
       // if (currentUser) {
       //   groupsAdapter.upsertOne(state, currentUser);

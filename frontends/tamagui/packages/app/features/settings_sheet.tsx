@@ -2,7 +2,7 @@ import { Event } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
-import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
+import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
@@ -85,10 +85,17 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
               <Heading size='$5' mt='$5'>Navigation</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
+                <ToggleRow name='Always Show Hide Button'
+                  description='Always show a button to hide navigation (so long as the Pinned Server selector is visible (i.e. not on singular Event, Post or Profile pages, but on listing pages).'
+                  value={app.alwaysShowHideButton}
+                  setter={setAlwaysShowHideButton} autoDispatch />
                 <ToggleRow name='Auto-Hide Navigation'
-                  description='Automatically hide navigation when scrolling down. For short (landscape phone) screens, this is automatically enabled.'
+                  description={<>
+                    <Paragraph o={app.autoHideNavigation ? 0.5 : 0.25} size='$1'>Automatically hide navigation when scrolling down.</Paragraph>
+                    <Paragraph o={app.autoHideNavigation ? 0.5 : 0.25} size='$1'>For very short (landscape phone) screens, this is automatically enabled.</Paragraph>
+                  </>}
                   value={app.autoHideNavigation}
-                  setter={(v) => setAutoHideNavigation(v)} autoDispatch />
+                  setter={setAutoHideNavigation} autoDispatch />
               </YStack>
               <XStack flexWrap='wrap' gap='$3' ai='center' mt='$2'>
                 <Heading size='$4'>Feature Navigation</Heading>
@@ -183,7 +190,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading size='$5' mt='$3'>Home Screen</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Paginate Events on Home'
-                  description='On the Home/Latest Screen (and Group Home/Latest screens), show pagination controls for both Events and Posts.'
+                  description='On the Home/Latest Screen (and Group Home/Latest screens), show pagination controls for Events (when not in Big Calendar mode).'
                   value={app.eventPagesOnHome} setter={setEventPagesOnHome} autoDispatch />
                 {/* <ToggleRow name='Blur Backgrounds'
                   disabled={!app.imagePostBackgrounds}

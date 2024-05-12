@@ -1,5 +1,5 @@
 import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
-import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
+import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, PanelTopOpen, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useCurrentAccount, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
@@ -40,7 +40,7 @@ export function PinnedServerSelector({
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
     .length;
   const totalServerCount = availableServers.length;
-  const { showPinnedServers, viewingRecommendedServers, browsingServers, shrinkPreviews, hideNavigation } = useLocalConfiguration();
+  const { alwaysShowHideButton, showPinnedServers, viewingRecommendedServers, browsingServers, shrinkPreviews, hideNavigation } = useLocalConfiguration();
 
 
   const currentServerRecommendedHosts = currentServer?.serverConfiguration?.serverInfo?.recommendedServerHosts ?? [];
@@ -64,7 +64,6 @@ export function PinnedServerSelector({
     )[0].replace(/\s*\|\s*/, ' ');
 
   const disabled = false;//useHideNavigation();
-
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const configuringFederation = useAppSelector(state => state.servers.configuringFederation);
   const accountId = accountID(useCurrentAccount());
@@ -112,7 +111,7 @@ export function PinnedServerSelector({
           ? undefined
           : <>
 
-            {hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
+            {alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
               ? <Button key='hide-nav-button' py='$1' h='auto' transparent
                 // animation='standard' {...reverseHorizontalAnimation}
                 onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
@@ -120,7 +119,7 @@ export function PinnedServerSelector({
                   o={hideNavigation ? 1 : 0}
                   transform={[{ translateY: hideNavigation ? 0 : 10 }]}
                   scale={hideNavigation ? 1 : 2}>
-                  <PanelBottomClose size='$1' />
+                  <PanelTopOpen size='$1' />
                 </XStack>
                 <XStack position='absolute' animation='standard'
                   o={hideNavigation ? 0 : 1}
