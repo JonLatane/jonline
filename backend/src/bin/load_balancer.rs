@@ -141,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     log::info!("JBL: Jonline Balancer of Loads");
     log::info!("A Rust Load Balancer for Jonline Kubernetes services");
-    log::info!("JBL: Jonline Balancer of Loads");
+    // log::info!("JBL: Jonline Balancer of Loads");
     let addr = options
         .addr
         .to_socket_addrs()?

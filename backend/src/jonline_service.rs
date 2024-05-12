@@ -44,7 +44,10 @@ macro_rules! auth_rpc {
 macro_rules! authenticated_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
-        let user = auth::get_auth_user(&$request, &mut conn)?;
+        let user = auth::get_auth_user(&$request, &mut conn)?.ok_or(Status::new(
+            Code::Unauthenticated,
+            "authentication_required",
+        ))?;
         let inner = $request.into_inner();
         let request_log = format!("{:?}", &inner);
         let result = $rpc(inner, &user, &mut conn);
@@ -65,7 +68,7 @@ macro_rules! authenticated_rpc {
 macro_rules! unauthenticated_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok();
+        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn)?;
         let inner = $request.into_inner();
         let request_log = format!("{:?}", &inner);
         let result = $rpc(inner, &user.as_ref(), &mut conn);
@@ -86,7 +89,7 @@ macro_rules! unauthenticated_rpc {
 macro_rules! unauthenticated_unlogged_rpc {
     ($self: expr, $rpc:expr, $request:expr) => {{
         let mut conn = get_connection(&$self.pool)?;
-        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok();
+        let user: Option<models::User> = auth::get_auth_user(&$request, &mut conn).ok().flatten();
         let inner = $request.into_inner();
         let result = $rpc(inner, &user.as_ref(), &mut conn);
         result.map(Response::new)
@@ -243,7 +246,7 @@ impl Jonline for JonlineService {
     async fn star_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         unauthenticated_unlogged_rpc!(self, rpcs::star_post, request)
     }
-    
+
     async fn unstar_post(&self, request: Request<Post>) -> Result<Response<Post>, Status> {
         unauthenticated_unlogged_rpc!(self, rpcs::unstar_post, request)
     }

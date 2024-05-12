@@ -8,35 +8,14 @@ use crate::schema::user_access_tokens::dsl as user_access_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use crate::schema::users::dsl as users;
 
-pub fn get_auth_access_token<T>(
-    request: &Request<T>
-) -> Result<String, Status> {
-    Ok(request
-        .metadata()
-        .get("authorization")
-        .ok_or(Status::new(
-            Code::Unauthenticated,
-            "No authentication header.",
-        ))?
-        .to_str()
-        .map_err(|_| Status::new(Code::Internal, "String conversion of auth header failed."))?
-        .to_string())
-}
-
 pub fn get_auth_user_id<T>(
     request: &Request<T>,
     conn: &mut PgPooledConnection,
-) -> Result<i64, Status> {
-    let access_token = request
-        .metadata()
-        .get("authorization")
-        .ok_or(Status::new(
-            Code::Unauthenticated,
-            "No authentication header.",
-        ))?
-        .to_str()
-        .unwrap()
-        .to_owned();
+) -> Result<Option<i64>, Status> {
+    let access_token = match request.metadata().get("authorization") {
+        Some(token) => token.to_str().unwrap().to_owned(),
+        None => return Ok(None),
+    };
 
     // delete(
     //     user_access_tokens::user_access_tokens
@@ -53,22 +32,30 @@ pub fn get_auth_user_id<T>(
         .first::<i64>(conn);
 
     match user_id {
-        Ok(user_id) => Ok(user_id),
-        Err(_) => Err(Status::new(Code::Unauthenticated, "not_authorized")),
+        Ok(user_id) => Ok(Some(user_id)),
+        Err(_) => Err(Status::new(Code::Unauthenticated, "invalid_auth_token")),
     }
 }
 
 pub fn get_auth_user<T>(
     request: &Request<T>,
     conn: &mut PgPooledConnection,
-) -> Result<models::User, Status> {
+) -> Result<Option<models::User>, Status> {
     let user_id = get_auth_user_id(request, conn);
-    let user: models::User = match user_id {
-        Err(status) => return Err(status),
-        Ok(user_id) => schema::users::table
+    match user_id {
+        Ok(Some(user_id)) => Ok(schema::users::table
             .filter(users::id.eq(user_id))
             .first::<models::User>(conn)
-            .unwrap(),
-    };
-    Ok(user)
+            .ok()),
+        Ok(None) => Ok(None),
+        Err(status) => Err(status),
+    }
+    // let user: models::User = match user_id {
+    //     Err(status) => return Err(status),
+    //     Ok(user_id) => schema::users::table
+    //         .filter(users::id.eq(user_id))
+    //         .first::<models::User>(conn)
+    //         .unwrap(),
+    // };
+    // Ok(user)
 }
