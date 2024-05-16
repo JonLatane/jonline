@@ -38,3 +38,6 @@ pub use server_information::*;
 
 pub mod external_cdn;
 pub use external_cdn::*;
+
+pub mod ical_subscription;
+pub use ical_subscription::*;

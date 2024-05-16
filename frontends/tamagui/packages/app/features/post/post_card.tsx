@@ -518,44 +518,44 @@ export const PostCard: React.FC<PostCardProps> = ({
 
                         </XStack>
                       </XStack>
-                      <XStack w='100%' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
-                        <AuthorInfo {...{ post, isVisible }} />
-                        {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
-                          my='auto' size='$2' mr='$2' /> : undefined}
-                        <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                          <YStack h='100%' mr='$1'>
-                            <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
-                              borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
-                              disabled={cannotToggleReplies || loadingReplies}
-                              marginVertical='auto'
-                              // mr={isPreview ? '$2' : undefined}
-                              size='$3'
-                              onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
-                              <XStack opacity={0.9}>
-                                <YStack marginVertical='auto' scale={0.75}>
-                                  {!post.replyToPostId ? <Paragraph size="$1" ta='right'>
-                                    {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
-                                  </Paragraph> : undefined}
-                                  {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Paragraph size="$1" ta='right'>
-                                    {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
-                                  </Paragraph> : undefined}
-                                  {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                    {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
-                                  </Paragraph>}
-                                </YStack>
-                                {!cannotToggleReplies ? <XStack marginVertical='auto'
-                                  animation='quick'
-                                  rotate={collapsed ? '0deg' : '90deg'}
-                                >
-                                  <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
-                                </XStack> : undefined}
-                              </XStack>
-                            </Button>
-                          </YStack>
-                        </Anchor>
-                      </XStack>
                     </YStack>}
                 </AnimatePresence>
+                <XStack w='100%' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
+                  <AuthorInfo {...{ post, isVisible }} />
+                  {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
+                    my='auto' size='$2' mr='$2' /> : undefined}
+                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                    <YStack h='100%' mr='$1'>
+                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                        borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
+                        disabled={cannotToggleReplies || loadingReplies}
+                        marginVertical='auto'
+                        // mr={isPreview ? '$2' : undefined}
+                        size='$3'
+                        onPress={toggleReplies} paddingRight={cannotToggleReplies || isPreview ? '$2' : '$0'} paddingLeft='$2'>
+                        <XStack opacity={0.9}>
+                          <YStack marginVertical='auto' scale={0.75}>
+                            {!post.replyToPostId ? <Paragraph size="$1" ta='right'>
+                              {post.responseCount} comment{post.responseCount == 1 ? '' : 's'}
+                            </Paragraph> : undefined}
+                            {(post.replyToPostId) && (post.responseCount != post.replyCount) ? <Paragraph size="$1" ta='right'>
+                              {post.responseCount} response{post.responseCount == 1 ? '' : 's'}
+                            </Paragraph> : undefined}
+                            {isPreview || post.replyCount == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                              {post.replyCount} repl{post.replyCount == 1 ? 'y' : 'ies'}
+                            </Paragraph>}
+                          </YStack>
+                          {!cannotToggleReplies ? <XStack marginVertical='auto'
+                            animation='quick'
+                            rotate={collapsed ? '0deg' : '90deg'}
+                          >
+                            <ChevronRight opacity={loadingReplies ? 0.5 : 1} />
+                          </XStack> : undefined}
+                        </XStack>
+                      </Button>
+                    </YStack>
+                  </Anchor>
+                </XStack>
               </YStack>
             }
           </Card.Footer>

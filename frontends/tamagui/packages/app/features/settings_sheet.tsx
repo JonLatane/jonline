@@ -18,6 +18,7 @@ export type SettingsSheetProps = {
 }
 
 export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
+  const mediaQuery = useMedia();
   // const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
   const { primaryColor, primaryAnchorColor } = useServerTheme();
@@ -86,13 +87,17 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <Heading size='$5' mt='$5'>Navigation</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Always Show Hide Button'
-                  description='Always show a button to hide navigation (so long as the Pinned Server selector is visible (i.e. not on singular Event, Post or Profile pages, but on listing pages).'
+                  description={<>
+                    <Paragraph o={app.alwaysShowHideButton ? 0.5 : 0.25} size='$1'>Always show a button to hide navigation (so long as the Pinned Server selector is visible (i.e. not on singular Event, Post or Profile pages, but on listing pages).</Paragraph>
+                    <Paragraph o={!mediaQuery.gtXShort ? 0.5 : 0.25} size='$1'>For very short (landscape phone) screens, this is force-enabled.</Paragraph>
+                  </>}
+                  // 'Always show a button to hide navigation (so long as the Pinned Server selector is visible (i.e. not on singular Event, Post or Profile pages, but on listing pages).'
                   value={app.alwaysShowHideButton}
                   setter={setAlwaysShowHideButton} autoDispatch />
                 <ToggleRow name='Auto-Hide Navigation'
                   description={<>
                     <Paragraph o={app.autoHideNavigation ? 0.5 : 0.25} size='$1'>Automatically hide navigation when scrolling down.</Paragraph>
-                    <Paragraph o={app.autoHideNavigation ? 0.5 : 0.25} size='$1'>For very short (landscape phone) screens, this is automatically enabled.</Paragraph>
+                    <Paragraph o={!mediaQuery.gtXShort ? 0.5 : 0.25} size='$1'>For very short (landscape phone) screens, this is force-enabled.</Paragraph>
                   </>}
                   value={app.autoHideNavigation}
                   setter={setAutoHideNavigation} autoDispatch />

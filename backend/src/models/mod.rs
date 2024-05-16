@@ -21,3 +21,7 @@ pub use event_models::*;
 
 mod push_models;
 pub use push_models::*;
+
+
+mod federation_models;
+pub use federation_models::*;

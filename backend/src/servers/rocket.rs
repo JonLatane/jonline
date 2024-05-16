@@ -85,6 +85,7 @@ fn create_rocket<T: rocket::figment::Provider>(
 ) -> rocket::Rocket<rocket::Build> {
     let mut routes = routes![web::main_index::main_index,];
     routes.append(&mut (*web::EXTERNAL_CDN_PAGES).clone());
+    routes.append(&mut (*web::ICAL_PAGES).clone());
     routes.append(&mut (*web::INFORMATIONAL_PAGES).clone());
     routes.append(&mut (*web::SEO_PAGES).clone());
     routes.append(&mut (*web::MEDIA_ENDPOINTS).clone());

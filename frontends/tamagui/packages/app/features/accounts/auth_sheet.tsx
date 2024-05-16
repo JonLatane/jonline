@@ -148,7 +148,7 @@ export function AuthSheet({ }: AuthSheetProps) {
     }
   }, [accountsLoading, forceDisableAccountButtons, addingAccount, accountsOnServer.length]);
 
-  const onPress = () => setOpen(true);
+  const alreadyHasAccounts = accountsOnServer.length > 0;
   return (
     <>
       <Sheet
@@ -166,7 +166,83 @@ export function AuthSheet({ }: AuthSheetProps) {
         <Sheet.Frame>
           <Sheet.Handle />
           {/* <ZStack h='$6'> */}
-          <CreationServerSelector onPressBack={() => setOpen(false)} />
+          <XStack 
+          // gap='$2'
+            h='$5' // paddingHorizontal='$3'
+            // mx='$3'
+            px='$3'
+            // w='100%'
+            mb='$2'
+            ai='center'
+            >
+            <Button
+              alignSelf='center'
+              size="$3"
+              circular
+              icon={ChevronLeft}
+              onPress={() => setOpen(false)} />
+            <XStack h='100%' f={1}>
+              <FlipMove style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+                {alreadyHasAccounts
+                  ? <div key='accounts' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                    {/* <Heading size="$5" alignSelf='center'>Accounts</Heading> */}
+                    {/* <div key='accounts'> */}
+                    <XStack ml='$3'>
+                      <Button h='auto' mih='$3'
+                        {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
+                        transparent={addingAccount}
+                        borderTopRightRadius={0} borderBottomRightRadius={0}
+                        onPress={() => {
+                          setAddingAccount(false);
+                          setReauthenticating(false);
+                        }}>
+                        {mediaQuery.gtXs
+                          ? <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
+                          : <YStack ai='center'>
+                            <Heading size='$3' color={addingAccount ? undefined : navTextColor}>Choose</Heading>
+                            <Heading size='$1' color={addingAccount ? undefined : navTextColor}>Account</Heading>
+                          </YStack>}
+                      </Button>
+                      <Button h='auto' mih='$3'
+                        {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
+                        transparent={!addingAccount}
+                        borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                        // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
+                        onPress={() => {
+                          setAddingAccount(true);
+                          setTimeout(() => usernameRef.current.focus(), 100);
+                        }}>
+                        {mediaQuery.gtXs
+                          ? <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
+                          : <YStack ai='center'>
+                            <Heading size='$3' color={!addingAccount ? undefined : navTextColor}>Add</Heading>
+                            <Heading size='$1' color={!addingAccount ? undefined : navTextColor}>Account</Heading>
+                          </YStack>}
+                      </Button>
+                    </XStack>
+                    {/* </div> */}
+                  </div>
+                  : <div key='add-account' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                    <Heading size="$5" alignSelf='center' my='auto' ml='$3' >Add Account</Heading>
+                  </div>
+                }
+              </FlipMove>
+            </XStack>
+            {/* {mediaQuery.gtXs || true
+              ? <Button
+                alignSelf='center'
+                size="$3"
+                circular
+                pointerEvents='none'
+                o={0.0}
+              // icon={ChevronLeft}
+              // onPress={() => setOpen(false)} 
+              />
+              : undefined} */}
+
+            {/* <Heading size="$5" alignSelf='center'>{alreadyHasAccounts ? 'Accounts' : 'Add Account'}</Heading> */}
+          </XStack>
+          <CreationServerSelector />
           {/* {newFunction(mediaQuery, setOpen, creationServer, isCurrentServer, server, serverLink, servers, dispatch, setCreationServer, currentServer)} */}
 
           <Sheet.ScrollView width='100%'>
@@ -193,32 +269,6 @@ export function AuthSheet({ }: AuthSheetProps) {
                   <ServerNameAndLogo server={server} enlargeSmallText />
                 </XStack>
               </div>
-              {accountsOnServer.length > 0
-                ? <div key='accounts'>
-                  <XStack mx='auto' my='$2'>
-                    <Button {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                      transparent={addingAccount}
-                      borderTopRightRadius={0} borderBottomRightRadius={0}
-                      onPress={() => {
-                        setAddingAccount(false);
-                        setReauthenticating(false);
-                      }}>
-                      <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
-                    </Button>
-                    <Button {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                      transparent={!addingAccount}
-                      borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                      // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-                      onPress={() => {
-                        setAddingAccount(true);
-                        setTimeout(() => usernameRef.current.focus(), 100);
-                      }}>
-                      <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
-                    </Button>
-                  </XStack>
-                </div>
-                : <div key='add-account'><Heading size='$9' ml='$5'>Add Account</Heading></div>}
-
               {addingAccount
                 ? <div key='add-account-panel' style={{ width: '100%' }}>
                   <YStack gap="$2" w='100%' pb='$3'>

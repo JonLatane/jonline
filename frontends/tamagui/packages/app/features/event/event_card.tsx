@@ -971,34 +971,36 @@ export const EventCard: React.FC<Props> = ({
                           </XStack>
                         </XStack>
 
-                        <XStack {...detailsShadowProps} key='details' mt={showEdit ? -11 : -15} pl='$3' mb='$3'>
-                          <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
-
-                          <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-                            <YStack key='discussion-anchor-root' h='100%'>
-                              <Button key='comments-link-button'
-                                opacity={isPreview ? 1 : 0.9}
-                                transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
-                                disabled={true}
-                                marginVertical='auto'
-                                px='$2'
-                              >
-                                <XStack opacity={0.9}>
-                                  <YStack marginVertical='auto' scale={0.75}>
-                                    <Paragraph size="$1" ta='right'>
-                                      {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
-                                    </Paragraph>
-                                    {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
-                                      {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
-                                    </Paragraph>}
-                                  </YStack>
-                                </XStack>
-                              </Button>
-                            </YStack>
-                          </Anchor>
-                        </XStack>
                       </YStack>}
                   </AnimatePresence>
+
+                  <XStack {...detailsShadowProps} key='details' pl='$3' mb='$3'
+                    mt={shrinkContent ? '$1' : showEdit ? -11 : -15} >
+                    <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
+
+                    <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                      <YStack key='discussion-anchor-root' h='100%'>
+                        <Button key='comments-link-button'
+                          opacity={isPreview ? 1 : 0.9}
+                          transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
+                          disabled={true}
+                          marginVertical='auto'
+                          px='$2'
+                        >
+                          <XStack opacity={0.9}>
+                            <YStack marginVertical='auto' scale={0.75}>
+                              <Paragraph size="$1" ta='right'>
+                                {instancePost?.responseCount ?? 0} comment{(instancePost?.responseCount ?? 0) == 1 ? '' : 's'}
+                              </Paragraph>
+                              {isPreview || (instancePost?.replyCount ?? 0) == 0 ? undefined : <Paragraph size="$1" ta='right'>
+                                {instancePost?.replyCount ?? 0} repl{(instancePost?.replyCount ?? 0) == 1 ? 'y' : 'ies'}
+                              </Paragraph>}
+                            </YStack>
+                          </XStack>
+                        </Button>
+                      </YStack>
+                    </Anchor>
+                  </XStack>
                 </YStack>
               }
             </Card.Footer>
