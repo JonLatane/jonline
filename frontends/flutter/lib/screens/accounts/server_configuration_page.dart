@@ -1,8 +1,9 @@
 import 'dart:ui';
 
 import 'package:auto_route/auto_route.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
+// import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:jonline/jonline_state.dart';
 import 'package:jonline/models/demo_data/demo_conversations.dart';
 import 'package:jonline/models/demo_data/demo_events.dart';
@@ -907,10 +908,28 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
             Expanded(
               child: SingleChildScrollView(
                 child: ColorPicker(
-                    pickerColor: color,
-                    onColorChanged: (c) {
-                      _pickerColor = c;
-                    }),
+                  // Use the screenPickerColor as start and active color.
+                  color: color,
+                  // Update the screenPickerColor using the callback.
+                  onColorChanged: (Color color) =>
+                      setState(() => _pickerColor = color),
+                  // width: 44,
+                  // height: 44,
+                  // borderRadius: 22,
+                  heading: Text(
+                    'Select color',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  subheading: Text(
+                    'Select color shade',
+                    style: Theme.of(context).textTheme.titleSmall,
+                  ),
+                ),
+                // ColorPicker(
+                //     pickerColor: color,
+                //     onColorChanged: (c) {
+                //       _pickerColor = c;
+                //     }),
               ),
             ),
             TextButton(
