@@ -1,6 +1,6 @@
 import { FederatedAccount } from "@jonline/api";
 import { Button, Heading, Popover, ScrollView, XStack, YStack } from "@jonline/ui";
-import { useAppSelector, useFederatedDispatch } from "app/hooks";
+import { useAppDispatch, useAppSelector, useFederatedDispatch } from "app/hooks";
 import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById } from 'app/store';
 import FlipMove from 'react-flip-move';
 import { useFederatedAccountOrServer } from '../../hooks/account_or_server/use_federated_account_or_server';
@@ -64,11 +64,15 @@ const FederatedProfileSelector: React.FC<{
   user: FederatedUser; profile: FederatedAccount
 }> = ({ user, profile }) => {
 
-  const { dispatch, accountOrServer } = useFederatedDispatch(profile.host);
-  const currentAccount = accountOrServer.account!;
-  const currentUser = accountOrServer.account?.user;
-  const isCurrentUser = user.id === currentUser?.id
-    && user.serverHost === accountOrServer.server?.host;
+  const dispatch = useAppDispatch();
+  
+  const { accountOrServer: userAccountOrServer } = useFederatedDispatch(user.serverHost);
+  const { accountOrServer: profileAccountOrServer } = useFederatedDispatch(profile.host);
+
+  // const currentAccount = accountOrServer.account!;
+  const userCurrentUser = userAccountOrServer.account?.user;
+  const isCurrentUser = user.id === userCurrentUser?.id
+    && user.serverHost === userAccountOrServer.server?.host;
 
   const profileAccount = useAppSelector(state => selectAllAccounts(state.accounts))
     .find(account => account.server.host === profile.host && account.user.id === profile.userId);
@@ -79,7 +83,7 @@ const FederatedProfileSelector: React.FC<{
   useEffect(() => {
     if (!profileUser && !loadFailed && !loadingUser) {
       setLoadingUser(true);
-      dispatch(loadUser({ userId: profile.userId, ...accountOrServer }))
+      dispatch(loadUser({ userId: profile.userId, ...profileAccountOrServer }))
         .then(() => setLoadingUser(false));
     }
   }, [profileUser, loadFailed, loadingUser]);
@@ -90,8 +94,8 @@ const FederatedProfileSelector: React.FC<{
 
   function defederateProfile() {
     dispatch(defederateAccounts({
-      account1: { account: currentAccount, server: currentAccount.server },
-      account2: { account: profileAccount, server: profileAccount!.server }
+      account1: userAccountOrServer,//{ account: currentAccount, server: currentAccount.server },
+      account2: profileAccountOrServer,//{ account: profileAccount, server: profileAccount!.server }
     }));
   }
   return <YStack ai='center' gap='$2'>

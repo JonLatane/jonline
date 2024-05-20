@@ -16,14 +16,16 @@ pub fn defederate_profile(
     let remote_user_id = &request.user_id;
     let server_host = &request.host;
 
-    let federated_user = federated_users::table
+    let federated_user = match federated_users::table
         .select(federated_users::all_columns)
         .filter(federated_users::remote_user_id.eq(remote_user_id))
         .filter(federated_users::server_host.eq(server_host))
         .first::<models::FederatedUser>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "federated_user_not_found"))?;
+    {
+        Ok(federated_user) => federated_user,
+        Err(_) => return Ok(()),
+    };
 
-    // upsert the federated profile
     diesel::delete(federated_profiles::table)
         .filter(federated_profiles::user_id.eq(user.id))
         .filter(federated_profiles::federated_user_id.eq(federated_user.id))
