@@ -337,11 +337,11 @@ extension HomePageAppBar on HomePageState {
               width: 72,
               child: ElevatedButton(
                 style: ButtonStyle(
-                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                    foregroundColor: MaterialStateProperty.all(
+                    padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
+                    foregroundColor: WidgetStateProperty.all(
                         Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
                     overlayColor:
-                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                        WidgetStateProperty.all(Colors.white.withAlpha(100)),
                     splashFactory: InkSparkle.splashFactory),
                 onPressed: canCreateGroup.value ? () => createGroup() : null,
                 // doingStuff || username.isEmpty || password.isEmpty
@@ -409,11 +409,11 @@ extension HomePageAppBar on HomePageState {
               width: 72,
               child: ElevatedButton(
                 style: ButtonStyle(
-                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                    foregroundColor: MaterialStateProperty.all(
+                    padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
+                    foregroundColor: WidgetStateProperty.all(
                         Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
                     overlayColor:
-                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                        WidgetStateProperty.all(Colors.white.withAlpha(100)),
                     splashFactory: InkSparkle.splashFactory),
                 onPressed: canCreatePost.value ? () => createPost() : null,
                 // doingStuff || username.isEmpty || password.isEmpty
@@ -446,11 +446,11 @@ extension HomePageAppBar on HomePageState {
               width: 72,
               child: ElevatedButton(
                 style: ButtonStyle(
-                    padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
-                    foregroundColor: MaterialStateProperty.all(
+                    padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
+                    foregroundColor: WidgetStateProperty.all(
                         Colors.white.withAlpha(title.isEmpty ? 100 : 255)),
                     overlayColor:
-                        MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                        WidgetStateProperty.all(Colors.white.withAlpha(100)),
                     splashFactory: InkSparkle.splashFactory),
                 onPressed: canCreateReply.value ? () => createReply() : null,
                 // doingStuff || username.isEmpty || password.isEmpty

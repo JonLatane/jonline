@@ -1,7 +1,7 @@
 import { ExpirableToken, GetServiceVersionResponse, ServerConfiguration, User } from "@jonline/api";
 import { JonlineClient } from "@jonline/api/generated/jonline";
 import { CallOptions } from "nice-grpc-web";
-import { accountID, serverID } from "./modules";
+import { FederatedUser, accountID, serverID } from "./modules";
 
 export type JonlineServer = {
   host: string;

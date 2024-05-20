@@ -18,6 +18,7 @@ interface Props {
 const recommendedServerCache = new Map<string, any>();
 
 export type JonlineServerInfo = {
+  server: JonlineServer;
   existingServer: JonlineServer | undefined;
   pendingServer: JonlineServer | undefined;
   prototypeServer: JonlineServer;
@@ -56,13 +57,13 @@ export function useJonlineServerInfo(host: string): JonlineServerInfo {
     }
   }, [existingServer === undefined, pendingServer === undefined, loadingPendingServer, loadedPendingServer]);
 
-  return { existingServer, pendingServer, prototypeServer };
+  return { existingServer, pendingServer, prototypeServer, server: existingServer ?? pendingServer ?? prototypeServer };
 }
 export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, disableHeightLimit = false, tiny = false, pinAfterAdding = false }) => {
   const dispatch = useAppDispatch();
   const [addingServer, setAddingServer] = React.useState(false);
 
-  const { existingServer, pendingServer, prototypeServer } = useJonlineServerInfo(host);
+  const { server } = useJonlineServerInfo(host);
 
   const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {
@@ -77,10 +78,10 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
     }
     // dispatch(upsertServer(prototypeServer)).then(async () => {
     // debugger;
-    await getServerClient(prototypeServer, { skipUpsert: false }).then(_client => {
+    await getServerClient(server, { skipUpsert: false }).then(_client => {
       console.log("Got server client", _client);
       setTimeout(() => {
-        store.dispatch(pinServer({ serverId: serverID(prototypeServer), pinned: true }));
+        store.dispatch(pinServer({ serverId: serverID(server), pinned: true }));
         setAddingServer(false);
       }, 1500);
     });
@@ -90,13 +91,13 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
 
   const externalLink = useLink({ href: `https://${host}` });
 
-  const { color: buttonBackgroundColor, textColor: buttonTextColor } = colorIntMeta(pendingServer?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242);
+  const { color: buttonBackgroundColor, textColor: buttonTextColor } = colorIntMeta(server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242);
   return <YStack px='$3' gap='$2'>
     {/* {tiny
       ? */}
     <XStack>
       <XStack f={1} overflow='hidden' mx='auto' my='auto'>
-        <ServerNameAndLogo server={existingServer ?? pendingServer ?? prototypeServer} />
+        <ServerNameAndLogo server={server} />
       </XStack>
       <Button icon={ExternalLink} target='_blank' circular my='auto' {...externalLink} />
     </XStack>
@@ -104,7 +105,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
       <ServerCard server={existingServer ?? pendingServer ?? prototypeServer} isPreview={isPreview}
         disableHeightLimit={disableHeightLimit} disableFooter disablePress />
     } */}
-    {existingServer ? undefined
+    {server ? undefined
       : <Button mt='$2' disabled={addingServer} o={addingServer ? 0.5 : 1}
         backgroundColor={buttonBackgroundColor} color={buttonTextColor}
         hoverStyle={{ backgroundColor: buttonBackgroundColor }}

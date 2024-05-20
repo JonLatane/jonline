@@ -25,3 +25,13 @@ message FederatedServer {
   // (showing its Events and Posts alongside the "main" server).
   optional bool pinned_by_default = 3;
 }
+
+// Some user on a Jonline server.
+// Most commonly a different server than the one serving up FederatedAccount data,
+// but users may also federate multiple accounts on the same server.
+message FederatedAccount {
+  // The DNS hostname of the server that this user is on.
+  string host = 1;
+  // The user ID of the user on the server.
+  string user_id = 2;
+}

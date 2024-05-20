@@ -21,7 +21,7 @@ pub fn get_current_user(
     };
 
     let lookup = avatar.to_media_lookup();
-    let result = user.to_proto(&None, &None, lookup.as_ref());
+    let result = user.to_proto(&None, &None, lookup.as_ref(), Some(conn));
     log::info!("GetCurrentUser::response={:?}", &result);
     Ok(result)
 }

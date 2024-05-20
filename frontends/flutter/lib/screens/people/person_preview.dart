@@ -301,7 +301,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                           child: TextButton(
                                               style: ButtonStyle(
                                                   padding:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           const EdgeInsets.all(
                                                               0))),
                                               onPressed: cannotFollow
@@ -324,7 +324,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                           child: TextButton(
                                               style: ButtonStyle(
                                                   padding:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           const EdgeInsets.all(
                                                               0))),
                                               onPressed: cannotFollow
@@ -364,7 +364,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                           child: TextButton(
                                               style: ButtonStyle(
                                                   padding:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           const EdgeInsets.all(
                                                               0))),
                                               onPressed: cannotFollow
@@ -388,7 +388,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                           child: TextButton(
                                               style: ButtonStyle(
                                                   padding:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           const EdgeInsets.all(
                                                               0))),
                                               onPressed: cannotFollow
@@ -481,7 +481,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                       child: TextButton(
                                           style: ButtonStyle(
                                               padding:
-                                                  MaterialStateProperty.all(
+                                                  WidgetStateProperty.all(
                                                       const EdgeInsets.all(0))),
                                           onPressed: () => unfollow(),
                                           child: Row(
@@ -512,7 +512,7 @@ class _PersonPreviewState extends JonlineState<PersonPreview> {
                                       child: TextButton(
                                           style: ButtonStyle(
                                               padding:
-                                                  MaterialStateProperty.all(
+                                                  WidgetStateProperty.all(
                                                       const EdgeInsets.all(0))),
                                           onPressed: cannotFollow
                                               ? null

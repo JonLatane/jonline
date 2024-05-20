@@ -481,13 +481,13 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                                   child: TextButton(
                                                       style: ButtonStyle(
                                                           overlayColor:
-                                                              MaterialStateProperty
+                                                              WidgetStateProperty
                                                                   .all(appState
                                                                       .navColor
                                                                       .withOpacity(
                                                                           0.2)),
                                                           padding:
-                                                              MaterialStateProperty
+                                                              WidgetStateProperty
                                                                   .all(EdgeInsets
                                                                       .zero)),
                                                       onPressed: () {
@@ -660,12 +660,12 @@ class HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                           child: TextButton(
                                               style: ButtonStyle(
                                                   overlayColor:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           appState.navColor
                                                               .withOpacity(
                                                                   0.2)),
                                                   padding:
-                                                      MaterialStateProperty.all(
+                                                      WidgetStateProperty.all(
                                                           EdgeInsets.zero)),
                                               onPressed: () {
                                                 if (index ==

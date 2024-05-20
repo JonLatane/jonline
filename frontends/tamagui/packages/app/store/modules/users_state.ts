@@ -9,7 +9,7 @@ import {
 } from "@reduxjs/toolkit";
 import { passes } from "app/utils/moderation_utils";
 import moment from "moment";
-import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createEvent, createFederatedPagesStatus, createPost, loadGroupMembers, notifyUserDeleted, store, upsertUserData } from "..";
+import { AccountOrServer, FederatedPagesStatus, PaginatedIds, createEvent, createFederatedPagesStatus, createPost, defederateAccounts, federateAccounts, loadGroupMembers, notifyUserDeleted, store, upsertUserData } from "..";
 import { Federated, FederatedAction, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedEntityId, federatedId, getFederated, parseFederatedId, setFederated } from '../federation';
 import { LoadUser, LoadUsername, defaultUserListingType, deleteUser, followUnfollowUser, loadUser, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, loadUsersPage, respondToFollowRequest, updateUser } from "./user_actions";
 
@@ -69,8 +69,11 @@ export const usersSlice = createSlice({
   name: "users",
   initialState: initialState,
   reducers: {
-    upsertUser: usersAdapter.upsertOne,
-    removeUser: usersAdapter.removeOne,
+    // upsertUser: (state, action: PayloadAction<FederatedUser>) => {
+    //   requestAnimationFrame(() => store.dispatch(upsertUserData(action.payload)));
+    //   usersAdapter.upsertOne(state, action.payload);
+    // },
+    // removeUser: usersAdapter.removeOne,
     resetUsers: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
       if (!action.payload.serverHost) return;
 
@@ -296,10 +299,68 @@ export const usersSlice = createSlice({
       ).filter(u => u) as FederatedUser[];
       usersAdapter.upsertMany(state, federatedUsers);
     });
+
+    builder.addCase(federateAccounts.fulfilled, (state, action) => {
+      const { account1, account2 } = action.meta.arg;
+      const userId1 = federateId(account1.account!.user.id, account1.server?.host);
+      const userId2 = federateId(account2.account!.user.id, account2.server?.host);
+      const user1 = selectors.selectById(state, userId1);
+      const user2 = selectors.selectById(state, userId2);
+
+      if (user1) {
+        usersAdapter.upsertOne(state, {
+          ...user1,
+          federatedProfiles: [
+            ...(user1.federatedProfiles || []),
+            {
+              userId: account2.account!.user.id,
+              host: account2.server!.host
+            }],
+        });
+      }
+      if (user2) {
+        usersAdapter.upsertOne(state, {
+          ...user2,
+          federatedProfiles: [
+            ...(user2.federatedProfiles || []),
+            {
+              userId: account1.account!.user.id,
+              host: account1.server!.host
+            }],
+        });
+      }
+    });
+
+    builder.addCase(defederateAccounts.fulfilled, (state, action) => {
+      const { account1, account2 } = action.meta.arg;
+      const userId1 = federateId(account1.account!.user.id, account1.server?.host);
+      const userId2 = federateId(account2.account!.user.id, account2.server?.host);
+      const user1 = selectors.selectById(state, userId1);
+      const user2 = selectors.selectById(state, userId2);
+
+      if (user1) {
+        usersAdapter.upsertOne(state, {
+          ...user1,
+          federatedProfiles: user1.federatedProfiles.filter(p =>
+            p.userId !== account2.account!.user.id ||
+            p.host !== account2.server!.host
+          )
+        });
+      }
+      if (user2) {
+        usersAdapter.upsertOne(state, {
+          ...user2,
+          federatedProfiles: user2.federatedProfiles.filter(p =>
+            p.userId !== account1.account!.user.id ||
+            p.host !== account1.server!.host
+          )
+        });
+      }
+    });
   },
 });
 
-export const { removeUser, resetUsers, resetUserEvents, resetUserPosts, upsertUser } = usersSlice.actions;
+export const { resetUsers, resetUserEvents, resetUserPosts } = usersSlice.actions;
 
 export const { selectAll: selectAllUsers, selectById: selectUserById } = selectors;
 export const usersReducer = usersSlice.reducer;

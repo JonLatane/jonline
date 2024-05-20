@@ -145,6 +145,7 @@ fn get_all_members(
                         &follow.as_ref(),
                         &target_follow.as_ref(),
                         lookup.as_ref(),
+                        None
                     )),
                     membership: Some(membership.to_proto()),
                 }
@@ -229,6 +230,7 @@ fn get_members_by_username(
                     &follow.as_ref(),
                     &target_follow.as_ref(),
                     media_reference.to_media_lookup().as_ref(),
+                    None
                 )),
                 membership: Some(membership.to_proto()),
             },

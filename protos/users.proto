@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "permissions.proto";
 import "visibility_moderation.proto";
 import "media.proto";
+import "federation.proto";
 
 // Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s,
 // [`Post`](#jonline-Post)s, [`Event`](#jonline-Event)s, and other objects associated with them.
@@ -61,6 +62,14 @@ message User {
   // The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
   // providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
   optional Membership current_group_membership = 52;
+
+  // Indicates that `federated_profiles` has been loaded.
+  bool has_advanced_data = 80;
+
+  // Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers
+  // that the user has connected to their account. Managed by the user via
+  // `Federate`
+  repeated FederatedAccount federated_profiles = 81;
 
   // The time the user was created.
   google.protobuf.Timestamp created_at = 100;

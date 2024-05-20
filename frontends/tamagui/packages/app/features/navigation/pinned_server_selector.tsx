@@ -1,13 +1,14 @@
 import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, PanelTopOpen, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useCurrentAccount, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useAppDispatch, useAppSelector, useCurrentAccount, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import FlipMove from 'react-flip-move';
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
-import RecommendedServer from "../accounts/recommended_server";
+import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { User } from "@jonline/api";
 
 
 export type PinnedServerSelectorProps = {
@@ -93,7 +94,7 @@ export function PinnedServerSelector({
   const childMargins = { paddingTop: 4, paddingBottom: 4 };
   return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
     w='100%' h={show ? undefined : 0}
-    // backgroundColor={transparentBackgroundColor}
+  // backgroundColor={transparentBackgroundColor}
   // o={transparent ? 1 : 1}
   >
     {/* <AnimatePresence> */}
@@ -324,39 +325,70 @@ export type ShortAccountSelectorButtonProps = {
 };
 export function ShortAccountSelectorButton({ server, pinnedServer, onPress }: ShortAccountSelectorButtonProps) {
   const pinned = !!pinnedServer?.pinned;
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
+  const { navColor, navTextColor } = useServerTheme(server);
   const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
-  const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
-  const avatarSize = 20;
-  const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
+  // const avatarUrl = useMediaUrl(accountuser.avatar?.id, { account, server: account?.server });
+  // const avatarSize = 20;
+  // const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
 
   return <Button onPress={onPress} h='auto' py='$1' px='$2'
     borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
     o={pinned ? 1 : 0.5}
     disabled={!onPress}
     {...(pinned ? themedButtonBackground(navColor, navTextColor) : {})}>
-    <XStack ai='center' w='100%' gap='$2'>
-
-      {(avatarUrl && avatarUrl != '') ?
-
-        <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
-          <Image
-            pos="absolute"
-            width={avatarSize}
-            height={avatarSize}
-            borderRadius={avatarSize / 2}
-            resizeMode="cover"
-            als="flex-start"
-            source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
-          />
-        </XStack>
-        : undefined}
-      <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse" color={pinned ? navTextColor : undefined} o={pinnedAccount ? 1 : 0.5}>
-        {pinnedAccount
-          ? pinnedAccount?.user.username
-          : 'anonymous'}
-      </Paragraph>
-      <AtSign size='$1' color={pinned ? navTextColor : undefined} />
-    </XStack>
+    <AccountAvatarAndUsername account={account}
+      textColor={pinned ? navTextColor : undefined} />
   </Button>;
+}
+
+export type AccountAvatarAndUsernameProps = {
+  account?: JonlineAccount;
+  user?: User;
+  server?: JonlineServer;
+  textColor?: string;
+};
+export function AccountAvatarAndUsername({
+  account: specifiedAccount,
+  server: specifiedServer,
+  user: specifiedUser,
+  textColor
+}:
+  AccountAvatarAndUsernameProps) {
+  const user = specifiedUser ?? specifiedAccount?.user;
+  const serverHost = specifiedServer?.host ?? specifiedAccount?.server?.host ??
+    (user && 'serverHost' in user ? user.serverHost as string : undefined);
+
+  const accountOrServer = useFederatedAccountOrServer(serverHost);
+  const account = specifiedAccount ?? accountOrServer.account;
+
+  const { server } = useJonlineServerInfo(serverHost ?? 'unknown');
+  // const pinned = !!pinnedServer?.pinned;
+  // const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
+  // const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
+  const avatarUrl = useMediaUrl(user?.avatar?.id, { account, server });
+  const avatarSize = 20;
+
+  return <XStack ai='center' w='100%' gap='$2'>
+
+    {(avatarUrl && avatarUrl != '') ?
+
+      <XStack w={avatarSize} h={avatarSize} ml={-3} mr={-3}>
+        <Image
+          pos="absolute"
+          width={avatarSize}
+          height={avatarSize}
+          borderRadius={avatarSize / 2}
+          resizeMode="cover"
+          als="flex-start"
+          source={{ uri: avatarUrl, width: avatarSize, height: avatarSize }}
+        />
+      </XStack>
+      : undefined}
+    <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse"
+      color={textColor}
+      o={user ? 1 : 0.5}>
+      {user?.username ?? 'anonyous'}
+    </Paragraph>
+    <AtSign size='$1' color={textColor} />
+  </XStack>;
 }

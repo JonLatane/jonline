@@ -248,7 +248,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
                 flex: 5,
                 child: TextButton(
                   style: ButtonStyle(
-                      padding: MaterialStateProperty.all(
+                      padding: WidgetStateProperty.all(
                     const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                   )),
                   onPressed: () {
@@ -315,7 +315,7 @@ class PostPreviewState extends JonlineBaseState<PostPreview> {
               const Expanded(child: SizedBox()),
               TextButton(
                 style: ButtonStyle(
-                    padding: MaterialStateProperty.all(
+                    padding: WidgetStateProperty.all(
                   const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                 )),
                 onPressed: widget.onPressResponseCount,
@@ -688,7 +688,7 @@ class _PostPreviewGroupChooserState
     }
     return TextButton(
       style: ButtonStyle(
-          padding: MaterialStateProperty.all(
+          padding: WidgetStateProperty.all(
         const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
       )),
       onPressed: () {

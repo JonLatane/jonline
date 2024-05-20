@@ -365,7 +365,7 @@ class PostsScreenState extends JonlineState<PostsScreen>
                                 const SizedBox(height: 8),
                                 TextButton(
                                   style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
+                                      padding: WidgetStateProperty.all(
                                           const EdgeInsets.all(16))),
                                   onPressed: () =>
                                       context.navigateNamedTo('/login'),
@@ -441,8 +441,8 @@ class PostsScreenState extends JonlineState<PostsScreen>
               l != PostListingType.GROUP_POSTS_PENDING_MODERATION;
           var textButton = TextButton(
               style: ButtonStyle(
-                  padding: MaterialStateProperty.all(EdgeInsets.zero),
-                  backgroundColor: MaterialStateProperty.all(l == listingType
+                  padding: WidgetStateProperty.all(EdgeInsets.zero),
+                  backgroundColor: WidgetStateProperty.all(l == listingType
                       ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),
               onPressed: usable

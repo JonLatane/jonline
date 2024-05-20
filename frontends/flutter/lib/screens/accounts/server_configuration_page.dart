@@ -437,7 +437,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                     child: Text("Primary Color", style: textTheme.labelLarge)),
                 TextButton(
                   style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(primaryColor)),
+                      backgroundColor: WidgetStateProperty.all(primaryColor)),
                   onPressed: () => account == null
                       ? null
                       : showColorPicker("Primary Color", primaryColor,
@@ -453,7 +453,7 @@ class _AdminPageState extends JonlineState<ServerConfigurationPage> {
                         Text("Navigation Color", style: textTheme.labelLarge)),
                 TextButton(
                   style: ButtonStyle(
-                      backgroundColor: MaterialStateProperty.all(navColor)),
+                      backgroundColor: WidgetStateProperty.all(navColor)),
                   onPressed: () => account == null
                       ? null
                       : showColorPicker(

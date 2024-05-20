@@ -1,5 +1,6 @@
 /* eslint-disable */
 import _m0 from "protobufjs/minimal";
+import { FederatedAccount } from "./federation";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
@@ -156,6 +157,14 @@ export interface User {
   currentGroupMembership?:
     | Membership
     | undefined;
+  /** Indicates that `federated_profiles` has been loaded. */
+  hasAdvancedData: boolean;
+  /**
+   * Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers
+   * that the user has connected to their account. Managed by the user via
+   * `Federate`
+   */
+  federatedProfiles: FederatedAccount[];
   /** The time the user was created. */
   createdAt:
     | string
@@ -292,6 +301,8 @@ function createBaseUser(): User {
     currentUserFollow: undefined,
     targetCurrentUserFollow: undefined,
     currentGroupMembership: undefined,
+    hasAdvancedData: false,
+    federatedProfiles: [],
     createdAt: undefined,
     updatedAt: undefined,
   };
@@ -357,6 +368,12 @@ export const User = {
     }
     if (message.currentGroupMembership !== undefined) {
       Membership.encode(message.currentGroupMembership, writer.uint32(418).fork()).ldelim();
+    }
+    if (message.hasAdvancedData !== false) {
+      writer.uint32(640).bool(message.hasAdvancedData);
+    }
+    for (const v of message.federatedProfiles) {
+      FederatedAccount.encode(v!, writer.uint32(650).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(802).fork()).ldelim();
@@ -517,6 +534,20 @@ export const User = {
 
           message.currentGroupMembership = Membership.decode(reader, reader.uint32());
           continue;
+        case 80:
+          if (tag !== 640) {
+            break;
+          }
+
+          message.hasAdvancedData = reader.bool();
+          continue;
+        case 81:
+          if (tag !== 650) {
+            break;
+          }
+
+          message.federatedProfiles.push(FederatedAccount.decode(reader, reader.uint32()));
+          continue;
         case 100:
           if (tag !== 802) {
             break;
@@ -569,6 +600,10 @@ export const User = {
       currentGroupMembership: isSet(object.currentGroupMembership)
         ? Membership.fromJSON(object.currentGroupMembership)
         : undefined,
+      hasAdvancedData: isSet(object.hasAdvancedData) ? globalThis.Boolean(object.hasAdvancedData) : false,
+      federatedProfiles: globalThis.Array.isArray(object?.federatedProfiles)
+        ? object.federatedProfiles.map((e: any) => FederatedAccount.fromJSON(e))
+        : [],
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
     };
@@ -633,6 +668,12 @@ export const User = {
     if (message.currentGroupMembership !== undefined) {
       obj.currentGroupMembership = Membership.toJSON(message.currentGroupMembership);
     }
+    if (message.hasAdvancedData !== false) {
+      obj.hasAdvancedData = message.hasAdvancedData;
+    }
+    if (message.federatedProfiles?.length) {
+      obj.federatedProfiles = message.federatedProfiles.map((e) => FederatedAccount.toJSON(e));
+    }
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
     }
@@ -680,6 +721,8 @@ export const User = {
       (object.currentGroupMembership !== undefined && object.currentGroupMembership !== null)
         ? Membership.fromPartial(object.currentGroupMembership)
         : undefined;
+    message.hasAdvancedData = object.hasAdvancedData ?? false;
+    message.federatedProfiles = object.federatedProfiles?.map((e) => FederatedAccount.fromPartial(e)) || [];
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     return message;

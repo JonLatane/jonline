@@ -93,6 +93,7 @@
     - [WebUserInterface](#jonline-WebUserInterface)
   
 - [federation.proto](#federation-proto)
+    - [FederatedAccount](#jonline-FederatedAccount)
     - [FederatedServer](#jonline-FederatedServer)
     - [FederationInfo](#jonline-FederationInfo)
     - [GetServiceVersionResponse](#jonline-GetServiceVersionResponse)
@@ -236,6 +237,8 @@ approach to predictable atomicity.
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
+| FederateProfile | [FederatedAccount](#jonline-FederatedAccount) | [FederatedAccount](#jonline-FederatedAccount) | Federate the current user&#39;s profile with another user profile. *Authenticated*. |
+| DefederateProfile | [FederatedAccount](#jonline-FederatedAccount) | [.google.protobuf.Empty](#google-protobuf-Empty) | Authenticated*. |
 | ConfigureServer | [ServerConfiguration](#jonline-ServerConfiguration) | [ServerConfiguration](#jonline-ServerConfiguration) | Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.* Requires `ADMIN` permissions. |
 | ResetData | [.google.protobuf.Empty](#google-protobuf-Empty) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.* Requires `ADMIN` permissions. Note: Server Configuration is not deleted. |
 | StreamReplies | [Post](#jonline-Post) | [Post](#jonline-Post) stream | (TODO) Reply streaming interface. Currently just streams fake example data. |
@@ -679,6 +682,8 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
+| has_advanced_data | [bool](#bool) |  | Indicates that `federated_profiles` has been loaded. |
+| federated_profiles | [FederatedAccount](#jonline-FederatedAccount) | repeated | Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers that the user has connected to their account. Managed by the user via `Federate` |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the user was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the user was last updated. |
 
@@ -1731,6 +1736,24 @@ a century ahead of Flutter Web, so it&#39;s the default.
 <p align="right"><a href="#top">Top</a></p>
 
 ## federation.proto
+
+
+
+<a name="jonline-FederatedAccount"></a>
+
+### FederatedAccount
+Some user on a Jonline server.
+Most commonly a different server than the one serving up FederatedAccount data,
+but users may also federate multiple accounts on the same server.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | The DNS hostname of the server that this user is on. |
+| user_id | [string](#string) |  | The user ID of the user on the server. |
+
+
+
 
 
 

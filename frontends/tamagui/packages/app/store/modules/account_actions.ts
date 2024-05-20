@@ -1,9 +1,10 @@
 import { CreateAccountRequest, LoginRequest } from "@jonline/api";
 import {
+  AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
 import 'react-native-get-random-values';
-import { JonlineAccount, JonlineServer, getServerClient } from "..";
+import { AccountOrServer, JonlineAccount, JonlineServer, getCredentialClient, getServerClient } from "..";
 export type SkipSelection = { skipSelection?: boolean; }
 export type CreateAccount = JonlineServer & CreateAccountRequest & SkipSelection;
 export const createAccount = createAsyncThunk<JonlineAccount, CreateAccount>(
@@ -61,3 +62,50 @@ const getDeviceName = () => {
   Object.keys(ua).map(v => navigator.userAgent.match(ua[v]) && (device = v));
   return device;
 };
+
+export type FederateAccounts = { account1: AccountOrServer, account2: AccountOrServer };
+export const federateAccounts: AsyncThunk<void, FederateAccounts, any> = createAsyncThunk<void, FederateAccounts>(
+  "users/federateAccounts",
+  async ({ account1, account2 }) => {
+    // debugger;
+    for (const accountOrServer of [account1, account2]) {
+      const otherAccount = (accountOrServer === account1
+        ? account2
+        : account1
+      ).account!;
+
+      const client = await getCredentialClient(accountOrServer);
+      try {
+        await client.federateProfile({
+          userId: otherAccount!.user.id,
+          host: otherAccount.server!.host,
+        }, client.credential);
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    }
+  });
+
+export const defederateAccounts: AsyncThunk<void, FederateAccounts, any> = createAsyncThunk<void, FederateAccounts>(
+  "users/defederateAccounts",
+  async ({ account1, account2 }) => {
+    // debugger;
+    for (const accountOrServer of [account1, account2]) {
+      const otherAccount = (accountOrServer === account1
+        ? account2
+        : account1
+      ).account!;
+
+      const client = await getCredentialClient(accountOrServer);
+      try {
+        await client.defederateProfile({
+          userId: otherAccount!.user.id,
+          host: otherAccount.server!.host,
+        }, client.credential);
+      } catch (e) {
+        console.error(e);
+        throw e;
+      }
+    }
+  });

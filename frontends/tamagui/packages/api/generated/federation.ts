@@ -33,6 +33,18 @@ export interface FederatedServer {
   pinnedByDefault?: boolean | undefined;
 }
 
+/**
+ * Some user on a Jonline server.
+ * Most commonly a different server than the one serving up FederatedAccount data,
+ * but users may also federate multiple accounts on the same server.
+ */
+export interface FederatedAccount {
+  /** The DNS hostname of the server that this user is on. */
+  host: string;
+  /** The user ID of the user on the server. */
+  userId: string;
+}
+
 function createBaseGetServiceVersionResponse(): GetServiceVersionResponse {
   return { version: "" };
 }
@@ -238,6 +250,80 @@ export const FederatedServer = {
     message.host = object.host ?? "";
     message.configuredByDefault = object.configuredByDefault ?? undefined;
     message.pinnedByDefault = object.pinnedByDefault ?? undefined;
+    return message;
+  },
+};
+
+function createBaseFederatedAccount(): FederatedAccount {
+  return { host: "", userId: "" };
+}
+
+export const FederatedAccount = {
+  encode(message: FederatedAccount, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.host !== "") {
+      writer.uint32(10).string(message.host);
+    }
+    if (message.userId !== "") {
+      writer.uint32(18).string(message.userId);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): FederatedAccount {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseFederatedAccount();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.host = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): FederatedAccount {
+    return {
+      host: isSet(object.host) ? globalThis.String(object.host) : "",
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+    };
+  },
+
+  toJSON(message: FederatedAccount): unknown {
+    const obj: any = {};
+    if (message.host !== "") {
+      obj.host = message.host;
+    }
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<FederatedAccount>, I>>(base?: I): FederatedAccount {
+    return FederatedAccount.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<FederatedAccount>, I>>(object: I): FederatedAccount {
+    const message = createBaseFederatedAccount();
+    message.host = object.host ?? "";
+    message.userId = object.userId ?? "";
     return message;
   },
 };

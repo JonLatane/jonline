@@ -13,6 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
+import 'federation.pb.dart' as $1;
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'media.pb.dart' as $5;
 import 'permissions.pbenum.dart' as $11;
@@ -44,6 +45,8 @@ class User extends $pb.GeneratedMessage {
     Follow? currentUserFollow,
     Follow? targetCurrentUserFollow,
     Membership? currentGroupMembership,
+    $core.bool? hasAdvancedData,
+    $core.Iterable<$1.FederatedAccount>? federatedProfiles,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
@@ -105,6 +108,12 @@ class User extends $pb.GeneratedMessage {
     if (currentGroupMembership != null) {
       $result.currentGroupMembership = currentGroupMembership;
     }
+    if (hasAdvancedData != null) {
+      $result.hasAdvancedData = hasAdvancedData;
+    }
+    if (federatedProfiles != null) {
+      $result.federatedProfiles.addAll(federatedProfiles);
+    }
     if (createdAt != null) {
       $result.createdAt = createdAt;
     }
@@ -137,6 +146,8 @@ class User extends $pb.GeneratedMessage {
     ..aOM<Follow>(50, _omitFieldNames ? '' : 'currentUserFollow', subBuilder: Follow.create)
     ..aOM<Follow>(51, _omitFieldNames ? '' : 'targetCurrentUserFollow', subBuilder: Follow.create)
     ..aOM<Membership>(52, _omitFieldNames ? '' : 'currentGroupMembership', subBuilder: Membership.create)
+    ..aOB(80, _omitFieldNames ? '' : 'hasAdvancedData')
+    ..pc<$1.FederatedAccount>(81, _omitFieldNames ? '' : 'federatedProfiles', $pb.PbFieldType.PM, subBuilder: $1.FederatedAccount.create)
     ..aOM<$9.Timestamp>(100, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(101, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
@@ -369,29 +380,45 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(52)
   Membership ensureCurrentGroupMembership() => $_ensure(18);
 
+  /// Indicates that `federated_profiles` has been loaded.
+  @$pb.TagNumber(80)
+  $core.bool get hasAdvancedData => $_getBF(19);
+  @$pb.TagNumber(80)
+  set hasAdvancedData($core.bool v) { $_setBool(19, v); }
+  @$pb.TagNumber(80)
+  $core.bool hasHasAdvancedData() => $_has(19);
+  @$pb.TagNumber(80)
+  void clearHasAdvancedData() => clearField(80);
+
+  /// Federated profiles for the user. *Not always loaded.* This is a list of profiles from other servers
+  /// that the user has connected to their account. Managed by the user via
+  /// `Federate`
+  @$pb.TagNumber(81)
+  $core.List<$1.FederatedAccount> get federatedProfiles => $_getList(20);
+
   /// The time the user was created.
   @$pb.TagNumber(100)
-  $9.Timestamp get createdAt => $_getN(19);
+  $9.Timestamp get createdAt => $_getN(21);
   @$pb.TagNumber(100)
   set createdAt($9.Timestamp v) { setField(100, v); }
   @$pb.TagNumber(100)
-  $core.bool hasCreatedAt() => $_has(19);
+  $core.bool hasCreatedAt() => $_has(21);
   @$pb.TagNumber(100)
   void clearCreatedAt() => clearField(100);
   @$pb.TagNumber(100)
-  $9.Timestamp ensureCreatedAt() => $_ensure(19);
+  $9.Timestamp ensureCreatedAt() => $_ensure(21);
 
   /// The time the user was last updated.
   @$pb.TagNumber(101)
-  $9.Timestamp get updatedAt => $_getN(20);
+  $9.Timestamp get updatedAt => $_getN(22);
   @$pb.TagNumber(101)
   set updatedAt($9.Timestamp v) { setField(101, v); }
   @$pb.TagNumber(101)
-  $core.bool hasUpdatedAt() => $_has(20);
+  $core.bool hasUpdatedAt() => $_has(22);
   @$pb.TagNumber(101)
   void clearUpdatedAt() => clearField(101);
   @$pb.TagNumber(101)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(20);
+  $9.Timestamp ensureUpdatedAt() => $_ensure(22);
 }
 
 /// Post/authorship-centric version of User. UI can cross-reference user details

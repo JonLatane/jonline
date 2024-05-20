@@ -2,6 +2,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::get_federated_users;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::{follows, users};
 use diesel::*;
@@ -16,6 +17,8 @@ pub trait ToProtoUser {
         follow: &Option<&models::Follow>,
         target_follow: &Option<&models::Follow>,
         media_lookup: Option<&MediaLookup>,
+        // If provided, marshaling will load federated user data from the DB.
+        conn: Option<&mut PgPooledConnection>,
     ) -> User;
 
     fn to_author(&self) -> models::Author;
@@ -29,6 +32,8 @@ impl ToProtoUser for models::User {
         follow: &Option<&models::Follow>,
         target_follow: &Option<&models::Follow>,
         media_lookup: Option<&MediaLookup>,
+        // If provided, marshaling will load federated user data from the DB.
+        conn: Option<&mut PgPooledConnection>,
     ) -> User {
         let email: Option<ContactMethod> = self
             .email
@@ -62,6 +67,10 @@ impl ToProtoUser for models::User {
                 .default_follow_moderation
                 .to_proto_moderation()
                 .unwrap() as i32,
+            has_advanced_data: conn.is_some(),
+            federated_profiles: conn
+                .map(|conn| get_federated_users(self.id, conn))
+                .unwrap_or(vec![]),
             current_user_follow: follow.as_ref().map(|f| f.to_proto()),
             target_current_user_follow: target_follow.as_ref().map(|f| f.to_proto()),
             current_group_membership: None, // TODO

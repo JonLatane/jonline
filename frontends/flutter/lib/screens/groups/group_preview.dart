@@ -370,7 +370,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                                     height: 32,
                                     child: TextButton(
                                         style: ButtonStyle(
-                                            padding: MaterialStateProperty.all(
+                                            padding: WidgetStateProperty.all(
                                                 const EdgeInsets.all(0))),
                                         onPressed: () => leaveGroup(group),
                                         child: Row(
@@ -400,7 +400,7 @@ class _GroupPreviewState extends JonlineState<GroupPreview> {
                                         child: TextButton(
                                             style: ButtonStyle(
                                                 padding:
-                                                    MaterialStateProperty.all(
+                                                    WidgetStateProperty.all(
                                                         const EdgeInsets.all(
                                                             0))),
                                             onPressed: canJoin

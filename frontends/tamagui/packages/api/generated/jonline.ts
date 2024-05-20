@@ -16,7 +16,7 @@ import {
   GetEventsRequest,
   GetEventsResponse,
 } from "./events";
-import { GetServiceVersionResponse } from "./federation";
+import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
 import { GetGroupsRequest, GetGroupsResponse, GetMembersRequest, GetMembersResponse, Group } from "./groups";
 import { GetMediaRequest, GetMediaResponse, Media } from "./media";
@@ -519,6 +519,24 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Federate the current user's profile with another user profile. *Authenticated*. */
+    federateProfile: {
+      name: "FederateProfile",
+      requestType: FederatedAccount,
+      requestStream: false,
+      responseType: FederatedAccount,
+      responseStream: false,
+      options: {},
+    },
+    /** Authenticated*. */
+    defederateProfile: {
+      name: "DefederateProfile",
+      requestType: FederatedAccount,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /**
      * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
      * Requires `ADMIN` permissions.
@@ -704,6 +722,13 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   ): Promise<DeepPartial<EventAttendance>>;
   /** Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.* */
   deleteEventAttendance(request: EventAttendance, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
+  /** Federate the current user's profile with another user profile. *Authenticated*. */
+  federateProfile(
+    request: FederatedAccount,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<FederatedAccount>>;
+  /** Authenticated*. */
+  defederateProfile(request: FederatedAccount, context: CallContext & CallContextExt): Promise<DeepPartial<Empty>>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions.
@@ -870,6 +895,13 @@ export interface JonlineClient<CallOptionsExt = {}> {
   ): Promise<EventAttendance>;
   /** Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.* */
   deleteEventAttendance(request: DeepPartial<EventAttendance>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
+  /** Federate the current user's profile with another user profile. *Authenticated*. */
+  federateProfile(
+    request: DeepPartial<FederatedAccount>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<FederatedAccount>;
+  /** Authenticated*. */
+  defederateProfile(request: DeepPartial<FederatedAccount>, options?: CallOptions & CallOptionsExt): Promise<Empty>;
   /**
    * Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
    * Requires `ADMIN` permissions.

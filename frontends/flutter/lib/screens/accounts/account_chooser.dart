@@ -68,11 +68,11 @@ class AccountChooserState extends JonlineState<AccountChooser> {
         width: 72 * mq.textScaleFactor,
         child: TextButton(
           style: ButtonStyle(
-              padding: MaterialStateProperty.all(const EdgeInsets.all(0)),
+              padding: WidgetStateProperty.all(const EdgeInsets.all(0)),
               foregroundColor:
-                  MaterialStateProperty.all(Colors.white.withAlpha(255)),
+                  WidgetStateProperty.all(Colors.white.withAlpha(255)),
               overlayColor:
-                  MaterialStateProperty.all(Colors.white.withAlpha(100)),
+                  WidgetStateProperty.all(Colors.white.withAlpha(100)),
               splashFactory: InkSparkle.splashFactory),
           onPressed: () {
             // HapticFeedback.lightImpact();

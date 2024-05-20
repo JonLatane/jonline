@@ -53,6 +53,8 @@ const User$json = {
     {'1': 'current_user_follow', '3': 50, '4': 1, '5': 11, '6': '.jonline.Follow', '9': 8, '10': 'currentUserFollow', '17': true},
     {'1': 'target_current_user_follow', '3': 51, '4': 1, '5': 11, '6': '.jonline.Follow', '9': 9, '10': 'targetCurrentUserFollow', '17': true},
     {'1': 'current_group_membership', '3': 52, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 10, '10': 'currentGroupMembership', '17': true},
+    {'1': 'has_advanced_data', '3': 80, '4': 1, '5': 8, '10': 'hasAdvancedData'},
+    {'1': 'federated_profiles', '3': 81, '4': 3, '5': 11, '6': '.jonline.FederatedAccount', '10': 'federatedProfiles'},
     {'1': 'created_at', '3': 100, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
     {'1': 'updated_at', '3': 101, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 11, '10': 'updatedAt', '17': true},
   ],
@@ -90,14 +92,16 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     '9sbG93GDIgASgLMg8uam9ubGluZS5Gb2xsb3dICFIRY3VycmVudFVzZXJGb2xsb3eIAQESUQoa'
     'dGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3cYMyABKAsyDy5qb25saW5lLkZvbGxvd0gJUhd0YX'
     'JnZXRDdXJyZW50VXNlckZvbGxvd4gBARJSChhjdXJyZW50X2dyb3VwX21lbWJlcnNoaXAYNCAB'
-    'KAsyEy5qb25saW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARI5Cg'
-    'pjcmVhdGVkX2F0GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0'
-    'Ej4KCnVwZGF0ZWRfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAtSCXVwZG'
-    'F0ZWRBdIgBAUIICgZfZW1haWxCCAoGX3Bob25lQgkKB19hdmF0YXJCEQoPX2ZvbGxvd2VyX2Nv'
-    'dW50QhIKEF9mb2xsb3dpbmdfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50Qh'
-    'EKD19yZXNwb25zZV9jb3VudEIWChRfY3VycmVudF91c2VyX2ZvbGxvd0IdChtfdGFyZ2V0X2N1'
-    'cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEINCgtfdXBkYX'
-    'RlZF9hdA==');
+    'KAsyEy5qb25saW5lLk1lbWJlcnNoaXBIClIWY3VycmVudEdyb3VwTWVtYmVyc2hpcIgBARIqCh'
+    'FoYXNfYWR2YW5jZWRfZGF0YRhQIAEoCFIPaGFzQWR2YW5jZWREYXRhEkgKEmZlZGVyYXRlZF9w'
+    'cm9maWxlcxhRIAMoCzIZLmpvbmxpbmUuRmVkZXJhdGVkQWNjb3VudFIRZmVkZXJhdGVkUHJvZm'
+    'lsZXMSOQoKY3JlYXRlZF9hdBhkIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNy'
+    'ZWF0ZWRBdBI+Cgp1cGRhdGVkX2F0GGUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcE'
+    'gLUgl1cGRhdGVkQXSIAQFCCAoGX2VtYWlsQggKBl9waG9uZUIJCgdfYXZhdGFyQhEKD19mb2xs'
+    'b3dlcl9jb3VudEISChBfZm9sbG93aW5nX2NvdW50Qg4KDF9ncm91cF9jb3VudEINCgtfcG9zdF'
+    '9jb3VudEIRCg9fcmVzcG9uc2VfY291bnRCFgoUX2N1cnJlbnRfdXNlcl9mb2xsb3dCHQobX3Rh'
+    'cmdldF9jdXJyZW50X3VzZXJfZm9sbG93QhsKGV9jdXJyZW50X2dyb3VwX21lbWJlcnNoaXBCDQ'
+    'oLX3VwZGF0ZWRfYXQ=');
 
 @$core.Deprecated('Use authorDescriptor instead')
 const Author$json = {

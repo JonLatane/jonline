@@ -128,7 +128,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                           child: ElevatedButton(
                                             style: ButtonStyle(
                                                 padding:
-                                                    MaterialStateProperty.all(
+                                                    WidgetStateProperty.all(
                                               const EdgeInsets.all(8),
                                             )),
                                             onPressed: () {
@@ -750,7 +750,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                                   height: 32,
                                   child: TextButton(
                                       style: ButtonStyle(
-                                          padding: MaterialStateProperty.all(
+                                          padding: WidgetStateProperty.all(
                                               const EdgeInsets.all(0))),
                                       onPressed: () => deleteAccount(account),
                                       child: const Icon(Icons.delete))))
@@ -886,7 +886,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                               width: 32,
                               child: TextButton(
                                   style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
+                                      padding: WidgetStateProperty.all(
                                           const EdgeInsets.all(0))),
                                   onPressed: () => context.navigateNamedTo(
                                       'server/${server.server}/configuration'),
@@ -935,7 +935,7 @@ class AccountsPageState extends JonlineState<AccountsPage> {
                               height: 32,
                               child: TextButton(
                                   style: ButtonStyle(
-                                      padding: MaterialStateProperty.all(
+                                      padding: WidgetStateProperty.all(
                                           const EdgeInsets.all(0))),
                                   onPressed: server.server !=
                                               appState.primaryServerHost &&

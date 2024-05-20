@@ -54,6 +54,6 @@ pub fn login(
     Ok(RefreshTokenResponse {
         refresh_token: tokens.refresh_token,
         access_token: tokens.access_token,
-        user: Some(user.to_proto(&None, &None, lookup.as_ref())),
+        user: Some(user.to_proto(&None, &None, lookup.as_ref(), Some(conn))),
     })
 }

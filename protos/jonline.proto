@@ -199,6 +199,12 @@ service Jonline {
   // Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
   rpc DeleteEventAttendance(EventAttendance) returns (google.protobuf.Empty) {}
 
+  // Federate the current user's profile with another user profile. *Authenticated*.
+  rpc FederateProfile(FederatedAccount) returns (FederatedAccount) {}
+  // *Authenticated*.
+  rpc DefederateProfile(FederatedAccount) returns (google.protobuf.Empty) {}
+  
+
   // Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
   // Requires `ADMIN` permissions.
   rpc ConfigureServer(ServerConfiguration) returns (ServerConfiguration) {}

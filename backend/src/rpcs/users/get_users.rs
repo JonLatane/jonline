@@ -104,7 +104,12 @@ fn get_all_users(
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
+            user.to_proto(
+                &follow.as_ref(),
+                &target_follow.as_ref(),
+                lookup.as_ref(),
+                None,
+            )
         })
         .collect();
     GetUsersResponse {
@@ -154,7 +159,12 @@ fn get_follow_requests(
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(&follow.as_ref(), &Some(target_follow), lookup.as_ref())
+            user.to_proto(
+                &follow.as_ref(),
+                &Some(target_follow),
+                lookup.as_ref(),
+                None,
+            )
         })
         .collect();
     GetUsersResponse {
@@ -226,7 +236,12 @@ fn get_by_username(
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
+            user.to_proto(
+                &follow.as_ref(),
+                &target_follow.as_ref(),
+                lookup.as_ref(),
+                Some(conn),
+            )
         })
         .collect();
     GetUsersResponse {
@@ -291,7 +306,12 @@ fn get_by_user_id(
         .iter()
         .map(|(user, follow, target_follow, media_reference)| {
             let lookup = media_reference.to_media_lookup();
-            user.to_proto(&follow.as_ref(), &target_follow.as_ref(), lookup.as_ref())
+            user.to_proto(
+                &follow.as_ref(),
+                &target_follow.as_ref(),
+                lookup.as_ref(),
+                Some(conn),
+            )
         })
         .collect();
     GetUsersResponse {

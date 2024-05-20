@@ -363,6 +363,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
       </li>
       <li><a href="#federation-proto">federation.proto</a>
         <ul>
+          <li><a href="#jonline-FederatedAccount">FederatedAccount</a></li>
           <li><a href="#jonline-FederatedServer">FederatedServer</a></li>
           <li><a href="#jonline-FederationInfo">FederationInfo</a></li>
           <li><a href="#jonline-GetServiceVersionResponse">GetServiceVersionResponse</a></li>
@@ -714,6 +715,18 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-EventAttendance">EventAttendance</a></td>
           <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
           <td>Delete an EventAttendance. <em>Publicly accessible <strong>or</strong> Authenticated, with anonymous RSVP support.</em></td>
+        </tr>
+        <tr>
+          <td>FederateProfile</td>
+          <td><a href="#jonline-FederatedAccount">FederatedAccount</a></td>
+          <td><a href="#jonline-FederatedAccount">FederatedAccount</a></td>
+          <td>Federate the current user's profile with another user profile. <em>Authenticated</em>.</td>
+        </tr>
+        <tr>
+          <td>DefederateProfile</td>
+          <td><a href="#jonline-FederatedAccount">FederatedAccount</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Authenticated*.</td>
         </tr>
         <tr>
           <td>ConfigureServer</td>
@@ -1719,6 +1732,18 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#jonline-Membership">Membership</a></td>
           <td>optional</td>
           <td>Returned by <code>GetMembers</code> calls, for use when managing <a href="#jonline-Group"><code>Group</code></a> <a href="#jonline-Membership"><code>Membership</code></a>s. The <code>Membership</code> should match the <code>Group</code> from the originating <a href="#jonline-GetMembersRequest"><code>GetMembersRequest</code></a>, providing whether the user is a member of that <code>Group</code>, has been invited, requested to join, etc..</td>
+        </tr>
+        <tr>
+          <td>has_advanced_data</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Indicates that <code>federated_profiles</code> has been loaded.</td>
+        </tr>
+        <tr>
+          <td>federated_profiles</td>
+          <td><a href="#jonline-FederatedAccount">FederatedAccount</a></td>
+          <td>repeated</td>
+          <td>Federated profiles for the user. <em>Not always loaded.</em> This is a list of profiles from other servers that the user has connected to their account. Managed by the user via <code>Federate</code></td>
         </tr>
         <tr>
           <td>created_at</td>
@@ -4025,6 +4050,37 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
     <p><a name="federation-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="federationproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federationproto"><span class="octicon octicon-link"></span></a>federation.proto</h2>
+    <p><a name="jonline-FederatedAccount"></a></p>
+    <h3 id="federatedaccount"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedaccount"><span class="octicon octicon-link"></span></a>FederatedAccount</h3>
+    <p>
+      Some user on a Jonline server.
+      Most commonly a different server than the one serving up FederatedAccount data,
+      but users may also federate multiple accounts on the same server.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>host</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The DNS hostname of the server that this user is on.</td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The user ID of the user on the server.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-FederatedServer"></a></p>
     <h3 id="federatedserver"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federatedserver"><span class="octicon octicon-link"></span></a>FederatedServer</h3>
     <p>A server that this server will federate with.</p>

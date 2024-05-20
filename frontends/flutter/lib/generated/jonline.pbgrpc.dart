@@ -189,6 +189,14 @@ class JonlineClient extends $grpc.Client {
       '/jonline.Jonline/DeleteEventAttendance',
       ($8.EventAttendance value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
+  static final _$federateProfile = $grpc.ClientMethod<$1.FederatedAccount, $1.FederatedAccount>(
+      '/jonline.Jonline/FederateProfile',
+      ($1.FederatedAccount value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $1.FederatedAccount.fromBuffer(value));
+  static final _$defederateProfile = $grpc.ClientMethod<$1.FederatedAccount, $0.Empty>(
+      '/jonline.Jonline/DefederateProfile',
+      ($1.FederatedAccount value) => value.writeToBuffer(),
+      ($core.List<$core.int> value) => $0.Empty.fromBuffer(value));
   static final _$configureServer = $grpc.ClientMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
       '/jonline.Jonline/ConfigureServer',
       ($2.ServerConfiguration value) => value.writeToBuffer(),
@@ -366,6 +374,14 @@ class JonlineClient extends $grpc.Client {
 
   $grpc.ResponseFuture<$0.Empty> deleteEventAttendance($8.EventAttendance request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteEventAttendance, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$1.FederatedAccount> federateProfile($1.FederatedAccount request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$federateProfile, request, options: options);
+  }
+
+  $grpc.ResponseFuture<$0.Empty> defederateProfile($1.FederatedAccount request, {$grpc.CallOptions? options}) {
+    return $createUnaryCall(_$defederateProfile, request, options: options);
   }
 
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer($2.ServerConfiguration request, {$grpc.CallOptions? options}) {
@@ -666,6 +682,20 @@ abstract class JonlineServiceBase extends $grpc.Service {
         false,
         ($core.List<$core.int> value) => $8.EventAttendance.fromBuffer(value),
         ($0.Empty value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$1.FederatedAccount, $1.FederatedAccount>(
+        'FederateProfile',
+        federateProfile_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $1.FederatedAccount.fromBuffer(value),
+        ($1.FederatedAccount value) => value.writeToBuffer()));
+    $addMethod($grpc.ServiceMethod<$1.FederatedAccount, $0.Empty>(
+        'DefederateProfile',
+        defederateProfile_Pre,
+        false,
+        false,
+        ($core.List<$core.int> value) => $1.FederatedAccount.fromBuffer(value),
+        ($0.Empty value) => value.writeToBuffer()));
     $addMethod($grpc.ServiceMethod<$2.ServerConfiguration, $2.ServerConfiguration>(
         'ConfigureServer',
         configureServer_Pre,
@@ -849,6 +879,14 @@ abstract class JonlineServiceBase extends $grpc.Service {
     return deleteEventAttendance(call, await request);
   }
 
+  $async.Future<$1.FederatedAccount> federateProfile_Pre($grpc.ServiceCall call, $async.Future<$1.FederatedAccount> request) async {
+    return federateProfile(call, await request);
+  }
+
+  $async.Future<$0.Empty> defederateProfile_Pre($grpc.ServiceCall call, $async.Future<$1.FederatedAccount> request) async {
+    return defederateProfile(call, await request);
+  }
+
   $async.Future<$2.ServerConfiguration> configureServer_Pre($grpc.ServiceCall call, $async.Future<$2.ServerConfiguration> request) async {
     return configureServer(call, await request);
   }
@@ -901,6 +939,8 @@ abstract class JonlineServiceBase extends $grpc.Service {
   $async.Future<$8.EventAttendances> getEventAttendances($grpc.ServiceCall call, $8.GetEventAttendancesRequest request);
   $async.Future<$8.EventAttendance> upsertEventAttendance($grpc.ServiceCall call, $8.EventAttendance request);
   $async.Future<$0.Empty> deleteEventAttendance($grpc.ServiceCall call, $8.EventAttendance request);
+  $async.Future<$1.FederatedAccount> federateProfile($grpc.ServiceCall call, $1.FederatedAccount request);
+  $async.Future<$0.Empty> defederateProfile($grpc.ServiceCall call, $1.FederatedAccount request);
   $async.Future<$2.ServerConfiguration> configureServer($grpc.ServiceCall call, $2.ServerConfiguration request);
   $async.Future<$0.Empty> resetData($grpc.ServiceCall call, $0.Empty request);
   $async.Stream<$7.Post> streamReplies($grpc.ServiceCall call, $7.Post request);

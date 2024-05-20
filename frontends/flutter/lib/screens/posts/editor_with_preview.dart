@@ -165,7 +165,7 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
                 showPreview = false;
               },
               style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
+                  backgroundColor: WidgetStateProperty.all(
                       !showPreview ? Colors.white : Colors.transparent)),
               // doingStuff || username.isEmpty || password.isEmpty
               //     ? null
@@ -187,7 +187,7 @@ class EditorWithPreviewState extends JonlineState<EditorWithPreview> {
                 showPreview = true;
               },
               style: ButtonStyle(
-                  backgroundColor: MaterialStateProperty.all(
+                  backgroundColor: WidgetStateProperty.all(
                       showPreview ? Colors.white : Colors.transparent)),
               child: const Padding(
                 padding: EdgeInsets.all(4.0),

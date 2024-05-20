@@ -21,6 +21,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { UserCard, useFullAvatarHeight } from './user_card';
+import { FederatedProfiles } from './federated_profiles';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
@@ -49,6 +50,7 @@ export function UsernameDetailsScreen() {
   const user = useRootSelector((state: RootState) => userId ? selectUserById(state.users, userId) : undefined);
   const usersState = useRootSelector((state: RootState) => state.users);
   const [loadingUser, setLoadingUser] = useState(false);
+  const [loadedUser, setLoadedUser] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const failedUsernames = getFederated(usersState.failedUsernames, server);
   // debugger;
@@ -201,12 +203,18 @@ export function UsernameDetailsScreen() {
   }, [editMode, canEdit]);
 
   useEffect(() => {
-    if (inputUsername && !!accountOrServer.server && !loadingUser && !user && !userLoadFailed) {
+    if (inputUsername && !!accountOrServer.server && !loadingUser && !user?.hasAdvancedData && !loadedUser && !userLoadFailed) {
       setLoadingUser(true);
       dispatch(loadUsername({ ...accountOrServer, username: inputUsername! }))
-        .then(() => setLoadingUser(false));
+        .then(() => {
+          setLoadingUser(false);
+          setLoadedUser(true);
+        });
     }
   }, [inputUsername, loadingUser, user, userLoadFailed, !!accountOrServer.server]);
+  useEffect(() => {
+    setLoadedUser(false);
+  }, [accountOrServer.server, accountOrServer.account?.user?.id, inputUsername]);
   // console.log('user', user, 'loadingUser', loadingUser, userLoadFailed, !!accountOrServer.server);
   useEffect(() => {
     if (user && userPostData && showScrollPreserver) {
@@ -330,9 +338,8 @@ export function UsernameDetailsScreen() {
             maxWidth: 1400,
             alignItems: 'center'
           }}>
-
             {/* <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'> */}
-            <div key='user-card-and-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
+            <div key='user-card' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
               <UserCard
                 editable editingDisabled={!editMode}
                 user={user}
@@ -340,7 +347,16 @@ export function UsernameDetailsScreen() {
                 setUsername={setUsername}
                 avatar={avatar}
                 setAvatar={setAvatar} />
-              <YStack als='center' w='100%' paddingHorizontal='$2' paddingTop='$3' gap>
+            </div>
+
+            {user.hasAdvancedData
+              ? <div key='federated-profiles' style={{paddingTop: 10}}>
+                <FederatedProfiles user={user} />
+              </div>
+              : undefined}
+
+            <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
+              <YStack als='center' w='100%' paddingHorizontal='$2' paddingTop='$2' gap>
                 {editMode ?
                   <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
                     value={bio} onChangeText={t => setBio(t)}

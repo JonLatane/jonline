@@ -316,6 +316,13 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
     }
 
+    async fn federate_profile(&self, request: Request<FederatedUser>) -> Result<Response<FederatedUser>, Status> {
+        authenticated_rpc!(self, rpcs::federate_profile, request)
+    }
+    async fn defederate_profile(&self, request: Request<FederatedUser>) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::defederate_profile, request)
+    }
+
     type StreamRepliesStream = ReplyStream;
     async fn stream_replies(
         &self,

@@ -59,3 +59,17 @@ final $typed_data.Uint8List federatedServerDescriptor = $convert.base64Decode(
     'YXVsdBgDIAEoCEgBUg9waW5uZWRCeURlZmF1bHSIAQFCGAoWX2NvbmZpZ3VyZWRfYnlfZGVmYX'
     'VsdEIUChJfcGlubmVkX2J5X2RlZmF1bHQ=');
 
+@$core.Deprecated('Use federatedAccountDescriptor instead')
+const FederatedAccount$json = {
+  '1': 'FederatedAccount',
+  '2': [
+    {'1': 'host', '3': 1, '4': 1, '5': 9, '10': 'host'},
+    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '10': 'userId'},
+  ],
+};
+
+/// Descriptor for `FederatedAccount`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List federatedAccountDescriptor = $convert.base64Decode(
+    'ChBGZWRlcmF0ZWRBY2NvdW50EhIKBGhvc3QYASABKAlSBGhvc3QSFwoHdXNlcl9pZBgCIAEoCV'
+    'IGdXNlcklk');
+

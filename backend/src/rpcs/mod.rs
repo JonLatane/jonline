@@ -21,3 +21,6 @@ pub use posts::*;
 
 pub mod events;
 pub use events::*;
+
+mod federation;
+pub use federation::*;

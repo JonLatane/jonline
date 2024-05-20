@@ -198,7 +198,7 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
                                                   TextButton(
                                                     style: ButtonStyle(
                                                         padding:
-                                                            MaterialStateProperty.all(
+                                                            WidgetStateProperty.all(
                                                                 const EdgeInsets
                                                                     .all(16))),
                                                     onPressed: () =>
@@ -322,8 +322,8 @@ class GroupsScreenState extends JonlineState<GroupsScreen>
 
           var textButton = TextButton(
               style: ButtonStyle(
-                  padding: MaterialStateProperty.all(EdgeInsets.zero),
-                  backgroundColor: MaterialStateProperty.all(l == listingType
+                  padding: WidgetStateProperty.all(EdgeInsets.zero),
+                  backgroundColor: WidgetStateProperty.all(l == listingType
                       ? appState.primaryColor.textColor.withOpacity(0.8)
                       : null)),
               // bac: ,

@@ -61,7 +61,7 @@ pub fn create_account(
             Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
                 access_token: tokens.access_token,
-                user: Some(user.to_proto(&None, &None, None)),
+                user: Some(user.to_proto(&None, &None, None, None)),
             })
         },
     };
