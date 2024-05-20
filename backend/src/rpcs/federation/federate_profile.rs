@@ -7,10 +7,10 @@ use crate::protos::*;
 use crate::schema::{federated_profiles, federated_users};
 
 pub fn federate_profile(
-    request: FederatedUser,
+    request: FederatedAccount,
     user: &models::User,
     conn: &mut PgPooledConnection,
-) -> Result<FederatedUser, Status> {
+) -> Result<FederatedAccount, Status> {
     // validate_permission(&Some(user), Permission::FederateProfile)?;
 
     let fake_response = request.clone();

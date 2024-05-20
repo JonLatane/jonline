@@ -7,7 +7,7 @@ use crate::protos::*;
 use crate::schema::{federated_profiles, federated_users};
 
 pub fn defederate_profile(
-    request: FederatedUser,
+    request: FederatedAccount,
     user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {

@@ -9,7 +9,7 @@ use crate::schema::{federated_profiles, federated_users};
 pub fn get_federated_users(
     user_id: i64,
     conn: &mut PgPooledConnection,
-) -> Vec<FederatedUser> {
+) -> Vec<FederatedAccount> {
     federated_users::table
         .inner_join(
             federated_profiles::table
@@ -20,7 +20,7 @@ pub fn get_federated_users(
         .load::<models::FederatedUser>(conn)
         .unwrap()
         .iter()
-        .map(|user| FederatedUser {
+        .map(|user| FederatedAccount {
             host: user.server_host.clone(),
             user_id: user.remote_user_id.clone(),
         })
