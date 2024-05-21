@@ -333,9 +333,9 @@ export const usersSlice = createSlice({
     });
 
     builder.addCase(defederateAccounts.fulfilled, (state, action) => {
-      const { account1, account2 } = action.meta.arg;
+      const { account1, account2, account2Profile } = action.meta.arg;
       const userId1 = federateId(account1.account!.user.id, account1.server?.host);
-      const userId2 = federateId(account2.account!.user.id, account2.server?.host);
+      const userId2 = federateId(account2Profile.userId, account2Profile.host);
       const user1 = selectors.selectById(state, userId1);
       const user2 = selectors.selectById(state, userId2);
 
@@ -343,8 +343,8 @@ export const usersSlice = createSlice({
         usersAdapter.upsertOne(state, {
           ...user1,
           federatedProfiles: user1.federatedProfiles.filter(p =>
-            p.userId !== account2.account!.user.id ||
-            p.host !== account2.server!.host
+            p.userId !== account2Profile.userId ||
+            p.host !== account2Profile.host
           )
         });
       }

@@ -1,4 +1,4 @@
-import { CreateAccountRequest, LoginRequest } from "@jonline/api";
+import { CreateAccountRequest, FederatedAccount, LoginRequest } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -87,25 +87,29 @@ export const federateAccounts: AsyncThunk<void, FederateAccounts, any> = createA
     }
   });
 
-export const defederateAccounts: AsyncThunk<void, FederateAccounts, any> = createAsyncThunk<void, FederateAccounts>(
-  "users/defederateAccounts",
-  async ({ account1, account2 }) => {
-    // debugger;
-    for (const accountOrServer of [account1, account2]) {
-      const otherAccount = (accountOrServer === account1
-        ? account2
-        : account1
-      ).account!;
+export type DefederateAccounts = { account1: AccountOrServer, account2?: AccountOrServer, account2Profile: FederatedAccount };
 
-      const client = await getCredentialClient(accountOrServer);
-      try {
+export const defederateAccounts: AsyncThunk<void, DefederateAccounts, any> = createAsyncThunk<void, DefederateAccounts>(
+  "users/defederateAccounts",
+  async ({ account1, account2, account2Profile }) => {
+    if (account2 && account2.account) {
+      for (const accountOrServer of [account1, account2]) {
+        const otherAccount = (accountOrServer === account1
+          ? account2
+          : account1
+        ).account!;
+
+        const client = await getCredentialClient(accountOrServer);
         await client.defederateProfile({
           userId: otherAccount!.user.id,
           host: otherAccount.server!.host,
         }, client.credential);
-      } catch (e) {
-        console.error(e);
-        throw e;
       }
+    } else {
+      const client = await getCredentialClient(account1);
+      await client.defederateProfile({
+        userId: account2Profile.userId,
+        host: account2Profile.host,
+      }, client.credential);
     }
   });
