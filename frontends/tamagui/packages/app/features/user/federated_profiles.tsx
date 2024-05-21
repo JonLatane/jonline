@@ -1,7 +1,7 @@
 import { FederatedAccount } from "@jonline/api";
-import { Button, Heading, Popover, ScrollView, XStack, YStack } from "@jonline/ui";
-import { X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useFederatedDispatch } from "app/hooks";
+import { Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack } from "@jonline/ui";
+import { AlertCircle, CheckCircle, X as XIcon } from '@tamagui/lucide-icons';
+import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch } from "app/hooks";
 import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, useServerTheme } from 'app/store';
 import { themedButtonBackground } from "app/utils";
 import { useEffect, useState } from "react";
@@ -81,7 +81,7 @@ const FederatedProfileSelector: React.FC<{
   const loadFailed = useAppSelector(state => state.users.failedUserIds.includes(federateId(profile.userId, profile.host)));
   const [loadingUser, setLoadingUser] = useState(false);
   useEffect(() => {
-    if (!profileUser && !loadFailed && !loadingUser && profileAccountOrServer.server) {
+    if (!profileUser?.hasAdvancedData && !loadFailed && !loadingUser && profileAccountOrServer.server) {
       setLoadingUser(true);
       dispatch(loadUser({ userId: profile.userId, ...profileAccountOrServer }))
         .then(() => setLoadingUser(false));
@@ -96,10 +96,17 @@ const FederatedProfileSelector: React.FC<{
   console.log('FederatedProfileSelector', { profileUser, profileAccount, loadFailed })
   function defederateProfile() {
     dispatch(defederateAccounts({
-      account1: userAccountOrServer,//{ account: currentAccount, server: currentAccount.server },
-      account2: profileAccountOrServer,//{ account: profileAccount, server: profileAccount!.server }
+      account1: userAccountOrServer,
+      account2: profileAccountOrServer,
+      account2Profile: profile
     }));
   }
+
+  const validated = profileUser?.federatedProfiles
+    .some(p => p.host === user.serverHost && p.userId === user.id);
+
+  const { navAnchorColor: validatedColor } = useServerTheme(useCurrentServer());
+
   return <YStack ai='center' gap='$2'>
     <Button h='auto' {...(profileUser ? link : {})} {...themedButtonBackground(primaryColor, primaryTextColor)}>
       <YStack ai='center' gap='$1' py='$1'>
@@ -107,9 +114,32 @@ const FederatedProfileSelector: React.FC<{
         <ServerNameAndLogo server={server} textColor={primaryTextColor} />
       </YStack>
     </Button>
-    {isCurrentUser && profileAccount
-      ? <Button circular size='$1' icon={XIcon} onPress={defederateProfile} />
-      : undefined}
+    <XStack ai='center' gap='$3'>
+      {validated
+        ? <Tooltip>
+          <Tooltip.Trigger>
+            <CheckCircle color={validatedColor} />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <Paragraph size='$1'>
+              This profile link has been validated. {user?.username}@{user?.serverHost} and {profileUser?.username}@{profileUser?.serverHost} both link to each other.
+            </Paragraph>
+          </Tooltip.Content>
+        </Tooltip>
+        : <Tooltip>
+          <Tooltip.Trigger>
+            <AlertCircle />
+          </Tooltip.Trigger>
+          <Tooltip.Content>
+            <Paragraph size='$1'>
+              This profile link has not been validated. While {user?.username}@{user?.serverHost} has linked to {profileUser?.username}@{profileUser?.serverHost}, {profileUser?.username}@{profileUser?.serverHost} has not linked back to {user?.username}@{user?.serverHost}.
+            </Paragraph>
+          </Tooltip.Content>
+        </Tooltip>}
+      {isCurrentUser && profileAccount
+        ? <Button mt='$1' circular size='$1' icon={XIcon} onPress={defederateProfile} />
+        : undefined}
+    </XStack>
   </YStack>;
 }
 

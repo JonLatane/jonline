@@ -22,6 +22,7 @@ import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { FederatedProfiles } from './federated_profiles';
 import { UserCard, useFullAvatarHeight } from './user_card';
+import { AccountOrServerContextProvider } from 'app/contexts';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
@@ -356,6 +357,7 @@ export function UsernameDetailsScreen() {
               : undefined}
 
             <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
+              <AccountOrServerContextProvider value={accountOrServer}>
               <YStack als='center' w='100%' paddingHorizontal='$2' gap>
                 {editMode ?
                   <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
@@ -368,6 +370,7 @@ export function UsernameDetailsScreen() {
                     <TamaguiMarkdown text={bio!} />
                   </YStack>}
               </YStack>
+              </AccountOrServerContextProvider>
             </div>
 
             {!editMode
