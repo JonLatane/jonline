@@ -1,17 +1,17 @@
 import { FederatedAccount } from "@jonline/api";
 import { Button, Heading, Popover, ScrollView, XStack, YStack } from "@jonline/ui";
+import { X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useFederatedDispatch } from "app/hooks";
-import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById } from 'app/store';
+import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, useServerTheme } from 'app/store';
+import { themedButtonBackground } from "app/utils";
+import { useEffect, useState } from "react";
 import FlipMove from 'react-flip-move';
+import { useLink } from "solito/link";
 import { useFederatedAccountOrServer } from '../../hooks/account_or_server/use_federated_account_or_server';
 import { federateId } from '../../store/federation';
 import { useJonlineServerInfo } from "../accounts/recommended_server";
 import { AccountAvatarAndUsername } from "../navigation/pinned_server_selector";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
-import { X as XIcon } from '@tamagui/lucide-icons';
-import { useLink } from "solito/link";
-import { useEffect } from "react";
-import { useState } from 'react';
 
 interface Props {
   user: FederatedUser;
@@ -65,7 +65,7 @@ const FederatedProfileSelector: React.FC<{
 }> = ({ user, profile }) => {
 
   const dispatch = useAppDispatch();
-  
+
   const { accountOrServer: userAccountOrServer } = useFederatedDispatch(user.serverHost);
   const { accountOrServer: profileAccountOrServer } = useFederatedDispatch(profile.host);
 
@@ -81,17 +81,19 @@ const FederatedProfileSelector: React.FC<{
   const loadFailed = useAppSelector(state => state.users.failedUserIds.includes(federateId(profile.userId, profile.host)));
   const [loadingUser, setLoadingUser] = useState(false);
   useEffect(() => {
-    if (!profileUser && !loadFailed && !loadingUser) {
+    if (!profileUser && !loadFailed && !loadingUser && profileAccountOrServer.server) {
       setLoadingUser(true);
       dispatch(loadUser({ userId: profile.userId, ...profileAccountOrServer }))
         .then(() => setLoadingUser(false));
     }
-  }, [profileUser, loadFailed, loadingUser]);
+  }, [profileUser, loadFailed, loadingUser, profileAccountOrServer.server]);
   const { server } = useJonlineServerInfo(profile.host);
+  const { primaryColor, primaryTextColor } = useServerTheme(server);
 
   // console.log('link', `https://${profile.host}/${profileUser?.username}@${profileUser?.serverHost}`);
   const link = useLink({ href: `/${profileUser?.username}@${profileUser?.serverHost}` });
 
+  console.log('FederatedProfileSelector', { profileUser, profileAccount, loadFailed })
   function defederateProfile() {
     dispatch(defederateAccounts({
       account1: userAccountOrServer,//{ account: currentAccount, server: currentAccount.server },
@@ -99,10 +101,10 @@ const FederatedProfileSelector: React.FC<{
     }));
   }
   return <YStack ai='center' gap='$2'>
-    <Button h='auto' {...(profileUser ? link : {})}>
-      <YStack ai='center'>
-        <AccountAvatarAndUsername account={profileAccount} user={profileUser} />
-        <ServerNameAndLogo server={server} />
+    <Button h='auto' {...(profileUser ? link : {})} {...themedButtonBackground(primaryColor, primaryTextColor)}>
+      <YStack ai='center' gap='$1' py='$1'>
+        <AccountAvatarAndUsername /*account={profileAccount}*/ user={profileUser} textColor={primaryTextColor} />
+        <ServerNameAndLogo server={server} textColor={primaryTextColor} />
       </YStack>
     </Button>
     {isCurrentUser && profileAccount

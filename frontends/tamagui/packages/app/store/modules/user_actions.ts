@@ -1,9 +1,9 @@
-import { Empty, Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, TimeFilter, User, UserListingType } from "@jonline/api";
+import { Follow, GetEventsResponse, GetPostsResponse, GetUsersRequest, GetUsersResponse, Moderation, PostContext, ResetPasswordRequest, TimeFilter, User, UserListingType } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, getCredentialClient, store, usersAdapter } from "..";
+import { AccountOrServer, federateId, getCredentialClient, store, usersAdapter } from "..";
 
 export const defaultUserListingType = UserListingType.EVERYONE;
 
@@ -25,8 +25,9 @@ const _loadingUserIds = new Set<string>();
 export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, LoadUser>(
   "users/loadById",
   async (request) => {
+    const federatedId = federateId(request.userId, request.server?.host);
     let user: User | undefined = undefined;
-    if (_loadingUserIds.has(request.userId)) {
+    if (_loadingUserIds.has(federatedId)) {
       throw 'Already loading user...';
     }
     // while (_loadingUserIds.has(request.id)) {
@@ -37,7 +38,7 @@ export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, 
       throw 'User not found';
     }
     if (!user) {
-      _loadingUserIds.add(request.userId);
+      _loadingUserIds.add(federatedId);
       const client = await getCredentialClient(request);
       const response = await client.getUsers(GetUsersRequest.create({ userId: request.userId }), client.credential);
       _loadingUserIds.delete(request.userId);

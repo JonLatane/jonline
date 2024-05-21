@@ -20,8 +20,8 @@ import { PageChooser } from '../home/page_chooser';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
-import { UserCard, useFullAvatarHeight } from './user_card';
 import { FederatedProfiles } from './federated_profiles';
+import { UserCard, useFullAvatarHeight } from './user_card';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
@@ -339,7 +339,7 @@ export function UsernameDetailsScreen() {
             alignItems: 'center'
           }}>
             {/* <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'> */}
-            <div key='user-card' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
+            <div key='user-card' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center', marginBottom: 10 }}>
               <UserCard
                 editable editingDisabled={!editMode}
                 user={user}
@@ -350,13 +350,13 @@ export function UsernameDetailsScreen() {
             </div>
 
             {user.hasAdvancedData
-              ? <div key='federated-profiles' style={{paddingTop: 10}}>
+              ? <div key='federated-profiles' style={{}}>
                 <FederatedProfiles user={user} />
               </div>
               : undefined}
 
             <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
-              <YStack als='center' w='100%' paddingHorizontal='$2' paddingTop='$2' gap>
+              <YStack als='center' w='100%' paddingHorizontal='$2' gap>
                 {editMode ?
                   <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
                     value={bio} onChangeText={t => setBio(t)}
