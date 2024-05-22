@@ -6,7 +6,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_instances, events, posts};
+use crate::schema::{event_instances, events, posts, users};
 
 use crate::rpcs::validations::*;
 
@@ -187,6 +187,11 @@ pub fn create_event(
                 MarshalablePost(instance_post, Some(author.clone()), None, vec![]),
             );
             inserted_instances.push(marshalable_instance);
+
+            update(users::table)
+            .filter(users::id.eq(user.id))
+            .set(users::event_count.eq(users::event_count + 1))
+            .execute(conn)?;
         }
         Ok(MarshalableEvent(
             inserted_event,

@@ -202,7 +202,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </XStack>
     <XStack>
       <Heading size='$1' f={1}>{user.groupCount} {user.groupCount === 1 ? 'group' : 'groups'}</Heading>
-      <Heading size='$1' f={1} ta='right'>{user.postCount} {user.postCount === 1 ? 'post/reply' : 'posts/replies'}</Heading>
+      <Heading size='$1' f={1} ta='right'>{user.postCount} {user.postCount === 1 ? 'post' : 'posts'}</Heading>
+
+      <Heading size='$1' f={1} ta='right'>{user.postCount} {user.responseCount === 1 ? 'post/reply' : 'posts/replies'}</Heading>
     </XStack>
     <YStack jc='flex-end' ai='flex-end' ac='flex-end'>
       <Paragraph size='$1' o={0.5}>Account Created</Paragraph>

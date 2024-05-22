@@ -706,6 +706,7 @@ Ways of listing users.
 | FRIENDS | 2 | Get users who follow and are followed by the current user. |
 | FOLLOWERS | 3 | Get users who follow the current user. |
 | FOLLOW_REQUESTS | 4 | Get users who have requested to follow the current user. |
+| ADMINS | 10 | [TODO] Gets admins for a server. |
 
 
  

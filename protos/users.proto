@@ -163,6 +163,9 @@ enum UserListingType {
   FOLLOWERS = 3;
   // Get users who have requested to follow the current user.
   FOLLOW_REQUESTS = 4;
+
+  // [TODO] Gets admins for a server.
+  ADMINS = 10;
 }
 
 // Response to a `GetUsersRequest`.

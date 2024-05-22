@@ -93,7 +93,7 @@ const FederatedProfileSelector: React.FC<{
   // console.log('link', `https://${profile.host}/${profileUser?.username}@${profileUser?.serverHost}`);
   const link = useLink({ href: `/${profileUser?.username}@${profileUser?.serverHost}` });
 
-  console.log('FederatedProfileSelector', { profileUser, profileAccount, loadFailed })
+  // console.log('FederatedProfileSelector', { profileUser, profileAccount, loadFailed })
   function defederateProfile() {
     dispatch(defederateAccounts({
       account1: userAccountOrServer,

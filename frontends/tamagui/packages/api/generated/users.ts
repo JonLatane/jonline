@@ -27,6 +27,8 @@ export enum UserListingType {
   FOLLOWERS = 3,
   /** FOLLOW_REQUESTS - Get users who have requested to follow the current user. */
   FOLLOW_REQUESTS = 4,
+  /** ADMINS - [TODO] Gets admins for a server. */
+  ADMINS = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -47,6 +49,9 @@ export function userListingTypeFromJSON(object: any): UserListingType {
     case 4:
     case "FOLLOW_REQUESTS":
       return UserListingType.FOLLOW_REQUESTS;
+    case 10:
+    case "ADMINS":
+      return UserListingType.ADMINS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -66,6 +71,8 @@ export function userListingTypeToJSON(object: UserListingType): string {
       return "FOLLOWERS";
     case UserListingType.FOLLOW_REQUESTS:
       return "FOLLOW_REQUESTS";
+    case UserListingType.ADMINS:
+      return "ADMINS";
     case UserListingType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

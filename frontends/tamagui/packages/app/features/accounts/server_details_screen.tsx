@@ -1,9 +1,9 @@
-import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo } from '@jonline/api';
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
-import { colorMeta, useAppDispatch, useFederatedAccountOrServer } from 'app/hooks';
-import { JonlineServer, RootState, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
+import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
@@ -17,6 +17,9 @@ import { RecommendedServer } from './recommended_server';
 import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
 import { MediaRef } from 'app/contexts';
+import { PageChooser } from '../home/page_chooser';
+import FlipMove from 'react-flip-move';
+import { UserCard } from '../user/user_card';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
 
@@ -289,6 +292,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   }
 
 
+  const adminList = useUsersPage(UserListingType.EVERYONE, 0).results.
+    filter(user => user.permissions.includes(Permission.ADMIN) && user.serverHost === server?.host);
+  const adminPagination = usePaginatedRendering(adminList, 10);
+  const paginatedAdmins = adminPagination.results;
 
   return (
     <TabsNavigation appSection={AppSection.INFO}
@@ -454,6 +461,27 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       ? <TamaguiMarkdown text={mediaPolicy} />
                       : <Paragraph opacity={0.5}>No media policy set.</Paragraph>}
 
+                  {adminList.length > 0
+                    ? <Heading size='$4'>Admins</Heading>
+                    : undefined}
+                  <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} >
+                    <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
+                      <PageChooser {...adminPagination} />
+                    </div>
+                    {paginatedAdmins?.map((user) => {
+                      return <div style={{ width: '100%' }} key={`user-${federatedId(user)}`}>
+                        <YStack w='100%' my='$2'>
+                          <UserCard user={user} isPreview />
+                        </YStack>
+                      </div>;
+                    })}
+
+                    <div key='pages-bottom' id='pages-bottom' style={{ maxWidth: '100%' }}>
+                      <PageChooser {...adminPagination} showResultCounts pageTopId='pages-top'
+                        entityName={{ singular: 'admin', plural: 'admins' }}
+                      />
+                    </div>
+                  </FlipMove>
                 </>
                   : undefined}
                 {/* <AnimatePresence> */}

@@ -2,7 +2,7 @@ import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizonta
 import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { colorMeta, useCurrentAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
-import React from "react";
+import React, { useState } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
@@ -76,8 +76,8 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
     onPress: disablePress ? undefined : doSelectServer
   } : {}
 
-  return (
-    // <Theme inverse={selected}>
+  const [deleting, setDeleting] = useState(false);
+  return <>
     <Card theme="dark" size="$4" bordered
       animation='standard'
       // {...standardHorizontalAnimation}
@@ -143,75 +143,80 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
                 : undefined}
             </YStack>
             {isPreview && serverIsExternal && serversState.ids.length > 1
-              ? <Dialog>
-                <Dialog.Trigger asChild>
-                  <Button onPress={(e) => { e.stopPropagation(); }} icon={<Trash />} color="red" circular />
-                </Dialog.Trigger>
-                <Dialog.Portal zi={1000011}>
-                  <Dialog.Overlay
-                    key="overlay"
-                    animation="quick"
-                    o={0.5}
-                    enterStyle={{ o: 0 }}
-                    exitStyle={{ o: 0 }}
-                  />
-                  <Dialog.Content
-                    bordered
-                    elevate
-                    key="content"
-                    animation={[
-                      'quick',
-                      {
-                        opacity: {
-                          overshootClamping: true,
-                        },
-                      },
-                    ]}
-                    m='$3'
-                    enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                    exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                    x={0}
-                    scale={1}
-                    opacity={1}
-                    y={0}
-                  >
-                    <YStack space>
-                      <Dialog.Title>Remove Server</Dialog.Title>
-                      <Dialog.Description>
-                        {/* <Paragraph> */}
-                        Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
-                        {/* </Paragraph> */}
-                      </Dialog.Description>
+              ? <Button onPress={(e) => {
+                e.stopPropagation();
+                setDeleting(true);
+              }} icon={<Trash />} color="red" circular />
 
-                      <XStack gap="$3" jc="flex-end">
-                        <Dialog.Close asChild>
-                          <Button>Cancel</Button>
-                        </Dialog.Close>
-                        {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-                        <Theme inverse>
-                          <Button onPress={doRemoveServer}>Remove</Button>
-                        </Theme>
-                        {/* </Dialog.Action> */}
-                      </XStack>
-                    </YStack>
-                  </Dialog.Content>
-                </Dialog.Portal>
-              </Dialog>
               : undefined
             }
           </XStack>
         </Card.Footer>
       }
-      {!selected
-        ? <Card.Background>
-          <YStack h='100%' w={5}
-            borderTopLeftRadius={20} borderBottomLeftRadius={20}
-            backgroundColor={primaryColor} />
-        </Card.Background>
-        : undefined}
-    </Card>
-    // </Theme>
-  );
+      {
+        !selected
+          ? <Card.Background>
+            <YStack h='100%' w={5}
+              borderTopLeftRadius={20} borderBottomLeftRadius={20}
+              backgroundColor={primaryColor} />
+          </Card.Background>
+          : undefined
+      }
+    </Card >
+    < Dialog open={deleting} onOpenChange={setDeleting}>
+      <Dialog.Portal zIndex={1000000000000011}>
+        <Dialog.Overlay
+          zIndex={1000000000000012}
+          key="overlay"
+          animation="quick"
+          o={0.5}
+          enterStyle={{ o: 0 }}
+          exitStyle={{ o: 0 }}
+        />
+        <Dialog.Content
+          zIndex={1000000000000013}
+          bordered
+          elevate
+          key="content"
+          animation={[
+            'quick',
+            {
+              opacity: {
+                overshootClamping: true,
+              },
+            },
+          ]}
+          m='$3'
+          enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+          exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+          x={0}
+          scale={1}
+          opacity={1}
+          y={0}
+        >
+          <YStack space>
+            <Dialog.Title>Remove Server</Dialog.Title>
+            <Dialog.Description>
+              {/* <Paragraph> */}
+              Really remove {server.host}{accounts.length == 1 ? ' and one account' : accounts.length > 1 ? ` and ${accounts.length} accounts` : ''}?
+              {/* </Paragraph> */}
+            </Dialog.Description>
+
+            <XStack gap="$3" jc="flex-end">
+              <Dialog.Close asChild>
+                <Button>Cancel</Button>
+              </Dialog.Close>
+              {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
+              <Theme inverse>
+                <Button onPress={doRemoveServer}>Remove</Button>
+              </Theme>
+              {/* </Dialog.Action> */}
+            </XStack>
+          </YStack>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog>
+  </>;
 };
 
 export default ServerCard;
