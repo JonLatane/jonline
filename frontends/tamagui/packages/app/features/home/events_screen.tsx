@@ -24,6 +24,7 @@ import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from "./events_full_calendar";
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
+import { useParamState } from '../people/people_screen';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -45,15 +46,15 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   const dimensions = useWindowDimensions();
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
   const [querySearchParam] = useParam('search');
-  const querySearch = querySearchParam ?? '';
+  // const querySearch = querySearchParam ?? '';
   const updateParams = useUpdateParams();
-  const [searchText, setSearchText] = useState(querySearch);
+  const [searchText, setSearchText] = useParamState(querySearchParam, '');
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
     300
   );
   useEffect(() => {
-    if (querySearch !== debouncedSearchText)
+    if (querySearchParam ?? '' !== debouncedSearchText)
       updateParams({ search: debouncedSearchText }, { web: { replace: true } });
   }, [debouncedSearchText])
   // useEffect(() => {
@@ -68,7 +69,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
 
 
   const endsAfter = queryEndsAfter ?? upcomingEndsAfter;
-  const displayMode: EventDisplayMode = queryEndsAfter === undefined || queryEndsAfter == upcomingEndsAfter
+  const displayMode: EventDisplayMode = queryEndsAfter === undefined
     ? 'upcoming'
     : moment(queryEndsAfter).unix() === 0 && querySearchParam === undefined
       ? 'all'
@@ -78,7 +79,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     switch (mode) {
       case 'upcoming':
         updateParams({
-          endsAfter: upcomingEndsAfter,
+          endsAfter: undefined,//upcomingEndsAfter,
           search: undefined
         });
         break;
@@ -89,20 +90,19 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         });
         break;
       case 'filtered':
-        const search = searchText ?? '';
         if (displayMode === 'upcoming') {
           updateParams({
             endsAfter: moment(upcomingEndsAfter).toISOString(false),
-            search
+            search: ''
           });
         } else if (displayMode === 'all') {
           updateParams({
             endsAfter: moment(1000).toISOString(false),
-            search
+            search: ''
           });
         } else {
           updateParams({
-            search
+            search: searchText
           });
         }
         break;
