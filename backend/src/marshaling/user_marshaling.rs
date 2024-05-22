@@ -62,6 +62,7 @@ impl ToProtoUser for models::User {
             following_count: Some(self.following_count),
             group_count: Some(self.group_count),
             post_count: Some(self.post_count),
+            event_count: Some(self.event_count),
             response_count: Some(self.response_count),
             default_follow_moderation: self
                 .default_follow_moderation

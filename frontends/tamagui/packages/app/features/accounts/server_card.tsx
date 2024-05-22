@@ -1,5 +1,5 @@
-import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation } from "@jonline/ui";
-import { ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
+import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation, Paragraph } from '@jonline/ui';
+import { AlertCircle, ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { colorMeta, useCurrentAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
 import React, { useState } from "react";
@@ -126,31 +126,41 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
       {disableFooter
         ? undefined
         : <Card.Footer p='$3'>
-          <XStack width='100%'>
-            <YStack mt='$2' mr='$3'>
-              {server.secure ? <Lock color={textColor} /> : <Unlock color={textColor} />}
-            </YStack>
-            <YStack f={10}>
-              <Heading size="$1" mr='auto' color={textColor}>
-                {accounts.length > 0
-                  ? accounts.length
-                  : "No "} account{accounts.length == 1 ? '' : 's'}
-              </Heading>
-              {server.serviceVersion
-                ? <Heading size="$1" mr='auto' color={textColor}>
-                  {server.serviceVersion?.version}
+          <YStack w='100%'>
+            {server.lastConnectionFailed
+              ? <XStack ai='center' gap='$2'>
+                <AlertCircle color={textColor} />
+                <Paragraph size="$1" color={textColor} opacity={0.5}>
+                  Last connection failed.
+                </Paragraph>
+              </XStack>
+              : undefined}
+            <XStack width='100%'>
+              <YStack mt='$2' mr='$3'>
+                {server.secure ? <Lock color={textColor} /> : <Unlock color={textColor} />}
+              </YStack>
+              <YStack f={10}>
+                <Heading size="$1" mr='auto' color={textColor}>
+                  {accounts.length > 0
+                    ? accounts.length
+                    : "No "} account{accounts.length == 1 ? '' : 's'}
                 </Heading>
-                : undefined}
-            </YStack>
-            {isPreview && serverIsExternal && serversState.ids.length > 1
-              ? <Button onPress={(e) => {
-                e.stopPropagation();
-                setDeleting(true);
-              }} icon={<Trash />} color="red" circular />
+                {server.serviceVersion
+                  ? <Heading size="$1" mr='auto' color={textColor}>
+                    {server.serviceVersion?.version}
+                  </Heading>
+                  : undefined}
+              </YStack>
+              {isPreview && serverIsExternal && serversState.ids.length > 1
+                ? <Button onPress={(e) => {
+                  e.stopPropagation();
+                  setDeleting(true);
+                }} icon={<Trash />} color="red" circular />
 
-              : undefined
-            }
-          </XStack>
+                : undefined
+              }
+            </XStack>
+          </YStack>
         </Card.Footer>
       }
       {

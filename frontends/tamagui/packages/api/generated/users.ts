@@ -142,6 +142,10 @@ export interface User {
   responseCount?:
     | number
     | undefined;
+  /** The number of events this user has created. */
+  eventCount?:
+    | number
+    | undefined;
   /**
    * Presence indicates the current user is following
    * or has a pending follow request for this user.
@@ -305,6 +309,7 @@ function createBaseUser(): User {
     groupCount: undefined,
     postCount: undefined,
     responseCount: undefined,
+    eventCount: undefined,
     currentUserFollow: undefined,
     targetCurrentUserFollow: undefined,
     currentGroupMembership: undefined,
@@ -366,6 +371,9 @@ export const User = {
     }
     if (message.responseCount !== undefined) {
       writer.uint32(280).int32(message.responseCount);
+    }
+    if (message.eventCount !== undefined) {
+      writer.uint32(288).int32(message.eventCount);
     }
     if (message.currentUserFollow !== undefined) {
       Follow.encode(message.currentUserFollow, writer.uint32(402).fork()).ldelim();
@@ -520,6 +528,13 @@ export const User = {
 
           message.responseCount = reader.int32();
           continue;
+        case 36:
+          if (tag !== 288) {
+            break;
+          }
+
+          message.eventCount = reader.int32();
+          continue;
         case 50:
           if (tag !== 402) {
             break;
@@ -600,6 +615,7 @@ export const User = {
       groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : undefined,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : undefined,
       responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : undefined,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : undefined,
       currentUserFollow: isSet(object.currentUserFollow) ? Follow.fromJSON(object.currentUserFollow) : undefined,
       targetCurrentUserFollow: isSet(object.targetCurrentUserFollow)
         ? Follow.fromJSON(object.targetCurrentUserFollow)
@@ -666,6 +682,9 @@ export const User = {
     if (message.responseCount !== undefined) {
       obj.responseCount = Math.round(message.responseCount);
     }
+    if (message.eventCount !== undefined) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
     if (message.currentUserFollow !== undefined) {
       obj.currentUserFollow = Follow.toJSON(message.currentUserFollow);
     }
@@ -717,6 +736,7 @@ export const User = {
     message.groupCount = object.groupCount ?? undefined;
     message.postCount = object.postCount ?? undefined;
     message.responseCount = object.responseCount ?? undefined;
+    message.eventCount = object.eventCount ?? undefined;
     message.currentUserFollow = (object.currentUserFollow !== undefined && object.currentUserFollow !== null)
       ? Follow.fromPartial(object.currentUserFollow)
       : undefined;

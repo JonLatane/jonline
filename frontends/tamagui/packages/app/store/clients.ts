@@ -40,10 +40,21 @@ export async function getServerClient(server: JonlineServer, args?: JonlineClien
   }
   const serverId = serverID(server);
   const configuredClient = await getConfiguredServerClient(server, args);
-  if (!configuredClient) throw "Failed to load client";
+  if (!configuredClient) {
+    setTimeout(() => store.dispatch(upsertServer({
+      ...server,
+      lastConnectionFailed: true
+    })), 1);
+    throw "Failed to load client";
+  }
 
   const { client, serviceVersion, serverConfiguration } = configuredClient;
-  const updatedServer = { ...server, serviceVersion, serverConfiguration };
+  const updatedServer = {
+    ...server,
+    serviceVersion,
+    serverConfiguration,
+    lastConnectionFailed: false
+  };
   const latestServer = store.getState().servers.entities[serverId];
   if (!args?.skipUpsert && (
     JSON.stringify(latestServer?.serviceVersion) !== JSON.stringify(serviceVersion) ||

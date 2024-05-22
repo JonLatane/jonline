@@ -679,6 +679,7 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | group_count | [int32](#int32) | optional | The number of groups this user is a member of. |
 | post_count | [int32](#int32) | optional | The number of posts this user has made. |
 | response_count | [int32](#int32) | optional | The number of responses to `Post`s and `Event`s this user has made. |
+| event_count | [int32](#int32) | optional | The number of events this user has created. |
 | current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |

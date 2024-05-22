@@ -29,7 +29,7 @@ export function usePageParam(): [number, (page: number) => void] {
 
   const page = parsedPage ?? 0;
   const setPage = (p: number) => {
-    // debugger;
+    if (page === p) return;
     updateParams(
       { page: p === 0 ? undefined : (p + 1).toString() },
       { web: { replace: true } }
@@ -52,10 +52,13 @@ export function useEventPageParam(): [number, (page: number) => void] {
   }
 
   const page = parsedPage ?? 0;
-  const setPage = (p: number) => updateParams(
-    { eventPage: p === 0 ? undefined : (p + 1).toString() },
-    { web: { replace: true } }
-  );
+  const setPage = (p: number) => {
+    if (page === p) return;
+    updateParams(
+      { eventPage: p === 0 ? undefined : (p + 1).toString() },
+      { web: { replace: true } }
+    );
+  }
 
   return [page, setPage] as const;
 }
@@ -75,7 +78,7 @@ export function usePostPageParam(): [number, (page: number) => void] {
 
   const page = parsedPage ?? 0;
   const setPage = (p: number) => {
-    // debugger;
+    if (page === p) return;
     updateParams(
       { postPage: p === 0 ? undefined : (p + 1).toString() },
       { web: { replace: true } }
@@ -96,12 +99,14 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
   const standardPageParams = usePageParam();
-  const [page, setPage] = args?.pageParamHook?.() ?? standardPageParams;
-  // function setPage(p: number) {
-  //   debugger;
-  //   _setPage(p);
-  //   debugger;
-  // }
+  const [page, _setPage] = args?.pageParamHook?.() ?? standardPageParams;
+  function setPage(p: number) {
+    // debugger;
+    if (page ?? 0 === p) return;
+
+    _setPage(p);
+    // debugger;
+  }
   const [loadingPage, setLoadingPage] = useState(false);
 
   useEffect(() => {

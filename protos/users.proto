@@ -51,6 +51,8 @@ message User {
   optional int32 post_count = 34;
   // The number of responses to `Post`s and `Event`s this user has made.
   optional int32 response_count = 35;
+  // The number of events this user has created.
+  optional int32 event_count = 36;
 
   // Presence indicates the current user is following
   // or has a pending follow request for this user.
