@@ -99,14 +99,13 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
   const standardPageParams = usePageParam();
-  const [page, _setPage] = args?.pageParamHook?.() ?? standardPageParams;
-  function setPage(p: number) {
-    // debugger;
-    if (page ?? 0 === p) return;
-
-    _setPage(p);
-    // debugger;
-  }
+  const [page, setPage] = args?.pageParamHook?.() ?? standardPageParams;
+  // function setPage(p: number) {
+  //   // debugger;
+  //   // if (page ?? 0 === p) return;
+  //   _setPage(p);
+  //   // debugger;
+  // }
   const [loadingPage, setLoadingPage] = useState(false);
 
   useEffect(() => {
