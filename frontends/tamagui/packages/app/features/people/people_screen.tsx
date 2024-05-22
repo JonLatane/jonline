@@ -25,6 +25,16 @@ export type PeopleScreenProps = HomeScreenProps & {
   listingType?: UserListingType;
 };
 
+export function useParamState<T>(paramValue: T | undefined, defaultValue: T) {
+  const [value, setValue] = useState(defaultValue);
+  useEffect(() => {
+    if (paramValue !== undefined) {
+      setValue(paramValue as T);
+    }
+  }, [paramValue]);
+  return [value, setValue] as const;
+}
+
 const { useParam, useUpdateParams } = createParam<{ search: string | undefined }>()
 export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
   const isForGroupMembers = listingType === undefined;
@@ -34,10 +44,13 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     // { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
     : useUsersPage(listingType, 0);
 
-  const [searchParamValue] = useParam('search');
-  const searchParam = searchParamValue ?? '';
+  // const [searchParamValue] = useParam('search');
+  // const searchParam = useParamState(useParam('search')[0], '');// searchParamValue ?? '';
   const updateParams = useUpdateParams();
-  const [searchText, setSearchText] = useState(searchParam);
+  // const [searchText, setSearchText] = useState(searchParam);
+  const [searchParamValue] = useParam('search');
+  const [searchText, setSearchText] = useParamState(searchParamValue, '');
+
   const debouncedSearchText = useDebounceValue(
     searchText.trim().toLowerCase(),
     300
@@ -45,7 +58,9 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   useEffect(() => {
     setTimeout(
       () => {
-        if (searchParam !== debouncedSearchText) {
+        // debugger;
+      if (searchParamValue ?? '' !== debouncedSearchText) {
+          // debugger;
           updateParams(
             { search: debouncedSearchText || undefined },
             { web: { replace: true } }

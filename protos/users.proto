@@ -51,6 +51,8 @@ message User {
   optional int32 post_count = 34;
   // The number of responses to `Post`s and `Event`s this user has made.
   optional int32 response_count = 35;
+  // The number of events this user has created.
+  optional int32 event_count = 36;
 
   // Presence indicates the current user is following
   // or has a pending follow request for this user.
@@ -163,6 +165,9 @@ enum UserListingType {
   FOLLOWERS = 3;
   // Get users who have requested to follow the current user.
   FOLLOW_REQUESTS = 4;
+
+  // [TODO] Gets admins for a server.
+  ADMINS = 10;
 }
 
 // Response to a `GetUsersRequest`.

@@ -8,6 +8,7 @@ export type JonlineServer = {
   secure: boolean;
   serviceVersion?: GetServiceVersionResponse;
   serverConfiguration?: ServerConfiguration;
+  lastConnectionFailed?: boolean;
 }
 
 // The type used to store accounts locally. Keyed by server URL + user ID.

@@ -209,8 +209,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
       dismissOnSnapToBottom
 
     >
-      <Sheet.Overlay />
-      <Sheet.Frame>
+      <Sheet.Overlay zIndex={500000} />
+      <Sheet.Frame zIndex={500000}>
         <Sheet.Handle />
         {/* } */}
         <XStack gap='$4'

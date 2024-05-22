@@ -20,6 +20,7 @@ class UserListingType extends $pb.ProtobufEnum {
   static const UserListingType FRIENDS = UserListingType._(2, _omitEnumNames ? '' : 'FRIENDS');
   static const UserListingType FOLLOWERS = UserListingType._(3, _omitEnumNames ? '' : 'FOLLOWERS');
   static const UserListingType FOLLOW_REQUESTS = UserListingType._(4, _omitEnumNames ? '' : 'FOLLOW_REQUESTS');
+  static const UserListingType ADMINS = UserListingType._(10, _omitEnumNames ? '' : 'ADMINS');
 
   static const $core.List<UserListingType> values = <UserListingType> [
     EVERYONE,
@@ -27,6 +28,7 @@ class UserListingType extends $pb.ProtobufEnum {
     FRIENDS,
     FOLLOWERS,
     FOLLOW_REQUESTS,
+    ADMINS,
   ];
 
   static final $core.Map<$core.int, UserListingType> _byValue = $pb.ProtobufEnum.initByValue(values);

@@ -221,7 +221,7 @@ export function TabsNavigation({
                     pointerEvents={hideNavigation ? 'none' : undefined}
                     backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
                     {/* <XStack w={5} /> */}
-                    <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} zi={9999}>
+                    <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
                       <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
                         selectedGroup={selectedGroup} />
                       <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}

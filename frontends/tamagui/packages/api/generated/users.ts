@@ -27,6 +27,8 @@ export enum UserListingType {
   FOLLOWERS = 3,
   /** FOLLOW_REQUESTS - Get users who have requested to follow the current user. */
   FOLLOW_REQUESTS = 4,
+  /** ADMINS - [TODO] Gets admins for a server. */
+  ADMINS = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -47,6 +49,9 @@ export function userListingTypeFromJSON(object: any): UserListingType {
     case 4:
     case "FOLLOW_REQUESTS":
       return UserListingType.FOLLOW_REQUESTS;
+    case 10:
+    case "ADMINS":
+      return UserListingType.ADMINS;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -66,6 +71,8 @@ export function userListingTypeToJSON(object: UserListingType): string {
       return "FOLLOWERS";
     case UserListingType.FOLLOW_REQUESTS:
       return "FOLLOW_REQUESTS";
+    case UserListingType.ADMINS:
+      return "ADMINS";
     case UserListingType.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";
@@ -133,6 +140,10 @@ export interface User {
     | undefined;
   /** The number of responses to `Post`s and `Event`s this user has made. */
   responseCount?:
+    | number
+    | undefined;
+  /** The number of events this user has created. */
+  eventCount?:
     | number
     | undefined;
   /**
@@ -298,6 +309,7 @@ function createBaseUser(): User {
     groupCount: undefined,
     postCount: undefined,
     responseCount: undefined,
+    eventCount: undefined,
     currentUserFollow: undefined,
     targetCurrentUserFollow: undefined,
     currentGroupMembership: undefined,
@@ -359,6 +371,9 @@ export const User = {
     }
     if (message.responseCount !== undefined) {
       writer.uint32(280).int32(message.responseCount);
+    }
+    if (message.eventCount !== undefined) {
+      writer.uint32(288).int32(message.eventCount);
     }
     if (message.currentUserFollow !== undefined) {
       Follow.encode(message.currentUserFollow, writer.uint32(402).fork()).ldelim();
@@ -513,6 +528,13 @@ export const User = {
 
           message.responseCount = reader.int32();
           continue;
+        case 36:
+          if (tag !== 288) {
+            break;
+          }
+
+          message.eventCount = reader.int32();
+          continue;
         case 50:
           if (tag !== 402) {
             break;
@@ -593,6 +615,7 @@ export const User = {
       groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : undefined,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : undefined,
       responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : undefined,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : undefined,
       currentUserFollow: isSet(object.currentUserFollow) ? Follow.fromJSON(object.currentUserFollow) : undefined,
       targetCurrentUserFollow: isSet(object.targetCurrentUserFollow)
         ? Follow.fromJSON(object.targetCurrentUserFollow)
@@ -659,6 +682,9 @@ export const User = {
     if (message.responseCount !== undefined) {
       obj.responseCount = Math.round(message.responseCount);
     }
+    if (message.eventCount !== undefined) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
     if (message.currentUserFollow !== undefined) {
       obj.currentUserFollow = Follow.toJSON(message.currentUserFollow);
     }
@@ -710,6 +736,7 @@ export const User = {
     message.groupCount = object.groupCount ?? undefined;
     message.postCount = object.postCount ?? undefined;
     message.responseCount = object.responseCount ?? undefined;
+    message.eventCount = object.eventCount ?? undefined;
     message.currentUserFollow = (object.currentUserFollow !== undefined && object.currentUserFollow !== null)
       ? Follow.fromPartial(object.currentUserFollow)
       : undefined;

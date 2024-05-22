@@ -387,7 +387,7 @@ export function AccountAvatarAndUsername({
     <Paragraph f={1} size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipse"
       color={textColor}
       o={user ? 1 : 0.5}>
-      {user?.username ?? 'anonyous'}
+      {user?.username ?? 'anonymous'}
     </Paragraph>
     <AtSign size='$1' color={textColor} />
   </XStack>;

@@ -21,19 +21,8 @@ pub fn delete_post(
     current_user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<Post, Status> {
-    // validate_user(&request)?;
-    // validate_post(&request)?;
-
-    let mut admin = false;
-    let mut moderator = false;
-    match validate_permission(&Some(current_user), Permission::Admin) {
-        Ok(_) => admin = true,
-        Err(_) => {}
-    };
-    match validate_permission(&Some(current_user), Permission::ModeratePosts) {
-        Ok(_) => moderator = true,
-        Err(_) => {}
-    };
+    let admin = validate_permission(&Some(current_user), Permission::Admin).is_ok();
+    let moderator = validate_permission(&Some(current_user), Permission::ModeratePosts).is_ok();
 
     let mut existing_post = posts::table
         .select(posts::all_columns)
@@ -100,11 +89,16 @@ pub fn delete_post(
                         // posts::last_activity_at.eq(inserted_post.created_at),
                     ))
                     .execute(conn)?;
+                update(users::table)
+                    .filter(users::id.eq(current_user.id))
+                    .set(users::response_count.eq(users::response_count - 1))
+                    .execute(conn)?;
+            } else if existing_post.context == PostContext::Post.to_string_post_context() {
+                update(users::table)
+                    .filter(users::id.eq(current_user.id))
+                    .set(users::post_count.eq(users::post_count - 1))
+                    .execute(conn)?;
             }
-            update(users::table)
-                .filter(users::id.eq(current_user.id))
-                .set(users::post_count.eq(users::post_count - 1))
-                .execute(conn)?;
 
             log::info!("Soft deleting post: {:?}", existing_post);
             match diesel::update(posts::table)
