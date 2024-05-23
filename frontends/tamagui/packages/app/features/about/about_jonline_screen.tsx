@@ -173,7 +173,7 @@ export function AboutJonlineScreen() {
           </Heading>
           <Heading size='$3' mt='$3' mb='$10' ta='center'>
             Made with ❤️ by{' '}
-            <Anchor color={navColor} href="https://instagram.com/jons_meaningless_life" target="_blank">
+            <Anchor color={navColor} href="https://github.com/JonLatane" target="_blank">
               Jon Latané
             </Anchor>.
           </Heading>
