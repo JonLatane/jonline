@@ -1,11 +1,11 @@
-import { EventListingType } from '@jonline/api';
+import { Author, Event, EventListingType, Location, Permission } from '@jonline/api';
 import * as webllm from "@mlc-ai/web-llm";
 import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 import { Button, Heading, Paragraph, TextArea, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, useRootSelector, useServerTheme } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
@@ -19,9 +19,11 @@ import { useHideNavigation } from "../navigation/use_hide_navigation";
 import { EventsFullCalendar, useScreenWidthAndHeight } from "../event/events_full_calendar";
 
 import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
-import { highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import { hasPermission, highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import { PageChooser } from "../home/page_chooser";
 import { TamaguiMarkdown } from '../post';
+import { useCreationAccountOrServer, useCreationServer } from '../../hooks/account_or_server/use_creation_account_or_server';
+import { CreationServerSelector } from '../accounts/creation_server_selector';
 
 export type EventAIScreenProps = {}
 // export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
@@ -55,8 +57,8 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = serverTheme;//useServerTheme();
   const dimensions = useWindowDimensions();
 
-  const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
-    useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS);
+  // const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
+  //   useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS);
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
 
@@ -84,17 +86,6 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
         : widthAdjustedPageSize
     : widthAdjustedPageSize;
 
-  const pagination = usePaginatedRendering(
-    allEvents,
-    pageSize
-  );
-  const paginatedEvents = pagination.results;
-
-  useEffect(() => {
-    if (firstPageLoaded) {
-      dismissScrollPreserver(setShowScrollPreserver);
-    }
-  }, [firstPageLoaded]);
 
   const eventCardWidth = renderInColumns
     ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
@@ -102,7 +93,6 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   const maxWidth = 2000;
 
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
   const setModalInstance = (e: FederatedEvent | undefined) => {
     setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
@@ -127,82 +117,6 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   const filterBarFlex = oneLineFilterBar ? { f: 1 } : { w: '100%' };
 
   const { screenWidth, screenHeight } = useScreenWidthAndHeight();
-  const calendarEventsView = [
-    bigCalendar
-      ? <div key='bigcalendar-rendering'>
-        <EventsFullCalendar events={allEvents} />
-      </div>
-      : renderInColumns
-        ? [
-          <div key='pages-top' id='pages-top'>
-            <PageChooser {...pagination} />
-          </div>,
-          <div key={`multi-column-rendering-page-${pagination.page}`}>
-            {/* <YStack gap='$2' width='100%' > */}
-            <XStack mx='auto' jc='center' flexWrap='wrap'>
-              {/* <AnimatePresence> */}
-              {firstPageLoaded || allEvents.length > 0
-                ? allEvents.length === 0
-                  ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
-                  // animation='standard' {...standardAnimation}
-                  >
-                    <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                      <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
-                    </YStack>
-                  </XStack>
-                  : undefined
-                : undefined}
-              {paginatedEvents.map((event) => {
-                return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
-                  animation='standard' {...standardAnimation}
-                >
-                  <XStack w={eventCardWidth}
-                    mx='$1' px='$1'>
-                    <EventCard event={event} isPreview />
-                  </XStack>
-                </XStack>;
-              })}
-              {/* </FlipMove> */}
-              {/* </AnimatePresence> */}
-            </XStack>
-          </div>,
-          <div key='pages-bottom' id='pages-bottom'>
-            <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-              entityName={{ singular: 'event', plural: 'events' }} />
-          </div>,
-        ]
-        : [
-          <div id='pages-top' key='pagest-top'>
-            <PageChooser {...pagination} />
-          </div>,
-
-          firstPageLoaded || allEvents.length > 0
-            ? allEvents.length === 0
-              ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
-                <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                  <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-                  {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                </YStack>
-              </div>
-              : undefined
-            : undefined,
-
-          paginatedEvents.map((event) => {
-            return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-              <XStack w='100%'>
-                <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
-              </XStack>
-            </div>
-          }),
-
-          <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
-            <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-              entityName={{ singular: 'event', plural: 'events' }} />
-          </div>
-        ],
-    showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined
-
-  ]
 
   const [aiMode, setAiMode] = useState<EventAIMode>('inputText');
   // const [aiText, setAiText] = useState<string>('');
@@ -283,32 +197,67 @@ ${aiText}
 `;
   console.log('aiPrompt', aiPrompt);
 
+  const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | undefined>(undefined);
-  const [aiResultEvents, setAiResultEvents] = useState<AiEventFormat[] | undefined>(undefined);
-
-  useEffect(() => {
+  const aiResultEvents: AiEventFormat[] | undefined = useMemo(() => {
     if (aiResult) {
       try {
         const parsedEvents = JSON.parse(aiResult);
         if (Array.isArray(parsedEvents)) {
-          setAiResultEvents(parsedEvents);
+          return parsedEvents as AiEventFormat[];
         } else {
           if (!aiResultsLoading) {
             toast.show('Error parsing AI results.');
           }
-          setAiResultEvents(undefined);
+          // setAiResultEvents(undefined);
         }
       } catch (e) {
         if (!aiResultsLoading) {
           toast.show('Error parsing AI results. See browser console for error info.');
           console.error('error parsing AI results', e);
         }
-        setAiResultEvents(undefined);
+        // setAiResultEvents(undefined);
       }
     } else {
-      setAiResultEvents(undefined);
+      // setAiResultEvents(undefined);
     }
-  }, [aiResult])
+  }, [aiResult]);
+  // const [aiResultEvents, setAiResultEvents] = useState<AiEventFormat[] | undefined>(undefined);
+  // const { creationServer } = useCreationServer();
+  const { account, server } = useCreationAccountOrServer();
+  const resultEvents: FederatedEvent[] = aiResultEvents?.map((event, index) => ({
+    serverHost: server?.host ?? 'no-host',
+    ...Event.create({
+      id: `ai-event-${index}`,
+      post: {
+        title: event.title,
+        content: event.content,
+        author: Author.create(),
+      },
+      instances: [
+        {
+          startsAt: event.startsAt,
+          endsAt: event.endsAt,
+          location: event.location
+            ? Location.create({ uniformlyFormattedAddress: event.location })
+            : undefined
+        }
+      ],
+    })
+  })) ?? [];
+
+
+  const pagination = usePaginatedRendering(
+    resultEvents,
+    pageSize
+  );
+  const paginatedEvents = pagination.results;
+
+  // useEffect(() => {
+  //   if (firstPageLoaded) {
+  //     dismissScrollPreserver(setShowScrollPreserver);
+  //   }
+  // }, [firstPageLoaded]);
   // const [parsedAiResul]
   // const parsedAiResultEvents = aiResult ? JSON.parse(aiResult) : undefined;
   // const aiResultEvents = Array.isArray(parsedAiResultEvents)
@@ -316,7 +265,6 @@ ${aiText}
   //   : undefined;
   // const aiMode: EventAIMode = 'inputText'
 
-  const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const toast = useToastController();
   async function getAiResults() {
     if (!llmEngine) return;
@@ -358,15 +306,94 @@ ${aiText}
     }
   }
 
+  async function createEvents() {
+    toast.show('TODO: Creating events...');
+  }
+
+  const calendarEventsView = [
+    bigCalendar
+      ? <div key='bigcalendar-rendering'>
+        <EventsFullCalendar events={resultEvents} />
+      </div>
+      : renderInColumns
+        ? [
+          <div key='pages-top' id='pages-top'>
+            <PageChooser {...pagination} />
+          </div>,
+          <div key={`multi-column-rendering-page-${pagination.page}`}>
+            {/* <YStack gap='$2' width='100%' > */}
+            <XStack mx='auto' jc='center' flexWrap='wrap'>
+              {/* <AnimatePresence> */}
+              {resultEvents.length === 0
+                ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
+                // animation='standard' {...standardAnimation}
+                >
+                  <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                    <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
+                  </YStack>
+                </XStack>
+                : undefined}
+              {paginatedEvents.map((event) => {
+                return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
+                  animation='standard' {...standardAnimation}
+                >
+                  <XStack w={eventCardWidth}
+                    mx='$1' px='$1'>
+                    <EventCard event={event} isPreview />
+                  </XStack>
+                </XStack>;
+              })}
+              {/* </FlipMove> */}
+              {/* </AnimatePresence> */}
+            </XStack>
+          </div>,
+          <div key='pages-bottom' id='pages-bottom'>
+            <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
+              entityName={{ singular: 'event', plural: 'events' }} />
+          </div>,
+        ]
+        : [
+          <div id='pages-top' key='pagest-top'>
+            <PageChooser {...pagination} />
+          </div>,
+
+          resultEvents.length === 0
+            ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
+              <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
+                {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+              </YStack>
+            </div>
+            : undefined,
+
+          paginatedEvents.map((event) => {
+            return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+              <XStack w='100%'>
+                <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
+              </XStack>
+            </div>
+          }),
+
+          <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
+            <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
+              entityName={{ singular: 'event', plural: 'events' }} />
+          </div>
+        ],
+    showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined
+
+  ];
+  const canCreateEvents = (aiResultEvents?.length ?? 0) > 0 && account
+    && hasPermission(account.user, Permission.CREATE_EVENTS);
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/events`}
       groupPageReverse='/events'
-      withServerPinning
+      // withServerPinning
       showShrinkPreviews={!bigCalendar}
-      loading={loadingEvents}
+      loading={aiResultsLoading}
       topChrome={<YStack w='100%' my='$1' py='$1'>
+        <CreationServerSelector />
         <XStack w='100%'>
           <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'inputText')}
             onPress={() => setAiMode('inputText')}>
@@ -377,7 +404,10 @@ ${aiText}
             Setup AI
           </Button>
           <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'previewEvents')}
-            onPress={() => setAiMode('previewEvents')}>
+            onPress={() => setAiMode('previewEvents')}
+            disabled={resultEvents.length === 0}
+            o={resultEvents.length === 0 ? 0.5 : 1}
+          >
             Preview Events
           </Button>
         </XStack>
@@ -387,14 +417,6 @@ ${aiText}
           <Paragraph f={1} size='$2'>
             {llmStatusText}
           </Paragraph>
-          <Button {...highlightedButtonBackground(serverTheme, 'primary')}
-            disabled={aiResultsLoading || aiText.length === 0}
-            o={aiResultsLoading || aiText.length === 0 ? 0.5 : 1}
-            // onPress={() => setAiMode('inputText')}
-            onPress={getAiResults}
-          >
-            Process with LLM
-          </Button>
 
           {aiMode === 'previewEvents'
             ? <Button onPress={() => setBigCalendar(!bigCalendar)}
@@ -406,9 +428,19 @@ ${aiText}
               o={aiMode === 'previewEvents' ? 1 : 0.5} />
             : undefined}
 
+          <Button {...highlightedButtonBackground(serverTheme, 'primary')}
+            disabled={aiResultsLoading || aiText.length === 0}
+            o={aiResultsLoading || aiText.length === 0 ? 0.5 : 1}
+            // onPress={() => setAiMode('inputText')}
+            onPress={getAiResults}
+          >
+            Process with LLM
+          </Button>
+
           <Button {...highlightedButtonBackground(serverTheme, 'primary', (aiResultEvents?.length ?? 0) > 0)}
-            disabled={(aiResultEvents?.length ?? 0) === 0}
-            o={(aiResultEvents?.length ?? 0) === 0 ? 0.5 : 1}
+            disabled={!canCreateEvents}
+            o={canCreateEvents ? 1 : 0.5}
+            onPress={createEvents}
           >
             {`Create ${aiResultEvents?.length ?? 0} ${aiResultEvents?.length === 1 ? 'Event' : 'Events'}`}
           </Button>
@@ -475,13 +507,17 @@ ${aiText}
                 />,
 
                 <Heading key='prompt-header' size='$3'>Prompt Preview</Heading>,
-                <div key='ai-prompt' style={{ opacity: 0.5 }}>
-                  <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
+                <div key='ai-prompt' style={{ width: '100%' }} >
+                  <YStack o={0.5}>
+                    <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
+                  </YStack>
                 </div>,
                 aiResult ? [
                   <Heading key='result-header' size='$3'>LLM Result</Heading>,
                   <div key='ai-result' style={{ opacity: 0.5 }}>
-                    <TamaguiMarkdown key='ai-prompt' text={aiResult} shrink />
+                    <YStack o={0.5}>
+                      <TamaguiMarkdown key='ai-result' text={aiResult} shrink />
+                    </YStack>
                   </div>,
                 ] : undefined,
                 // <Paragraph size='$2'>{aiPrompt}</Paragraph>
@@ -497,5 +533,3 @@ ${aiText}
     </TabsNavigation >
   )
 }
-
-const localizer = momentLocalizer(moment);
