@@ -63,7 +63,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     >
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' maw={800} space>
         <YStack w='100%'>
-          <FlipMove>
+          <FlipMove maintainContainerHeight>
 
             <div id='pages-create' key='pages-create' style={{ display: 'flex' }}>
               <XStack w='100%'>

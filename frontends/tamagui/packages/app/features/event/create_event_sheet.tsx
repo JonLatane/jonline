@@ -12,7 +12,7 @@ import { LocationControl } from './location_control';
 import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { useBigCalendar } from 'app/hooks/configuration_hooks';
 import { themedButtonBackground } from 'app/utils';
-import { EventsFullCalendar } from '../home/events_full_calendar';
+import { EventsFullCalendar } from './events_full_calendar';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 

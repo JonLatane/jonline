@@ -129,7 +129,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       }
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' pb='$3' maw={800} space>
-        <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} >
+        <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} maintainContainerHeight>
           <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
             <PageChooser {...pagination} />
           </div>

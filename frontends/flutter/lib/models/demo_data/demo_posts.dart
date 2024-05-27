@@ -241,7 +241,7 @@ I plan to re-implement the Orbifold in BeatScratch, at which point this app will
       Post()
         ..title =
             "My Insta 📸 See my animals, music, mediocre climbing and gymbro-ing, other apps and more weirdness."
-        ..link = "https://instagram.com/jons_meaningless_life"),
+        ..link = "https://instagram.com/jons_difficult_truths"),
   DemoPost(
       [DemoGroup.everyoneWelcome],
       Post()

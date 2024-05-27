@@ -253,7 +253,7 @@ export function TabsNavigation({
                         {...homeProps}
                       >
                         <YStack
-                          o={excludeCurrentServer ? 0.5 : 1}
+                          // o={excludeCurrentServer ? 0.5 : 1}
                           my={shrinkHomeButton ? 'auto' : undefined}
                           h={shrinkHomeButton ? '$3' : undefined}
                           w={shrinkHomeButton ? '100%' : undefined}
@@ -263,6 +263,7 @@ export function TabsNavigation({
                           <ServerNameAndLogo
                             shrinkToSquare={shrinkHomeButton}
                             fallbackToHomeIcon
+                            strikethrough={excludeCurrentServer}
                             server={primaryServer} />
                         </YStack>
                       </Button>

@@ -89,9 +89,14 @@ const FederatedProfileSelector: React.FC<{
   }, [profileUser, loadFailed, loadingUser, profileAccountOrServer.server]);
   const { server } = useJonlineServerInfo(profile.host);
   const { primaryColor, primaryTextColor } = useServerTheme(server);
+  const isCurrentServer = useCurrentServer()?.host === profileUser?.serverHost;
 
   // console.log('link', `https://${profile.host}/${profileUser?.username}@${profileUser?.serverHost}`);
-  const link = useLink({ href: `/${profileUser?.username}@${profileUser?.serverHost}` });
+  const link = useLink({
+    href: isCurrentServer
+      ? `/${profileUser?.username}`
+      : `/${profileUser?.username}@${profileUser?.serverHost}`
+  });
 
   // console.log('FederatedProfileSelector', { profileUser, profileAccount, loadFailed })
   function defederateProfile() {

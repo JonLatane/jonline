@@ -384,6 +384,23 @@ webui!(
 );
 webui!(server, "/server/<_..>", "server/[id].html");
 
+webui!(
+    event_ai,
+    "/event_ai",
+    "event_ai.html",
+    |_connection: PgPooledConnection,
+     _server_name: String,
+     _server_logo: Option<String>,
+     _path: Path| {
+        Some(JonlineSummary {
+            title: Some("Jonline AI Event Importer".to_string()),
+            description: Some(
+                "AI-powered bulk import of Events for Jonline".to_string(),
+            ),
+            image: None, //server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    }
+);
 fn group_name(path: &Path, connection: &mut PgPooledConnection) -> String {
     match federated_path_component(&path, 2) {
         Some(FederatedId::Local(shortname)) => rpcs::get_groups(

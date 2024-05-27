@@ -14,7 +14,7 @@ export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
 
 export function useEventPages(
   listingType: EventListingType,
-  selectedGroup: FederatedGroup | undefined,
+  selectedGroup?: FederatedGroup,
   params?: EventPageParams,
 ): PaginationResults<FederatedEvent> {
   const [currentPage, setCurrentPage] = useState(0);

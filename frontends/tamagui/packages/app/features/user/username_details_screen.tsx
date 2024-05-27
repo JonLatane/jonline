@@ -15,7 +15,7 @@ import { useAppSelector } from '../../hooks/store_hooks';
 import { EventCard } from '../event/event_card';
 import { useGroupFromPath } from '../groups/group_home_screen';
 import { DynamicCreateButton } from '../home/dynamic_create_button';
-import { EventsFullCalendar } from '../home/events_full_calendar';
+import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from '../home/page_chooser';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';

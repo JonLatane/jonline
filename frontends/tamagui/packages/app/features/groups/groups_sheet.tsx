@@ -286,7 +286,7 @@ export function GroupsSheet({
         {disableSelection || serverHostFilter ? undefined : <PinnedServerSelector show transparent simplified />}
       </YStack>
       <Sheet.ScrollView px="$4" py='$2' w='100%'>
-        <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+        <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }} maintainContainerHeight>
 
           {open
             ? [

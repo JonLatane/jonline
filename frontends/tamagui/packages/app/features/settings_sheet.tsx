@@ -7,7 +7,7 @@ import moment from 'moment';
 import React, { useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { federatedEntity } from '../store/federation';
-import { EventsFullCalendar } from './home/events_full_calendar';
+import { EventsFullCalendar } from './event/events_full_calendar';
 import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
 
 

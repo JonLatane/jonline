@@ -21,7 +21,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
 import { DynamicCreateButton } from './dynamic_create_button';
-import { EventsFullCalendar } from "./events_full_calendar";
+import { EventsFullCalendar } from "../event/events_full_calendar";
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
 import { useParamState } from '../people/people_screen';
@@ -296,7 +296,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         px='$3'
         maw={maxWidth}>
-        <FlipMove style={{ width: '100%' }}>
+        <FlipMove style={{ width: '100%' }} maintainContainerHeight>
           {bigCalendar
             ? <div key='bigcalendar-rendering'>
               <EventsFullCalendar events={allEvents} />

@@ -18,10 +18,23 @@ import { X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import moment from 'moment';
 import { createParam } from 'solito';
-import EventCard from '../event/event_card';
+import EventCard from './event_card';
 import { useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
 
+export function useScreenWidthAndHeight() {
+  const minBigCalWidth = 150;
+  const minBigCalHeight = 150;
+  const maxWidth = 2000;
+
+  const navigationHeight = useTabsNavigationHeight();
+  const screenWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
+
+  const screenHeight =
+    Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
+
+  return { screenWidth, screenHeight };
+}
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export type EventsFullCalendarProps = {
   // selectedGroup?: FederatedGroup;
@@ -85,30 +98,30 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   // const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
   //   useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-  const numberOfColumns = mediaQuery.gtXxxxl ? 6
-    : mediaQuery.gtXxl ? 5
-      : mediaQuery.gtLg ? 4
-        : mediaQuery.gtMd ? 3
-          : mediaQuery.gtXs ? 2 : 1;
+  // const numberOfColumns = mediaQuery.gtXxxxl ? 6
+  //   : mediaQuery.gtXxl ? 5
+  //     : mediaQuery.gtLg ? 4
+  //       : mediaQuery.gtMd ? 3
+  //         : mediaQuery.gtXs ? 2 : 1;
 
-  const renderInColumns = numberOfColumns > 1;
+  // const renderInColumns = numberOfColumns > 1;
 
-  const widthAdjustedPageSize = renderInColumns
-    ? numberOfColumns * 2
-    : 8;
+  // const widthAdjustedPageSize = renderInColumns
+  //   ? numberOfColumns * 2
+  //   : 8;
 
-  const pageSize = renderInColumns && shrinkPreviews
-    ? mediaQuery.gtMdHeight
-      ? Math.round(widthAdjustedPageSize * 2)
-      : mediaQuery.gtShort
-        ? Math.round(widthAdjustedPageSize * 1.5)
-        : widthAdjustedPageSize
-    : widthAdjustedPageSize;
+  // const pageSize = renderInColumns && shrinkPreviews
+  //   ? mediaQuery.gtMdHeight
+  //     ? Math.round(widthAdjustedPageSize * 2)
+  //     : mediaQuery.gtShort
+  //       ? Math.round(widthAdjustedPageSize * 1.5)
+  //       : widthAdjustedPageSize
+  // : widthAdjustedPageSize;
 
-  const pagination = usePaginatedRendering(
-    allEvents,
-    pageSize
-  );
+  // const pagination = usePaginatedRendering(
+  //   allEvents,
+  //   pageSize
+  // );
   // const paginatedEvents = pagination.results;
 
   // useEffect(() => {
@@ -117,9 +130,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   //   }
   // }, [firstPageLoaded]);
 
-  useEffect(pagination.reset, [queryEndsAfter, debouncedSearchText]);
+  // useEffect(pagination.reset, [queryEndsAfter, debouncedSearchText]);
 
-  const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
+  // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
@@ -140,10 +153,8 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const minBigCalWidth = 150;
   const minBigCalHeight = 150;
   const maxWidth = 2000;
-  const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
 
-  const borderedScreenHeight =
-    Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20)
+  const {screenWidth: bigCalWidth, screenHeight: borderedScreenHeight} = useScreenWidthAndHeight();
   const bigCalHeight = Math.min(
     weeklyOnly ? 350 : Number.MAX_SAFE_INTEGER,
     borderedScreenHeight

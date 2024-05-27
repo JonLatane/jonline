@@ -14,7 +14,7 @@ import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
-import { EventsFullCalendar } from './events_full_calendar';
+import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from './page_chooser';
 
 export function HomeScreen() {
@@ -141,7 +141,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         justifyContent: 'center', alignItems: 'center', marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20
-      }}>
+      }}
+      maintainContainerHeight
+      >
         {/* <div key='create' style={{ width: '100%', max<Width>: 800, paddingLeft: 18, paddingRight: 18 }}>
           <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
         </div> */}

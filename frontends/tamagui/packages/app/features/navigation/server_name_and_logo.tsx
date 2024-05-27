@@ -15,6 +15,7 @@ export type ServerNameAndLogoProps = {
   disableWidthLimits?: boolean;
   textColor?: string;
   disableTooltip?: boolean;
+  strikethrough?: boolean;
 };
 
 type SplitOnFirstEmojiRequest = { text: string; supportPipe?: boolean; };
@@ -64,6 +65,7 @@ export function ServerNameAndLogo({
   disableWidthLimits = false,
   textColor,
   disableTooltip = false,
+  strikethrough = false,
 }: ServerNameAndLogoProps) {
   const mediaQuery = useMedia()
 
@@ -103,6 +105,8 @@ export function ServerNameAndLogo({
       m={0}
       p={0}
       color={textColor}
+      o={strikethrough ? 0.5 : 1}
+      textDecorationLine={strikethrough ? 'line-through' : undefined}
       lineHeight={largeServername || enlargeSmallText ? '$1' : 12}
     // whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis"
     >
@@ -110,6 +114,8 @@ export function ServerNameAndLogo({
     </Heading>
     {!largeServername && serverNameAfterEmoji && serverNameAfterEmoji !== '' && (mediaQuery.gtXs || shortServername || true)
       ? <Paragraph
+        o={strikethrough ? 0.5 : 1}
+        textDecorationLine={strikethrough ? 'line-through' : undefined}
         color={textColor}
         size={enlargeSmallText
           ? serverNameAfterEmoji.length > 10 ? '$3' : '$7'
