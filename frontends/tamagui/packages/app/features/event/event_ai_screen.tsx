@@ -1,29 +1,26 @@
-import { Author, Event, EventListingType, Location, Permission } from '@jonline/api';
+import { Author, Event, Location, Permission } from '@jonline/api';
 import * as webllm from "@mlc-ai/web-llm";
-import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Button, Heading, Paragraph, TextArea, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, useRootSelector, useServerTheme } from 'app/store';
+import { Button, Heading, Paragraph, TextArea, XStack, YStack, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { FederatedEvent, federateId, federatedId, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import moment from 'moment';
 import FlipMove from 'react-flip-move';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
-import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { TabsNavigation } from '../navigation/tabs_navigation';
 
 import { EventsFullCalendar, useScreenWidthAndHeight } from "../event/events_full_calendar";
 
 import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { hasPermission, highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import { useCreationAccountOrServer } from '../../hooks/account_or_server/use_creation_account_or_server';
+import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { PageChooser } from "../home/page_chooser";
 import { TamaguiMarkdown } from '../post';
-import { useCreationAccountOrServer, useCreationServer } from '../../hooks/account_or_server/use_creation_account_or_server';
-import { CreationServerSelector } from '../accounts/creation_server_selector';
 
 export type EventAIScreenProps = {}
 // export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
@@ -44,24 +41,22 @@ export function useLocalStorageState(key: string, defaultValue: string) {
 }
 
 export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
-  const dispatch = useAppDispatch();
   const toast = useToastController();
   const mediaQuery = useMedia();
-  const { showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+  const { shrinkPreviews } = useLocalConfiguration();
   const { bigCalendar, setBigCalendar } = useBigCalendar();
 
-  const eventsState = useRootSelector((state: RootState) => state.events);
+  // const eventsState = useRootSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
   const serverTheme = useServerTheme();
   const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = serverTheme;//useServerTheme();
-  const dimensions = useWindowDimensions();
 
   // const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
   //   useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS);
 
-  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  // const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
 
   const numberOfColumns = mediaQuery.gtXxxxl ? 6
     : mediaQuery.gtXxl ? 5
@@ -93,29 +88,8 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
     : undefined;
   const maxWidth = 2000;
 
-  const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
-  const setModalInstance = (e: FederatedEvent | undefined) => {
-    setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
-  }
-  const hideNavigation = useHideNavigation();
 
-  const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
-    (result, server: JonlineServer) => {
-      if (server.serverConfiguration?.serverInfo?.colors?.primary) {
-        result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
-
-      }
-      return result;
-    }, {}
-  ));
-
-  const navigationHeight = useTabsNavigationHeight();
-  const minBigCalWidth = 150;
-  const minBigCalHeight = 150;
-
-  const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
-  const filterBarFlex = oneLineFilterBar ? { f: 1 } : { w: '100%' };
+  // const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
 
   const { screenWidth, screenHeight } = useScreenWidthAndHeight();
 
@@ -156,10 +130,6 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
       ).then(setLlmEngine);
     }
   }, [llmEngine, webllm]);
-  // const engine: webllm.MLCEngineInterface = await webllm.CreateMLCEngine(
-  //   selectedModel,
-  //   /*engineConfig=*/{ initProgressCallback: initProgressCallback }
-  // );
 
   const [aiInstructions, setAiInstructions] = useLocalStorageState(
     'aiInstructions',
@@ -196,7 +166,7 @@ The input event text is:
 
 ${aiText}
 `;
-  console.log('aiPrompt', aiPrompt);
+  // console.log('aiPrompt', aiPrompt);
 
   const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | undefined>(undefined);

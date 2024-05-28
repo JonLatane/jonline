@@ -3,13 +3,13 @@ import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
-import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, serializeTimeFilter, useRootSelector, useServerTheme } from 'app/store';
+import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useDebounceValue, useMedia } from '@jonline/ui';
+import { federateId, federatedId, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
-import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -17,14 +17,13 @@ import moment from 'moment';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
-import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
-import { useHideNavigation } from "../navigation/use_hide_navigation";
-import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from "../event/events_full_calendar";
+import { AppSection } from '../navigation/features_navigation';
+import { TabsNavigation } from '../navigation/tabs_navigation';
+import { useParamState } from '../people/people_screen';
+import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
-import { useParamState } from '../people/people_screen';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -33,17 +32,16 @@ export function EventsScreen() {
 
 export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
 export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: HomeScreenProps) => {
-  const dispatch = useAppDispatch();
   const mediaQuery = useMedia();
-  const { showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+  const { shrinkPreviews } = useLocalConfiguration();
   const { bigCalendar, setBigCalendar } = useBigCalendar();
 
-  const eventsState = useRootSelector((state: RootState) => state.events);
+  // const eventsState = useRootSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
   const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = useServerTheme();
-  const dimensions = useWindowDimensions();
+  // const dimensions = useWindowDimensions();
   const [queryEndsAfter, setQueryEndsAfter] = useParam('endsAfter');
   const [querySearchParam] = useParam('search');
   // const querySearch = querySearchParam ?? '';
@@ -189,32 +187,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     ? (window.innerWidth - 50 - (20 * numberOfColumns)) / numberOfColumns
     : undefined;
   const maxWidth = 2000;
-
-  const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
-  // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
-  const setModalInstance = (e: FederatedEvent | undefined) => {
-    setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
-  }
-  const hideNavigation = useHideNavigation();
-
-  const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
-    (result, server: JonlineServer) => {
-      if (server.serverConfiguration?.serverInfo?.colors?.primary) {
-        result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
-
-      }
-      return result;
-    }, {}
-  ));
-
-  const navigationHeight = useTabsNavigationHeight();
-  const serializedTimeFilter = serializeTimeFilter(timeFilter);
-  const minBigCalWidth = 150;
-  const minBigCalHeight = 150;
-  const bigCalWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
-  const bigCalHeight = Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
-  const starredPostIds = useAppSelector(state => state.app.starredPostIds);
 
   const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
   const filterBarFlex = oneLineFilterBar ? { f: 1 } : { w: '100%' };
