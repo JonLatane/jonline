@@ -45,6 +45,7 @@ export function useLocalStorageState(key: string, defaultValue: string) {
 
 export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   const dispatch = useAppDispatch();
+  const toast = useToastController();
   const mediaQuery = useMedia();
   const { showPinnedServers, shrinkPreviews } = useLocalConfiguration();
   const { bigCalendar, setBigCalendar } = useBigCalendar();
@@ -232,7 +233,7 @@ ${aiText}
       post: {
         title: event.title,
         content: event.content,
-        author: Author.create(),
+        author: Author.create(account?.user ?? {}),
       },
       instances: [
         {
@@ -265,7 +266,6 @@ ${aiText}
   //   : undefined;
   // const aiMode: EventAIMode = 'inputText'
 
-  const toast = useToastController();
   async function getAiResults() {
     if (!llmEngine) return;
 
@@ -506,12 +506,6 @@ ${aiText}
                   placeholder={`Give the AI custom instructions.`}
                 />,
 
-                <Heading key='prompt-header' size='$3'>Prompt Preview</Heading>,
-                <div key='ai-prompt' style={{ width: '100%' }} >
-                  <YStack o={0.5}>
-                    <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
-                  </YStack>
-                </div>,
                 aiResult ? [
                   <Heading key='result-header' size='$3'>LLM Result</Heading>,
                   <div key='ai-result' style={{ opacity: 0.5 }}>
@@ -520,6 +514,13 @@ ${aiText}
                     </YStack>
                   </div>,
                 ] : undefined,
+
+                <Heading key='prompt-header' size='$3'>Prompt Preview</Heading>,
+                <div key='ai-prompt' style={{ width: '100%' }} >
+                  <YStack o={0.5}>
+                    <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
+                  </YStack>
+                </div>,
                 // <Paragraph size='$2'>{aiPrompt}</Paragraph>
               ]
               : undefined,
