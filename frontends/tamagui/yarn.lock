@@ -11308,7 +11308,7 @@ __metadata:
     expo-status-bar: "npm:~1.12.1"
     expo-updates: "npm:~0.25.14"
     metro-minify-terser: "npm:^0.80.9"
-    react: "npm:18.3.1"
+    react: "npm:^18.3.1"
     react-dom: "npm:^18.2.0"
     react-native: "npm:0.74.1"
     react-native-gesture-handler: "npm:~2.12.0"
