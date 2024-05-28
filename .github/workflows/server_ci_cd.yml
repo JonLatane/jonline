@@ -23,6 +23,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: arduino/setup-protoc@v3
+        with:
+          version: "26.x"
       - uses: ts-graphviz/setup-graphviz@v2
       - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v3
@@ -166,7 +168,9 @@ jobs:
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-    - uses: arduino/setup-protoc@v2
+    - uses: arduino/setup-protoc@v3
+      with:
+        version: "26.x"
 
     - uses: Swatinem/rust-cache@v2
       with:
@@ -192,7 +196,9 @@ jobs:
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-      - uses: arduino/setup-protoc@v2
+      - uses: arduino/setup-protoc@v3
+        with:
+          version: "26.x"
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
 
       - uses: Swatinem/rust-cache@v2
