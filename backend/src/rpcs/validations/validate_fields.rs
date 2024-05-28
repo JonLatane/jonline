@@ -15,7 +15,8 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
             "app", "flutter", "tamagui", "home", "web", "events", "event", "e", "posts", "post", "p", "groups", "group",
             "g", "people", "person", "author", "a", "member", "m", "server", "s", "servers", "about", "about_jonline", "u", "users", "user",
             "info", "info_shield", "robots.txt", "favicon.ico", "sitemap.xml", "sitemap.xml.gz", "sitemap.xml.gz", "sitemap.xml.gz", "sitemap.xml.gz",
-            "media", "backend_host", "frontend_host", "docs", "documentation"
+            "media", "backend_host", "frontend_host", "docs", "documentation",
+            "event_ai"
         ],
     )
 }

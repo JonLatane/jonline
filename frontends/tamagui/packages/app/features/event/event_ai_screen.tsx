@@ -1,29 +1,27 @@
-import { Author, Event, EventListingType, Location, Permission } from '@jonline/api';
+import { Author, Event, Location, Permission } from '@jonline/api';
 import * as webllm from "@mlc-ai/web-llm";
-import { momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Button, Heading, Paragraph, TextArea, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, federateId, federatedId, selectAllServers, useRootSelector, useServerTheme } from 'app/store';
+import { Button, Heading, Paragraph, Select, TextArea, Tooltip, XStack, YStack, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { FederatedEvent, federateId, federatedId, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { useAppDispatch, useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import moment from 'moment';
 import FlipMove from 'react-flip-move';
 import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation, useTabsNavigationHeight } from '../navigation/tabs_navigation';
-import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { TabsNavigation } from '../navigation/tabs_navigation';
 
 import { EventsFullCalendar, useScreenWidthAndHeight } from "../event/events_full_calendar";
 
-import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
+import { Calendar as CalendarIcon, Check, ChevronDown } from '@tamagui/lucide-icons';
 import { hasPermission, highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import { useCreationAccountOrServer } from '../../hooks/account_or_server/use_creation_account_or_server';
+import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { PageChooser } from "../home/page_chooser";
 import { TamaguiMarkdown } from '../post';
-import { useCreationAccountOrServer, useCreationServer } from '../../hooks/account_or_server/use_creation_account_or_server';
-import { CreationServerSelector } from '../accounts/creation_server_selector';
+import { isSafari } from '../../../ui/src/global';
 
 export type EventAIScreenProps = {}
 // export type EventDisplayMode = 'upcoming' | 'all' | 'filtered';
@@ -44,23 +42,22 @@ export function useLocalStorageState(key: string, defaultValue: string) {
 }
 
 export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
-  const dispatch = useAppDispatch();
+  const toast = useToastController();
   const mediaQuery = useMedia();
-  const { showPinnedServers, shrinkPreviews } = useLocalConfiguration();
+  const { shrinkPreviews } = useLocalConfiguration();
   const { bigCalendar, setBigCalendar } = useBigCalendar();
 
-  const eventsState = useRootSelector((state: RootState) => state.events);
+  // const eventsState = useRootSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
   const serverTheme = useServerTheme();
   const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = serverTheme;//useServerTheme();
-  const dimensions = useWindowDimensions();
 
   // const { results: allEvents, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
   //   useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS);
 
-  const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
+  // const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
 
   const numberOfColumns = mediaQuery.gtXxxxl ? 6
     : mediaQuery.gtXxl ? 5
@@ -92,29 +89,8 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
     : undefined;
   const maxWidth = 2000;
 
-  const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
-  const setModalInstance = (e: FederatedEvent | undefined) => {
-    setModalInstanceId(e ? federateId(e.instances[0]?.id ?? '', e.serverHost) : undefined);
-  }
-  const hideNavigation = useHideNavigation();
 
-  const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
-    (result, server: JonlineServer) => {
-      if (server.serverConfiguration?.serverInfo?.colors?.primary) {
-        result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
-
-      }
-      return result;
-    }, {}
-  ));
-
-  const navigationHeight = useTabsNavigationHeight();
-  const minBigCalWidth = 150;
-  const minBigCalHeight = 150;
-
-  const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
-  const filterBarFlex = oneLineFilterBar ? { f: 1 } : { w: '100%' };
+  // const oneLineFilterBar = mediaQuery.xShort && mediaQuery.gtXs;
 
   const { screenWidth, screenHeight } = useScreenWidthAndHeight();
 
@@ -133,14 +109,30 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   //   }
   // }, [debouncedApiKey]);
 
-  const [llmStatusText, setLlmStatusText] = useState<string>('Initializing AI Engine...');
+  const isSafariBrowser = isSafari();
+  const [llmStatusText, setLlmStatusText] = useState<string>(
+    isSafariBrowser ? 'WebLLM is not supported in Safari. Use a browser with WebGPU support, like Chrome.'
+      : 'Initializing WebLLM...');
+  const [llmReady, setLlmReady] = useState(false);
+  const availableModels = webllm.prebuiltAppConfig.model_list.map((model) => model.model_id);
+
+  const [selectedModel, setSelectedModel] = useLocalStorageState('aiModel', 'Llama-3-8B-Instruct-q4f32_1');
+  // const selectedModel = "Llama-3-8B-Instruct-q4f32_1";
+  const [llmEngine, setLlmEngine] = useState<webllm.MLCEngineInterface | undefined>(undefined);
+  useEffect(() => { llmEngine?.reload(selectedModel); }, [selectedModel]);
+
+
   const llmInitCallback = (report: webllm.InitProgressReport) => {
     // const label = document.getElementById("init-label");
     setLlmStatusText(report.text);
     // label.innerText = report.text;
+    if (report.progress === 1) {
+      setLlmStatusText(`WebLLM ${selectedModel} is ready.`);
+      setLlmReady(true);
+    } else {
+      setLlmReady(false);
+    }
   };
-  const selectedModel = "Llama-3-8B-Instruct-q4f32_1";
-  const [llmEngine, setLlmEngine] = useState<webllm.MLCEngineInterface | undefined>(undefined);
   useEffect(() => {
     if (webllm && !llmEngine) {
       webllm.CreateMLCEngine(
@@ -155,10 +147,6 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
       ).then(setLlmEngine);
     }
   }, [llmEngine, webllm]);
-  // const engine: webllm.MLCEngineInterface = await webllm.CreateMLCEngine(
-  //   selectedModel,
-  //   /*engineConfig=*/{ initProgressCallback: initProgressCallback }
-  // );
 
   const [aiInstructions, setAiInstructions] = useLocalStorageState(
     'aiInstructions',
@@ -195,7 +183,7 @@ The input event text is:
 
 ${aiText}
 `;
-  console.log('aiPrompt', aiPrompt);
+  // console.log('aiPrompt', aiPrompt);
 
   const [aiResultsLoading, setAiResultsLoading] = useState(false);
   const [aiResult, setAiResult] = useState<string | undefined>(undefined);
@@ -232,7 +220,7 @@ ${aiText}
       post: {
         title: event.title,
         content: event.content,
-        author: Author.create(),
+        author: Author.create(account?.user ?? {}),
       },
       instances: [
         {
@@ -265,7 +253,6 @@ ${aiText}
   //   : undefined;
   // const aiMode: EventAIMode = 'inputText'
 
-  const toast = useToastController();
   async function getAiResults() {
     if (!llmEngine) return;
 
@@ -384,6 +371,7 @@ ${aiText}
   ];
   const canCreateEvents = (aiResultEvents?.length ?? 0) > 0 && account
     && hasPermission(account.user, Permission.CREATE_EVENTS);
+  const canParseText = !aiResultsLoading && aiText.length > 0 && llmReady;
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -401,15 +389,26 @@ ${aiText}
           </Button>
           <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'setupAi')}
             onPress={() => setAiMode('setupAi')}>
-            Setup AI
+            Setup LLM
           </Button>
-          <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'previewEvents')}
-            onPress={() => setAiMode('previewEvents')}
-            disabled={resultEvents.length === 0}
-            o={resultEvents.length === 0 ? 0.5 : 1}
-          >
-            Preview Events
-          </Button>
+          <Tooltip>
+            <Tooltip.Trigger f={1}>
+              <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'previewEvents')}
+                onPress={() => setAiMode('previewEvents')}
+                disabled={resultEvents.length === 0}
+                o={resultEvents.length === 0 ? 0.5 : 1}
+              >
+                Preview Events
+              </Button>
+            </Tooltip.Trigger>
+            {resultEvents.length === 0
+              ? <Tooltip.Content>
+                <Paragraph size='$2' o={0.5}>
+                  There are no events to preview. Process some text with AI first.
+                </Paragraph>
+              </Tooltip.Content>
+              : undefined}
+          </Tooltip>
         </XStack>
       </YStack>}
       bottomChrome={<YStack w='100%' my='$1' py='$1'>
@@ -428,14 +427,18 @@ ${aiText}
               o={aiMode === 'previewEvents' ? 1 : 0.5} />
             : undefined}
 
-          <Button {...highlightedButtonBackground(serverTheme, 'primary')}
-            disabled={aiResultsLoading || aiText.length === 0}
-            o={aiResultsLoading || aiText.length === 0 ? 0.5 : 1}
-            // onPress={() => setAiMode('inputText')}
-            onPress={getAiResults}
-          >
-            Process with LLM
-          </Button>
+          {aiResultsLoading
+            ? <Button onPress={() => llmEngine?.interruptGenerate()}>
+              Stop Processing
+            </Button>
+            : <Button {...highlightedButtonBackground(serverTheme, 'primary')}
+              disabled={!canParseText}
+              o={canParseText ? 1 : 0.5}
+              onPress={getAiResults}
+            >
+              Process with LLM
+            </Button>
+          }
 
           <Button {...highlightedButtonBackground(serverTheme, 'primary', (aiResultEvents?.length ?? 0) > 0)}
             disabled={!canCreateEvents}
@@ -496,6 +499,54 @@ ${aiText}
                 //     value={openAiKey}
                 //     onChange={(data) => { setOpenAiKey(data.nativeEvent.text) }} />
                 // </XStack>,
+
+                <Heading key='model-header' size='$3'>WebLLM Model</Heading>,
+                <div key='ai-model'>
+                  <Select native
+                    value={selectedModel}
+                    onValueChange={setSelectedModel}
+                  // disabled={disabled}
+                  >
+                    <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}
+                    //  disabled={disabled}
+                    >
+                      <Select.Value w='100%' placeholder="Choose Moderation" />
+                    </Select.Trigger>
+                    <Select.Content zIndex={200000} >
+                      <Select.Viewport minWidth={200} w='100%'>
+                        <XStack w='100%'>
+                          <Select.Group gap="$0" w='100%'>
+                            <Select.Label w='100%'>AI Model</Select.Label>
+                            {availableModels.map((model, i) => {
+                              return (
+                                <Select.Item w='100%' index={i} key={`${model}`} value={model.toString()}>
+                                  <Select.ItemText w='100%'>
+                                    {model}
+                                  </Select.ItemText>
+                                  <Select.ItemIndicator ml="auto">
+                                    <Check size={16} />
+                                  </Select.ItemIndicator>
+                                </Select.Item>
+                              )
+                            })}
+                          </Select.Group>
+                          <YStack
+                            position="absolute"
+                            right={0}
+                            top={0}
+                            bottom={0}
+                            alignItems="center"
+                            justifyContent="center"
+                            width={'$4'}
+                            pointerEvents="none"
+                          >
+                            <ChevronDown size='$2' />
+                          </YStack>
+                        </XStack>
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select>
+                </div>,
                 <Heading key='instructions-header' size='$3'>Custom Instructions</Heading>,
                 <TextArea key='bio-edit' animation='quick'
                   value={aiInstructions} onChangeText={setAiInstructions}
@@ -506,12 +557,6 @@ ${aiText}
                   placeholder={`Give the AI custom instructions.`}
                 />,
 
-                <Heading key='prompt-header' size='$3'>Prompt Preview</Heading>,
-                <div key='ai-prompt' style={{ width: '100%' }} >
-                  <YStack o={0.5}>
-                    <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
-                  </YStack>
-                </div>,
                 aiResult ? [
                   <Heading key='result-header' size='$3'>LLM Result</Heading>,
                   <div key='ai-result' style={{ opacity: 0.5 }}>
@@ -520,6 +565,13 @@ ${aiText}
                     </YStack>
                   </div>,
                 ] : undefined,
+
+                <Heading key='prompt-header' size='$3'>Prompt Preview</Heading>,
+                <div key='ai-prompt' style={{ width: '100%' }} >
+                  <YStack o={0.5}>
+                    <TamaguiMarkdown key='ai-prompt' text={aiPrompt} shrink />
+                  </YStack>
+                </div>,
                 // <Paragraph size='$2'>{aiPrompt}</Paragraph>
               ]
               : undefined,
