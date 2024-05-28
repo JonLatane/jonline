@@ -43,6 +43,7 @@ lazy_static! {
         group_event,
         group_members,
         group_member,
+        event_ai,
         tamagui_file_or_username::tamagui_file_or_username,
     ];
 }
