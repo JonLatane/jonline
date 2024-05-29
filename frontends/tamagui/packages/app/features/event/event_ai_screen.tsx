@@ -2,26 +2,23 @@ import { Author, Event, Location, Permission } from '@jonline/api';
 import * as webllm from "@mlc-ai/web-llm";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
-import { FederatedEvent, federateId, federatedId, useServerTheme } from 'app/store';
+import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { FederatedEvent, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
 import FlipMove from 'react-flip-move';
-import EventCard from '../event/event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 
-import { EventsFullCalendar, useScreenWidthAndHeight } from "../event/events_full_calendar";
+import { useScreenWidthAndHeight } from "../event/events_full_calendar";
 
-import { Calendar as CalendarIcon, Check, ChevronDown, ChevronRight, Key, Eye, EyeOff } from '@tamagui/lucide-icons';
+import { Calendar as CalendarIcon, Check, ChevronDown, ChevronRight, Eye, EyeOff, Key } from '@tamagui/lucide-icons';
 import { hasPermission, highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import OpenAI from 'openai';
 import { isSafari } from '../../../ui/src/global';
 import { useCreationAccountOrServer } from '../../hooks/account_or_server/use_creation_account_or_server';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
-import { PageChooser } from "../home/page_chooser";
 import { TamaguiMarkdown } from '../post';
 import { EventListingLarge } from './event_listing_large';
 
@@ -47,23 +44,22 @@ export const useLocalStorageString = (key: string, defaultValue: string) =>
   useLocalStorageState<string>(key, defaultValue);
 
 // WebLLM gives us easy control to cancel generation.
-// OpenAI's garbage-ass APIs are designed to maximize their profit
+// OpenAI APIs are make canceling generation impossible,
 // and force devs to use globals like this in their React apps
 // if we want to cancel streaming generation.
+// No idea if this works because my OpenAI API key doesn't seem to work.
 let abortStreaming = false;
 
 export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
-  const toast = useToastController();
-  const mediaQuery = useMedia();
-  const { shrinkPreviews } = useLocalConfiguration();
-  const { bigCalendar, setBigCalendar } = useBigCalendar();
-
-  // const eventsState = useRootSelector((state: RootState) => state.events);
-
-  const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
+  const { account, server } = useCreationAccountOrServer();
 
   const serverTheme = useServerTheme();
-  const { server: currentServer, primaryColor, primaryAnchorColor, navColor, navTextColor, transparentBackgroundColor } = serverTheme;//useServerTheme();
+  const { server: currentServer, navColor, navTextColor } = serverTheme;
+
+  const toast = useToastController();
+  const mediaQuery = useMedia();
+  const { bigCalendar, setBigCalendar } = useBigCalendar();
+
 
   useEffect(() => {
     const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
@@ -113,9 +109,8 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   }, [aiBackend])
 
   const llmInitCallback = (report: webllm.InitProgressReport) => {
-    // const label = document.getElementById("init-label");
     setLlmStatusText(report.text);
-    // label.innerText = report.text;
+
     if (report.progress === 1) {
       setLlmStatusText(`WebLLM ${llmModel} is ready.`);
       setLlmReady(true);
@@ -123,6 +118,7 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
       setLlmReady(false);
     }
   };
+
   useEffect(() => {
     if (webllm && aiBackend === 'webLlm' && !llmEngine) {
       webllm.CreateMLCEngine(
@@ -164,7 +160,10 @@ I am going to send you a list of one or more events pasted from a user. Please p
 All generated events should have only one instance. Do not invent content if there is none - title-only events are fine.
 
 ${trimmedInstructions ?
-      `${trimmedInstructions}${trimmedInstructions.endsWith('.') ? '' : '.'} ` :
+      `${trimmedInstructions}${trimmedInstructions.endsWith('.') ||
+        trimmedInstructions.endsWith('!')
+        ? ''
+        : '.'} ` :
       ''}
 
 Timestamp values should always be in UTC. Only send the JSON, no other text.
@@ -186,20 +185,15 @@ ${aiText}
           if (!aiResultsLoading) {
             toast.show('Error parsing AI results.');
           }
-          // setAiResultEvents(undefined);
         }
       } catch (e) {
         if (!aiResultsLoading) {
           toast.show('Error parsing AI results. See browser console for error info.');
           console.error('error parsing AI results', e);
         }
-        // setAiResultEvents(undefined);
       }
-    } else {
-      // setAiResultEvents(undefined);
     }
   }, [aiResult]);
-  const { account, server } = useCreationAccountOrServer();
   const resultEvents: FederatedEvent[] = aiResultEvents?.map((event, index) => ({
     serverHost: server?.host ?? 'no-host',
     ...Event.create({
@@ -278,9 +272,7 @@ ${aiText}
 
         const token = chunk.choices[0]?.delta?.content || '';
         message += token;
-        // if (token.length > 0) {
         setAiResult(message);
-        // }
       }
       const finalResult = aiBackend === 'webLlm'
         ? await llmEngine!.getMessage()
@@ -291,10 +283,7 @@ ${aiText}
       console.error('error getting AI results', e);
       toast.show('Error getting AI results. See browser console for error info.');
     } finally {
-      // debugger;
-      // setTimeout(() => 
       setAiResultsLoading(false);
-      // , 3000);
     }
   }
 
