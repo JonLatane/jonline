@@ -38,6 +38,7 @@
     "expo-linking": "~5.0.2",
     "moment": "^2.30.1",
     "nice-grpc-web": "^3.3.3",
+    "openai": "^4.47.2",
     "react-big-calendar": "^1.12.2",
     "react-colorful": "^5.6.1",
     "react-drag-drop-files": "^2.3.10",

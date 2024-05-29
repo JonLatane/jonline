@@ -24,6 +24,7 @@ import { useParamState } from '../people/people_screen';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
+import { EventListingLarge } from '../event/event_listing_large';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -250,6 +251,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         : undefined}
     </AnimatePresence>
   </YStack>;
+
+  const eventListing = EventListingLarge({ events: allEvents });
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
@@ -269,7 +272,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         px='$3'
         maw={maxWidth}>
         <FlipMove style={{ width: '100%' }} maintainContainerHeight>
-          {bigCalendar
+          {/* <EventListingLarge events={allEvents} /> */}
+          {eventListing}
+          {/* {bigCalendar
             ? <div key='bigcalendar-rendering'>
               <EventsFullCalendar events={allEvents} />
             </div>
@@ -279,9 +284,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <PageChooser {...pagination} />
                 </div>,
                 <div key={`multi-column-rendering-page-${pagination.page}`}>
-                  {/* <YStack gap='$2' width='100%' > */}
                   <XStack mx='auto' jc='center' flexWrap='wrap'>
-                    {/* <AnimatePresence> */}
                     {firstPageLoaded || allEvents.length > 0
                       ? allEvents.length === 0
                         ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
@@ -303,8 +306,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                         </XStack>
                       </XStack>;
                     })}
-                    {/* </FlipMove> */}
-                    {/* </AnimatePresence> */}
                   </XStack>
                 </div>,
                 <div key='pages-bottom' id='pages-bottom'>
@@ -322,7 +323,6 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                     ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
                       <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                         <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-                        {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                       </YStack>
                     </div>
                     : undefined
@@ -340,7 +340,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
                   <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
                     entityName={{ singular: 'event', plural: 'events' }} />
                 </div>
-              ]}
+              ]} */}
           {showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         </FlipMove>
 
