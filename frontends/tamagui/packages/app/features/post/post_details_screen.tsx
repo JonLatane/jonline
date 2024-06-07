@@ -1,12 +1,12 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { ListEnd } from '@tamagui/lucide-icons'
+import { CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
-import { loadPost, parseFederatedId, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
+import { FederatedEvent, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
-import { federateId } from '../../store/federation'
+import { federateId, federatedId } from '../../store/federation';
 import { useGroupFromPath } from '../groups/group_home_screen'
 import { AppSection } from '../navigation/features_navigation'
 import { TabsNavigation } from '../navigation/tabs_navigation'
@@ -14,6 +14,9 @@ import { ConversationContextProvider, useStatefulConversationContext } from './c
 import { ConversationManager, scrollToCommentsBottom } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
+import { StarredPostCard } from '../navigation/starred_posts'
+import FlipMove from 'react-flip-move';
+import { PostContext } from '@jonline/api/index'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -85,11 +88,61 @@ export function PostDetailsScreen() {
   }, [serverPostId, server, subjectPost, loadingPost]);
 
   const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
+
+  // function scrollToBottom() {
+  //   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+  // }
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  const chatUI = app?.discussionChatUI;
+
+  const [ancestorPostIds, setAncestorPostIds] = useState([] as string[]);
+  const ancestorPosts = useAppSelector(state => ancestorPostIds.map(id => {
+    const federatedId = federateId(id, server);
+    return selectPostById(state.posts, federatedId);
+  }));
+  useEffect(() => {
+    if (subjectPost && subjectPost.replyToPostId) {
+      setAncestorPostIds([subjectPost.replyToPostId]);
+    }
+  }, [subjectPost]);
+  useEffect(() => {
+    for (const idx in ancestorPostIds) {
+      const postId = ancestorPostIds[idx]!;
+      const post = ancestorPosts[idx];
+
+      if (!post) {
+        dispatch(loadPost({ ...accountOrServer, id: postId }));
+      }
+    }
+
+  }, [ancestorPostIds]);
+
+  useEffect(() => {
+    if (ancestorPosts[0]?.replyToPostId) {
+      setAncestorPostIds([ancestorPosts[0].replyToPostId, ...ancestorPostIds]);
+    }
+  }, [ancestorPosts]);
+
+  const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
+  const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
+  useEffect(() => {
+    if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
+      dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
+    }
+  }, [ancestorPosts[0]?.context, ancestorEvent?.id]);
+
+  const federatedAncestorPostIds = ancestorPostIds.map(id => federateId(id, server));
+
+  const ancestorTitle = ancestorEvent?.post?.title || ancestorPosts[0]?.title;
+  const subjectPostTitle = subjectPost?.title || (ancestorTitle ? `Comments - ${ancestorTitle}` : '');
   useEffect(() => {
     let title = '';
     if (subjectPost) {
-      if (subjectPost.title && subjectPost.title.length > 0) {
-        title = subjectPost.title;
+      if (subjectPostTitle && subjectPostTitle.length > 0) {
+        title = subjectPostTitle;
       } else {
         title = `Post Details (#${subjectPost.id})`;
       }
@@ -103,15 +156,7 @@ export function PostDetailsScreen() {
       title += `- ${group.name}`;
     }
     setDocumentTitle(title)
-  });//, [serverName, subjectPost, failedToLoadPost, pathShortname, group?.name]);
-
-  // function scrollToBottom() {
-  //   window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-  // }
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-  const chatUI = app?.discussionChatUI;
+  });
 
   return (
     <TabsNavigation appSection={AppSection.POSTS} selectedGroup={group}
@@ -130,7 +175,7 @@ export function PostDetailsScreen() {
                 }}>
                 {mediaQuery.gtSm
                   ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
-                    {subjectPost?.title || 'Loading...'}
+                    {subjectPostTitle || 'Loading...'}
                   </Paragraph>
                   : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>}
               </Button>
@@ -208,17 +253,33 @@ export function PostDetailsScreen() {
           <ConversationContextProvider value={conversationContext}>
             <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
               <ScrollView w='100%'>
-                <AnimatePresence>
+                <FlipMove>
                   {interactionType === 'post'
-                    ? <XStack w='100%' paddingHorizontal='$3'
-                      animation='standard' {...standardHorizontalAnimation}>
-                      <PostCard key={`post-card-main-${serverPostId}`}
-                        post={subjectPost}
-                        onEditingChange={editHandler(subjectPost.id)} />
-                    </XStack>
+                    ? <div key='subject' style={{ display: 'flex', flexDirection: 'column' }}>
+                      {federatedAncestorPostIds.map(
+                        id => <YStack w='100%' px='$3'>
+                          <StarredPostCard key={`post-card-ancestor-${id}`}
+                            postId={id}
+                            fullSize
+                            showPermalink
+                            hideCurrentUser />
+                          <XStack ml='$3'><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                        </YStack>
+                      )}
+                      <XStack w='100%' px='$3'
+                      // animation='standard' {...standardHorizontalAnimation}
+                      >
+                        <PostCard key={`post-card-main-${serverPostId}`}
+                          post={subjectPost}
+                          onEditingChange={editHandler(subjectPost.id)}
+                          isSubjectPost />
+                      </XStack>
+                    </div>
                     : undefined}
-                </AnimatePresence>
-                <ConversationManager post={subjectPost} />
+                  <div key='convo'>
+                    <ConversationManager key='convo' post={subjectPost} />
+                  </div>
+                </FlipMove>
               </ScrollView>
 
 

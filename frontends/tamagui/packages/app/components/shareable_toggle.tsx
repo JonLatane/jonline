@@ -10,6 +10,7 @@ export interface ShareableToggleProps {
   disabled?: boolean;
   readOnly?: boolean;
   autoDispatch?: boolean;
+  isOwner?: boolean;
 }
 
 let _key = 1;
@@ -18,13 +19,17 @@ export function ShareableToggle({
   setter,
   disabled = false,
   readOnly = false,
-  autoDispatch = false
+  autoDispatch = false,
+  isOwner = false,
 }: ShareableToggleProps) {
   const dispatch = useAppDispatch();
   const value = !!optionalValue;
   const name = useComponentKey('shareable');
 
-  const label = value ? 'Shareable' : 'Not Shareable';
+  const label = value ? 'Shareable' :
+    readOnly && isOwner
+      ? 'Not shareable for others'
+      : 'Not Shareable';
 
   if (!useCurrentAccount()) {
     return <></>;

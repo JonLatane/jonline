@@ -13,11 +13,13 @@ import { useFederatedDispatch } from '../../hooks/credential_dispatch_hooks';
 interface StarButtonProps {
   post: FederatedPost;
   eventMargins?: boolean;
+  horizontal?: boolean;
 }
 
 export const StarButton: React.FC<StarButtonProps> = ({
   post,
-  eventMargins = false
+  eventMargins = false,
+  horizontal = false,
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const federatedPostId = federatedId(post);
@@ -71,41 +73,65 @@ export const StarButton: React.FC<StarButtonProps> = ({
   function onPress() {
     if (starred) {
       dispatch(unstarPost(federatedPostId));
-      toast.show(`Unstarred "${postTitle}"`);
+      toast.show(postTitle ? `Unstarred "${postTitle}"` : 'Unstarred.');
     } else {
       dispatch(starPost(federatedPostId));
-      toast.show(`Starred "${postTitle}"`);
+      toast.show(postTitle ? `Starred "${postTitle}"` : 'Starred!');
     }
   }
 
-  return <YStack ai='center'
-    pt={5}
-    ml={eventMargins ? 5 : -15}
-    mr={eventMargins ? -12 : 3}
-  >
-    <Button transparent
-      size='$2'
-      p='$1'
-      px={0}
-      disabled={!post.id}
-      onPress={onPress}
-    >
-      <ThemedStar {...{ starred, server: accountOrServer.server }} />
-    </Button>
-    <ZStack w='$2' h='$2'>
-      <XStack animation='standard' mx='auto'
-        o={firstStarred != starred ? 0.5 : 0}
+  return horizontal ?
+    <XStack ai='center'>
+      <Button transparent
+        size='$2'
+        p='$1'
+        px={0}
+        disabled={!post.id}
+        onPress={onPress}
       >
-        <Spinner size='small' />
-      </XStack>
-      <XStack animation='standard' mx='auto'
-        o={post.unauthenticatedStarCount > 0 ? 0.5 : 0}>
-        <Paragraph size='$1' ta='center'>
-          {post.unauthenticatedStarCount}
-        </Paragraph>
-      </XStack>
-    </ZStack>
-  </YStack>;
+        <ThemedStar {...{ starred, server: accountOrServer.server }} />
+      </Button>
+      <ZStack w='$2' h='$2' transform={[{translateX: -3}]}>
+        <XStack animation='standard' m='auto'
+          o={firstStarred != starred ? 0.5 : 0}
+        >
+          <Spinner size='small' />
+        </XStack>
+        <XStack animation='standard' m='auto'
+          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0}>
+          <Paragraph size='$1' ta='center'>
+            {post.unauthenticatedStarCount}
+          </Paragraph>
+        </XStack>
+      </ZStack>
+    </XStack>
+    : <YStack ai='center' pt={5}
+      ml={eventMargins ? 5 : -15}
+      mr={eventMargins ? -12 : 3}
+    >
+      <Button transparent
+        size='$2'
+        p='$1'
+        px={0}
+        disabled={!post.id}
+        onPress={onPress}
+      >
+        <ThemedStar {...{ starred, server: accountOrServer.server }} />
+      </Button>
+      <ZStack w='$2' h='$2'>
+        <XStack animation='standard' mx='auto'
+          o={firstStarred != starred ? 0.5 : 0}
+        >
+          <Spinner size='small' />
+        </XStack>
+        <XStack animation='standard' mx='auto'
+          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0}>
+          <Paragraph size='$1' ta='center'>
+            {post.unauthenticatedStarCount}
+          </Paragraph>
+        </XStack>
+      </ZStack>
+    </YStack>;
 };
 
 export type ThemedStarProps = {

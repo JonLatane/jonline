@@ -116,16 +116,20 @@ export function PinnedServerSelector({
               ? <Button key='hide-nav-button' py='$1' h='auto' transparent
                 // animation='standard' {...reverseHorizontalAnimation}
                 onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                <XStack position='absolute' animation='standard'
+                <XStack position='absolute' animation='800ms'
+                  key='open-icon'
                   o={hideNavigation ? 1 : 0}
                   transform={[{ translateY: hideNavigation ? 0 : 10 }]}
-                  scale={hideNavigation ? 1 : 2}>
+                // scale={hideNavigation ? 1 : 2}
+                >
                   <PanelTopOpen size='$1' />
                 </XStack>
-                <XStack position='absolute' animation='standard'
+                <XStack position='absolute' animation='800ms'
+                  key='close-icon'
                   o={hideNavigation ? 0 : 1}
-                  transform={[{ translateY: !hideNavigation ? 0 : 10 }]}
-                  scale={hideNavigation ? 0.2 : 1}>
+                  transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
+                // scale={hideNavigation ? 0.2 : 1}
+                >
                   <PanelTopClose size='$1' />
                 </XStack>
               </Button>
@@ -361,7 +365,7 @@ export function AccountAvatarAndUsername({
   const accountOrServer = useFederatedAccountOrServer(serverHost);
   const account = specifiedAccount ?? accountOrServer.account;
 
-  const { server } = useJonlineServerInfo(serverHost ?? 'unknown');
+  const { server } = useJonlineServerInfo(serverHost ?? 'default');
   // const pinned = !!pinnedServer?.pinned;
   // const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   // const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);

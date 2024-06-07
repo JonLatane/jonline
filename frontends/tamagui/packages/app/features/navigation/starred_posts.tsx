@@ -482,8 +482,10 @@ export type StarredPostCardProps = {
   fullSize?: boolean;
   unsortable?: boolean;
   unreadCount?: number;
+  hideCurrentUser?: boolean;
+  showPermalink?: boolean;
 };
-export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount }: StarredPostCardProps) {
+export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount, hideCurrentUser, showPermalink }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
 
@@ -524,6 +526,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
       event={eventWithSingleInstance}
       isPreview={!fullSize} forceShrinkPreview
       onPress={() => onOpen?.(postId)}
+      showPermalink={showPermalink}
     />;
   } else if (basePost) {
     renderedCardView = <YStack w='100%'>
@@ -539,6 +542,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
         post={basePost}
         isPreview={!fullSize} forceShrinkPreview
         onPress={() => onOpen?.(postId)}
+        showPermalink={showPermalink}
       />
     </YStack>;
   } else {
@@ -561,7 +565,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   }
   const chatUI = useAppSelector(state => state.app.discussionChatUI);
   const renderedCard = <YStack w='100%' key={`starred-post-${postId}`}>
-    {server && (pinnedServer?.accountId || !basePost) ?
+    {!hideCurrentUser && server && (pinnedServer?.accountId || !basePost) ?
       <XStack ml='auto' mr='$9' mb={-10}>
         <ShortAccountSelectorButton {...{ server, pinnedServer }} />
         {/* <SingleServerAccountsSheet

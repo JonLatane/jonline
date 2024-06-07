@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
-import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, Eye, History, Link, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
+import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, Eye, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
@@ -42,6 +42,7 @@ interface Props {
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
   onPress?: () => void;
+  showPermalink?: boolean;
 }
 
 let newEventId = 0;
@@ -60,7 +61,8 @@ export const EventCard: React.FC<Props> = ({
   onInstancesUpdated,
   ignoreShrinkPreview,
   forceShrinkPreview,
-  onPress
+  onPress,
+  showPermalink
 }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(event);
   const currentUser = accountOrServer.account?.user;// useAccount()?.user;
@@ -957,6 +959,7 @@ export const EventCard: React.FC<Props> = ({
                             </XStack>
                             <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                               <ShareableToggle value={shareable}
+                                isOwner={isAuthor}
                                 setter={setEditedShareable}
                                 readOnly={!editing || previewingEdits} />
                             </XStack>
@@ -978,6 +981,11 @@ export const EventCard: React.FC<Props> = ({
                     mt={shrinkContent ? '$1' : showEdit ? -11 : -15} >
                     <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
 
+
+                    {showPermalink
+                      ? <Button circular icon={Link2} {...detailsLink}
+                        my='auto' size='$2' mr='$2' />
+                      : undefined}
                     <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                       <YStack key='discussion-anchor-root' h='100%'>
                         <Button key='comments-link-button'

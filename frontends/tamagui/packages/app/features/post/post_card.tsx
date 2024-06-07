@@ -2,9 +2,9 @@ import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById,
 import React, { useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
-import { Post, Visibility } from "@jonline/api";
+import { Post, PostContext, Visibility } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
-import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
+import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
@@ -39,6 +39,8 @@ interface PostCardProps {
   onEditingChange?: (editing: boolean) => void;
   forceExpandPreview?: boolean;
   forceShrinkPreview?: boolean;
+  isSubjectPost?: boolean;
+  showPermalink?: boolean;
 }
 
 export const postBackgroundSize = (media: TamaguiMediaState) =>
@@ -59,7 +61,9 @@ export const PostCard: React.FC<PostCardProps> = ({
   onPressReply,
   onEditingChange,
   forceExpandPreview,
-  forceShrinkPreview
+  forceShrinkPreview,
+  isSubjectPost,
+  showPermalink
 }) => {
   const mediaQuery = useMedia();
   const { dispatch, accountOrServer } = usePostDispatch(unfederatedPost);
@@ -71,6 +75,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   // source the post from the store, necessarily the Post/Reply hierarchy.
   const updatedPost = useAppSelector(state => selectPostById(state.posts, federatedPostId));
   const post: FederatedPost = { ...(updatedPost ?? unfederatedPost), serverHost: serverHost(server) };
+  const isReply = post.context === PostContext.REPLY;
 
   const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
   const currentAndPinnedServers = usePinnedAccountsAndServers();
@@ -508,6 +513,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                           <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                             <ShareableToggle value={shareable}
                               setter={setEditedShareable}
+                              isOwner={isAuthor}
                               readOnly={!editing || previewingEdits} />
                           </XStack>
                           {!post?.replyToPostId
@@ -522,8 +528,15 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </AnimatePresence>
                 <XStack w='100%' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
                   <AuthorInfo {...{ post, isVisible }} />
-                  {onPressReply ? <Button onPress={onPressReply} circular icon={Reply}
-                    my='auto' size='$2' mr='$2' /> : undefined}
+                  {isReply ? <StarButton post={post} horizontal /> : undefined}
+                  {onPressReply
+                    ? <Button onPress={onPressReply} circular icon={Reply}
+                      my='auto' size='$2' mr='$2' />
+                    : undefined}
+                  {showPermalink || (isReply && !isSubjectPost)
+                    ? <Button circular icon={Link2} {...detailsPostLink}
+                      my='auto' size='$2' mr='$2' />
+                    : undefined}
                   <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
                     <YStack h='100%' mr='$1'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}

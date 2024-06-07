@@ -11,7 +11,7 @@ use rocket_cache_response::CacheResponse;
 
 use crate::{
     db_connection::PgPooledConnection,
-    protos::{Event, GetPostsRequest, MediaReference, ServerInfo, ServerLogo},
+    protos::{Event, GetPostsRequest, MediaReference, PostContext, ServerInfo, ServerLogo, Visibility},
     rpcs,
     web::RocketState,
 };
@@ -184,7 +184,14 @@ webui!(
             None => return None,
         };
 
-        post_summary("Post".to_string(), post, server_name, server_logo, None)
+        post_summary(
+            "Post".to_string(),
+            post,
+            server_name,
+            server_logo,
+            None,
+            &mut connection,
+        )
     }
 );
 webui!(
@@ -202,7 +209,14 @@ webui!(
         };
         let post = event.map(|e| e.post).flatten();
 
-        post_summary("Event".to_string(), post, server_name, server_logo, None)
+        post_summary(
+            "Event".to_string(),
+            post,
+            server_name,
+            server_logo,
+            None,
+            &mut connection,
+        )
     }
 );
 webui!(user, "/user/<_>", "user/[id].html");
@@ -292,6 +306,7 @@ webui!(
             server_name,
             server_logo,
             Some(group_name),
+            &mut connection,
         )
     }
 );
@@ -346,6 +361,7 @@ webui!(
             server_name,
             server_logo,
             Some(group_name),
+            &mut connection,
         )
     }
 );
@@ -395,9 +411,7 @@ webui!(
      _path: Path| {
         Some(JonlineSummary {
             title: Some("Jonline AI Event Importer".to_string()),
-            description: Some(
-                "AI-powered bulk import of Events for Jonline".to_string(),
-            ),
+            description: Some("AI-powered bulk import of Events for Jonline".to_string()),
             image: None, //server_logo.or(Some("/favicon.ico".to_string())),
         })
     }
@@ -427,6 +441,7 @@ fn post_summary(
     server_name: String,
     server_logo: Option<String>,
     group_name: Option<String>,
+    connection: &mut PgPooledConnection,
 ) -> Option<JonlineSummary> {
     let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
     let server_and_group_name = match group_name {
@@ -434,26 +449,55 @@ fn post_summary(
         None => server_name,
     };
     let (title, description, image) = match post {
-        Some(post) => {
-            let title = post.title.map_or(
-                format!("{} Details - {}", entity_type, server_and_group_name),
+        Some(post) if post.visibility() == Visibility::GlobalPublic => {
+            let mut ancestor_post = post.clone();
+            while let Some(parent_id) = ancestor_post.reply_to_post_id {
+                ancestor_post = get_post(parent_id, connection).unwrap();
+            }
+            if ancestor_post.context() == PostContext::EventInstance {
+                let event = get_event_from_post(&ancestor_post.id, connection);
+                ancestor_post = match event {
+                    Some(event) => match event.post {
+                        Some(post) => post,
+                        None => ancestor_post,
+                    },
+                    None => ancestor_post,
+                };
+                // if event.is_some() && event.unwrap().post.is_some() {
+                //     ancestor_post = event.unwrap().post.unwrap();
+                // }
+            }
+            let ancestor_entity_type = match ancestor_post.context() {
+                PostContext::EventInstance | PostContext::Event => "Event".to_string(),
+                _ => entity_type,
+            };
+
+            let mut title = ancestor_post.title.map_or(
+                format!("{} Details - {}", ancestor_entity_type, server_and_group_name),
                 |title| {
                     format!(
                         "{} - {} Details - {}",
                         title.clone(),
-                        entity_type,
+                        ancestor_entity_type,
                         server_and_group_name
                     )
                 },
             );
+            if ancestor_post.id != post.id {
+                title = format!("Comments - {}", title);
+            }
             let image_ref: Option<&MediaReference> = post
                 .media
                 .iter()
-                .find(|m| m.content_type.starts_with("image"));
+                .find(|m| m.content_type.starts_with("image"))
+                .or(ancestor_post
+                    .media
+                    .iter()
+                    .find(|m| m.content_type.starts_with("image")));
             let image = image_ref.map_or(basic_logo, |mr| Some(format!("/media/{}", mr.id)));
             (title, post.content.clone(), image)
         }
-        None => (
+        _ => (
             format!("{} Details - {}", entity_type, server_and_group_name),
             None,
             basic_logo,
@@ -486,6 +530,22 @@ fn get_event(event_instance_id: String, connection: &mut PgPooledConnection) -> 
     let event = rpcs::get_events(
         GetEventsRequest {
             event_instance_id: Some(event_instance_id),
+            ..Default::default()
+        },
+        &None,
+        connection,
+    )
+    .ok()
+    .map(|r| r.events.into_iter().next())
+    .flatten();
+    event
+}
+
+fn get_event_from_post(post_id: &str, connection: &mut PgPooledConnection) -> Option<Event> {
+    let event = rpcs::get_events(
+        GetEventsRequest {
+            post_id: Some(post_id.to_string()),
+            // event_instance_id: Some(event_instance_id),
             ..Default::default()
         },
         &None,

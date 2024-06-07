@@ -1,4 +1,4 @@
-import { RootState, loadUser, selectUserById, useRootSelector } from "app/store";
+import { RootState, loadUser, selectUserById, useRootSelector, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { Author, Permission, Post } from "@jonline/api";
@@ -30,17 +30,27 @@ export const AuthorInfo = ({
   isVisible = true,
   larger = false,
   shrink = false,
-  textColor
+  textColor: inputTextColor,
 }: AuthorInfoProps) => {
   const { dispatch, accountOrServer } = useProvidedDispatch();
   // const author = inputAuthor as Author;
   const server = accountOrServer.server;
-  const authorId = author ? federatedIDPair(author.userId, server) : undefined;
+  const authorIdPair = author ? federatedIDPair(author.userId, server) : undefined;
   const serverAuthorId = author?.userId;
   const federatedAuthorId = serverAuthorId ? federateId(serverAuthorId, server) : undefined;
   const authorName = author?.username;
   const federatedAuthorName = authorName ? federateId(authorName, server) : undefined;
   // const { server, primaryColor, navColor } = useServerTheme();
+
+  const isCurrentUser = serverAuthorId === accountOrServer.account?.user?.id;
+  // console.log('AuthorInfo', { isCurrentUser, authorId: authorIdPair, currentUser: accountOrServer.account?.user })
+  const { primaryAnchorColor, navAnchorColor } = useServerTheme(accountOrServer.server);
+  const textColor = inputTextColor ??
+    (isCurrentUser
+      ? primaryAnchorColor
+      : undefined);
+  const permissionBadgeColor = inputTextColor;
+
   const mediaQuery = useMedia();
   const authorUser = useRootSelector((state: RootState) => federatedAuthorId ?
     selectUserById(state.users, federatedAuthorId) : undefined);
@@ -93,8 +103,8 @@ export const AuthorInfo = ({
 
   return <XStack ref={ref} f={1} /*ml={media.gtXs ? 0 : -7}*/ alignContent='flex-start'>
     <YStack w={detailsMargins} />
-    {(avatarUrl && avatarUrl != '') ?
-      <YStack marginVertical='auto'>
+    {(avatarUrl && avatarUrl != '')
+      ? <YStack marginVertical='auto'>
         {disableLink
           ?
           // <FadeInView>
@@ -119,7 +129,7 @@ export const AuthorInfo = ({
           {author ?? authorName
             ? disableLink
               ? `${author?.username ?? authorName}`
-              : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps}>{author?.username ?? authorName}</Anchor>
+              : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps} color={textColor}>{author?.username ?? authorName}</Anchor>
             : 'anonymous'}
         </Heading>
       </XStack>
@@ -130,9 +140,9 @@ export const AuthorInfo = ({
             : undefined}
         </XStack>
         {author && hasAdminPermission(authorUser)
-          ? <PermissionIndicator permission={Permission.ADMIN} color={textColor} /> : undefined}
+          ? <PermissionIndicator permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined}
         {author && hasPermission(authorUser, Permission.RUN_BOTS)
-          ? <PermissionIndicator permission={Permission.RUN_BOTS} color={textColor} /> : undefined}
+          ? <PermissionIndicator permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined}
       </XStack>
     </YStack>
   </XStack>;

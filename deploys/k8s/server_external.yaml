@@ -98,6 +98,7 @@ metadata:
   name: delete-expired-tokens
 spec:
   schedule: "*/5 * * * *"
+  successfulJobsHistoryLimit: 3
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -120,6 +121,7 @@ metadata:
   name: delete-unowned-media
 spec:
   schedule: "*/10 * * * *"
+  successfulJobsHistoryLimit: 3
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
