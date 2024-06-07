@@ -13,7 +13,7 @@ import FlipMove from "react-flip-move";
 import { useLink } from "solito/link";
 import EventCard from "../event/event_card";
 import { InstanceTime } from "../event/instance_time";
-import { ConversationContextProvider, PostCard, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useStatefulConversationContext } from "../post";
+import { ConversationContextProvider, PostCard, ReplyArea, scrollToCommentsBottom, scrollToCommentsTop, useConversationCommentList, useReplyAncestors, useStatefulConversationContext } from "../post";
 import { StarButton, ThemedStar } from "../post/star_button";
 import { AppSection, menuIcon } from "./features_navigation";
 import { ShortAccountSelectorButton } from "./pinned_server_selector";
@@ -162,6 +162,13 @@ export function StarredPosts({ }: StarredPostsProps) {
     }
   }, [openedPostId])
   const { serverHost, basePost, event, eventInstanceId, eventWithSingleInstance } = useStarredPostDetails(openedPostId ?? '');
+  const { ancestorPost, ancestorEvent } = useReplyAncestors(basePost);
+  const basePostTitle = event?.post?.title || basePost?.title ||
+    (ancestorEvent?.post?.title
+      ? `Comments | ${ancestorEvent.post.title}`
+      : ancestorPost?.title
+        ? `Comments | ${ancestorPost.title}`
+        : 'Loading...');
 
   useEffect(() => {
   }, [openedPostId, basePost]);
@@ -285,7 +292,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                                 maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
                                 overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
                                 fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
-                                {event?.post?.title ?? basePost?.title ?? 'Loading...'}
+                                {basePostTitle}
                               </Paragraph>
                             </YStack>
                           </Button>
@@ -540,7 +547,8 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
         : undefined}
       <PostCard
         post={basePost}
-        isPreview={!fullSize} forceShrinkPreview
+        isPreview={!fullSize && basePost.context != PostContext.REPLY}
+        forceShrinkPreview
         onPress={() => onOpen?.(postId)}
         showPermalink={showPermalink}
       />

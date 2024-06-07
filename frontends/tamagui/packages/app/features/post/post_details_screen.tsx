@@ -2,7 +2,7 @@ import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Toolt
 import { CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
-import { FederatedEvent, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
+import { FederatedEvent, FederatedPost, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
@@ -42,6 +42,53 @@ export function usePostInteractionType(): [PostDetailsInteractionType, (interact
     default: return ['post', setInteractionType];
   }
 }
+
+export function useReplyAncestors(subjectPost?: FederatedPost) {
+  const { dispatch, accountOrServer } = useFederatedDispatch(subjectPost);
+  const { server } = accountOrServer;
+
+  const [ancestorPostIds, setAncestorPostIds] = useState([] as string[]);
+  const ancestorPosts = useAppSelector(state => ancestorPostIds.map(id => {
+    const federatedId = federateId(id, server);
+    return selectPostById(state.posts, federatedId);
+  }));
+  useEffect(() => {
+    if (subjectPost && subjectPost.replyToPostId) {
+      setAncestorPostIds([subjectPost.replyToPostId]);
+    }
+  }, [subjectPost]);
+  useEffect(() => {
+    for (const idx in ancestorPostIds) {
+      const postId = ancestorPostIds[idx]!;
+      const post = ancestorPosts[idx];
+
+      if (!post) {
+        dispatch(loadPost({ ...accountOrServer, id: postId }));
+      }
+    }
+
+  }, [ancestorPostIds]);
+
+  useEffect(() => {
+    if (ancestorPosts[0]?.replyToPostId) {
+      setAncestorPostIds([ancestorPosts[0].replyToPostId, ...ancestorPostIds]);
+    }
+  }, [ancestorPosts]);
+
+  const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
+  const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
+  useEffect(() => {
+    if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
+      dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
+    }
+  }, [ancestorPosts[0]?.context, ancestorEvent?.id]);
+
+  const federatedAncestorPostIds = ancestorPostIds.map(id => federateId(id, server));
+
+  return { ancestorPost: ancestorPosts[0], ancestorEvent, federatedAncestorPostIds };
+}
+
 export function PostDetailsScreen() {
   const mediaQuery = useMedia();
   const [pathPostId] = useParam('postId');
@@ -97,46 +144,48 @@ export function PostDetailsScreen() {
   }
   const chatUI = app?.discussionChatUI;
 
-  const [ancestorPostIds, setAncestorPostIds] = useState([] as string[]);
-  const ancestorPosts = useAppSelector(state => ancestorPostIds.map(id => {
-    const federatedId = federateId(id, server);
-    return selectPostById(state.posts, federatedId);
-  }));
-  useEffect(() => {
-    if (subjectPost && subjectPost.replyToPostId) {
-      setAncestorPostIds([subjectPost.replyToPostId]);
-    }
-  }, [subjectPost]);
-  useEffect(() => {
-    for (const idx in ancestorPostIds) {
-      const postId = ancestorPostIds[idx]!;
-      const post = ancestorPosts[idx];
+  // const [ancestorPostIds, setAncestorPostIds] = useState([] as string[]);
+  // const ancestorPosts = useAppSelector(state => ancestorPostIds.map(id => {
+  //   const federatedId = federateId(id, server);
+  //   return selectPostById(state.posts, federatedId);
+  // }));
+  // useEffect(() => {
+  //   if (subjectPost && subjectPost.replyToPostId) {
+  //     setAncestorPostIds([subjectPost.replyToPostId]);
+  //   }
+  // }, [subjectPost]);
+  // useEffect(() => {
+  //   for (const idx in ancestorPostIds) {
+  //     const postId = ancestorPostIds[idx]!;
+  //     const post = ancestorPosts[idx];
 
-      if (!post) {
-        dispatch(loadPost({ ...accountOrServer, id: postId }));
-      }
-    }
+  //     if (!post) {
+  //       dispatch(loadPost({ ...accountOrServer, id: postId }));
+  //     }
+  //   }
 
-  }, [ancestorPostIds]);
+  // }, [ancestorPostIds]);
 
-  useEffect(() => {
-    if (ancestorPosts[0]?.replyToPostId) {
-      setAncestorPostIds([ancestorPosts[0].replyToPostId, ...ancestorPostIds]);
-    }
-  }, [ancestorPosts]);
+  // useEffect(() => {
+  //   if (ancestorPosts[0]?.replyToPostId) {
+  //     setAncestorPostIds([ancestorPosts[0].replyToPostId, ...ancestorPostIds]);
+  //   }
+  // }, [ancestorPosts]);
 
-  const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
-  const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
-  const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
-  useEffect(() => {
-    if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
-      dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
-    }
-  }, [ancestorPosts[0]?.context, ancestorEvent?.id]);
+  // const ancestorEventInstanceId = useAppSelector(state => state.events.postInstances[federateId(ancestorPosts[0]?.id ?? '', server)]);
+  // const ancestorEventId = useAppSelector(state => ancestorEventInstanceId ? state.events.instanceEvents[ancestorEventInstanceId] : undefined);
+  // const ancestorEvent = useAppSelector(state => ancestorEventId ? selectEventById(state.events, ancestorEventId) : undefined);
+  // useEffect(() => {
+  //   if (ancestorPosts[0]?.context === PostContext.EVENT_INSTANCE && !ancestorEvent) {
+  //     dispatch(loadEvent({ ...accountOrServer, postId: ancestorPosts[0]!.id }));
+  //   }
+  // }, [ancestorPosts[0]?.context, ancestorEvent?.id]);
 
-  const federatedAncestorPostIds = ancestorPostIds.map(id => federateId(id, server));
+  // const federatedAncestorPostIds = ancestorPostIds.map(id => federateId(id, server));
 
-  const ancestorTitle = ancestorEvent?.post?.title || ancestorPosts[0]?.title;
+  const { ancestorPost, ancestorEvent, federatedAncestorPostIds } = useReplyAncestors(subjectPost);
+
+  const ancestorTitle = ancestorEvent?.post?.title || ancestorPost?.title;
   const subjectPostTitle = subjectPost?.title || (ancestorTitle ? `Comments - ${ancestorTitle}` : '');
   useEffect(() => {
     let title = '';

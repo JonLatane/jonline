@@ -334,6 +334,9 @@ export const PostCard: React.FC<PostCardProps> = ({
       appShrinkPreviews && !forceExpandPreview
     )
   );
+  const linkToDetails = isPreview || onPress;
+  const conditionalDetailsLink = linkToDetails ? detailsLink : {};
+  // const conditionalDetailsLink = isPreview || onPress ? detailsLink : {};
   // console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
@@ -405,9 +408,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               <XStack ai='center'>
                 <StarButton post={post} />
                 <YStack f={1}>
-                  {isPreview
+                  {linkToDetails
                     ? <Anchor textDecorationLine='none'
-                      {...(isPreview ? detailsLink : {})}
+                      {...conditionalDetailsLink}
                     >
                       <YStack w='100%'>
                         <Heading size="$7" marginRight='auto'>
@@ -461,8 +464,8 @@ export const PostCard: React.FC<PostCardProps> = ({
                             }, isPreview, groupContext: selectedGroup, isVisible
                           }} />}
                       </YStack>
-                      {isPreview
-                        ? <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                      {linkToDetails
+                        ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
                           {contentArea}
                         </Anchor>
                         : contentArea}
@@ -537,7 +540,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     ? <Button circular icon={Link2} {...detailsPostLink}
                       my='auto' size='$2' mr='$2' />
                     : undefined}
-                  <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
+                  <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
                     <YStack h='100%' mr='$1'>
                       <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
                         borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
