@@ -63,7 +63,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
   const dispatch = useAppDispatch();
   const [addingServer, setAddingServer] = React.useState(false);
 
-  const { server } = useJonlineServerInfo(host);
+  const { server, existingServer } = useJonlineServerInfo(host);
 
   const { allowServerSelection, browsingServers } = useLocalConfiguration();
   async function addServer() {
@@ -105,7 +105,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
       <ServerCard server={existingServer ?? pendingServer ?? prototypeServer} isPreview={isPreview}
         disableHeightLimit={disableHeightLimit} disableFooter disablePress />
     } */}
-    {server ? undefined
+    {existingServer ? undefined
       : <Button mt='$2' disabled={addingServer} o={addingServer ? 0.5 : 1}
         backgroundColor={buttonBackgroundColor} color={buttonTextColor}
         hoverStyle={{ backgroundColor: buttonBackgroundColor }}
