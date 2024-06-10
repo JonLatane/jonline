@@ -26,7 +26,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
     const expired = accessExpiresAt.subtract(1, 'minutes').isBefore(now);
-    console.log(server?.host, "token expired:", expired);
+    // console.log(server?.host, "token expired:", expired);
 
     function loadCurrentUser() {
 
@@ -47,7 +47,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
     if (expired) {
       let newAccessToken: ExpirableToken | undefined = undefined;
       let newRefreshToken: ExpirableToken | undefined = undefined;
-      console.log("blocking on access token refresh:", _accessFetchLock)
+      // console.log("blocking on access token refresh:", _accessFetchLock)
       // debugger;
       while (_accessFetchLock) {
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -56,11 +56,11 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
       }
       _accessFetchLock = true;
       try {
-        console.log("access token refresh unblocked")
+        // console.log("access token refresh unblocked")
         const newTokenExpired = !newAccessToken ||
           moment.utc(newAccessToken!.expiresAt).subtract(1, 'minutes').isBefore(now);
 
-        console.log("newTokenExpired:", newTokenExpired);
+        // console.log("newTokenExpired:", newTokenExpired);
         if (newTokenExpired) {
           console.log(`Access token expired, refreshing..., now=${now}, expiresAt=${accessExpiresAt}`);
           const accessTokenResult = await client
@@ -106,7 +106,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
         // account = { ...account, accessToken: newAccessToken! };
         // store.dispatch(accountsSlice.actions.upsertAccount(account));
       } finally {
-        console.log("unblocking access token refresh")
+        // console.log("unblocking access token refresh")
         _accessFetchLock = false;
       }
     } else {
