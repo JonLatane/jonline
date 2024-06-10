@@ -517,6 +517,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
   const { navColor, navTextColor, navAnchorColor } = useServerTheme(server);
 
+  const isActuallyStarred = useAppSelector(state => state.app.starredPostIds.includes(postId));
   const { canMoveUp, canMoveDown } = useAppSelector(state => ({
     canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,
     canMoveDown: state.app.starredPostIds.indexOf(postId) < state.app.starredPostIds.length - 1,
@@ -591,7 +592,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
         <XStack f={1} key='card-view'>
           {renderedCardView}
         </XStack>
-        {fullSize ? undefined :
+        {fullSize || !isActuallyStarred ? undefined :
           <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
             <Button key='moveUp' size='$2' circular
               animation='standard'

@@ -1,5 +1,5 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
+import { ChevronRight, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
 import { FederatedEvent, FederatedPost, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
@@ -187,6 +187,7 @@ export function PostDetailsScreen() {
 
   const ancestorTitle = ancestorEvent?.post?.title || ancestorPost?.title;
   const subjectPostTitle = subjectPost?.title || (ancestorTitle ? `Comments - ${ancestorTitle}` : '');
+  const [showContext, setShowContext] = useState(false);
   useEffect(() => {
     let title = '';
     if (subjectPost) {
@@ -218,19 +219,24 @@ export function PostDetailsScreen() {
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
                 transparent={interactionType !== 'post'} mr='$2'
+                px='$2'
                 onPress={() => {
-                  setInteractionType('post');
                   scrollToTop();
+                  if (interactionType === 'post') {
+                    setShowContext(!showContext);
+                  } else {
+                    setInteractionType('post');
+                  }
                 }}>
                 {mediaQuery.gtSm
                   ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
                     {subjectPostTitle || 'Loading...'}
                   </Paragraph>
-                  : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Post</Heading>}
+                  : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>{subjectPost?.context === PostContext.REPLY ? 'Comments' : 'Post'}</Heading>}
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
-              <Heading size='$2'>Post Details</Heading>
+              <Heading size='$2'>{subjectPost?.context === PostContext.REPLY ? showContext ? 'Comment Context' :'Comment Details' : 'Post Details'}</Heading>
             </Tooltip.Content>
           </Tooltip>
 
@@ -240,6 +246,7 @@ export function PostDetailsScreen() {
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
                 transparent={interactionType !== 'discussion'}
+                px='$2'
                 onPress={() => setInteractionType('discussion')} mr='$2'>
                 <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : !chatUI ? navAnchorColor : undefined}>Discussion</Heading>
               </Button>
@@ -254,6 +261,7 @@ export function PostDetailsScreen() {
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'chat' ? navColor : undefined)}
                 transparent={interactionType !== 'chat'}
+                px='$2'
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
                 <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor : undefined}>Chat</Heading>
@@ -304,26 +312,40 @@ export function PostDetailsScreen() {
               <ScrollView w='100%'>
                 <FlipMove>
                   {interactionType === 'post'
-                    ? <div key='subject' style={{ display: 'flex', flexDirection: 'column' }}>
-                      {federatedAncestorPostIds.map(
-                        id => <YStack w='100%' px='$3'>
-                          <StarredPostCard key={`post-card-ancestor-${id}`}
-                            postId={id}
-                            fullSize
-                            showPermalink
-                            hideCurrentUser />
-                          <XStack ml='$3'><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                        </YStack>
-                      )}
-                      <XStack w='100%' px='$3'
-                      // animation='standard' {...standardHorizontalAnimation}
-                      >
-                        <PostCard key={`post-card-main-${serverPostId}`}
-                          post={subjectPost}
-                          onEditingChange={editHandler(subjectPost.id)}
-                          isSubjectPost />
-                      </XStack>
-                    </div>
+                    ? [
+                      showContext
+                        ? federatedAncestorPostIds.map(
+                          id =>
+                            <div key={`context-${id}`} style={{ display: 'flex', flexDirection: 'column' }}>
+                              <YStack w='100%' px='$3'>
+                                <XStack w='100%'>
+                                  <XStack mt='$7'>
+                                    <ChevronRight />
+                                  </XStack>
+                                  <YStack f={1} >
+                                    <StarredPostCard key={`post-card-ancestor-${id}`}
+                                      postId={id}
+                                      fullSize
+                                      showPermalink
+                                      hideCurrentUser />
+                                  </YStack>
+                                </XStack>
+                                <XStack ml='$7'><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                              </YStack>
+                            </div>
+                        )
+                        : undefined,
+                      <div key='subjectPost'>
+                        <XStack w='100%' px='$3'
+                        // animation='standard' {...standardHorizontalAnimation}
+                        >
+                          <PostCard key={`post-card-main-${serverPostId}`}
+                            post={subjectPost}
+                            onEditingChange={editHandler(subjectPost.id)}
+                            isSubjectPost />
+                        </XStack>
+                      </div>
+                    ]
                     : undefined}
                   <div key='convo'>
                     <ConversationManager key='convo' post={subjectPost} />
