@@ -1,5 +1,5 @@
 import { FederatedPost, JonlineServer, getCachedServerClient, starPost, store, unstarPost, upsertPost, useServerTheme } from "app/store";
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect } from "react";
 
 import { Button, Paragraph, Spinner, XStack, YStack, ZStack, useDebounceValue, useToastController } from '@jonline/ui';
 import { Star } from "@tamagui/lucide-icons";
@@ -70,15 +70,18 @@ export const StarButton: React.FC<StarButtonProps> = ({
   const postTitle = event
     ? `${event?.post?.title}${eventInstance ? ` (${moment(eventInstance.startsAt).format('MMM D, h:mm a')})` : ''}`
     : post.title;
-  function onPress() {
+
+  const onPress = useCallback(() => {
     if (starred) {
+      // requestAnimationFrame(() => 
       dispatch(unstarPost(federatedPostId));
+      // );
       toast.show(postTitle ? `Unstarred "${postTitle}"` : 'Unstarred.');
     } else {
       dispatch(starPost(federatedPostId));
       toast.show(postTitle ? `Starred "${postTitle}"` : 'Starred!');
     }
-  }
+  }, [starred, toast, federatedPostId, postTitle, dispatch]);
 
   return horizontal ?
     <XStack ai='center'>
@@ -91,7 +94,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
       >
         <ThemedStar {...{ starred, server: accountOrServer.server }} />
       </Button>
-      <ZStack w='$2' h='$2' transform={[{translateX: -3}]}>
+      <ZStack w='$2' h='$2' transform={[{ translateX: -3 }]}>
         <XStack animation='standard' m='auto'
           o={firstStarred != starred ? 0.5 : 0}
         >

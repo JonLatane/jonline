@@ -433,21 +433,23 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </div>
                           : undefined}
 
-                        {openedPostId// && basePost
-                          ? [
-                            <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%' }}>
-                              <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
-                            </div>,
-                            basePost ? conversationCommentList : undefined
-                          ]
-                          : filteredPostIds.map((postId) =>
-                            <div key={`starred-post-card-${postId}`} style={{ width: '100%' }}>
-                              <XStack w='100%'
-                                animation='standard' {...standardAnimation}>
-                                <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
-                                  unsortable={!!starredPostFilter} />
-                              </XStack>
-                            </div>)}
+                        {open ?
+                          openedPostId// && basePost
+                            ? [
+                              <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%' }}>
+                                <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
+                              </div>,
+                              basePost ? conversationCommentList : undefined
+                            ]
+                            : filteredPostIds.map((postId) =>
+                              <div key={`starred-post-card-${postId}`} style={{ width: '100%' }}>
+                                <XStack w='100%'
+                                  animation='standard' {...standardAnimation}>
+                                  <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
+                                    unsortable={!!starredPostFilter} />
+                                </XStack>
+                              </div>)
+                          : undefined}
 
                       </FlipMove>
                     </ScrollView>
@@ -632,7 +634,8 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
               onPress={(e) => { e.stopPropagation(); moveDown(); }}
               icon={ChevronDown} />
           </YStack>
-        }</AnimatePresence>
+        }
+      </AnimatePresence>
     </XStack >
   </YStack>;
 
