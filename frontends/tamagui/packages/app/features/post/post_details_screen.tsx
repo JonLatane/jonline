@@ -1,5 +1,5 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { ChevronRight, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
+import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
+import { ChevronRight, CircleEllipsis, ListEnd, X } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
 import { FederatedEvent, FederatedPost, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
@@ -56,7 +56,7 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
     if (subjectPost && subjectPost.replyToPostId) {
       setAncestorPostIds([subjectPost.replyToPostId]);
     }
-  }, [subjectPost]);
+  }, [subjectPost?.id, subjectPost?.serverHost]);
   useEffect(() => {
     for (const idx in ancestorPostIds) {
       const postId = ancestorPostIds[idx]!;
@@ -236,7 +236,7 @@ export function PostDetailsScreen() {
               </Button>
             </Tooltip.Trigger>
             <Tooltip.Content>
-              <Heading size='$2'>{subjectPost?.context === PostContext.REPLY ? showContext ? 'Comment Context' :'Comment Details' : 'Post Details'}</Heading>
+              <Heading size='$2'>{subjectPost?.context === PostContext.REPLY ? showContext ? 'Comment Context' : 'Comment Details' : 'Post Details'}</Heading>
             </Tooltip.Content>
           </Tooltip>
 
@@ -334,6 +334,29 @@ export function PostDetailsScreen() {
                               </YStack>
                             </div>
                         )
+                        : undefined,
+
+                      federatedAncestorPostIds.length > 0
+                        ? <div key='show-hide-context' style={{paddingLeft: 15, paddingRight: 15}}>
+                          <Button onPress={() => setShowContext(!showContext)} mx='auto' px='$2' py='$1'
+                            animation='slow' mt={showContext ? '$3' : undefined}
+                            w='100%'
+                            icon={<ZStack w='$2' h='$2'>
+                              <XStack m='auto' animation='slow' o={!showContext ? 1 : 0}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                              <XStack m='auto' animation='slow' o={showContext ? 1 : 0}><X /></XStack>
+                            </ZStack>}
+                          // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
+                          >
+                            <ZStack w='$15' h='$2'>
+                              <XStack m='auto' animation='slow' o={!showContext ? 1 : 0}>
+                                <Heading size='$4'>Show Context</Heading>
+                              </XStack>
+                              <XStack m='auto' animation='slow' o={showContext ? 1 : 0}>
+                                <Heading size='$4'>Hide Context</Heading>
+                              </XStack>
+                            </ZStack>
+                          </Button>
+                        </div>
                         : undefined,
                       <div key='subjectPost'>
                         <XStack w='100%' px='$3'
