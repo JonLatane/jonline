@@ -108,7 +108,9 @@ export function GroupsSheet({
         topGroupIds: sharingGroupPostData?.map(gp => federateId(gp.groupId, sharingPostServerHost))
       }
       : {
-        serverHostFilter: tagServerHostFilter ?? selectedGroup?.serverHost ?? primaryEntity?.serverHost,
+        serverHostFilter: tagServerHostFilter ??
+          // selectedGroup?.serverHost ?? 
+          primaryEntity?.serverHost,
         extraListItemChrome: undefined,
         topGroupIds: undefined
       };
