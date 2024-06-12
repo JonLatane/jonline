@@ -1,5 +1,5 @@
 import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { ChevronRight, CircleEllipsis, ListEnd, X } from '@tamagui/lucide-icons'
+import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd, X } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
 import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
 import { FederatedEvent, FederatedPost, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
@@ -53,8 +53,12 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
     return selectPostById(state.posts, federatedId);
   }));
   useEffect(() => {
-    if (subjectPost && subjectPost.replyToPostId) {
-      setAncestorPostIds([subjectPost.replyToPostId]);
+    if (subjectPost) {
+      if (subjectPost.replyToPostId) {
+        setAncestorPostIds([subjectPost.replyToPostId]);
+      } else if (ancestorPostIds.length > 0) {
+        setAncestorPostIds([]);
+      }
     }
   }, [subjectPost?.id, subjectPost?.serverHost]);
   useEffect(() => {
@@ -342,16 +346,16 @@ export function PostDetailsScreen() {
                             animation='slow' mt={showContext ? '$3' : undefined}
                             w='100%'
                             icon={<ZStack w='$2' h='$2'>
-                              <XStack m='auto' animation='slow' o={!showContext ? 1 : 0}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                              <XStack m='auto' animation='slow' o={showContext ? 1 : 0}><X /></XStack>
+                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{rotate: !showContext ? '0deg' : '-180deg'}]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{rotate: showContext ? '0deg' : '180deg'}]}><ChevronUp /></XStack>
                             </ZStack>}
                           // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
                           >
                             <ZStack w='$15' h='$2'>
-                              <XStack m='auto' animation='slow' o={!showContext ? 1 : 0}>
+                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0}>
                                 <Heading size='$4'>Show Context</Heading>
                               </XStack>
-                              <XStack m='auto' animation='slow' o={showContext ? 1 : 0}>
+                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0}>
                                 <Heading size='$4'>Hide Context</Heading>
                               </XStack>
                             </ZStack>
