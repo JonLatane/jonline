@@ -10,11 +10,11 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
-import { Button, Dialog, Heading, ScrollView, Text, YStack, needsScrollPreservers, reverseStandardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
+import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
-import { X as XIcon } from '@tamagui/lucide-icons';
+import { ChevronLeft, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import moment from 'moment';
 import { createParam } from 'solito';
@@ -134,6 +134,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
 
   // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
+  // console.log('EventsFullCalendar', { modalInstanceId })
   const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
   const hideNavigation = useHideNavigation();
@@ -154,7 +155,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const minBigCalHeight = 150;
   const maxWidth = 2000;
 
-  const {screenWidth: bigCalWidth, screenHeight: borderedScreenHeight} = useScreenWidthAndHeight();
+  const { screenWidth: bigCalWidth, screenHeight: borderedScreenHeight } = useScreenWidthAndHeight();
   const bigCalHeight = Math.min(
     weeklyOnly ? 350 : Number.MAX_SAFE_INTEGER,
     borderedScreenHeight
@@ -176,7 +177,10 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   );
   const scrollToTime = (scrollToTimeParam
     ? moment(scrollToTimeParam)
-    : moment()
+    : //modalInstance
+    //  ? moment(modalInstance?.instances[0]?.startsAt)
+    //  : 
+     moment()
   ).subtract(30, 'minutes');
   const { calendarImplementation } = useLocalConfiguration();
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
@@ -203,9 +207,20 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
     }-${navigationHeight
     }-${hideNavigation
     }-${allEvents.length
-    }-${scrollToTimeParam}`;
+    }-${scrollToTime}`;
 
   const isEmpty = allEvents.length === 0;
+
+  const findNeighborEvent = (offset: number) => {
+    if (modalInstance) {
+      const sortedEvents = allEvents.sort((a, b) => moment(a.instances[0]?.startsAt ?? 0).unix() - moment(b.instances[0]?.startsAt ?? 0).unix());
+      const index = sortedEvents.findIndex((e) => federatedId(e) === federatedId(modalInstance));
+      return sortedEvents[index + offset];
+    }
+  };
+  const nextEvent = useMemo(() => findNeighborEvent(1), [modalInstance ? federatedId(modalInstance) : undefined]);
+  const prevEvent = useMemo(() => findNeighborEvent(-1), [modalInstance ? federatedId(modalInstance) : undefined]);
+
   return (<>
 
     <YStack zi={1}
@@ -322,6 +337,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
               ? <YStack w='100%' h='100%'>
                 <BigCalendar
                   // key={renderingKey}
+                  // key={`calendar-rendering-${scrollToTime}`}
                   localizer={localizer}
 
                   // defaultDate={new Date()}
@@ -418,31 +434,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         </div>
       </Text>
     </YStack>
-    <Dialog
-      key={`modal-${modalInstanceId}`}
-      modal open={!!modalInstance}
-
-      onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
-      {/* <Dialog.Trigger asChild>
-                    <Button>Show Dialog</Button>
-                  </Dialog.Trigger> */}
-
-      {/* <Adapt when="sm" platform="touch">
-                    <Sheet animation="medium" zIndex={200000} modal dismissOnSnapToBottom>
-                      <Sheet.Frame padding="$4" gap="$4">
-                        <Sheet.ScrollView>
-                          {modalInstance
-                            ? <EventCard event={modalInstance!} isPreview />
-                            : undefined}
-                        </Sheet.ScrollView>
-                      </Sheet.Frame>
-                      <Sheet.Overlay
-                        animation="lazy"
-                        enterStyle={{ opacity: 0 }}
-                        exitStyle={{ opacity: 0 }}
-                      />
-                    </Sheet>
-                  </Adapt> */}
+    <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
 
       <Dialog.Portal>
         <Dialog.Overlay
@@ -457,7 +449,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           bordered
           elevate
           key="content"
-          animateOnly={['transform', 'opacity']}
+          // animateOnly={['transform', 'opacity']}
           animation='standard'
           // maw={bigCalWidth}
           w={Math.min(800, bigCalWidth)}
@@ -468,18 +460,38 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         >
           {/* <Unspaced> */}
           <YStack gap='$2' h='100%'>
-            <Dialog.Close asChild>
+            <XStack w='100%'>
               <Button
-                ml='auto' mr='$3' size='$1'
+                ml='$3' size='$2'
                 circular
-                icon={XIcon}
+                icon={ChevronLeft}
+                disabled={!prevEvent}
+                o={prevEvent ? 1 : 0.5}
+                onPress={() => setModalInstanceId(federateId(prevEvent!.instances[0]!.id, prevEvent!.serverHost))}
               />
-            </Dialog.Close>
+              <Button
+                ml='$3' size='$2'
+                circular
+                icon={ChevronRight}
+                disabled={!nextEvent}
+                o={nextEvent ? 1 : 0.5}
+                onPress={() => setModalInstanceId(federateId(nextEvent!.instances[0]!.id, nextEvent!.serverHost))}
+              />
+              <Dialog.Close asChild>
+                <Button
+                  ml='auto' mr='$3' size='$2'
+                  circular
+                  icon={XIcon}
+                />
+              </Dialog.Close>
+            </XStack>
+            {/* <YStack w='100%' my='auto' f={1}> */}
             <ScrollView f={1}>
               {modalInstance
-                ? <EventCard event={modalInstance!} isPreview ignoreShrinkPreview />
+                ? <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview />
                 : undefined}
             </ScrollView>
+            {/* </YStack> */}
           </YStack>
         </Dialog.Content>
       </Dialog.Portal>

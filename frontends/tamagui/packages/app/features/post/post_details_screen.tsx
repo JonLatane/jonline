@@ -22,7 +22,9 @@ const { useParam } = createParam<{ postId: string, shortname: string | undefined
 
 export type PostDetailsInteractionType = 'post' | 'discussion' | 'chat';
 export function usePostInteractionType(): [PostDetailsInteractionType, (interactionType: PostDetailsInteractionType) => void] {
-  const [interactionTypeParam, _setInteractionType] = useHash();
+  const [_, _setInteractionType] = useHash();
+  const interactionTypeParam = window.location.hash;
+  // console.log('usePostInteractionType', {interactionTypeParam, other: window.location.hash})
   const chatUI = useLocalConfiguration().discussionChatUI;
   const dispatch = useAppDispatch();
 
@@ -106,6 +108,7 @@ export function PostDetailsScreen() {
   // console.log('PostDetailsScreen', serverPostId, serverHost, accountOrServer);
 
   const [interactionType, setInteractionType] = usePostInteractionType();
+  // console.log('PostDetailsScreen', { interactionType })
   const { group, pathShortname } = useGroupFromPath();
 
   const { primaryColor, primaryTextColor, navColor, navTextColor, navAnchorColor } = useServerTheme(accountOrServer.server);
@@ -192,6 +195,11 @@ export function PostDetailsScreen() {
   const ancestorTitle = ancestorEvent?.post?.title || ancestorPost?.title;
   const subjectPostTitle = subjectPost?.title || (ancestorTitle ? `Comments - ${ancestorTitle}` : '');
   const [showContext, setShowContext] = useState(false);
+  useEffect(() => {
+    if (interactionType === 'post') {
+      setShowContext(false);
+    }
+  }, [interactionType, pathPostId]);
   useEffect(() => {
     let title = '';
     if (subjectPost) {
@@ -341,13 +349,13 @@ export function PostDetailsScreen() {
                         : undefined,
 
                       federatedAncestorPostIds.length > 0
-                        ? <div key='show-hide-context' style={{paddingLeft: 15, paddingRight: 15}}>
+                        ? <div key='show-hide-context' style={{ paddingLeft: 15, paddingRight: 15 }}>
                           <Button onPress={() => setShowContext(!showContext)} mx='auto' px='$2' py='$1'
                             animation='slow' mt={showContext ? '$3' : undefined}
                             w='100%'
                             icon={<ZStack w='$2' h='$2'>
-                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{rotate: !showContext ? '0deg' : '-180deg'}]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{rotate: showContext ? '0deg' : '180deg'}]}><ChevronUp /></XStack>
+                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{ rotate: !showContext ? '0deg' : '-180deg' }]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{ rotate: showContext ? '0deg' : '180deg' }]}><ChevronUp /></XStack>
                             </ZStack>}
                           // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
                           >

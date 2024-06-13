@@ -341,46 +341,48 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <AccountOrServerContextProvider value={accountOrServer}>
       <YStack w='100%' ref={ref!}>
-        {previewParent && post.replyToPostId
-          ? <XStack w='100%'>
-            {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
-            <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
+        <AnimatePresence>
+          {previewParent && post.replyToPostId
+            ? <XStack w='100%' animation='standard' {...standardAnimation}>
+              {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
+              <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
-            <AnimatePresence>
-              <Card f={1} theme="dark" size="$1" bordered={false} id={componentKey}
-                margin='$0'
-                backgroundColor={selectedPostId == previewParent.id ? '$backgroundFocus' : undefined}
-                // marginBottom={replyPostIdPath ? '$0' : '$3'}
-                // marginTop={replyPostIdPath ? '$0' : '$3'}
-                // padding='$2'
-                px='$2'
-                py='$1'
-                mb='$1'
-                // f={isPreview ? undefined : 1}
-                animation='standard' {...reverseStandardAnimation}
-                scale={0.92}
-                opacity={1}
-                y={0}
-                // enterStyle={{ y: -50, opacity: 0, }}
-                // exitStyle={{ opacity: 0, }}
-                pressStyle={{ scale: 0.91 }}
-                onPress={onPressParentPreview}
-              >
-                <Card.Footer>
-                  <YStack w='100%'>
-                    <XStack mah={200} w='100%'>
-                      <TamaguiMarkdown text={previewParent.content} shrink />
-                    </XStack>
+              <AnimatePresence>
+                <Card f={1} theme="dark" size="$1" bordered={false} id={componentKey}
+                  margin='$0'
+                  backgroundColor={selectedPostId == previewParent.id ? '$backgroundFocus' : undefined}
+                  // marginBottom={replyPostIdPath ? '$0' : '$3'}
+                  // marginTop={replyPostIdPath ? '$0' : '$3'}
+                  // padding='$2'
+                  px='$2'
+                  py='$1'
+                  mb='$1'
+                  // f={isPreview ? undefined : 1}
+                  animation='standard' {...reverseStandardAnimation}
+                  scale={0.92}
+                  opacity={1}
+                  y={0}
+                  // enterStyle={{ y: -50, opacity: 0, }}
+                  // exitStyle={{ opacity: 0, }}
+                  pressStyle={{ scale: 0.91 }}
+                  onPress={onPressParentPreview}
+                >
+                  <Card.Footer>
+                    <YStack w='100%'>
+                      <XStack mah={200} w='100%'>
+                        <TamaguiMarkdown text={previewParent.content} shrink />
+                      </XStack>
 
-                    <XStack ml='auto' mr='$2'>
-                      <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
-                    </XStack>
-                  </YStack>
-                </Card.Footer>
-              </Card>
-            </AnimatePresence>
-          </XStack>
-          : undefined}
+                      <XStack ml='auto' mr='$2'>
+                        <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
+                      </XStack>
+                    </YStack>
+                  </Card.Footer>
+                </Card>
+              </AnimatePresence>
+            </XStack>
+            : undefined}
+        </AnimatePresence>
         {/* <Theme inverse={selectedPostId == post.id}> */}
         <Card size="$4"
           bordered={!post.replyToPostId}

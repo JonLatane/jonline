@@ -4,7 +4,7 @@ import { ListEnd } from '@tamagui/lucide-icons';
 import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { FederatedPost, RootState, federatedId, useServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
 import moment, { Moment } from 'moment';
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useMemo, useReducer, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { ConversationContextType, useConversationContext } from './conversation_context';
 import PostCard from './post_card';
@@ -207,31 +207,36 @@ export function useConversationCommentList({
     lastReplyTo?: string;
   }
 
-  const flattenedReplies: FlattenedReply[] = [];
-  function flattenReplies(reply: Post, postIdPath: string[], includeSelf: boolean = false, parentPost?: Post,
-    lastReplyTo?: string, isLastReply?: boolean) {
-    if (includeSelf) {
-      flattenedReplies.push({
-        reply, postIdPath, parentPost,
-        lastReplyTo: isLastReply && (collapsedReplies.has(reply.id) || reply.replyCount == 0 || reply.replies.length == 0)
-          ? lastReplyTo : undefined,
-      });
-    }
-    if (collapsedReplies.has(reply.id)) return;
+  const flattenedReplies: FlattenedReply[] = useMemo(() => {
+    const result = [] as FlattenedReply[];
+    function flattenReplies(
+      reply: Post, postIdPath: string[], includeSelf: boolean = false, parentPost?: Post,
+      lastReplyTo?: string, isLastReply?: boolean
+    ) {
+      if (includeSelf) {
+        result.push({
+          reply, postIdPath, parentPost,
+          lastReplyTo: isLastReply && (collapsedReplies.has(reply.id) || reply.replyCount == 0 || reply.replies.length == 0)
+            ? lastReplyTo : undefined,
+        });
+      }
+      if (collapsedReplies.has(reply.id)) return;
 
-    for (const [index, child] of reply.replies.entries()) {
-      const isChildLastReply = (index == reply.replies.length - 1 && includeSelf)
-        || (!includeSelf && collapsedReplies.has(child.id) || child.replyCount == 0 || (child.replies ?? []).length == 0);
-      const childIsLastReplyTo = isChildLastReply ? lastReplyTo ?? reply.id : undefined;
-      flattenReplies(child, postIdPath.concat(child.id), true, reply, childIsLastReplyTo, isChildLastReply);
+      for (const [index, child] of reply.replies.entries()) {
+        const isChildLastReply = (index == reply.replies.length - 1 && includeSelf)
+          || (!includeSelf && collapsedReplies.has(child.id) || child.replyCount == 0 || (child.replies ?? []).length == 0);
+        const childIsLastReplyTo = isChildLastReply ? lastReplyTo ?? reply.id : undefined;
+        flattenReplies(child, postIdPath.concat(child.id), true, reply, childIsLastReplyTo, isChildLastReply);
+      }
     }
-  }
-  if (post) {
-    flattenReplies(post, rootPostId ? [rootPostId] : []);
-  }
-  if (chatUI) {
-    flattenedReplies.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
-  }
+    if (post) {
+      flattenReplies(post, rootPostId ? [rootPostId] : []);
+    }
+    if (chatUI) {
+      result.sort((a, b) => a.reply.createdAt!.localeCompare(b.reply.createdAt!));
+    }
+    return result;
+  }, [chatUI, post?.replies, collapsedReplies]);
   const dimensions = useWindowDimensions();
 
   let replyAboveCurrent: Post | undefined = undefined;
