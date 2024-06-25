@@ -1,6 +1,7 @@
 import { Moderation } from "@jonline/api";
 import { Paragraph, Select, XStack, YStack } from "@jonline/ui";
 import { Check, ChevronDown } from "@tamagui/lucide-icons";
+import { useCallback } from "react";
 
 export type ModerationPickerProps = {
   id?: string;
@@ -21,20 +22,20 @@ export function ModerationPicker({
   label,
   moderationDescription = defaultModerationDescription
 }: ModerationPickerProps) {
-  function onValueSelected(v: string) {
+  const onValueSelected = useCallback((v: string) => {
     const selectedModeration = parseInt(v) as Moderation;
     onChange(selectedModeration)
-  }
+  }, [onChange]);
   const description = moderationDescription(moderation);
 
   return <YStack w='100%' maw={350} opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : undefined}>
     <Select native id={id ?? 'moderation-picker'}
-     value={moderation.toString()}
-      onValueChange={onValueSelected} 
+      value={moderation.toString()}
+      onValueChange={onValueSelected}
     // disabled={disabled}
     >
-      <Select.Trigger w='100%' f={1}  iconAfter={ChevronDown}
-       disabled={disabled}>
+      <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}
+        disabled={disabled}>
         <Select.Value w='100%' placeholder="Choose Moderation" />
       </Select.Trigger>
       <Select.Content zIndex={200000} >

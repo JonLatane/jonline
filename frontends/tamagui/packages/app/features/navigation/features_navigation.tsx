@@ -4,7 +4,7 @@ import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 
 import { useCurrentAccountOrServer, useCredentialDispatch, useLocalConfiguration, useCurrentServer, usePinnedAccountsAndServers } from "app/hooks";
 import { FederatedGroup, RootState, federateId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
 import FlipMove from "react-flip-move";
@@ -125,7 +125,7 @@ export type FeaturesNavigationProps = {
 export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection, selectedGroup, disabled }: FeaturesNavigationProps) {
   // const { account, server } = useCurrentAccountOrServer();
   const server = useCurrentServer();
-  const hasAccount = usePinnedAccountsAndServers({includeUnpinned: true}).filter(aos => !!aos.account?.user?.id).length > 0;
+  const hasAccount = usePinnedAccountsAndServers({ includeUnpinned: true }).filter(aos => !!aos.account?.user?.id).length > 0;
   const mediaQuery = useMedia();
   const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
@@ -198,50 +198,13 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   //   }
   // });
 
-  const [latest, posts, events] = [
-    navButton(isLatest, latestLink, AppSection.HOME),
-    navButton(isPosts, postsLink, AppSection.POSTS),
-    navButton(isEvents, eventsLink, AppSection.EVENTS),
-  ];
-  const postsEventsRow = selectedGroup ?
-    inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENTS)
-      ? [latest, events, posts]
-      : [latest, posts, events]
-    : inlineNavigation && reorderInlineNavigation
-      ? (appSection == AppSection.EVENTS)
-        ? [events, posts]
-        : [posts, events]
-        //  appSection === AppSection.HOME//(appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
-        //   ? [posts, events]
-        //   : [latest, posts, events]
-      : [
-        appSection === AppSection.HOME && inlineNavigation
-          ? latest : undefined,
-        posts,
-        events
-      ];
 
   const showFollowRequests = hasAccount && (
     (!inlineNavigation || (!reorderInlineNavigation && appSubsection == AppSubsection.FOLLOW_REQUESTS))
     || followRequestCount > 0
     || isPeople
   );
-  const peopleRow = [
-    selectedGroup
-      ? navButton(isMembers, peopleLink, AppSection.MEMBERS)
-      : navButton(isPeople, peopleLink, AppSection.PEOPLE),
-    showFollowRequests ? navButton(isFollowRequests, followRequestsLink,
-      AppSection.PEOPLE, AppSubsection.FOLLOW_REQUESTS, followRequestCount
-    ) : undefined,
-  ];
-  const isPeopleRow = isPeople || isFollowRequests;
-
-  const { setMediaSheetOpen } = useMediaContext();
-  const myDataRow = [
-    hasAccount ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
-  ];
-
-  function triggerButton(forPopup?: boolean) {
+  const triggerButton = useCallback((forPopup?: boolean) => {
     const icon = inlineNavigation && appSubsection
       ? undefined
       : (menuIcon(appSection, navTextColor)
@@ -275,9 +238,9 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         </XStack>
       </Button>
     </div>;
-  }
+  }, [appSection, appSubsection, inlineNavigation, navTextColor, selectedGroup]);
 
-  function navButton(selected: boolean, link: object, section: AppSection, subsection?: AppSubsection, count?: number) {
+  const navButton = useCallback((selected: boolean, link: object, section: AppSection, subsection?: AppSubsection, count?: number) => {
     const baseName = (
       subsection
         ? subsectionTitle(subsection)
@@ -343,7 +306,46 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           </Tooltip>
         </Popover.Close>
       </div>;
-  }
+  }, [appSection, appSubsection, inlineNavigation, navTextColor, selectedGroup, reorderInlineNavigation, shrinkNavigation]);
+
+  const [latest, posts, events] = [
+    navButton(isLatest, latestLink, AppSection.HOME),
+    navButton(isPosts, postsLink, AppSection.POSTS),
+    navButton(isEvents, eventsLink, AppSection.EVENTS),
+  ];
+
+  const postsEventsRow = selectedGroup ?
+    inlineNavigation && reorderInlineNavigation && (appSection == AppSection.EVENTS)
+      ? [latest, events, posts]
+      : [latest, posts, events]
+    : inlineNavigation && reorderInlineNavigation
+      ? (appSection == AppSection.EVENTS)
+        ? [events, posts]
+        : [posts, events]
+      //  appSection === AppSection.HOME//(appSection == AppSection.POSTS || appSection == AppSection.MEDIA || appSection == AppSection.INFO || appSection == AppSection.GROUP || appSection == AppSection.PEOPLE)
+      //   ? [posts, events]
+      //   : [latest, posts, events]
+      : [
+        appSection === AppSection.HOME && inlineNavigation
+          ? latest : undefined,
+        posts,
+        events
+      ];
+
+  const peopleRow = [
+    selectedGroup
+      ? navButton(isMembers, peopleLink, AppSection.MEMBERS)
+      : navButton(isPeople, peopleLink, AppSection.PEOPLE),
+    showFollowRequests ? navButton(isFollowRequests, followRequestsLink,
+      AppSection.PEOPLE, AppSubsection.FOLLOW_REQUESTS, followRequestCount
+    ) : undefined,
+  ];
+  const isPeopleRow = isPeople || isFollowRequests;
+
+  const { setMediaSheetOpen } = useMediaContext();
+  const myDataRow = [
+    hasAccount ? navButton(isMedia, myMediaLink, AppSection.MEDIA) : undefined
+  ];
 
   const inlineSeparator = (index: number | string) => inlineNavSeparators
     ? <div key={`separator-${index}`}>

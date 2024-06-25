@@ -2,8 +2,8 @@ import { Button, Heading, Progress, Text, XStack, YStack, isTouchable, isWebTouc
 import { Upload } from '@tamagui/lucide-icons';
 import { useCreationAccountOrServer } from 'app/hooks';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
-import { getCredentialClient, serverUrl, useServerTheme } from 'app/store';
-import React, { useState } from 'react';
+import { getCredentialClient, serverID, serverUrl, useServerTheme } from 'app/store';
+import React, { useCallback, useState } from 'react';
 import { FileUploader } from "react-drag-drop-files";
 import { resizeImage } from './resize_media';
 
@@ -30,7 +30,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
   //   setDocumentTitle(title)
   // });
 
-  function handleUpload(arg: File | Array<File>) {
+  const handleUpload = useCallback((arg: File | Array<File>) => {
     if (!server) return;
 
     const currentServer = server;
@@ -91,7 +91,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
         uploadFile(file);
       }
     }
-  }
+  }, [server ? serverID(server) : undefined]);
   return (
     <YStack mb={-19} p='$2' als='center' overflow='hidden' maw='100%'>
       <Text fontFamily='$body' fontSize='$3' mx='auto' mb='$3'>

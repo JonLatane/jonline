@@ -5,7 +5,7 @@ import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLoca
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setHasOpenedAccounts, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
@@ -76,14 +76,14 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   //   serversState.server && serversState.server.host != browsingOn ||
   //   onlyShowServer && onlyShowServer.host != browsingOn
   // );
-  function addServer() {
+  const addServer = useCallback(() => {
     console.log(`Connecting to server ${newServerHost}`)
     dispatch(clearServerAlerts());
     dispatch(upsertServer({
       host: newServerHost,
       secure: newServerSecure,
     }));
-  }
+  }, [newServerHost, newServerSecure]);
 
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));

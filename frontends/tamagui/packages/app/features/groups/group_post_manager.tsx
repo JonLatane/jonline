@@ -1,6 +1,6 @@
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { FederatedGroup, FederatedPost, RootState, createGroupPost, deleteGroupPost, federateId, federatedId, loadPostGroupPosts, loadUser, markGroupVisit, useRootSelector, useServerTheme } from "app/store";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 
 import { GroupPost, Permission, Post, PostContext } from "@jonline/api";
 import { Button, Paragraph, Spinner, Text, XStack, YStack, useDebounceValue } from '@jonline/ui';
@@ -197,19 +197,19 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   });
 
   // const [loadingGroups, setLoadingGroups] = useState([] as string[]);
-  function shareToGroup(groupId: string) {
+  const shareToGroup = useCallback((groupId: string) => {
     dispatch(createGroupPost({ ...accountOrServer, postId: post.id, groupId }))
       .then(() => {
         setLoadingGroup(false);
         if (server) dispatch(markGroupVisit({ group }));
       });
     setLoadingGroup(true);
-  }
-  function unshareToGroup(groupId: string) {
+  }, [server, federatedId(post)]);
+  const unshareToGroup = useCallback((groupId: string) => {
     dispatch(deleteGroupPost({ ...accountOrServer, postId: post.id, groupId }))
       .then(() => setLoadingGroup(false));
     setLoadingGroup(true);
-  }
+  }, [server, federatedId(post)]);
 
   const { selectedGroup } = useGroupContext();
   const groupPostData = useAppSelector(state => state.groups.postIdGroupPosts[federatedId(post)]);

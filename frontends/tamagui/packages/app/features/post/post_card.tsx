@@ -1,5 +1,5 @@
 import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById, updatePost, useServerTheme } from "app/store";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
@@ -90,10 +90,10 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { primaryColor, primaryTextColor, primaryBgColor, primaryAnchorColor, navAnchorColor } = useServerTheme(server);
   // const postsStatus = useRootSelector((state: RootState) => state.posts.status);
   const [editing, _setEditing] = useState(false);
-  function setEditing(value: boolean) {
+  const setEditing = useCallback((value: boolean) => {
     _setEditing(value);
     onEditingChange?.(value);
-  }
+  }, [onEditingChange]);
   const toast = useToastController();
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
@@ -111,7 +111,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const shareable = editing ? editedShareable : post.shareable;
   const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews } = useLocalConfiguration();
 
-  function saveEdits() {
+  const saveEdits = useCallback(() => {
     setSavingEdits(true);
     console.log('saveEdits replyPostIdPath', replyPostIdPath);
     dispatch(updatePost({
@@ -127,17 +127,17 @@ export const PostCard: React.FC<PostCardProps> = ({
       setSavingEdits(false);
       setPreviewingEdits(false);
     });
-  }
+  }, [accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable]);
 
   const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
-  function doDeletePost() {
+  const doDeletePost = useCallback(() => {
     setDeleting(true);
     dispatch(deletePost({ ...accountOrServer, ...post })).then(() => {
       setDeleted(true);
       setDeleting(false);
     });
-  }
+  }, [accountOrServer, post]);
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
@@ -203,9 +203,10 @@ export const PostCard: React.FC<PostCardProps> = ({
       setLoadingReplies(false);
     }
   });
-  function toggleReplies(e: GestureResponderEvent) {
+  const toggleReplies = useCallback((e: GestureResponderEvent) => {
     e.stopPropagation();
-    setTimeout(() => {
+    // setTimeout(() => {
+    requestAnimationFrame(() => {
       if (!loadingReplies && post.replies.length == 0) {
         setLoadingReplies(true);
         if (onLoadReplies) {
@@ -215,8 +216,9 @@ export const PostCard: React.FC<PostCardProps> = ({
       } else if (toggleCollapseReplies) {
         toggleCollapseReplies();
       }
-    }, 1);
-  }
+    });
+    // }, 1);
+  }, [accountOrServer, loadingReplies, replyPostIdPath]);
   const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0
     || (post.replies.length > 0 && !toggleCollapseReplies);
   const collapsed = collapseReplies || post.replies?.length == 0;

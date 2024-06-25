@@ -7,7 +7,7 @@ import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
@@ -91,7 +91,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   }, [eventPagesOnHome])
   const paginatedEvents = eventPagination.results;
 
-  function onHomePressed() {
+  const onHomePressed = useCallback(() => {
     // console.log('onHomePressed', document.getElementById('events-top'));
     setTimeout(
       () => document.getElementById('events-top')?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }),
@@ -110,7 +110,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       reloadPosts();
       reloadEvents();
     }
-  }
+  }, [postPagination.page, eventPagination.page]);
 
   useEffect(() => {
     if (eventsLoaded && postsLoaded) {

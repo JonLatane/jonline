@@ -3,7 +3,7 @@ import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, Scrol
 import { ExternalLink, MapPin, Scroll } from "@tamagui/lucide-icons";
 import { NominatimResult, useNominatim } from "app/hooks/use_nominatim";
 import { useQueryDebounce } from "app/hooks/use_query_debounce";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLink } from "solito/link";
 
 
@@ -28,9 +28,9 @@ export const LocationControl: React.FC<Props> = ({
 }) => {
   const mediaQuery = useMedia();
   const value = location.uniformlyFormattedAddress;
-  function setValue(value: string) {
+  const setValue = useCallback((value: string) => {
     setLocation({ ...location, uniformlyFormattedAddress: value });
-  }
+  }, [setLocation]);
 
   const [isEditing, setIsEditing] = useState(!value);
   const [address, setAddress] = useState(value);

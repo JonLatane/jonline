@@ -5,7 +5,7 @@ import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
 import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
 import { accountID, actionSucceeded, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { TextInput } from 'react-native';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
@@ -96,7 +96,7 @@ export function AuthSheet({ }: AuthSheetProps) {
     }
   }
   // const skipAccountSelection = onAccountSelected !== undefined || currentServer?.host !== server?.host;
-  function loginToServer() {
+  const loginToServer = useCallback(() => {
     dispatch(clearAccountAlerts());
     const loginRequest = {
       ...server!,
@@ -113,8 +113,8 @@ export function AuthSheet({ }: AuthSheetProps) {
         setForceDisableAccountButtons(false);
       }
     });
-  }
-  function createServerAccount() {
+  }, [server, newAccountUser, newAccountPass]);
+  const createServerAccount = useCallback(() => {
     dispatch(clearAccountAlerts());
     dispatch(createAccount({
       ...server!,
@@ -128,7 +128,7 @@ export function AuthSheet({ }: AuthSheetProps) {
         setForceDisableAccountButtons(false);
       }
     });
-  }
+  }, [server, newAccountUser, newAccountPass]);
 
   const accountsLoading = accountsState.status == 'loading';
   const newAccountValid = newAccountUser.length > 0 && newAccountPass.length >= 8;
@@ -166,15 +166,15 @@ export function AuthSheet({ }: AuthSheetProps) {
         <Sheet.Frame>
           <Sheet.Handle />
           {/* <ZStack h='$6'> */}
-          <XStack 
-          // gap='$2'
+          <XStack
+            // gap='$2'
             h='$5' // paddingHorizontal='$3'
             // mx='$3'
             px='$3'
             // w='100%'
             mb='$2'
             ai='center'
-            >
+          >
             <Button
               alignSelf='center'
               size="$3"

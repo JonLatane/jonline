@@ -1,7 +1,7 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
 import { useCreationDispatch, useCreationServer, useCredentialDispatch, useEventPageParam, useEventPages, useLocalConfiguration } from 'app/hooks';
@@ -30,22 +30,22 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
 
-  function setStartsAt(v: string) {
+  const setStartsAt = useCallback((v: string) => {
     _setStartsAt(v);
     if (v && duration) {
       const start = moment(v);
       const end = start.add(duration, 'minutes');
       _setEndsAt(supportDateInput(end));
     }
-  }
-  function setEndsAt(v: string) {
+  }, [duration]);
+  const setEndsAt = useCallback((v: string) => {
     _setEndsAt(v);
     if (startsAt) {
       const start = moment(startsAt);
       const end = moment(v);
       _setDuration(end.diff(start, 'minutes'));
     }
-  }
+  }, [startsAt]);
   // useEffect(() => {
   //   if (startsAt && endsAt) {
   //     const start = moment(startsAt);
@@ -67,7 +67,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const endDateInvalid = !moment(endsAt).isAfter(moment(startsAt));
   const invalid = endDateInvalid;
 
-  function previewEvent(post: Post) {
+  const previewEvent = useCallback((post: Post) => {
     const event = Event.create({
       post: post,
       instances: [
@@ -83,15 +83,15 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       ],
     });
     return federatedEntity(event, accountOrServer.server);
-  };
+  }, [location, startsAt, endsAt, accountOrServer.server]);
 
-  function doCreate(
+  const doCreate = useCallback((
     post: Post,
     group: Group | undefined,
     resetPost: () => void,
     onComplete: () => void,
     onErrored: (error: any) => void,
-  ) {
+  ) => {
     function doReset() {
       resetPost();
       setStartsAt('');
@@ -116,7 +116,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
         onComplete();
       }
     });
-  }
+  }, []);
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { creationServer } = useCreationServer();
   const { navColor, navTextColor } = useServerTheme(creationServer);

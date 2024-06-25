@@ -1,6 +1,6 @@
 import useIsVisibleHorizontal, { useIsVisible } from 'app/hooks/use_is_visible';
 import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, useServerTheme, updateEvent } from "app/store";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
@@ -78,10 +78,10 @@ export const EventCard: React.FC<Props> = ({
 
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = useServerTheme(server);
   const [editing, _setEditing] = useState(false);
-  function setEditing(value: boolean) {
+  const setEditing = useCallback((value: boolean) => {
     _setEditing(value);
     onEditingChange?.(value);
-  }
+  }, [onEditingChange]);
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
 
@@ -119,7 +119,6 @@ export const EventCard: React.FC<Props> = ({
   const hasPastInstances = instances.find(isPastInstance) != undefined;
   const [editingInstance, setEditingInstance] = useState(undefined as EventInstance | undefined);
 
-  const { setStartTime, setEndTime } = useStartAndEndTime(editingInstance, updateEditingInstance);
 
   const [repeatWeeks, setRepeatWeeks] = useState(1);
 
@@ -145,7 +144,7 @@ export const EventCard: React.FC<Props> = ({
     }
   }
 
-  function saveEdits() {
+  const saveEdits = useCallback(() => {
     setSavingEdits(true);
     dispatch(updateEvent({
       ...accountOrServer,
@@ -172,41 +171,36 @@ export const EventCard: React.FC<Props> = ({
       setPreviewingEdits(false);
       setEditedInstances(result.payload?.instances);
     });
-  }
+  }, [event, editedAllowRsvps, editedAllowAnonymousRsvps, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
 
-  function addInstance() {
+  const addInstance = useCallback(() => {
     const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };
     setEditedInstances([newInstance, ...editedInstances]);
     setEditingInstance(newInstance);
-  }
-  function removeInstance(target: EventInstance) {
+  }, [editedInstances]);
+  const removeInstance = useCallback((target: EventInstance) => {
     if (target.id === editingInstance?.id) {
       setEditingInstance(undefined);
     }
     setEditedInstances(editedInstances.filter(i => i.id != target.id));
-  }
-  function updateEditingInstance(target: EventInstance) {
+  }, [editedInstances]);
+  const updateEditingInstance = useCallback((target: EventInstance) => {
     setEditedInstances(editedInstances.map(i => i.id === target.id ? target : i));
     if (target.id === editingInstance?.id) {
       setEditingInstance(target);
     }
-  }
-  function repeatInstance(target: EventInstance, repititions: { weeks?: number, days?: number, hours?: number }) {
-    // setEditedInstances(editedInstances.map(i => i.id == target.id ? target : i));
-  }
-  function editInstance(target: EventInstance) {
-    setEditingInstance(target);
-  }
+  }, [editedInstances, editingInstance]);
 
+  const { setStartTime, setEndTime } = useStartAndEndTime(editingInstance, updateEditingInstance);
   const [deleted, setDeleted] = useState(eventPost.author === undefined);
   const [deleting, setDeleting] = useState(false);
-  function doDeletePost() {
+  const doDeletePost = useCallback(() => {
     setDeleting(true);
     dispatch(deleteEvent({ ...accountOrServer, ...event })).then(() => {
       setDeleted(true);
       setDeleting(false);
     });
-  }
+  }, [accountOrServer, federatedId(event)]);
 
   const window = useWindowDimensions();
   const visibilityRef = React.createRef<HTMLDivElement>();
@@ -544,12 +538,12 @@ export const EventCard: React.FC<Props> = ({
     editingInstance?.endsAt, editingInstance?.location?.uniformlyFormattedAddress
   ]);
 
-  function doRepeatInstance() {
+  const doRepeatInstance = useCallback(() => {
     setEditedInstances([...editedInstances, ...repeatedInstances]);
     setTimeout(forceUpdate, 1);
-  }
+  }, [editedInstances, repeatedInstances]);
 
-  function renderInstance(i: EventInstance) {
+  const renderInstance = useCallback((i: EventInstance) => {
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
@@ -690,7 +684,7 @@ export const EventCard: React.FC<Props> = ({
     }
 
     return result;
-  }
+  }, [editing, editedInstances, editingInstance, repeatedInstances, primaryInstance]);
 
 
   const deleteDialog = <Dialog key='delete-button-dialog'>
@@ -1041,20 +1035,20 @@ export default EventCard;
 
 function useStartAndEndTime(instance: EventInstance | undefined, setInstance: (instance: EventInstance) => void) {
   const [startTime, endTime] = [instance?.startsAt, instance?.endsAt]
-  function setEndTime(value: string) {
+  const setEndTime = useCallback((value: string) => {
     if (!instance) {
       return;
     }
     const updatedInstance = { ...instance, endsAt: toProtoISOString(value) };
     setInstance(updatedInstance);
-  }
-  function setStartTime(value: string) {
+  }, [instance]);
+  const setStartTime = useCallback((value: string) => {
     if (!instance) {
       return;
     }
     const updatedInstance = { ...instance, startsAt: toProtoISOString(value) };
     setInstance(updatedInstance);
-  }
+  }, [instance]);
   const [duration, _setDuration] = useState(0);
   useEffect(() => {
     if (startTime && endTime) {

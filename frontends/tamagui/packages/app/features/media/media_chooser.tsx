@@ -1,7 +1,7 @@
 import { Button, Paragraph, XStack, useTheme } from '@jonline/ui';
 import { useCreationServer, useProvidedDispatch } from 'app/hooks';
 import { useServerTheme } from 'app/store';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 
 import { Image as ImageIcon } from '@tamagui/lucide-icons';
@@ -32,7 +32,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     }
   }, [mediaSheetOpen]);
 
-  function openMedia() {
+  const openMedia = useCallback(() => {
     if (creationServer?.host !== server?.host) {
       setCreationServer(server);
     }
@@ -41,7 +41,7 @@ export const MediaChooser: React.FC<MediaChooserProps> = ({ children, selectedMe
     setSelectedMedia(selectedMedia);
     setMediaSheetOpen(true);
     setOpen(true);
-  }
+  }, [creationServer, server, multiselect, selectedMedia]);
 
   useEffect(() => {
     if (open && isSelecting) {

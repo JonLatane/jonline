@@ -2,7 +2,7 @@ import { Visibility } from "@jonline/api";
 import { Heading, Label, Paragraph, Select, Tooltip, XStack, YStack } from "@jonline/ui";
 import { Check, ChevronDown } from "@tamagui/lucide-icons";
 import { useComponentKey } from "app/hooks";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export type VisibilityPickerProps = {
   id?: string;
@@ -32,10 +32,10 @@ export function VisibilityPicker({
   canPublishLocally = true,
   canPublishGlobally = true,
 }: VisibilityPickerProps) {
-  function onValueSelected(v: string) {
+  const onValueSelected = useCallback((v: string) => {
     const selectedVisibility = parseInt(v) as Visibility;
     onChange(selectedVisibility)
-  }
+  }, [onChange]);
   const description = visibilityDescription?.(visibility);
 
   if (readOnly) {

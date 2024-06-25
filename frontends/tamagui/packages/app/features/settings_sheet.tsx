@@ -4,7 +4,7 @@ import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X 
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
 import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
 import { federatedEntity } from '../store/federation';
 import { EventsFullCalendar } from './event/events_full_calendar';
@@ -40,10 +40,10 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
     state.servers.ids.find(sid => serverIDHost(sid as string) === location.hostname) ?? 'no-server-has-this-id'
   ]);
 
-  function doResetAllData() {
+  const doResetAllData = useCallback(() => {
     resetAllData();
     setTimeout(forceUpdate, 2000);
-  }
+  }, []);
 
   const { shrinkNavigation, inlineNavigation } = useInlineFeatureNavigation();
 
