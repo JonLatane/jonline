@@ -5,6 +5,7 @@ import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
 import { ToggleRow } from 'app/components';
+import FlipMove from 'react-flip-move';
 
 export type PostMediaManagerProps = {
   entityName?: string;
@@ -46,7 +47,8 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
     {...standardAnimation}
   >
     {media.length > 0 ? <ScrollView horizontal w='100%'>
-      <XStack gap='$2'>
+      {/* <XStack gap='$2'> */}
+      <FlipMove style={{ display: 'flex', gap: 10, }}>
         {media.map((mediaRef, index) =>
           <ZStack key={`media-renderer-${mediaRef.id}`} w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
             {/* <ZStack> */}
@@ -77,7 +79,8 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
             {/* </ZStack> */}
           </ZStack>
         )}
-      </XStack>
+      </FlipMove>
+      {/* </XStack> */}
     </ScrollView> : undefined}
     <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />
     <YStack h='$0' mt='$2' />
