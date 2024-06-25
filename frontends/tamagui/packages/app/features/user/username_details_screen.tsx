@@ -7,7 +7,7 @@ import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
@@ -21,7 +21,7 @@ import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { PostCard } from '../post/post_card';
 import { FederatedProfiles } from './federated_profiles';
-import { UserCard, useFullAvatarHeight } from './user_card';
+import { EditableUserDetails, UserCard, useFullAvatarHeight } from './user_card';
 import { AccountOrServerContextProvider } from 'app/contexts';
 
 const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
@@ -60,9 +60,21 @@ export function UsernameDetailsScreen() {
   const isAdmin = hasAdminPermission(accountOrServer.account?.user);
   const canEdit = isCurrentUser || isAdmin;
   const [username, setUsername] = useState(user?.username);
+  const [realName, setRealName] = useState(user?.realName);
   const [bio, setBio] = useState(user?.bio);
   const [avatar, setAvatar] = useState(user?.avatar);
   const [editMode, setEditMode] = useState(false);
+  const editableUserDetails: EditableUserDetails = {
+    editable: canEdit,
+    editingDisabled: !editMode,
+
+    username,
+    setUsername,
+    realName,
+    setRealName,
+    avatar,
+    setAvatar,
+  }
   const [defaultFollowModeration, setDefaultFollowModeration] = useState(user?.defaultFollowModeration ?? Moderation.MODERATION_UNKNOWN);
   const [visibility, setVisibility] = useState(Visibility.GLOBAL_PUBLIC);
   const [permissions, setPermissions] = useState(user?.permissions ?? []);
@@ -86,7 +98,7 @@ export function UsernameDetailsScreen() {
 
   const permissionsModified = JSON.stringify(permissions) !== JSON.stringify(user?.permissions ?? []);
   const dirtyData = user !== undefined && (
-    username != user?.username || bio != user?.bio || avatar?.id != user?.avatar?.id
+    username != user?.username || realName != user?.realName || bio != user?.bio || avatar?.id != user?.avatar?.id
     || defaultFollowModeration != user?.defaultFollowModeration || visibility != user?.visibility
     || permissionsModified
   );
@@ -176,9 +188,10 @@ export function UsernameDetailsScreen() {
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   const fullAvatarHeight = useFullAvatarHeight();
-  function resetFormData() {
+  const resetFormData = useCallback(() => {
     if (!user) {
       setUsername(undefined);
+      setRealName(undefined);
       setBio(undefined);
       setAvatar(undefined);
       setDefaultFollowModeration(Moderation.MODERATION_UNKNOWN);
@@ -188,12 +201,13 @@ export function UsernameDetailsScreen() {
     };
 
     setUsername(user.username);
+    setRealName(user.realName);
     setBio(user.bio);
     setAvatar(user.avatar);
     setDefaultFollowModeration(user.defaultFollowModeration);
     setVisibility(user.visibility);
     setPermissions(user.permissions);
-  }
+  }, [user ? federatedId(user) : undefined]);
 
   const [successSaving, setSuccessSaving] = useState(false);
   useEffect(() => {
@@ -243,7 +257,16 @@ export function UsernameDetailsScreen() {
     setSaving(true);
     dispatch(updateUser({
       ...accountOrServer,
-      ...{ ...user!, username: username ?? '', bio: bio ?? '', avatar, defaultFollowModeration, visibility, permissions },
+      // ...{
+      ...user!,
+      username: username ?? '',
+      realName: realName ?? '',
+      bio: bio ?? '',
+      avatar,
+      defaultFollowModeration,
+      visibility,
+      permissions
+      // },
     })).then((result) => {
       const success = result.type == updateUser.fulfilled.type;
       if (success && usernameChanged) {
@@ -341,13 +364,13 @@ export function UsernameDetailsScreen() {
           }}>
             {/* <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'> */}
             <div key='user-card' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center', marginBottom: 10 }}>
-              <UserCard
-                editable editingDisabled={!editMode}
+              <UserCard user={user} {...editableUserDetails} />
+              {/* editable editingDisabled={!editMode}
                 user={user}
                 username={username}
                 setUsername={setUsername}
                 avatar={avatar}
-                setAvatar={setAvatar} />
+                setAvatar={setAvatar} /> */}
             </div>
 
             {user.hasAdvancedData
@@ -358,18 +381,18 @@ export function UsernameDetailsScreen() {
 
             <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
               <AccountOrServerContextProvider value={accountOrServer}>
-              <YStack als='center' w='100%' paddingHorizontal='$2' gap>
-                {editMode ?
-                  <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
-                    value={bio} onChangeText={t => setBio(t)}
-                    // size='$5'
-                    h='$14'
-                    placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
-                  />
-                  : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
-                    <TamaguiMarkdown text={bio!} />
-                  </YStack>}
-              </YStack>
+                <YStack als='center' w='100%' paddingHorizontal='$2' gap>
+                  {editMode ?
+                    <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
+                      value={bio} onChangeText={t => setBio(t)}
+                      // size='$5'
+                      h='$14'
+                      placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
+                    />
+                    : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
+                      <TamaguiMarkdown text={bio!} />
+                    </YStack>}
+                </YStack>
               </AccountOrServerContextProvider>
             </div>
 

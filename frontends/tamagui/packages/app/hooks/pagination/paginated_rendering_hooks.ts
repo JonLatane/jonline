@@ -100,20 +100,13 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   const pageCount = Math.ceil(dataSet.length / pageSize);
   const standardPageParams = usePageParam();
   const [page, setPage] = args?.pageParamHook?.() ?? standardPageParams;
-  // function setPage(p: number) {
-  //   // debugger;
-  //   // if (page ?? 0 === p) return;
-  //   _setPage(p);
-  //   // debugger;
-  // }
   const [loadingPage, setLoadingPage] = useState(false);
 
-  useEffect(() => {
-    // if (page >= pageCount && !loadingPage) {
-    //   setPage(Math.max(0, pageCount - 1));
-    // }
-  },
-    [page, pageCount, loadingPage]);
+  // useEffect(() => {
+  //   if (page >= pageCount && !loadingPage) {
+  //     setPage(Math.max(0, pageCount - 1));
+  //   }
+  // }, [page, pageCount, loadingPage]);
 
   const result = useMemo(() => {
     const lowerBoundPage = Math.max(0, page - maxPagesToRender + 1);
@@ -152,7 +145,7 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
       reset
     };
   }, [
-    [dataSet.map(federatedId)],
+    dataSet.map(federatedId),
     // dataSet.length,
     // dataSet[0]?.id,
     // dataSet[0]?.serverHost,

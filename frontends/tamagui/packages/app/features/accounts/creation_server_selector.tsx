@@ -49,8 +49,8 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
   // const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
 
-  const serverNameAndLogo = (s: JonlineServer) => {
-    const pinnedServer = pinnedServers.find(ps => server && ps.serverId === serverID(s));
+  const serverNameAndLogo = (s: JonlineServer | undefined) => {
+    const pinnedServer = pinnedServers.find(ps => s && ps.serverId === serverID(s));
     return <YStack>
       {showUser && s
         ? <ShortAccountSelectorButton {...{ server: s, pinnedServer }} />

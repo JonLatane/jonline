@@ -17,23 +17,37 @@ import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { postBackgroundSize } from "../post/post_card";
 import { MembershipManager } from "./membership_manager";
 
-interface Props {
-  user: FederatedUser;
-  isPreview?: boolean;
-  username?: string;
-  setUsername?: (username: string) => void;
-  avatar?: MediaRef;
-  setAvatar?: (avatar?: MediaRef) => void;
+export type Editable = {
   editable?: boolean;
   editingDisabled?: boolean;
+};
+
+export type EditableUserDetails = Editable & {
+  username?: string;
+  setUsername?: (username: string) => void;
+  realName?: string;
+  setRealName?: (realName: string) => void;
+  avatar?: MediaRef;
+  setAvatar?: (avatar?: MediaRef) => void;
 }
+
+export type Props = {
+  user: FederatedUser;
+  isPreview?: boolean;
+  // username?: string;
+  // setUsername?: (username: string) => void;
+  // avatar?: MediaRef;
+  // setAvatar?: (avatar?: MediaRef) => void;
+  // editable?: boolean;
+  // editingDisabled?: boolean;
+} & EditableUserDetails;
 
 export function useFullAvatarHeight(): number {
   const media = useMedia();
   return media.gtXs ? 400 : 300;
 }
 
-export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
+export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: inputUsername, setUsername, realName, setRealName, avatar: inputAvatar, setAvatar, editable, editingDisabled }) => {
   // return <></>;
   // const { dispatch, accountOrServer } = useCredentialDispatch();
   const mediaQuery = useMedia();
@@ -89,7 +103,11 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const hasAvatarUrl = avatarUrl && avatarUrl != '';
   const canEditAvatar = (isCurrentUser || isAdmin) && editable && setAvatar && !editingDisabled;
 
-  const usernameRegion = <XStack f={1} w='100%'>
+  const isBusiness = hasPermission(user, Permission.BUSINESS);
+  const displayedRealName = realName ?? user.realName;
+  const inlineUsername = displayedRealName && (isPreview || !editable || editingDisabled || !setUsername || !setRealName);
+  console.log('UserCard', { realName })
+  const usernameRegion = <XStack f={1} w='100%' ai='center'>
     {hasAvatarUrl ? <Image
       width={50}
       height={50}
@@ -102,20 +120,35 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     <YStack f={1}>
       <XStack ai='center'>
         <Heading size="$1" >{server?.host}/</Heading>
+        {inlineUsername ?
+          <Heading size='$7' fontSize="$1" >{username}</Heading> : undefined}
         {showUserIds ? <Paragraph size='$1' ml='auto' mr='$2' o={0.6}>{user.id}</Paragraph> : undefined}
       </XStack>
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
       {editable && !editingDisabled && setUsername
         ? <Input textContentType="name" f={1}
-          my='auto'
+          // my='auto'
           mr='$2'
           placeholder={`Username (required)`}
           disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
           // autoCapitalize='words'
           value={username}
           onChange={(data) => { setUsername(data.nativeEvent.text) }} />
-        :
-        <Heading size="$7" marginRight='auto' w='100%'>{username}</Heading>}
+        : inlineUsername ? undefined : <Heading size='$7'
+          lh={realName ? '$1' : undefined}
+          fontSize={realName ? '$2' : undefined}
+          marginRight='auto' w='100%'>{username}</Heading>}
+
+      {editable && !editingDisabled && setRealName
+        ? <Input textContentType="name" f={1}
+          mt='$2'
+          mr='$2'
+          placeholder={isBusiness ? 'Business Name (optional)' : 'Real Name (optional)'}
+          disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
+          // autoCapitalize='words'
+          value={realName}
+          onChange={(data) => { setRealName(data.nativeEvent.text) }} />
+        : <Heading size="$7" fontSize='$7' lh='$2' marginRight='auto' w='100%'>{displayedRealName}</Heading>}
     </YStack>
     {/* {showServerInfo
       ?  */}

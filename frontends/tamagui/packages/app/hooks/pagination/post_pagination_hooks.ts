@@ -1,4 +1,4 @@
-import { PostListingType } from "@jonline/api";
+import { Group, PostListingType } from "@jonline/api";
 import { useDebounce } from "@jonline/ui";
 import { useAppDispatch, useCredentialDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
@@ -73,7 +73,6 @@ export function useGroupPostPages(
   group: FederatedGroup | undefined,
   throughPage: number
 ): PaginationResults<FederatedPost> {
-  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
 
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const state = useRootSelector((state: RootState) => state);
@@ -95,10 +94,12 @@ export function useGroupPostPages(
     }
   });
 
+  const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
 
-  const results: FederatedPost[] = getGroupPostPages(state, group, throughPage);
-  const firstPageLoaded = getHasGroupPostsPage(state.groups, group, 0);
-  const hasMorePages = getHasMoreGroupPostPages(state.groups, group, throughPage);
+  const results: FederatedPost[] = getGroupPostPages(state, group ?? defaultGroup, throughPage);
+  const firstPageLoaded = getHasGroupPostsPage(state.groups, group ?? defaultGroup, 0);
+  const hasMorePages = getHasMoreGroupPostPages(state.groups, group ?? defaultGroup, throughPage);
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }

@@ -1,4 +1,4 @@
-import { EventListingType, TimeFilter } from "@jonline/api";
+import { EventListingType, Group, TimeFilter } from "@jonline/api";
 import { useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch } from "app/hooks";
 
 import { debounce, useDebounce } from "@jonline/ui";
@@ -42,7 +42,7 @@ export function useServerEventPages(
   const results: FederatedEvent[] = useMemo(
     () => getEventsPages(eventsState, listingType, timeFilter, throughPage, servers),
     [
-      eventsState.ids, 
+      eventsState.ids,
       servers.map(s => [s.account?.user?.id, s.server?.host]),
       timeFilter,
       listingType
@@ -84,7 +84,6 @@ export function useGroupEventPages(
   throughPage: number,
   params?: EventPageParams
 ): PaginationResults<FederatedEvent> {
-  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
   const state = useRootSelector((state: RootState) => state);
@@ -114,9 +113,12 @@ export function useGroupEventPages(
   }, [loading, optServerID(accountOrServer.server), group, timeFilter]);
 
 
-  const results: FederatedEvent[] = getGroupEventPages(state, group, timeFilter, throughPage);
-  const firstPageLoaded = getHasGroupEventsPage(state, group, timeFilter, 0);
-  const hasMorePages = getHasMoreGroupEventPages(state.groups, group, timeFilter, throughPage);
+  const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
+  const results: FederatedEvent[] = getGroupEventPages(state, group ?? defaultGroup, timeFilter, throughPage);
+  const firstPageLoaded = getHasGroupEventsPage(state, group ?? defaultGroup, timeFilter, 0);
+  const hasMorePages = getHasMoreGroupEventPages(state.groups, group ?? defaultGroup, timeFilter, throughPage);
+
+  if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   // console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
   return { results, loading, reload, hasMorePages, firstPageLoaded };

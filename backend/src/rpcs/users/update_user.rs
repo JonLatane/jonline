@@ -55,6 +55,7 @@ pub fn update_user(
                 .first::<models::User>(conn)?;
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
+                existing_user.real_name = request.real_name.to_owned();
                 existing_user.bio = request.bio.to_owned();
                 existing_user.avatar_media_id = request
                     .avatar
