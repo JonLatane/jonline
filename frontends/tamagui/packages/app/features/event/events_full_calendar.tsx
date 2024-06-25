@@ -214,7 +214,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const findNeighborEvent = (offset: number) => {
     if (modalInstance) {
       const sortedEvents = allEvents.sort((a, b) => moment(a.instances[0]?.startsAt ?? 0).unix() - moment(b.instances[0]?.startsAt ?? 0).unix());
-      const index = sortedEvents.findIndex((e) => federatedId(e) === federatedId(modalInstance));
+      const index = sortedEvents.findIndex((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === federateId(modalInstance.instances[0]?.id ?? '', modalInstance.serverHost));
       return sortedEvents[index + offset];
     }
   };
