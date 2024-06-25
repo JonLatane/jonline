@@ -25,7 +25,6 @@ use super::{tamagui_file_or_username, tamagui_path, JonlineResponder, JonlineSum
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
         index,
-        media,
         posts,
         events,
         about,
@@ -107,7 +106,7 @@ webui!(
         })
     }
 );
-webui!(media, "/media", "media.html");
+
 webui!(
     posts,
     "/posts",
