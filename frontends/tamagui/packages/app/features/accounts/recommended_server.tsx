@@ -1,10 +1,11 @@
 import { Button, Heading, Paragraph, XStack, YStack } from "@jonline/ui";
 import { ExternalLink } from "@tamagui/lucide-icons";
-import { useAppDispatch, useLocalConfiguration } from 'app/hooks';
+import { Selector, useAppDispatch, useAppSelector, useLocalConfiguration } from 'app/hooks';
 import { JonlineServer, RootState, colorIntMeta, getServerClient, pinServer, serverID, serversAdapter, setAllowServerSelection, setBrowsingServers, store, upsertServer, useRootSelector } from 'app/store';
 import React, { useEffect } from "react";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { createSelector } from "@reduxjs/toolkit";
 
 interface Props {
   host: string;
@@ -23,9 +24,17 @@ export type JonlineServerInfo = {
   pendingServer: JonlineServer | undefined;
   prototypeServer: JonlineServer;
 }
+
+const selectPinnedAccountsAndServers = (
+  host: string
+): Selector<JonlineServer | undefined> =>
+  createSelector(
+    [state => serversAdapter.getSelectors().selectAll(state.servers).find(server => server.host == host)],
+    (data) => data
+  );
+
 export function useJonlineServerInfo(host: string): JonlineServerInfo {
-  const existingServer = useRootSelector(
-    (state: RootState) => serversAdapter.getSelectors().selectAll(state.servers)).find(server => server.host == host);
+  const existingServer: JonlineServer | undefined = useAppSelector(selectPinnedAccountsAndServers(host));
   const prototypeServer: JonlineServer = {
     host,
     secure: true,

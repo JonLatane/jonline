@@ -1,14 +1,13 @@
 import { EventListingType, Group, TimeFilter } from "@jonline/api";
-import { useCredentialDispatch, usePinnedAccountsAndServers, useFederatedDispatch } from "app/hooks";
+import { Selector, useAppSelector, useCredentialDispatch, useFederatedDispatch, usePinnedAccountsAndServers } from "app/hooks";
 
-import { debounce, useDebounce } from "@jonline/ui";
+import { useDebounce } from "@jonline/ui";
+import { createSelector } from "@reduxjs/toolkit";
 import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
-import { PaginationResults } from "./pagination_hooks";
+import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
 import { PostPageParams } from "./post_pagination_hooks";
-import { finishPagination, onPageLoaded } from "./pagination_hooks";
-import { serverHost } from '../../store/federation';
 
 export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
 
@@ -86,11 +85,9 @@ export function useGroupEventPages(
 ): PaginationResults<FederatedEvent> {
 
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
-  const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingEvents] = useState(false);
 
   const timeFilter = serializeTimeFilter(params?.timeFilter);
-
 
   const reload = () => {
     setLoadingEvents(true);
@@ -112,14 +109,27 @@ export function useGroupEventPages(
     }
   }, [loading, optServerID(accountOrServer.server), group, timeFilter]);
 
-
-  const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
-  const results: FederatedEvent[] = getGroupEventPages(state, group ?? defaultGroup, timeFilter, throughPage);
-  const firstPageLoaded = getHasGroupEventsPage(state, group ?? defaultGroup, timeFilter, 0);
-  const hasMorePages = getHasMoreGroupEventPages(state.groups, group ?? defaultGroup, timeFilter, throughPage);
+  const { results, firstPageLoaded, hasMorePages } = useAppSelector(selectGroupPages(group, timeFilter, throughPage));
 
   if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: false };
 
   // console.log("useGroupEventPages", group, throughPage, results, hasMorePages, firstPageLoaded);
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
+
+
+const selectGroupPages = (
+  group: FederatedGroup | undefined,
+  timeFilter: string,
+  throughPage: number,
+): Selector<Pick<PaginationResults<FederatedEvent>, 'results' | 'firstPageLoaded' | 'hasMorePages'>> =>
+  createSelector(
+    [(state: RootState) => {
+      const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
+      const results: FederatedEvent[] = getGroupEventPages(state, group ?? defaultGroup, timeFilter, throughPage);
+      const firstPageLoaded = getHasGroupEventsPage(state, group ?? defaultGroup, timeFilter, 0);
+      const hasMorePages = getHasMoreGroupEventPages(state.groups, group ?? defaultGroup, timeFilter, throughPage);
+      return { results, firstPageLoaded, hasMorePages };
+    }],
+    (data) => data
+  );

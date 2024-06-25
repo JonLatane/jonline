@@ -3,8 +3,8 @@ import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack,
 import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';
-import { useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering } from 'app/hooks';
-import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector } from 'app/store';
+import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering } from 'app/hooks';
+import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -16,6 +16,8 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { CreateGroupSheet } from './create_group_sheet';
 import { GroupButton } from './group_buttons';
 import { GroupPostChrome } from './group_post_manager';
+import { createSelector } from '@reduxjs/toolkit';
+import { GroupPost } from '../../../api/generated/posts';
 
 export type GroupsSheetProps = {
   open: boolean;
@@ -36,6 +38,36 @@ export type GroupsSheetProps = {
   // primaryEntity?: FederatedEntity<any>;
   isPrimaryNavigation?: boolean;
 }
+
+const selectGroupPostPages = (
+  sharingPostId: string | undefined
+): Selector<{ sharingPost?: FederatedPost; sharingGroupPostData?: GroupPost[] }> =>
+  createSelector(
+    [(state: RootState) =>
+      sharingPostId
+        ? {
+          sharingPost: state.posts.entities[sharingPostId],
+          sharingGroupPostData: state.groups.postIdGroupPosts[sharingPostId]
+        }
+        : {}
+    ],
+    (data) => data
+  );
+
+
+const selectServerHostFilteredGroups = (
+  serverHostFilter: string | undefined
+): Selector<FederatedGroup[] | undefined> =>
+  createSelector(
+    [(state: RootState) =>
+      serverHostFilter
+    ? selectAllGroups(state.groups).filter(g => g.serverHost === serverHostFilter)
+    : undefined
+    ],
+    (data) => data
+  );
+  // serverHostFilteredGroups
+
 export function GroupsSheet({
   open, setOpen,
   selectedGroup: tagSelectedGroup,
@@ -63,14 +95,14 @@ export function GroupsSheet({
 
   const selectedGroupId = optFederatedId(selectedGroup);
   const componentKey = useComponentKey('groups-sheet');
-  const { sharingPost, sharingGroupPostData } = useAppSelector(
-    state => sharingPostId
-      ? {
-        sharingPost: state.posts.entities[sharingPostId],
-        sharingGroupPostData: state.groups.postIdGroupPosts[sharingPostId]
-      }
-      : {}
-  );
+  const { sharingPost, sharingGroupPostData } = useAppSelector(selectGroupPostPages(sharingPostId));
+  //   state => sharingPostId
+  //     ? {
+  //       sharingPost: state.posts.entities[sharingPostId],
+  //       sharingGroupPostData: state.groups.postIdGroupPosts[sharingPostId]
+  //     }
+  //     : {}
+  // );
   const title = sharingPost
     ? `Share ${sharingPost.context == PostContext.EVENT ? 'Event' : 'Post'}`
     : onGroupSelected ? 'Select Group' : undefined;
@@ -154,13 +186,14 @@ export function GroupsSheet({
   // }, [openChanged])
 
   const { groups: pinnedServerGroups } = useGroupPages(GroupListingType.ALL_GROUPS, 0, { disableLoading: extraListItemChrome !== undefined });
-  const serverHostFilteredGroups = useAppSelector(state => serverHostFilter
-    ? selectAllGroups(state.groups).filter(g => g.serverHost === serverHostFilter)
-    : undefined
-  );
+  const serverHostFilteredGroups = useAppSelector(selectServerHostFilteredGroups(serverHostFilter));
+  // state => serverHostFilter
+  //   ? selectAllGroups(state.groups).filter(g => g.serverHost === serverHostFilter)
+  //   : undefined
+  // );
   const allGroups = serverHostFilteredGroups ?? pinnedServerGroups;
 
-  const recentGroupIds = useRootSelector((state: RootState) => state.app.recentGroups ?? []);
+  const recentGroupIds = useAppSelector(state => state.app.recentGroups) ?? [];
 
   const groupMatcher = (group: FederatedGroup) =>
     (

@@ -1,14 +1,15 @@
 import { Permission } from "@jonline/api";
 import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
-import { colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { Selector, colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { useRequestResult } from "app/hooks/use_request_result";
-import { JonlineAccount, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
+import { JonlineAccount, RootState, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
 import React, { useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { createSelector } from "@reduxjs/toolkit";
 
 interface Props {
   account: JonlineAccount;
@@ -19,6 +20,25 @@ interface Props {
   // selectedAccount?: JonlineAccount;
 }
 
+
+const selectAccountIds = (
+): Selector<string[]> =>
+  createSelector(
+    [(state: RootState) => state.accounts.ids as string[]],
+    (data) => data
+  );
+
+
+const selectPinned = (
+  account: JonlineAccount
+): Selector<boolean> =>
+  createSelector(
+    [(state: RootState) => state.accounts.pinnedServers.map(ps => ps.accountId).includes(accountID(account))],
+    (data) => data
+  );
+
+
+
 const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, onPress }) => {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const currentAccountId = useCurrentAccountId();
@@ -26,7 +46,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   //   ps.serverId === state.servers.currentServerId)?.accountId);
   const selected = currentAccountId === accountID(account);
   // console.log('AccountCard selected', selected, 'currentAccountId', currentAccountId, 'accountID(account)', accountID(account));
-  const pinned = useAppSelector(state => state.accounts.pinnedServers.map(ps => ps.accountId)).includes(accountID(account));
+  const pinned = useAppSelector(selectPinned(account));
 
   const currentServer = currentAccountOrServer.server;
   const isCurrentServer = currentServer &&
@@ -141,7 +161,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   function moveDown() {
     dispatch(moveAccountDown(accountID(account)!));
   }
-  const accountIds = useRootSelector(state => state.accounts.ids);
+  const accountIds = useAppSelector(selectAccountIds());
   const canMoveUp = accountIds.indexOf(accountID(account)!) > 0;
   const canMoveDown = accountIds.indexOf(accountID(account)!) < accountIds.length - 1;
   const avatarUrl = useMediaUrl(account.user.avatar?.id, { account, server: account.server });

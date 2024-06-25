@@ -724,7 +724,7 @@ export const EventCard: React.FC<Props> = ({
         <YStack space>
           <Dialog.Title>Delete Event</Dialog.Title>
           <Dialog.Description>
-            Really delete event?
+            Really delete event? {event.instances.length > 1 ? `All ${event.instances.length} instances will be deleted. `: undefined}
             The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
           </Dialog.Description>
 
@@ -973,7 +973,9 @@ export const EventCard: React.FC<Props> = ({
 
                   <XStack {...detailsShadowProps} key='details' pl='$3' mb='$3'
                     mt={shrinkContent ? '$1' : showEdit ? -11 : -15} >
-                    <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
+                    <XStack f={1}>
+                      <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
+                    </XStack>
 
 
                     {showPermalink

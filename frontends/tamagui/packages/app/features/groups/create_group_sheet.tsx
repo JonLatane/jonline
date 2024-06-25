@@ -5,7 +5,6 @@ import { useCreationDispatch } from 'app/hooks';
 import { JonlineServer, RootState, createGroup, useServerTheme, selectAllAccounts, serverID, useRootSelector } from 'app/store';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
-// import { PostMediaManager } from '../posts/post_media_manager';
 import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
 import { useMediaUrl } from 'app/hooks';
 import { actionFailed } from 'app/store';

@@ -1,12 +1,12 @@
 import { EventInstance, Post, PostContext } from "@jonline/api";
 import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, Spinner, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia, useTheme } from "@jonline/ui";
 import { reverseHorizontalAnimation, standardHorizontalAnimation } from '@jonline/ui/src/animations';
-import { Dictionary } from "@reduxjs/toolkit";
+import { Dictionary, createSelector } from "@reduxjs/toolkit";
 import { ChevronDown, ChevronLeft, ChevronUp, Info, ListEnd, MessagesSquare, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
-import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
+import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";
-import { FederatedEvent, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
+import { FederatedEvent, FederatedPost, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { highlightedButtonBackground } from "app/utils";
 import { createRef, useEffect, useState } from "react";
 import FlipMove from "react-flip-move";
@@ -20,11 +20,55 @@ import { ShortAccountSelectorButton } from "./pinned_server_selector";
 import { ServerNameAndLogo } from "./server_name_and_logo";
 
 type StarredPostFilter = 'posts' | 'events' | undefined;
+
+
+const selectStarredPostEventData = (
+  basePost: FederatedPost | undefined
+): Selector<{ eventInstanceId?: string; event?: FederatedEvent; }> =>
+  createSelector(
+    [(state: RootState) => {
+      if (!basePost) return {};
+
+      const postId = federatedId(basePost);
+      const eventInstanceId = basePost?.context === PostContext.EVENT_INSTANCE
+        ? state.events.postInstances[postId]
+        : undefined;
+      const event = eventInstanceId
+        ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
+        : undefined
+
+      return { eventInstanceId, event };
+    }],
+    (data) => data
+  );
+
+const selectFilteredPostIds = (
+  starredPostFilter: StarredPostFilter
+): Selector<string[]> =>
+  createSelector(
+    [(state: RootState) => {
+      const { starredPostIds } = state.app;
+      if (starredPostFilter === 'posts') {
+        return starredPostIds.map(id => state.posts.entities[id])
+          .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
+          .map(p => federatedId(p!));
+      } else if (starredPostFilter === 'events') {
+        return starredPostIds.map(id => state.posts.entities[id])
+          .filter(p => p?.context === PostContext.EVENT_INSTANCE)
+          .map(p => federatedId(p!));
+      } else {
+        return starredPostIds;
+      }
+    }],
+    (data) => data
+  );
+
+
 export type StarredPostsProps = {};
 function useStarredPostDetails(postId: string, isVisible?: boolean) {
   const { id: serverPostId, serverHost } = parseFederatedId(postId, useCurrentServer()?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
-  const basePost = useAppSelector(state => state.posts.entities[postId]);
+  const basePost = useAppSelector(state => selectPostById(state.posts, postId));
   const isServerReady = accountOrServer?.server
     ? !!getCachedServerClient(accountOrServer.server)
     : false;
@@ -42,6 +86,7 @@ function useStarredPostDetails(postId: string, isVisible?: boolean) {
   }, [isServerReady, loadingServer, accountOrServer?.server?.host, isVisible])
 
   const [loadingPost, setLoadingPost] = useState(false);
+
   const hasFailedToLoadPost = useAppSelector(state => state.posts.failedPostIds.includes(postId));
   useEffect(() => {
     if (!basePost && isServerReady && !loadingServer && !loadingPost && !hasFailedToLoadPost && postId && (isVisible ?? true)) {
@@ -59,16 +104,18 @@ function useStarredPostDetails(postId: string, isVisible?: boolean) {
   }, [basePost?.id, accountID(accountOrServer?.account), serverHost, isServerReady, loadingServer, loadingPost,
     hasFailedToLoadPost, postId, isVisible]);
 
-  const eventInstanceId = useAppSelector(state =>
-    basePost?.context === PostContext.EVENT_INSTANCE
-      ? state.events.postInstances[postId]
-      : undefined
-  );
-  const event = useAppSelector(state =>
-    eventInstanceId
-      ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
-      : undefined
-  );
+  // const eventInstanceId = useAppSelector(state =>
+  //   basePost?.context === PostContext.EVENT_INSTANCE
+  //     ? state.events.postInstances[postId]
+  //     : undefined
+  // );
+  // const event = useAppSelector(state =>
+  //   eventInstanceId
+  //     ? state.events.entities[state.events.instanceEvents[eventInstanceId]!]
+  //     : undefined
+  // );
+
+  const { eventInstanceId, event } = useAppSelector(selectStarredPostEventData(basePost));
 
   const [loadingEvent, setLoadingEvent] = useState(false);
 
@@ -101,7 +148,7 @@ function useStarredPostDetails(postId: string, isVisible?: boolean) {
 export function StarredPosts({ }: StarredPostsProps) {
   const mediaQuery = useMedia();
 
-  const starredPostIds = useAppSelector(state => (state.app.starredPostIds ?? []));
+  const starredPostIds = useAppSelector(state => state.app.starredPostIds) ?? [];
 
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(open);
@@ -123,30 +170,18 @@ export function StarredPosts({ }: StarredPostsProps) {
     dispatch(setOpenedStarredPost(postId));
   const [starredPostFilter, setStarredPostFilter] = useState<StarredPostFilter>(undefined);
 
-  const filteredPostIds = useAppSelector(state => {
-    if (starredPostFilter === 'posts') {
-      return starredPostIds.map(id => state.posts.entities[id])
-        .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
-        .map(p => federatedId(p!));
-    } else if (starredPostFilter === 'events') {
-      return starredPostIds.map(id => state.posts.entities[id])
-        .filter(p => p?.context === PostContext.EVENT_INSTANCE)
-        .map(p => federatedId(p!));
-    } else {
-      return starredPostIds;
-    }
-  });
+  const filteredPostIds = useAppSelector(selectFilteredPostIds(starredPostFilter));
 
-  const starredPostUnreadCounts: Dictionary<number> = useAppSelector(state => {
-    const counts = {} as Dictionary<number>;
+  // const starredPostUnreadCounts: Dictionary<number> = useAppSelector(state => {
+  //   const counts = {} as Dictionary<number>;
 
-    state.app.starredPostIds.forEach(id => {
-      const lastUnreadCount = state.app.starredPostLastOpenedResponseCounts?.[id] ?? 0;
-      const currentCount = state.posts.entities[id]?.responseCount ?? 0;
-      counts[id] = currentCount - lastUnreadCount;
-    });
-    return counts;
-  });
+  //   state.app.starredPostIds.forEach(id => {
+  //     const lastUnreadCount = state.app.starredPostLastOpenedResponseCounts?.[id] ?? 0;
+  //     const currentCount = state.posts.entities[id]?.responseCount ?? 0;
+  //     counts[id] = currentCount - lastUnreadCount;
+  //   });
+  //   return counts;
+  // });
 
   const scrollToTop = (smooth?: boolean) => document.getElementById('starred-post-scroll-top')
     ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : undefined });
@@ -494,6 +529,20 @@ export type StarredPostCardProps = {
   hideCurrentUser?: boolean;
   showPermalink?: boolean;
 };
+
+
+const selectStarredMovability = (
+  postId: string,
+): Selector<{canMoveUp: boolean, canMoveDown: boolean}> =>
+  createSelector(
+    [(state: RootState) => ({
+      canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,
+      canMoveDown: state.app.starredPostIds.indexOf(postId) < state.app.starredPostIds.length - 1,
+    })],
+    (data) => data
+  );
+
+
 export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount, hideCurrentUser, showPermalink }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
@@ -514,14 +563,12 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   } = useStarredPostDetails(postId, isVisible);
 
   const server = useFederatedAccountOrServer(serverHost)?.server;
-  const pinnedServer = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
   const { navColor, navTextColor, navAnchorColor } = useServerTheme(server);
 
+  const pinnedServer: PinnedServer | undefined = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
+
   const isActuallyStarred = useAppSelector(state => state.app.starredPostIds.includes(postId));
-  const { canMoveUp, canMoveDown } = useAppSelector(state => ({
-    canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,
-    canMoveDown: state.app.starredPostIds.indexOf(postId) < state.app.starredPostIds.length - 1,
-  }));
+  const { canMoveUp, canMoveDown } = useAppSelector(selectStarredMovability(postId));
 
   function moveUp() {
     dispatch(moveStarredPostUp(postId));

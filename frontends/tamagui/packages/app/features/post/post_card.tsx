@@ -407,7 +407,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         // exitStyle={{ opacity: 0, }}
         // {...postLinkProps}
         >
-          {!post.replyToPostId && (post.link != '' || post.title != '')
+          {!isReply && (post.link || post.title)
             ? <Card.Header>
               <XStack ai='center'>
                 <StarButton post={post} />
@@ -445,37 +445,40 @@ export const PostCard: React.FC<PostCardProps> = ({
           <Card.Footer p={0} >
             {deleted
               ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
-              : <YStack zi={1000} width='100%'>
-
-                <YStack w='100%' px='$3' >
-                  <AnimatePresence>
-                    {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
-                      <YStack mah={isPreview ? 300 : undefined} overflow='hidden'>
-                        {editing && !previewingEdits
-                          ? <PostMediaManager
-                            link={post.link}
-                            media={editedMedia}
-                            setMedia={setEditedMedia}
-                            embedLink={editedEmbedLink}
-                            setEmbedLink={setEditedEmbedLink}
-                            disableInputs={savingEdits}
-                          />
-                          : <PostMediaRenderer {...{
-                            post: {
-                              ...post,
-                              media,
-                              embedLink
-                            }, isPreview, groupContext: selectedGroup, isVisible
-                          }} />}
-                      </YStack>
-                      {linkToDetails
-                        ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
-                          {contentArea}
-                        </Anchor>
-                        : contentArea}
-                    </YStack>}
-                  </AnimatePresence>
-                </YStack>
+              : <YStack zi={1000} w='100%'>
+                <XStack ai='flex-start' w='100%' pr='$3' pl={isReply ? '$2' : '$3'}>
+                  {isReply ? <XStack mt='$3'><AuthorInfo {...{ post, isVisible }} avatarOnly /></XStack> : undefined}
+                  <YStack f={1}>
+                    {isReply ? <XStack mt='$1' pt='$1'><AuthorInfo {...{ post, isVisible }} nameOnly /></XStack> : undefined}
+                    <AnimatePresence>
+                      {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
+                        <YStack mah={isPreview ? 550 : undefined} overflow='hidden'>
+                          {editing && !previewingEdits
+                            ? <PostMediaManager
+                              link={post.link}
+                              media={editedMedia}
+                              setMedia={setEditedMedia}
+                              embedLink={editedEmbedLink}
+                              setEmbedLink={setEditedEmbedLink}
+                              disableInputs={savingEdits}
+                            />
+                            : <PostMediaRenderer {...{
+                              post: {
+                                ...post,
+                                media,
+                                embedLink
+                              }, isPreview, groupContext: selectedGroup, isVisible
+                            }} />}
+                        </YStack>
+                        {linkToDetails
+                          ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
+                            {contentArea}
+                          </Anchor>
+                          : contentArea}
+                      </YStack>}
+                    </AnimatePresence>
+                  </YStack>
+                </XStack>
                 <AnimatePresence>
                   {shrinkPreviews ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
@@ -533,8 +536,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                       </XStack>
                     </YStack>}
                 </AnimatePresence>
-                <XStack w='100%' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
-                  <AuthorInfo {...{ post, isVisible }} />
+                <XStack w='100%' ai='center' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
+                  <XStack f={1}>
+                    <AuthorInfo {...{ post, isVisible }} dateOnly={isReply} />
+                  </XStack>
                   {isReply ? <StarButton post={post} horizontal /> : undefined}
                   {onPressReply
                     ? <Button onPress={onPressReply} circular icon={Reply}

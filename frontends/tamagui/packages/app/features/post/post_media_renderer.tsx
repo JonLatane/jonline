@@ -101,14 +101,16 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
   const singleMediaPreview = showScrollableMediaPreviews
     ? undefined
-    : post?.media?.find(m => m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
+    : post?.media?.find(m => !m.generated);//m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
   const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
   const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
+  const isReply = post.replyToPostId != null;
   const backgroundSize = postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
+  // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, hasBeenVisible, media: post.media })
 
   return <YStack zi={1000} width='100%'>
     {hasBeenVisible && embedComponent
@@ -121,31 +123,39 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
         <ScrollView horizontal w={isPreview ? '260px' : '100%'}
           h={mediaQuery.gtXs ? '400px' : '260px'} >
           <XStack gap='$2'>
-            {post.media.map((mediaRef, i) => <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
-              <MediaRenderer media={mediaRef} isVisible={isVisible} />
-            </YStack>)}
+            {post.media.map((mediaRef, i) => {
+              // debugger;
+              return <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
+                <MediaRenderer media={mediaRef} isVisible={isVisible} isPreview={isPreview} />
+              </YStack>;
+            })}
           </XStack>
         </ScrollView>
       </XStack> : undefined}
 
-    <Anchor textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
-      <YStack>
+    <Anchor w='100%' textDecorationLine='none' {...{ ...(isPreview && singleMediaPreview?.contentType.startsWith('image') ? detailsLink : {}) }}>
+      <YStack w='100%'>
         {singleMediaPreview
-          ? <Image
-            mb='$3'
-            width={500}
-            height={500}
-            // width={foregroundSize}
-            // height={foregroundSize}
-            resizeMode="contain"
-            als="center"
-            source={{
-              uri: isVisible ? singleMediaPreviewUrl : undefined,
-              height: singlePreviewSize,
-              width: singlePreviewSize
-            }}
-            borderRadius={10}
-          /> : undefined}
+          ?
+          <YStack key={singleMediaPreview.id} w={singlePreviewSize} maw='100%' mah='100%' h={isPreview ? singlePreviewSize : undefined} mx='auto'>
+            <MediaRenderer media={singleMediaPreview} isVisible={isVisible} />
+          </YStack>
+          // <Image
+          //   mb='$3'
+          //   width={singlePreviewSize}
+          //   height={singlePreviewSize}
+          //   // width={foregroundSize}
+          //   // height={foregroundSize}
+          //   resizeMode="contain"
+          //   als="center"
+          //   source={{
+          //     uri: isVisible ? singleMediaPreviewUrl : undefined,
+          //     height: singlePreviewSize,
+          //     width: singlePreviewSize
+          //   }}
+          //   borderRadius={10}
+          // />
+          : undefined}
       </YStack>
     </Anchor>
   </YStack>;

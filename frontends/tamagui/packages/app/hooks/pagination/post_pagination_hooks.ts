@@ -1,11 +1,13 @@
 import { Group, PostListingType } from "@jonline/api";
 import { useDebounce } from "@jonline/ui";
-import { useAppDispatch, useCredentialDispatch } from "app/hooks";
+import { createSelector } from "@reduxjs/toolkit";
+import { Selector, useAppDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { someUnloaded } from '../../store/pagination/federated_pages_status';
-import { useFederatedDispatch } from '../credential_dispatch_hooks';
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
+import { useFederatedDispatch } from '../credential_dispatch_hooks';
+import { useAppSelector } from '../store_hooks';
 import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
 
 export type PostPageParams = {};
@@ -37,7 +39,7 @@ export function useServerPostPages(
     () => getPostsPages(postsState, listingType, throughPage, servers),
     [
       postsState.ids,
-      servers.map(s => [s.account?.user?.id, s.server?.host]),,
+      servers.map(s => [s.account?.user?.id, s.server?.host]), ,
       listingType
     ]
   );
@@ -75,7 +77,7 @@ export function useGroupPostPages(
 ): PaginationResults<FederatedPost> {
 
   const { dispatch, accountOrServer } = useFederatedDispatch(group);
-  const state = useRootSelector((state: RootState) => state);
+  // const state = useRootSelector((state: RootState) => state);
   const [loading, setLoadingPosts] = useState(false);
 
   const reload = () => {
@@ -94,12 +96,27 @@ export function useGroupPostPages(
     }
   });
 
-  const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
+  const { results, firstPageLoaded, hasMorePages } = useAppSelector(selectGroupPages(group, throughPage));
 
-  const results: FederatedPost[] = getGroupPostPages(state, group ?? defaultGroup, throughPage);
-  const firstPageLoaded = getHasGroupPostsPage(state.groups, group ?? defaultGroup, 0);
-  const hasMorePages = getHasMoreGroupPostPages(state.groups, group ?? defaultGroup, throughPage);
   if (!group) return { results: [], loading: false, reload: () => { }, hasMorePages: false, firstPageLoaded: true };
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
+
+
+
+const selectGroupPages = (
+  group: FederatedGroup | undefined,
+  throughPage: number,
+): Selector<Pick<PaginationResults<FederatedPost>, 'results' | 'firstPageLoaded' | 'hasMorePages'>> =>
+  createSelector(
+    [(state: RootState) => {
+
+      const defaultGroup: FederatedGroup = useMemo(() => ({ ...Group.create(), serverHost: '' }), []);
+      const results: FederatedPost[] = getGroupPostPages(state, group ?? defaultGroup, throughPage);
+      const firstPageLoaded = getHasGroupPostsPage(state.groups, group ?? defaultGroup, 0);
+      const hasMorePages = getHasMoreGroupPostPages(state.groups, group ?? defaultGroup, throughPage);
+      return { results, firstPageLoaded, hasMorePages };
+    }],
+    (data) => data
+  );

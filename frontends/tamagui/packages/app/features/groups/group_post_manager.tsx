@@ -29,6 +29,13 @@ export function useMostRecentGroup(groups: FederatedGroup[]) {
 
   return groups[0];
 }
+// type Selector<S> = (state: RootState) => S;
+
+// const selectOrganizationName = (id: string): Selector<string | undefined> =>
+//   createSelector(
+//     [(state: RootState) => organizationSelectors.selectById(state, id)],
+//     (organization) => organization?.name
+//   );
 
 export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
@@ -74,7 +81,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       ? federateId(groupPostData[0]!.groupId, server)
       : undefined;
   // console.log('singleSharedGroupId', singleSharedGroupId);
-  const singleSharedGroup = useRootSelector((state: RootState) => singleSharedGroupId
+  const singleSharedGroup = useAppSelector((state) => singleSharedGroupId
     ? state.groups.entities[singleSharedGroupId]
     : undefined);
   // console.log('GroupPostManager singleSharedGroup', singleSharedGroupId, singleSharedGroup)

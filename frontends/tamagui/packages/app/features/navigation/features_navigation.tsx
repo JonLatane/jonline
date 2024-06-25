@@ -181,7 +181,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   //   getUsersPage(state.users, UserListingType.FOLLOW_REQUESTS, 0));
   const { results: followRequests } = useUsersPage(UserListingType.FOLLOW_REQUESTS, 0);
   const followRequestCount = followRequests?.length ?? 0;
-  const followPageStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
+  // const followPageStatus = useRootSelector((state: RootState) => getFederated(state.users.pagesStatus, server));
 
   // const { dispatch, accountOrServer } = useCredentialDispatch();
   // const [loadingUsers, setLoadingUsers] = useState(false);

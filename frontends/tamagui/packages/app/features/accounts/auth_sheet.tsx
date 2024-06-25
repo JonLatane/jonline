@@ -11,6 +11,7 @@ import { TextInput } from 'react-native';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 import { CreationServerSelector } from './creation_server_selector';
+import { useRouter } from 'solito/router';
 
 export type AuthSheetProps = {
   // server?: JonlineServer;
@@ -114,6 +115,7 @@ export function AuthSheet({ }: AuthSheetProps) {
       }
     });
   }, [server, newAccountUser, newAccountPass]);
+  const {push} = useRouter();
   const createServerAccount = useCallback(() => {
     dispatch(clearAccountAlerts());
     dispatch(createAccount({
@@ -124,6 +126,9 @@ export function AuthSheet({ }: AuthSheetProps) {
     })).then(action => {
       if (actionSucceeded(action)) {
         onAccountAdded();
+        const isCurrentServer = server?.host === currentServer?.host;
+        const profileUrl = isCurrentServer ? `/${newAccountUser}` : `/${newAccountUser}@${server?.host}`;
+        requestAnimationFrame(() => push(profileUrl));
       } else {
         setForceDisableAccountButtons(false);
       }

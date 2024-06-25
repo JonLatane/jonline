@@ -1,22 +1,23 @@
-import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardHorizontalAnimation, useMedia } from '@jonline/ui'
-import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd, X } from '@tamagui/lucide-icons'
+import { PostContext } from '@jonline/api/index'
+import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui'
+import { createSelector } from '@reduxjs/toolkit'
+import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
-import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
-import { FederatedEvent, FederatedPost, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
+import { useGroupFromPath } from 'app/features/groups/group_home_screen'
+import { AppSection } from 'app/features/navigation/features_navigation'
+import { TabsNavigation } from 'app/features/navigation/tabs_navigation'
+import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
+import { FederatedPost, RootState, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
+import { HasServer, federateId } from 'app/store/federation'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
+import FlipMove from 'react-flip-move'
 import { createParam } from 'solito'
-import { federateId, federatedId } from '../../store/federation';
-import { useGroupFromPath } from '../groups/group_home_screen'
-import { AppSection } from '../navigation/features_navigation'
-import { TabsNavigation } from '../navigation/tabs_navigation'
+import { StarredPostCard } from '../navigation/starred_posts'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'
 import { ConversationManager, scrollToCommentsBottom } from './conversation_manager'
 import PostCard from './post_card'
 import { ReplyArea } from './reply_area'
-import { StarredPostCard } from '../navigation/starred_posts'
-import FlipMove from 'react-flip-move';
-import { PostContext } from '@jonline/api/index'
 
 const { useParam } = createParam<{ postId: string, shortname: string | undefined }>()
 
@@ -45,15 +46,26 @@ export function usePostInteractionType(): [PostDetailsInteractionType, (interact
   }
 }
 
+
+const selectReplyAncestors = (
+  ancestorPostIds: string[],
+  server: HasServer
+): Selector<(FederatedPost | undefined)[]> =>
+  createSelector(
+    [(state: RootState) => ancestorPostIds.map(id => {
+      const federatedId = federateId(id, server);
+      return selectPostById(state.posts, federatedId);
+    })],
+    (data) => data
+  );
+
+
 export function useReplyAncestors(subjectPost?: FederatedPost) {
   const { dispatch, accountOrServer } = useFederatedDispatch(subjectPost);
   const { server } = accountOrServer;
 
   const [ancestorPostIds, setAncestorPostIds] = useState([] as string[]);
-  const ancestorPosts = useAppSelector(state => ancestorPostIds.map(id => {
-    const federatedId = federateId(id, server);
-    return selectPostById(state.posts, federatedId);
-  }));
+  const ancestorPosts = useAppSelector(selectReplyAncestors(ancestorPostIds, server));
   useEffect(() => {
     if (subjectPost) {
       if (subjectPost.replyToPostId) {
@@ -130,16 +142,17 @@ export function PostDetailsScreen() {
 
   useEffect(() => {
     if (serverPostId && server) {
-      if (!subjectPost && !loadingPost) {
+      if (!subjectPost && !loadingPost && !failedToLoadPost) {
         setLoadingPost(true);
         // console.log('loadPost', postId!)
-        setTimeout(() =>
-          dispatch(loadPost({ ...accountOrServer, id: serverPostId! })));
+        requestAnimationFrame(() =>
+          dispatch(loadPost({ ...accountOrServer, id: serverPostId! }))
+            .then(() => setLoadingPost(false)));
       } else if (subjectPost && loadingPost) {
         setLoadingPost(false);
       }
     }
-  }, [serverPostId, server, subjectPost, loadingPost]);
+  }, [serverPostId, server, subjectPost, loadingPost, failedToLoadPost]);
 
   const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
 

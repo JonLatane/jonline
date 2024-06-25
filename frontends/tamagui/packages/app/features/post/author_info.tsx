@@ -21,6 +21,9 @@ export type AuthorInfoProps = {
   larger?: boolean;
   shrink?: boolean;
   textColor?: string;
+  nameOnly?: boolean;
+  avatarOnly?: boolean;
+  dateOnly?: boolean;
 }
 export const AuthorInfo = ({
   post,
@@ -31,6 +34,9 @@ export const AuthorInfo = ({
   larger = false,
   shrink = false,
   textColor: inputTextColor,
+  nameOnly = false,
+  avatarOnly = false,
+  dateOnly = false,
 }: AuthorInfoProps) => {
   const { dispatch, accountOrServer } = useProvidedDispatch();
   // const author = inputAuthor as Author;
@@ -70,7 +76,7 @@ export const AuthorInfo = ({
     }
   }
   // console.log("RENDER loading author", federatedAuthorId, authorUser);
-  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
   useEffect(() => {
     if (server && serverAuthorId && isVisible) {
@@ -101,9 +107,15 @@ export const AuthorInfo = ({
     />
   </XStack>;
 
-  return <XStack ref={ref} f={1} /*ml={media.gtXs ? 0 : -7}*/ alignContent='flex-start'>
+  const permissionsIndicators = [
+    author && hasAdminPermission(authorUser)
+      ? <PermissionIndicator key='admin' permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined,
+    author && hasPermission(authorUser, Permission.RUN_BOTS)
+      ? <PermissionIndicator key='bot'  permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined
+  ];
+  return <XStack alignContent='flex-start'>
     <YStack w={detailsMargins} />
-    {(avatarUrl && avatarUrl != '')
+    {(!nameOnly && !dateOnly && avatarUrl && avatarUrl != '')
       ? <YStack marginVertical='auto'>
         {disableLink
           ?
@@ -120,30 +132,35 @@ export const AuthorInfo = ({
         }
       </YStack>
       : undefined}
-    <YStack>
-      <XStack>
-        {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
+    {avatarOnly
+      ? undefined
+      : <YStack>
+        {dateOnly
+          ? undefined
+          : <XStack ai='center'>
+            {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
 
-        <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
-          marginVertical='auto' color={textColor}>
-          {author ?? authorName
-            ? disableLink
-              ? `${author?.username ?? authorName}`
-              : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps} color={textColor}>{author?.username ?? authorName}</Anchor>
-            : 'anonymous'}
-        </Heading>
-      </XStack>
-      <XStack>
-        <XStack mr='$2'>
-          {post
-            ? <DateViewer date={post.publishedAt || post.createdAt} updatedDate={post.updatedAt} />
-            : undefined}
-        </XStack>
-        {author && hasAdminPermission(authorUser)
-          ? <PermissionIndicator permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined}
-        {author && hasPermission(authorUser, Permission.RUN_BOTS)
-          ? <PermissionIndicator permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined}
-      </XStack>
-    </YStack>
+            <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
+              marginVertical='auto' color={textColor}>
+              {author ?? authorName
+                ? disableLink
+                  ? `${author?.username ?? authorName}`
+                  : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps} color={textColor}>{author?.username ?? authorName}</Anchor>
+                : 'anonymous'}
+            </Heading>
+            {nameOnly ? permissionsIndicators : undefined}
+          </XStack>}
+        {nameOnly
+          ? undefined
+          : <XStack>
+            <XStack mr='$2'>
+              {post
+                ? <DateViewer date={post.publishedAt || post.createdAt} updatedDate={post.updatedAt} />
+                : undefined}
+            </XStack>
+            {dateOnly ? undefined : permissionsIndicators}
+          </XStack>
+        }
+      </YStack>}
   </XStack>;
 }

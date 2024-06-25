@@ -53,7 +53,7 @@ export function getHasMorePostPages(posts: PostsState, listingType: PostListingT
 
 export function getGroupPostPages(state: RootState, group: FederatedGroup, throughPage: number): FederatedPost[] {
   const result: FederatedPost[] = [];
-  console.log('getGroupPostPages', group, throughPage);
+  // console.log('getGroupPostPages', group, throughPage);
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getGroupPostsPage(state, group, page);
     result.push(...pagePosts);

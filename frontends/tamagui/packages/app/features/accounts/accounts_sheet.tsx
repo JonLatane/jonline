@@ -47,7 +47,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
       setHasOpened(true);
     }
     if (open && !hasOpenedAccounts) {
-      setTimeout(() => dispatch(setHasOpenedAccounts(true)), 3000);
+      requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
     }
   }, [hasOpened, open]);
 

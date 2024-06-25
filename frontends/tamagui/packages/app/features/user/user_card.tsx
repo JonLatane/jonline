@@ -53,6 +53,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const accountOrServer = useFederatedAccountOrServer(user);
+  console.log('UserCard', { user, accountOrServer })
   const currentServer = useCurrentServer();
   const isPrimaryServer = currentServer?.host === user.serverHost;
   const currentAndPinnedServers = usePinnedAccountsAndServers();
@@ -66,9 +67,9 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     : [user.username, user.avatar];
 
   const isAdmin = hasAdminPermission(account?.user);
-  const isCurrentUser = account && account?.user?.id == user.id;
+  const isCurrentUser = !!account && account?.user?.id == user.id;
   // const theme = useTheme();
-  const { primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme(server);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = useServerTheme(server);
 
   const following = passes(user.currentUserFollow?.targetUserModeration);
   const followRequested = user.currentUserFollow && !following;
@@ -107,6 +108,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const displayedRealName = realName ?? user.realName;
   const inlineUsername = displayedRealName && (isPreview || !editable || editingDisabled || !setUsername || !setRealName);
   console.log('UserCard', { realName })
+  const usernameColor = isCurrentUser ? primaryAnchorColor : undefined;
   const usernameRegion = <XStack f={1} w='100%' ai='center'>
     {hasAvatarUrl ? <Image
       width={50}
@@ -121,7 +123,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       <XStack ai='center'>
         <Heading size="$1" >{server?.host}/</Heading>
         {inlineUsername ?
-          <Heading size='$7' fontSize="$1" >{username}</Heading> : undefined}
+          <Heading size='$7' fontSize="$1" color={usernameColor}>{username}</Heading> : undefined}
         {showUserIds ? <Paragraph size='$1' ml='auto' mr='$2' o={0.6}>{user.id}</Paragraph> : undefined}
       </XStack>
       {/* <Heading marginRight='auto' whiteSpace="nowrap" opacity={true ? 1 : 0.5}>{user.userConfiguration?.userInfo?.name || 'Unnamed'}</Heading> */}
@@ -135,6 +137,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           value={username}
           onChange={(data) => { setUsername(data.nativeEvent.text) }} />
         : inlineUsername ? undefined : <Heading size='$7'
+          color={usernameColor}
           lh={realName ? '$1' : undefined}
           fontSize={realName ? '$2' : undefined}
           marginRight='auto' w='100%'>{username}</Heading>}
@@ -148,7 +151,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           // autoCapitalize='words'
           value={realName}
           onChange={(data) => { setRealName(data.nativeEvent.text) }} />
-        : <Heading size="$7" fontSize='$7' lh='$2' marginRight='auto' w='100%'>{displayedRealName}</Heading>}
+        : <Heading size="$7" color={usernameColor} fontSize='$7' lh='$2' marginRight='auto' w='100%'>{displayedRealName}</Heading>}
     </YStack>
     {/* {showServerInfo
       ?  */}

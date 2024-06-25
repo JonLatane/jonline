@@ -205,7 +205,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                             </XStack>
                             : undefined}
                           <YStack f={1} overflow='hidden' pointerEvents='none' w='100%' jc='center' ac='center'>
-                            <MediaRenderer media={item} />
+                            <MediaRenderer media={item} isPreview />
                           </YStack>
                           {showInfo && !mediaQuery.gtXs
                             ? <XStack mt='$1' mx='$1' px='$1'>

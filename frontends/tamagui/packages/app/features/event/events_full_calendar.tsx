@@ -11,16 +11,17 @@ import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useRootSelector, useServerTheme } from 'app/store';
-import React, { useEffect, useMemo, useState } from 'react';
+import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { ChevronLeft, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { Selector, useAppDispatch, useAppSelector, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import moment from 'moment';
 import { createParam } from 'solito';
 import EventCard from './event_card';
 import { useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
+import { createSelector } from "@reduxjs/toolkit";
 
 export function useScreenWidthAndHeight() {
   const minBigCalWidth = 150;
@@ -46,6 +47,22 @@ export type EventsFullCalendarProps = {
   disableSelection?: boolean;
   // timeFilter: TimeFilter;
 }
+
+const selectServerColors = (
+): Selector<{}> =>
+  createSelector(
+    [(state: RootState) => selectAllServers(state.servers).reduce(
+      (result, server: JonlineServer) => {
+        if (server.serverConfiguration?.serverInfo?.colors?.primary) {
+          result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
+  
+        }
+        return result;
+      }, {}
+    )],
+    (data) => data
+  );
+
 export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   events: allEvents,
   weeklyOnly,
@@ -57,7 +74,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   const mediaQuery = useMedia();
   const { showBigCalendar: bigCalendar, showPinnedServers, shrinkPreviews } = useLocalConfiguration();
 
-  const eventsState = useRootSelector((state: RootState) => state.events);
+  // const eventsState = useAppSelector((state: RootState) => state.events);
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
 
@@ -135,19 +152,14 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
   // console.log('EventsFullCalendar', { modalInstanceId })
-  const modalInstance = useAppSelector((state) => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId));
+  const modalInstance = useMemo(
+    () => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId),
+    [modalInstanceId, allEvents]
+  );
   // console.log('modalInstanceId', modalInstanceId, 'modalInstance', modalInstance);
   const hideNavigation = useHideNavigation();
 
-  const serverColors = useAppSelector((state) => selectAllServers(state.servers).reduce(
-    (result, server: JonlineServer) => {
-      if (server.serverConfiguration?.serverInfo?.colors?.primary) {
-        result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
-
-      }
-      return result;
-    }, {}
-  ));
+  const serverColors = useAppSelector(selectServerColors());
 
   const navigationHeight = useTabsNavigationHeight();
   // const serializedTimeFilter = serializeTimeFilter(timeFilter);
@@ -180,7 +192,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
     : //modalInstance
     //  ? moment(modalInstance?.instances[0]?.startsAt)
     //  : 
-     moment()
+    moment()
   ).subtract(30, 'minutes');
   const { calendarImplementation } = useLocalConfiguration();
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
@@ -211,19 +223,56 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
 
   const isEmpty = allEvents.length === 0;
 
-  const findNeighborEvent = (offset: number) => {
+  const sortedEvents = useMemo(
+    () => allEvents.sort((a, b) => moment(a.instances[0]?.startsAt ?? 0).unix() - moment(b.instances[0]?.startsAt ?? 0).unix()),
+    [allEvents.map(e => federateId(e.instances[0]?.id ?? '', e.serverHost))]
+  );
+  const findNeighborEvent = useCallback((offset: number) => {
     if (modalInstance) {
-      const sortedEvents = allEvents.sort((a, b) => moment(a.instances[0]?.startsAt ?? 0).unix() - moment(b.instances[0]?.startsAt ?? 0).unix());
-      const index = sortedEvents.findIndex((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === federateId(modalInstance.instances[0]?.id ?? '', modalInstance.serverHost));
+      const index = sortedEvents.findIndex((e) => e.instances[0]?.id === modalInstance.instances[0]?.id && e.serverHost === modalInstance.serverHost);
       return sortedEvents[index + offset];
     }
-  };
-  const nextEvent = useMemo(() => findNeighborEvent(1), [modalInstance ? federatedId(modalInstance) : undefined]);
-  const prevEvent = useMemo(() => findNeighborEvent(-1), [modalInstance ? federatedId(modalInstance) : undefined]);
+  }, [
+    modalInstance ? federateId(modalInstance.instances[0]?.id ?? '', modalInstance.serverHost) : undefined,
+    sortedEvents.map(e => federateId(e.instances[0]?.id ?? '', e.serverHost))
+  ]);
+  const nextEvent = useMemo(() => findNeighborEvent(1), [findNeighborEvent]);
+  const prevEvent = useMemo(() => findNeighborEvent(-1), [findNeighborEvent]);
 
+
+  // <div key={modalInstance?.id} onKeyDown={modalInstance
+  //   ? (e) => {
+  //     if (e.key === 'ArrowRight' && nextEvent) {
+  //       setModalInstanceId(federateId(nextEvent.instances[0]!.id, nextEvent.serverHost));
+  //     } else if (e.key === 'ArrowLeft' && prevEvent) {
+  //       setModalInstanceId(federateId(prevEvent.instances[0]!.id, prevEvent.serverHost));
+  //     }
+  //   }
+  //   : undefined} />
+  // const nextEventId = nextEvent ? federateId(nextEvent.instances[0]!.id, nextEvent.serverHost) : undefined;
+  // const prevEventId = prevEvent ? federateId(prevEvent.instances[0]!.id, prevEvent.serverHost) : undefined;
+  // useEffect(() => {
+  //   const handleKeyDown = (e: KeyboardEvent) => {
+  //     if (e.key === 'ArrowRight' && nextEvent) {
+  //       console.log('right');
+  //       setModalInstanceId(nextEventId);
+  //     } else if (e.key === 'ArrowLeft' && prevEvent) {
+  //       console.log('left');
+  //       setModalInstanceId(prevEventId);
+  //     }
+
+  //   };
+  //   document.addEventListener('keydown', handleKeyDown, true);
+
+  //   return () => {
+  //     document.removeEventListener('keydown', handleKeyDown);
+  //   };
+
+  // }, [nextEventId, prevEventId]);
   return (<>
 
     <YStack zi={1}
+      // onKeyPress={undefined}
       // key={`calendar-rendering-${serializedTimeFilter}`} 
       mx='$1'
       animation='standard' {...reverseStandardAnimation}

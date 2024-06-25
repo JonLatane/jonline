@@ -4,7 +4,7 @@ import { X as XIcon } from '@tamagui/lucide-icons';
 import { useAppSelector, useCurrentServer, useMembersPage, usePaginatedRendering, useUsersPage } from 'app/hooks';
 import { federatedId, getFederated } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
@@ -59,7 +59,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     setTimeout(
       () => {
         // debugger;
-      if (searchParamValue ?? '' !== debouncedSearchText) {
+        if (searchParamValue ?? '' !== debouncedSearchText) {
           // debugger;
           updateParams(
             { search: debouncedSearchText || undefined },
@@ -71,9 +71,13 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       1);
   }, [debouncedSearchText])
 
-  const filteredUsers = allUsers?.filter((user) => {
-    return user.username.toLowerCase().includes(debouncedSearchText);
-  });
+  const filteredUsers = useMemo(
+    () => allUsers?.filter((user) => {
+      return user.username.toLowerCase().includes(debouncedSearchText)
+        || user.realName?.toLowerCase().includes(debouncedSearchText);
+    }),
+    [allUsers, debouncedSearchText]
+  );
 
   const pagination = usePaginatedRendering(filteredUsers, 10);
   const paginatedUsers = pagination.results;

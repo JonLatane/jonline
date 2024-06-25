@@ -4,7 +4,7 @@ import { ListEnd } from '@tamagui/lucide-icons';
 import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { FederatedPost, RootState, federatedId, useServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
 import moment, { Moment } from 'moment';
-import React, { useEffect, useMemo, useReducer, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import FlipMove from 'react-flip-move';
 import { ConversationContextType, useConversationContext } from './conversation_context';
 import PostCard from './post_card';
@@ -191,14 +191,14 @@ export function useConversationCommentList({
     }
   }, [post, post?.replyCount, post?.replies.length, showScrollPreserver]);
 
-  function toggleCollapseReplies(postId: string) {
+  const toggleCollapseReplies = useCallback((postId: string) => {
     if (collapsedReplies.has(postId)) {
       collapsedReplies.delete(postId);
     } else {
       collapsedReplies.add(postId);
     }
     setCollapsedReplies(new Set(collapsedReplies));
-  }
+  }, [collapsedReplies]);
 
   type FlattenedReply = {
     postIdPath: string[];

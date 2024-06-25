@@ -1,14 +1,15 @@
 import { Button, Heading, Image, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, standardAnimation, useMedia } from "@jonline/ui";
 import { AtSign, CheckCircle, ChevronRight, Circle, Maximize2, Minimize2, PanelBottomClose, PanelTopClose, PanelTopOpen, SeparatorHorizontal, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useCurrentAccount, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { Selector, useAppDispatch, useAppSelector, useCurrentAccount, useCurrentServer, useFederatedAccountOrServer, useLocalConfiguration, useMediaUrl } from "app/hooks";
 
-import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
+import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, RootState, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import FlipMove from 'react-flip-move';
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
 import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { User } from "@jonline/api";
+import { createSelector } from "@reduxjs/toolkit";
 
 
 export type PinnedServerSelectorProps = {
@@ -19,6 +20,20 @@ export type PinnedServerSelectorProps = {
   simplified?: boolean;
   showShrinkPreviews?: boolean;
 };
+
+
+const selectAvailableServers = (
+  currentServer: JonlineServer | undefined,
+  simplified?: boolean
+): Selector<JonlineServer[]> =>
+  createSelector(
+    [(state: RootState) =>
+      selectAllServers(state.servers)
+        .filter(server => simplified || !currentServer || server.host !== currentServer.host)
+    ],
+    (data) => data
+  );
+
 export function PinnedServerSelector({
   show,
   transparent,
@@ -33,9 +48,7 @@ export function PinnedServerSelector({
   const { server: currentServer, primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme();
 
   const allServers = useAppSelector(state => selectAllServers(state.servers));
-  const availableServers = useAppSelector(state =>
-    selectAllServers(state.servers)
-      .filter(server => simplified || !currentServer || server.host !== currentServer.host));
+  const availableServers = useAppSelector(selectAvailableServers(currentServer, simplified));
 
   const pinnedServerCount = availableServers
     .filter(server => pinnedServers.some(s => s.pinned && s.serverId === serverID(server)))
@@ -266,7 +279,7 @@ export type PinnableServerProps = {
 export function PinnableServer({ server, pinnedServer, simplified }: PinnableServerProps) {
   const pinned = !!pinnedServer?.pinned;
   const dispatch = useAppDispatch();
-  const account = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
+  const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
   const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   const onPress = () => {
     const updatedValue: PinnedServer = pinnedServer
@@ -275,7 +288,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
     dispatch(pinServer(updatedValue));
   }
 
-  const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
+  // const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
   const toggleAccountSelect = (account: JonlineAccount) => {
     if (accountID(account) === accountID(pinnedAccount)) {
       dispatch(unpinAccount(account));
@@ -283,7 +296,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
       dispatch(pinAccount(account));
     }
   };
-  const avatarUrl = useMediaUrl(account?.user.avatar?.id, { account, server: account?.server });
+  const avatarUrl = useMediaUrl(pinnedAccount?.user.avatar?.id, { account: pinnedAccount, server: pinnedAccount?.server });
   const avatarSize = 20;
   const loadingPosts = useAppSelector(state => state.posts.pagesStatus.values[server.host] === 'loading');
   const loadingEvents = useAppSelector(state => state.events.pagesStatus.values[server.host] === 'loading');

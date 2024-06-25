@@ -101,7 +101,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
           <Spinner size='small' />
         </XStack>
         <XStack animation='standard' m='auto'
-          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0}>
+          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0.25}>
           <Paragraph size='$1' ta='center'>
             {post.unauthenticatedStarCount}
           </Paragraph>
@@ -128,7 +128,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
           <Spinner size='small' />
         </XStack>
         <XStack animation='standard' mx='auto'
-          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0}>
+          o={post.unauthenticatedStarCount > 0 ? 0.5 : 0.25}>
           <Paragraph size='$1' ta='center'>
             {post.unauthenticatedStarCount}
           </Paragraph>

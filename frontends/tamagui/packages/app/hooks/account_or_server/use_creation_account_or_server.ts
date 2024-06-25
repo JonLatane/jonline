@@ -1,18 +1,22 @@
-import { JonlineServer, selectCreationServer, selectServerById } from 'app/store';
-import { useAppDispatch, useAppSelector } from "../store_hooks";
+import { JonlineServer, RootState, selectCreationServer, selectServerById } from 'app/store';
+import { Selector, useAppDispatch, useAppSelector } from "../store_hooks";
 import { usePinnedAccountsAndServers } from './use_pinned_accounts_and_servers';
+import { useCallback } from 'react';
+import { createSelector } from '@reduxjs/toolkit';
 
 
+export type AppCreationServer = {
+  creationServer: JonlineServer | undefined;
+  setCreationServer: (s: JonlineServer | undefined) => {
+    payload: JonlineServer | undefined;
+    type: "servers/selectCreationServer";
+  };
+};
 
-export const useCreationServer = () => {
+export function useCreationServer(): AppCreationServer {
   const dispatch = useAppDispatch();
-  return useAppSelector(state => {
-    const creationServer = state.servers.creationServerId
-      ? selectServerById(state.servers, state.servers.creationServerId)
-      : undefined;
-    const setCreationServer = (s: JonlineServer | undefined) => dispatch(selectCreationServer(s));
-    return { creationServer, setCreationServer };
-  });
+  const setCreationServer = useCallback((s: JonlineServer | undefined) => dispatch(selectCreationServer(s)), []);
+  return useAppSelector(creationServerSelector(setCreationServer));
 };
 
 export const useCreationAccountOrServer = () => {
@@ -21,3 +25,19 @@ export const useCreationAccountOrServer = () => {
     .find(aos => aos.server?.host === creationServer?.host)
     ?? {};
 };
+
+const creationServerSelector = (
+  setCreationServer: (s: JonlineServer | undefined) => {
+    payload: JonlineServer | undefined;
+    type: "servers/selectCreationServer";
+  }
+): Selector<AppCreationServer> =>
+  createSelector(
+    [(state: RootState) => {
+      const creationServer = state.servers.creationServerId
+        ? selectServerById(state.servers, state.servers.creationServerId)
+        : undefined;
+      return { creationServer, setCreationServer };
+    }],
+    (data) => data
+  );

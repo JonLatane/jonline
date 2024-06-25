@@ -14,6 +14,7 @@ interface Props {
   serverOverride?: JonlineServer;
   forceImage?: boolean;
   isVisible?: boolean;
+  isPreview?: boolean;
 }
 
 // MediaRenderers will always be styled with width=100% and height=100%.
@@ -22,8 +23,9 @@ export const MediaRenderer: React.FC<Props> = ({
   media,
   failQuietly = false,
   serverOverride,
-  forceImage,
-  isVisible = true
+  forceImage = false,
+  isVisible = true,
+  isPreview = false
 }) => {
   const { dispatch, accountOrServer } = useProvidedDispatch(serverOverride);
   const server = accountOrServer.server;
@@ -41,7 +43,7 @@ export const MediaRenderer: React.FC<Props> = ({
 
   const mediaUrl = useMediaUrl(media.id, { server });
   // console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
-  let [type, subType] = media.contentType.split('/');
+  let [type, subType] = (media?.contentType ?? '').split('/');
   if (forceImage) {
     type = 'image';
   }
@@ -49,6 +51,13 @@ export const MediaRenderer: React.FC<Props> = ({
   if (!server) return <></>;
   if (!hasBeenVisible) return <></>;
 
+  // if (!forceImage) {
+  //   debugger;
+  // }
+  // if (type !== 'image') {
+  //   debugger;
+  // }
+  // debugger;
   let view: JSX.Element;
   switch (type) {
     case 'image':
@@ -60,9 +69,11 @@ export const MediaRenderer: React.FC<Props> = ({
       </FadeInView>;
     case 'video':
       return <FadeInView w='100%' h='100%'>
-        <YStack w='100%' h='100%' ac='center' jc='center'>
-          <ReactPlayerShim width='100%' style={{ maxHeight: mediaQuery.gtXs ? '500px' : '300px' }}
-            height='100%' url={mediaUrl} controls muted />
+        <YStack w='100%' h='100%' ac='center' jc='center' mah={isPreview ? 500 : undefined}>
+          <ReactPlayerShim width='100%'
+            height='100%'
+            // height={isPreview ? mediaQuery.gtXs ? '500px' : '300px' : '100%'}
+            url={mediaUrl} controls />
         </YStack>
       </FadeInView>;
     default:
