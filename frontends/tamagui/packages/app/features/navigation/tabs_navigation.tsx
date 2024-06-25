@@ -280,11 +280,11 @@ export function TabsNavigation({
                               <Paragraph color={primaryTextColor} size='$1'>and Settings</Paragraph>
                             </YStack>
                           </XStack>
-                          <Button size='$1' 
-                          onPress={() => {
-                            setForceHideAccountSheetGuide(true);
-                            setShowAccountSheetGuide(false);
-                            // dispatch(setHasOpenedAccounts(true));
+                          <Button size='$1'
+                            onPress={() => {
+                              setForceHideAccountSheetGuide(true);
+                              setShowAccountSheetGuide(false);
+                              // dispatch(setHasOpenedAccounts(true));
                             }}>Got it!</Button>
                           {/* <XStack>
                             <ChevronLeft color={primaryTextColor} size='$1' />
@@ -343,6 +343,7 @@ export function TabsNavigation({
               </YStack> */}
 
                   <XStack w='100%' id='nav-pinned-server-selector'
+                    backgroundColor={transparentBackgroundColor}
                   // pointerEvents={hideNavigation ? 'none' : undefined}
                   >
                     <PinnedServerSelector
