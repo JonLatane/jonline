@@ -106,10 +106,10 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
     {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
-    <XStack>
+    <XStack py='$1'>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
-        : <Button size='$2' my='$2' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}>
+        : <Button size='$2' my='$1' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}>
           {singleSharedGroup?.name
             ?? (sharedToSelectedGroup ? selectedGroup?.name : undefined)
             ?? 'Share'}

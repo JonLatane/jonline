@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useTheme, useToastController } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -482,41 +482,18 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <AnimatePresence>
                   {shrinkPreviews ? undefined
                     : <YStack animation='standard' {...standardAnimation}>
-                      <XStack key='edit-buttons' px='$3' gap='$2' flexWrap="wrap" py={!showEdit && !isAuthor ? 0 : '$2'}>
-                        {showEdit
-                          ? editing
-                            ? <>
-                              <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
-                                Save
-                              </Button>
-                              <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
-                                Cancel
-                              </Button>
-                              {previewingEdits
-                                ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
-                                  Edit
-                                </Button>
-                                :
-                                <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
-                                  Preview
-                                </Button>}
-                            </>
-                            : <>
-                              <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
-                                Edit
-                              </Button>
-
-                              {deleteDialog}
-                            </>
-                          : isAuthor && post.id ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
-                        <XStack gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                      <XStack key='edit-buttons' px='$3' flexWrap="wrap" ai='center'
+                        // py={!showEdit && !isAuthor ? 0 : '$2'}
+                        flexDirection="row-reverse"
+                      >
+                        <XStack gap='$2' flexWrap="wrap" ml='auto' maw='100%'>
                           {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
                             <VisibilityPicker
                               id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
                               label='Post Visibility'
                               visibility={visibility}
                               onChange={setEditedVisibility}
-                              visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server, 'post')}
+                              visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server)}
                               readOnly={!editing || previewingEdits}
                             />
                           </XStack>}
@@ -533,10 +510,40 @@ export const PostCard: React.FC<PostCardProps> = ({
                             : undefined}
 
                         </XStack>
+                        <XStack py={showEdit ? '$2' : undefined} gap='$2' mr='auto'>
+                          {showEdit
+                            ? editing
+                              ? <>
+                                <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                                  Save
+                                </Button>
+                                <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                                  Cancel
+                                </Button>
+                                {previewingEdits
+                                  ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                    Edit
+                                  </Button>
+                                  :
+                                  <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                    Preview
+                                  </Button>}
+                              </>
+                              : <>
+                                <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+                                  Edit
+                                </Button>
+
+                                {deleteDialog}
+                              </>
+                            : isAuthor && post.id ? <XStack o={0.5}>{deleteDialog}</XStack> : undefined}
+                        </XStack>
                       </XStack>
                     </YStack>}
                 </AnimatePresence>
-                <XStack w='100%' ai='center' p='$3' mt={showEdit ? -11 : -15} pt={post?.replyToPostId ? 10 : 0} {...detailsShadowProps}>
+                <XStack w='100%' ai='center' p='$3' /*mt={showEdit ? -11 : -15}*/
+                  mt={shrinkPreviews && isReply ? '$1' : undefined}
+                  pt={isReply ? 10 : 0} {...detailsShadowProps}>
                   <XStack f={1}>
                     <AuthorInfo {...{ post, isVisible }} dateOnly={isReply} />
                   </XStack>

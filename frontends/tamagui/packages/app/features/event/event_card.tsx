@@ -1,14 +1,14 @@
-import useIsVisibleHorizontal, { useIsVisible } from 'app/hooks/use_is_visible';
-import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, useServerTheme, updateEvent } from "app/store";
+import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
+import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TamaguiElement, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
-import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, Eye, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
+import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
+import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useCurrentAccount, useCurrentAccountOrServer, useAppSelector, useComponentKey, usePinnedAccountsAndServers, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl } from "app/hooks";
+import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -18,14 +18,14 @@ import { useLink } from "solito/link";
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
 import { AccountOrServerContextProvider, useGroupContext } from 'app/contexts';
+import { federatedId } from '../../store/federation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
+import { StarButton } from '../post/star_button';
 import { defaultEventInstance, } from "./create_event_sheet";
 import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
-import { StarButton } from '../post/star_button';
-import { federatedId } from '../../store/federation';
 
 interface Props {
   event: FederatedEvent;
@@ -724,7 +724,7 @@ export const EventCard: React.FC<Props> = ({
         <YStack space>
           <Dialog.Title>Delete Event</Dialog.Title>
           <Dialog.Description>
-            Really delete event? {event.instances.length > 1 ? `All ${event.instances.length} instances will be deleted. `: undefined}
+            Really delete event? {event.instances.length > 1 ? `All ${event.instances.length} instances will be deleted. ` : undefined}
             The content and title, along with all event instances and RSVPs, will be deleted, and your user account de-associated, but any replies (including quotes) will still be present.
           </Dialog.Description>
 
@@ -902,10 +902,37 @@ export const EventCard: React.FC<Props> = ({
                   <AnimatePresence>
                     {shrinkContent ? undefined
                       : <YStack animation='standard' {...standardAnimation}>
-                        <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap">
+                        <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap"
+                          flexDirection='row-reverse'>
 
+                          <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
+                            <XStack key='visibility-edit' my='auto' ml='auto'>
+                              <VisibilityPicker
+                                id={`visibility-picker-${eventPost.id}${isPreview ? '-preview' : ''}`}
+                                label='Event Visibility'
+                                visibility={visibility}
+                                onChange={setEditedVisibility}
+                                visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server, 'Event')}
+                                readOnly={!editing || previewingEdits}
+                              />
+                            </XStack>
+                            <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
+                              <ShareableToggle value={shareable}
+                                isOwner={isAuthor}
+                                setter={setEditedShareable}
+                                readOnly={!editing || previewingEdits} />
+                            </XStack>
+                            {/* {isPrimaryServer
+                              ?  */}
+                            <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
+                              <GroupPostManager
+                                post={eventPost}
+                                isVisible={isVisible} />
+                            </XStack>
+                            {/* : undefined} */}
+                          </XStack>
                           {event.id
-                            ? <>
+                            ? <XStack py={showEdit ? '$2' : undefined} gap='$2' mr='auto'>
                               {showEdit
                                 ? editing
                                   ? <>
@@ -938,41 +965,15 @@ export const EventCard: React.FC<Props> = ({
                                 : isAuthor
                                   ? <XStack o={0.5}>{deleteDialog}</XStack>
                                   : undefined}
-                            </>
+                            </XStack>
                             : undefined}
-                          <XStack key='visibility-etc' gap='$2' flexWrap="wrap" ml='auto' my='auto' maw='100%'>
-                            <XStack key='visibility-edit' my='auto' ml='auto'>
-                              <VisibilityPicker
-                                id={`visibility-picker-${eventPost.id}${isPreview ? '-preview' : ''}`}
-                                label='Event Visibility'
-                                visibility={visibility}
-                                onChange={setEditedVisibility}
-                                visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server, 'event')}
-                                readOnly={!editing || previewingEdits}
-                              />
-                            </XStack>
-                            <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
-                              <ShareableToggle value={shareable}
-                                isOwner={isAuthor}
-                                setter={setEditedShareable}
-                                readOnly={!editing || previewingEdits} />
-                            </XStack>
-                            {/* {isPrimaryServer
-                              ?  */}
-                            <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                              <GroupPostManager
-                                post={eventPost}
-                                isVisible={isVisible} />
-                            </XStack>
-                            {/* : undefined} */}
-                          </XStack>
                         </XStack>
 
                       </YStack>}
                   </AnimatePresence>
 
                   <XStack {...detailsShadowProps} key='details' pl='$3' mb='$3'
-                    mt={shrinkContent ? '$1' : showEdit ? -11 : -15} >
+                    mt={shrinkContent ? '$1' : undefined}>{/*showEdit ? -11 : -15} >*/}
                     <XStack f={1}>
                       <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
                     </XStack>

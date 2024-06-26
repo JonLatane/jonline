@@ -38,6 +38,8 @@ export function VisibilityPicker({
   }, [onChange]);
   const description = visibilityDescription?.(visibility);
 
+  const name = useComponentKey('visibility');
+
   if (readOnly) {
     return <Tooltip>
       <Tooltip.Trigger>
@@ -56,10 +58,9 @@ export function VisibilityPicker({
     </Tooltip>
   }
 
-  const name = useComponentKey('visibility');
 
   return <YStack w='100%' maw={350}>
-    {readOnly ? undefined : <Heading size='$1'>Visibility</Heading>}
+    {/* {readOnly ? undefined : <Heading size='$1'>Visibility</Heading>} */}
     {/* <style>
       select {
         width: 100%;
@@ -90,16 +91,16 @@ export function VisibilityPicker({
                   if (item == Visibility.GLOBAL_PUBLIC && !canPublishGlobally) return undefined;
                 }
 
-                // const description = visibilityDescription?.(item);
+                const description = visibilityDescription?.(item);
                 return (
                   <Select.Item index={i} key={`${item}`} value={item.toString()}>
                     <Select.ItemText>
-                      {/* <YStack> */}
-                      {/* <Heading size='$2'> */}
-                      {visibilityName(item)}
-                      {/* </Heading> */}
-                      {/* {description ? <Paragraph size='$1'>{description}</Paragraph> : undefined} */}
-                      {/* </YStack> */}
+                      <YStack>
+                        <Heading size='$2'>
+                          {visibilityName(item)}
+                        </Heading>
+                        {description ? <Paragraph size='$1'>{description}</Paragraph> : undefined}
+                      </YStack>
                     </Select.ItemText>
                     <Select.ItemIndicator ml="auto">
                       <Check size={16} />
@@ -112,10 +113,10 @@ export function VisibilityPicker({
 
         </Select.Content>
       </Select>}
-    {description
+    {/* {description
       ? <Label htmlFor={name}>
         <Paragraph size='$1' mx='$2' my='$1'>{description}</Paragraph>
-      </Label> : undefined}
+      </Label> : undefined} */}
   </YStack>;
   // return <Select onValueChange={v => onChange(Visibility[v])} value={visibility.toString()}>
   //   {[Visibility.PRIVATE, Visibility.LIMITED, Visibility.SERVER_PUBLIC, Visibility.GLOBAL_PUBLIC,].map((item, i) => {

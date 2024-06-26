@@ -4,7 +4,7 @@ import { CalendarPlus, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamag
 import { ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationAccountOrServer } from 'app/hooks';
 import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
-import { themedButtonBackground } from 'app/utils';
+import { highlightedButtonBackground, themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
 import FlipMove from 'react-flip-move';
@@ -45,7 +45,7 @@ export const postVisibilityDescription = (
   v: Visibility,
   group: Group | undefined,
   server: JonlineServer | undefined,
-  entity: string = 'post'
+  entity: string = 'Post'
 ) => {
   switch (v) {
     case Visibility.PRIVATE:
@@ -185,7 +185,8 @@ export function BaseCreatePostSheet({
   const toast = useToastController();
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, textColor } = useServerTheme(server);
+  const serverTheme = useServerTheme(server);
+  const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor, navAnchorColor, textColor } = serverTheme;
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -295,10 +296,10 @@ export function BaseCreatePostSheet({
                   }}
                 />
                 <Heading marginVertical='auto' f={1} size='$7'>New {entityName}</Heading>
-                <Button {...themedButtonBackground(showSettings ? navColor : undefined)}
+                {/* <Button {...themedButtonBackground(showSettings ? navColor : undefined)}
                   onPress={() => setShowSettings(!showSettings)} circular mr='$2'>
                   <Cog color={showSettings ? navTextColor : textColor} />
-                </Button>
+                </Button> */}
                 <Tooltip>
                   <Tooltip.Trigger>
                     <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
@@ -396,12 +397,24 @@ export function BaseCreatePostSheet({
                       {/* <Heading size="$6">{server?.host}/</Heading> */}
                       <div key='title-etc' style={{ width: '100%', marginBottom: 5 }}>
                         <YStack gap='$2'>
-                          <Input textContentType="name" placeholder={`${entityName} Title (required)`}
-                            disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
-                            onFocus={() => setShowSettings(false)}
-                            // autoCapitalize='words'
-                            value={title}
-                            onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                          <XStack gap='$2'>
+                            <Input f={1} textContentType="name"
+                              placeholder={`${entityName} Title (required)`}
+                              placeholderTextColor={navAnchorColor}
+                              disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
+                              borderColor={title == '' ? navAnchorColor : undefined}
+                              // color={title == '' ? primaryAnchorColor : undefined}
+                              onFocus={() => setShowSettings(false)}
+                              // autoCapitalize='words'
+                              value={title}
+                              onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                            <Button ml='$2'
+                              {...highlightedButtonBackground(serverTheme, 'nav', showSettings)}
+                              // {...themedButtonBackground(showSettings ? navColor : undefined)}
+                              onPress={() => setShowSettings(!showSettings)} circular>
+                              <Cog color={showSettings ? navTextColor : textColor} />
+                            </Button>
+                          </XStack>
                           {additionalFields?.(previewPost, group)}
                           <XStack gap='$2'>
                             <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
@@ -474,12 +487,16 @@ export function BaseCreatePostSheet({
                         </div>
                         : undefined}
                       {showMedia
-                        ? <AccountOrServerContextProvider value={accountOrServer}>
-                          <div key='post-media-manager' style={{ width: '100%', marginBottom: 5 }}>
-                          <PostMediaManager
-                            {...{ link, media, setMedia, embedLink, setEmbedLink }} />
+                        ? <div key='media'>
+                          <AccountOrServerContextProvider value={accountOrServer}>
+                            <div key='post-media-manager' style={{ width: '100%', marginBottom: 5 }}>
+                              <PostMediaManager
+                                {...{ link, media, setMedia, embedLink, setEmbedLink }} />
+                            </div>
+                          </AccountOrServerContextProvider>
                         </div>
-                        </AccountOrServerContextProvider> : undefined}
+                        : undefined}
+
 
                       <div key='content'>
                         <TextArea w='100%' pt='$2' value={content} ref={textAreaRef}
