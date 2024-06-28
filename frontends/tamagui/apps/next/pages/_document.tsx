@@ -51,6 +51,8 @@ export default class Document extends NextDocument {
           <meta property="og:title" content="Jonline Social Link" />
           <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
           <meta property="og:image" content="/favicon.ico" />
+
+          <link rel="manifest" href="/manifest.json" />
         </Head>
         <body>
           <Main />

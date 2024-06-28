@@ -1,0 +1,21 @@
+{
+  "name": "Jonline Example",
+  "short_name": "JonlineExample",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#90cdf41188",
+  "theme_color": "#90cdf4CC",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "bell2.png",
+      "sizes": "500x500",
+      "type": "image&#x2F;png"
+    },
+    {
+      "src": "bell.png",
+      "sizes": "192x192",
+      "type": "image&#x2F;png"
+    }
+  ]
+}
