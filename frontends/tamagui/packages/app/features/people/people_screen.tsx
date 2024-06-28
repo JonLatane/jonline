@@ -39,10 +39,12 @@ const { useParam, useUpdateParams } = createParam<{ search: string | undefined }
 export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, selectedGroup }) => {
   const isForGroupMembers = listingType === undefined;
 
+  const users = useUsersPage(listingType, 0);
+  const groupMembers = useMembersPage(selectedGroup ? federatedId(selectedGroup!) : '', 0);
   const { results: allUsers, loading: loadingUsers, reload: reloadUsers, firstPageLoaded } = isForGroupMembers
-    ? useMembersPage(federatedId(selectedGroup!), 0)
+    ? groupMembers
     // { results: [], loading: false, reload: () => { }, firstPageLoaded: true }
-    : useUsersPage(listingType, 0);
+    : users
 
   // const [searchParamValue] = useParam('search');
   // const searchParam = useParamState(useParam('search')[0], '');// searchParamValue ?? '';
@@ -133,7 +135,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       }
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' pb='$3' maw={800} space>
-        <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} maintainContainerHeight>
+        <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }}>
           <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
             <PageChooser {...pagination} />
           </div>

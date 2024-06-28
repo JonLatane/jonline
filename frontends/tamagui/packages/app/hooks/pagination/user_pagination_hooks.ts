@@ -8,7 +8,7 @@ import { PaginationResults } from ".";
 import { useFederatedAccountOrServer } from "../account_or_server";
 
 export function useUsersPage(
-  listingType: UserListingType,
+  listingType: UserListingType | undefined,
   page: number,
 ): PaginationResults<FederatedUser> {
   const dispatch = useAppDispatch();
@@ -27,19 +27,19 @@ export function useUsersPage(
 
   const state = useAppSelector(state => state.users);
   const { users, hadUndefinedServers } = useMemo(
-    () => getUsersPage(state, listingType, page, servers),
+    () => getUsersPage(state, listingType ?? UserListingType.EVERYONE, page, servers),
     [
       state.ids,
       servers.map(s => s.server?.host),
       listingType
     ])
   useEffect(() => {
-    if (listingType === UserListingType.EVERYONE && hadUndefinedServers && !loadingUsers) {
+    if (listingType !== undefined && hadUndefinedServers && !loadingUsers) {
       console.log("Loading users...");
       setLoadingUsers(true);
       reloadUsers();
     }
-  }, [users, loadingUsers]);
+  }, [listingType, users, loadingUsers]);
 
   return {
     results: users,
@@ -68,18 +68,18 @@ export function useMembersPage(
 
   const { users, hadUndefinedServers } = useAppSelector(state => getMembersPage(state, groupId, page, groupModeration))
   useEffect(() => {
-    if (hadUndefinedServers && !loadingMembers && accountOrServer?.server) {
+    if (groupId && hadUndefinedServers && !loadingMembers && accountOrServer?.server) {
       console.log("Loading members...");
       setLoadingMembers(true);
       reloadMembers();
     }
-  }, [users, loadingMembers]);
+  }, [groupId, users, loadingMembers]);
 
   // console.log("members page", groupId, page, users);
   return {
-    results: users,
+    results: groupId ? users : [],
     loading: loadingMembers,
     reload: reloadMembers,
-    firstPageLoaded: users !== undefined,
+    firstPageLoaded: groupId ? users !== undefined : true,
   };
 }

@@ -53,7 +53,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
   const accountOrServer = useFederatedAccountOrServer(user);
-  console.log('UserCard', { user, accountOrServer })
+  // console.log('UserCard', { user, accountOrServer })
   const currentServer = useCurrentServer();
   const isPrimaryServer = currentServer?.host === user.serverHost;
   const currentAndPinnedServers = usePinnedAccountsAndServers();
@@ -107,7 +107,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const isBusiness = hasPermission(user, Permission.BUSINESS);
   const displayedRealName = realName ?? user.realName;
   const inlineUsername = displayedRealName && (isPreview || !editable || editingDisabled || !setUsername || !setRealName);
-  console.log('UserCard', { realName })
+  // console.log('UserCard', { realName })
   const usernameColor = isCurrentUser ? primaryAnchorColor : undefined;
   const usernameRegion = <XStack f={1} w='100%' ai='center'>
     {hasAvatarUrl ? <Image
