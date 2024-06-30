@@ -179,7 +179,10 @@ webui!(
      path: Path| {
         let post = match federated_path_component(&path, 2) {
             Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
-            Some(FederatedId::Federated(_, _)) => None,
+            Some(FederatedId::Federated(_, _domain)) => {
+                // let _domain = 
+                None
+            },
             None => return None,
         };
 

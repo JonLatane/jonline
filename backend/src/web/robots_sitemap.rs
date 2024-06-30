@@ -81,7 +81,7 @@ async fn sitemap(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<R
 }
 
 #[rocket::get("/manifest.json")]
-async fn manifest(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<RawJson<String>> {
+async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse<RawJson<String>> {
     // let domain = host.domain();
     let mut conn = state.pool.get().unwrap();
     let configuration = get_server_configuration_proto(&mut conn).unwrap();
@@ -92,14 +92,14 @@ async fn manifest(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<
         .map(|i| i.name)
         .flatten()
         .unwrap_or("Jonline".to_string());
-    let server_logo_id = configuration
-        .server_info
-        .as_ref()
-        .map(|i| i.logo.as_ref())
-        .flatten()
-        .map(|l| l.square_media_id.clone())
-        .flatten();
-    let server_logo = server_logo_id.map(|id| format!("/media/{}", id));
+    // let server_logo_id = configuration
+    //     .server_info
+    //     .as_ref()
+    //     .map(|i| i.logo.as_ref())
+    //     .flatten()
+    //     .map(|l| l.square_media_id.clone())
+    //     .flatten();
+    // let server_logo = server_logo_id.map(|id| format!("/media/{}", id));
     let primary_color_int = configuration
         .server_info
         .map(|i| i.colors)
@@ -108,7 +108,7 @@ async fn manifest(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<
         .flatten()
         .unwrap_or(424242);
     let primary_color = &format!("{:x}", primary_color_int)[2..8];
-    // let server_logo_type
+
     let response = RawJson(
         format!(
             "{{
@@ -126,9 +126,8 @@ async fn manifest(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<
   ]
 }}
 ",
-            server_name,
+            server_name.replace("\"", "\\\""),
             primary_color,
-            // server_logo.unwrap_or("/favicon.ico".to_string())
         )
         .to_string(),
     );
