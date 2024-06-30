@@ -109,34 +109,24 @@ async fn manifest(state: &State<RocketState>, host: &Host<'_>) -> CacheResponse<
         .unwrap_or(424242);
     let primary_color = &format!("{:x}", primary_color_int)[2..8];
     // let server_logo_type
-
     let response = RawJson(
         format!(
             "{{
   \"name\": \"{}\",
-  \"short_name\": \"{}\",
+  \"theme_color\": \"#{}CC\",
   \"start_url\": \"/\",
   \"display\": \"standalone\",
-  \"background_color\": \"#{}CC\",
-  \"theme_color\": \"#{}CC\",
   \"orientation\": \"portrait-primary\",
   \"icons\": [
     {{
       \"src\": \"favicon.ico\",
       \"sizes\": \"500x500\",
       \"type\": \"image&#x2F;png\"
-    }},
-    {{
-      \"src\": \"/favicon.ico\",
-      \"sizes\": \"192x192\",
-      \"type\": \"image&#x2F;png\"
     }}
   ]
 }}
 ",
             server_name,
-            server_name,
-            primary_color,
             primary_color,
             // server_logo.unwrap_or("/favicon.ico".to_string())
         )

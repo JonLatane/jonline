@@ -127,7 +127,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const server = useCurrentServer();
   const hasAccount = usePinnedAccountsAndServers({ includeUnpinned: true }).filter(aos => !!aos.account?.user?.id).length > 0;
   const mediaQuery = useMedia();
-  const { textColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { /*textColor, */primaryTextColor, navColor, navTextColor } = useServerTheme();
 
   const groupIdentifier = selectedGroup
     ? (selectedGroup?.serverHost === server?.host
@@ -249,12 +249,13 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
     const name = count && count > 0
       ? `${baseName} (${count})`
       : baseName;
+    const textColor = selected
+      ? navTextColor
+      : inlineNavigation
+        ? primaryTextColor
+        : undefined;
     const icon = !subsection
-      ? menuIcon(section, selected
-        ? navTextColor
-        : inlineNavigation
-          ? primaryTextColor
-          : undefined)
+      ? menuIcon(section, textColor)
       : undefined;
 
     const triggerButtonLink =
@@ -290,7 +291,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
                 <XStack gap='$2'>
                   {icon}
                   {!inlineNavigation || !shrinkNavigation || !icon
-                    ? <Heading size="$4" color={selected ? navTextColor : inlineNavigation ? primaryTextColor : textColor}>
+                    ? <Heading size="$4" color={textColor}>
                       {name}
                     </Heading>
                     : undefined}
