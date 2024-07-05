@@ -21,7 +21,7 @@ jobs:
     name: Test Protobuf/Docs Consistency
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: arduino/setup-protoc@v3
         with:
           version: "26.x"
@@ -76,7 +76,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -106,7 +106,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -192,7 +192,7 @@ jobs:
     name: Test Rust Binaries
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -216,7 +216,7 @@ jobs:
     name: Test Tamagui Web UI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: actions/setup-node@v3
       with:
         node-version: 18.x
@@ -248,7 +248,7 @@ jobs:
     name: Test Flutter Web UI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: subosito/flutter-action@v2
       with:
         channel: 'stable'
@@ -270,7 +270,7 @@ jobs:
       - test_consistency
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -334,7 +334,7 @@ jobs:
       - test_consistency
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -388,7 +388,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -435,7 +435,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -477,7 +477,7 @@ jobs:
       - test_flutter_ui
       - test_tamagui_ui
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
@@ -558,7 +558,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -598,7 +598,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars

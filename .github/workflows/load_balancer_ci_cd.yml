@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -57,7 +57,7 @@ jobs:
     name: Test Rust Binaries
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -83,7 +83,7 @@ jobs:
       - build_rust_binaries
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Extract Versioning Data
       id: vars
@@ -132,7 +132,7 @@ jobs:
   #   runs-on: ubuntu-latest
 
   #   steps:
-  #   - uses: actions/checkout@v3
+  #   - uses: actions/checkout@v4
 
   #   - name: Extract Versioning Data
   #     id: vars
@@ -179,7 +179,7 @@ jobs:
   #   runs-on: ubuntu-latest
 
   #   steps:
-  #   - uses: actions/checkout@v3
+  #   - uses: actions/checkout@v4
 
   #   - name: Extract Versioning Data
   #     id: vars
@@ -218,7 +218,7 @@ jobs:
   #   runs-on: ubuntu-latest
 
   #   steps:
-  #   - uses: actions/checkout@v3
+  #   - uses: actions/checkout@v4
 
   #   - name: Extract Versioning Data
   #     id: vars
