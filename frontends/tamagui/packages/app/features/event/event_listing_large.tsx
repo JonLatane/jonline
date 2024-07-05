@@ -8,7 +8,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import EventCard from './event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';

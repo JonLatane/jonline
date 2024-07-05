@@ -7,7 +7,7 @@ import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, 
 import { highlightedButtonBackground, themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
 import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';

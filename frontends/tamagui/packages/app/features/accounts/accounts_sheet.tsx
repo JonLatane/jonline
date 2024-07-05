@@ -6,7 +6,7 @@ import { useMediaUrl } from 'app/hooks/use_media_url';
 import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setHasOpenedAccounts, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { Platform } from 'react-native';
 import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';

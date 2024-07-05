@@ -8,7 +8,7 @@ import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceede
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { useAppSelector } from '../../hooks/store_hooks';

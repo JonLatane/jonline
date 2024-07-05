@@ -14,7 +14,7 @@ import { useBigCalendar } from "app/hooks/configuration_hooks";
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { createParam } from 'solito';
 import EventCard from '../event/event_card';
 import { EventsFullCalendar } from "../event/events_full_calendar";
@@ -271,7 +271,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         px='$3'
         maw={maxWidth}>
-        <FlipMove style={{ width: '100%' }} maintainContainerHeight>
+        <FlipMove style={{ width: '100%' }}>
           {/* <EventListingLarge events={allEvents} /> */}
           {eventListing}
           {/* {bigCalendar

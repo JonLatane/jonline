@@ -2,7 +2,7 @@ import { RootState, loadUser, selectUserById, useRootSelector, useServerTheme } 
 import React, { useEffect, useState } from "react";
 
 import { Author, Permission, Post } from "@jonline/api";
-import { Anchor, DateViewer, Heading, Image, XStack, YStack, useMedia } from "@jonline/ui";
+import { Anchor, DateViewer, Heading, Image, Paragraph, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
 import { PermissionIndicator } from "@jonline/ui";
 import { useCurrentAccountOrServer, useAppDispatch, useCredentialDispatch, useProvidedDispatch, useCurrentServer } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
@@ -111,7 +111,7 @@ export const AuthorInfo = ({
     author && hasAdminPermission(authorUser)
       ? <PermissionIndicator key='admin' permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined,
     author && hasPermission(authorUser, Permission.RUN_BOTS)
-      ? <PermissionIndicator key='bot'  permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined
+      ? <PermissionIndicator key='bot' permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined
   ];
   return <XStack alignContent='flex-start'>
     <YStack w={detailsMargins} />
@@ -140,14 +140,27 @@ export const AuthorInfo = ({
           : <XStack ai='center'>
             {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
 
-            <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
-              marginVertical='auto' color={textColor}>
-              {author ?? authorName
-                ? disableLink
-                  ? `${author?.username ?? authorName}`
-                  : <Anchor size={larger ? '$7' : '$1'} {...authorLinkProps} color={textColor}>{author?.username ?? authorName}</Anchor>
-                : 'anonymous'}
-            </Heading>
+            {/* <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
+              marginVertical='auto' color={textColor}> */}
+            {author ?? authorName
+              ? disableLink
+                ? `${author?.username ?? authorName}`
+                : <Anchor flexDirection='row' {...authorLinkProps} color={textColor}>
+                  <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
+                    {author?.username ?? authorName}
+                  </Paragraph>
+                  {authorUser?.realName
+                    ? <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
+                      {' ('}
+                      {<Text fontWeight='bold' color={textColor}>{authorUser.realName}</Text>}
+                      {')'}
+                    </Paragraph>
+                    : undefined}
+                </Anchor>
+              : 'anonymous'}
+            <Spinner size='small' ml='$2' animation='standard' color={textColor}
+              opacity={loadingAuthor || (!authorUser && !authorLoadFailed) ? 0.5 : 0} />
+            {/* </Heading> */}
             {nameOnly ? permissionsIndicators : undefined}
           </XStack>}
         {nameOnly

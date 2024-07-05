@@ -5,7 +5,7 @@ import { useAppSelector, useCurrentServer, useMembersPage, usePaginatedRendering
 import { federatedId, getFederated } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
 import { PageChooser } from '../home/page_chooser';

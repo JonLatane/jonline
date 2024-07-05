@@ -9,7 +9,7 @@ import useIsVisibleHorizontal from "app/hooks/use_is_visible";
 import { FederatedEvent, FederatedPost, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { highlightedButtonBackground } from "app/utils";
 import { createRef, useEffect, useState } from "react";
-import FlipMove from "react-flip-move";
+import FlipMove from "lumen5-react-flip-move";
 import { useLink } from "solito/link";
 import EventCard from "../event/event_card";
 import { InstanceTime } from "../event/instance_time";

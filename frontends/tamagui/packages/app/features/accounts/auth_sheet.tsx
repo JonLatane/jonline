@@ -6,7 +6,7 @@ import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
 import { accountID, actionSucceeded, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';

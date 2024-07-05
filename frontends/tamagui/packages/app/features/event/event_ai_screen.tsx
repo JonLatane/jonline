@@ -7,7 +7,7 @@ import { FederatedEvent, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 
@@ -449,7 +449,7 @@ ${aiText}
         // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         px='$3'
         maw={2000}>
-        <FlipMove style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 25 }} maintainContainerHeight>
+        <FlipMove style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 25 }}>
           {[
             aiMode === 'inputText'
               ? <div key='input-text'>

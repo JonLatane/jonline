@@ -218,8 +218,14 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
               </XStack>
               : undefined}
             <YStack f={1}>
-              <Heading size="$1" color={textColor} mr='auto'>{account.server.host}/</Heading>
-              <Heading size="$7" color={textColor} mr='auto'>{account.user.username}</Heading>
+              <XStack ai='center'>
+                <Heading size="$1" color={textColor}>{account.server.host}/</Heading>
+                {account.user.realName ?
+                  <Heading size='$7' fontSize="$1">{account.user.username}</Heading>
+                  : undefined}
+
+              </XStack>
+              <Heading size="$7" color={textColor} mr='auto'>{account.user.realName || account.user.username}</Heading>
             </YStack>
 
 

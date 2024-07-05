@@ -5,7 +5,7 @@ import { usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { federatedId, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
@@ -63,7 +63,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
     >
       <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' maw={800} space>
         <YStack w='100%'>
-          <FlipMove maintainContainerHeight>
+          <FlipMove>
 
             <div id='pages-create' key='pages-create' style={{ display: 'flex' }}>
               <XStack w='100%'>

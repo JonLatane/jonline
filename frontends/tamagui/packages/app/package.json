@@ -36,6 +36,7 @@
     "calendar-link": "^2.6.0",
     "expo-constants": "~14.4.2",
     "expo-linking": "~5.0.2",
+    "lumen5-react-flip-move": "^3.0.6",
     "moment": "^2.30.1",
     "nice-grpc-web": "^3.3.3",
     "openai": "^4.47.2",

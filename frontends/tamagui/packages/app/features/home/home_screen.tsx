@@ -8,7 +8,7 @@ import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, us
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
@@ -112,6 +112,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     }
   }, [postPagination.page, eventPagination.page]);
 
+  console.log('HomeScreen', { eventsLoaded, postsLoaded, showScrollPreserver })
   useEffect(() => {
     if (eventsLoaded && postsLoaded) {
       dismissScrollPreserver(setShowScrollPreserver);
@@ -137,12 +138,11 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         width: '100%',
         margin: 'auto',
         flex: 1,
-        display: 'flex', flexDirection: 'column', 
+        display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center', marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20
       }}
-      maintainContainerHeight
       >
         {/* <div key='create' style={{ width: '100%', max<Width>: 800, paddingLeft: 18, paddingRight: 18 }}>
           <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
@@ -168,8 +168,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
               animation='standard'
-              disabled={!showEvents || allEvents.length === 0}
-              o={showEvents ? 1 : 0}
+              disabled={!showEvents || !allEvents.length}
+              o={showEvents ? allEvents.length ? 1 : 0.5 : 0}
             />
 
             <div style={{ flex: 1 }} />

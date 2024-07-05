@@ -18,7 +18,7 @@ import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
 import { MediaRef } from 'app/contexts';
 import { PageChooser } from '../home/page_chooser';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { UserCard } from '../user/user_card';
 
 const { useParam } = createParam<{ id: string, section?: string }>()

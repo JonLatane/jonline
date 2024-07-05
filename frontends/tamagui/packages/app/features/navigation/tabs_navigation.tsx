@@ -81,7 +81,8 @@ export function TabsNavigation({
         if (store.getState().app.hasOpenedAccounts) return;
 
         setShowAccountSheetGuide(true);
-      }, 3000);
+      }
+      , 3000);
     }
   }, [hasOpenedAccounts, loading]);
   useEffect(() => {

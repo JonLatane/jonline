@@ -9,7 +9,7 @@ import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker 
 import { useMediaUrl } from 'app/hooks';
 import { actionFailed } from 'app/store';
 import { pending, themedButtonBackground } from 'app/utils';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { groupUserPermissions } from './group_details_sheet';
 import { CreationServerSelector } from '../accounts/creation_server_selector';

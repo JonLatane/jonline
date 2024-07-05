@@ -7,7 +7,7 @@ import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederat
 import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
 import { AuthSheetButton } from '../accounts/auth_sheet_button';
 import { PageChooser } from '../home/page_chooser';
@@ -321,7 +321,7 @@ export function GroupsSheet({
         {disableSelection || serverHostFilter ? undefined : <PinnedServerSelector show transparent simplified />}
       </YStack>
       <Sheet.ScrollView px="$4" py='$2' w='100%'>
-        <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }} maintainContainerHeight>
+        <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
 
           {open
             ? [

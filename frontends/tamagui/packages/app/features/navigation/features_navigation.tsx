@@ -7,7 +7,7 @@ import { themedButtonBackground } from 'app/utils';
 import { useCallback, useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
-import FlipMove from "react-flip-move";
+import FlipMove from "lumen5-react-flip-move";
 import { useMediaContext } from "app/contexts";
 
 export enum AppSection {

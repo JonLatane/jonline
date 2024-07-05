@@ -28,6 +28,7 @@ export const loadUser: AsyncThunk<User, LoadUser, any> = createAsyncThunk<User, 
     const federatedId = federateId(request.userId, request.server?.host);
     let user: User | undefined = undefined;
     if (_loadingUserIds.has(federatedId)) {
+      // await new Promise(resolve => setTimeout(resolve, 100));
       throw 'Already loading user...';
     }
     // while (_loadingUserIds.has(request.id)) {

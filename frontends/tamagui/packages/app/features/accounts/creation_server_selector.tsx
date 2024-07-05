@@ -3,7 +3,7 @@ import { ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-ic
 import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey, useAppSelector } from 'app/hooks';
 import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from 'solito/link';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { Permission } from '@jonline/api';

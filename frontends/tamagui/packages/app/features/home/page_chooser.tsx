@@ -4,7 +4,7 @@ import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServ
 import { useServerTheme } from 'app/store';
 import { highlightedButtonBackground } from 'app/utils';
 import React, { useEffect } from "react";
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 
 export type Pluralizable = {
   singular: string;

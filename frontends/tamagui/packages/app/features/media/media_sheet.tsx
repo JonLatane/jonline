@@ -11,7 +11,7 @@ import { MediaReference, Permission, Post } from '@jonline/api';
 import { AccountOrServerContextProvider, MediaRef, useMediaContext } from 'app/contexts';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { highlightedButtonBackground } from 'app/utils';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { PageChooser } from '../home/page_chooser';
 import { PostMediaRenderer } from '../post';

@@ -11,7 +11,7 @@ import { FederatedPost, RootState, loadEvent, loadPost, parseFederatedId, select
 import { HasServer, federateId } from 'app/store/federation'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
-import FlipMove from 'react-flip-move'
+import FlipMove from 'lumen5-react-flip-move'
 import { createParam } from 'solito'
 import { StarredPostCard } from '../navigation/starred_posts'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'

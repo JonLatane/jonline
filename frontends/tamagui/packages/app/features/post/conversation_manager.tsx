@@ -5,7 +5,7 @@ import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
 import { FederatedPost, RootState, federatedId, useServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
 import moment, { Moment } from 'moment';
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { ConversationContextType, useConversationContext } from './conversation_context';
 import PostCard from './post_card';
 import { usePostInteractionType } from './post_details_screen';

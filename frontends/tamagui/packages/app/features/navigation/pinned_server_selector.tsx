@@ -4,7 +4,7 @@ import { Selector, useAppDispatch, useAppSelector, useCurrentAccount, useCurrent
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, RootState, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
 import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";

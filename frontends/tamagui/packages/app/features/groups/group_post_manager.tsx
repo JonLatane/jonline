@@ -91,8 +91,10 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
     : undefined;
   // return <></>;
 
+
   //TODO revert this:
   const groupsUnavailable = false;//!groupPostData || (accountOrServer.account === undefined && groupPostData.length == 0);
+  const showPeriod = selectedGroup && otherGroupCount && sharedToSelectedGroup === false;
   // console.log('groupPostManager')
   return <XStack flexWrap='wrap' maw='100%'>
     {!selectedGroup && !singleSharedGroup && otherGroupCount
@@ -105,7 +107,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       {sharedToSelectedGroup === true || (sharedToSelectedGroup === undefined && singleSharedGroup) ? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
-    {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined}
+    {/* {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined} */}
     <XStack py='$1'>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
@@ -115,10 +117,16 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
             ?? 'Share'}
         </Button>
       }
-      {selectedGroup && otherGroupCount && sharedToSelectedGroup === false
-        ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>. </Text>
-        : undefined}
+      {/* {showPeriod
+        ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>.</Text>
+        : undefined} */}
     </XStack>
+    <Spinner my='auto' mx='$2' color={primaryAnchorColor} animation='standard' size='small'
+      pointerEvents='none'
+      position='absolute'
+      right={8} top={7}
+      o={loading && !groupPostDataLoadFailed ? 0.5 : 0}
+    />
     {groupPostData && selectedGroup
       ? otherGroupCount
         ? <Text my='auto' ml={selectedGroup && otherGroupCount && sharedToSelectedGroup === false ? 0 : '$2'}

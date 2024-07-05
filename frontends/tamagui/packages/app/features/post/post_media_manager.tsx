@@ -5,7 +5,7 @@ import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
 import { ToggleRow } from 'app/components';
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 
 export type PostMediaManagerProps = {
   entityName?: string;

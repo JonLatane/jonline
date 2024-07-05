@@ -5,7 +5,7 @@ import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch 
 import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, useServerTheme } from 'app/store';
 import { themedButtonBackground } from "app/utils";
 import { useEffect, useState } from "react";
-import FlipMove from 'react-flip-move';
+import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from "solito/link";
 import { useFederatedAccountOrServer } from '../../hooks/account_or_server/use_federated_account_or_server';
 import { federateId } from '../../store/federation';
