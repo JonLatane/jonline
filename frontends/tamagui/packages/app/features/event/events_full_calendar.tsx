@@ -28,11 +28,11 @@ export function useScreenWidthAndHeight() {
   const minBigCalHeight = 150;
   const maxWidth = 2000;
 
-  const navigationHeight = useTabsNavigationHeight();
+  const { topNavHeight } = useTabsNavigationHeight();
   const screenWidth = Math.min(maxWidth - 30, Math.max(minBigCalWidth, window.innerWidth - 30));
 
   const screenHeight =
-    Math.max(minBigCalHeight, window.innerHeight - navigationHeight - 20);
+    Math.max(minBigCalHeight, window.innerHeight - topNavHeight - 20);
 
   return { screenWidth, screenHeight };
 }
@@ -55,7 +55,7 @@ const selectServerColors = (
       (result, server: JonlineServer) => {
         if (server.serverConfiguration?.serverInfo?.colors?.primary) {
           result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
-  
+
         }
         return result;
       }, {}

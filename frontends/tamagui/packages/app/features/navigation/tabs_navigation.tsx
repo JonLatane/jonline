@@ -5,7 +5,7 @@ import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/a
 import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
 import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setHasOpenedAccounts, store, useRootSelector, useServerTheme } from "app/store";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import StickyBox from "react-sticky-box";
 import { useLink } from "solito/link";
 import { AccountsSheet } from "../accounts/accounts_sheet";
@@ -19,6 +19,7 @@ import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
+import FlipMove from "lumen5-react-flip-move";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -42,15 +43,25 @@ export type TabsNavigationProps = {
 // export const tabNavBaseHeight = 64;
 
 export const useTabsNavigationHeight = () => {
-  const navigationHeight = document.getElementById('jonline-top-navigation')?.clientHeight ?? 0;
-
+  const topNavHeight = document.getElementById('jonline-top-navigation')?.clientHeight ?? 0;
+  const bottomNavHeight = document.getElementById('jonline-bottom-navigation')?.clientHeight ?? 0;
+  // const [topNavHeight, setTopNavHeight] = useState(document.getElementById('jonline-top-navigation')?.clientHeight ?? 0);
+  // const [bottomNavHeight, setBottomNavHeight] = useState(document.getElementById('jonline-bottom-navigation')?.clientHeight ?? 0);
+  // const [notified, setNotified] = useState(false);
+  // useEffect(() => {
+  //   if (notified) {
+  //     setTopNavHeight(document.getElementById('jonline-top-navigation')?.clientHeight ?? 0);
+  //     setBottomNavHeight(document.getElementById('jonline-bottom-navigation')?.clientHeight ?? 0);
+  //   }
+  // }, [notified]);
+  // const tabNavChangeNotifier = useCallback(() => setNotified(true), [])
   const { showPinnedServers } = useLocalConfiguration();
   const [_showPinnedServers, _setShowPinnedServers] = useState(showPinnedServers);
   useEffect(() => {
     _setShowPinnedServers(showPinnedServers);
   }, [showPinnedServers]);
 
-  return navigationHeight;
+  return { topNavHeight, bottomNavHeight };
 }
 
 export function TabsNavigation({
@@ -206,6 +217,8 @@ export function TabsNavigation({
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const isKeyboardOpen = useDetectKeyboardOpen();
+  const { topNavHeight, bottomNavHeight } = useTabsNavigationHeight();
+  console.log('TabsNavigation', { topNavHeight, bottomNavHeight });
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -219,8 +232,19 @@ export function TabsNavigation({
               w='100%'
               backgroundColor={bgColor}
               minHeight={window.innerHeight} >
-              <StickyBox style={{ zIndex: 10, width: '100%', /*pointerEvents: hideNavigation ? 'none' : undefined*/ }} className='blur'>
-                <YStack w='100%' id='jonline-top-navigation'>
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                zIndex: 10,
+                // backgroundColor: transparentBackgroundColor
+              }}>
+
+                {/* <StickyBox style={{ zIndex: 10, width: '100%', 
+              //pointerEvents: hideNavigation ? 'none' : undefined
+              }} className='blur'> */}
+                <YStack w='100%' className='blur' id='jonline-top-navigation'>
                   {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
                     pointerEvents={hideNavigation ? 'none' : undefined}
                     backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
@@ -362,7 +386,8 @@ export function TabsNavigation({
                     {topChrome}
                   </XStack>
                 </YStack>
-              </StickyBox>
+                {/* </StickyBox> */}
+              </div>
 
               <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }} animation='standard' o={loading && hideNavigation ? 1 : 0}
                 top={dimensions.height / 2 - 50}>
@@ -376,17 +401,33 @@ export function TabsNavigation({
                 </XStack>
               </XStack>
 
-              <YStack f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
-                maw={window.innerWidth}
-                overflow="hidden"
-              >
-                {children}
-              </YStack>
+              <FlipMove style={{ display: 'flex', flexDirection: 'flex-column', gap: 10, width: '100%', minHeight: '50vh' }}>
+                <YStack key={`navigation-padding-${topNavHeight}`} style={{ height: topNavHeight }} />
+                <YStack key='children' f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
+                  maw={window.innerWidth}
+                  mt={topNavHeight}
+                  mb={bottomNavHeight}
+                  overflow="hidden"
+                >
+                  {children}
+                </YStack>
+                <YStack key={`navigation-padding-bottom-${bottomNavHeight}`} h={bottomNavHeight} />
+              </FlipMove>
 
               {bottomChrome
-                ? <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10, backgroundColor: transparentBackgroundColor }} >
-                    {bottomChrome}
-                </StickyBox>
+                ?
+                <div id='jonline-bottom-navigation' className='blur bottomChrome' style={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: 10,
+                  backgroundColor: transparentBackgroundColor
+                }}>
+                  {/* <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10, backgroundColor: transparentBackgroundColor }} > */}
+                  {bottomChrome}
+                  {/* </StickyBox> */}
+                </div>
                 : undefined}
             </YStack>
           </NavigationContextProvider>

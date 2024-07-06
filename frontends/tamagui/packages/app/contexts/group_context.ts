@@ -3,9 +3,13 @@ import { createContext, useContext } from "react";
 
 type GroupContextType = {
   selectedGroup?: FederatedGroup;
+  // The UI implicitly displays the GroupsSheet iff sharingPostId is defined.
   sharingPostId?: string;
+  // The UI implicitly displays the GroupsSheet iff sharingPostId is defined.
   setSharingPostId: (postId: string | undefined) => void;
+  // The UI implicitly displays the GroupInfoSheet iff infoGroupId is defined.
   infoGroupId?: string;
+  // The UI implicitly displays the GroupInfoSheet iff infoGroupId is defined.
   setInfoGroupId: (groupId: string | undefined) => void;
 };
 
