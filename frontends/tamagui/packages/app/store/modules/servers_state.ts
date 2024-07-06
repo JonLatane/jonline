@@ -136,7 +136,7 @@ function initializeWithServer(initialServer: JonlineServer) {
             .then(async () => {
               if (pinnedByDefault) {
                 store.dispatch(pinServer(pinnedServer));
-                await new Promise((resolve) => setTimeout(resolve, 100));
+                await new Promise((resolve) => setTimeout(resolve, 25));
               }
             }).catch(() => {
               console.error(`Failed to configure federated server ${host}`);
