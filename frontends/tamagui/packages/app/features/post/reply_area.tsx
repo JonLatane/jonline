@@ -94,7 +94,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const hideNavigation = useHideNavigation();
   const hide = hidden || hideNavigation;
   return hide ? <></> : isWeb ? canComment
-    ? <YStack w='100%' px='$2' paddingVertical='$2' backgroundColor='$backgroundTransparent' alignContent='center'>
+    ? <YStack w='100%' px='$2' paddingVertical='$2' alignContent='center'>
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
@@ -112,7 +112,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </>
         : undefined}
       {previewReply
-        ? <YStack px='$3' py='$1' f={1} backgroundColor='$backgroundTransparent' animation='standard' {...reverseStandardAnimation}>
+        ? <YStack px='$3' py='$1' f={1} animation='standard' {...reverseStandardAnimation}>
           <ScrollView maxHeight={maxPreviewHeight}>
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{
@@ -167,10 +167,10 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </YStack>
       </XStack>
     </YStack>
-    : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$backgroundTransparent' alignContent='center'>
+    : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' alignContent='center'>
       <Heading size='$1'>You do not have permission to {chatUI ? 'chat' : 'comment'}.</Heading>
     </YStack>
-      : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$backgroundTransparent' alignContent='center'>
+      : <YStack w='100%' opacity={.92} p='$3' alignContent='center'>
         {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}

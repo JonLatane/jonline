@@ -215,7 +215,7 @@ export function TabsNavigation({
         <GroupContextProvider value={groupContext}>
           <NavigationContextProvider value={{ appSection, appSubsection, groupPageForwarder, groupPageReverse, primaryEntity }}>
             <YStack jc="center" ac='center' ai="center"
-            className={isKeyboardOpen ? 'keyboard-open' : undefined}
+              className={isKeyboardOpen ? 'keyboard-open' : undefined}
               w='100%'
               backgroundColor={bgColor}
               minHeight={window.innerHeight} >
@@ -384,7 +384,7 @@ export function TabsNavigation({
               </YStack>
 
               {bottomChrome
-                ? <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10 }} >
+                ? <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10, backgroundColor: transparentBackgroundColor }} >
                     {bottomChrome}
                 </StickyBox>
                 : undefined}
