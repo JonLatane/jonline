@@ -94,7 +94,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const hideNavigation = useHideNavigation();
   const hide = hidden || hideNavigation;
   return hide ? <></> : isWeb ? canComment
-    ? <YStack w='100%' pl='$2' paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+    ? <YStack w='100%' px='$2' paddingVertical='$2' backgroundColor='$backgroundTransparent' alignContent='center'>
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
@@ -112,7 +112,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </>
         : undefined}
       {previewReply
-        ? <YStack px='$3' py='$1' f={1} backgroundColor='$background' animation='standard' {...reverseStandardAnimation}>
+        ? <YStack px='$3' py='$1' f={1} backgroundColor='$backgroundTransparent' animation='standard' {...reverseStandardAnimation}>
           <ScrollView maxHeight={maxPreviewHeight}>
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{
@@ -139,7 +139,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
             onBlur={() => setReplyTextFocused(false)}
             placeholder={`Reply to this post. Markdown is supported.`} />
         </YStack>
-        <YStack mr='$2' ml='$2' mt='auto' ac='flex-end' >
+        <YStack ml='$2' mt='auto' ac='flex-end' >
           <YStack f={1} />
           <Tooltip placement="top-end" key={`preview-button-${previewReply}`}>
             <Tooltip.Trigger>
@@ -167,10 +167,10 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </YStack>
       </XStack>
     </YStack>
-    : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$background' alignContent='center'>
+    : accountOrServer.account ? <YStack w='100%' opacity={.92} paddingVertical='$2' backgroundColor='$backgroundTransparent' alignContent='center'>
       <Heading size='$1'>You do not have permission to {chatUI ? 'chat' : 'comment'}.</Heading>
     </YStack>
-      : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$background' alignContent='center'>
+      : <YStack w='100%' opacity={.92} p='$3' backgroundColor='$backgroundTransparent' alignContent='center'>
         {/* <Button backgroundColor={primaryColor} color={primaryTextColor}>
             Login or Sign Up to Comment
           </Button> */}

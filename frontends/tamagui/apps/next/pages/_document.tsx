@@ -25,6 +25,12 @@ export default class Document extends NextDocument {
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
         }
+        .bottomChrome {
+            padding-bottom: env(safe-area-inset-bottom, 0);
+        }
+        .keyboard-open .bottomChrome {
+            padding-bottom: 0!important;
+        }
         .postMarkdown {
           color: white;
         }
@@ -51,6 +57,7 @@ export default class Document extends NextDocument {
           <meta property="og:title" content="Jonline Social Link" />
           <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
           <meta property="og:image" content="/favicon.ico" />
+          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
 
           <link rel="manifest" href="/manifest.json" />
         </Head>

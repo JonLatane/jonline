@@ -18,6 +18,7 @@ import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
+import useDetectKeyboardOpen from "use-detect-keyboard-open";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -82,7 +83,7 @@ export function TabsNavigation({
 
         setShowAccountSheetGuide(true);
       }
-      , 3000);
+        , 3000);
     }
   }, [hasOpenedAccounts, loading]);
   useEffect(() => {
@@ -204,6 +205,7 @@ export function TabsNavigation({
   // }, [mediaQuery.gtXShort]);
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
+  const isKeyboardOpen = useDetectKeyboardOpen();
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -213,6 +215,7 @@ export function TabsNavigation({
         <GroupContextProvider value={groupContext}>
           <NavigationContextProvider value={{ appSection, appSubsection, groupPageForwarder, groupPageReverse, primaryEntity }}>
             <YStack jc="center" ac='center' ai="center"
+            className={isKeyboardOpen ? 'keyboard-open' : undefined}
               w='100%'
               backgroundColor={bgColor}
               minHeight={window.innerHeight} >
@@ -381,8 +384,8 @@ export function TabsNavigation({
               </YStack>
 
               {bottomChrome
-                ? <StickyBox bottom offsetBottom={0} className='blur' style={{ width: '100%', zIndex: 10 }} >
-                  {bottomChrome}
+                ? <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10 }} >
+                    {bottomChrome}
                 </StickyBox>
                 : undefined}
             </YStack>

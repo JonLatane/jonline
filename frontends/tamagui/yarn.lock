@@ -7979,6 +7979,7 @@ __metadata:
     redux-persist: "npm:^6.0.0"
     solito: "npm:^3.2.9"
     typescript-cookie: "npm:^1.0.6"
+    use-detect-keyboard-open: "npm:^0.4.0"
     uuid: "npm:^9.0.1"
     yarn: "npm:^1.22.22"
   languageName: unknown
@@ -20859,6 +20860,13 @@ __metadata:
     "@types/react":
       optional: true
   checksum: f9f1b217db60419b033228ba17cee5c521123e7c7f35577258a1abdce6d9623e5880f0bed3a0504eff35fdf6c761a2b2e020337a34218fb86229b8641772654a
+  languageName: node
+  linkType: hard
+
+"use-detect-keyboard-open@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "use-detect-keyboard-open@npm:0.4.0"
+  checksum: d50e54624fac781b467493b7f70d72ca8cfcf9d24d0249e4d039934db78f07723bd73a2963e7093a0817d60699fd0b1c733c6d6c67fbb0264fd6745f5649f309
   languageName: node
   linkType: hard
 

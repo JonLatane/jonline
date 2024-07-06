@@ -58,6 +58,7 @@
     "redux-persist": "^6.0.0",
     "solito": "^3.2.9",
     "typescript-cookie": "^1.0.6",
+    "use-detect-keyboard-open": "^0.4.0",
     "uuid": "^9.0.1",
     "yarn": "^1.22.22"
   },
