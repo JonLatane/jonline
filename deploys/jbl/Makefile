@@ -54,13 +54,13 @@ deploy_lb_unlink_service_account:
 	kubectl patch configmap $(LB_CONFIG) -p '{"data":{"servers":"$(UPDATED_CONFIG_WITH_ESCAPED_QUOTES)"}}' -n $(NAMESPACE)
 
 deploy_lb_create:
-	kubectl create -f k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
+	kubectl create -f ../k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
 
 deploy_lb_update:
-	kubectl apply -f k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
+	kubectl apply -f ../k8s/load_balancer.yaml --save-config -n $(NAMESPACE)
 
 deploy_lb_delete:
-	kubectl delete -f k8s/load_balancer.yaml -n $(NAMESPACE)
+	kubectl delete -f ../k8s/load_balancer.yaml -n $(NAMESPACE)
 
 deploy_lb_monitor_rollout:
 	kubectl rollout status deployment/jonline-lb -n $(NAMESPACE)
