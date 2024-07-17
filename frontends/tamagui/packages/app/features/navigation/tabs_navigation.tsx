@@ -218,7 +218,7 @@ export function TabsNavigation({
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const isKeyboardOpen = useDetectKeyboardOpen();
   const { topNavHeight, bottomNavHeight } = useTabsNavigationHeight();
-  console.log('TabsNavigation', { topNavHeight, bottomNavHeight });
+  // console.log('TabsNavigation', { topNavHeight, bottomNavHeight });
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />

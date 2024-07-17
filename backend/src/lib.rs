@@ -24,6 +24,8 @@ extern crate percent_encoding;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
+extern crate http;
+extern crate reqwest;
 
 pub mod auth;
 pub mod db_connection;

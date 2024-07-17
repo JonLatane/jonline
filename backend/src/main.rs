@@ -58,6 +58,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_service_logging();
     db_connection::migrate_database();
 
+    log::info!("Starting Jonline...
+┏┳ ┏┓ ┳┓ ┓  ┳ ┳┓ ┏┓
+ ┃ ┃┃ ┃┃ ┃  ┃ ┃┃ ┣ 
+┗┛ ┗┛ ┛┗ ┗┛ ┻ ┛┗ ┗┛
+ (Jonline Server)
+A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
+");
+
     let pool = Arc::new(db_connection::establish_pool());
     let bucket = Arc::new(
         minio_connection::get_and_test_bucket()

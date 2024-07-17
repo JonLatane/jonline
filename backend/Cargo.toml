@@ -73,6 +73,7 @@ rustls-pemfile = "1.0"
 structopt = "0.3.9"
 reqwest = "0.11.23"
 rand = "0.8.5"
+http = "1.1.0"
 
 [build-dependencies]
 tonic-build = "0.10.2"

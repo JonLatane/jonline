@@ -528,7 +528,9 @@ jobs:
           - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.full_version }})
           
           - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
-          
+
+          - *In testing/not yet ready for production use:* [DockerHub: JBL (Jonline Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+
           ## Deployments
           
           Deployments will be brought up-to-date at around the same time as this release is created.
