@@ -112,7 +112,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     }
   }, [postPagination.page, eventPagination.page]);
 
-  console.log('HomeScreen', { eventsLoaded, postsLoaded, showScrollPreserver })
+  // console.log('HomeScreen', { eventsLoaded, postsLoaded, showScrollPreserver })
   useEffect(() => {
     if (eventsLoaded && postsLoaded) {
       dismissScrollPreserver(setShowScrollPreserver);
