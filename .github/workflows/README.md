@@ -11,7 +11,7 @@ The `server_ci_cd.yml` workflow a multi-phase CI/CD process:
 6. Deploy the Preview Generator everywhere.
 
 ## Flutter Apps
-Jonline also provides a single workflow for each Flutter native app (`flutter_android.yml`, `flutter_ios.yml`, `flutter_linux.yml`, `flutter_macos.yml`, and `flutter_wndws.yml`).
+Jonline also provides a single workflow for each Flutter native app (`flutter_android.yml`, `flutter_ios.yml`, `flutter_macos.yml`, and `flutter_wndws.yml`).
 
 
 ## Protobuf Consistency Check
