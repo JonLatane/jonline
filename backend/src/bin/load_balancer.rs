@@ -283,7 +283,7 @@ async fn handle_connection(acceptor: &TlsAcceptor, tcp_stream: &mut TcpStream) -
 }
 
 // shell script version of this:
-//  curl -sSk -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)"       https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/demo-namespace/secrets
+//  curl -sSk -H "Authorization: Bearer $(cat /run/secrets/kubernetes.io/serviceaccount/token)"       https://$KUBERNETES_SERVICE_HOST:$KUBERNETES_PORT_443_TCP_PORT/api/v1/namespaces/jonline/secrets
 async fn load_secrets() {
     log::info!("Loading secrets...");
     let token = std::fs::read_to_string("/run/secrets/kubernetes.io/serviceaccount/token").unwrap();
