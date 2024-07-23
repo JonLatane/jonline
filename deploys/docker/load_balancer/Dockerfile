@@ -18,4 +18,4 @@ COPY backend/target/release/load_balancer__server_release /opt/load_balancer
 EXPOSE 27707 8000 80 443 8001-9000 27709
 
 # Start Jonline LB on port 27709.
-ENTRYPOINT ["/opt/load_balancer ::0:27709"]
+ENTRYPOINT ["/opt/load_balancer", "::0:27709"]
