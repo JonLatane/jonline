@@ -1,6 +1,7 @@
 FROM --platform=linux/amd64 debian:stable-slim
 
-# RUN apt-get update && apt-get -y install libpq5 curl postgresql-client
+RUN apt-get update && apt-get -y install libpq5 
+#curl postgresql-client
 
 # Old Ubuntu OpenSSL thing
 # RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb > libssl1.1.deb
