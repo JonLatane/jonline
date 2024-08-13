@@ -69,7 +69,7 @@ jobs:
         run: make protos
 
       - name: Check for changes
-        run: git diff --exit-code
+        run: git diff --exit-code --ignore-matching-lines='//   protoc +v[\\.0-9]+'
 
   build_flutter_ui:
     name: Build Flutter Web UI
