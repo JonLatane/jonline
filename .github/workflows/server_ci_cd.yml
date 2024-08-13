@@ -95,7 +95,7 @@ jobs:
     - working-directory: frontends/flutter
       run: flutter build web --web-renderer canvaskit --release --base-href /flutter/
 
-    - uses: actions/cache/save@v3
+    - uses: actions/cache/save@v4
       id: flutter-app-cache
       with:
         path: frontends/flutter/build/web
@@ -144,7 +144,7 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn web:prod:build
 
-    - uses: actions/cache/save@v3
+    - uses: actions/cache/save@v4
       id: web-app-cache
       with:
         path: frontends/tamagui/apps/next/out
@@ -182,7 +182,7 @@ jobs:
     - working-directory: backend
       run: cargo build --release
 
-    - uses: actions/cache/save@v3
+    - uses: actions/cache/save@v4
       id: rust-app-cache
       with:
         path: backend/target/release
@@ -281,17 +281,17 @@ jobs:
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
 
-    - uses: actions/cache/restore@v3
+    - uses: actions/cache/restore@v4
       id: fllutter-app-cache
       with:
         path: frontends/flutter/build/web
         key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-    - uses: actions/cache/restore@v3
+    - uses: actions/cache/restore@v4
       id: web-app-cache
       with:
         path: frontends/tamagui/apps/next/out
         key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-    - uses: actions/cache/restore@v3
+    - uses: actions/cache/restore@v4
       id: rust-app-cache
       with:
         path: backend/target/release
