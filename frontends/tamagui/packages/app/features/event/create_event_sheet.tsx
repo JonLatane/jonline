@@ -113,13 +113,13 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
         } else {
           doReset();
         }
+        onComplete();
       } else {
-        // debugger;
         if ('error' in action) {
           onErrored(action.error);
+        } else {
+          onErrored('Error creating Event');
         }
-        // onErrored(action.payload.erro)
-        // onComplete();
       }
     });
   }, [previewEvent, accountOrServer]);
@@ -139,41 +139,33 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
     ? eventResults
     : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
 
-  return <BaseCreatePostSheet
-    entityName='Event'
-    requiredPermissions={[Permission.CREATE_EVENTS]}
-    {...{ canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid, button }}
-    preview={(post, group) => {
-      // console.log('previewEvent', previewEvent(post));
-      return <EventCard event={previewEvent(post)} hideEditControls />;
-    }}
-    feedPreview={(post, group) => {
-      const event = previewEvent(post);
-      return <YStack>
-        <Button
-          onPress={() => setBigCalendar(!bigCalendar)} mb='$2'
-          icon={CalendarIcon}
-          transparent
-          {...themedButtonBackground(
-            bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-        // animation='standard'
-        // zi={100000}
-        // disabled={!showEvents || allEvents.length === 0}
-        // o={showEvents && allEvents.length > 0 ? 1 : 0}
-        />
-        {bigCalendar
-          ? <EventsFullCalendar events={[event, ...allEvents]}
-            scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
-          : <EventCard event={event} isPreview hideEditControls />}
-        {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
-      </YStack>
-    }}
+  const preview = useCallback((post: Post, group: Group | undefined) => {
+    return <EventCard event={previewEvent(post)} hideEditControls />;
+  }, [previewEvent]);
+  const feedPreview = useCallback((post: Post, group: Group | undefined) => {
+    const event = previewEvent(post);
+    return <YStack>
+      <Button
+        onPress={() => setBigCalendar(!bigCalendar)} mb='$2'
+        icon={CalendarIcon}
+        transparent
+        {...themedButtonBackground(
+          bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+      // animation='standard'
+      // zi={100000}
+      // disabled={!showEvents || allEvents.length === 0}
+      // o={showEvents && allEvents.length > 0 ? 1 : 0}
+      />
+      {bigCalendar
+        ? <EventsFullCalendar events={[event, ...allEvents]}
+          scrollToTime={event.instances[0]?.startsAt} weeklyOnly width='100%' />
+        : <EventCard event={event} isPreview hideEditControls />}
+      {/* <EventCard event={previewEvent(post)} isPreview hideEditControls /> */}
+    </YStack>
+  }, [previewEvent, bigCalendar, navColor, allEvents]);
 
-    onFreshOpen={() => {
-      setStartsAt(supportDateInput(moment()));
-      setEndsAt(supportDateInput(moment().add(1, 'hour')));
-    }}
-    additionalFields={(post, group) => <>
+  const additionalFields = useCallback((post: Post, group: Group | undefined) => {
+    return <>
       <XStack mx='$2'>
         <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
         <XStack ml='auto' my='auto'>
@@ -190,6 +182,20 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       {endDateInvalid ? <Paragraph size='$2' mx='$2'>Must be after Start Time</Paragraph> : undefined}
 
       <LocationControl key='location-control' location={location} setLocation={setLocation} />
-    </>}
+    </>;
+  }, [startsAt, endsAt, location]);
+
+  const onFreshOpen = useCallback(() => {
+    setStartsAt(supportDateInput(moment()));
+    setEndsAt(supportDateInput(moment().add(1, 'hour')));
+  }, []);
+
+  return <BaseCreatePostSheet
+    entityName='Event'
+    requiredPermissions={[Permission.CREATE_EVENTS]}
+    {...{
+      canPublishGlobally, canPublishLocally, selectedGroup, doCreate, invalid, button,
+      preview, feedPreview, onFreshOpen, additionalFields
+    }}
   />;
 }
