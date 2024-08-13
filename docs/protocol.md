@@ -552,6 +552,8 @@ from its own cache (for things like admin/bot icons).
 | user_id | [string](#string) |  | Permanent string ID for the user. Will never contain a `@` symbol. |
 | username | [string](#string) | optional | Impermanent string username for the user. Will never contain a `@` symbol. |
 | avatar | [MediaReference](#jonline-MediaReference) | optional | The user&#39;s avatar. |
+| real_name | [string](#string) | optional |  |
+| permissions | [Permission](#jonline-Permission) | repeated |  |
 
 
 
@@ -1477,6 +1479,8 @@ Wire-identical to [Author](#author), but with a different name to avoid confusio
 | user_id | [string](#string) |  | The user ID of the attendee. |
 | username | [string](#string) | optional | The username of the attendee. |
 | avatar | [MediaReference](#jonline-MediaReference) | optional | The attendee&#39;s user avatar. |
+| real_name | [string](#string) | optional |  |
+| permissions | [Permission](#jonline-Permission) | repeated |  |
 
 
 

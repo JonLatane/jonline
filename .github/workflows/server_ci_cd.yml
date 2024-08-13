@@ -18,7 +18,7 @@ on:
 
 jobs:
   test_consistency:
-    name: Test Protobuf/Docs Consistency
+    name: Test Proto/Docs Consistency
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
