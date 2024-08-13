@@ -31,10 +31,7 @@ jobs:
         echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
     - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
-
-    - uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
+    - uses: dtolnay/rust-toolchain@stable
     - uses: arduino/setup-protoc@v2
 
     - uses: Swatinem/rust-cache@v2
@@ -58,9 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - uses: dtolnay/rust-toolchain@stable
       - uses: arduino/setup-protoc@v2
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
 
