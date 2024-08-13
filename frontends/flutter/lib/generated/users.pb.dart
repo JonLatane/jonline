@@ -443,6 +443,8 @@ class Author extends $pb.GeneratedMessage {
     $core.String? userId,
     $core.String? username,
     $5.MediaReference? avatar,
+    $core.String? realName,
+    $core.Iterable<$11.Permission>? permissions,
   }) {
     final $result = create();
     if (userId != null) {
@@ -454,6 +456,12 @@ class Author extends $pb.GeneratedMessage {
     if (avatar != null) {
       $result.avatar = avatar;
     }
+    if (realName != null) {
+      $result.realName = realName;
+    }
+    if (permissions != null) {
+      $result.permissions.addAll(permissions);
+    }
     return $result;
   }
   Author._() : super();
@@ -464,6 +472,8 @@ class Author extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
+    ..aOS(4, _omitFieldNames ? '' : 'realName')
+    ..pc<$11.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
@@ -519,6 +529,18 @@ class Author extends $pb.GeneratedMessage {
   void clearAvatar() => clearField(3);
   @$pb.TagNumber(3)
   $5.MediaReference ensureAvatar() => $_ensure(2);
+
+  @$pb.TagNumber(4)
+  $core.String get realName => $_getSZ(3);
+  @$pb.TagNumber(4)
+  set realName($core.String v) { $_setString(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasRealName() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearRealName() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.List<$11.Permission> get permissions => $_getList(4);
 }
 
 /// Model for a user's follow of another user.

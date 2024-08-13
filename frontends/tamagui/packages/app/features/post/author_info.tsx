@@ -78,20 +78,20 @@ export const AuthorInfo = ({
   // console.log("RENDER loading author", federatedAuthorId, authorUser);
   // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
 
-  useEffect(() => {
-    if (server && serverAuthorId && isVisible) {
-      if (!loadingAuthor && !authorUser && !authorLoadFailed) {
-        // console.log('BEGIN loading author', federatedAuthorId, serverAuthorId, accountOrServer.server?.host, author)
-        dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer })).then((action) => {
-          // setLoadingAuthor(false);
-          // console.log('FINISH loading author', action)
-        });
-        setLoadingAuthor(true);
-      } else if (loadingAuthor && authorUser) {
-        setLoadingAuthor(false);
-      }
-    }
-  }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
+  // useEffect(() => {
+  //   if (server && serverAuthorId && isVisible) {
+  //     if (!loadingAuthor && !authorUser && !authorLoadFailed) {
+  //       // console.log('BEGIN loading author', federatedAuthorId, serverAuthorId, accountOrServer.server?.host, author)
+  //       dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer })).then((action) => {
+  //         // setLoadingAuthor(false);
+  //         // console.log('FINISH loading author', action)
+  //       });
+  //       setLoadingAuthor(true);
+  //     } else if (loadingAuthor && authorUser) {
+  //       setLoadingAuthor(false);
+  //     }
+  //   }
+  // }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
   const avatarUrl = useMediaUrl(author?.avatar?.id ?? authorUser?.avatar?.id, accountOrServer);
   const avatarSize = mediaQuery.gtXs
     ? shrink ? 30 : 50
@@ -108,11 +108,15 @@ export const AuthorInfo = ({
   </XStack>;
 
   const permissionsIndicators = [
-    author && hasAdminPermission(authorUser)
+    author && hasAdminPermission(authorUser ?? author)
       ? <PermissionIndicator key='admin' permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined,
-    author && hasPermission(authorUser, Permission.RUN_BOTS)
+    author && hasPermission(authorUser ?? author, Permission.RUN_BOTS)
       ? <PermissionIndicator key='bot' permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined
   ];
+  
+  const username = author?.username ?? authorName;
+  const realName = authorUser?.realName;
+  const renderAsLoading = false;//loadingAuthor || (!authorUser && !authorLoadFailed);
   return <XStack alignContent='flex-start'>
     <YStack w={detailsMargins} />
     {(!nameOnly && !dateOnly && avatarUrl && avatarUrl != '')
@@ -144,12 +148,12 @@ export const AuthorInfo = ({
               marginVertical='auto' color={textColor}> */}
             {author ?? authorName
               ? disableLink
-                ? `${author?.username ?? authorName}`
+                ? `${username}`
                 : <Anchor flexDirection='row' {...authorLinkProps} color={textColor}>
                   <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
-                    {author?.username ?? authorName}
+                    {username}
                   </Paragraph>
-                  {authorUser?.realName
+                  {realName
                     ? <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
                       {' ('}
                       {<Text fontWeight='bold' color={textColor}>{authorUser.realName}</Text>}
@@ -159,7 +163,7 @@ export const AuthorInfo = ({
                 </Anchor>
               : 'anonymous'}
             <Spinner size='small' ml='$2' animation='standard' color={textColor}
-              opacity={loadingAuthor || (!authorUser && !authorLoadFailed) ? 0.5 : 0} />
+              opacity={renderAsLoading ? 0.5 : 0} />
             {/* </Heading> */}
             {nameOnly ? permissionsIndicators : undefined}
           </XStack>}

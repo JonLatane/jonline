@@ -203,6 +203,8 @@ export interface Author {
     | undefined;
   /** The user's avatar. */
   avatar?: MediaReference | undefined;
+  realName?: string | undefined;
+  permissions: Permission[];
 }
 
 /** Model for a user's follow of another user. */
@@ -763,7 +765,7 @@ export const User = {
 };
 
 function createBaseAuthor(): Author {
-  return { userId: "", username: undefined, avatar: undefined };
+  return { userId: "", username: undefined, avatar: undefined, realName: undefined, permissions: [] };
 }
 
 export const Author = {
@@ -777,6 +779,14 @@ export const Author = {
     if (message.avatar !== undefined) {
       MediaReference.encode(message.avatar, writer.uint32(26).fork()).ldelim();
     }
+    if (message.realName !== undefined) {
+      writer.uint32(34).string(message.realName);
+    }
+    writer.uint32(42).fork();
+    for (const v of message.permissions) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -808,6 +818,30 @@ export const Author = {
 
           message.avatar = MediaReference.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.realName = reader.string();
+          continue;
+        case 5:
+          if (tag === 40) {
+            message.permissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 42) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.permissions.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -822,6 +856,10 @@ export const Author = {
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
       username: isSet(object.username) ? globalThis.String(object.username) : undefined,
       avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
+      realName: isSet(object.realName) ? globalThis.String(object.realName) : undefined,
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => permissionFromJSON(e))
+        : [],
     };
   },
 
@@ -836,6 +874,12 @@ export const Author = {
     if (message.avatar !== undefined) {
       obj.avatar = MediaReference.toJSON(message.avatar);
     }
+    if (message.realName !== undefined) {
+      obj.realName = message.realName;
+    }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
+    }
     return obj;
   },
 
@@ -849,6 +893,8 @@ export const Author = {
     message.avatar = (object.avatar !== undefined && object.avatar !== null)
       ? MediaReference.fromPartial(object.avatar)
       : undefined;
+    message.realName = object.realName ?? undefined;
+    message.permissions = object.permissions?.map((e) => e) || [];
     return message;
   },
 };

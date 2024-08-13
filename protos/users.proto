@@ -88,6 +88,8 @@ message Author {
   optional string username = 2;
   // The user's avatar.
   optional MediaReference avatar = 3;
+  optional string real_name = 4;
+  repeated Permission permissions = 5;
 }
 
 // Model for a user's follow of another user.

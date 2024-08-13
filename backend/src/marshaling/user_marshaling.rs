@@ -87,6 +87,8 @@ impl ToProtoUser for models::User {
             id: self.id,
             username: self.username.clone(),
             avatar_media_id: self.avatar_media_id,
+            real_name: self.real_name.clone(),
+            permissions: self.permissions.clone(),
         }
     }
 }
@@ -109,6 +111,8 @@ impl ToProtoAuthor for models::Author {
                         .map(|media_ref| media_ref.to_proto())
                 })
                 .flatten(),
+            real_name: Some(self.real_name.to_owned()),
+            permissions: self.permissions.to_i32_permissions(),
         }
     }
     fn to_proto_user_attendee(&self, media_lookup: Option<&MediaLookup>) -> UserAttendee {
@@ -124,6 +128,8 @@ impl ToProtoAuthor for models::Author {
                         .map(|media_ref| media_ref.to_proto())
                 })
                 .flatten(),
+            real_name: Some(self.real_name.to_owned()),
+            permissions: self.permissions.to_i32_permissions(),
         }
     }
 }

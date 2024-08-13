@@ -9,6 +9,7 @@ import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { Location } from "./location";
 import { MediaReference } from "./media";
+import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import { Post } from "./posts";
 import { ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
@@ -461,6 +462,8 @@ export interface UserAttendee {
     | undefined;
   /** The attendee's user avatar. */
   avatar?: MediaReference | undefined;
+  realName?: string | undefined;
+  permissions: Permission[];
 }
 
 function createBaseGetEventsRequest(): GetEventsRequest {
@@ -1911,7 +1914,7 @@ export const AnonymousAttendee = {
 };
 
 function createBaseUserAttendee(): UserAttendee {
-  return { userId: "", username: undefined, avatar: undefined };
+  return { userId: "", username: undefined, avatar: undefined, realName: undefined, permissions: [] };
 }
 
 export const UserAttendee = {
@@ -1925,6 +1928,14 @@ export const UserAttendee = {
     if (message.avatar !== undefined) {
       MediaReference.encode(message.avatar, writer.uint32(26).fork()).ldelim();
     }
+    if (message.realName !== undefined) {
+      writer.uint32(34).string(message.realName);
+    }
+    writer.uint32(42).fork();
+    for (const v of message.permissions) {
+      writer.int32(v);
+    }
+    writer.ldelim();
     return writer;
   },
 
@@ -1956,6 +1967,30 @@ export const UserAttendee = {
 
           message.avatar = MediaReference.decode(reader, reader.uint32());
           continue;
+        case 4:
+          if (tag !== 34) {
+            break;
+          }
+
+          message.realName = reader.string();
+          continue;
+        case 5:
+          if (tag === 40) {
+            message.permissions.push(reader.int32() as any);
+
+            continue;
+          }
+
+          if (tag === 42) {
+            const end2 = reader.uint32() + reader.pos;
+            while (reader.pos < end2) {
+              message.permissions.push(reader.int32() as any);
+            }
+
+            continue;
+          }
+
+          break;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1970,6 +2005,10 @@ export const UserAttendee = {
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
       username: isSet(object.username) ? globalThis.String(object.username) : undefined,
       avatar: isSet(object.avatar) ? MediaReference.fromJSON(object.avatar) : undefined,
+      realName: isSet(object.realName) ? globalThis.String(object.realName) : undefined,
+      permissions: globalThis.Array.isArray(object?.permissions)
+        ? object.permissions.map((e: any) => permissionFromJSON(e))
+        : [],
     };
   },
 
@@ -1984,6 +2023,12 @@ export const UserAttendee = {
     if (message.avatar !== undefined) {
       obj.avatar = MediaReference.toJSON(message.avatar);
     }
+    if (message.realName !== undefined) {
+      obj.realName = message.realName;
+    }
+    if (message.permissions?.length) {
+      obj.permissions = message.permissions.map((e) => permissionToJSON(e));
+    }
     return obj;
   },
 
@@ -1997,6 +2042,8 @@ export const UserAttendee = {
     message.avatar = (object.avatar !== undefined && object.avatar !== null)
       ? MediaReference.fromPartial(object.avatar)
       : undefined;
+    message.realName = object.realName ?? undefined;
+    message.permissions = object.permissions?.map((e) => e) || [];
     return message;
   },
 };

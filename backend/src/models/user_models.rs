@@ -50,10 +50,14 @@ pub const AUTHOR_COLUMNS: (
     users::id,
     users::username,
     users::avatar_media_id,
+    users::real_name,
+    users::permissions,
 ) = (
     users::id,
     users::username,
     users::avatar_media_id,
+    users::real_name,
+    users::permissions,
 );
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -62,6 +66,8 @@ pub struct Author {
     pub id: i64,
     pub username: String,
     pub avatar_media_id: Option<i64>,
+    pub real_name: String,
+    pub permissions: serde_json::Value,
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]

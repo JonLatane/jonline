@@ -142,14 +142,14 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
   // const currentServer = currentServer;
   const avatarSize = 22;
-  const alertTriangle = ({ color }: { color?: string | ColorTokens } = {}) => <Tooltip>
+  const alertTriangle = useCallback(({ color }: { color?: string | ColorTokens } = {}) => <Tooltip>
     <Tooltip.Trigger>
       <AlertTriangle color={color} />
     </Tooltip.Trigger>
     <Tooltip.Content>
       <Paragraph size='$1'>You are seeing data as though you were on {currentServer?.host}, although you're on {browsingOn}.</Paragraph>
     </Tooltip.Content>
-  </Tooltip>;
+  </Tooltip>, [currentServer, browsingOn]);
   return <>
     <Button
       my='auto'

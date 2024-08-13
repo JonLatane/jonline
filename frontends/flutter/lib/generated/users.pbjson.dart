@@ -114,10 +114,13 @@ const Author$json = {
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
     {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
+    {'1': 'real_name', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'realName', '17': true},
+    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
   ],
   '8': [
     {'1': '_username'},
     {'1': '_avatar'},
+    {'1': '_real_name'},
   ],
 };
 
@@ -125,7 +128,9 @@ const Author$json = {
 final $typed_data.Uint8List authorDescriptor = $convert.base64Decode(
     'CgZBdXRob3ISFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEh8KCHVzZXJuYW1lGAIgASgJSABSCH'
     'VzZXJuYW1liAEBEjQKBmF2YXRhchgDIAEoCzIXLmpvbmxpbmUuTWVkaWFSZWZlcmVuY2VIAVIG'
-    'YXZhdGFyiAEBQgsKCV91c2VybmFtZUIJCgdfYXZhdGFy');
+    'YXZhdGFyiAEBEiAKCXJlYWxfbmFtZRgEIAEoCUgCUghyZWFsTmFtZYgBARI1CgtwZXJtaXNzaW'
+    '9ucxgFIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnNCCwoJX3VzZXJuYW1l'
+    'QgkKB19hdmF0YXJCDAoKX3JlYWxfbmFtZQ==');
 
 @$core.Deprecated('Use followDescriptor instead')
 const Follow$json = {

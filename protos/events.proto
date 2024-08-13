@@ -6,6 +6,7 @@ import "google/protobuf/timestamp.proto";
 import "posts.proto";
 import "media.proto";
 import "visibility_moderation.proto";
+import "permissions.proto";
 import "users.proto";
 import "location.proto";
 
@@ -271,4 +272,6 @@ message UserAttendee {
   optional string username = 2;
   // The attendee's user avatar.
   optional MediaReference avatar = 3;
+  optional string real_name = 4;
+  repeated Permission permissions = 5;
 }

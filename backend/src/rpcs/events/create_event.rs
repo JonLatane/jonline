@@ -90,11 +90,14 @@ pub fn create_event(
         Visibility::ServerPublic => validate_permission(&Some(user), Permission::PublishEventsLocally)?,
         _ => {}
     };
-    let author = models::Author {
-        id: user.id,
-        username: user.username.clone(),
-        avatar_media_id: user.avatar_media_id,
-    };
+    let author = user.to_author();
+    // models::Author {
+    //     id: user.id,
+    //     username: user.username.clone(),
+    //     avatar_media_id: user.avatar_media_id,
+    //     real_name: user.real_name.clone(),
+    //     permissions: user.permissions()
+    // };
     let result = conn.transaction::<MarshalableEvent, diesel::result::Error, _>(|conn| {
         let event_post = insert_into(posts::table)
             .values(&models::NewPost {

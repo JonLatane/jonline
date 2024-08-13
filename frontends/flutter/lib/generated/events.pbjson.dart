@@ -349,10 +349,13 @@ const UserAttendee$json = {
     {'1': 'user_id', '3': 1, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
     {'1': 'avatar', '3': 3, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 1, '10': 'avatar', '17': true},
+    {'1': 'real_name', '3': 4, '4': 1, '5': 9, '9': 2, '10': 'realName', '17': true},
+    {'1': 'permissions', '3': 5, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'permissions'},
   ],
   '8': [
     {'1': '_username'},
     {'1': '_avatar'},
+    {'1': '_real_name'},
   ],
 };
 
@@ -360,5 +363,7 @@ const UserAttendee$json = {
 final $typed_data.Uint8List userAttendeeDescriptor = $convert.base64Decode(
     'CgxVc2VyQXR0ZW5kZWUSFwoHdXNlcl9pZBgBIAEoCVIGdXNlcklkEh8KCHVzZXJuYW1lGAIgAS'
     'gJSABSCHVzZXJuYW1liAEBEjQKBmF2YXRhchgDIAEoCzIXLmpvbmxpbmUuTWVkaWFSZWZlcmVu'
-    'Y2VIAVIGYXZhdGFyiAEBQgsKCV91c2VybmFtZUIJCgdfYXZhdGFy');
+    'Y2VIAVIGYXZhdGFyiAEBEiAKCXJlYWxfbmFtZRgEIAEoCUgCUghyZWFsTmFtZYgBARI1CgtwZX'
+    'JtaXNzaW9ucxgFIAMoDjITLmpvbmxpbmUuUGVybWlzc2lvblILcGVybWlzc2lvbnNCCwoJX3Vz'
+    'ZXJuYW1lQgkKB19hdmF0YXJCDAoKX3JlYWxfbmFtZQ==');
 
