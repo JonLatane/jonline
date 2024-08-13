@@ -36,6 +36,7 @@ deploy_lb_get_config:
 	@echo '$(CURRENT_CONFIG)'
 
 deploy_lb_link_service_account:
+	jq --version
 	kubectl create clusterrole $(SERVICE_LINK_ROLE) --verb get,list --resource secret -n $(NAMESPACE)
 	kubectl create rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE) --serviceaccount $(NAMESPACE):$(SERVICE_ACCOUNT) --clusterrole $(SERVICE_LINK_ROLE)
 
@@ -45,6 +46,7 @@ deploy_lb_link_service_account:
 	kubectl patch configmap $(LB_CONFIG) -p '{"data":{"servers":"$(UPDATED_CONFIG_WITH_ESCAPED_QUOTES)"}}' -n $(NAMESPACE)
 
 deploy_lb_unlink_service_account:
+	jq --version
 	kubectl delete rolebinding $(SERVICE_LINK_ROLE) -n $(TARGET_NAMESPACE)
 	kubectl delete clusterrole $(SERVICE_LINK_ROLE) -n $(NAMESPACE)
 

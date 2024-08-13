@@ -27,6 +27,8 @@ deploy_lb_create:
 	cd deploys/jbl && $(MAKE) deploy_lb_create
 deploy_lb_update:
 	cd deploys/jbl && $(MAKE) deploy_lb_update
+deploy_lb_restart:
+	cd deploys/jbl && $(MAKE) deploy_lb_restart
 
 # Targets for deploying Jonline to your K8s cluster.
 # Internal or external refers to whether the service is exposed to the internet.

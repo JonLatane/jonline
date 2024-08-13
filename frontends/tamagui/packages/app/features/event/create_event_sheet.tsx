@@ -98,6 +98,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       setEndsAt('');
     }
 
+    // const event = previewEvent(post);
     dispatch(createEvent({ ...previewEvent(post), ...accountOrServer })).then((action) => {
       if (action.type == createEvent.fulfilled.type) {
         // dispatch(loadEventsPage({ ...accountOrServer, listingType: EventListingType.ALL_ACCESSIBLE_EVENTS, page: 0 }));
@@ -113,10 +114,15 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
           doReset();
         }
       } else {
-        onComplete();
+        // debugger;
+        if ('error' in action) {
+          onErrored(action.error);
+        }
+        // onErrored(action.payload.erro)
+        // onComplete();
       }
     });
-  }, []);
+  }, [previewEvent, accountOrServer]);
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { creationServer } = useCreationServer();
   const { navColor, navTextColor } = useServerTheme(creationServer);
