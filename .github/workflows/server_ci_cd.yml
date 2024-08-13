@@ -144,12 +144,11 @@ jobs:
     - working-directory: frontends/tamagui
       run: yarn web:prod:build
 
-    # The cache action should auto-save the Yarn cache in the post-build steps.
-    # - uses: actions/cache/save@v3
-    #   id: web-app-cache
-    #   with:
-    #     path: frontends/tamagui/apps/next/out
-    #     key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - uses: actions/cache/save@v3
+      id: web-app-cache
+      with:
+        path: frontends/tamagui/apps/next/out
+        key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_rust_binaries:
     name: Build Rust Binaries
