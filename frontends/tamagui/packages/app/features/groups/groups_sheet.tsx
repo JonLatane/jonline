@@ -3,7 +3,7 @@ import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack,
 import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';
-import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering } from 'app/hooks';
+import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederatedDispatch, useGroupPages, useMediaUrl, usePaginatedRendering, usePinnedAccountsAndServers } from 'app/hooks';
 import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
@@ -160,11 +160,18 @@ export function GroupsSheet({
   const primaryEntityServer = useAppSelector(state => primaryEntity
     ? selectAllServers(state.servers).find(s => s.host === primaryEntity.serverHost)
     : undefined);
-  const primaryEntityAccountId = useAppSelector(state => state.accounts.pinnedServers
-    .find(a => a.serverId === optServerID(primaryEntityServer))?.accountId);
-  const primaryEntityAccount = useAppSelector(state => primaryEntityAccountId
-    ? selectAccountById(state.accounts, primaryEntityAccountId)
-    : undefined);
+  const pinnedAccountsAndServers = usePinnedAccountsAndServers();
+  const primaryEntityAccount = pinnedAccountsAndServers.find(aos => 
+    aos.server?.host === primaryEntity?.serverHost)?.account;
+  const canCreateGroups = pinnedAccountsAndServers.some(aos =>
+    hasPermission(aos.account?.user, Permission.CREATE_GROUPS)
+  );
+  // const primaryEntityAccountId = useAppSelector(state => state.accounts.pinnedServers
+  //   .find(a => a.serverId === optServerID(primaryEntityServer))?.accountId);
+  // const primaryEntityAccount = useAppSelector(state => primaryEntityAccountId
+  //   ? selectAccountById(state.accounts, primaryEntityAccountId)
+  //   : undefined);
+
 
   const account = primaryEntity ? primaryEntityAccount : groupAccount;
   const server = primaryEntityServer ?? groupServer;
@@ -385,8 +392,7 @@ export function GroupsSheet({
             : undefined}
         </FlipMove>
       </Sheet.ScrollView>
-      {hasPermission(account?.user, Permission.CREATE_GROUPS) &&
-        (!serverHostFilter || serverHostFilter === server?.host)
+      {canCreateGroups
         ? <CreateGroupSheet />
         : undefined}
     </Sheet.Frame>

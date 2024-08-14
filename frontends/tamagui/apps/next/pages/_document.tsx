@@ -50,16 +50,6 @@ export default class Document extends NextDocument {
     return (
       <Html>
         <Head>
-          <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-
-          {/** Note that these tags must be findable by tamagui_web.rs, so Jonline's Rust server 
-           * can override them with Post/Event titles, images, etc. */}
-          <meta property="og:title" content="Jonline Social Link" />
-          <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
-          <meta property="og:image" content="/favicon.ico" />
-          <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-
-          <link rel="manifest" href="/manifest.json" />
         </Head>
         <body>
           <Main />

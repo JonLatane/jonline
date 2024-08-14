@@ -1,18 +1,16 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
-import { Button, Heading, Image, Input, Sheet, TextArea, XStack, YStack, standardAnimation, useDebounceValue, useMedia, useTheme } from '@jonline/ui';
+import { Button, Heading, Image, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
 import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
-import { useCreationDispatch } from 'app/hooks';
-import { JonlineServer, RootState, createGroup, useServerTheme, selectAllAccounts, serverID, useRootSelector } from 'app/store';
+import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
+import { useCreationDispatch, useMediaUrl } from 'app/hooks';
+import { JonlineServer, RootState, actionFailed, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
+import { hasPermission, pending, themedButtonBackground } from 'app/utils';
+import FlipMove from 'lumen5-react-flip-move';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
-import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
-import { useMediaUrl } from 'app/hooks';
-import { actionFailed } from 'app/store';
-import { pending, themedButtonBackground } from 'app/utils';
-import FlipMove from 'lumen5-react-flip-move';
+import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { groupUserPermissions } from './group_details_sheet';
-import { CreationServerSelector } from '../accounts/creation_server_selector';
 
 export type CreateGroupSheetProps = {
   // selectedGroup?: Group;
@@ -178,7 +176,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
   const [posting, setPosting] = useState(false);
   const serversState = useRootSelector((state: RootState) => state.servers);
 
-  const { server, primaryColor, primaryTextColor, navColor, navTextColor, textColor } = useServerTheme(accountOrServer.server);
+  const { server, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, textColor } = useServerTheme(accountOrServer.server);
   const accountsState = useRootSelector((state: RootState) => state.accounts);
   const accounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
   // const primaryServer = onlyShowServer || serversState.server;
@@ -201,7 +199,14 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
 
   const [isCreating, setIsCreating] = useState(false);
   const disableInputs = isCreating;
-  const disableCreate = disableInputs || !valid;
+  const disableCreate = disableInputs || !valid || !hasPermission(account?.user, Permission.CREATE_GROUPS);
+  const createDisabledReason = !valid
+    ? 'Group name is required.'
+    : !hasPermission(account?.user, Permission.CREATE_GROUPS)
+      ? 'You do not have permission to create groups with this account.'
+      : disableInputs
+        ? 'Creating group...'
+        : undefined;
 
   // return <></>;
   const avatarUrl = useMediaUrl(avatar?.id);
@@ -252,10 +257,19 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                   <Cog color={showSettings ? navTextColor : textColor} />
                 </Button>
 
-                <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
-                  onPress={() => doCreate()}>
-                  <Heading size='$1' color={primaryTextColor}>Create</Heading>
-                </Button>
+                <Tooltip>
+                  <Tooltip.Trigger>
+                    <Button backgroundColor={primaryColor} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
+                      onPress={() => doCreate()}>
+                      <Heading size='$1' color={primaryTextColor}>Create</Heading>
+                    </Button>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Paragraph size='$2'>
+                      {createDisabledReason}
+                    </Paragraph>
+                  </Tooltip.Content>
+                </Tooltip>
               </XStack>
               <CreationServerSelector requiredPermissions={[Permission.CREATE_GROUPS]} />
 
@@ -272,6 +286,8 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                         <Input f={1}
                           my='auto'
                           textContentType="name" placeholder={`Group Name (required)`}
+                          borderColor={name == '' ? navAnchorColor : undefined}
+                          placeholderTextColor={navAnchorColor}
                           disabled={disableInputs} opacity={disableInputs || name == '' ? 0.5 : 1}
                           // onFocus={() => setShowSettings(false)}
                           // autoCapitalize='words'

@@ -5,10 +5,12 @@ edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
 
-license = "GPL-3.0"
+license = "AGPL"
 repository = "https://github.com/jonlatane/jonline"
-description = "Backend of Jonline"
+description = "Jonline is a decentralized social network server."
+homepage = "https://jonline.io"
 default-run = "jonline"
+readme = "README.md"
 
 [dependencies]
 tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread", "fs", "sync"] }
@@ -74,6 +76,7 @@ structopt = "0.3.9"
 reqwest = "0.11.23"
 rand = "0.8.5"
 http = "1.1.0"
+base64 = "0.22.1"
 
 [build-dependencies]
 tonic-build = "0.10.2"

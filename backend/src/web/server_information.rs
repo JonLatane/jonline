@@ -1,9 +1,17 @@
 use std::str::FromStr;
 
-use super::{RocketState, load_media_file_data, open_named_file};
-use crate::{rpcs::{get_server_configuration_proto, get_service_version}, protos::{ServerInfo, ServerLogo}};
+use super::{load_media_file_data, open_named_file, RocketState};
+use crate::{
+    protos::{GetMediaRequest, ServerInfo, ServerLogo},
+    rpcs::{get_media, get_server_configuration_proto, get_service_version},
+};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use rocket::{fs::NamedFile, http::{MediaType, ContentType, Status}, response::Redirect, routes, uri, Route, State};
+use rocket::{
+    fs::NamedFile,
+    http::{ContentType, MediaType, Status},
+    response::Redirect,
+    routes, uri, Route, State,
+};
 use rocket_cache_response::CacheResponse;
 
 lazy_static! {
@@ -12,7 +20,7 @@ lazy_static! {
 }
 
 #[rocket::get("/info_shield")]
-async fn info_shield(state: &State<RocketState>) -> CacheResponse<Redirect> {
+async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirect>, Status> {
     let service_version = get_service_version().unwrap().version;
 
     let mut conn = state.pool.get().unwrap();
@@ -39,10 +47,54 @@ async fn info_shield(state: &State<RocketState>) -> CacheResponse<Redirect> {
 
     let encoded_server_name = utf8_percent_encode(&server_name, NON_ALPHANUMERIC).to_string();
 
-    CacheResponse::NoStore(Redirect::temporary(format!(
-        "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}",
-        encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color
-    )))
+    let logo_media_id = server_info
+        .logo
+        .as_ref()
+        .map(|l| l.square_media_id.clone())
+        .flatten();
+    let logo_media_data_url = match logo_media_id {
+        Some(ref logo_media_id) => {
+            let logo_data = load_media_file_data(logo_media_id, state).await?;
+            let content_type = logo_data.0;
+            match content_type.to_string().as_str() {
+                "image/svg+xml" => {
+                    let named_filename =
+                        &logo_data.1.path().as_os_str().to_str().unwrap().to_string();
+                    let logo_file = std::fs::File::open(named_filename).unwrap();
+                    let logo_bytes = std::io::Read::bytes(logo_file)
+                        .collect::<Result<Vec<u8>, _>>()
+                        .unwrap();
+                    let media_data_url = format!(
+                        "data:{};base64,{}",
+                        content_type,
+                        base64::encode(&logo_bytes)
+                    );
+                    Some(media_data_url)
+                }
+                _ => None,
+            }
+        }
+        None => None,
+    };
+    let encoded_logo = match logo_media_data_url {
+        Some(logo_media_data_url) => {
+            let encoded_logo =
+                utf8_percent_encode(&logo_media_data_url, NON_ALPHANUMERIC).to_string();
+            Some(encoded_logo)
+        }
+        None => None,
+    };
+
+    match encoded_logo {
+        Some(encoded_logo) => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
+                "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}&logo={}",
+                encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color, encoded_logo
+            )))),
+        None =>  Ok(CacheResponse::NoStore(Redirect::temporary(format!(
+            "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}",
+            encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color
+        ))))
+    }
 }
 
 #[rocket::get("/documentation")]
@@ -77,7 +129,6 @@ async fn docs_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
         must_revalidate: false,
     }
 }
-
 
 #[rocket::get("/favicon.ico")]
 async fn favicon<'a>(

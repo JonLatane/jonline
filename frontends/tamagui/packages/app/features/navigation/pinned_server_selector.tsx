@@ -12,6 +12,7 @@ import { User } from "@jonline/api";
 import { createSelector } from "@reduxjs/toolkit";
 
 
+
 export type PinnedServerSelectorProps = {
   show?: boolean;
   transparent?: boolean;
@@ -105,168 +106,167 @@ export function PinnedServerSelector({
   const { transparentBackgroundColor } = useServerTheme();
   const renderPinnedServers = showPinnedServers || simplified && !disabled;
   const childMargins = { paddingTop: 4, paddingBottom: 4 };
-  return <YStack key='pinned-server-selector' id={affectsNavigation ? 'navigation-pinned-servers' : undefined}
-    w='100%' h={show ? undefined : 0}
-  // backgroundColor={transparentBackgroundColor}
-  // o={transparent ? 1 : 1}
-  >
-    {/* <AnimatePresence> */}
-    {configuringFederation ?
-      <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
-        <Spinner size='small' color={primaryAnchorColor} />
-        <Paragraph size='$1'>Configuring servers...</Paragraph>
-      </XStack>
-      : undefined}
-    {/* </AnimatePresence> */}
-    {/* <AnimatePresence> */}
-    {show && !disabled ? <>
-      <XStack key='pinned-server-toggle-row'>
-        {simplified
-          ? undefined
-          : <>
+  return <div id={affectsNavigation ? 'navigation-pinned-servers' : undefined} style={{ width: '100%' }} >
+    <FlipMove style={{ width: '100%' }} >
+      {[
+        configuringFederation ?
+          <div key='configuring-servers'>
+            <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
+              <Spinner size='small' color={primaryAnchorColor} />
+              <Paragraph size='$1'>Configuring servers...</Paragraph>
+            </XStack>
+          </div>
+          : undefined,
+        show && !disabled ? [
+          <div key='toggle-row'>
+            <XStack key='pinned-server-toggle-row'>
+              {simplified
+                ? undefined
+                : <>
 
-            {alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
-              ? <Button key='hide-nav-button' py='$1' h='auto' transparent
-                // animation='standard' {...reverseHorizontalAnimation}
-                onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                <XStack position='absolute' animation='800ms'
-                  key='open-icon'
-                  o={hideNavigation ? 1 : 0}
-                  transform={[{ translateY: hideNavigation ? 0 : 10 }]}
-                // scale={hideNavigation ? 1 : 2}
-                >
-                  <PanelTopOpen size='$1' />
-                </XStack>
-                <XStack position='absolute' animation='800ms'
-                  key='close-icon'
-                  o={hideNavigation ? 0 : 1}
-                  transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
-                // scale={hideNavigation ? 0.2 : 1}
-                >
-                  <PanelTopClose size='$1' />
-                </XStack>
-              </Button>
-              : undefined}
+                  {alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
+                    ? <Button key='hide-nav-button' py='$1' h='auto' transparent
+                      // animation='standard' {...reverseHorizontalAnimation}
+                      onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
+                      <XStack position='absolute' animation='800ms'
+                        key='open-icon'
+                        o={hideNavigation ? 1 : 0}
+                        transform={[{ translateY: hideNavigation ? 0 : 10 }]}
+                      // scale={hideNavigation ? 1 : 2}
+                      >
+                        <PanelTopOpen size='$1' />
+                      </XStack>
+                      <XStack position='absolute' animation='800ms'
+                        key='close-icon'
+                        o={hideNavigation ? 0 : 1}
+                        transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
+                      // scale={hideNavigation ? 0.2 : 1}
+                      >
+                        <PanelTopClose size='$1' />
+                      </XStack>
+                    </Button>
+                    : undefined}
 
-            <Button key='pinned-server-toggle' py='$1'
-              pl='$2' pr='$1'
-              h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-              <XStack mr='auto' maw='100%' ai='center'>
-                <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                  {description}
-                </Paragraph>
-                <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-                  <ChevronRight size='$1' />
-                </XStack>
-              </XStack>
-            </Button>
-            <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
-              onPress={toggleExcludeCurrentServer}>
-              <XStack ml='auto' gap='$2'>
-                {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
-                <Paragraph my='auto' size='$1'>
-                  Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
-                </Paragraph>
-              </XStack>
-            </Button>
+                  <Button key='pinned-server-toggle' py='$1'
+                    pl='$2' pr='$1'
+                    h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+                    <XStack mr='auto' maw='100%' ai='center'>
+                      <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+                        {description}
+                      </Paragraph>
+                      <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+                        <ChevronRight size='$1' />
+                      </XStack>
+                    </XStack>
+                  </Button>
+                  <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
+                    onPress={toggleExcludeCurrentServer}>
+                    <XStack ml='auto' gap='$2'>
+                      {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
+                      <Paragraph my='auto' size='$1'>
+                        Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
+                      </Paragraph>
+                    </XStack>
+                  </Button>
 
-            {/* <AnimatePresence> */}
-            {showShrinkPreviews
-              ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
-                // animation='standard' {...reverseHorizontalAnimation}
-                onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
-                <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
-                  <Maximize2 size='$1' />
-                </XStack>
-                <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
-                  <Minimize2 size='$1' />
-                </XStack>
-              </Button>
-              : undefined}
-            {/* </AnimatePresence> */}
-          </>
-        }
-      </XStack>
-      <ScrollView key='pinned-server-scroller' w='100%' horizontal>
-        <XStack mx='$3'
-          ai='center' gap='$2' key='available-servers'>
-          <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
-            {renderPinnedServers
-              ? [
-                availableServers.map(server => {
-                  let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                  return <div key={`server-${server.host}`} style={{ display: 'flex', marginRight: 5, ...childMargins }}>
-                    <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
-                  </div>;
-                }),
-                recommendedServerHosts.length > 0
-                  ? <div key='recommended-servers-button' style={{ display: 'flex', marginRight: -10, ...childMargins }}/*animation='standard' {...standardAnimation}*/>
-                    <Button h='auto' py='$1' mr='$1' size='$2'
-                      onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
-                      <XStack ai='center'>
-                        <YStack my='auto' ai='center'>
-                          <Heading size='$1'>
-                            Recommended
-                          </Heading>
-                          <Heading size='$1'>
-                            Servers{recommendedServerHosts.length ? ` (${recommendedServerHosts.length})` : undefined}
-                          </Heading>
-                        </YStack>
-                        {/* <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                  {/* <AnimatePresence> */}
+                  {showShrinkPreviews
+                    ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
+                      // animation='standard' {...reverseHorizontalAnimation}
+                      onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
+                      <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
+                        <Maximize2 size='$1' />
+                      </XStack>
+                      <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
+                        <Minimize2 size='$1' />
+                      </XStack>
+                    </Button>
+                    : undefined}
+                  {/* </AnimatePresence> */}
+                </>
+              }
+            </XStack>
+          </div>,
+          showPinnedServers ? <div key='server-selector'>
+            <ScrollView key='pinned-server-scroller' w='100%' horizontal>
+              <XStack mx='$3'
+                ai='center' gap='$2' key='available-servers'>
+                <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+                  {renderPinnedServers
+                    ? [
+                      availableServers.map(server => {
+                        let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
+                        return <div key={`server-${server.host}`} style={{ display: 'flex', marginRight: 5, ...childMargins }}>
+                          <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
+                        </div>;
+                      }),
+                      recommendedServerHosts.length > 0
+                        ? <div key='recommended-servers-button' style={{ display: 'flex', marginRight: -10, ...childMargins }}/*animation='standard' {...standardAnimation}*/>
+                          <Button h='auto' py='$1' mr='$1' size='$2'
+                            onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
+                            <XStack ai='center'>
+                              <YStack my='auto' ai='center'>
+                                <Heading size='$1'>
+                                  Recommended
+                                </Heading>
+                                <Heading size='$1'>
+                                  Servers{recommendedServerHosts.length ? ` (${recommendedServerHosts.length})` : undefined}
+                                </Heading>
+                              </YStack>
+                              {/* <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
                           <ChevronRight size='$1' />
                         </XStack> */}
 
-                        <ZStack w='$1' h='$1'>
-                          <XStack m='auto' animation='standard' o={viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
-                            <ChevronRight size='$1' />
-                          </XStack>
-                          <XStack m='auto' animation='standard' o={!viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
-                            <XIcon size='$1' />
-                          </XStack>
-                        </ZStack>
-                      </XStack>
-                    </Button>
-                  </div>
-                  : undefined,
-                viewingRecommendedServers ?
-                  // <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
-                  recommendedServerHosts.map((host, index) => {
-                    const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
-                    // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                    return [
-                      precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
-                        ? <div key='separator' style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
-                          <Tooltip>
-                            <Tooltip.Trigger>
-                              <SeparatorHorizontal size='$5' />
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
-                            </Tooltip.Content>
-                          </Tooltip>
+                              <ZStack w='$1' h='$1'>
+                                <XStack m='auto' animation='standard' o={viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
+                                  <ChevronRight size='$1' />
+                                </XStack>
+                                <XStack m='auto' animation='standard' o={!viewingRecommendedServers ? 0 : 1} rotate={viewingRecommendedServers ? '-90deg' : '0deg'}>
+                                  <XIcon size='$1' />
+                                </XStack>
+                              </ZStack>
+                            </XStack>
+                          </Button>
                         </div>
                         : undefined,
-                      <div key={`server-${host}`} style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
-                        <RecommendedServer host={host} tiny />
-                      </div>
+                      viewingRecommendedServers ?
+                        // <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
+                        recommendedServerHosts.map((host, index) => {
+                          const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
+                          // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
+                          return [
+                            precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                              ? <div key='separator' style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
+                                <Tooltip>
+                                  <Tooltip.Trigger>
+                                    <SeparatorHorizontal size='$5' />
+                                  </Tooltip.Trigger>
+                                  <Tooltip.Content>
+                                    <Paragraph size='$1'>Servers to the right are recommended by servers other than {currentServer?.serverConfiguration?.serverInfo?.name}.</Paragraph>
+                                  </Tooltip.Content>
+                                </Tooltip>
+                              </div>
+                              : undefined,
+                            <div key={`server-${host}`} style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
+                              <RecommendedServer host={host} tiny />
+                            </div>
+                          ]
+                        })
+                        // </XStack>
+                        : recommendedServerHosts.length > 0
+                          ? <XStack key='recommendedServerHosts-spacer' w='$10' />
+                          : undefined
                     ]
-                  })
-                  // </XStack>
-                  : recommendedServerHosts.length > 0
-                    ? <XStack key='recommendedServerHosts-spacer' w='$10' />
-                    : undefined
-              ]
 
-              : undefined}
-          </FlipMove>
-        </XStack>
-      </ScrollView>
-      {/* </YStack>
-        : undefined} */}
-
-    </> : undefined}
-    {/* </AnimatePresence> */}
-  </YStack >;
+                    : undefined}
+                </FlipMove>
+              </XStack>
+            </ScrollView>
+          </div> : undefined
+        ] : undefined
+      ]}
+    </FlipMove>
+  </div>;
 }
 
 

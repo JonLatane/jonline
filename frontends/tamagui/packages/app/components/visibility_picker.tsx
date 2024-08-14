@@ -78,9 +78,7 @@ export function VisibilityPicker({
           <Select.Value placeholder="Choose Visibility" />
         </Select.Trigger>
 
-
-        <Select.Content zIndex={200000}>
-
+        <Select.Content zIndex={20000000}>
 
           <Select.Viewport minWidth={200}>
             <Select.Group gap="$0" w='100%'>

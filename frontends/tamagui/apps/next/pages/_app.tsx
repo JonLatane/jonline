@@ -42,10 +42,22 @@ function MyApp({ Component, pageProps }: SolitoAppProps) {
       <Head>
         <title>Jonline</title>
         <meta name="description" content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends." />
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+        {/* <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /> */}
         {/* <meta name="viewport" content="viewport-fit=cover" /> */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/favicon.ico" />
+
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+
+        {/** Note that these tags must be findable by tamagui_web.rs, so Jonline's Rust server 
+         * can override them with Post/Event titles, images, etc. */}
+        <meta property="og:title" content="Jonline Social Link" />
+        <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
+        <meta property="og:image" content="/favicon.ico" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+
+        <link rel="manifest" href="/manifest.json" />
+
 
         {/* <link rel="icon" href="/favicon.ico" sizes="any" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/favicon.ico"/>
