@@ -304,7 +304,7 @@ export const EventCard: React.FC<Props> = ({
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview && isVisible;
+  const showBackgroundPreview = !!imagePreview && hasBeenVisible;
   //  && isPreview
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
 
@@ -445,7 +445,6 @@ export const EventCard: React.FC<Props> = ({
           </Anchor>
           {primaryInstance //&& (!isPreview || isVisible)
             ? <EventCalendarExporter tiny event={event}
-              isVisible={!isPreview || isVisible}
               instance={primaryInstance} />
             : undefined}
         </XStack>
@@ -566,7 +565,7 @@ export const EventCard: React.FC<Props> = ({
               <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay
                   key="overlay"
-                  animation="quick"
+                  animation='standard'
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
@@ -576,7 +575,7 @@ export const EventCard: React.FC<Props> = ({
                   elevate
                   key="content"
                   animation={[
-                    'quick',
+                    'standard',
                     {
                       opacity: {
                         overshootClamping: true,
@@ -697,7 +696,7 @@ export const EventCard: React.FC<Props> = ({
     <Dialog.Portal zi={1000011}>
       <Dialog.Overlay
         key="overlay"
-        animation="quick"
+        animation='standard'
         o={0.5}
         enterStyle={{ o: 0 }}
         exitStyle={{ o: 0 }} />
@@ -706,7 +705,7 @@ export const EventCard: React.FC<Props> = ({
         elevate
         key="content"
         animation={[
-          'quick',
+          'standard',
           {
             opacity: {
               overshootClamping: true,
@@ -843,7 +842,6 @@ export const EventCard: React.FC<Props> = ({
                               readOnly={!editing || previewingEdits}
                               preview={isPreview}
                               link={isPreview ? eventLink : undefined}
-                              isVisible={!isPreview || isVisible}
                               setLocation={(location: Location) => {
                                 if (editingInstance) {
                                   updateEditingInstance({ ...editingInstance, location });
@@ -927,7 +925,7 @@ export const EventCard: React.FC<Props> = ({
                             <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
                               <GroupPostManager
                                 post={eventPost}
-                                isVisible={isVisible} />
+                                isVisible={hasBeenVisible} />
                             </XStack>
                             {/* : undefined} */}
                           </XStack>
@@ -975,7 +973,7 @@ export const EventCard: React.FC<Props> = ({
                   <XStack {...detailsShadowProps} key='details' pl='$3' mb='$3'
                     mt={shrinkContent ? '$1' : undefined}>{/*showEdit ? -11 : -15} >*/}
                     <XStack f={1}>
-                      <AuthorInfo key='author-details' {...{ post: eventPost, isVisible }} />
+                      <AuthorInfo key='author-details' {...{ post: eventPost }} />
                     </XStack>
 
 

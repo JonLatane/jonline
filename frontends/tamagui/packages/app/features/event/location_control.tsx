@@ -14,7 +14,6 @@ interface Props {
   readOnly?: boolean;
   preview?: boolean;
   link?: object;
-  isVisible?: boolean;
 }
 
 export const LocationControl: React.FC<Props> = ({
@@ -24,7 +23,6 @@ export const LocationControl: React.FC<Props> = ({
   readOnly,
   preview,
   link,
-  isVisible = true
 }) => {
   const mediaQuery = useMedia();
   const value = location.uniformlyFormattedAddress;
@@ -67,6 +65,14 @@ export const LocationControl: React.FC<Props> = ({
   useEffect(() => {
     setShowResults(true);
   }, [results]);
+
+  const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  useEffect(() => {
+    if (open && !hasOpened) {
+      setHasOpened(true);
+    }
+  }, [open, hasOpened]);
   const willAdaptEdit = !mediaQuery.gtSm;
 
   //https://maps.google.com?q=newyork or
@@ -90,7 +96,7 @@ export const LocationControl: React.FC<Props> = ({
           {value}
         </Paragraph>}
 
-      <Popover size="$5" allowFlip placement='left'>
+      <Popover size="$5" allowFlip onOpenChange={setOpen} placement='left'>
         <Popover.Trigger asChild>
           <Button circular icon={MapPin} />
         </Popover.Trigger>
@@ -108,7 +114,7 @@ export const LocationControl: React.FC<Props> = ({
           </Popover.Sheet>
         </Adapt> */}
 
-        {isVisible
+        {hasOpened
           ? <Popover.Content
             borderWidth={1}
             borderColor="$borderColor"
@@ -116,7 +122,7 @@ export const LocationControl: React.FC<Props> = ({
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
             animation={[
-              'quick',
+              'standard',
               {
                 opacity: {
                   overshootClamping: true,
@@ -217,7 +223,7 @@ export const LocationControl: React.FC<Props> = ({
         exitStyle={{ y: -10, opacity: 0 }}
         elevate
         animation={[
-          'quick',
+          'standard',
           {
             opacity: {
               overshootClamping: true,

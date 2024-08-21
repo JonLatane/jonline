@@ -61,7 +61,7 @@ export const MediaRenderer: React.FC<Props> = ({
   let view: JSX.Element;
   switch (type) {
     case 'image':
-      if (!isVisible) return <></>;
+      // if (!isVisible) return <></>;
 
       return <FadeInView w='100%' h='100%'>
         <img style={{ width: '100%', height: '100%', objectFit: 'contain' }}

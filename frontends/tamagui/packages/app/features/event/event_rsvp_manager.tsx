@@ -634,7 +634,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     <Dialog.Portal zi={1000011}>
                       <Dialog.Overlay
                         key="overlay"
-                        animation="quick"
+                        animation='standard'
                         o={0.5}
                         enterStyle={{ o: 0 }}
                         exitStyle={{ o: 0 }}
@@ -644,7 +644,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                         elevate
                         key="content"
                         animation={[
-                          'quick',
+                          'standard',
                           {
                             opacity: {
                               overshootClamping: true,
@@ -694,7 +694,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   <Dialog.Portal zi={1000011}>
                     <Dialog.Overlay
                       key="overlay"
-                      animation="quick"
+                      animation='standard'
                       o={0.5}
                       enterStyle={{ o: 0 }}
                       exitStyle={{ o: 0 }}
@@ -704,7 +704,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                       elevate
                       key="content"
                       animation={[
-                        'quick',
+                        'standard',
                         {
                           opacity: {
                             overshootClamping: true,
@@ -796,7 +796,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </XStack>
                 : undefined}
             </YStack>
-            <XStack animation='quick' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>
+            <XStack animation='standard' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>
               <ChevronRight />
             </XStack>
           </XStack>

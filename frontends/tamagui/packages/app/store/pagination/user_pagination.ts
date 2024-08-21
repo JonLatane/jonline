@@ -32,6 +32,21 @@ export function getUsersPage(
   return { users, hadUndefinedServers };
 }
 
+export function getServersMissingUsersPage(state: UsersState,
+  listingType: UserListingType,
+  page: number,
+  servers: AccountOrServer[]
+): AccountOrServer[] {
+  return servers.filter(isMissingServerPage(state, listingType, page));
+}
+
+function isMissingServerPage(state: UsersState, listingType: UserListingType, page: number) {
+  return (server: AccountOrServer) => {
+    const serverUserPages = getFederated(state.userPages, server.server);
+    return (serverUserPages[listingType] ?? {})[page] === undefined;
+  }
+}
+
 export function getMembersPage(
   state: RootState,
   groupId: string,

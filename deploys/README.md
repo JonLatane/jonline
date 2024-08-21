@@ -15,18 +15,28 @@
       - [K8s cluster with multiple Kubernetes LoadBalancers (without JBL)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-jbl)
       - [K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-jbl-loadbalancer)
 
-Jonline is designed so you can simply clone the Jonline repo and use `Makefile`s that run `kubectl` (and, for the load balancer, `jq`) to setup and manage your deployment.
-Jonline deploys are done from the `./deploys` directory from the root of the repo.
-
-To deploy to your K8s cluster:
+Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment goes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
 
 * Clone this repo.
 * `cd deploys && make deploy_data_create deploy_be_create` to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)
     * This deploys Postgres, MinIO and Jonline to the namespace `jonline` in your cluster. You can `NAMESPACE=mynamespace make deploy_data_create deploy_be_create` to create your setup in `mynamespace`.
     * For "production-ready" performance you can (and should) skip the `deploy_data_create` part and instead configure external, managed Postgres and/or MinIO/S3 servers.
 
-See [Generated Certs](./generated_certs/README.md) for more info on generating certs. At a high level, for a K8s deploy, `generated_certs/Makefile` will simply generate Cert-Manager K8s YAML to `deploys/generated_certs/k8s/cert-manager.\[digitalocean\].\[my-domain.com\].generated.yaml`. Applying that YAML (also doable through the `Makefile`) sets up K8s/Cert-Manager to auto-generate the certs for your Jonline instance in its namespace where it will look for them.
+See [the Cert-Manager integration README](./generated_certs/README.md) for more info on generating certs. At a high level, for a K8s deploy, `generated_certs/Makefile` will simply generate Cert-Manager K8s YAML to `deploys/generated_certs/k8s/cert-manager.\[digitalocean\].\[my-domain.com\].generated.yaml`. Applying that YAML (also doable through the `Makefile`) sets up K8s/Cert-Manager to auto-generate the certs for your Jonline instance in its namespace where it will look for them.
 
+As a user or a contributor, it's helpful to understand that Jonline deployment is built upon:
+
+* `make` and the `Makefile` targets in this `deploys/` directory and its subdirectories, which use/require:
+  * `sed`
+  * `jq`
+  * `kubectl`
+* `Dockerfile`s in `deploys/docker`
+  * As a user, these are really just for reference, as you'll likely be deploying pre-built images from [jonlatane/jonline](https://hub.docker.com/r/jonlatane/jonline).
+* Kubernetes `.yml` files in `deploys/k8s` and `deploys/generated_certs/k8s` (for using Jonline's Cert-Manager integration)
+  * `.template.yml` files are used to generate `.yml` files for managing your own deployment.
+* 
+
+Virtually all deployment-related targets will involve `make` calling `kubectl` with either predefinied `.yml`, or after modifying `.template.yml` files.
 
 ## Basic Deployment
 By following these instructions, you will bring up one namespace as diagrammed here in your Kubernetes cluster:

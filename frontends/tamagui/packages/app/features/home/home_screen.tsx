@@ -107,8 +107,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         eventPagination.setPage(0);
       }, 1);
     } else {
-      reloadPosts();
-      reloadEvents();
+      reloadPosts(true);
+      reloadEvents(true);
     }
   }, [postPagination.page, eventPagination.page]);
 
@@ -158,7 +158,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 <Heading size='$1' lh='$1'>Upcoming</Heading>
                 <Heading size='$3' lh='$1'>Events</Heading>
               </YStack>
-              <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
+              <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
                 <ChevronRight />
               </XStack>
             </Button>

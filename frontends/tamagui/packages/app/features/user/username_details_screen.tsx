@@ -328,17 +328,17 @@ export function UsernameDetailsScreen() {
             </Tooltip>
 
             <XStack f={1} />
-            {/* <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+            {/* <YStack animation='standard' o={dirtyData ? 1 : 0} p='$3'>
           <AlertTriangle color='yellow' />
         </YStack> */}
             <ZStack w={48} h={48}>
-              <YStack animation='quick' o={successSaving ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={successSaving ? 1 : 0} p='$3'>
                 <CheckCircle color='green' />
               </YStack>
-              <YStack animation='quick' o={dirtyData ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={dirtyData ? 1 : 0} p='$3'>
                 <AlertTriangle color='yellow' />
               </YStack>
-              <YStack animation='quick' o={saving ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={saving ? 1 : 0} p='$3'>
                 <Spinner size='small' />
               </YStack>
             </ZStack>
@@ -383,13 +383,13 @@ export function UsernameDetailsScreen() {
               <AccountOrServerContextProvider value={accountOrServer}>
                 <YStack als='center' w='100%' paddingHorizontal='$2' gap>
                   {editMode ?
-                    <TextArea key='bio-edit' animation='quick' {...standardHorizontalAnimation}
+                    <TextArea key='bio-edit' animation='standard' {...standardHorizontalAnimation}
                       value={bio} onChangeText={t => setBio(t)}
                       // size='$5'
                       h='$14'
                       placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
                     />
-                    : <YStack key='bio-markdown' animation='quick' {...reverseHorizontalAnimation}>
+                    : <YStack key='bio-markdown' animation='standard' {...reverseHorizontalAnimation}>
                       <TamaguiMarkdown text={bio!} />
                     </YStack>}
                 </YStack>
@@ -406,7 +406,7 @@ export function UsernameDetailsScreen() {
                         <Heading size='$1' lh='$1'>Upcoming</Heading>
                         <Heading size='$3' lh='$1'>Events</Heading>
                       </YStack>
-                      <XStack animation='quick' rotate={showEvents ? '90deg' : '0deg'}>
+                      <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
                         <ChevronRight />
                       </XStack>
                     </Button>
@@ -671,7 +671,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
             <Dialog.Portal zi={1000011}>
               <Dialog.Overlay
                 key="overlay"
-                animation="quick"
+                animation='standard'
                 o={0.5}
                 enterStyle={{ o: 0 }}
                 exitStyle={{ o: 0 }}
@@ -681,7 +681,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                 elevate
                 key="content"
                 animation={[
-                  'quick',
+                  'standard',
                   {
                     opacity: {
                       overshootClamping: true,
@@ -759,7 +759,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
             <Dialog.Portal zi={1000011}>
               <Dialog.Overlay
                 key="overlay"
-                animation="quick"
+                animation='standard'
                 o={0.5}
                 enterStyle={{ o: 0 }}
                 exitStyle={{ o: 0 }}
@@ -769,7 +769,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                 elevate
                 key="content"
                 animation={[
-                  'quick',
+                  'standard',
                   {
                     opacity: {
                       overshootClamping: true,

@@ -178,7 +178,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
         <Dialog.Overlay
           zIndex={1000000000000012}
           key="overlay"
-          animation="quick"
+          animation='standard'
           o={0.5}
           enterStyle={{ o: 0 }}
           exitStyle={{ o: 0 }}
@@ -189,7 +189,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
           elevate
           key="content"
           animation={[
-            'quick',
+            'standard',
             {
               opacity: {
                 overshootClamping: true,

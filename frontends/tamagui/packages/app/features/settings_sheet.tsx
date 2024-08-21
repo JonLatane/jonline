@@ -126,7 +126,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     value={inlineNavigation.toString()}
                     disabled={app.inlineFeatureNavigation === undefined}
                     onCheckedChange={(checked) => dispatch(setInlineFeatureNavigation(checked))}>
-                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                    <Switch.Thumb animation='standard' backgroundColor='black' />
                   </Switch>
                   <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
                     <YStack w='100%'>
@@ -310,7 +310,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     value={(app.dateTimeRenderer === 'native').toString()}
                     // disabled={app.inlineFeatureNavigation === undefined}
                     onCheckedChange={(checked) => dispatch(setDateTimeRenderer(checked ? 'native' : 'custom'))}>
-                    <Switch.Thumb animation="quick" backgroundColor='black' />
+                    <Switch.Thumb animation='standard' backgroundColor='black' />
                   </Switch>
                   <Label htmlFor='date-type-toggle' my='auto' f={1}>
                     <YStack w='100%'>
@@ -391,7 +391,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                   <Dialog.Portal zIndex={20000000}>
                     <Dialog.Overlay
                       key="overlay"
-                      animation="quick"
+                      animation='standard'
                       o={0.5}
                       enterStyle={{ o: 0 }}
                       exitStyle={{ o: 0 }}
@@ -401,7 +401,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                       elevate
                       key="content"
                       animation={[
-                        'quick',
+                        'standard',
                         {
                           opacity: {
                             overshootClamping: true,

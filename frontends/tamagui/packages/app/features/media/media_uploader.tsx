@@ -124,7 +124,7 @@ export const MediaUploader: React.FC<MediaUploaderProps> = ({ uploading, setUplo
         </FileUploader>
       </Text>
       <Progress value={(uploadProgress ?? 0) * 100} >
-        <Progress.Indicator animation="quick" />
+        <Progress.Indicator animation='standard' />
       </Progress>
     </YStack>
   )

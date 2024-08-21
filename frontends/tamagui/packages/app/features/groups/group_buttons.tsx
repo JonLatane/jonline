@@ -241,7 +241,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
   return account && (!hideLeaveButton || !joined)
     ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
       <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-        // {...standardAnimation} animation='quick'
+        // {...standardAnimation} animation='standard'
         mb='$2'
         p='$3'
         disabled={isLocked} opacity={isLocked ? 0.5 : 1}

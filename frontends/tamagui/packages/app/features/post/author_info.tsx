@@ -17,7 +17,6 @@ export type AuthorInfoProps = {
   post?: Post;
   detailsMargins?: number;
   disableLink?: boolean;
-  isVisible?: boolean;
   larger?: boolean;
   shrink?: boolean;
   textColor?: string;
@@ -30,7 +29,6 @@ export const AuthorInfo = ({
   author = post?.author,
   disableLink = false,
   detailsMargins = 0,
-  isVisible = true,
   larger = false,
   shrink = false,
   textColor: inputTextColor,

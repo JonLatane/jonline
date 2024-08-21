@@ -128,7 +128,7 @@ export function PinnedServerSelector({
                     ? <Button key='hide-nav-button' py='$1' h='auto' transparent
                       // animation='standard' {...reverseHorizontalAnimation}
                       onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                      <XStack position='absolute' animation='800ms'
+                      <XStack position='absolute' animation='standard'
                         key='open-icon'
                         o={hideNavigation ? 1 : 0}
                         transform={[{ translateY: hideNavigation ? 0 : 10 }]}
@@ -136,7 +136,7 @@ export function PinnedServerSelector({
                       >
                         <PanelTopOpen size='$1' />
                       </XStack>
-                      <XStack position='absolute' animation='800ms'
+                      <XStack position='absolute' animation='standard'
                         key='close-icon'
                         o={hideNavigation ? 0 : 1}
                         transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
@@ -213,7 +213,7 @@ export function PinnedServerSelector({
                                   Servers{recommendedServerHosts.length ? ` (${recommendedServerHosts.length})` : undefined}
                                 </Heading>
                               </YStack>
-                              {/* <XStack my='auto' animation='quick' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
+                              {/* <XStack my='auto' animation='standard' rotate={!viewingRecommendedServers ? '90deg' : '0deg'}>
                           <ChevronRight size='$1' />
                         </XStack> */}
 

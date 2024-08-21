@@ -252,7 +252,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   //   : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview && isVisible;
+  const showBackgroundPreview = !!imagePreview && hasBeenVisible;
 
 
   const componentKey = useComponentKey('post-card');
@@ -286,7 +286,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     <Dialog.Portal zi={100000000011}>
       <Dialog.Overlay
         key="overlay"
-        animation="quick"
+        animation='standard'
         o={0.5}
         enterStyle={{ o: 0 }}
         exitStyle={{ o: 0 }}
@@ -296,7 +296,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         elevate
         key="content"
         animation={[
-          'quick',
+          'standard',
           {
             opacity: {
               overshootClamping: true,
@@ -376,7 +376,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                       </XStack>
 
                       <XStack ml='auto' mr='$2'>
-                        <AuthorInfo post={previewParent!} disableLink={false} isVisible={isVisible} shrink />
+                        <AuthorInfo post={previewParent!} disableLink={false} shrink />
                       </XStack>
                     </YStack>
                   </Card.Footer>
@@ -578,7 +578,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                             </Paragraph>}
                           </YStack>
                           {!cannotToggleReplies ? <XStack marginVertical='auto'
-                            animation='quick'
+                            animation='standard'
                             rotate={collapsed ? '0deg' : '90deg'}
                           >
                             <ChevronRight opacity={loadingReplies ? 0.5 : 1} />

@@ -321,7 +321,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                                 defaultChecked
                                 onCheckedChange={(checked) => setNewServerSecure(checked)}
                                 disabled={disableSecureSelection} >
-                                <Switch.Thumb animation="quick" disabled={disableSecureSelection} />
+                                <Switch.Thumb animation='standard' disabled={disableSecureSelection} />
                               </Switch>
 
                               <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
@@ -396,7 +396,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                     <Button mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
                       <XStack>
                         <Heading size='$1'>{browsingServers ? 'All ' : ''}Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
-                        <XStack animation='quick' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
+                        <XStack animation='standard' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
                           <ChevronRight size='$1' />
                         </XStack>
                       </XStack>

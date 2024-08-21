@@ -53,7 +53,9 @@ export function useServerEventPages(
   const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);
 
-  const reload = () => {
+  const reload = (force?: boolean) => {
+    if (loading) return;
+
     setLoadingEvents(true);
     const serversToUpdate = getServersMissingEventsPage(eventsState, listingType, timeFilter, 0, servers);
     console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));

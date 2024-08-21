@@ -17,7 +17,7 @@ interface Props {
 export const SingleMediaChooser: React.FC<Props> = ({ selectedMedia, setSelectedMedia, mediaUseName = 'Avatar', disabled }) => {
   const { server, primaryColor, navColor, primaryTextColor, navTextColor, textColor } = useServerTheme();
   const elementKey = `media-chooser-${mediaUseName.replace(' ', '-').toLowerCase()}`;
-  return <YStack key={elementKey} animation='quick' {...standardAnimation}
+  return <YStack key={elementKey} animation='standard' {...standardAnimation}
     gap='$2' mb='$2'>
     <MediaChooser
       selectedMedia={selectedMedia ? [selectedMedia] : []}

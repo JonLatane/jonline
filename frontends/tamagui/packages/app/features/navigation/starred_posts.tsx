@@ -281,7 +281,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                   exitStyle={{ y: -10, opacity: 0 }}
                   elevate
                   animation={[
-                    'quick',
+                    'standard',
                     {
                       opacity: {
                         overshootClamping: true,

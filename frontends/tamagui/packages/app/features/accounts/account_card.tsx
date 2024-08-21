@@ -371,7 +371,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         <Dialog.Overlay
           zIndex={1000000000000012}
           key="overlay"
-          animation="quick"
+          animation='standard'
           o={0.5}
           enterStyle={{ o: 0 }}
           exitStyle={{ o: 0 }}
@@ -382,7 +382,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
           elevate
           key="content"
           animation={[
-            'quick',
+            'standard',
             {
               opacity: {
                 overshootClamping: true,

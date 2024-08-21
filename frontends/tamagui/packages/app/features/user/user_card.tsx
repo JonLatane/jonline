@@ -182,13 +182,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const followHandler = <YStack w='100%'>
     <AnimatePresence>
       {followsCurrentUser
-        ? <Heading key='follow-request-heading' animation='quick' {...standardAnimation}
+        ? <Heading key='follow-request-heading' animation='standard' {...standardAnimation}
           size='$1' ta='center'>
           {following ? 'Friends' : 'Follows You'}
         </Heading>
         : undefined}
       {followRequestReceived ?
-        <YStack key='follow-request-heading' animation='quick' {...standardAnimation}
+        <YStack key='follow-request-heading' animation='standard' {...standardAnimation}
           gap='$2'>
           <Heading size='$1' ta='center'>Wants to follow you</Heading>
           <XStack ac='center' jc='center' mb='$2' gap='$2'>

@@ -98,7 +98,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-            <XStack animation='quick' rotate={showMedia ? '90deg' : '0deg'}>
+            <XStack animation='standard' rotate={showMedia ? '90deg' : '0deg'}>
               <ChevronRight size='$1' />
             </XStack>
             <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>

@@ -294,7 +294,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
         <AlertDialog.Portal zIndex={1000000}>
           <AlertDialog.Overlay
             key="overlay"
-            animation="quick"
+            animation='standard'
             {...overlayAnimation}
           />
           <AlertDialog.Content
@@ -303,7 +303,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
             key="content"
             maw={window.innerWidth - 20}
             animation={[
-              'quick',
+              'standard',
               {
                 opacity: {
                   overshootClamping: true,

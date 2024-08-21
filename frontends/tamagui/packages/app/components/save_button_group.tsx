@@ -166,7 +166,7 @@ export function SaveButtonGroup({
               <Dialog.Portal zIndex={2000011}>
                 <Dialog.Overlay
                   key="overlay"
-                  animation="quick"
+                  animation='standard'
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
@@ -178,7 +178,7 @@ export function SaveButtonGroup({
                   // zIndex={2000011}
                   key="content"
                   animation={[
-                    'quick',
+                    'standard',
                     {
                       opacity: {
                         overshootClamping: true,

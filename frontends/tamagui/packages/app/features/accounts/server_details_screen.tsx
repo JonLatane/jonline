@@ -318,10 +318,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           <XStack f={1} />
 
           <ZStack w={48} h={48}>
-            <YStack animation='quick' o={updated ? 1 : 0} p='$3'>
+            <YStack animation='standard' o={updated ? 1 : 0} p='$3'>
               <CheckCircle color='green' />
             </YStack>
-            <YStack animation='quick' o={updating ? 1 : 0} p='$3'>
+            <YStack animation='standard' o={updating ? 1 : 0} p='$3'>
               <Spinner size='small' />
             </YStack>
           </ZStack>
@@ -380,7 +380,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       <Heading my='auto' size='$3' f={1}>Service Version</Heading>
                       <Paragraph my='auto'>{serviceVersion?.version}</Paragraph>
 
-                      <XStack animation='quick' my='auto' ml='$2' rotate={showVersionInfo ? '90deg' : '0deg'}>
+                      <XStack animation='standard' my='auto' ml='$2' rotate={showVersionInfo ? '90deg' : '0deg'}>
                         <ChevronRight />
                       </XStack>
                     </XStack>
@@ -635,7 +635,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                     checked={server.configuredByDefault} value={server.configuredByDefault?.toString()}
                                     disabled={!isAdmin}
                                     onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
-                                    <Switch.Thumb animation="standard" backgroundColor='black' />
+                                    <Switch.Thumb animation='standard' backgroundColor='black' />
                                   </Switch>
                                   <Label pr="$0" miw={90} jc="flex-end" size='$2'
                                     o={server.configuredByDefault ? 1 : 0.5}
@@ -649,7 +649,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                     checked={server.pinnedByDefault} value={server.pinnedByDefault?.toString()}
                                     disabled={!isAdmin}
                                     onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
-                                    <Switch.Thumb animation="standard" backgroundColor='black' />
+                                    <Switch.Thumb animation='standard' backgroundColor='black' />
                                   </Switch>
                                   <Label pr="$0" miw={90} jc="flex-end" size='$2' o={server.pinnedByDefault ? 1 : 0.5}
                                     htmlFor={`${server.host}-pin-by-default`}>
@@ -718,7 +718,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       onCheckedChange={(checked) => setExternalCdnConfig(
                         checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
                       )}>
-                      <Switch.Thumb animation="quick" backgroundColor='black' />
+                      <Switch.Thumb animation='standard' backgroundColor='black' />
                     </Switch>
                   </XStack>
                   {isAdmin || externalCdnConfig
@@ -767,7 +767,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                           ? { ...externalCdnConfig, cdnGrpc: checked }
                           : undefined
                       )}>
-                      <Switch.Thumb animation="quick" backgroundColor='black' />
+                      <Switch.Thumb animation='standard' backgroundColor='black' />
                     </Switch>
                   </XStack>
                 </>

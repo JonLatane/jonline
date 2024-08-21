@@ -295,7 +295,7 @@ export function AuthSheet({ }: AuthSheetProps) {
                       }}
                       onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
                     {loginMethod
-                      ? <XStack w='100%' animation="quick"  {...standardAnimation}>
+                      ? <XStack w='100%' animation='standard'  {...standardAnimation}>
                         <Input secureTextEntry w='100%'
                           ref={passwordRef}
                           textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}

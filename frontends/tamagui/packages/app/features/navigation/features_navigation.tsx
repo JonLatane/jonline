@@ -397,7 +397,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           y={0}
           o={1}
           animation={[
-            'quick',
+            'standard',
             {
               opacity: {
                 overshootClamping: true,

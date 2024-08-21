@@ -1,5 +1,5 @@
 import { FederatedEvent, federateId } from "app/store";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 import { EventInstance } from "@jonline/api";
 import { Button, Heading, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
@@ -9,20 +9,19 @@ import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-
 import moment from "moment";
 import { useLink } from "solito/link";
 import { useGroupContext } from "app/contexts/group_context";
+import { set } from 'immer/dist/internal';
 
 type Props = {
   event: FederatedEvent,
   instance: EventInstance,
   tiny?: boolean;
   anonymousRsvpPath?: string;
-  isVisible?: boolean;
 };
 export const EventCalendarExporter: React.FC<Props> = ({
   event,
   instance,
   tiny: inputTiny = false,
   anonymousRsvpPath,
-  isVisible = true,
 }) => {
   const mediaQuery = useMedia();
   const tiny = inputTiny || !mediaQuery.gtXs;
@@ -66,10 +65,17 @@ export const EventCalendarExporter: React.FC<Props> = ({
   const office365Link = useLink({ href: office365(calendarEvent) });
   const yahooLink = useLink({ href: yahoo(calendarEvent) });
   const icsLink = useLink({ href: ics(calendarEvent) });
+  const [open, setOpen] = useState(false);
+  const [hasOpened, setHasOpened] = useState(false);
+  useEffect(() => {
+    if (open && !hasOpened) {
+      setHasOpened(true);
+    }
+  }, [open, hasOpened]);
 
   return <Tooltip>
     <Tooltip.Trigger>
-      <Popover size="$5" stayInFrame placement='bottom-end'>
+      <Popover size="$5" stayInFrame onOpenChange={setOpen} placement='bottom-end'>
         <Popover.Trigger asChild>
           {/* <Tooltip>
         <Tooltip.Trigger> */}
@@ -90,7 +96,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
           </Button>
         </Popover.Trigger>
 
-        {isVisible
+        {hasOpened
           ? <Popover.Content
             borderWidth={1}
             borderColor="$borderColor"
@@ -98,7 +104,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
             animation={[
-              'quick',
+              'standard',
               {
                 opacity: {
                   overshootClamping: true,

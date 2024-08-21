@@ -47,9 +47,13 @@ export function useServerPostPages(
   const hasMorePages = getHasMorePostPages(postsState, listingType, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);
 
-  const reload = () => {
+  const reload = (force?: boolean) => {
+    if (loading) return;
+
     setLoading(true);
-    const serversToUpdate = getServersMissingPostsPage(postsState, listingType, 0, servers);
+    const serversToUpdate = force
+      ? servers
+      : getServersMissingPostsPage(postsState, listingType, 0, servers);
     console.log('Reloading posts for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server =>
       dispatch(loadPostsPage({ ...server, listingType })))
@@ -62,7 +66,6 @@ export function useServerPostPages(
 
   useEffect(() => {
     if (!loading && serversAllDefined && someUnloaded(postsState.pagesStatus, servers)) {
-      setLoading(true);
       console.log("Loading posts...");
       setTimeout(debounceReload, 1);
     }

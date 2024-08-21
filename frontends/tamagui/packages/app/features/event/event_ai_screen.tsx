@@ -453,7 +453,7 @@ ${aiText}
           {[
             aiMode === 'inputText'
               ? <div key='input-text'>
-                <TextArea key='bio-edit' animation='quick'
+                <TextArea key='bio-edit' animation='standard'
                   value={aiText} onChangeText={setAiText}
                   // size='$5'
                   // h='$14'

@@ -1,11 +1,11 @@
-import { Moderation, User, UserListingType } from "@jonline/api";
-import { AccountOrServer, FederatedUser, getMembersPage, getUsersPage, loadGroupMembers, loadUsersPage, parseFederatedId, selectAllServers } from "app/store";
+import { Moderation, UserListingType } from "@jonline/api";
+import { useDebounce } from "@jonline/ui";
+import { FederatedUser, getMembersPage, getServersMissingUsersPage, getUsersPage, loadGroupMembers, loadUsersPage, parseFederatedId } from "app/store";
 import { useEffect, useMemo, useState } from "react";
-import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
-import { useCurrentAccountOrServer } from '../account_or_server/use_current_account_or_server';
-import { useAppDispatch, useAppSelector } from "../store_hooks";
 import { PaginationResults } from ".";
 import { useFederatedAccountOrServer } from "../account_or_server";
+import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
+import { useAppDispatch, useAppSelector } from "../store_hooks";
 
 export function useUsersPage(
   listingType: UserListingType | undefined,
@@ -13,11 +13,19 @@ export function useUsersPage(
 ): PaginationResults<FederatedUser> {
   const dispatch = useAppDispatch();
   const servers = usePinnedAccountsAndServers();
+  const usersState = useAppSelector(state => state.users);
 
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  function reloadUsers() {
+  const [loading, setLoadingUsers] = useState(false);
+  const effectiveListingType = listingType ?? UserListingType.EVERYONE;
+  function reload(force?: boolean) {
+    if (loading) return;
+
+    setLoadingUsers(true);
+    const serversToUpdate = force
+      ? servers
+      : getServersMissingUsersPage(usersState, effectiveListingType, 0, servers);
     Promise.all(
-      servers.map(pinnedServer =>
+      serversToUpdate.map(pinnedServer =>
         dispatch(loadUsersPage({ listingType, ...pinnedServer })))
     ).then((results) => {
       console.log("Loaded users", results);
@@ -27,24 +35,24 @@ export function useUsersPage(
 
   const state = useAppSelector(state => state.users);
   const { users, hadUndefinedServers } = useMemo(
-    () => getUsersPage(state, listingType ?? UserListingType.EVERYONE, page, servers),
+    () => getUsersPage(state, effectiveListingType, page, servers),
     [
       state.ids,
       servers.map(s => s.server?.host),
       listingType
     ])
+  const debounceReload = useDebounce(reload, 1000, { leading: true });
   useEffect(() => {
-    if (listingType !== undefined && hadUndefinedServers && !loadingUsers) {
+    if (listingType !== undefined && hadUndefinedServers && !loading) {
       console.log("Loading users...");
-      setLoadingUsers(true);
-      reloadUsers();
+      setTimeout(debounceReload, 1);
     }
-  }, [listingType, users, loadingUsers]);
+  }, [listingType, users, loading]);
 
   return {
     results: users,
-    loading: loadingUsers,
-    reload: reloadUsers,
+    loading: loading,
+    reload: reload,
     firstPageLoaded: users !== undefined,
   };
 }
