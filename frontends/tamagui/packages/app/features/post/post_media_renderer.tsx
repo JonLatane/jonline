@@ -4,7 +4,7 @@ import { View } from "react-native";
 
 import { Group, Post } from "@jonline/api";
 import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useIsVisible, useMediaUrl, usePostDispatch, useCurrentServer } from "app/hooks";
+import { useIsVisible, useMediaUrl, usePostDispatch, useCurrentServer, useLocalConfiguration } from "app/hooks";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, XEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
@@ -61,6 +61,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       : `/post/${detailsLinkId}`,
   });
   const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
+  const { preloadPostMedia } = useLocalConfiguration();
 
   const embedSupported = post.embedLink && post.link && post.link.length;
   let embedComponent: React.ReactNode | undefined = undefined;
@@ -87,7 +88,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
     ? <YStack mx='auto' width='100%' ai='center'>{embedComponent}</YStack>
     : undefined;
 
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  const [hasBeenVisible, setHasBeenVisible] = useState(preloadPostMedia || false);
   useEffect(() => {
     if (isVisible && !hasBeenVisible) {
       setHasBeenVisible(true);
@@ -112,7 +113,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
   // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, hasBeenVisible, media: post.media })
 
-  return <YStack zi={1000} width='100%'>
+  return <YStack zi={1000} width='100%' ai='center'>
     {hasBeenVisible && embedComponent
       ? <FadeInView><div>{embedComponent}</div></FadeInView>
       : embedComponent

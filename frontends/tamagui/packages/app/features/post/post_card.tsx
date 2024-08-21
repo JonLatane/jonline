@@ -109,7 +109,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const embedLink = editing ? editedEmbedLink : post.embedLink;
   const visibility = editing ? editedVisibility : post.visibility;
   const shareable = editing ? editedShareable : post.shareable;
-  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews } = useLocalConfiguration();
+  const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews, preloadPostMedia } = useLocalConfiguration();
 
   const saveEdits = useCallback(() => {
     setSavingEdits(true);
@@ -462,13 +462,10 @@ export const PostCard: React.FC<PostCardProps> = ({
                               setEmbedLink={setEditedEmbedLink}
                               disableInputs={savingEdits}
                             />
-                            : <PostMediaRenderer {...{
-                              post: {
-                                ...post,
-                                media,
-                                embedLink
-                              }, isPreview, groupContext: selectedGroup, isVisible
-                            }} />}
+                            : <PostMediaRenderer
+                              groupContext={selectedGroup}
+                              post={{ ...post, media, embedLink }}
+                              {...{ isPreview, isVisible }} />}
                         </YStack>
                         {linkToDetails
                           ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>

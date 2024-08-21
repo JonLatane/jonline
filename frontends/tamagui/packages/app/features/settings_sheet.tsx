@@ -2,7 +2,7 @@ import { Event } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
-import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
+import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setPreloadPostMedia, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useCallback, useState } from 'react';
 import { ToggleRow } from '../components/toggle_row';
@@ -377,6 +377,9 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                 <ToggleRow name='Browse RSVPs from Event Previews' value={app.browseRsvpsFromPreviews} setter={setBrowseRsvpsFromPreviews} autoDispatch />
                 <ToggleRow name='Show User IDs' value={app.showUserIds} setter={setShowUserIds} autoDispatch />
+                <ToggleRow name='Preload Post Media'
+                  description="Don't wait until posts/events are on-screen to render their media and embeds."
+                  value={app.preloadPostMedia} setter={setPreloadPostMedia} autoDispatch />
 
               </YStack>
               <XStack>
