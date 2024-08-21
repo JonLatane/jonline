@@ -13,9 +13,9 @@ use async_std::task;
 use async_tls::TlsAcceptor;
 use futures_lite::io::AsyncWriteExt;
 use log::info;
-use rustls::server::ResolvesServerCert;
-use rustls::{Certificate, PrivateKey, ServerConfig};
-use rustls_pemfile::{certs, read_one, Item};
+// use rustls::server::ResolvesServerCert;
+// use rustls::{Certificate, PrivateKey, ServerConfig};
+// use rustls_pemfile::{certs, read_one, Item};
 
 use http;
 use http::{HeaderMap, HeaderValue, Request, Response};
@@ -26,6 +26,8 @@ use std::io::BufReader;
 use std::net::ToSocketAddrs;
 use std::path::Path;
 use std::sync::Arc;
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 use std::vec::*;
 use structopt::StructOpt;
 use tokio;
@@ -68,60 +70,69 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
 
     // We create one TLSAcceptor around a shared configuration.
     // Cloning the acceptor will not clone the configuration.
-    let acceptor = TlsAcceptor::from(Arc::new(config.rustls_config));
+    // let acceptor = TlsAcceptor::from(Arc::new(config.rustls_config));
 
     // load_secrets().await;
 
     // We start a classic TCP server, passing all connections to the
     // handle_connection async function
     task::block_on(async {
-        let listener = TcpListener::bind(&addr).await?;
-        let mut incoming = listener.incoming();
-
-        log::info!("Initiating rustls main loop...");
-        while let Some(stream) = incoming.next().await {
-            // We use one acceptor per connection, so
-            // we need to clone the current one.
-            let acceptor = acceptor.clone();
-            let mut stream = stream?;
-            log::info!("Accepted a rustls stream...");
-
-            // TODO: scoped tasks?
-            task::spawn(async move {
-                let res = handle_connection(&acceptor, &mut stream).await;
-                match res {
-                    Ok(_) => {}
-                    Err(err) => {
-                        eprintln!("{:?}", err);
-                    }
-                };
-            });
+        log::info!("Initiating main loop...");
+        let interval = Duration::from_secs(5);
+        let mut next_time = Instant::now() + interval;
+        loop {
+            log::info!("Looping...");
+            sleep(next_time - Instant::now());
+            next_time += interval;
         }
+
+        // let listener = TcpListener::bind(&addr).await?;
+        // let mut incoming = listener.incoming();
+
+        // log::info!("Initiating rustls main loop...");
+        // while let Some(stream) = incoming.next().await {
+        //     // We use one acceptor per connection, so
+        //     // we need to clone the current one.
+        //     let acceptor = acceptor.clone();
+        //     let mut stream = stream?;
+        //     log::info!("Accepted a rustls stream...");
+
+        //     // TODO: scoped tasks?
+        //     task::spawn(async move {
+        //         let res = handle_connection(&acceptor, &mut stream).await;
+        //         match res {
+        //             Ok(_) => {}
+        //             Err(err) => {
+        //                 eprintln!("{:?}", err);
+        //             }
+        //         };
+        //     });
+        // }
 
         Ok(())
     })
 }
 
-/// Load the passed certificates file
-fn _load_certs(path: &Path) -> io::Result<Vec<Certificate>> {
-    Ok(certs(&mut BufReader::new(File::open(path)?))
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))?
-        .into_iter()
-        .map(Certificate)
-        .collect())
-}
+// /// Load the passed certificates file
+// fn _load_certs(path: &Path) -> io::Result<Vec<Certificate>> {
+//     Ok(certs(&mut BufReader::new(File::open(path)?))
+//         .map_err(|_| io::Error::new(io::ErrorKind::InvalidInput, "invalid cert"))?
+//         .into_iter()
+//         .map(Certificate)
+//         .collect())
+// }
 
-/// Load the passed keys file
-fn _load_key(path: &Path) -> io::Result<PrivateKey> {
-    match read_one(&mut BufReader::new(File::open(path)?)) {
-        Ok(Some(Item::RSAKey(data) | Item::PKCS8Key(data))) => Ok(PrivateKey(data)),
-        Ok(_) => Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("invalid key in {}", path.display()),
-        )),
-        Err(e) => Err(io::Error::new(io::ErrorKind::InvalidInput, e)),
-    }
-}
+// /// Load the passed keys file
+// fn _load_key(path: &Path) -> io::Result<PrivateKey> {
+//     match read_one(&mut BufReader::new(File::open(path)?)) {
+//         Ok(Some(Item::RSAKey(data) | Item::PKCS8Key(data))) => Ok(PrivateKey(data)),
+//         Ok(_) => Err(io::Error::new(
+//             io::ErrorKind::InvalidInput,
+//             format!("invalid key in {}", path.display()),
+//         )),
+//         Err(e) => Err(io::Error::new(io::ErrorKind::InvalidInput, e)),
+//     }
+// }
 
 // A reference to a K8s namespace containing a `jonline` instance (we will use K8s DNS to route the request)
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
@@ -129,25 +140,25 @@ struct Server {
     host: String,
     namespace: String,
 }
-#[derive(Clone)]
-struct ServerResolver {
-    servers: Vec<Server>,
-}
+// #[derive(Clone)]
+// struct ServerResolver {
+//     servers: Vec<Server>,
+// }
 
-impl ResolvesServerCert for ServerResolver {
-    fn resolve(
-        &self,
-        client_hello: rustls::server::ClientHello,
-    ) -> Option<Arc<rustls::sign::CertifiedKey>> {
-        info!("Resolving client hello: {:?}", client_hello.server_name());
-        todo!()
-    }
-}
+// impl ResolvesServerCert for ServerResolver {
+//     fn resolve(
+//         &self,
+//         client_hello: rustls::server::ClientHello,
+//     ) -> Option<Arc<rustls::sign::CertifiedKey>> {
+//         info!("Resolving client hello: {:?}", client_hello.server_name());
+//         todo!()
+//     }
+// }
 
 #[derive(Clone, Debug)]
 struct JonlineServerConfig {
     servers: Vec<Server>,
-    rustls_config: ServerConfig,
+    // rustls_config: ServerConfig,
 }
 
 /// Load the Jonline server configuration
@@ -231,27 +242,27 @@ async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
         log::info!("Secrets response for server {:?}: {:?}", server, secrets);
     }
 
-    // Configure the server using rustls
-    // See https://docs.rs/rustls/0.16.0/rustls/struct.ServerConfig.html for details
-    //
-    // A TLS server needs a certificate and a fitting private key
-    let server_resolver: ServerResolver = ServerResolver {
-        servers: servers.clone(),
-    };
-    let server_arc = Arc::new(server_resolver.clone());
-    // we don't use client authentication
-    let rustls_config = ServerConfig::builder()
-        .with_safe_defaults()
-        .with_no_client_auth()
-        .with_cert_resolver(server_arc);
-    // set this server to use one cert together with the loaded private key
-    // .with_single_cert(certs, key)
+    // // Configure the server using rustls
+    // // See https://docs.rs/rustls/0.16.0/rustls/struct.ServerConfig.html for details
+    // //
+    // // A TLS server needs a certificate and a fitting private key
+    // let server_resolver: ServerResolver = ServerResolver {
+    //     servers: servers.clone(),
+    // };
+    // let server_arc = Arc::new(server_resolver.clone());
+    // // we don't use client authentication
+    // let rustls_config = ServerConfig::builder()
+    //     .with_safe_defaults()
+    //     .with_no_client_auth()
+    //     .with_cert_resolver(server_arc);
+    // // set this server to use one cert together with the loaded private key
+    // // .with_single_cert(certs, key)
 
-    // .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
+    // // .map_err(|err| io::Error::new(io::ErrorKind::InvalidInput, err))?;
 
     Ok(JonlineServerConfig {
         servers,
-        rustls_config,
+        // rustls_config,
     })
 }
 

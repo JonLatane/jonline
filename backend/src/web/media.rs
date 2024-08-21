@@ -65,7 +65,8 @@ pub async fn create_media(
         .bucket
         .put_object_stream(&mut media.open(250.mebibytes()), &minio_path)
         .await
-        .map_err(|_| Status::InternalServerError)?;
+        .map_err(|_| Status::InternalServerError)?
+        .status_code();
 
     log::info!("create_media status_code: {:?}", status_code);
 
