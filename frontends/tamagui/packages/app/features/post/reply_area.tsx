@@ -117,7 +117,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{
                 post: Post.create({ id: '', media, embedLink })
-              }} isVisible />
+              }} />
               : undefined}
             <TamaguiMarkdown text={replyText} shrink />
           </ScrollView>

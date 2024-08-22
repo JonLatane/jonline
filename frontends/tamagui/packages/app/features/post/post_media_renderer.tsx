@@ -16,7 +16,6 @@ export interface PostMediaRendererProps {
   post: Post;
   isPreview?: boolean;
   groupContext?: FederatedGroup;
-  isVisible: boolean;
   smallPreview?: boolean;
   xsPreview?: boolean;
   detailsLink?: LinkProps;
@@ -32,7 +31,6 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   post,
   isPreview,
   groupContext,
-  isVisible,
   smallPreview,
   xsPreview,
   detailsLink: parentDetailsLink
@@ -61,7 +59,6 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       : `/post/${detailsLinkId}`,
   });
   const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
-  const { preloadPostMedia } = useLocalConfiguration();
 
   const embedSupported = post.embedLink && post.link && post.link.length;
   let embedComponent: React.ReactNode | undefined = undefined;
@@ -88,13 +85,6 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
     ? <YStack mx='auto' width='100%' ai='center'>{embedComponent}</YStack>
     : undefined;
 
-  const [hasBeenVisible, setHasBeenVisible] = useState(preloadPostMedia || false);
-  useEffect(() => {
-    if (isVisible && !hasBeenVisible) {
-      setHasBeenVisible(true);
-    }
-  }, [isVisible, hasBeenVisible]);
-
   const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
   const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
 
@@ -114,7 +104,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, hasBeenVisible, media: post.media })
 
   return <YStack zi={1000} width='100%' ai='center'>
-    {hasBeenVisible && embedComponent
+    {embedComponent
       ? <FadeInView><div>{embedComponent}</div></FadeInView>
       : embedComponent
         ? <Spinner color={primaryColor} />
@@ -127,7 +117,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
             {post.media.map((mediaRef, i) => {
               // debugger;
               return <YStack key={mediaRef.id} w={mediaQuery.gtXs ? '400px' : '260px'} h='100%'>
-                <MediaRenderer media={mediaRef} isVisible={isVisible} isPreview={isPreview} />
+                <MediaRenderer media={mediaRef} isPreview={isPreview} />
               </YStack>;
             })}
           </XStack>
@@ -139,7 +129,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
         {singleMediaPreview
           ?
           <YStack key={singleMediaPreview.id} w={singlePreviewSize} maw='100%' mah='100%' h={isPreview ? singlePreviewSize : undefined} mx='auto'>
-            <MediaRenderer media={singleMediaPreview} isVisible={isVisible} />
+            <MediaRenderer media={singleMediaPreview} />
           </YStack>
           // <Image
           //   mb='$3'

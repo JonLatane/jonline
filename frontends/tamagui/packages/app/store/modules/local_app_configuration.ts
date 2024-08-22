@@ -53,7 +53,6 @@ export type LocalAppConfiguration = {
   calendarImplementation: CalendarImplementation;
   hasOpenedAccounts: boolean;
   alwaysShowHideButton: boolean;
-  preloadPostMedia: boolean;
 }
 
 const initialState: LocalAppConfiguration = {
@@ -89,7 +88,6 @@ const initialState: LocalAppConfiguration = {
   calendarImplementation: 'big-calendar',
   hasOpenedAccounts: false,
   alwaysShowHideButton: false,
-  preloadPostMedia: true,
 };
 
 setTimeout(async () => {
@@ -255,9 +253,6 @@ export const localAppSlice = createSlice({
     setAlwaysShowHideButton: (state, action: PayloadAction<boolean>) => {
       state.alwaysShowHideButton = action.payload;
     },
-    setPreloadPostMedia: (state, action: PayloadAction<boolean>) => {
-      state.preloadPostMedia = action.payload;
-    },
   },
   extraReducers: (builder) => {
   },
@@ -270,7 +265,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
   moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount,
-  setEventPagesOnHome,setCalendarImplementation, setHasOpenedAccounts, setAlwaysShowHideButton, setPreloadPostMedia
+  setEventPagesOnHome,setCalendarImplementation, setHasOpenedAccounts, setAlwaysShowHideButton
 } = localAppSlice.actions;
 export const localAppReducer = localAppSlice.reducer;
 export default localAppReducer;

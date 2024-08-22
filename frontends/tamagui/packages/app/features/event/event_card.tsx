@@ -865,7 +865,7 @@ export const EventCard: React.FC<Props> = ({
                               smallPreview={horizontal && isPreview}
                               xsPreview={xs && isPreview}
 
-                              {...{ detailsLink, isPreview, groupContext: selectedGroup, isVisible }}
+                              {...{ detailsLink, isPreview, groupContext: selectedGroup }}
                               post={{
                                 ...eventPost,
                                 media,

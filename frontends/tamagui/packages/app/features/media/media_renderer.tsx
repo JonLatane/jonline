@@ -1,6 +1,6 @@
 import { useProvidedDispatch } from "app/hooks";
 import { JonlineServer, useServerTheme } from "app/store";
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 import { Anchor, Paragraph, Text, YStack, useMedia } from "@jonline/ui";
 import { MediaRef } from "app/contexts";
@@ -24,7 +24,6 @@ export const MediaRenderer: React.FC<Props> = ({
   failQuietly = false,
   serverOverride,
   forceImage = false,
-  isVisible = true,
   isPreview = false
 }) => {
   const { dispatch, accountOrServer } = useProvidedDispatch(serverOverride);
@@ -32,37 +31,19 @@ export const MediaRenderer: React.FC<Props> = ({
   const { navAnchorColor } = useServerTheme(server);
   const mediaQuery = useMedia();
 
-  // const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  // useEffect(() => {
-  //   if (isVisible && !hasBeenVisible) {
-  //     setHasBeenVisible(true);
-  //   }
-  // }, [isVisible, hasBeenVisible]);
-
   const ReactPlayerShim = ReactPlayer as any;
 
   const mediaUrl = useMediaUrl(media.id, { server });
-  // console.log(`mediaUrl for ${server.host} is ${mediaUrl}`)
   let [type, subType] = (media?.contentType ?? '').split('/');
   if (forceImage) {
     type = 'image';
   }
 
   if (!server) return <></>;
-  // if (!hasBeenVisible) return <></>;
 
-  // if (!forceImage) {
-  //   debugger;
-  // }
-  // if (type !== 'image') {
-  //   debugger;
-  // }
-  // debugger;
   let view: JSX.Element;
   switch (type) {
     case 'image':
-      // if (!isVisible) return <></>;
-
       return <FadeInView w='100%' h='100%'>
         <img style={{ width: '100%', height: '100%', objectFit: 'contain' }}
           src={mediaUrl} />

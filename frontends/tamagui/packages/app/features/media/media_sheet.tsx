@@ -189,7 +189,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 {viewerMedia?.name}
                               </Heading>
                             </XStack>
-                            <PostMediaRenderer isVisible post={
+                            <PostMediaRenderer post={
                               Post.create({
                                 media: [viewerMedia as MediaReference]
                               })
