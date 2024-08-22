@@ -1,7 +1,7 @@
 extern crate diesel;
 extern crate jonline;
 use diesel::*;
-use jonline::{db_connection, minio_connection, init_bin_logging};
+use jonline::{db_connection, minio_connection, init_bin_logging, init_crypto};
 use jonline::schema::{media, posts};
 
 #[tokio::main]
