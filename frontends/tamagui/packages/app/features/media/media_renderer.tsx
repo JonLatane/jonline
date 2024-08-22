@@ -32,12 +32,12 @@ export const MediaRenderer: React.FC<Props> = ({
   const { navAnchorColor } = useServerTheme(server);
   const mediaQuery = useMedia();
 
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  useEffect(() => {
-    if (isVisible && !hasBeenVisible) {
-      setHasBeenVisible(true);
-    }
-  }, [isVisible, hasBeenVisible]);
+  // const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  // useEffect(() => {
+  //   if (isVisible && !hasBeenVisible) {
+  //     setHasBeenVisible(true);
+  //   }
+  // }, [isVisible, hasBeenVisible]);
 
   const ReactPlayerShim = ReactPlayer as any;
 
@@ -49,7 +49,7 @@ export const MediaRenderer: React.FC<Props> = ({
   }
 
   if (!server) return <></>;
-  if (!hasBeenVisible) return <></>;
+  // if (!hasBeenVisible) return <></>;
 
   // if (!forceImage) {
   //   debugger;
