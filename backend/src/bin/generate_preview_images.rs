@@ -11,7 +11,7 @@ use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::db_connection::PgPooledConnection;
-use jonline::marshaling::*;
+use jonline::{init_crypto, marshaling::*};
 use jonline::models;
 use jonline::models::{get_user, Post};
 use jonline::protos::Visibility;
@@ -22,6 +22,7 @@ use uuid::Uuid;
 
 #[tokio::main]
 async fn main() {
+    init_crypto();
     init_bin_logging();
     log::info!("Generating preview images...");
     log::info!("Connecting to DB and MinIO...");

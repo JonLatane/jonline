@@ -45,7 +45,7 @@ pub mod jonline_service;
 pub mod web;
 pub mod servers;
 
-use ::jonline::{env_var, init_service_logging, report_error};
+use ::jonline::{env_var, init_crypto, init_service_logging, report_error};
 use diesel::*;
 use futures::future::join_all;
 use marshaling::ToProtoServerConfiguration;
@@ -55,6 +55,7 @@ use tokio::task::JoinHandle;
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init_crypto();
     init_service_logging();
     db_connection::migrate_database();
 

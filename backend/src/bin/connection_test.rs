@@ -10,6 +10,7 @@ const PORT: i32 = 27707;
 
 #[tokio::main]
 async fn main() {
+    init_crypto();
     init_bin_logging();
     let protocol = env_var("PROTOCOL").unwrap_or(PROTOCOL.to_string());
     let host = env_var("HOST").unwrap_or(HOST.to_string());

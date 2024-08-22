@@ -19,13 +19,13 @@ extern crate awscreds;
 extern crate awsregion;
 extern crate bytes;
 extern crate env_logger;
+extern crate http;
 extern crate log;
 extern crate percent_encoding;
+extern crate reqwest;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
-extern crate http;
-extern crate reqwest;
 
 pub mod auth;
 pub mod db_connection;
@@ -73,6 +73,12 @@ where
 
 pub fn env_var(name: &str) -> Option<String> {
     env::var(name).ok().filter(|s| !s.is_empty())
+}
+
+pub fn init_crypto() {
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
 }
 
 /// Designed to be called from the main function of a service.

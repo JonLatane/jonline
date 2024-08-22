@@ -6,6 +6,7 @@ use jonline::schema::{media, posts};
 
 #[tokio::main]
 async fn main() {
+    init_crypto();
     init_bin_logging();
     log::info!("Deleting Unowned Media...");
     log::info!("Connecting to DB and MinIO...");

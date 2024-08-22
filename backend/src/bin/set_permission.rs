@@ -4,13 +4,14 @@ extern crate serde_json;
 use diesel::*;
 use jonline::marshaling::{ToProtoId, ToProtoPermission, ALL_PERMISSIONS};
 
-use jonline::{db_connection, init_bin_logging};
+use jonline::{db_connection, init_bin_logging, init_crypto};
 // use jonline::protos::Permission;
 use jonline::schema::*;
 // use serde_json::Value::Array;
 use std::env;
 
 pub fn main() {
+    init_crypto();
     init_bin_logging();
 
     let args: Vec<String> = env::args().collect();

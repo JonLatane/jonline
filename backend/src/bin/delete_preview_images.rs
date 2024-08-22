@@ -3,10 +3,11 @@ extern crate jonline;
 
 use diesel::*;
 
-use jonline::{db_connection, init_bin_logging};
+use jonline::{db_connection, init_bin_logging, init_crypto};
 use jonline::schema::*;
 
 pub fn main() {
+    init_crypto();
     init_bin_logging();
     log::info!("Unlinking all preview images...");
     log::info!("Connecting to DB...");

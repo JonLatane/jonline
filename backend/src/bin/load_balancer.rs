@@ -4,7 +4,7 @@ extern crate futures_lite;
 extern crate reqwest;
 extern crate rustls;
 
-use jonline::{init_bin_logging, init_service_logging};
+use jonline::{init_crypto, init_bin_logging, init_service_logging};
 
 use async_std::io;
 use async_std::net::{TcpListener, TcpStream};
@@ -46,6 +46,7 @@ struct Options {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    init_crypto();
     init_service_logging();
     let options = Options::from_args();
     log::info!(

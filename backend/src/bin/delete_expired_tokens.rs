@@ -1,11 +1,12 @@
 extern crate diesel;
 extern crate jonline;
 use diesel::*;
-use jonline::{db_connection, init_bin_logging};
+use jonline::{db_connection, init_bin_logging, init_crypto};
 use jonline::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 use jonline::schema::user_access_tokens::dsl as user_access_tokens;
 
 pub fn main() {
+    init_crypto();
     init_bin_logging();
     log::info!("Cleaning Expired Tokens...");
     log::info!("Connecting to DB...");

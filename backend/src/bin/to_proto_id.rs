@@ -4,6 +4,7 @@ use jonline::*;
 use std::env::args;
 
 pub fn main() {
+    init_crypto();
     init_bin_logging();
     let args: Vec<String> = args().collect();
     let arg = args[1].parse::<i64>().expect("Invalid BIGINT format");
