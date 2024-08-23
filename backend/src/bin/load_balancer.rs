@@ -240,7 +240,7 @@ async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
         //         )
         //     })?;
         // let response = http::send(request.body(()).unwrap());
-        log::info!("Secrets response for server {:?}: {:?}", server, secrets);
+        // log::info!("Secrets response for server {:?}: {:?}", server, secrets);
     }
 
     // // Configure the server using rustls
