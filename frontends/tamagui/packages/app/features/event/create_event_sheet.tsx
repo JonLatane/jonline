@@ -23,43 +23,28 @@ export type CreateEventSheetProps = {
 
 export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProps) {
   const { dispatch, accountOrServer } = useCreationDispatch();
-  const [startsAt, _setStartsAt] = useState('');
-  const [endsAt, _setEndsAt] = useState('');
-  const [duration, _setDuration] = useState(0);
+  const [startsAt, setStartsAt] = useState('');
+  const [endsAt, setEndsAt] = useState('');
+  const [duration, setDuration] = useState(60);
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
 
-  const setStartsAt = useCallback((v: string) => {
-    _setStartsAt(v);
-    if (v && duration) {
-      const start = moment(v);
-      const end = start.add(duration, 'minutes');
-      _setEndsAt(supportDateInput(end));
-    }
-  }, [duration]);
-  const setEndsAt = useCallback((v: string) => {
-    _setEndsAt(v);
-    if (startsAt) {
+
+  useEffect(() => {
+    if (startsAt && endsAt) {
       const start = moment(startsAt);
-      const end = moment(v);
-      _setDuration(end.diff(start, 'minutes'));
+      const end = moment(endsAt);
+      setDuration(end.diff(start, 'minutes'));
+    }
+  }, [endsAt]);
+  useEffect(() => {
+    if (startsAt && duration) {
+      const start = moment(startsAt);
+      const end = start.add(duration, 'minutes');
+      setEndsAt(supportDateInput(end));
     }
   }, [startsAt]);
-  // useEffect(() => {
-  //   if (startsAt && endsAt) {
-  //     const start = moment(startsAt);
-  //     const end = moment(endsAt);
-  //     _setDuration(end.diff(start, 'minutes'));
-  //   }
-  // }, [endsAt]);
-  // useEffect(() => {
-  //   if (startsAt && duration) {
-  //     const start = moment(startsAt);
-  //     const end = start.add(duration, 'minutes');
-  //     setEndsAt(supportDateInput(end));
-  //   }
-  // }, [startsAt]);
 
 
   const [location, setLocation] = useState(Location.create({}));

@@ -204,15 +204,8 @@ export const EventCard: React.FC<Props> = ({
 
   const window = useWindowDimensions();
   const visibilityRef = React.createRef<HTMLDivElement>();
-  // const ref = React.createRef<TamaguiElement>();
   const instanceScrollRef = React.createRef<ScrollView>();
   const isVisible = useIsVisibleHorizontal(visibilityRef);
-  // const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  // useEffect(() => {
-  //   if (isVisible && !hasBeenVisible) {
-  //     setHasBeenVisible(true);
-  //   }
-  // }, [isVisible]);
 
   const authorId = eventPost.author?.userId;
   const authorName = eventPost.author?.username;
