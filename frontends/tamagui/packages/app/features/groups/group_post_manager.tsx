@@ -97,6 +97,10 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
   const showPeriod = selectedGroup && otherGroupCount && sharedToSelectedGroup === false;
   // console.log('groupPostManager')
   return <XStack flexWrap='wrap' maw='100%'>
+    {/* {loading && !groupPostDataLoadFailed
+      ? <Spinner my='auto' mx='$2' position='absolute' right={0}
+        color={primaryAnchorColor} size='small' />
+      : undefined} */}
     {!selectedGroup && !singleSharedGroup && otherGroupCount
       ?
       <Text my='auto' fontSize={'$1'} fontFamily='$body'>
@@ -107,7 +111,6 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       {sharedToSelectedGroup === true || (sharedToSelectedGroup === undefined && singleSharedGroup) ? 'In ' : undefined}
       {sharedToSelectedGroup === false ? 'Not shared to ' : undefined}
     </Text>
-    {/* {loading && !groupPostDataLoadFailed ? <Spinner my='auto' mx='$2' color={primaryAnchorColor} size='small' /> : undefined} */}
     <XStack py='$1'>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
@@ -125,7 +128,8 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
       pointerEvents='none'
       position='absolute'
       right={8} top={7}
-      o={loading && !groupPostDataLoadFailed ? 0.5 : 0}
+      zi={1000}
+      o={(!groupPostData || loading) && !groupPostDataLoadFailed ? 1 : 0}
     />
     {groupPostData && selectedGroup
       ? otherGroupCount

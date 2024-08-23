@@ -207,12 +207,12 @@ export const EventCard: React.FC<Props> = ({
   // const ref = React.createRef<TamaguiElement>();
   const instanceScrollRef = React.createRef<ScrollView>();
   const isVisible = useIsVisibleHorizontal(visibilityRef);
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  useEffect(() => {
-    if (isVisible && !hasBeenVisible) {
-      setHasBeenVisible(true);
-    }
-  }, [isVisible]);
+  // const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  // useEffect(() => {
+  //   if (isVisible && !hasBeenVisible) {
+  //     setHasBeenVisible(true);
+  //   }
+  // }, [isVisible]);
 
   const authorId = eventPost.author?.userId;
   const authorName = eventPost.author?.username;
@@ -304,7 +304,7 @@ export const EventCard: React.FC<Props> = ({
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview && hasBeenVisible;
+  const showBackgroundPreview = !!imagePreview;;// && hasBeenVisible;
   //  && isPreview
   ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
 
@@ -925,7 +925,7 @@ export const EventCard: React.FC<Props> = ({
                             <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
                               <GroupPostManager
                                 post={eventPost}
-                                isVisible={hasBeenVisible} />
+                                isVisible={isVisible} />
                             </XStack>
                             {/* : undefined} */}
                           </XStack>

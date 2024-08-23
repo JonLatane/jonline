@@ -141,12 +141,12 @@ export const PostCard: React.FC<PostCardProps> = ({
 
   const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  useEffect(() => {
-    if (isVisible && !hasBeenVisible) {
-      setHasBeenVisible(true);
-    }
-  }, [isVisible]);
+  // const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  // useEffect(() => {
+  //   if (isVisible && !hasBeenVisible) {
+  //     setHasBeenVisible(true);
+  //   }
+  // }, [isVisible]);
 
   const postHasWebLink = !!post.link && post.link.startsWith('http');
   const postLink = postHasWebLink ? useLink({
@@ -252,7 +252,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   //   : post?.media?.find(m => m.contentType.startsWith('image') && (!m.generated /*|| !isPreview*/));
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview && hasBeenVisible;
+  const showBackgroundPreview = !!imagePreview;// && hasBeenVisible;
 
 
   const componentKey = useComponentKey('post-card');
@@ -447,9 +447,9 @@ export const PostCard: React.FC<PostCardProps> = ({
               ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
               : <YStack zi={1000} w='100%'>
                 <XStack ai='flex-start' w='100%' pr='$3' pl={isReply ? '$2' : '$3'}>
-                  {isReply ? <XStack mt='$3'><AuthorInfo {...{ post, isVisible }} avatarOnly /></XStack> : undefined}
+                  {isReply ? <XStack mt='$3'><AuthorInfo {...{ post }} avatarOnly /></XStack> : undefined}
                   <YStack f={1}>
-                    {isReply ? <XStack mt='$1' pt='$1'><AuthorInfo {...{ post, isVisible }} nameOnly /></XStack> : undefined}
+                    {isReply ? <XStack mt='$1' pt='$1'><AuthorInfo {...{ post }} nameOnly /></XStack> : undefined}
                     <AnimatePresence>
                       {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
                         <YStack mah={isPreview ? 550 : undefined} overflow='hidden'>
@@ -542,7 +542,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   mt={shrinkPreviews && isReply ? '$1' : undefined}
                   pt={isReply ? 10 : 0} {...detailsShadowProps}>
                   <XStack f={1}>
-                    <AuthorInfo {...{ post, isVisible }} dateOnly={isReply} />
+                    <AuthorInfo {...{ post }} dateOnly={isReply} />
                   </XStack>
                   {isReply ? <StarButton post={post} horizontal /> : undefined}
                   {onPressReply
