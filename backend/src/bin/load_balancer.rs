@@ -219,26 +219,26 @@ async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
         log::info!("Secrets URL: {:?}", secrets_url);
         log::info!("K8s Secrets Token: {:?}", k8s_token);
 
-        let secrets = client
-            .get(secrets_url)
-            .send()
-            .await
-            .map_err(|e| {
-                log::error!("Failed to fetch secrets: {:?}", e);
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Failed to fetch secrets: {:?}", e),
-                )
-            })?
-            .text()
-            .await
-            .map_err(|e| {
-                log::error!("Failed to fetch secrets: {:?}", e);
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Failed to fetch secrets: {:?}", e),
-                )
-            })?;
+        // let secrets = client
+        //     .get(secrets_url)
+        //     .send()
+        //     .await
+        //     .map_err(|e| {
+        //         log::error!("Failed to fetch secrets: {:?}", e);
+        //         io::Error::new(
+        //             io::ErrorKind::InvalidInput,
+        //             format!("Failed to fetch secrets: {:?}", e),
+        //         )
+        //     })?
+        //     .text()
+        //     .await
+        //     .map_err(|e| {
+        //         log::error!("Failed to read secrets: {:?}", e);
+        //         io::Error::new(
+        //             io::ErrorKind::InvalidInput,
+        //             format!("Failed to read secrets: {:?}", e),
+        //         )
+        //     })?;
         // let response = http::send(request.body(()).unwrap());
         log::info!("Secrets response for server {:?}: {:?}", server, secrets);
     }
