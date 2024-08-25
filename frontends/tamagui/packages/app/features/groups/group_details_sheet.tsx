@@ -300,7 +300,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
       <Sheet.Overlay />
       <Sheet.Frame>
         <Sheet.Handle />
-        <XStack gap='$4' paddingHorizontal='$3' ai='center' w='100%'>
+        <XStack gap='$2' paddingHorizontal='$3' ai='center' w='100%'>
 
           <Button
             // alignSelf='center'
@@ -327,16 +327,16 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
 
           <XStack f={1} />
 
-          {showServerInfo
-            ? <XStack my='auto' f={1} ai='center' jc='center' o={0.5}>
-              <Paragraph size='$1' my='auto' mr='$2'>on</Paragraph>
+          {showServerInfo && !isPrimaryServer
+            ? <YStack my='auto' f={1} ai='flex-start' jc='flex-start' o={0.5}>
+              <Paragraph pl='$2' size='$1'>on</Paragraph>
               <ServerNameAndLogo server={currentServer} />
-            </XStack>
+            </YStack>
             : undefined}
 
           <Button size='$3' backgroundColor={showSettings ? navColor : undefined}
             hoverStyle={{ backgroundColor: showSettings ? navColor : undefined }}
-            onPress={() => setShowSettings(!showSettings)} circular mr='$2' my='auto'>
+            onPress={() => setShowSettings(!showSettings)} circular my='auto'>
             <Cog color={showSettings ? navTextColor : undefined} />
           </Button>
         </XStack>
