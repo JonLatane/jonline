@@ -208,6 +208,7 @@ export function GroupButton({ group, selected, setOpen, onShowInfo, onGroupSelec
         size='$2'
         my='auto'
         ml='$2'
+        mr={-3}
         // mr='$2'
         circular
         icon={Info} onPress={() => onShowInfo()} />}
