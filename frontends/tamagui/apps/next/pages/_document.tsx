@@ -22,8 +22,8 @@ export default class Document extends NextDocument {
       <style key='jonline-css' dangerouslySetInnerHTML={{
         __html: `
         .blur {
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          backdrop-filter: blur(3px);
+          -webkit-backdrop-filter: blur(3px);
         }
         .bottomChrome {
             padding-bottom: env(safe-area-inset-bottom, 0);
