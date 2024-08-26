@@ -36,7 +36,6 @@ metadata:
   labels:
     app: jonline-lb
 spec:
-  serviceAccountName: jonline-lb
   replicas: 2
   selector:
     matchLabels:
@@ -46,6 +45,7 @@ spec:
       labels:
         app: jonline-lb
     spec:
+      serviceAccountName: jonline-lb
       containers:
         - image: docker.io/jonlatane/jbl:0.2.532
           name: jonline-lb
