@@ -239,7 +239,6 @@ async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
                     format!("Failed to read secrets: {:?}", e),
                 )
             })?;
-        let response = http::send(request.body(()).unwrap());
         log::info!("Secrets response for server {:?}: {:?}", server, secrets);
     }
 
