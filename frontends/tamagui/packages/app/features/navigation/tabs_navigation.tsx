@@ -148,7 +148,7 @@ export function TabsNavigation({
   const logo = primaryServer?.serverConfiguration?.serverInfo?.logo;
 
 
-  const { transparentBackgroundColor, darkMode: systemDark, inverse } = useServerTheme(currentServer);
+  const { backgroundColor, barelyTransparentBackgroundColor, transparentBackgroundColor, darkMode: systemDark, inverse } = useServerTheme(currentServer);
 
   // console.log('TabsNavigation darkMode', systemDark, 'inverse', inverse, 'transparentBackgroundColor', transparentBackgroundColor);
 
@@ -241,9 +241,6 @@ export function TabsNavigation({
                 // backgroundColor: transparentBackgroundColor
               }}>
 
-                {/* <StickyBox style={{ zIndex: 10, width: '100%', 
-              //pointerEvents: hideNavigation ? 'none' : undefined
-              }} className='blur'> */}
                 <YStack w='100%' className='blur' id='jonline-top-navigation'>
                   {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
                     pointerEvents={hideNavigation ? 'none' : undefined}
@@ -422,11 +419,9 @@ export function TabsNavigation({
                   left: 0,
                   right: 0,
                   zIndex: 10,
-                  backgroundColor: transparentBackgroundColor
+                  backgroundColor: barelyTransparentBackgroundColor
                 }}>
-                  {/* <StickyBox bottom offsetBottom={0} className='blur bottomChrome' style={{ width: '100%', zIndex: 10, backgroundColor: transparentBackgroundColor }} > */}
                   {bottomChrome}
-                  {/* </StickyBox> */}
                 </div>
                 : undefined}
             </YStack>

@@ -27,6 +27,7 @@ export type ServerTheme = {
 
   backgroundColor: string;
   transparentBackgroundColor: string;
+  barelyTransparentBackgroundColor: string;
 
   warningAnchorColor: string;
   darkMode: boolean;
@@ -47,7 +48,6 @@ function getServerTheme(
   server: JonlineServer | undefined,
   app: LocalAppConfiguration
 ): ServerTheme {
-
   const baseTheme = useTheme();
   const baseBackgroundColor = baseTheme?.background?.val ?? '#FFFFFF';
   const { luma: baseThemeBgLuma } = colorMeta(baseBackgroundColor);
@@ -78,6 +78,7 @@ function getServerTheme(
 
 
   const transparentBackgroundColor = darkMode ? '#000A' : '#FFFA';
+  const barelyTransparentBackgroundColor = darkMode ? '#000D' : '#FFFD';
   const primaryBgColor = darkMode ? primaryDarkColor : primaryLightColor;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
@@ -100,6 +101,7 @@ function getServerTheme(
     navColor, navTextColor, navDarkColor, navLightColor,
     navBgColor, navAnchorColor,
     transparentBackgroundColor,
+    barelyTransparentBackgroundColor,
 
     inverse
   };
