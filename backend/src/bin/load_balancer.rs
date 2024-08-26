@@ -5,6 +5,7 @@ extern crate reqwest;
 extern crate rustls;
 
 use jonline::{init_crypto, init_bin_logging, init_service_logging};
+use serde::{Deserialize, Serialize};
 
 use async_std::io;
 use async_std::net::{TcpListener, TcpStream};
@@ -26,6 +27,7 @@ use std::io::BufReader;
 use std::net::ToSocketAddrs;
 use std::path::Path;
 use std::sync::Arc;
+use std::collections::HashMap;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use std::vec::*;
@@ -136,7 +138,7 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
 // }
 
 // A reference to a K8s namespace containing a `jonline` instance (we will use K8s DNS to route the request)
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 struct Server {
     host: String,
     namespace: String,
@@ -161,6 +163,25 @@ struct JonlineServerConfig {
     servers: Vec<Server>,
     // rustls_config: ServerConfig,
 }
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct KubernetesSecrets {
+    kind: String,
+    api_version: String,
+    items: Vec<KubernetesSecretItem>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct KubernetesSecretItem {
+    metadata: KubernetesSecretMetadata,
+    data: HashMap<String, String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+struct KubernetesSecretMetadata {
+    name: String,
+    namespace: String
+}
+
 
 /// Load the Jonline server configuration
 async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
@@ -240,7 +261,31 @@ async fn load_config(options: &Options) -> io::Result<JonlineServerConfig> {
                     format!("Failed to read secrets: {:?}", e),
                 )
             })?;
-        log::info!("Secrets response for server {:?}: {:?}", server, secrets);
+        log::debug!("Secrets response for server {:?}: {:?}", server, secrets);
+
+        let parsed_secrets = serde_json::from_str::<KubernetesSecrets>(&secrets)
+            .map_err(|e| {
+                log::error!("Failed to parse secrets: {:?}", e);
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Failed to parse secrets: {:?}", e),
+                )
+            })?;
+
+        let tls_secrets = parsed_secrets
+            .items
+            .iter()
+            .filter(|item| item.metadata.name == "jonline-generated-tls")
+            .next()
+            .ok_or_else(|| {
+                log::error!("Failed to find tls secret for server: {:?}", server);
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Failed to find tls secret for server: {:?}", server),
+                )
+            })?;
+
+        log::info!("Parsed TLS secrets for server {:?}: {:?}", server, tls_secrets);
     }
 
     // // Configure the server using rustls
