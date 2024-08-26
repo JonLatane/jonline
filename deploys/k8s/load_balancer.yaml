@@ -36,6 +36,7 @@ metadata:
   labels:
     app: jonline-lb
 spec:
+  serviceAccountName: jonline-lb
   replicas: 2
   selector:
     matchLabels:
