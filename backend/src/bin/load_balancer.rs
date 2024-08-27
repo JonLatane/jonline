@@ -52,8 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_crypto();
     init_service_logging();
     let options = Options::from_args();
-    let pwd = env::var("PWD")
-        .expect("PWD must be set");
+    let pwd = env::var("PWD").expect("PWD must be set");
     let config = setup_nginx_config(&options).await?;
 
     log::info!(
@@ -77,20 +76,20 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
                 sleep(next_time - Instant::now());
                 next_time += interval;
             }
-    
+
             // Ok(())
         });
         return Ok(());
+    } else {
+        log::info!("Starting NGINX...");
+        let _nginx = match std::process::Command::new("nginx")
+            .args(&["-c", "nginx.conf.jbl", "-p", &pwd])
+            .spawn()
+        {
+            Ok(process) => process,
+            Err(err) => panic!("Nginx crashed: {}", err),
+        };
     }
-
-    log::info!("Starting NGINX...");
-    let _nginx = match std::process::Command::new("nginx")
-        .args(&["-c", "nginx.conf.jbl", "-p", &pwd])
-        .spawn()
-    {
-        Ok(process) => process,
-        Err(err) => panic!("Nginx crashed: {}", err),
-    };
 
     Ok(())
 }
