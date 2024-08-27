@@ -166,6 +166,7 @@ struct JonlineServerConfig {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 struct KubernetesSecrets {
     kind: String,
+    #[serde(alias = "apiVersion")]
     api_version: String,
     items: Vec<KubernetesSecretItem>,
 }
