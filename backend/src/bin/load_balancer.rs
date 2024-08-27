@@ -52,7 +52,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_crypto();
     init_service_logging();
     let options = Options::from_args();
-    let pwd = env::var("PWD").expect("PWD must be set");
+    let pwd = env::current_dir()
+        .expect("PWD must be set")
+        .display()
+        .to_string();
     let config = setup_nginx_config(&options).await?;
 
     log::info!(
