@@ -13,3 +13,6 @@
 # Generated YAML from deploy scripts. May contain emails, names, etc.
 *.generated.yaml
 .minio-data
+
+# Generated JBL certs and NGINX configs
+*.jbl
