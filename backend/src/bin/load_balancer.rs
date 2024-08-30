@@ -4,31 +4,15 @@ extern crate futures_lite;
 extern crate reqwest;
 extern crate rustls;
 
-use jonline::{init_bin_logging, init_crypto, init_service_logging};
+use jonline::{init_crypto, init_service_logging};
 use serde::{Deserialize, Serialize};
 
 use async_std::io;
-use async_std::net::{TcpListener, TcpStream};
-use async_std::stream::StreamExt;
 use async_std::task;
-use async_tls::TlsAcceptor;
-use futures_lite::io::AsyncWriteExt;
-use log::info;
-// use rustls::server::ResolvesServerCert;
-// use rustls::{Certificate, PrivateKey, ServerConfig};
-// use rustls_pemfile::{certs, read_one, Item};
-
-use http;
-use http::{HeaderMap, HeaderValue, Request, Response};
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::fs::File;
 use std::io::prelude::*;
-use std::io::BufReader;
-use std::net::ToSocketAddrs;
-use std::path::Path;
-use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 use std::vec::*;
