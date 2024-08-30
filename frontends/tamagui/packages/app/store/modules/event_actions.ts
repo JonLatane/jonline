@@ -3,7 +3,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, getCredentialClient } from "..";
+import { AccountOrServer, EventsState, getCredentialClient, getFederated, getHasEventsPage } from "..";
 
 export type CreateEvent = AccountOrServer & Event;
 export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(
@@ -35,22 +35,28 @@ export type LoadEventsRequest = AccountOrServer & {
   listingType?: EventListingType,
   page?: number
   filter?: TimeFilter
+  force?: boolean
 };
 export const defaultEventListingType = EventListingType.ALL_ACCESSIBLE_EVENTS;
 export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {
+    console.log('loadEventsPage', request.server?.host);
     let client = await getCredentialClient(request);
-    let result = await client.getEvents({
+    let response = await client.getEvents({
       listingType: defaultEventListingType,
       ...request,
       timeFilter: request.filter
     }, client.credential);
-    return {
-      ...result,
-      events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })
-    };
-  }
+    console.log('loadEventsPage', request.server?.host, response);
+    return response;
+  },
+  // {
+  //   condition: (request, { getState }) => {
+  //     const state = getState() as EventsState;
+  //     return request.force || getFederated(state.pagesStatus, request) !== "loading";
+  //   }
+  // }
 );
 
 export type LoadEvent = { id?: string, postId?: string } & AccountOrServer;

@@ -9,7 +9,7 @@ import {
 import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
-import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
+import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, getHasEventsPage } from "../pagination";
 import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
@@ -139,6 +139,9 @@ export const eventsSlice = createSlice({
       // }, 1);
     });
     builder.addCase(loadEventsPage.pending, (state, action) => {
+      // if (!action.meta.arg.force && getFederated(state.pagesStatus, action) === "loading") {
+      //     throw 'Events already loading';
+      // }
       setFederated(state.pagesStatus, action, "loading");
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {

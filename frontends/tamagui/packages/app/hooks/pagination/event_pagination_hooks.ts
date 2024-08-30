@@ -1,12 +1,12 @@
 import { EventListingType, Group, TimeFilter } from "@jonline/api";
 import { Selector, useAppSelector, useCredentialDispatch, useFederatedDispatch, usePinnedAccountsAndServers } from "app/hooks";
 
-import { useDebounce } from "@jonline/ui";
+import { useDebounce, useForceUpdate } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
-import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
+import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someLoading, someUnloaded, useRootSelector } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
-import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
+import { PaginationResults } from "./pagination_hooks";
 import { PostPageParams } from "./post_pagination_hooks";
 
 export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
@@ -33,8 +33,9 @@ export function useServerEventPages(
 ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = usePinnedAccountsAndServers();
-  const eventsState = useRootSelector((state: RootState) => state.events);
-  const [loading, setLoadingEvents] = useState(false);
+  const eventsState = useAppSelector(state => state.events);
+  const loading = someLoading(eventsState.pagesStatus, servers);
+  // const [loading, setLoadingEvents] = useState(false);
 
   const timeFilter = serializeTimeFilter(params?.timeFilter);
 
@@ -42,6 +43,7 @@ export function useServerEventPages(
     () => getEventsPages(eventsState, listingType, timeFilter, throughPage, servers),
     [
       eventsState.ids,
+      eventsState.pagesStatus,
       servers.map(s => [s.account?.user?.id, s.server?.host]),
       timeFilter,
       listingType
@@ -53,29 +55,23 @@ export function useServerEventPages(
   const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);
 
+  const forceUpdate = useForceUpdate();
   const reload = (force?: boolean) => {
     if (loading) return;
 
-    setLoadingEvents(true);
     const serversToUpdate = getServersMissingEventsPage(eventsState, listingType, timeFilter, 0, servers);
-    console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));
+    // console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server => {
-      return dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter }));
-    })).then((results) => {
-      console.log("Loaded events", results);
-      finishPagination(setLoadingEvents);
-    });
+      return dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter, force }));
+    })).finally(forceUpdate);
   }
-  const debounceReload = useDebounce(reload, 1000, { leading: true });
 
+  const needsReload = !loading && serversAllDefined && (someUnloadedServers || !firstPageLoaded);
   useEffect(() => {
-    if (!loading && serversAllDefined && (someUnloadedServers || !firstPageLoaded)) {
-      setLoadingEvents(true);
-      console.log("Loading events...");
-
-      setTimeout(debounceReload, 1);
+    if (needsReload) {
+      reload();
     }
-  }, [serversAllDefined, loading, eventsState.pagesStatus, servers.map(s => s.server?.host).join(','), firstPageLoaded, someUnloadedServers]);
+  }, [needsReload, servers.map(s => s.server?.host).join(',')]);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
@@ -97,7 +93,7 @@ export function useGroupEventPages(
       ...accountOrServer,
       groupId: group.id,
       filter: params?.timeFilter
-    })).then(onPageLoaded(setLoadingEvents));
+    })).then(() => setLoadingEvents(false));
   }
   const debounceReload = useDebounce(reload, 1000, { leading: true });
 

@@ -13,27 +13,22 @@ export type FederatedPagesStatus = Federated<PagesStatus>;
  */
 export const createFederatedPagesStatus: () => FederatedPagesStatus = () => createFederated("unloaded" as PagesStatus);
 
+export function someLoading(pagesStatus: FederatedPagesStatus, servers: AccountOrServer[]): boolean {
+  return someWithStatus('loading', pagesStatus, servers);
+}
+
 export function someUnloaded(pagesStatus: FederatedPagesStatus, servers: AccountOrServer[]): boolean {
-  // const status = getFederated(pagesStatus, servers[0]!.server!);
-  // console.log('someUnloaded.servers', status);
-  // debugger;
-  // for (const [server, status] of Object.entries(pagesStatus.values)) {
-  //   if (["unloaded", undefined].includes(status) && servers.some(s => s.server?.host === server)) {
-  //     // console.log("server is unloaded", server);
-  //     return true;
-  //   }
-  // }
+  return someWithStatus('unloaded', pagesStatus, servers);
+}
+
+function someWithStatus(status: PagesStatus, pagesStatus: FederatedPagesStatus, servers: AccountOrServer[]): boolean {
   for (const server of servers) {
     if (!server.server) continue;
 
-    const status = getFederated(pagesStatus, server.server);
-    if (status === 'unloaded') {
+    const serverStatus = getFederated(pagesStatus, server.server);
+    if (serverStatus === status) {
       return true;
     }
-    // if (!server.server || !pagesStatus.values[server.server.host]) {
-    //   // console.log("server is unloaded", server.server!.host);
-    //   return true;
-    // }
   }
   return false;
 }

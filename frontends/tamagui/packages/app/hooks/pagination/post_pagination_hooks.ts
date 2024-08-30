@@ -4,11 +4,11 @@ import { createSelector } from "@reduxjs/toolkit";
 import { Selector, useAppDispatch } from "app/hooks";
 import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, useRootSelector } from "app/store";
 import { useEffect, useMemo, useState } from "react";
-import { someUnloaded } from '../../store/pagination/federated_pages_status';
+import { someLoading, someUnloaded } from '../../store/pagination/federated_pages_status';
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
 import { useFederatedDispatch } from '../credential_dispatch_hooks';
 import { useAppSelector } from '../store_hooks';
-import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
+import { PaginationResults } from "./pagination_hooks";
 
 export type PostPageParams = {};
 
@@ -33,7 +33,8 @@ export function useServerPostPages(
   const dispatch = useAppDispatch();
   const servers = usePinnedAccountsAndServers();
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const [loading, setLoading] = useState(false);
+  const loading = someLoading(postsState.pagesStatus, servers);
+  // const [loading, setLoading] = useState(false);
 
   const results: FederatedPost[] = useMemo(
     () => getPostsPages(postsState, listingType, throughPage, servers),
@@ -50,7 +51,6 @@ export function useServerPostPages(
   const reload = (force?: boolean) => {
     if (loading) return;
 
-    setLoading(true);
     const serversToUpdate = force
       ? servers
       : getServersMissingPostsPage(postsState, listingType, 0, servers);
@@ -59,7 +59,6 @@ export function useServerPostPages(
       dispatch(loadPostsPage({ ...server, listingType })))
     ).then((results) => {
       console.log("Loaded posts", results);
-      finishPagination(setLoading);
     });
   }
   const debounceReload = useDebounce(reload, 1000, { leading: true });
@@ -85,19 +84,19 @@ export function useGroupPostPages(
 
   const reload = () => {
     setLoadingPosts(true);
-    if (group) dispatch(loadGroupPostsPage({ ...accountOrServer, groupId: group.id })).then(onPageLoaded(setLoadingPosts));
+    if (group) dispatch(loadGroupPostsPage({ ...accountOrServer, groupId: group.id }))
+      .then(() => setLoadingPosts(false));
   }
-  const debounceReload = useDebounce(reload, 1000, { leading: true });
 
   useEffect(() => {
-    if (!firstPageLoaded && !loading) {
+    if (group && !firstPageLoaded && !loading) {
       if (!accountOrServer.server) return;
 
       console.log("Loading group posts...");
       setLoadingPosts(true);
-      setTimeout(debounceReload, 1);
+      reload();
     }
-  });
+  }, [group, accountOrServer]);
 
   const { results, firstPageLoaded, hasMorePages } = useAppSelector(selectGroupPages(group, throughPage));
 

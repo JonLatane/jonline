@@ -10,13 +10,13 @@ export type PaginationResults<F extends FederatedEntity<any>> = {
 };
 
 
-export function onPageLoaded(setLoading: (v: boolean) => void, onLoaded?: () => void) {
-  return () => finishPagination(setLoading, onLoaded);
-}
+// export function onPageLoaded(setLoading: (v: boolean) => void, onLoaded?: () => void) {
+//   return () => finishPagination(setLoading, onLoaded);
+// }
 
-export function finishPagination(setLoading: (v: boolean) => void, onLoaded?: () => void) {
-  setTimeout(() => {
-    setLoading(false);
-    onLoaded?.();
-  }, 1000);
-}
+// export function finishPagination() {
+//   setTimeout(() => {
+//     setLoading(false);
+//     onLoaded?.();
+//   }, 1000);
+// }
