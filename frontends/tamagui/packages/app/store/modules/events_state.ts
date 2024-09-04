@@ -6,16 +6,12 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
-import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus, getHasEventsPage } from "../pagination";
-import { store } from "../store";
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
-import { resetUserEvents, resetUsers } from "./users_state";
-import { toProtoISOString } from "@jonline/ui/src";
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
@@ -141,9 +137,6 @@ export const eventsSlice = createSlice({
       // }, 1);
     });
     builder.addCase(loadEventsPage.pending, (state, action) => {
-      // if (!action.meta.arg.force && getFederated(state.pagesStatus, action) === "loading") {
-      //     throw 'Events already loading';
-      // }
       setFederated(state.pagesStatus, action, "loading");
     });
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {
