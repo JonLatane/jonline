@@ -46,7 +46,7 @@ export function useServerMediaPages(
     Promise.all(serversToUpdate.map(server => {
       const userId = server.account?.user.id;
       if (userId) {
-        dispatch(loadMediaPage({ ...server, userId }));
+        return dispatch(loadMediaPage({ ...server, userId }));
       }
     })
     ).then((results) => {

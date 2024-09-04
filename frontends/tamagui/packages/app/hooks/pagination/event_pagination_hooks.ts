@@ -3,7 +3,7 @@ import { Selector, useAppSelector, useCredentialDispatch, useFederatedDispatch, 
 
 import { useDebounce, useForceUpdate } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
-import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someLoading, someUnloaded, useRootSelector } from "app/store";
+import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someLoading, someUnloaded } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { PaginationResults } from "./pagination_hooks";
@@ -26,6 +26,19 @@ export function useEventPages(
     : mainPostPages;
 }
 
+export type LoadingMutex = { loading: boolean };
+export const createLoadingManager = (): LoadingMutex => ({ loading: false });
+export const startLoading = (mutex: LoadingMutex) => mutex.loading = true;
+export const finishLoading = (mutex: LoadingMutex) => mutex.loading = false;
+export const isLoading = (mutex: LoadingMutex) => mutex.loading;
+// export async function loadingDone(mutex: LoadingMutex, pagesStatusCheck: () => FederatedPagesStatus, servers: AccountOrServer[]) {
+//   while (mutex.loading || someLoading(pagesStatusCheck(), servers)) {
+//     await new Promise(resolve => setTimeout(resolve, 100));
+//   }
+// }
+
+const loadingMutex: LoadingMutex = createLoadingManager();
+
 export function useServerEventPages(
   listingType: EventListingType,
   throughPage: number,
@@ -33,45 +46,91 @@ export function useServerEventPages(
 ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = usePinnedAccountsAndServers();
-  const eventsState = useAppSelector(state => state.events);
-  const loading = someLoading(eventsState.pagesStatus, servers);
+  // const eventsState = useAppSelector(state => state.events);
+  const loading = useAppSelector(state => someLoading(state.events.pagesStatus, servers));
   // const [loading, setLoadingEvents] = useState(false);
 
-  const timeFilter = serializeTimeFilter(params?.timeFilter);
-
-  const results: FederatedEvent[] = useMemo(
-    () => getEventsPages(eventsState, listingType, timeFilter, throughPage, servers),
-    [
-      eventsState.ids,
-      eventsState.pagesStatus,
-      servers.map(s => [s.account?.user?.id, s.server?.host]),
-      timeFilter,
-      listingType
-    ]
-  );
-
-  const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
-  const someUnloadedServers = someUnloaded(eventsState.pagesStatus, servers);
-  const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);
+  const timeFilter = serializeTimeFilter(params?.timeFilter);
+  const serversMissingEventsPage = useAppSelector(state =>
+    getServersMissingEventsPage(state.events, listingType, timeFilter, 0, servers)
+  );
+  const needsLoading = serversMissingEventsPage.length > 0 && !loading && serversAllDefined;
+
+  const results: FederatedEvent[] =
+    // useMemo(
+    //   () => 
+    useAppSelector(state => {
+      // console.trace('useServerEventPages: selecting events', state.events.ids.length);
+
+      return getEventsPages(state.events, listingType, timeFilter, throughPage, servers);
+    });
+  //   ,
+  //   [
+  //     eventsState.ids,
+  //     eventsState.pagesStatus,
+  //     servers.map(s => [s.account?.user?.id, s.server?.host]),
+  //     timeFilter,
+  //     listingType,
+  //     serversAllDefined,
+  //     serversMissingEventsPage,
+  //     needsLoading
+  //   ]
+  // );
+  // console.trace('useServerEventPages: events', results.length);
+
+  const firstPageLoaded = useAppSelector(state => getHasEventsPage(state.events, listingType, timeFilter, 0, servers));
+  const someUnloadedServers = useAppSelector(state => someUnloaded(state.events.pagesStatus, servers));
+  const hasMorePages = useAppSelector(state => getHasMoreEventPages(state.events, listingType, timeFilter, throughPage, servers));
 
   const forceUpdate = useForceUpdate();
+  // console.log('useServerEventPages', {results, listingType, throughPage, params});
+  const tryReload = () => {
+    // console.log('useServerEventPages tryReload', { listingType, results, hasMorePages, firstPageLoaded, loading, serversAllDefined, someUnloadedServers, serversMissingEventsPage });
+
+    setTimeout(forceUpdate, 100);
+    // if (isLoading(loadingMutex)) {
+    //   // setAwaitTime(awaitTime + 1);
+    //   // setTimeout(tryReload, 100);
+    //   // forceUpdate();
+    //   requestAnimationFrame(forceUpdate);
+    // } else {
+    //   // forceUpdate();
+    //   setTimeout(forceUpdate, 100);
+    // }
+  };//, [awaitTime, awaitTime, listingType, results, hasMorePages, firstPageLoaded, loading, serversAllDefined, someUnloadedServers, serversMissingEventsPage]);
+  const [initiatedLoading, setInitiatedLoading] = useState(false);
+  useEffect(() => { isLoading(loadingMutex) && !initiatedLoading ? tryReload() : undefined });
+
   const reload = (force?: boolean) => {
     if (loading) return;
+    if (isLoading(loadingMutex)) {
+      tryReload();
+      // setTimeout(tryReload, 300);
+      return;
+    };
 
-    const serversToUpdate = getServersMissingEventsPage(eventsState, listingType, timeFilter, 0, servers);
-    // console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));
+    setInitiatedLoading(true);
+    startLoading(loadingMutex);
+    const serversToUpdate = force ? servers : serversMissingEventsPage;
+    if (serversToUpdate.length === 0) return;
+
+    console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server => {
       return dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter, force }));
-    })).finally(forceUpdate);
+    })).then((results) => {
+      console.log("Loaded events", results);
+    }).finally(() => {
+      finishLoading(loadingMutex);
+      setInitiatedLoading(false);
+    });
   }
 
-  const needsReload = !loading && serversAllDefined && (someUnloadedServers || !firstPageLoaded);
   useEffect(() => {
-    if (needsReload) {
+    if (needsLoading) {
       reload();
     }
-  }, [needsReload, servers.map(s => s.server?.host).join(',')]);
+  }, [needsLoading]);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
@@ -87,7 +146,7 @@ export function useGroupEventPages(
 
   const timeFilter = serializeTimeFilter(params?.timeFilter);
 
-  const reload = () => {
+  const reload = (_force?: boolean) => {
     setLoadingEvents(true);
     if (group) dispatch(loadGroupEventsPage({
       ...accountOrServer,

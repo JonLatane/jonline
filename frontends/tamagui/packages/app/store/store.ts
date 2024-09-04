@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AnyAction, PayloadAction, Store, ThunkDispatch, combineReducers, configureStore } from "@reduxjs/toolkit";
 import { Platform } from 'react-native';
-import { createSelectorHook, useDispatch } from "react-redux";
+import { createSelectorHook } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { LocalAppConfiguration, accountsReducer, eventsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetLocalConfiguration, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
+import { accountsReducer, eventsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetLocalConfiguration, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
+import { postsApi } from './apis/posts_api';
 
 const serversPersistConfig = {
   key: 'servers',
@@ -44,6 +45,7 @@ const rootReducer = combineReducers({
   events: eventsReducer,
   users: usersReducer, // persistReducer(usersPersistConfig, usersReducer),
   groups: groupsReducer, // persistReducer(groupsPersistConfig, groupsReducer)
+  [postsApi.reducerPath]: postsApi.reducer
 });
 
 const rootPersistConfig = {
@@ -73,7 +75,7 @@ export const store: AppStore = configureStore({
     serializableCheck: {
       ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
     }
-  }), thunkMiddleware]
+  }), thunkMiddleware, postsApi.middleware],
 });
 
 export const persistor = persistStore(store);

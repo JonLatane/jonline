@@ -3,7 +3,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, EventsState, getCredentialClient, getFederated, getHasEventsPage } from "..";
+import { AccountOrServer, EventsState, getCredentialClient, getEventsPage, getFederated, getHasEventsPage } from "..";
 
 export type CreateEvent = AccountOrServer & Event;
 export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(
@@ -41,14 +41,13 @@ export const defaultEventListingType = EventListingType.ALL_ACCESSIBLE_EVENTS;
 export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {
-    console.log('loadEventsPage', request.server?.host);
     let client = await getCredentialClient(request);
     let response = await client.getEvents({
-      listingType: defaultEventListingType,
       ...request,
+      listingType: request.listingType ?? defaultEventListingType,
       timeFilter: request.filter
     }, client.credential);
-    console.log('loadEventsPage', request.server?.host, response);
+    // console.log('loadEventsPage', request.server?.host, response);
     return response;
   },
   // {
@@ -64,10 +63,10 @@ export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Eve
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    const response = await client.getEvents(GetEventsRequest.create({ 
+    const response = await client.getEvents(GetEventsRequest.create({
       eventId: request.id,
       postId: request.postId
-     }), client.credential);
+    }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
     return event;

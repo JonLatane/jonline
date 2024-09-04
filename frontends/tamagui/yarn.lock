@@ -8962,9 +8962,9 @@ __metadata:
   linkType: hard
 
 "caniuse-lite@npm:^1.0.30001406, caniuse-lite@npm:^1.0.30001449, caniuse-lite@npm:^1.0.30001541, caniuse-lite@npm:^1.0.30001565":
-  version: 1.0.30001583
-  resolution: "caniuse-lite@npm:1.0.30001583"
-  checksum: 8e7b5ffeb1229efacc1022fbe19eb136f39e4512363322d175e836fef9d798d7308a0763ce654670d45a55c3f25f34c12f87e90e1da34c5d9531fac2327d2063
+  version: 1.0.30001655
+  resolution: "caniuse-lite@npm:1.0.30001655"
+  checksum: 98e80bdb5a5e4ac1738df7df14379a51aed2fcf3402b18361ac4902ac8afacf35920498afd0bfb71d6902ad4ab4ccbf2d09c792ec3a4925c2e3d186b803f6bc7
   languageName: node
   linkType: hard
 
@@ -11162,6 +11162,15 @@ __metadata:
   peerDependencies:
     eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
   checksum: 0e0e80c21552998b7af2b92a74aec5e862b33f6f16c3e1303d42b5821d68b7ba11c2037bd73e3581fc7d97d9a2e64dd19e202d47d6885f53e33aac87c048d641
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-react-hooks@npm:^4.6.2":
+  version: 4.6.2
+  resolution: "eslint-plugin-react-hooks@npm:4.6.2"
+  peerDependencies:
+    eslint: ^3.0.0 || ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0-0
+  checksum: 5a0680941f34e70cf505bcb6082df31a3e445d193ee95a88ff3483041eb944f4cefdaf7e81b0eb1feb4eeceee8c7c6ddb8a2a6e8c4c0388514a42e16ac7b7a69
   languageName: node
   linkType: hard
 
@@ -13973,6 +13982,7 @@ __metadata:
     babel-plugin-fully-specified: "npm:^1.3.0"
     check-dependency-version-consistency: "npm:^3.3.0"
     eslint: "npm:^8.57.0"
+    eslint-plugin-react-hooks: "npm:^4.6.2"
     node-gyp: "npm:^9.4.1"
     prettier: "npm:^2.8.8"
     ts-proto: "npm:^1.176.0"

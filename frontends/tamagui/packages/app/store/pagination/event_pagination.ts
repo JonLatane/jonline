@@ -14,7 +14,7 @@ export function getEventsPages(events: EventsState, listingType: EventListingTyp
   return result;
 }
 
-function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
+export function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
   const pageInstanceIds: string[] = servers.flatMap(server => {
     const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
     return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
