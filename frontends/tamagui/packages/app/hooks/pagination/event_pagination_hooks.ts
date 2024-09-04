@@ -3,10 +3,11 @@ import { Selector, useAppSelector, useCredentialDispatch, useFederatedDispatch, 
 
 import { useDebounce } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
-import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someUnloaded, useRootSelector } from "app/store";
+import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someLoading, someUnloaded } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
-import { PaginationResults, finishPagination, onPageLoaded } from "./pagination_hooks";
+import { createLoadingMutex, useLoadingLock } from "./loading_mutex";
+import { PaginationResults } from "./pagination_hooks";
 import { PostPageParams } from "./post_pagination_hooks";
 
 export type EventPageParams = PostPageParams & { timeFilter?: TimeFilter };
@@ -26,6 +27,8 @@ export function useEventPages(
     : mainPostPages;
 }
 
+const loadingMutex = createLoadingMutex();
+
 export function useServerEventPages(
   listingType: EventListingType,
   throughPage: number,
@@ -33,49 +36,45 @@ export function useServerEventPages(
 ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = usePinnedAccountsAndServers();
-  const eventsState = useRootSelector((state: RootState) => state.events);
-  const [loading, setLoadingEvents] = useState(false);
+  // const eventsState = useAppSelector(state => state.events);
+  const loading = useAppSelector(state => someLoading(state.events.pagesStatus, servers));
+  // const [loading, setLoadingEvents] = useState(false);
 
+  const serversAllDefined = !servers.some(s => !s.server);
   const timeFilter = serializeTimeFilter(params?.timeFilter);
+  const serversMissingEventsPage = useAppSelector(state =>
+    getServersMissingEventsPage(state.events, listingType, timeFilter, 0, servers)
+  );
+  const needsLoading = serversMissingEventsPage.length > 0 && !loading && serversAllDefined;
 
-  const results: FederatedEvent[] = useMemo(
-    () => getEventsPages(eventsState, listingType, timeFilter, throughPage, servers),
-    [
-      eventsState.ids,
-      servers.map(s => [s.account?.user?.id, s.server?.host]),
-      timeFilter,
-      listingType
-    ]
+  const results: FederatedEvent[] = useAppSelector(state =>
+    getEventsPages(state.events, listingType, timeFilter, throughPage, servers)
   );
 
-  const firstPageLoaded = getHasEventsPage(eventsState, listingType, timeFilter, 0, servers);
-  const someUnloadedServers = someUnloaded(eventsState.pagesStatus, servers);
-  const hasMorePages = getHasMoreEventPages(eventsState, listingType, timeFilter, throughPage, servers);
-  const serversAllDefined = !servers.some(s => !s.server);
+  const firstPageLoaded = useAppSelector(state => getHasEventsPage(state.events, listingType, timeFilter, 0, servers));
+  const someUnloadedServers = useAppSelector(state => someUnloaded(state.events.pagesStatus, servers));
+  const hasMorePages = useAppSelector(state => getHasMoreEventPages(state.events, listingType, timeFilter, throughPage, servers));
 
-  const reload = (force?: boolean) => {
-    if (loading) return;
+  const { pollForLoadingLocked, lockLoading, unlockLoading, createReload } = useLoadingLock(loadingMutex);
 
-    setLoadingEvents(true);
-    const serversToUpdate = getServersMissingEventsPage(eventsState, listingType, timeFilter, 0, servers);
+  const reload = createReload(loading, async (force) => {
+    const serversToUpdate = force ? servers : serversMissingEventsPage;
+    if (serversToUpdate.length === 0) return;
+
     console.log('Reloading events for servers', serversToUpdate.map(s => s.server?.host));
-    Promise.all(serversToUpdate.map(server => {
-      return dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter }));
+
+    await Promise.all(serversToUpdate.map(server => {
+      return dispatch(loadEventsPage({ ...server, listingType, filter: params?.timeFilter, force }));
     })).then((results) => {
       console.log("Loaded events", results);
-      finishPagination(setLoadingEvents);
     });
-  }
-  const debounceReload = useDebounce(reload, 1000, { leading: true });
+  });
 
   useEffect(() => {
-    if (!loading && serversAllDefined && (someUnloadedServers || !firstPageLoaded)) {
-      setLoadingEvents(true);
-      console.log("Loading events...");
-
-      setTimeout(debounceReload, 1);
+    if (needsLoading) {
+      reload();
     }
-  }, [serversAllDefined, loading, eventsState.pagesStatus, servers.map(s => s.server?.host).join(','), firstPageLoaded, someUnloadedServers]);
+  }, [needsLoading]);
 
   return { results, loading, reload, hasMorePages, firstPageLoaded };
 }
@@ -91,13 +90,13 @@ export function useGroupEventPages(
 
   const timeFilter = serializeTimeFilter(params?.timeFilter);
 
-  const reload = () => {
+  const reload = (_force?: boolean) => {
     setLoadingEvents(true);
     if (group) dispatch(loadGroupEventsPage({
       ...accountOrServer,
       groupId: group.id,
       filter: params?.timeFilter
-    })).then(onPageLoaded(setLoadingEvents));
+    })).then(() => setLoadingEvents(false));
   }
   const debounceReload = useDebounce(reload, 1000, { leading: true });
 

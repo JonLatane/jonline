@@ -13,6 +13,7 @@ import { Calendar as CalendarIcon } from '@tamagui/lucide-icons';
 import { useBigCalendar } from 'app/hooks/configuration_hooks';
 import { themedButtonBackground } from 'app/utils';
 import { EventsFullCalendar } from './events_full_calendar';
+import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 
 export const defaultEventInstance: () => EventInstance = () => EventInstance.create({ id: '', startsAt: moment().toISOString(), endsAt: moment().add(1, 'hour').toISOString() });
 
@@ -114,7 +115,8 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
   const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
-  const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
+  const timeFilter: TimeFilter = useUpcomingEventsFilter();
 
   const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });

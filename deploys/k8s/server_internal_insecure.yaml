@@ -45,7 +45,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.2.532
+        - image: docker.io/jonlatane/jonline:0.2.533
           name: jonline
           env:
             - name: DATABASE_URL
@@ -108,7 +108,7 @@ spec:
         spec:
           containers:
           - name: delete-expired-tokens
-            image: docker.io/jonlatane/jonline:0.2.532
+            image: docker.io/jonlatane/jonline:0.2.533
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL
@@ -131,7 +131,7 @@ spec:
         spec:
           containers:
           - name: delete-unowned-media
-            image: docker.io/jonlatane/jonline:0.2.532
+            image: docker.io/jonlatane/jonline:0.2.533
             imagePullPolicy: IfNotPresent
             env:
               - name: DATABASE_URL

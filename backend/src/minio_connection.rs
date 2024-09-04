@@ -1,11 +1,12 @@
 use std::env;
 
 use awscreds::Credentials;
-use awsregion::Region;
+// use awsregion::Region;
+use s3::Region;
 use s3::error::S3Error;
 use s3::{Bucket, BucketConfiguration};
 
-pub async fn get_and_test_bucket() -> Result<Bucket, S3Error> {
+pub async fn get_and_test_bucket() -> Result<Box<Bucket>, S3Error> {
     let minio_access_key = env::var("MINIO_ACCESS_KEY").map_err(|_| {
         S3Error::Credentials(awscreds::error::CredentialsError::MissingEnvVar(
             "MINIO_ACCESS_KEY".to_string(),
@@ -77,7 +78,7 @@ pub async fn get_and_test_bucket() -> Result<Bucket, S3Error> {
     Ok(bucket)
 }
 
-fn get_bucket() -> Result<Bucket, S3Error> {
+fn get_bucket() -> Result<Box<Bucket>, S3Error> {
     let minio_endpoint = env::var("MINIO_ENDPOINT").map_err(|_| {
         S3Error::Credentials(awscreds::error::CredentialsError::MissingEnvVar(
             "MINIO_ENDPOINT".to_string(),

@@ -6,6 +6,7 @@ import { PaginationResults } from ".";
 import { useFederatedAccountOrServer } from "../account_or_server";
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
+import { PagesStatus, someLoading } from '../../store/pagination/federated_pages_status';
 
 export function useUsersPage(
   listingType: UserListingType | undefined,
@@ -15,12 +16,11 @@ export function useUsersPage(
   const servers = usePinnedAccountsAndServers();
   const usersState = useAppSelector(state => state.users);
 
-  const [loading, setLoadingUsers] = useState(false);
+  const loading = someLoading(usersState.pagesStatus, servers);
   const effectiveListingType = listingType ?? UserListingType.EVERYONE;
   function reload(force?: boolean) {
     if (loading) return;
 
-    setLoadingUsers(true);
     const serversToUpdate = force
       ? servers
       : getServersMissingUsersPage(usersState, effectiveListingType, 0, servers);
@@ -28,8 +28,8 @@ export function useUsersPage(
       serversToUpdate.map(pinnedServer =>
         dispatch(loadUsersPage({ listingType, ...pinnedServer })))
     ).then((results) => {
-      console.log("Loaded users", results);
-      setLoadingUsers(false);
+      console.log("Loaded users", effectiveListingType, results);
+      // setLoadingUsers(false);
     });
   }
 
@@ -41,11 +41,11 @@ export function useUsersPage(
       servers.map(s => s.server?.host),
       listingType
     ])
-  const debounceReload = useDebounce(reload, 1000, { leading: true });
+  // const debounceReload = useDebounce(reload, 1000, { leading: true });
   useEffect(() => {
     if (listingType !== undefined && hadUndefinedServers && !loading) {
       console.log("Loading users...");
-      setTimeout(debounceReload, 1);
+      reload();
     }
   }, [listingType, users, loading]);
 

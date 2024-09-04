@@ -23,7 +23,7 @@ extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
 extern crate awscreds;
-extern crate awsregion;
+// extern crate awsregion;
 extern crate bytes;
 extern crate ico;
 extern crate percent_encoding;
@@ -69,7 +69,7 @@ A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
 
     let pool = Arc::new(db_connection::establish_pool());
     let bucket = Arc::new(
-        minio_connection::get_and_test_bucket()
+        *minio_connection::get_and_test_bucket()
             .await
             .expect("Failed to connect to MinIO"),
     );

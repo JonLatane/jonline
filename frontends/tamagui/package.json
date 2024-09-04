@@ -45,5 +45,8 @@
     "turbo": "^1.13.3",
     "typescript": "^5.4.5"
   },
-  "packageManager": "yarn@4.0.2"
+  "packageManager": "yarn@4.0.2",
+  "devDependencies": {
+    "eslint-plugin-react-hooks": "^4.6.2"
+  }
 }

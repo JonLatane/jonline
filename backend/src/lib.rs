@@ -16,7 +16,7 @@ extern crate uuid;
 #[macro_use]
 extern crate lazy_static;
 extern crate awscreds;
-extern crate awsregion;
+// extern crate awsregion;
 extern crate bytes;
 extern crate env_logger;
 extern crate http;

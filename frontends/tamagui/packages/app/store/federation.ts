@@ -44,7 +44,7 @@ export type FederatedEntity<T extends HasIdFromServer> = T & {
 
 export type FederatedAction = PayloadAction<any, any, { arg: AccountOrServer }>;
 
-export type HasServer = FederatedAction | JonlineServer | string | undefined;
+export type HasServer = FederatedAction | JonlineServer | AccountOrServer | string | undefined;
 
 /**
  * Make an entity server-/federation-aware.
@@ -178,7 +178,9 @@ export function serverHost(server: HasServer): string {
   }
   const jonlineServer = (server && 'meta' in server)
     ? (server as FederatedAction).meta.arg.server
-    : server as JonlineServer | undefined;
+    : (server && 'server' in server)
+      ? (server as JonlineServer)
+      : server as JonlineServer | undefined;
   return federationKey(jonlineServer);
 }
 

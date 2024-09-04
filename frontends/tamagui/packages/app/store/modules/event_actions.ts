@@ -3,7 +3,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, getCredentialClient } from "..";
+import { AccountOrServer, EventsState, getCredentialClient, getEventsPage, getFederated, getHasEventsPage } from "..";
 
 export type CreateEvent = AccountOrServer & Event;
 export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(
@@ -35,22 +35,27 @@ export type LoadEventsRequest = AccountOrServer & {
   listingType?: EventListingType,
   page?: number
   filter?: TimeFilter
+  force?: boolean
 };
 export const defaultEventListingType = EventListingType.ALL_ACCESSIBLE_EVENTS;
 export const loadEventsPage: AsyncThunk<GetEventsResponse, LoadEventsRequest, any> = createAsyncThunk<GetEventsResponse, LoadEventsRequest>(
   "events/loadPage",
   async (request) => {
     let client = await getCredentialClient(request);
-    let result = await client.getEvents({
-      listingType: defaultEventListingType,
+    let response = await client.getEvents({
       ...request,
+      listingType: request.listingType ?? defaultEventListingType,
       timeFilter: request.filter
     }, client.credential);
-    return {
-      ...result,
-      events: result.events.map(e => { return { ...e, post: { ...e.post!, previewImage: undefined } } })
-    };
-  }
+    // console.log('loadEventsPage', request.server?.host, response);
+    return response;
+  },
+  // {
+  //   condition: (request, { getState }) => {
+  //     const state = getState() as EventsState;
+  //     return request.force || getFederated(state.pagesStatus, request) !== "loading";
+  //   }
+  // }
 );
 
 export type LoadEvent = { id?: string, postId?: string } & AccountOrServer;
@@ -58,10 +63,10 @@ export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Eve
   "events/loadOne",
   async (request) => {
     const client = await getCredentialClient(request);
-    const response = await client.getEvents(GetEventsRequest.create({ 
+    const response = await client.getEvents(GetEventsRequest.create({
       eventId: request.id,
       postId: request.postId
-     }), client.credential);
+    }), client.credential);
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
     return event;

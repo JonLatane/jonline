@@ -3,8 +3,8 @@ import { useAccountOrServerContext } from "app/contexts";
 import { useAppDispatch, useCreationAccountOrServer } from "app/hooks";
 import { FederatedMedia, RootState, getHasMediaPage, getHasMoreMediaPages, getMediaPages, loadMediaPage, useRootSelector } from "app/store";
 import { useEffect, useState } from "react";
-import { someUnloaded } from '../../store/pagination/federated_pages_status';
-import { PaginationResults, finishPagination } from "./pagination_hooks";
+import { someLoading, someUnloaded } from '../../store/pagination/federated_pages_status';
+import { PaginationResults } from "./pagination_hooks";
 
 export type MediaPageParams = {};
 
@@ -30,7 +30,8 @@ export function useServerMediaPages(
   //END TODO
 
   const mediaState = useRootSelector((state: RootState) => state.media);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
+  const loading = someLoading(mediaState.pagesStatus, servers);
 
   const results: FederatedMedia[] = getMediaPages(mediaState, throughPage, servers);
   const firstPageLoaded = getHasMediaPage(mediaState, 0, servers);
@@ -38,30 +39,28 @@ export function useServerMediaPages(
   const serversAllDefined = !servers.some(s => !s.server);
 
   const reload = () => {
-    setLoading(true);
+    if (loading) return;
+
     const serversToUpdate = servers;//getServersMissingMediaPage(mediaState, 0, servers);
     console.log('Reloading media for servers', serversToUpdate.map(s => s.server?.host));
     Promise.all(serversToUpdate.map(server => {
       const userId = server.account?.user.id;
       if (userId) {
-        dispatch(loadMediaPage({ ...server, userId }));
+        return dispatch(loadMediaPage({ ...server, userId }));
       }
     })
     ).then((results) => {
       console.log("Loaded media", results);
-      finishPagination(setLoading);
     });
   }
-  const debounceReload = useDebounce(reload, 1000, { leading: true });
 
   useEffect(() => {
     if (!loading && serversAllDefined
       && someUnloaded(mediaState.pagesStatus, servers.filter(s => s.account))
     ) {
-      setLoading(true);
-      // debugger;
+
       console.log("Loading media...");
-      setTimeout(debounceReload, 1);
+      reload();
     }
   }, [serversAllDefined, loading, mediaState.pagesStatus, servers.map(s => s.server?.host).join(',')]);
 

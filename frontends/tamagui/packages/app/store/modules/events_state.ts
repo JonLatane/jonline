@@ -6,16 +6,12 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
-import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { store } from "../store";
 import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
-import { resetUserEvents, resetUsers } from "./users_state";
-import { toProtoISOString } from "@jonline/ui/src";
 export * from './event_actions';
 
 export type FederatedEvent = FederatedEntity<Event>;
@@ -34,6 +30,7 @@ export interface EventsState {
   postEvents: Dictionary<string>;
   // Maps Post IDs to EventInstance IDs.
   postInstances: Dictionary<string>;
+  upcomingEventsTime: string;
   upcomingEventsTimeFilter?: TimeFilter;
 }
 
@@ -61,6 +58,7 @@ const initialState: EventsState = {
   instanceEvents: {},
   postEvents: {},
   postInstances: {},
+  upcomingEventsTime: moment(Date.now()).toISOString(true),
   ...eventsAdapter.getInitialState(),
 };
 
