@@ -116,7 +116,7 @@ fn create_rocket<T: rocket::figment::Provider>(
         //     level: Some(async_compression::Level::Fastest),
         //     ..Default::default()
         // })
-        server.attach(Compression(async_compression::Level::Fastest))
+        server.attach(Compression::with_level(async_compression::Level::Fastest))
     }
 }
 
