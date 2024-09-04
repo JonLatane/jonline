@@ -7,7 +7,7 @@ import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
@@ -78,9 +78,10 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
   const { eventPagesOnHome } = useLocalConfiguration();
-  const allEvents = bigCalendar
+  const allEvents = useMemo(() => bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime)),
+    [bigCalendar, eventResults, pageLoadTime]);
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });

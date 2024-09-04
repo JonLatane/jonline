@@ -39,7 +39,7 @@ export const loadGroupsPage: AsyncThunk<GetGroupsResponse, LoadGroupsPage, any> 
   "groups/loadPage",
   async (getGroupsRequest) => {
     const client = await getCredentialClient(getGroupsRequest);
-    console.log('Loading groups page...')
+    // console.log('Loading groups page...')
     return await client.getGroups(getGroupsRequest, client.credential);
   }
 );

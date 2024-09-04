@@ -34,6 +34,7 @@ export interface EventsState {
   postEvents: Dictionary<string>;
   // Maps Post IDs to EventInstance IDs.
   postInstances: Dictionary<string>;
+  upcomingEventsTime: string;
   upcomingEventsTimeFilter?: TimeFilter;
 }
 
@@ -61,6 +62,7 @@ const initialState: EventsState = {
   instanceEvents: {},
   postEvents: {},
   postInstances: {},
+  upcomingEventsTime: moment(Date.now()).toISOString(true),
   ...eventsAdapter.getInitialState(),
 };
 
