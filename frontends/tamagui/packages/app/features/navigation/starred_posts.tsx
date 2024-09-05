@@ -224,7 +224,7 @@ export function StarredPosts({ }: StarredPostsProps) {
 
   const serverTheme = useServerTheme();
   const openedPostAccountTheme = useServerTheme(openedPostAccount?.server);
-  const { primaryTextColor, navColor, navTextColor } = serverTheme;
+  const { primaryColor, transparentPrimaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;
   const { primaryAnchorColor: openedPostPrimaryAnchorColor, navAnchorColor: openedPostNavAnchorColor } = openedPostAccountTheme;
 
   // const openedPostAccount: AccountOrServer | undefined = useAppSelector(state =>
@@ -276,6 +276,10 @@ export function StarredPosts({ }: StarredPostsProps) {
                 ? <Popover.Content
                   borderWidth={1}
                   p='$2'
+                  // color={primaryTextColor}
+                  backgroundColor={transparentPrimaryColor}
+                  backdropFilter="blur(10px)"
+                  // backdropFilter="fade(0.5)"
                   borderColor="$borderColor"
                   enterStyle={{ y: -10, opacity: 0 }}
                   exitStyle={{ y: -10, opacity: 0 }}
@@ -289,7 +293,8 @@ export function StarredPosts({ }: StarredPostsProps) {
                     },
                   ]}
                 >
-                  <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
+                  {/* <YStack backgroundColor={transparentPrimaryColor}> */}
+                  <Popover.Arrow borderWidth={1} backgroundColor={transparentPrimaryColor} borderColor="$borderColor" />
 
                   <YStack h='100%' ai='center'>
                     <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'none' }}>
@@ -301,7 +306,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                           // <div key='flex-1' style={{ flex: 1 }} />
                         ] : [
                           <div key='posts-filter'>
-                            <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : undefined)}
+                            <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : primaryTextColor)}
                               onPress={() => setStarredPostFilter(
                                 starredPostFilter === 'posts' ? undefined : 'posts'
                               )}
@@ -310,7 +315,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             />
                           </div>,
                           <div key='events-filter' style={{ marginRight: 10 }}>
-                            <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : undefined)}
+                            <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : primaryTextColor)}
                               onPress={() => setStarredPostFilter(
                                 starredPostFilter === 'events' ? undefined : 'events'
                               )}
@@ -324,6 +329,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                           <Button transparent onPress={() => scrollToTop(true)} >
                             <YStack>
                               <Paragraph size='$1'
+                                color={primaryTextColor}
                                 maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
                                 overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
                                 fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
@@ -339,19 +345,19 @@ export function StarredPosts({ }: StarredPostsProps) {
                               <FlipMove style={{ width: '100%' }}>
                                 <div key='starred'>
                                   <XStack ai='center' gap='$2'>
-                                    <Heading size='$4'>Starred</Heading>
-                                    <Info size={16} o={0.5} />
+                                    <Heading size='$4' color={primaryTextColor}>Starred</Heading>
+                                    <Info size={16} o={0.5} color={primaryTextColor} />
                                   </XStack>
                                 </div>
                                 {starredPostFilter === 'posts'
                                   ?
                                   <div key='starred-posts'>
-                                    <Heading size='$5' whiteSpace="nowrap">Posts</Heading>
+                                    <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Posts</Heading>
                                   </div>
                                   : starredPostFilter === 'events'
                                     ?
                                     <div key='starred-events'>
-                                      <Heading size='$5' whiteSpace="nowrap">Events</Heading>
+                                      <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Events</Heading>
                                     </div>
                                     : undefined}
                               </FlipMove>
@@ -393,13 +399,13 @@ export function StarredPosts({ }: StarredPostsProps) {
                               transparent={chatUI}
                               borderTopRightRadius={0} borderBottomRightRadius={0}
 
-                              icon={<ListEnd color={chatUI ? undefined : navTextColor} transform={[{ rotate: '180deg' }]} />}
+                              icon={<ListEnd color={chatUI ? primaryTextColor : navTextColor} transform={[{ rotate: '180deg' }]} />}
                               onPress={() => {
                                 dispatch(setDiscussionChatUI(false));
                                 scrollToCommentsTop(openedPostId);
                               }}
                               mr={0}>
-                              <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
+                              <Heading size='$4' color={chatUI ? primaryTextColor : navTextColor}>Discussion</Heading>
                             </Button>
                           </Tooltip.Trigger>
                           <Tooltip.Content>
@@ -414,7 +420,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                               backgroundColor={!chatUI ? undefined : navColor}
                               hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                               transparent={!chatUI}
-                              iconAfter={<ListEnd color={!chatUI ? undefined : navTextColor} />}
+                              iconAfter={<ListEnd color={!chatUI ? primaryTextColor : navTextColor} />}
                               borderTopLeftRadius={0} borderBottomLeftRadius={0}
                               onPress={() => {
                                 dispatch(setDiscussionChatUI(true));
@@ -423,7 +429,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                                 else
                                   setTimeout(() => scrollToCommentsBottom(openedPostId), 800);
                               }}>
-                              <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
+                              <Heading size='$4' color={!chatUI ? primaryTextColor : navTextColor}>Chat</Heading>
                             </Button>
                           </Tooltip.Trigger>
                           <Tooltip.Content>
@@ -497,6 +503,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                     {/* </>
                         : undefined} */}
                   </YStack>
+                  {/* </YStack> */}
                 </Popover.Content>
                 : undefined}
             </Popover >
@@ -533,7 +540,7 @@ export type StarredPostCardProps = {
 
 const selectStarredMovability = (
   postId: string,
-): Selector<{canMoveUp: boolean, canMoveDown: boolean}> =>
+): Selector<{ canMoveUp: boolean, canMoveDown: boolean }> =>
   createSelector(
     [(state: RootState) => ({
       canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,

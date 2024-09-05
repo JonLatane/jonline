@@ -3,8 +3,17 @@ import { useForceUpdate } from "@jonline/ui";
 import { useEffect, useState } from "react";
 
 // A LoadingMutex in the *global* context, along with the React state
-// management in useLoadingLock, is used to achieve something akin to
-// React-Saga's takeLeading effect (or the behavior of Tanstack Query, RTK Query, etc.).
+// management in useLoadingLock (really just 'initiatedLoading' at the component level),
+// is used to achieve something akin to React-Saga's takeLeading effect 
+// (or the behavior of Tanstack Query, RTK Query, etc.).
+//
+// The advantage of this approach is that it works for *arbitrary* numbers of servers.
+// It's built for:
+//
+// - fetching data from multiple servers in parallel
+// - displaying per-server results as they come in
+// - displaying per-server load statuses for the data being loaded (handled separately by the FederatedPagesStatus type)
+// - preventing multiple requests for the same data
 //
 // This is used to prevent multiple requests
 // for the same sets of posts/events/users/other entities on a server.

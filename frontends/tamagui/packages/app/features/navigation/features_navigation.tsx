@@ -127,7 +127,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   const server = useCurrentServer();
   const hasAccount = usePinnedAccountsAndServers({ includeUnpinned: true }).filter(aos => !!aos.account?.user?.id).length > 0;
   const mediaQuery = useMedia();
-  const { /*textColor, */primaryTextColor, navColor, navTextColor } = useServerTheme();
+  const { /*textColor, */transparentPrimaryColor, primaryTextColor, navColor, navTextColor } = useServerTheme();
 
   const groupIdentifier = selectedGroup
     ? (selectedGroup?.serverHost === server?.host
@@ -255,7 +255,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         ? primaryTextColor
         : undefined;
     const icon = !subsection
-      ? menuIcon(section, textColor)
+      ? menuIcon(section, primaryTextColor)
       : undefined;
 
     const triggerButtonLink =
@@ -283,7 +283,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
                 my='auto'
                 size="$3"
                 disabled={isDisabled}
-                o={isDisabled ? 0.5 : 1}
+                o={isDisabled ? 0.7 : 1}
                 backgroundColor={selected ? navColor : undefined}
                 hoverStyle={{ backgroundColor: '$colorTransparent' }}
                 {...triggerButtonLink ?? link}
@@ -291,7 +291,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
                 <XStack gap='$2'>
                   {icon}
                   {!inlineNavigation || !shrinkNavigation || !icon
-                    ? <Heading size="$4" color={textColor}>
+                    ? <Heading size="$4" color={primaryTextColor}>
                       {name}
                     </Heading>
                     : undefined}
@@ -391,6 +391,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         <Popover.Content
           bw={1}
           boc="$borderColor"
+          backgroundColor={transparentPrimaryColor}
+          backdropFilter="blur(10px)"
           enterStyle={{ x: 0, y: -10, o: 0 }}
           exitStyle={{ x: 0, y: -10, o: 0 }}
           x={0}
@@ -406,7 +408,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           ]}
           elevate
         >
-          <Popover.Arrow bw={1} boc="$borderColor" />
+          <Popover.Arrow bw={1} boc="$borderColor" backgroundColor={transparentPrimaryColor} />
 
           <YStack gap="$3">
             <XStack ac='center' jc='center' gap='$2'>

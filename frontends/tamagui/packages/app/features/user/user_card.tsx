@@ -136,11 +136,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           // autoCapitalize='words'
           value={username}
           onChange={(data) => { setUsername(data.nativeEvent.text) }} />
-        : inlineUsername ? undefined : <Heading size='$7'
-          color={usernameColor}
-          lh={realName ? '$1' : undefined}
-          fontSize={realName ? '$2' : undefined}
-          marginRight='auto' w='100%'>{username}</Heading>}
+        : inlineUsername
+          ? undefined
+          : <Heading size='$7'
+            color={usernameColor}
+            lh={realName ? '$1' : undefined}
+            fontSize={realName ? '$2' : undefined}
+            marginRight='auto' w='100%'>{username}</Heading>}
 
       {editable && !editingDisabled && setRealName
         ? <Input textContentType="name" f={1}
@@ -306,7 +308,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
               </Tooltip> : undefined}
           </XStack>
         </Card.Header>
-        <Card.Footer p='$3'>
+        <Card.Footer p={shrinkPreviews ? 0 : '$3'} animation='standard'>
           <YStack mt='$2' mr='$3' w='100%'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>

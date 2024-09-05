@@ -77,7 +77,7 @@ export async function getConfiguredServerClient(server: JonlineServer, args?: Jo
 
   const serverId = serverID(server);
   // TODO: Why does this fail miserable if using port 443?
-  const ports = [27707, 443];
+  const ports = [27707/*, 443*/];
   const totalRetries = 5 * ports.length;
   let remainingRetries = totalRetries;
   while (!clients.has(serverId)) {

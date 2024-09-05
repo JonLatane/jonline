@@ -402,7 +402,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         // {...postLinkProps}
         >
           {!isReply && (post.link || post.title)
-            ? <Card.Header>
+            ? <Card.Header pb={shrinkPreviews ? '$2' : undefined}>
               <XStack ai='center'>
                 <StarButton post={post} />
                 <YStack f={1}>

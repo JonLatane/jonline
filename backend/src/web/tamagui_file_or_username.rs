@@ -71,7 +71,11 @@ pub async fn tamagui_file_or_username(
                                     user.permissions.contains(&(Permission::Business as i32));
                                 let page_title = format!(
                                     "{} - {}",
-                                    user.username.clone(),
+                                    match user.real_name {
+                                        name if name != "" => name,
+                                        _ => user.username.clone(),
+                                    },
+                                    // user.username.clone(),
                                     if is_business { "Business Profile" } else { "Profile" }
                                 );
                                 let description = user.bio.clone();

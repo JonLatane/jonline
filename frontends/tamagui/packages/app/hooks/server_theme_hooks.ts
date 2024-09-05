@@ -27,6 +27,7 @@ export type ServerTheme = {
 
   backgroundColor: string;
   transparentBackgroundColor: string;
+  transparentPrimaryColor: string;
   barelyTransparentBackgroundColor: string;
 
   warningAnchorColor: string;
@@ -79,6 +80,7 @@ function getServerTheme(
 
   const transparentBackgroundColor = darkMode ? '#000A' : '#FFFA';
   const barelyTransparentBackgroundColor = darkMode ? '#000D' : '#FFFD';
+  const transparentPrimaryColor = `${primaryColor}F0`;
   const primaryBgColor = darkMode ? primaryDarkColor : primaryLightColor;
   const primaryAnchorColor = !darkMode ? primaryDarkColor : primaryLightColor;
   const navAnchorColor = !darkMode ? navDarkColor : navLightColor;
@@ -100,6 +102,7 @@ function getServerTheme(
 
     navColor, navTextColor, navDarkColor, navLightColor,
     navBgColor, navAnchorColor,
+    transparentPrimaryColor,
     transparentBackgroundColor,
     barelyTransparentBackgroundColor,
 
