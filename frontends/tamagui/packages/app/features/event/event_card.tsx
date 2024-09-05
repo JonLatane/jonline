@@ -260,7 +260,7 @@ export const EventCard: React.FC<Props> = ({
   const onPressDetails = onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
     : undefined;
-  const detailsLink: LinkProps | undefined = isPreview ? onPressDetails ?? eventLink : undefined;
+  const detailsLink = isPreview ? {...(onPressDetails ?? eventLink), cursor: 'pointer'} : undefined;
   const postLink = eventPost.link ? useLink({ href: eventPost.link }) : undefined;
   const authorLinkProps = eventPost.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;

@@ -38,8 +38,8 @@ jobs:
       with:
         workspaces: ./backend -> target
         # default key
-        key: jonline-${{ runner.OS }}-github-build
-        shared-key: jonline-${{ runner.OS }}-github-build
+        key: jonline-lb-${{ runner.OS }}-github-build
+        shared-key: jonlin-lb-${{ runner.OS }}-github-build
 
     - working-directory: backend
       run: cargo build --release

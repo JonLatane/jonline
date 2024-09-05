@@ -331,7 +331,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     )
   );
   const linkToDetails = isPreview || onPress;
-  const conditionalDetailsLink = linkToDetails ? detailsLink : {};
+  const conditionalDetailsLink = linkToDetails ? {...detailsLink, cursor: 'pointer'} : {};
   // const conditionalDetailsLink = isPreview || onPress ? detailsLink : {};
   // console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
   return (
