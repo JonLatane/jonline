@@ -15,6 +15,21 @@ on:
       DOCKERHUB_TOKEN:
         description: 'DockerHub access token for CD'
         required: true
+      DIGITALOCEAN_ACCESS_TOKEN:
+        description: 'DigitalOcean access token for CD'
+        required: true
+      CLOUDFLARE_TOKEN:
+        description: 'Cloudflare API token for CD'
+        required: true
+      CLOUDFLARE_ZONE_JONLINEIO:
+        description: 'Cloudflare Zone ID for Jonline.io'
+        required: true
+      CLOUDFLARE_ZONE_BULLCITY_SOCIAL:
+        description: 'Cloudflare Zone ID for Bull City Social'
+        required: true
+      CLOUDFLARE_ZONE_OAKCITY_SOCIAL:
+        description: 'Cloudflare Zone ID for Oak City Social'
+        required: true
 
 jobs:
   test_consistency:
@@ -411,7 +426,7 @@ jobs:
       run: kubectl apply -f deploys/k8s/server_external.yaml -n jonline
 
     - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n jonline
+      run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
 
     - name: Purge Cloudflare cache
       uses: jakejarvis/cloudflare-purge-action@master
@@ -578,7 +593,7 @@ jobs:
       run: kubectl apply -f deploys/k8s/server_external.yaml -n bullcitysocial
 
     - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n bullcitysocial
+      run: kubectl rollout status deployment/jonline -n bullcitysocial --timeout 2m
 
     - name: Deploy Preview Generator
       run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
@@ -621,7 +636,7 @@ jobs:
       run: kubectl apply -f deploys/k8s/server_external.yaml -n oakcitysocial
 
     - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n oakcitysocial
+      run: kubectl rollout status deployment/jonline -n oakcitysocial --timeout 2m
 
     - name: Deploy Preview Generator
       run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial

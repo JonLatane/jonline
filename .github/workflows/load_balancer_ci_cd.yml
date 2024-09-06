@@ -154,4 +154,4 @@ jobs:
       run: kubectl apply -f deploys/k8s/load_balancer.yaml -n jonline
 
     - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline-lb -n jonline
+      run: kubectl rollout status deployment/jonline-lb -n jonline --timeout 2m

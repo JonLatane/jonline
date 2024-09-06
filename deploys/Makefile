@@ -41,7 +41,7 @@ deploy_be_delete:
 	kubectl delete -f k8s/preview_generator.yaml -n $(NAMESPACE)
 
 deploy_be_monitor_rollout:
-	kubectl rollout status deployment/jonline -n $(NAMESPACE)
+	kubectl rollout status deployment/jonline -n $(NAMESPACE) --timeout 2m
 
 deploy_be_restart:
 	kubectl rollout restart deployment jonline -n $(NAMESPACE)

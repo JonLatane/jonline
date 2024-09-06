@@ -65,7 +65,7 @@ deploy_lb_delete:
 	kubectl delete -f ../k8s/load_balancer.yaml -n $(NAMESPACE)
 
 deploy_lb_monitor_rollout:
-	kubectl rollout status deployment/jonline-lb -n $(NAMESPACE)
+	kubectl rollout status deployment/jonline-lb -n $(NAMESPACE) --timeout 2m
 
 deploy_lb_restart:
 	kubectl rollout restart deployment jonline-lb -n $(NAMESPACE)
