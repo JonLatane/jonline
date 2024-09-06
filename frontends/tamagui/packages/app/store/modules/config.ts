@@ -17,7 +17,7 @@ export type DateTimeRenderer = 'custom' | 'native';
 
 export type CalendarImplementation = 'fullcalendar' | 'big-calendar' | 'daypilot';
 
-export type LocalAppConfiguration = {
+export type Config = {
   showIntro: boolean;
   darkModeAuto: boolean;
   darkMode: boolean;
@@ -55,7 +55,7 @@ export type LocalAppConfiguration = {
   alwaysShowHideButton: boolean;
 }
 
-const initialState: LocalAppConfiguration = {
+const initialState: Config = {
   showIntro: true,
   darkModeAuto: true,
   darkMode: false,
@@ -91,7 +91,7 @@ const initialState: LocalAppConfiguration = {
 };
 
 setTimeout(async () => {
-  if (store.getState().app.dateTimeRenderer === undefined) {
+  if (store.getState().config.dateTimeRenderer === undefined) {
     // while (!globalThis.navigator) {
     //   await new Promise((resolve) => setTimeout(resolve, 100));
     // }
@@ -101,10 +101,10 @@ setTimeout(async () => {
       // isSafari() ? 'native' : 'custom'
     ))
   }
-  if (store.getState().app.starredPostIds === undefined) {
+  if (store.getState().config.starredPostIds === undefined) {
     store.dispatch(setStarredPostIds([]))
   }
-  if (store.getState().app.starredPostLastOpenedResponseCounts === undefined) {
+  if (store.getState().config.starredPostLastOpenedResponseCounts === undefined) {
     store.dispatch(updateStarredPostLastOpenedResponseCount({
       postId: 'data-migration-artifact',
       count: 0
@@ -112,11 +112,11 @@ setTimeout(async () => {
   }
 }, 1000);
 
-export const localAppSlice = createSlice({
-  name: "localApp",
+export const configSlice = createSlice({
+  name: "config",
   initialState: initialState,
   reducers: {
-    resetLocalConfiguration: () => initialState,
+    resetConfig: () => initialState,
     setShowIntro: (state, action: PayloadAction<boolean>) => {
       state.showIntro = action.payload;
     },
@@ -259,13 +259,13 @@ export const localAppSlice = createSlice({
 });
 
 export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelection,
-  setSeparateAccountsByServer, setShowBetaNavigation, resetLocalConfiguration, setDiscussionChatUI,
+  setSeparateAccountsByServer, setShowBetaNavigation, resetConfig, setDiscussionChatUI,
   setAutoRefreshDiscussions, setDiscussionRefreshIntervalSeconds, setShowUserIds, setShowEventsOnLatest, markGroupVisit,
   setInlineFeatureNavigation, setShrinkFeatureNavigation, setBrowsingServers, setViewingRecommendedServers, setBrowseRsvpsFromPreviews,
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
   moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount,
   setEventPagesOnHome,setCalendarImplementation, setHasOpenedAccounts, setAlwaysShowHideButton
-} = localAppSlice.actions;
-export const localAppReducer = localAppSlice.reducer;
-export default localAppReducer;
+} = configSlice.actions;
+export const configReducer = configSlice.reducer;
+export default configReducer;

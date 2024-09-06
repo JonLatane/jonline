@@ -73,7 +73,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   //   requestedServer
   // })
   const dispatch = useAppDispatch();
-  const app = useRootSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.config);
   const savedServer: JonlineServer | undefined = useRootSelector((state: RootState) =>
     selectServerById(state.servers, requestedServerUrl!));
   const unsavedServer: JonlineServer | undefined = requestedServer

@@ -31,7 +31,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const postsState = useRootSelector((state: RootState) => state.posts);
   const eventsState = useRootSelector((state: RootState) => state.events);
   const mediaQuery = useMedia();
-  const app = useRootSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.config);
   // const showEvents = app.showEvents ?? true;
   const { showEvents, setShowEvents } = useShowEvents();
   const { bigCalendar, setBigCalendar } = useBigCalendar();

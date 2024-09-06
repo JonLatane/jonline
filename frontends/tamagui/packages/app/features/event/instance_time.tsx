@@ -53,7 +53,7 @@ export const InstanceTime: React.FC<Props> = ({
   const mx = linkToInstance ? 'auto' : undefined;
   const lh = 14;
   const federatedPostId = federateId(instance.post?.id ?? '', server);
-  const starred = useAppSelector(state => state.app.starredPostIds.includes(federatedPostId));
+  const starred = useAppSelector(state => state.config.starredPostIds.includes(federatedPostId));
 
   function dateView(date: string) {
     return <YStack>

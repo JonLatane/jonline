@@ -47,7 +47,7 @@ const selectFilteredPostIds = (
 ): Selector<string[]> =>
   createSelector(
     [(state: RootState) => {
-      const { starredPostIds } = state.app;
+      const { starredPostIds } = state.config;
       if (starredPostFilter === 'posts') {
         return starredPostIds.map(id => state.posts.entities[id])
           .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
@@ -148,7 +148,7 @@ function useStarredPostDetails(postId: string, isVisible?: boolean) {
 export function StarredPosts({ }: StarredPostsProps) {
   const mediaQuery = useMedia();
 
-  const starredPostIds = useAppSelector(state => state.app.starredPostIds) ?? [];
+  const starredPostIds = useAppSelector(state => state.config.starredPostIds) ?? [];
 
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(open);
@@ -165,7 +165,7 @@ export function StarredPosts({ }: StarredPostsProps) {
   }, [openChanged])
 
   // const [openedPostId, setOpenedPostId] = useState<string | undefined>(undefined);
-  const openedPostId = useAppSelector(state => state.app.openedStarredPostId);
+  const openedPostId = useAppSelector(state => state.config.openedStarredPostId);
   const setOpenedPostId = (postId: string | undefined) =>
     dispatch(setOpenedStarredPost(postId));
   const [starredPostFilter, setStarredPostFilter] = useState<StarredPostFilter>(undefined);
@@ -175,8 +175,8 @@ export function StarredPosts({ }: StarredPostsProps) {
   // const starredPostUnreadCounts: Dictionary<number> = useAppSelector(state => {
   //   const counts = {} as Dictionary<number>;
 
-  //   state.app.starredPostIds.forEach(id => {
-  //     const lastUnreadCount = state.app.starredPostLastOpenedResponseCounts?.[id] ?? 0;
+  //   state.config.starredPostIds.forEach(id => {
+  //     const lastUnreadCount = state.config.starredPostLastOpenedResponseCounts?.[id] ?? 0;
   //     const currentCount = state.posts.entities[id]?.responseCount ?? 0;
   //     counts[id] = currentCount - lastUnreadCount;
   //   });
@@ -233,7 +233,7 @@ export function StarredPosts({ }: StarredPostsProps) {
   //       .find(s => s.serverId.includes(basePost.serverHost))
   //     : undefined);
 
-  const chatUI = useAppSelector(state => state.app.discussionChatUI);
+  const chatUI = useAppSelector(state => state.config.discussionChatUI);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
   const conversationContext = useStatefulConversationContext();
   const { editingPosts, replyPostIdPath, setReplyPostIdPath, editHandler } = conversationContext;
@@ -543,8 +543,8 @@ const selectStarredMovability = (
 ): Selector<{ canMoveUp: boolean, canMoveDown: boolean }> =>
   createSelector(
     [(state: RootState) => ({
-      canMoveUp: state.app.starredPostIds.indexOf(postId) > 0,
-      canMoveDown: state.app.starredPostIds.indexOf(postId) < state.app.starredPostIds.length - 1,
+      canMoveUp: state.config.starredPostIds.indexOf(postId) > 0,
+      canMoveDown: state.config.starredPostIds.indexOf(postId) < state.config.starredPostIds.length - 1,
     })],
     (data) => data
   );
@@ -574,7 +574,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
 
   const pinnedServer: PinnedServer | undefined = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
 
-  const isActuallyStarred = useAppSelector(state => state.app.starredPostIds.includes(postId));
+  const isActuallyStarred = useAppSelector(state => state.config.starredPostIds.includes(postId));
   const { canMoveUp, canMoveDown } = useAppSelector(selectStarredMovability(postId));
 
   function moveUp() {
@@ -628,7 +628,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
       </XStack>
     </XStack>;
   }
-  const chatUI = useAppSelector(state => state.app.discussionChatUI);
+  const chatUI = useAppSelector(state => state.config.discussionChatUI);
   const renderedCard = <YStack w='100%' key={`starred-post-${postId}`}>
     {!hideCurrentUser && server && (pinnedServer?.accountId || !basePost) ?
       <XStack ml='auto' mr='$9' mb={-10}>

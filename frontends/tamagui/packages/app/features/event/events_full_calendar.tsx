@@ -172,7 +172,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
     weeklyOnly ? 350 : Number.MAX_SAFE_INTEGER,
     borderedScreenHeight
   );
-  const starredPostIds = useAppSelector(state => state.app.starredPostIds);
+  const starredPostIds = useAppSelector(state => state.config.starredPostIds);
 
   const startTimes = allEvents.map((event) => {
     const instance = event.instances[0];

@@ -1,6 +1,6 @@
 import { useTheme } from '@jonline/ui';
 
-import { LocalAppConfiguration } from 'app/store';
+import { Config } from 'app/store';
 import { JonlineServer } from '../store/types';
 import { useCurrentServer } from './account_or_server/use_current_account_or_server';
 import { useLocalConfiguration } from './store_hooks';
@@ -47,7 +47,7 @@ export function useServerTheme(specificServer?: JonlineServer): ServerTheme {
 
 function getServerTheme(
   server: JonlineServer | undefined,
-  app: LocalAppConfiguration
+  app: Config
 ): ServerTheme {
   const baseTheme = useTheme();
   const baseBackgroundColor = baseTheme?.background?.val ?? '#FFFFFF';

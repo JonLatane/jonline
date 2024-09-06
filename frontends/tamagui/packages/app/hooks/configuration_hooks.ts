@@ -4,7 +4,7 @@ import { setShowBigCalendar, setShowEventsOnLatest } from 'app/store';
 
 export function useShowEvents() {
   const dispatch = useAppDispatch();
-  const { showEventsOnLatest: showEvents } = useAppSelector(state => state.app);
+  const { showEventsOnLatest: showEvents } = useAppSelector(state => state.config);
   const setShowEvents = (v: boolean) => dispatch(setShowEventsOnLatest(v));
 
   return {
@@ -15,7 +15,7 @@ export function useShowEvents() {
 
 export function useBigCalendar() {
   const dispatch = useAppDispatch();
-  const { showBigCalendar: bigCalendar } = useAppSelector(state => state.app);
+  const { showBigCalendar: bigCalendar } = useAppSelector(state => state.config);
   const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
 
   return {

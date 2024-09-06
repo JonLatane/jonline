@@ -4,10 +4,11 @@ import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from '
 import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/auth_sheet_context";
 import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
-import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setHasOpenedAccounts, store, useRootSelector, useServerTheme } from "app/store";
-import { useCallback, useEffect, useState } from "react";
-import StickyBox from "react-sticky-box";
+import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setForceHideAccountSheetGuide, store, useRootSelector, useServerTheme } from "app/store";
+import FlipMove from "lumen5-react-flip-move";
+import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
+import useDetectKeyboardOpen from "use-detect-keyboard-open";
 import { AccountsSheet } from "../accounts/accounts_sheet";
 import { AuthSheet } from "../accounts/auth_sheet";
 import { GroupDetailsSheet } from "../groups/group_details_sheet";
@@ -18,8 +19,6 @@ import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
-import useDetectKeyboardOpen from "use-detect-keyboard-open";
-import FlipMove from "lumen5-react-flip-move";
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -86,11 +85,13 @@ export function TabsNavigation({
 
   const { hasOpenedAccounts } = useLocalConfiguration();
   const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
-  const [forceHideAccountSheetGuide, setForceHideAccountSheetGuide] = useState(false);
+  const dispatch = useAppDispatch();
+  const forceHideAccountSheetGuide = useAppSelector(state => state.temporaryConfig.forceHideAccountSheetGuide);
+
   useEffect(() => {
     if (!loading && !hasOpenedAccounts && !showAccountSheetGuide && !forceHideAccountSheetGuide) {
       setTimeout(() => {
-        if (store.getState().app.hasOpenedAccounts) return;
+        if (store.getState().config.hasOpenedAccounts) return;
 
         setShowAccountSheetGuide(true);
       }
@@ -116,7 +117,7 @@ export function TabsNavigation({
       //         : 
       '/'
   });
-  const dispatch = useAppDispatch();
+
   // Start the push notification service worker
   // useEffect(() => {
   //   if ('serviceWorker' in navigator) {
@@ -132,7 +133,7 @@ export function TabsNavigation({
   //   }
   // }, []);
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
-  const app = useRootSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.config);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)
   const backgroundColorInt = primaryServer?.serverConfiguration?.serverInfo?.colors?.primary;
   const primaryColor = `#${(backgroundColorInt)?.toString(16).slice(-6) || '424242'}`;
@@ -156,7 +157,7 @@ export function TabsNavigation({
   const bgColor = dark ? '$gray1Dark' : '$gray2Light';
   const canUseLogo = logo?.wideMediaId != undefined || logo?.squareMediaId != undefined;
   const showHomeIcon = serverNameEmoji == undefined && !canUseLogo;
-  const recentGroupIds = useRootSelector((state: RootState) => state.app.recentGroups ?? []);
+  const recentGroupIds = useRootSelector((state: RootState) => state.config.recentGroups ?? []);
   const { inlineNavigation: inlineFeatureNavigation } = useInlineFeatureNavigation();
   const scrollGroupsSheet = !inlineFeatureNavigation
     || !mediaQuery.gtXs;
@@ -307,7 +308,7 @@ export function TabsNavigation({
                           </XStack>
                           <Button size='$1'
                             onPress={() => {
-                              setForceHideAccountSheetGuide(true);
+                              dispatch(setForceHideAccountSheetGuide(true));
                               setShowAccountSheetGuide(false);
                               // dispatch(setHasOpenedAccounts(true));
                             }}>Got it!</Button>

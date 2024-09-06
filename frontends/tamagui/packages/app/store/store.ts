@@ -5,8 +5,9 @@ import { createSelectorHook } from "react-redux";
 import { FLUSH, PAUSE, PERSIST, PURGE, REGISTER, REHYDRATE, persistReducer, persistStore } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import thunkMiddleware from 'redux-thunk';
-import { accountsReducer, eventsReducer, groupsReducer, localAppReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetLocalConfiguration, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
+import { accountsReducer, eventsReducer, groupsReducer, configReducer, mediaReducer, postsReducer, resetAccounts, resetGroups, resetConfig, resetMedia, resetPosts, resetServers, resetUsers, serversReducer, usersReducer } from "./modules";
 import { postsApi } from './apis/posts_api';
+import temporaryConfigReducer from './modules/temporary_config';
 
 const serversPersistConfig = {
   key: 'servers',
@@ -19,25 +20,26 @@ const accountsPersistConfig = {
   blacklist: ['status', 'successMessage', 'errorMessage', 'error']
 }
 
-const postsPersistConfig = {
-  key: 'posts',
-  storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'pagesStatus', 'successMessage', 'errorMessage', 'error', 'previews'],
-}
-const usersPersistConfig = {
-  key: 'users',
-  storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'usernameIds', 'failedUsernames', 'failedUserIds'],
-}
+// const postsPersistConfig = {
+//   key: 'posts',
+//   storage: Platform.OS == 'web' ? storage : AsyncStorage,
+//   blacklist: ['status', 'pagesStatus', 'successMessage', 'errorMessage', 'error', 'previews'],
+// }
+// const usersPersistConfig = {
+//   key: 'users',
+//   storage: Platform.OS == 'web' ? storage : AsyncStorage,
+//   blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'usernameIds', 'failedUsernames', 'failedUserIds'],
+// }
 
-const groupsPersistConfig = {
-  key: 'groups',
-  storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'shortnameIds', 'failedShortnames'],
-}
+// const groupsPersistConfig = {
+//   key: 'groups',
+//   storage: Platform.OS == 'web' ? storage : AsyncStorage,
+//   blacklist: ['status', 'successMessage', 'errorMessage', 'error', 'avatars', 'shortnameIds', 'failedShortnames'],
+// }
 
 const rootReducer = combineReducers({
-  app: localAppReducer,
+  config: configReducer,
+  temporaryConfig: temporaryConfigReducer,
   accounts: persistReducer(accountsPersistConfig, accountsReducer),
   servers: persistReducer(serversPersistConfig, serversReducer),
   media: mediaReducer,
@@ -51,7 +53,7 @@ const rootReducer = combineReducers({
 const rootPersistConfig = {
   key: 'root',
   storage: Platform.OS == 'web' ? storage : AsyncStorage,
-  whitelist: ['app'],
+  whitelist: ['config'],
   // blacklist: ['accounts', 'servers', 'posts', 'users', 'groups'],
   // transforms: [RemovePostPreviews]
 }
@@ -97,5 +99,5 @@ export function resetAllData() {
     store.dispatch(resetUsers({ serverHost }));
     store.dispatch(resetMedia({ serverHost }));
   });
-  store.dispatch(resetLocalConfiguration());
+  store.dispatch(resetConfig());
 }

@@ -24,7 +24,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const federatedPostId = federatedId(post);
   const toast = useToastController();
-  const starred = useAppSelector(state => state.app.starredPostIds.includes(federatedPostId));
+  const starred = useAppSelector(state => state.config.starredPostIds.includes(federatedPostId));
 
   const { client } = accountOrServer.server
     ? getCachedServerClient(accountOrServer.server) ?? { client: undefined }

@@ -200,7 +200,7 @@ export function GroupsSheet({
   // );
   const allGroups = serverHostFilteredGroups ?? pinnedServerGroups;
 
-  const recentGroupIds = useAppSelector(state => state.app.recentGroups) ?? [];
+  const recentGroupIds = useAppSelector(state => state.config.recentGroups) ?? [];
 
   const groupMatcher = (group: FederatedGroup) =>
     (

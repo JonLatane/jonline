@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph,Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -253,9 +253,12 @@ export const PostCard: React.FC<PostCardProps> = ({
   const backgroundSize = document.getElementById(componentKey)?.clientWidth ?? postBackgroundSize(mediaQuery);
   const foregroundSize = backgroundSize * 0.7;
 
-  const contentArea = <YStack maxHeight={isPreview
-    ? (showScrollableMediaPreviews) ? 150 : 300
-    : editing && !previewingEdits ? backgroundSize * (media.length > 0 ? 0.6 : 0.8) : undefined} overflow='hidden'
+  const contentArea = <YStack overflow='hidden'
+    maxHeight={isPreview
+      ? (showScrollableMediaPreviews) ? 150 : 300
+      : editing && !previewingEdits
+        ? backgroundSize * (media.length > 0 ? 0.6 : 0.8)
+        : undefined}
   >
     {
       editing && !previewingEdits
@@ -331,7 +334,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     )
   );
   const linkToDetails = isPreview || onPress;
-  const conditionalDetailsLink = linkToDetails ? {...detailsLink, cursor: 'pointer'} : {};
+  const conditionalDetailsLink = linkToDetails ? { ...detailsLink, cursor: 'pointer' } : {};
   // const conditionalDetailsLink = isPreview || onPress ? detailsLink : {};
   // console.log('postCard shrinkPreviews', shrinkPreviews, forceShrinkPreview, appShrinkPreviews, forceExpandPreview, isPreview, post.id);
   return (

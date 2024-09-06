@@ -15,7 +15,7 @@ import { createFederatedPagesStatus, FederatedPagesStatus, GroupedPages, Paginat
 import { store } from "../store";
 import { GroupedEventInstancePages, serializeTimeFilter } from "./events_state";
 import { createGroup, createGroupPost, defaultGroupListingType, deleteGroup, deleteGroupPost, joinLeaveGroup, loadGroup, loadGroupByShortname, loadGroupEventsPage, loadGroupMembers, loadGroupPostsPage, loadGroupsPage, loadPostGroupPosts, respondToMembershipRequest, updateGroup, updateMembership } from "./group_actions";
-import { markGroupVisit } from "./local_app_configuration";
+import { markGroupVisit } from "./config";
 
 export type FederatedGroup = FederatedEntity<Group>;
 export function federatedShortname(group: FederatedGroup): string {

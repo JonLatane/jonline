@@ -26,7 +26,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   const [position, setPosition] = useState(0);
   // const serversState = useRootSelector((state: RootState) => state.servers);
   // const mediaState = useRootSelector((state: RootState) => state.media);
-  // const app = useRootSelector((state: RootState) => state.app);
+  // const app = useRootSelector((state: RootState) => state.config);
   const { dispatch, accountOrServer } = useCreationDispatch(); //useProvidedDispatch();// useCredentialDispatch();
   const { server, account } = accountOrServer;
   const [viewerMediaId, setViewerMediaId] = useState<string | undefined>(undefined);

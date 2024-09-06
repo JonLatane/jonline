@@ -18,7 +18,7 @@ export function AboutJonlineScreen() {
   const [showTechDetails, setShowTechDetails] = useState(false);
   const serversState = useRootSelector((state: RootState) => state.servers);
   const postsState = useRootSelector((state: RootState) => state.posts);
-  const app = useRootSelector((state: RootState) => state.app);
+  const app = useRootSelector((state: RootState) => state.config);
   const posts = useRootSelector((state: RootState) => selectAllPosts(state.posts));
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
   let { dispatch, accountOrServer } = useCredentialDispatch();

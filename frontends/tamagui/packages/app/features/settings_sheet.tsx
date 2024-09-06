@@ -26,7 +26,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const [open, setOpen] = useState(false)
   const [position, setPosition] = useState(0)
   const dispatch = useAppDispatch();
-  const app = useAppSelector(state => state.app);
+  const app = useAppSelector(state => state.config);
   const accountCount = useAppSelector(state => selectAccountTotal(state.accounts));
   const serverCount = useAppSelector(state => selectServerTotal(state.servers));
 

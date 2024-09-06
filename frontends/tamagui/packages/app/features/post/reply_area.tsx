@@ -32,7 +32,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const [previewReply, setPreviewReply] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
   const textAreaRef = React.createRef<TextInput>();
-  const chatUI = useRootSelector((state: RootState) => state.app.discussionChatUI);
+  const chatUI = useRootSelector((state: RootState) => state.config.discussionChatUI);
   const [showMedia, setShowMedia] = useState(true);
   const maxPreviewHeight = (useWindowDimensions().height - 80 - (showMedia && media.length > 0 ? 100 : 0)) * 0.5;
 
