@@ -9,7 +9,7 @@ import { useProvidedDispatch } from "app/hooks";
 // import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 // import { dark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import SyntaxHighlighter from 'react-syntax-highlighter';
-import { dark, a11yDark } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
+import { atomOneDark as darkCodeStyle, atomOneLight as lightCodeStyle } from 'react-syntax-highlighter/dist/cjs/styles/hljs';
 
 export type MarkdownProps = {
   text?: string;
@@ -56,14 +56,16 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false,
           const match = /language-(\w+)/.exec(className || '')
           console.log('TamaguiMarkdown code match', match)
           return match ? (
-            <SyntaxHighlighter
-              {...rest}
-              PreTag="div"
-              children={String(children).replace(/\n$/, '')}
-              language={match[1]}
-              // style={{}}
-              style={a11yDark}
-            />
+            <XStack my='$3'>
+              <SyntaxHighlighter
+                {...rest}
+                PreTag="div"
+                children={String(children).replace(/\n$/, '')}
+                language={match[1]}
+                // style={{}}
+                style={darkMode ? darkCodeStyle : lightCodeStyle}
+              />
+            </XStack>
           ) : (
             <code {...rest} className={className}>
               {children}
