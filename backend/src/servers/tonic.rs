@@ -24,7 +24,7 @@ pub fn start_tonic_server(
 
     let reflection_service = tonic_reflection::server::Builder::configure()
         .register_encoded_file_descriptor_set(FILE_DESCRIPTOR_SET)
-        .build()
+        .build_v1()
         .unwrap();
 
     let (tonic_server, secure_mode) = match get_tls_config() {
@@ -60,7 +60,7 @@ pub fn start_tonic_server(
         let tonic_addr = SocketAddr::from(([0, 0, 0, 0], port));
         info!("Starting Tonic server on {}", tonic_addr);
         match tonic_router.serve(tonic_addr).await {
-            Ok(_) => panic!("Tonic server stoped on {}", tonic_addr),
+            Ok(_) => panic!("Tonic server stopped on {}", tonic_addr),
             Err(e) => {
                 ::log::warn!("Unable to start Tonic server on port {}", port);
                 report_error(e);

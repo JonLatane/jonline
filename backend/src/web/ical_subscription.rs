@@ -1,9 +1,10 @@
-use std::str::FromStr;
+// TODO: This doesn't work like at all. Just not done.
+// use std::str::FromStr;
 
-use super::{RocketState, load_media_file_data, open_named_file};
-use crate::{rpcs::{get_server_configuration_proto, get_service_version}, protos::{ServerInfo, ServerLogo}};
+use super::RocketState;
+use crate::rpcs::{get_server_configuration_proto, get_service_version};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use rocket::{fs::NamedFile, http::{MediaType, ContentType, Status}, response::Redirect, routes, uri, Route, State};
+use rocket::{routes, Route, State, response::Redirect};
 use rocket_cache_response::CacheResponse;
 
 lazy_static! {
@@ -11,8 +12,8 @@ lazy_static! {
         routes![ical_subscription];
 }
 
-#[rocket::get("/calendar.ics?<user_id>")]
-async fn ical_subscription(user_id: Option<String>, state: &State<RocketState>) -> CacheResponse<Redirect> {
+#[rocket::get("/calendar.ics?<_user_id>")]
+async fn ical_subscription(_user_id: Option<String>, state: &State<RocketState>) -> CacheResponse<Redirect> {
     let service_version = get_service_version().unwrap().version;
 
     let mut conn = state.pool.get().unwrap();

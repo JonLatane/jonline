@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use super::{load_media_file_data, open_named_file, RocketState};
 use crate::{
-    protos::{GetMediaRequest, ServerInfo, ServerLogo},
-    rpcs::{get_media, get_server_configuration_proto, get_service_version},
+    protos::{ServerInfo, ServerLogo},
+    rpcs::{get_server_configuration_proto, get_service_version},
 };
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use rocket::{
@@ -13,6 +13,7 @@ use rocket::{
     routes, uri, Route, State,
 };
 use rocket_cache_response::CacheResponse;
+use base64::{Engine, prelude::BASE64_STANDARD};
 
 lazy_static! {
     pub static ref INFORMATIONAL_PAGES: Vec<Route> =
@@ -67,7 +68,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
                     let media_data_url = format!(
                         "data:{};base64,{}",
                         content_type,
-                        base64::encode(&logo_bytes)
+                        BASE64_STANDARD.encode(&logo_bytes)
                     );
                     Some(media_data_url)
                 }
