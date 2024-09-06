@@ -114,7 +114,7 @@ struct KubernetesSecretMetadata {
 }
 
 /// Load the Jonline server configuration
-async fn setup_nginx_config(options: &Options) -> io::Result<JonlineServerConfig> {
+async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfig> {
     // let certs = load_certs(&options.cert)?;
     // debug_assert_eq!(1, certs.len());
     // let key = load_key(&options.key)?;

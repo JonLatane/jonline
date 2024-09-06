@@ -57,9 +57,9 @@ jobs:
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          key: jonline-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
           restore-keys: |
-            jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+            jonline-consistency-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
         run: yarn install
