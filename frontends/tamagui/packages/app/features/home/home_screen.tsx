@@ -16,7 +16,7 @@ import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from './page_chooser';
-import { useSwipeable } from 'react-swipeable';
+// import { useSwipeable } from 'react-swipeable';
 
 // import Swipeable from '@jonline/ui/src/swipeable';
 
@@ -122,24 +122,6 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       dismissScrollPreserver(setShowScrollPreserver);
     }
   }, [eventsLoaded, postsLoaded]);
-
-  const swipeHandlers = useSwipeable({
-    onSwipedLeft: () => {
-      console.log('swiped left');
-      if (postPagination.pageCount > postPagination.page + 1) {
-        postPagination.setPage(postPagination.page + 1);
-      }
-    },
-    onSwipedRight: () => {
-      console.log('swiped right');
-      if (postPagination.page > 0) {
-        postPagination.setPage(postPagination.page - 1);
-      }
-    },
-    swipeDuration: 500,
-    preventScrollOnSwipe: true,
-    trackMouse: true
-  });
 
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
@@ -290,7 +272,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </div>
             : undefined
           : undefined}
-        <div style={{ width: '100%' }} {...swipeHandlers}>
+        {/* <div style={{ width: '100%' }} {...swipeHandlers}> */}
           {paginatedPosts.map((post) => {
             return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
               style={{
@@ -301,7 +283,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               <PostCard post={post} isPreview />
             </div>;
           })}
-        </div>
+        {/* </div> */}
 
         {postPagination.pageCount > 1
           ? <div key='page-chooser-bottom'
