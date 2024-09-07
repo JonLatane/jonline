@@ -384,7 +384,7 @@ export function PostDetailsScreen() {
                         </div>
                         : undefined,
                       <div key='subjectPost'>
-                        <XStack w='100%' px='$3'
+                        <XStack w='100%' px={mediaQuery.gtXxs ? '$3' : 0}
                         // animation='standard' {...standardHorizontalAnimation}
                         >
                           <PostCard key={`post-card-main-${serverPostId}`}

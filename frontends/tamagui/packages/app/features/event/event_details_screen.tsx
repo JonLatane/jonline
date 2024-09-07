@@ -248,7 +248,7 @@ export function EventDetailsScreen() {
               <ScrollView w='100%'>
                 <AnimatePresence>
                   {interactionType === 'post'
-                    ? <XStack w='100%' paddingHorizontal='$3'
+                    ? <XStack w='100%' px={mediaQuery.gtXxs ? '$3' : 0}
                       animation='standard' {...standardHorizontalAnimation}>
                       <EventCard key={`event-card-loaded`}
                         event={subjectEvent}

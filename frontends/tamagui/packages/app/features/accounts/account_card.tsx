@@ -190,7 +190,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
       backgroundColor={selected ? navColor : undefined}
       scale={0.9}
       // hoverStyle={{ scale: 0.925 }}
-      pressStyle={{ scale: 0.985 }}
+      // pressStyle={{ scale: 0.985 }}
       onPress={onPress ?? doSelectAccount}
     >
       <Card.Header>

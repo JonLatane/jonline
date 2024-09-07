@@ -269,78 +269,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         mt={bigCalendar ? mediaQuery.xShort ? '$15' : 0 : '$3'}
         mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
-        px='$3'
+        px={mediaQuery.gtXxs ? '$3' : 0}
         maw={maxWidth}>
-        <FlipMove style={{ width: '100%' }}>
+        <FlipMove style={{ width: '100%', /*display: 'flex', flexDirection: 'column', alignItems: 'center'*/ }}>
           {/* <EventListingLarge events={allEvents} /> */}
           {eventListing}
-          {/* {bigCalendar
-            ? <div key='bigcalendar-rendering'>
-              <EventsFullCalendar events={allEvents} />
-            </div>
-            : renderInColumns
-              ? [
-                <div key='pages-top' id='pages-top'>
-                  <PageChooser {...pagination} />
-                </div>,
-                <div key={`multi-column-rendering-page-${pagination.page}`}>
-                  <XStack mx='auto' jc='center' flexWrap='wrap'>
-                    {firstPageLoaded || allEvents.length > 0
-                      ? allEvents.length === 0
-                        ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
-                        // animation='standard' {...standardAnimation}
-                        >
-                          <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                            <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
-                          </YStack>
-                        </XStack>
-                        : undefined
-                      : undefined}
-                    {paginatedEvents.map((event) => {
-                      return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
-                        animation='standard' {...standardAnimation}
-                      >
-                        <XStack w={eventCardWidth}
-                          mx='$1' px='$1'>
-                          <EventCard event={event} isPreview />
-                        </XStack>
-                      </XStack>;
-                    })}
-                  </XStack>
-                </div>,
-                <div key='pages-bottom' id='pages-bottom'>
-                  <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-                    entityName={{ singular: 'event', plural: 'events' }} />
-                </div>,
-              ]
-              : [
-                <div id='pages-top' key='pagest-top'>
-                  <PageChooser {...pagination} />
-                </div>,
-
-                firstPageLoaded || allEvents.length > 0
-                  ? allEvents.length === 0
-                    ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
-                      <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                        <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-                      </YStack>
-                    </div>
-                    : undefined
-                  : undefined,
-
-                paginatedEvents.map((event) => {
-                  return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                    <XStack w='100%'>
-                      <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
-                    </XStack>
-                  </div>
-                }),
-
-                <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
-                  <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-                    entityName={{ singular: 'event', plural: 'events' }} />
-                </div>
-              ]} */}
           {showScrollPreserver && !bigCalendar ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         </FlipMove>
 

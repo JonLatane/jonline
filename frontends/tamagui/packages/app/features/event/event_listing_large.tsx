@@ -87,7 +87,8 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
 
 
   return bigCalendar
-    ? <div key='bigcalendar-rendering'>
+    ? <div key='bigcalendar-rendering' style={{ width: '100%',
+      display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
       <EventsFullCalendar events={events}
         scrollToTime={events[0]?.instances[0]?.startsAt} />
     </div>

@@ -215,7 +215,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 mih='160px'
                                 mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
                                 borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
-                                animation='standard' pressStyle={{ scale: 0.95 }}
+                                animation='standard' 
+                                pressStyle={{ scale: 0.95 }}
                                 backgroundColor={selected ? navColor : undefined}
                                 onPress={onSelect}>
                                 {selectionIndexBase1

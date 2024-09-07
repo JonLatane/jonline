@@ -1,5 +1,5 @@
 import { PostListingType } from '@jonline/api';
-import { Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { Heading, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { usePaginatedRendering } from 'app/hooks';
 import { usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { federatedId, useServerTheme } from 'app/store';
@@ -50,6 +50,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
 
   // console.log(`Posts pagination: ${pagination}`);
 
+  const mediaQuery = useMedia();
   return (
     <TabsNavigation
       appSection={AppSection.POSTS}
@@ -61,7 +62,9 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       // bottomChrome={<DynamicCreateButton selectedGroup={selectedGroup} showPosts />}
       loading={loadingPosts}
     >
-      <YStack f={1} w='100%' jc="center" ai="center" py="$2" px='$3' maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" py="$2"
+        px={mediaQuery.gtXxs ? '$3' : 0}
+        maw={800} space>
         <YStack w='100%'>
           <FlipMove>
 

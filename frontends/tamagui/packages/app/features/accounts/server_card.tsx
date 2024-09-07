@@ -72,7 +72,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
 
   const { allowServerSelection } = useLocalConfiguration();
   const pressParams = allowServerSelection || server.host === window?.location?.host ? {
-    pressStyle: { scale: 0.95 },
+    // pressStyle: { scale: 0.95 },
     onPress: disablePress ? undefined : doSelectServer
   } : {}
 

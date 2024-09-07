@@ -81,7 +81,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const currentAndPinnedServers = usePinnedAccountsAndServers();
   const showServerInfo = ('serverHost' in post) && (!isPrimaryServer || (isPreview && currentAndPinnedServers.length > 1));
 
-  const shrinkServerInfo = isPreview && (!mediaQuery.gtXxxs || forceShrinkPreview);
+  const shrinkServerInfo = !mediaQuery.gtXxxs || (isPreview && (!mediaQuery.gtXxxs || forceShrinkPreview));
   // console.log('PostCard', post.id, serverHost, accountOrServer?.server?.host);
 
   const { selectedGroup } = useGroupContext();
@@ -395,7 +395,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           // marginRight={-10}
           f={isPreview ? undefined : 1}
           animation='standard'
-          pressStyle={isPreview ? { scale: 0.990 } : {}}
+          // pressStyle={isPreview ? { scale: 0.990 } : {}}
           scale={1}
           opacity={1}
           // w='100%'

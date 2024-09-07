@@ -29,7 +29,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
 }: DynamicCreateButtonProps) => {
   const currentAccount = useCurrentAccount();
   const accountsAndServers = usePinnedAccountsAndServers({ includeUnpinned: true });
-  const {selectedGroup} = useGroupContext();
+  const { selectedGroup } = useGroupContext();
 
   const canCreatePosts = accountsAndServers.some(aos =>
     aos.account?.user?.permissions?.includes(Permission.CREATE_POSTS)
@@ -52,7 +52,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
 
   // console.log("DynamicCreateButton hide", hide);
   return doShowPosts || doShowEvents
-    ? <XStack px='$2' gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
+    ? <XStack gap='$2' opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
       {doShowPosts ? <CreatePostSheet {...{ selectedGroup, button }} /> : undefined}
       {doShowEvents ? <CreateEventSheet {...{ selectedGroup, button }} /> : undefined}
     </XStack>
@@ -67,7 +67,7 @@ export const DynamicCreateButton: React.FC<DynamicCreateButtonProps> = ({
           </YStack>
           : undefined
         :
-        <YStack opacity={.92} p='$3' /*backgroundColor='$background'*/ alignContent='center'>
+        <YStack opacity={.92} /*backgroundColor='$background'*/ alignContent='center'>
           <AuthSheetButton operation='Post' button={button} />
         </YStack>;
 

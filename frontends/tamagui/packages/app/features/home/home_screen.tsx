@@ -16,6 +16,9 @@ import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from './page_chooser';
+import { useSwipeable } from 'react-swipeable';
+
+// import Swipeable from '@jonline/ui/src/swipeable';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -120,6 +123,24 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
     }
   }, [eventsLoaded, postsLoaded]);
 
+  const swipeHandlers = useSwipeable({
+    onSwipedLeft: () => {
+      console.log('swiped left');
+      if (postPagination.pageCount > postPagination.page + 1) {
+        postPagination.setPage(postPagination.page + 1);
+      }
+    },
+    onSwipedRight: () => {
+      console.log('swiped right');
+      if (postPagination.page > 0) {
+        postPagination.setPage(postPagination.page - 1);
+      }
+    },
+    swipeDuration: 500,
+    preventScrollOnSwipe: true,
+    trackMouse: true
+  });
+
   // console.log("BaseHomeScreen render", { posts: posts.length, events: events.length, loaded: [eventsLoaded, postsLoaded] })
 
   const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
@@ -140,7 +161,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         margin: 'auto',
         flex: 1,
         display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center', marginTop: 5,
+        justifyContent: 'center', alignItems: 'center',
+        marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20
       }}
@@ -149,7 +171,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
         </div> */}
         <div key='latest-events-header' style={{ width: '100%' }}>
-          <XStack w='100%' pt={0} px='$3' ai='center'
+          <XStack w='100%' pt={0}
+            px={mediaQuery.gtXxs ? '$3' : 0}
+            ai='center'
           // flexDirection='row-reverse'
           >
 
@@ -201,7 +225,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                         <div id='events-top' />
                         {allEvents.length == 0 && !loadingEvents
                           ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
-                            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px='$2' mt='$3'>
+                            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px={mediaQuery.gtXxs ? '$2' : 0} mt='$3'>
                               <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
                               {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                             </YStack>
@@ -237,7 +261,12 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             ]
           : undefined}
 
-        <div id='latest-posts-header' key='latest-posts-header' style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
+        <div id='latest-posts-header' key='latest-posts-header' style={{
+          width: '100%', maxWidth: 800,
+
+          paddingLeft: mediaQuery.gtXxs ? 18 : 0,
+          paddingRight: mediaQuery.gtXxs ? 18 : 0
+        }}>
           <XStack ai='center' w='100%' overflow='hidden'>
             <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
             {/* <XStack f={1}> */}
@@ -261,12 +290,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </div>
             : undefined
           : undefined}
-        {paginatedPosts.map((post) => {
-          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
-            style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-            <PostCard post={post} isPreview />
-          </div>;
-        })}
+        <div style={{ width: '100%' }} {...swipeHandlers}>
+          {paginatedPosts.map((post) => {
+            return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
+              style={{
+                width: '100%', maxWidth: 800,
+                paddingLeft: mediaQuery.gtXxs ? 18 : 0,
+                paddingRight: mediaQuery.gtXxs ? 18 : 0
+              }}>
+              <PostCard post={post} isPreview />
+            </div>;
+          })}
+        </div>
 
         {postPagination.pageCount > 1
           ? <div key='page-chooser-bottom'

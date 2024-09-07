@@ -8094,6 +8094,7 @@ __metadata:
     react-redux: "npm:^8.1.3"
     react-social-media-embed: "npm:^2.5.13"
     react-sticky-box: "npm:^2.0.5"
+    react-swipeable: "npm:^7.0.1"
     react-syntax-highlighter: "npm:^15.5.0"
     recyclerlistview: "npm:^4.2.0"
     redux-persist: "npm:^6.0.0"
@@ -18416,6 +18417,15 @@ __metadata:
     react: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
     react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
   checksum: 684f9ec88af0be9e27c3112480e47ef54060af13e5adb0cf7988ac2599bf29e12fcbeca3e8067270216b1add805a063cbd6abae20f1dd0b65b5d689afd3b66d7
+  languageName: node
+  linkType: hard
+
+"react-swipeable@npm:^7.0.1":
+  version: 7.0.1
+  resolution: "react-swipeable@npm:7.0.1"
+  peerDependencies:
+    react: ^16.8.3 || ^17 || ^18
+  checksum: b4aa3e8222e34d53f98df80075bdd7a034b33e733952844931a520158c49a892e53fdd497e53ee0f74c502eec21db3d6c9dbc97e251881c2032fe7fd5a0145c8
   languageName: node
   linkType: hard
 
