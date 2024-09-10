@@ -8,7 +8,7 @@ import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederate
 import useIsVisibleHorizontal from "app/hooks/use_is_visible";
 import { FederatedEvent, FederatedPost, PinnedServer, RootState, accountID, federatedId, getCachedServerClient, getServerClient, loadEvent, loadPost, moveStarredPostDown, moveStarredPostUp, parseFederatedId, selectPostById, serverID, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
 import { highlightedButtonBackground } from "app/utils";
-import { createRef, useEffect, useState } from "react";
+import { createRef, useCallback, useEffect, useState } from "react";
 import FlipMove from "lumen5-react-flip-move";
 import { useLink } from "solito/link";
 import EventCard from "../event/event_card";
@@ -151,20 +151,7 @@ export function StarredPosts({ }: StarredPostsProps) {
   const starredPostIds = useAppSelector(state => state.config.starredPostIds) ?? [];
 
   const [open, setOpen] = useState(false);
-  const [hasOpened, setHasOpened] = useState(open);
-  useEffect(() => {
-    if (open && !hasOpened) {
-      setHasOpened(true);
-    }
-  }, [hasOpened, open]);
-  const openChanged = useDebounceValue(open, 3000);
-  useEffect(() => {
-    if (!openChanged) {
-      setHasOpened(false);
-    }
-  }, [openChanged])
-
-  // const [openedPostId, setOpenedPostId] = useState<string | undefined>(undefined);
+  const openDebounced = useDebounceValue(open, 3000);
   const openedPostId = useAppSelector(state => state.config.openedStarredPostId);
   const setOpenedPostId = (postId: string | undefined) =>
     dispatch(setOpenedStarredPost(postId));
@@ -183,8 +170,8 @@ export function StarredPosts({ }: StarredPostsProps) {
   //   return counts;
   // });
 
-  const scrollToTop = (smooth?: boolean) => document.getElementById('starred-post-scroll-top')
-    ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : undefined });
+  const scrollToTop = useCallback((smooth?: boolean) => document.getElementById('starred-post-scroll-top')
+    ?.scrollIntoView({ block: 'center', behavior: smooth ? 'smooth' : undefined }), []);
   useEffect(() => {
     if (openedPostId && chatUI) {
       // if (chatUI) {
@@ -272,240 +259,238 @@ export function StarredPosts({ }: StarredPostsProps) {
                 </Button>
               </Popover.Trigger>
 
-              {hasOpened
-                ? <Popover.Content
-                  borderWidth={1}
-                  p='$2'
-                  // color={primaryTextColor}
-                  backgroundColor={transparentPrimaryColor}
-                  backdropFilter="blur(10px)"
-                  // backdropFilter="fade(0.5)"
-                  borderColor="$borderColor"
-                  enterStyle={{ y: -10, opacity: 0 }}
-                  exitStyle={{ y: -10, opacity: 0 }}
-                  elevate
-                  animation={[
-                    'standard',
-                    {
-                      opacity: {
-                        overshootClamping: true,
-                      },
+              <Popover.Content
+                borderWidth={1}
+                p='$2'
+                // color={primaryTextColor}
+                backgroundColor={transparentPrimaryColor}
+                backdropFilter="blur(10px)"
+                // backdropFilter="fade(0.5)"
+                borderColor="$borderColor"
+                enterStyle={{ y: -10, opacity: 0 }}
+                exitStyle={{ y: -10, opacity: 0 }}
+                elevate
+                animation={[
+                  'standard',
+                  {
+                    opacity: {
+                      overshootClamping: true,
                     },
-                  ]}
-                >
-                  {/* <YStack backgroundColor={transparentPrimaryColor}> */}
-                  <Popover.Arrow borderWidth={1} backgroundColor={transparentPrimaryColor} borderColor="$borderColor" />
+                  },
+                ]}
+              >
+                {/* <YStack backgroundColor={transparentPrimaryColor}> */}
+                <Popover.Arrow borderWidth={1} backgroundColor={transparentPrimaryColor} borderColor="$borderColor" />
 
-                  <YStack h='100%' ai='center'>
-                    <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'none' }}>
-                      {openedPostId
-                        ? [
-                          <div key='back'>
-                            <Button circular size='$3' mr='$2' onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
-                          </div>,
-                          // <div key='flex-1' style={{ flex: 1 }} />
-                        ] : [
-                          <div key='posts-filter'>
-                            <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : primaryTextColor)}
-                              onPress={() => setStarredPostFilter(
-                                starredPostFilter === 'posts' ? undefined : 'posts'
-                              )}
-                              transparent
-                              {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
-                            />
-                          </div>,
-                          <div key='events-filter' style={{ marginRight: 10 }}>
-                            <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : primaryTextColor)}
-                              onPress={() => setStarredPostFilter(
-                                starredPostFilter === 'events' ? undefined : 'events'
-                              )}
-                              transparent
-                              {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
-                            />
-                          </div>,
-                        ]}
-                      {basePost
-                        ? <div key='post-name' style={{ flex: 1 }}>
-                          <Button transparent onPress={() => scrollToTop(true)} >
-                            <YStack>
-                              <Paragraph size='$1'
-                                color={primaryTextColor}
-                                maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
-                                overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
-                                fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
-                                {basePostTitle}
+                <YStack h='100%' ai='center'>
+                  <FlipMove style={{ width: '100%', display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'none' }}>
+                    {openedPostId
+                      ? [
+                        <div key='back'>
+                          <Button circular size='$3' mr='$2' onPress={() => setOpenedPostId(undefined)} icon={ChevronLeft} />
+                        </div>,
+                        // <div key='flex-1' style={{ flex: 1 }} />
+                      ] : [
+                        <div key='posts-filter'>
+                          <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : primaryTextColor)}
+                            onPress={() => setStarredPostFilter(
+                              starredPostFilter === 'posts' ? undefined : 'posts'
+                            )}
+                            transparent
+                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
+                          />
+                        </div>,
+                        <div key='events-filter' style={{ marginRight: 10 }}>
+                          <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : primaryTextColor)}
+                            onPress={() => setStarredPostFilter(
+                              starredPostFilter === 'events' ? undefined : 'events'
+                            )}
+                            transparent
+                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
+                          />
+                        </div>,
+                      ]}
+                    {basePost
+                      ? <div key='post-name' style={{ flex: 1 }}>
+                        <Button transparent onPress={() => scrollToTop(true)} >
+                          <YStack>
+                            <Paragraph size='$1'
+                              color={primaryTextColor}
+                              maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
+                              overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
+                              fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
+                              {basePostTitle}
+                            </Paragraph>
+                          </YStack>
+                        </Button>
+                      </div>
+                      : <div key='starred-heading' style={{ flex: 1 }}>
+
+                        <Tooltip>
+                          <Tooltip.Trigger>
+                            <FlipMove style={{ width: '100%' }}>
+                              <div key='starred'>
+                                <XStack ai='center' gap='$2'>
+                                  <Heading size='$4' color={primaryTextColor}>Starred</Heading>
+                                  <Info size={16} o={0.5} color={primaryTextColor} />
+                                </XStack>
+                              </div>
+                              {starredPostFilter === 'posts'
+                                ?
+                                <div key='starred-posts'>
+                                  <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Posts</Heading>
+                                </div>
+                                : starredPostFilter === 'events'
+                                  ?
+                                  <div key='starred-events'>
+                                    <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Events</Heading>
+                                  </div>
+                                  : undefined}
+                            </FlipMove>
+                          </Tooltip.Trigger>
+                          <Tooltip.Content>
+                            <YStack ai='flex-start'>
+                              <Paragraph size='$1' >
+                                Starred Posts/Events are stored only in your current browser.
+                              </Paragraph>
+                              <Paragraph size='$1' >
+                                They are <i>never</i> associated with any profile or any personal identifiable information (PII), even in server logs.
+                              </Paragraph>
+                              <Paragraph size='$1' >
+                                Don't take Star Counts seriously. They are anonymous tallies, easily prone to manipulation, and don't affect who sees anything.
                               </Paragraph>
                             </YStack>
+                          </Tooltip.Content>
+                        </Tooltip>
+                      </div>}
+                    {/* <div key='flex-2' style={{ flex: 1 }} /> */}
+
+                    {eventWithSingleInstance
+                      ? <div key='instance-time'>
+                        <InstanceTime instance={eventWithSingleInstance.instances[0]!} event={eventWithSingleInstance} />
+                      </div>
+                      : basePost
+                        ? undefined//<div key='flex-3' style={{ flex: 1 }} />
+                        : undefined}
+                  </FlipMove>
+                  {openedPostId && basePost //&& basePost.responseCount > 0
+                    ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
+                      w='100%' maw={800} mx='auto' mt='$1' ai='center'>
+                      <XStack key='spacer1' f={1} />
+                      <Tooltip key='discussionUI' placement="bottom">
+                        <Tooltip.Trigger>
+                          <Button h='$2' px='$2'
+                            backgroundColor={chatUI ? undefined : navColor}
+                            hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
+                            transparent={chatUI}
+                            borderTopRightRadius={0} borderBottomRightRadius={0}
+
+                            icon={<ListEnd color={chatUI ? primaryTextColor : navTextColor} transform={[{ rotate: '180deg' }]} />}
+                            onPress={() => {
+                              dispatch(setDiscussionChatUI(false));
+                              scrollToCommentsTop(openedPostId);
+                            }}
+                            mr={0}>
+                            <Heading size='$4' color={chatUI ? primaryTextColor : navTextColor}>Discussion</Heading>
                           </Button>
-                        </div>
-                        : <div key='starred-heading' style={{ flex: 1 }}>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <Heading size='$2'>Newest on top.</Heading>
+                          <Heading size='$1'>Grouped into threads.</Heading>
+                        </Tooltip.Content>
+                      </Tooltip>
 
-                          <Tooltip>
-                            <Tooltip.Trigger>
-                              <FlipMove style={{ width: '100%' }}>
-                                <div key='starred'>
-                                  <XStack ai='center' gap='$2'>
-                                    <Heading size='$4' color={primaryTextColor}>Starred</Heading>
-                                    <Info size={16} o={0.5} color={primaryTextColor} />
-                                  </XStack>
-                                </div>
-                                {starredPostFilter === 'posts'
-                                  ?
-                                  <div key='starred-posts'>
-                                    <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Posts</Heading>
-                                  </div>
-                                  : starredPostFilter === 'events'
-                                    ?
-                                    <div key='starred-events'>
-                                      <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Events</Heading>
-                                    </div>
-                                    : undefined}
-                              </FlipMove>
-                            </Tooltip.Trigger>
-                            <Tooltip.Content>
-                              <YStack ai='flex-start'>
-                                <Paragraph size='$1' >
-                                  Starred Posts/Events are stored only in your current browser.
-                                </Paragraph>
-                                <Paragraph size='$1' >
-                                  They are <i>never</i> associated with any profile or any personal identifiable information (PII), even in server logs.
-                                </Paragraph>
-                                <Paragraph size='$1' >
-                                  Don't take Star Counts seriously. They are anonymous tallies, easily prone to manipulation, and don't affect who sees anything.
-                                </Paragraph>
-                              </YStack>
-                            </Tooltip.Content>
-                          </Tooltip>
-                        </div>}
-                      {/* <div key='flex-2' style={{ flex: 1 }} /> */}
+                      <Tooltip key='chatUI' placement="bottom">
+                        <Tooltip.Trigger>
+                          <Button h='$2' px='$2'
+                            backgroundColor={!chatUI ? undefined : navColor}
+                            hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
+                            transparent={!chatUI}
+                            iconAfter={<ListEnd color={!chatUI ? primaryTextColor : navTextColor} />}
+                            borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                            onPress={() => {
+                              dispatch(setDiscussionChatUI(true));
+                              if (chatUI)
+                                scrollToCommentsBottom(openedPostId);
+                              else
+                                setTimeout(() => scrollToCommentsBottom(openedPostId), 800);
+                            }}>
+                            <Heading size='$4' color={!chatUI ? primaryTextColor : navTextColor}>Chat</Heading>
+                          </Button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Content>
+                          <Heading size='$2'>Newest on bottom.</Heading>
+                          <Heading size='$1'>Sorted by time.</Heading>
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <XStack key='spacer2' f={1} />
 
-                      {eventWithSingleInstance
-                        ? <div key='instance-time'>
-                          <InstanceTime instance={eventWithSingleInstance.instances[0]!} event={eventWithSingleInstance} />
+
+
+                      {/* {basePost ? */}
+                      <Button
+                        h='$2' px='$2' ml='$2'
+                        // onPress={() => setOpen(false)}
+                        {...basePostLinkWithClose}
+                        iconAfter={PanelLeftOpen} >
+                        <Heading size='$4'>Open</Heading>
+                      </Button>
+                      {/* : undefined} */}
+                    </XStack>
+                    : undefined}
+                  {/* </AnimatePresence> */}
+                  <ScrollView
+                    w={Math.max(100, Math.min(650, window.innerWidth - 50))}
+                    h={Math.max(100, Math.min(650, window.innerHeight - 280 - (showReplyArea ? mediaQuery.gtXxxs ? 200 : 100 : 0)))}
+                  >
+                    <FlipMove style={{ alignItems: 'center' }}>
+                      <div id='starred-post-scroll-top' key='starred-post-scroll-top' style={{ height: 0 }} />
+                      {filteredPostIds.length === 0
+                        ? <div key='no-starred-posts' style={{
+                          display: 'flex',
+                          marginLeft: 'auto',
+                          marginRight: 'auto',
+                          marginTop: Math.max(50, Math.min(350, window.innerHeight - 150)) / 2 - 50,
+                        }}>
+                          <Paragraph size='$3' w='100%' ta='center' o={0.5}>
+                            {starredPostFilter === 'events'
+                              ? 'No starred events.'
+                              : 'No starred posts.'}
+                          </Paragraph>
                         </div>
-                        : basePost
-                          ? undefined//<div key='flex-3' style={{ flex: 1 }} />
-                          : undefined}
+                        : undefined}
+
+                      {open || openDebounced ?
+                        openedPostId// && basePost
+                          ? [
+                            <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%' }}>
+                              <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
+                            </div>,
+                            basePost ? conversationCommentList : undefined
+                          ]
+                          : filteredPostIds.map((postId) =>
+                            <div key={`starred-post-card-${postId}`} style={{ width: '100%' }}>
+                              <XStack w='100%'
+                                animation='standard' {...standardAnimation}>
+                                <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
+                                  unsortable={!!starredPostFilter} />
+                              </XStack>
+                            </div>)
+                        : undefined}
+
                     </FlipMove>
-                    {openedPostId && basePost //&& basePost.responseCount > 0
-                      ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
-                        w='100%' maw={800} mx='auto' mt='$1' ai='center'>
-                        <XStack key='spacer1' f={1} />
-                        <Tooltip key='discussionUI' placement="bottom">
-                          <Tooltip.Trigger>
-                            <Button h='$2' px='$2'
-                              backgroundColor={chatUI ? undefined : navColor}
-                              hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
-                              transparent={chatUI}
-                              borderTopRightRadius={0} borderBottomRightRadius={0}
+                  </ScrollView>
 
-                              icon={<ListEnd color={chatUI ? primaryTextColor : navTextColor} transform={[{ rotate: '180deg' }]} />}
-                              onPress={() => {
-                                dispatch(setDiscussionChatUI(false));
-                                scrollToCommentsTop(openedPostId);
-                              }}
-                              mr={0}>
-                              <Heading size='$4' color={chatUI ? primaryTextColor : navTextColor}>Discussion</Heading>
-                            </Button>
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <Heading size='$2'>Newest on top.</Heading>
-                            <Heading size='$1'>Grouped into threads.</Heading>
-                          </Tooltip.Content>
-                        </Tooltip>
-
-                        <Tooltip key='chatUI' placement="bottom">
-                          <Tooltip.Trigger>
-                            <Button h='$2' px='$2'
-                              backgroundColor={!chatUI ? undefined : navColor}
-                              hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
-                              transparent={!chatUI}
-                              iconAfter={<ListEnd color={!chatUI ? primaryTextColor : navTextColor} />}
-                              borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                              onPress={() => {
-                                dispatch(setDiscussionChatUI(true));
-                                if (chatUI)
-                                  scrollToCommentsBottom(openedPostId);
-                                else
-                                  setTimeout(() => scrollToCommentsBottom(openedPostId), 800);
-                              }}>
-                              <Heading size='$4' color={!chatUI ? primaryTextColor : navTextColor}>Chat</Heading>
-                            </Button>
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <Heading size='$2'>Newest on bottom.</Heading>
-                            <Heading size='$1'>Sorted by time.</Heading>
-                          </Tooltip.Content>
-                        </Tooltip>
-                        <XStack key='spacer2' f={1} />
-
-
-
-                        {/* {basePost ? */}
-                        <Button
-                          h='$2' px='$2' ml='$2'
-                          // onPress={() => setOpen(false)}
-                          {...basePostLinkWithClose}
-                          iconAfter={PanelLeftOpen} >
-                          <Heading size='$4'>Open</Heading>
-                        </Button>
-                        {/* : undefined} */}
-                      </XStack>
-                      : undefined}
-                    {/* </AnimatePresence> */}
-                    <ScrollView
-                      w={Math.max(100, Math.min(650, window.innerWidth - 50))}
-                      h={Math.max(100, Math.min(650, window.innerHeight - 280 - (showReplyArea ? mediaQuery.gtXxxs ? 200 : 100 : 0)))}
-                    >
-                      <FlipMove style={{ alignItems: 'center' }}>
-                        <div id='starred-post-scroll-top' key='starred-post-scroll-top' style={{ height: 0 }} />
-                        {filteredPostIds.length === 0
-                          ? <div key='no-starred-posts' style={{
-                            display: 'flex',
-                            marginLeft: 'auto',
-                            marginRight: 'auto',
-                            marginTop: Math.max(50, Math.min(350, window.innerHeight - 150)) / 2 - 50,
-                          }}>
-                            <Paragraph size='$3' w='100%' ta='center' o={0.5}>
-                              {starredPostFilter === 'events'
-                                ? 'No starred events.'
-                                : 'No starred posts.'}
-                            </Paragraph>
-                          </div>
-                          : undefined}
-
-                        {open ?
-                          openedPostId// && basePost
-                            ? [
-                              <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%' }}>
-                                <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
-                              </div>,
-                              basePost ? conversationCommentList : undefined
-                            ]
-                            : filteredPostIds.map((postId) =>
-                              <div key={`starred-post-card-${postId}`} style={{ width: '100%' }}>
-                                <XStack w='100%'
-                                  animation='standard' {...standardAnimation}>
-                                  <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
-                                    unsortable={!!starredPostFilter} />
-                                </XStack>
-                              </div>)
-                          : undefined}
-
-                      </FlipMove>
-                    </ScrollView>
-
-                    {/* {openedPostId && basePost
+                  {/* {openedPostId && basePost
                         ? <> */}
-                    <ReplyArea replyingToPath={replyPostIdPath}
-                      onStopReplying={() => openedPostId && setReplyPostIdPath([openedPostId])}
-                      hidden={!showReplyArea} />
-                    {/* </>
+                  <ReplyArea replyingToPath={replyPostIdPath}
+                    onStopReplying={() => openedPostId && setReplyPostIdPath([openedPostId])}
+                    hidden={!showReplyArea} />
+                  {/* </>
                         : undefined} */}
-                  </YStack>
-                  {/* </YStack> */}
-                </Popover.Content>
-                : undefined}
+                </YStack>
+                {/* </YStack> */}
+              </Popover.Content>
             </Popover >
 
             <XStack key='count' pointerEvents="none" o={0.7}

@@ -41,22 +41,22 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
 
-  const [hasOpened, setHasOpened] = useState(open);
+  const openDebounced = useDebounceValue(open, 3000);
+  // const [hasOpened, setHasOpened] = useState(open);
   useEffect(() => {
-    if (open && !hasOpened) {
-      setHasOpened(true);
-    }
-    if (open && !hasOpenedAccounts) {
+    // if (open && !hasOpened) {
+    //   setHasOpened(true);
+    // }
+    if (openDebounced && !hasOpenedAccounts) {
       requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
     }
-  }, [hasOpened, open]);
+  }, [openDebounced, hasOpenedAccounts]);
 
-  const openChanged = useDebounceValue(open, 3000);
-  useEffect(() => {
-    if (!openChanged) {
-      setHasOpened(false);
-    }
-  }, [openChanged])
+  // useEffect(() => {
+  //   if (!openDebounced) {
+  //     setHasOpened(false);
+  //   }
+  // }, [openDebounced])
   const dispatch = useAppDispatch();
   const { server: currentServer, textColor, backgroundColor, primaryColor, primaryTextColor, navColor, navTextColor, warningAnchorColor } = useServerTheme();
 
@@ -150,6 +150,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
       <Paragraph size='$1'>You are seeing data as though you were on {currentServer?.host}, although you're on {browsingOn}.</Paragraph>
     </Tooltip.Content>
   </Tooltip>, [currentServer, browsingOn]);
+
+  const renderContent = open || openDebounced;
   return <>
     <Button
       my='auto'
@@ -266,7 +268,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
           <FlipMove style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
             {/* <YStack maxWidth={800} gap width='100%' alignSelf='center'> */}
-            {open ? [
+            {renderContent ? [
               browsingServers
                 ? <div key='server-header'>
                   <XStack ai='center'>

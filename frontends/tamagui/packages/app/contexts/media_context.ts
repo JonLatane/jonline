@@ -1,4 +1,6 @@
 import { Media, MediaReference } from "@jonline/api";
+import { useDebounceValue } from "@jonline/ui";
+
 import { useCreationServer } from "app/hooks";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -59,6 +61,8 @@ export function useNewMediaContext(): MediaContextType {
   const [isMultiselect, setMultiselect] = useState(false);
   const [contentTypePrefixFilter, setContentTypePrefixFilter] = useState(undefined as string | undefined);
 
+
+  // const mediaSheetOpenDebounce = useDebounceValue(setMediaSheetOpen, 300);
   useEffect(() => {
     if (!mediaSheetOpen) {
       setSelectedMedia([]);

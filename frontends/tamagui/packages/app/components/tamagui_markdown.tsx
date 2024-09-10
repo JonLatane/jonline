@@ -54,7 +54,7 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false,
         code: ({ children, className, node, ...rest }) => {
           // const  = props
           const match = /language-(\w+)/.exec(className || '')
-          console.log('TamaguiMarkdown code match', match)
+          // console.log('TamaguiMarkdown code match', match)
           return match ? (
             <XStack my='$3'>
               <SyntaxHighlighter

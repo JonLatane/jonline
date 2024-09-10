@@ -1,5 +1,5 @@
 import { Event } from '@jonline/api';
-import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useMedia } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Checkbox, CheckboxProps, DateTimePicker, Dialog, Heading, Label, Paragraph, RadioGroup, Sheet, SizeTokens, Slider, Switch, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
 import { AlertTriangle, Check, ChevronLeft, Router, Settings as SettingsIcon, X as XIcon } from '@tamagui/lucide-icons';
 import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
 import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
@@ -23,7 +23,8 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
   const { primaryColor, primaryAnchorColor } = useServerTheme();
 
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
+  const openDebounced = useDebounceValue(open, 3000);
   const [position, setPosition] = useState(0)
   const dispatch = useAppDispatch();
   const app = useAppSelector(state => state.config);
