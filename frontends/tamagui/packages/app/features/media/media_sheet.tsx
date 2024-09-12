@@ -24,10 +24,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   const mediaQuery = useMedia();
   const { mediaSheetOpen: open, setMediaSheetOpen: setOpen, isSelecting, isMultiselect, selectedMedia, setSelectedMedia, setSelecting, setMultiselect } = useMediaContext();
   const [position, setPosition] = useState(0);
-  // const serversState = useRootSelector((state: RootState) => state.servers);
-  // const mediaState = useRootSelector((state: RootState) => state.media);
-  // const app = useRootSelector((state: RootState) => state.config);
-  const { dispatch, accountOrServer } = useCreationDispatch(); //useProvidedDispatch();// useCredentialDispatch();
+
+  const { dispatch, accountOrServer } = useCreationDispatch();
   const { server, account } = accountOrServer;
   const [viewerMediaId, setViewerMediaId] = useState<string | undefined>(undefined);
   const [deletingMediaId, setDeletingMediaId] = useState<string | undefined>(undefined);
@@ -49,7 +47,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
   }, [open]);
 
   const serverTheme = useServerTheme(server);
-  const { primaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;//useServerTheme(accountOrServer.server);
+  const { primaryColor, primaryTextColor, navColor, navTextColor } = serverTheme;
   const dimensions = useWindowDimensions();
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | undefined>(undefined);
@@ -59,6 +57,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
     useMediaPages();
 
   const viewerMedia = allMedia?.find((m) => m.id === viewerMediaId);
+  // console.log('MediaSheet', { viewerMedia })
   const deletingMedia = allMedia?.find((m) => m.id === deletingMediaId);
 
   const [page, setPage] = useState(0);
@@ -189,11 +188,14 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 {viewerMedia?.name}
                               </Heading>
                             </XStack>
-                            <PostMediaRenderer post={
-                              Post.create({
-                                media: [viewerMedia as MediaReference]
-                              })
-                            } />
+                            <AccountOrServerContextProvider value={accountOrServer}>
+                              <PostMediaRenderer renderGeneratedMedia post={
+                                Post.create({
+                                  media: [viewerMedia as MediaReference]
+                                })
+                              } />
+                            </AccountOrServerContextProvider>
+                            {/* <Paragraph>hi</Paragraph> */}
                             <Paragraph fontFamily='$mono' ml='auto'>{viewerMedia?.contentType}</Paragraph>
                             <Paragraph size='$2'>{viewerMedia?.description}</Paragraph>
                           </YStack>
@@ -215,7 +217,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 mih='160px'
                                 mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
                                 borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
-                                animation='standard' 
+                                animation='standard'
                                 pressStyle={{ scale: 0.95 }}
                                 backgroundColor={selected ? navColor : undefined}
                                 onPress={onSelect}>

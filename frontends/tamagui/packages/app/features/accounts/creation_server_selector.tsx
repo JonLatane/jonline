@@ -1,5 +1,5 @@
 import { Button, Paragraph, reverseHorizontalAnimation, ScrollView, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronLeft, ExternalLink, SeparatorVertical } from '@tamagui/lucide-icons';
+import { ChevronLeft, ExternalLink, Info, SeparatorVertical } from '@tamagui/lucide-icons';
 import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey, useAppSelector } from 'app/hooks';
 import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
@@ -32,6 +32,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
   const server = taggedServer ?? creationServer ?? currentServer;
   const isCurrentServer = server?.host == currentServer?.host;
   const serverLink = useLink({ href: server ? `http://${server.host}` : '' });
+  const infoLink = useLink({ href: server ? `/server/${serverID(server)}` : '' });
 
   const disabled = !!taggedServer;
 
@@ -58,13 +59,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
       <ServerNameAndLogo server={s} />
     </YStack>
   };
-  const serverView = isCurrentServer
-    ? serverNameAndLogo(creationServer!)
-    : <Button maxWidth='100%' h='auto' ml='$1' p='$1' transparent iconAfter={ExternalLink} target='_blank' {...serverLink}>
-      <XStack ai='center'>
-        {serverNameAndLogo(creationServer!)}
-      </XStack>
-    </Button>;
+  // const serverView = ;
 
   return <XStack ai='center'
     pl={pl}
@@ -84,12 +79,19 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
       <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
         <div id={selectorTopKey} key={selectorTopKey} />
         {server
-          ? <div id='accounts-sheet-currently-adding-server'
-            key={`serverCard-${serverID(server)}`}
-            style={{ margin: 2 }}>
-            {serverView}
-            {/* <ServerNameAndLogo server={addAccountServer} /> */}
-          </div>
+          ? [
+            <div id='accounts-sheet-currently-adding-server'
+              key={`serverCard-${serverID(server)}`}
+              style={{ margin: 2 }}>
+              <XStack ai='center' gap='$1' maxWidth='100%'>
+                {serverNameAndLogo(creationServer!)}
+                {isCurrentServer
+                  ? undefined
+                  : <Button icon={ExternalLink} circular size='$2' {...serverLink} target='_blank' />}
+                <Button icon={Info} circular size='$2' {...infoLink} />
+              </XStack>
+            </div>
+          ]
           : undefined}
         {availableServers && availableServers.length > 1 && !disabled
           ? <div key='separator' style={{ margin: 2 }}>

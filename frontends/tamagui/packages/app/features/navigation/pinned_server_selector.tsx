@@ -348,7 +348,7 @@ export function ShortAccountSelectorButton({ server, pinnedServer, onPress }: Sh
   // const avatarSize = 20;
   // const pinnedAccount = useAppSelector(state => pinnedServer?.accountId ? selectAccountById(state.accounts, pinnedServer.accountId) : undefined);
 
-  return <Button onPress={onPress} h='auto' py='$1' px='$2'
+  return <Button onPress={onPress} h='auto' /*py='$1'*/ px='$2'
     borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
     o={pinned ? 1 : 0.5}
     disabled={!onPress}

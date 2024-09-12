@@ -1,11 +1,10 @@
 import { FederatedGroup, federateId, useServerTheme } from "app/store";
-import React, { useEffect, useState } from "react";
-import { View } from "react-native";
+import React, { useMemo } from "react";
 
-import { Group, Post } from "@jonline/api";
-import { Anchor, Image, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
-import { useIsVisible, useMediaUrl, usePostDispatch, useCurrentServer, useLocalConfiguration } from "app/hooks";
-import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, XEmbed, YouTubeEmbed } from 'react-social-media-embed';
+import { Post } from "@jonline/api";
+import { Anchor, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
+import { useCurrentServer, useMediaUrl, usePostDispatch } from "app/hooks";
+import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, XEmbed, YouTubeEmbed } from 'react-social-media-embed';
 import { useLink } from "solito/link";
 
 import { FadeInView } from 'app/components';
@@ -19,6 +18,7 @@ export interface PostMediaRendererProps {
   smallPreview?: boolean;
   xsPreview?: boolean;
   detailsLink?: LinkProps;
+  renderGeneratedMedia?: boolean;
 }
 
 export type LinkProps = {
@@ -33,7 +33,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   groupContext,
   smallPreview,
   xsPreview,
-  detailsLink: parentDetailsLink
+  detailsLink: parentDetailsLink,
+  renderGeneratedMedia
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const mediaQuery = useMedia();
@@ -61,29 +62,33 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
 
   const embedSupported = post.embedLink && post.link && post.link.length;
-  let embedComponent: React.ReactNode | undefined = undefined;
-  if (embedSupported) {
-    const url = new URL(post.link!);
-    const hostname = url.hostname.split(':')[0]!;
-    if (hostname.endsWith('twitter.com') || hostname.endsWith('t.co') || hostname.endsWith('x.com')) {
-      embedComponent = <XEmbed url={post.link!} />;
-    } else if (hostname.endsWith('instagram.com')) {
-      embedComponent = <InstagramEmbed width='100%' url={post.link!} />;
-    } else if (hostname.endsWith('facebook.com')) {
-      embedComponent = <FacebookEmbed width='100%' url={post.link!} />;
-    } else if (hostname.endsWith('youtube.com')) {
-      embedComponent = <YouTubeEmbed width='100%' url={post.link!} />;
-    } else if (hostname.endsWith('tiktok.com')) {
-      embedComponent = <TikTokEmbed width='100%' url={post.link!} />;
-    } else if (hostname.endsWith('pinterest.com')) {
-      embedComponent = <PinterestEmbed width='100%' url={post.link!} />;
-    } else if (hostname.endsWith('linkedin.com')) {
-      embedComponent = <LinkedInEmbed width='100%' url={post.link!} />;
+  const embedComponent = useMemo(() => {
+    let embed: React.ReactNode | undefined = undefined;
+    if (embedSupported) {
+      const url = new URL(post.link!);
+      const hostname = url.hostname.split(':')[0]!;
+      if (hostname.endsWith('twitter.com') || hostname.endsWith('t.co') || hostname.endsWith('x.com')) {
+        embed = <XEmbed url={post.link!} />;
+      } else if (hostname.endsWith('instagram.com')) {
+        embed = <InstagramEmbed width='100%' url={post.link!} />;
+      } else if (hostname.endsWith('facebook.com')) {
+        embed = <FacebookEmbed width='100%' url={post.link!} />;
+      } else if (hostname.endsWith('youtube.com')) {
+        embed = <YouTubeEmbed width='100%' url={post.link!} />;
+      } else if (hostname.endsWith('tiktok.com')) {
+        embed = <TikTokEmbed width='100%' url={post.link!} />;
+      } else if (hostname.endsWith('pinterest.com')) {
+        embed = <PinterestEmbed width='100%' url={post.link!} />;
+      } else if (hostname.endsWith('linkedin.com')) {
+        embed = <LinkedInEmbed width='100%' url={post.link!} />;
+      }
     }
-  }
-  embedComponent = embedComponent
-    ? <YStack mx='auto' width='100%' ai='center'>{embedComponent}</YStack>
-    : undefined;
+    embed = embed
+      ? <YStack mx='auto' width='100%' ai='center'>{embed}</YStack>
+      : undefined;
+
+    return embed;
+  }, [embedSupported, post.link]);
 
   const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
   const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
@@ -92,7 +97,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
   const singleMediaPreview = showScrollableMediaPreviews
     ? undefined
-    : post?.media?.find(m => !m.generated);//m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
+    : post?.media?.find(m => !m.generated || renderGeneratedMedia);//m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
   const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
   const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
@@ -101,7 +106,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const foregroundSize = backgroundSize * 0.7;
 
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
-  // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, hasBeenVisible, media: post.media })
+  // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, media: post.media })
 
   return <YStack zi={1000} width='100%' ai='center'>
     {embedComponent
@@ -131,25 +136,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
           <YStack key={singleMediaPreview.id} w={singlePreviewSize} maw='100%' mah='100%' h={isPreview ? singlePreviewSize : undefined} mx='auto'>
             <MediaRenderer media={singleMediaPreview} />
           </YStack>
-          // <Image
-          //   mb='$3'
-          //   width={singlePreviewSize}
-          //   height={singlePreviewSize}
-          //   // width={foregroundSize}
-          //   // height={foregroundSize}
-          //   resizeMode="contain"
-          //   als="center"
-          //   source={{
-          //     uri: isVisible ? singleMediaPreviewUrl : undefined,
-          //     height: singlePreviewSize,
-          //     width: singlePreviewSize
-          //   }}
-          //   borderRadius={10}
-          // />
           : undefined}
       </YStack>
     </Anchor>
   </YStack>;
 };
-
-// export default PostMediaRenderer;
