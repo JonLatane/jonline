@@ -1,11 +1,21 @@
 import { EventListingType } from "@jonline/api";
+import { createSelector } from "@reduxjs/toolkit";
 import { defederateId, federatedId, getFederated } from "../federation";
 import { EventsState, FederatedEvent, FederatedGroup, GroupsState, selectEventById } from "../modules";
-import { RootState } from "../store";
+import { RootState } from '../store';
 import { AccountOrServer } from "../types";
+import { someLoading } from "./federated_pages_status";
 
+export const selectEventPages = createSelector([
+  (state: RootState) => state.events,
+  (_state, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]) =>
+    [listingType, timeFilter, throughPage, servers] as [EventListingType, string, number, AccountOrServer[]]
+],
+  (events: EventsState, [listingType, timeFilter, throughPage, servers]: [EventListingType, string, number, AccountOrServer[]]) =>
+    getEventsPages(events, listingType, timeFilter, throughPage, servers)
+);
 
-export function getEventsPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
+function getEventsPages(events: EventsState, listingType: EventListingType, timeFilter: string, throughPage: number, servers: AccountOrServer[]): FederatedEvent[] {
   const result: FederatedEvent[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getEventsPage(events, listingType, timeFilter, page, servers);
@@ -14,7 +24,7 @@ export function getEventsPages(events: EventsState, listingType: EventListingTyp
   return result;
 }
 
-export function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
+function getEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): FederatedEvent[] {
   const pageInstanceIds: string[] = servers.flatMap(server => {
     const serverEventInstancePages = getFederated(events.eventInstancePages, server.server);
     return ((serverEventInstancePages[listingType] ?? {})[timeFilter] ?? {})[page] ?? [];
@@ -30,7 +40,26 @@ export function getHasEventsPage(events: EventsState, listingType: EventListingT
   return !servers.some(isMissingServerPage(events, listingType, timeFilter, page));
 }
 
+export const selectEventsLoading = createSelector([
+  (state: RootState) => state.events,
+  (_state, servers: AccountOrServer[]) => servers
+], (events, servers) => someLoading(events.pagesStatus, servers));
+
+export const selectServersMissingEventsPage = createSelector([
+  (state: RootState) => {
+    // debugger;
+    return state.events
+  },
+  (_state, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]) =>
+    [listingType, timeFilter, page, servers] as [EventListingType, string, number, AccountOrServer[]]
+],
+  (events, [listingType, timeFilter, page, servers]) => {
+    // debugger;
+    return getServersMissingEventsPage(events, listingType, timeFilter, page, servers);
+  })
+
 export function getServersMissingEventsPage(events: EventsState, listingType: EventListingType, timeFilter: string, page: number, servers: AccountOrServer[]): AccountOrServer[] {
+  // debugger;
   return servers.filter(isMissingServerPage(events, listingType, timeFilter, page));
 }
 

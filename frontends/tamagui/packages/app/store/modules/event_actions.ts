@@ -3,7 +3,7 @@ import {
   AsyncThunk,
   createAsyncThunk
 } from "@reduxjs/toolkit";
-import { AccountOrServer, EventsState, getCredentialClient, getEventsPage, getFederated, getHasEventsPage } from "..";
+import { AccountOrServer, getCredentialClient } from "..";
 
 export type CreateEvent = AccountOrServer & Event;
 export const createEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, CreateEvent>(

@@ -41,7 +41,7 @@
     "eslint": "^8.57.0",
     "node-gyp": "^9.4.1",
     "prettier": "^2.8.8",
-    "ts-proto": "^1.176.0",
+    "ts-proto": "^1.181.2",
     "turbo": "^1.13.3",
     "typescript": "^5.4.5"
   },

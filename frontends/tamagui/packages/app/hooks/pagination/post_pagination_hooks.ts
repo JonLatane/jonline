@@ -2,7 +2,7 @@ import { Group, PostListingType } from "@jonline/api";
 import { useDebounce } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
 import { Selector, useAppDispatch } from "app/hooks";
-import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getPostsPages, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, store, useRootSelector } from "app/store";
+import { FederatedGroup, FederatedPost, RootState, getGroupPostPages, getHasGroupPostsPage, getHasMoreGroupPostPages, getHasMorePostPages, getHasPostsPage, getServersMissingPostsPage, loadGroupPostsPage, loadPostsPage, selectPostPages, store, useRootSelector } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { someLoading, someUnloaded } from '../../store/pagination/federated_pages_status';
 import { usePinnedAccountsAndServers } from '../account_or_server/use_pinned_accounts_and_servers';
@@ -37,15 +37,16 @@ function useServerPostPages(
   const loading = someLoading(postsState.pagesStatus, servers);
   // const [loading, setLoading] = useState(false);
 
-  const results: FederatedPost[] = useMemo(
-    () => getPostsPages(postsState, listingType, throughPage, servers),
-    [
-      postsState.ids,
-      postsState.pagesStatus,
-      servers.map(s => [s.account?.user?.id, s.server?.host]), ,
-      listingType
-    ]
-  );
+  const results: FederatedPost[] = useAppSelector(state => selectPostPages(state, listingType, throughPage, servers));
+  // useMemo(
+  //   () => getPostsPages(postsState, listingType, throughPage, servers),
+  //   [
+  //     postsState.ids,
+  //     postsState.pagesStatus,
+  //     servers.map(s => [s.account?.user?.id, s.server?.host]), ,
+  //     listingType
+  //   ]
+  // );
   const firstPageLoaded = getHasPostsPage(postsState, listingType, 0, servers);
   const hasMorePages = getHasMorePostPages(postsState, listingType, throughPage, servers);
   const serversAllDefined = !servers.some(s => !s.server);

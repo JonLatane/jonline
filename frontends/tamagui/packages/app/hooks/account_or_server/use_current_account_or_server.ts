@@ -1,6 +1,6 @@
 import { AccountOrServer, selectAccount, selectAccountById, selectServerById } from 'app/store';
 import { useAppDispatch, useAppSelector } from "../store_hooks";
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { current } from '@reduxjs/toolkit';
 
 
@@ -35,8 +35,14 @@ export const useCurrentAccount = () => {
 export const useCurrentServer = () => useAppSelector(state => state.servers.currentServerId ? selectServerById(state.servers, state.servers.currentServerId) : undefined);
 
 export function useCurrentAccountOrServer(): AccountOrServer {
-  return {
-    account: useCurrentAccount(),
-    server: useCurrentServer()
-  };
+  const currentAccount = useCurrentAccount();
+  const currentServer = useCurrentServer();
+  return useMemo(() => ({
+    account: currentAccount,
+    server: currentServer
+  }), [currentAccount, currentServer]);
+  // return {
+  //   account: useCurrentAccount(),
+  //   server: useCurrentServer()
+  // };
 }

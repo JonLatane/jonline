@@ -3,6 +3,7 @@ import { federatedId, getFederated } from "../federation";
 import { FederatedGroup, FederatedPost, GroupsState, PostsState, selectPostById } from "../modules";
 import { RootState } from "../store";
 import { AccountOrServer } from "../types";
+import { createSelector } from "@reduxjs/toolkit";
 
 /**
  * Pagination state building block, accessed via <code>number</code> rather than <code>string</code> keys.
@@ -12,7 +13,17 @@ import { AccountOrServer } from "../types";
  * We trust that the server will return the same consistent pagination data, and if not, "refresh the page to see the updated version"
  * is a reasonable fallback.
  */
-export function getPostsPages(posts: PostsState, listingType: PostListingType, throughPage: number, servers: AccountOrServer[]): FederatedPost[] {
+
+export const selectPostPages = createSelector([
+  (state: RootState) => state.posts,
+  (_state, listingType: PostListingType, throughPage: number, servers: AccountOrServer[]) =>
+    [listingType, throughPage, servers] as [PostListingType, number, AccountOrServer[]]
+],
+  (posts: PostsState, [listingType, throughPage, servers]: [PostListingType, number, AccountOrServer[]]) =>
+    getPostsPages(posts, listingType, throughPage, servers)
+);
+
+function getPostsPages(posts: PostsState, listingType: PostListingType, throughPage: number, servers: AccountOrServer[]): FederatedPost[] {
   const result: FederatedPost[] = [];
   for (let page = 0; page <= throughPage; page++) {
     const pagePosts = getPostsPage(posts, listingType, page, servers);

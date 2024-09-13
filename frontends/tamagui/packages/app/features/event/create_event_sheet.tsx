@@ -1,7 +1,7 @@
 import { Event, EventInstance, EventListingType, Group, Location, Permission, Post, TimeFilter } from '@jonline/api';
 import { Button, DateTimePicker, Heading, Paragraph, XStack, YStack, getThemes, supportDateInput, toProtoISOString, useTheme } from '@jonline/ui';
 import { FederatedGroup, createEvent, createGroupPost, federatedEntity, useServerTheme, loadEventsPage, loadGroupEventsPage, resetEvents } from 'app/store';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import {Calendar as CalendarIcon} from '@tamagui/lucide-icons';
 
 import { useCreationDispatch, useCreationServer, useCredentialDispatch, useEventPageParam, useEventPages, useLocalConfiguration } from 'app/hooks';
@@ -30,7 +30,6 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
 
   const canPublishLocally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_LOCALLY);
   const canPublishGlobally = accountOrServer.account?.user?.permissions?.includes(Permission.PUBLISH_EVENTS_GLOBALLY);
-
 
   useEffect(() => {
     if (startsAt && endsAt) {
@@ -114,17 +113,18 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const { navColor, navTextColor } = useServerTheme(creationServer);
   // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
-  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+  // const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
   // const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   const timeFilter: TimeFilter = useUpcomingEventsFilter();
 
   const { results: eventResults, loading: loadingEvents, reload: reloadEvents, firstPageLoaded: eventsLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });
 
-  const { eventPagesOnHome } = useLocalConfiguration();
-  const allEvents = bigCalendar
+  // const { eventPagesOnHome } = useLocalConfiguration();
+  const allEvents = useMemo(() => bigCalendar
     ? eventResults
-    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime))
+    : eventResults.filter(e => moment(e.instances[0]?.endsAt).isAfter(pageLoadTime)),
+    [bigCalendar, eventResults, pageLoadTime])
 
   const preview = useCallback((post: Post, group: Group | undefined) => {
     return <EventCard event={previewEvent(post)} hideEditControls />;
@@ -175,7 +175,7 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
   const onFreshOpen = useCallback(() => {
     setStartsAt(supportDateInput(moment()));
     setEndsAt(supportDateInput(moment().add(1, 'hour')));
-  }, []);
+  }, [setStartsAt, setEndsAt]);
 
   return <BaseCreatePostSheet
     entityName='Event'

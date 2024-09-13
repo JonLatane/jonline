@@ -3,7 +3,7 @@ import { Selector, useAppSelector, useCredentialDispatch, useFederatedDispatch, 
 
 import { useDebounce } from "@jonline/ui";
 import { createSelector } from "@reduxjs/toolkit";
-import { FederatedEvent, FederatedGroup, RootState, getEventsPages, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, getServersMissingEventsPage, loadEventsPage, loadGroupEventsPage, serializeTimeFilter, someLoading, someUnloaded } from "app/store";
+import { FederatedEvent, FederatedGroup, RootState, getGroupEventPages, getHasEventsPage, getHasGroupEventsPage, getHasMoreEventPages, getHasMoreGroupEventPages, loadEventsPage, loadGroupEventsPage, selectEventPages, selectEventsLoading, selectServersMissingEventsPage, serializeTimeFilter, someUnloaded } from "app/store";
 import { useEffect, useMemo, useState } from "react";
 import { optServerID } from '../../store/modules/servers_state';
 import { createLoadingMutex, useLoadingLock } from "./loading_mutex";
@@ -36,19 +36,18 @@ export function useServerEventPages(
 ): PaginationResults<FederatedEvent> {
   const { dispatch, accountOrServer: currentAccountOrServer } = useCredentialDispatch();
   const servers = usePinnedAccountsAndServers();
-  // const eventsState = useAppSelector(state => state.events);
-  const loading = useAppSelector(state => someLoading(state.events.pagesStatus, servers));
-  // const [loading, setLoadingEvents] = useState(false);
+  const loading = useAppSelector(state => selectEventsLoading(state, servers));
 
-  const serversAllDefined = !servers.some(s => !s.server);
   const timeFilter = serializeTimeFilter(params?.timeFilter);
   const serversMissingEventsPage = useAppSelector(state =>
-    getServersMissingEventsPage(state.events, listingType, timeFilter, 0, servers)
+    selectServersMissingEventsPage(state, listingType, timeFilter, 0, servers)
   );
+
+  const serversAllDefined = !servers.some(s => !s.server);
   const needsLoading = serversMissingEventsPage.length > 0 && !loading && serversAllDefined;
 
   const results: FederatedEvent[] = useAppSelector(state =>
-    getEventsPages(state.events, listingType, timeFilter, throughPage, servers)
+    selectEventPages(state, listingType, timeFilter, throughPage, servers)
   );
 
   const firstPageLoaded = useAppSelector(state => getHasEventsPage(state.events, listingType, timeFilter, 0, servers));

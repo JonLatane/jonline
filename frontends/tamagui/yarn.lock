@@ -6987,21 +6987,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tanstack/query-core@npm:5.29.0":
-  version: 5.29.0
-  resolution: "@tanstack/query-core@npm:5.29.0"
-  checksum: a58f1f899292daea66bf8341a4e6b8f96064c0a45bbcb350d68b004b871c6d2894dcecb268389695b093167b0a0acb6bcf5d01f52a335ffb128348b6705450b1
+"@tanstack/query-core@npm:5.56.2":
+  version: 5.56.2
+  resolution: "@tanstack/query-core@npm:5.56.2"
+  checksum: b7600ee71c46c756edbfb0b7733c3df10c16d57b639bf6bd43b81cbdfd7678e01b425b02bd7a08764a2610af10a27f48a4380e3504a29356781bed1d50a38341
   languageName: node
   linkType: hard
 
-"@tanstack/react-query@npm:^5.29.2":
-  version: 5.29.2
-  resolution: "@tanstack/react-query@npm:5.29.2"
+"@tanstack/react-query@npm:^5.56.2":
+  version: 5.56.2
+  resolution: "@tanstack/react-query@npm:5.56.2"
   dependencies:
-    "@tanstack/query-core": "npm:5.29.0"
+    "@tanstack/query-core": "npm:5.56.2"
   peerDependencies:
-    react: ^18.0.0
-  checksum: fff25a36d764b0bec7d4ec3f499a74881abf043e81a8f97c71ffffd52fb6b1cfd60f0199ac4150902beccc95e80b7c32ec3a56ae2ee07bdd388e14bb4546123b
+    react: ^18 || ^19
+  checksum: fddf62e987b4f11a31fa136c5ddc203fdec642e7c35c94e5bd1132eb94c51e7d0d8eeb26f2fec9aa330929e596a4b1e340f539be26435b8858868d12d6b1578a
   languageName: node
   linkType: hard
 
@@ -7273,6 +7273,13 @@ __metadata:
   version: 15.7.11
   resolution: "@types/prop-types@npm:15.7.11"
   checksum: 7519ff11d06fbf6b275029fe03fff9ec377b4cb6e864cac34d87d7146c7f5a7560fd164bdc1d2dbe00b60c43713631251af1fd3d34d46c69cd354602bc0c7c54
+  languageName: node
+  linkType: hard
+
+"@types/qs@npm:^6.9.15":
+  version: 6.9.15
+  resolution: "@types/qs@npm:6.9.15"
+  checksum: 97d8208c2b82013b618e7a9fc14df6bd40a73e1385ac479b6896bafc7949a46201c15f42afd06e86a05e914f146f495f606b6fb65610cc60cf2e0ff743ec38a2
   languageName: node
   linkType: hard
 
@@ -8065,7 +8072,7 @@ __metadata:
     "@tamagui/lucide-icons": "npm:^1.110.3"
     "@tamagui/shorthands": "npm:^1.110.3"
     "@tamagui/themes": "npm:^1.110.3"
-    "@tanstack/react-query": "npm:^5.29.2"
+    "@tanstack/react-query": "npm:^5.56.2"
     "@types/react": "npm:^18.2.79"
     "@types/react-big-calendar": "npm:^1.8.9"
     "@types/react-native": "npm:^0.73.0"
@@ -8078,9 +8085,9 @@ __metadata:
     expo-linking: "npm:~5.0.2"
     lumen5-react-flip-move: "npm:^3.0.6"
     moment: "npm:^2.30.1"
-    nice-grpc-web: "npm:^3.3.3"
-    openai: "npm:^4.47.2"
-    react-big-calendar: "npm:^1.12.2"
+    nice-grpc-web: "npm:^3.3.4"
+    openai: "npm:^4.60.1"
+    react-big-calendar: "npm:^1.14.0"
     react-colorful: "npm:^5.6.1"
     react-drag-drop-files: "npm:^2.3.10"
     react-flip-move: "npm:^3.0.5"
@@ -8095,7 +8102,7 @@ __metadata:
     react-social-media-embed: "npm:^2.5.13"
     react-sticky-box: "npm:^2.0.5"
     react-syntax-highlighter: "npm:^15.5.0"
-    recyclerlistview: "npm:^4.2.0"
+    recyclerlistview: "npm:^4.2.1"
     redux-persist: "npm:^6.0.0"
     solito: "npm:^3.2.9"
     typescript-cookie: "npm:^1.0.6"
@@ -14245,7 +14252,7 @@ __metadata:
     eslint-plugin-react-hooks: "npm:^4.6.2"
     node-gyp: "npm:^9.4.1"
     prettier: "npm:^2.8.8"
-    ts-proto: "npm:^1.176.0"
+    ts-proto: "npm:^1.181.2"
     turbo: "npm:^1.13.3"
     typescript: "npm:^5.4.5"
   languageName: unknown
@@ -16144,15 +16151,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nice-grpc-web@npm:^3.3.3":
-  version: 3.3.3
-  resolution: "nice-grpc-web@npm:3.3.3"
+"nice-grpc-web@npm:^3.3.4":
+  version: 3.3.4
+  resolution: "nice-grpc-web@npm:3.3.4"
   dependencies:
     abort-controller-x: "npm:^0.4.0"
     isomorphic-ws: "npm:^5.0.0"
     js-base64: "npm:^3.7.2"
     nice-grpc-common: "npm:^2.0.2"
-  checksum: cfaf8d2cc1da021445dc8f5fb6ed9929dc1224eec5bc211459e6265f9821951084e6f4363f0ec7c25555ca21bb70c986e0b61ad4f8ee74461d10e57333b301fe
+  checksum: bee11d54654090ea94a3a51028c96eb1c68d0433ec58bd943067554d77c987b5526ba34ecaec164c5f4a2b1d5057d3a6a74c229b7b99a1b0c7c0c840dac7f06c
   languageName: node
   linkType: hard
 
@@ -16657,21 +16664,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^4.47.2":
-  version: 4.47.2
-  resolution: "openai@npm:4.47.2"
+"openai@npm:^4.60.1":
+  version: 4.60.1
+  resolution: "openai@npm:4.60.1"
   dependencies:
     "@types/node": "npm:^18.11.18"
     "@types/node-fetch": "npm:^2.6.4"
+    "@types/qs": "npm:^6.9.15"
     abort-controller: "npm:^3.0.0"
     agentkeepalive: "npm:^4.2.1"
     form-data-encoder: "npm:1.7.2"
     formdata-node: "npm:^4.3.2"
     node-fetch: "npm:^2.6.7"
-    web-streams-polyfill: "npm:^3.2.1"
+    qs: "npm:^6.10.3"
+  peerDependencies:
+    zod: ^3.23.8
+  peerDependenciesMeta:
+    zod:
+      optional: true
   bin:
     openai: bin/cli
-  checksum: 0e10aec12244b902822c3943eb2b3caeccfeb82708a494500fed0d349554e13d0149956b9182c1378e6cf386f143910bda7f375ef2c3e3a39eb6da0a6f4dca06
+  checksum: 5bc6f21e66205a80b7ac5a96fcc3b87ee060019cd6ed481841fb731c34c7f9a69b4754c7ca059cb0e5e296d10c8cd33b77c4891a69f0d75d167518d2116d110a
   languageName: node
   linkType: hard
 
@@ -17650,9 +17663,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-big-calendar@npm:^1.12.2":
-  version: 1.12.2
-  resolution: "react-big-calendar@npm:1.12.2"
+"react-big-calendar@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "react-big-calendar@npm:1.14.0"
   dependencies:
     "@babel/runtime": "npm:^7.20.7"
     clsx: "npm:^1.2.1"
@@ -17673,7 +17686,7 @@ __metadata:
   peerDependencies:
     react: ^16.14.0 || ^17 || ^18
     react-dom: ^16.14.0 || ^17 || ^18
-  checksum: ad9e5c7c3670bfdd140f33db30ff7595e129d6ed4182042e6b35b323774e437d30341242cd9e767f867a466ba9444d74d3971c20e60c2a6950488b56c9374c72
+  checksum: 41703eefd4f6559fe1154e8428b9e2782cde70696f6032b00fde2670b2fa4fc78e06cf9fa9e004ae516982db868291647152caf2a5f093e4e30c05a47365197d
   languageName: node
   linkType: hard
 
@@ -18566,9 +18579,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"recyclerlistview@npm:^4.2.0":
-  version: 4.2.0
-  resolution: "recyclerlistview@npm:4.2.0"
+"recyclerlistview@npm:^4.2.1":
+  version: 4.2.1
+  resolution: "recyclerlistview@npm:4.2.1"
   dependencies:
     lodash.debounce: "npm:4.0.8"
     prop-types: "npm:15.8.1"
@@ -18576,7 +18589,7 @@ __metadata:
   peerDependencies:
     react: ">= 15.2.1"
     react-native: ">= 0.30.0"
-  checksum: 84c2fc1ee7d109e21ca30813f646a5d490a33fa789d1fb3f7f7854c191895de010109563ba1c67a35ec28340a872a039ceb6233a57053480098c48205fc147e9
+  checksum: 9c5080bfeb59a5b3127bf7b66338278b7fbc40a56aa1644add7e3de280a1f24458c49fdb08299058041f3afe49a085d06cfdfc997852345c4e9090ef48d27da6
   languageName: node
   linkType: hard
 
@@ -20652,9 +20665,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ts-proto@npm:^1.176.0":
-  version: 1.176.0
-  resolution: "ts-proto@npm:1.176.0"
+"ts-proto@npm:^1.181.2":
+  version: 1.181.2
+  resolution: "ts-proto@npm:1.181.2"
   dependencies:
     case-anything: "npm:^2.1.13"
     protobufjs: "npm:^7.2.4"
@@ -20662,7 +20675,7 @@ __metadata:
     ts-proto-descriptors: "npm:1.16.0"
   bin:
     protoc-gen-ts_proto: protoc-gen-ts_proto
-  checksum: 62e600e7cdea63ba79eb456939b6476d2c3e2fd066e349b443cd6142f36d659d7fc83b090c91da5b0f5f11d89a199e4c660b6a83a190e18a5b192c76dc71fcba
+  checksum: 8695b30337bb6242d72f83fc59274f41f560176e0e616632d81d8e66ef80309a4074299ee40302d0fd9bbf6dbf6abddfe881bbeda30083f451a398043f140bac
   languageName: node
   linkType: hard
 
@@ -21569,13 +21582,6 @@ __metadata:
   version: 4.0.0-beta.3
   resolution: "web-streams-polyfill@npm:4.0.0-beta.3"
   checksum: dcdef67de57d83008f9dc330662b65ba4497315555dd0e4e7bcacb132ffdf8a830eaab8f74ad40a4a44f542461f51223f406e2a446ece1cc29927859b1405853
-  languageName: node
-  linkType: hard
-
-"web-streams-polyfill@npm:^3.2.1":
-  version: 3.3.3
-  resolution: "web-streams-polyfill@npm:3.3.3"
-  checksum: 8e7e13501b3834094a50abe7c0b6456155a55d7571312b89570012ef47ec2a46d766934768c50aabad10a9c30dd764a407623e8bfcc74fcb58495c29130edea9
   languageName: node
   linkType: hard
 

@@ -1,6 +1,6 @@
 import { createSelector } from '@reduxjs/toolkit';
 import { AccountOrServer, JonlineServer, PinnedServer, RootState, accountID, selectAllAccounts, selectAllServers, serverID, unpinAccount } from 'app/store';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Selector, useAppDispatch, useAppSelector } from "../store_hooks";
 import { useCurrentAccountOrServer } from './use_current_account_or_server';
 
@@ -12,7 +12,7 @@ export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; 
   const accountOrServer = useCurrentAccountOrServer();
   const { server } = accountOrServer;
   const pinnedServers = useAppSelector(state => state.accounts.pinnedServers);
-  const pinnedAccountsAndServers: AccountOrServer[] = useAppSelector(selectPinnedAccountsAndServers(server, pinnedServers, args));
+  const pinnedAccountsAndServers: AccountOrServer[] = useAppSelector(selectPinnedAccountsAndServers(server, args));
   // useAppSelector(state => pinnedServers
   //   .filter(ps => (ps.pinned || args?.includeUnpinned) && (!server || ps.serverId !== serverID(server)))
   //   .map(pinnedServer => ({
@@ -23,7 +23,7 @@ export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; 
   // );
   const pinnedAccountNeedsReauthentication = pinnedAccountsAndServers
     .some(aos => aos.account?.needsReauthentication);
-  // console.log('pinnedAccountNeedsReauthentication', pinnedAccountNeedsReauthentication);
+
   useEffect(() => {
     if (pinnedAccountNeedsReauthentication) {
       pinnedAccountsAndServers.filter(aos => aos.account?.needsReauthentication).forEach(aos => {
@@ -38,19 +38,28 @@ export function usePinnedAccountsAndServers(args?: { includeUnpinned?: boolean; 
     }
   }, [pinnedAccountNeedsReauthentication]);
 
+  // const result = useMemo(
+  //   () => excludeCurrentServer && !args?.includeUnpinned
+  //     ? pinnedAccountsAndServers
+  //     : [accountOrServer, ...pinnedAccountsAndServers],
+  //   [excludeCurrentServer, args, pinnedAccountsAndServers, accountOrServer]
+  // );
 
-  return excludeCurrentServer && !args?.includeUnpinned
-    ? pinnedAccountsAndServers
-    : [accountOrServer, ...pinnedAccountsAndServers];
+  const result = excludeCurrentServer && !args?.includeUnpinned
+  ? pinnedAccountsAndServers
+  : [accountOrServer, ...pinnedAccountsAndServers];
+
+
+  return result;
 }
 
 const selectPinnedAccountsAndServers = (
   server: JonlineServer | undefined,
-  pinnedServers: PinnedServer[],
+  // pinnedServers: PinnedServer[],
   args?: { includeUnpinned?: boolean; }
 ): Selector<AccountOrServer[]> =>
   createSelector(
-    [(state: RootState) => pinnedServers
+    [(state: RootState) => state.accounts.pinnedServers
       .filter(ps => (ps.pinned || args?.includeUnpinned) && (!server || ps.serverId !== serverID(server)))
       .map(pinnedServer => ({
         account: selectAllAccounts(state.accounts).find(a => accountID(a) === pinnedServer.accountId /* && !a.needsReauthentication*/),
