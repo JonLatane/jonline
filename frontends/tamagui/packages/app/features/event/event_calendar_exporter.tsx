@@ -1,33 +1,34 @@
-import { FederatedEvent, federateId } from "app/store";
+import { FederatedEvent, federateId, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { EventInstance } from "@jonline/api";
 import { Button, Heading, Paragraph, Popover, Tooltip, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, ExternalLink } from "@tamagui/lucide-icons";
-import { useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
+import { useAnonymousAuthToken, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
 import { useLink } from "solito/link";
 import { useGroupContext } from "app/contexts/group_context";
 import { set } from 'immer/dist/internal';
+import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 
 type Props = {
   event: FederatedEvent,
   instance: EventInstance,
   tiny?: boolean;
-  anonymousRsvpPath?: string;
 };
 export const EventCalendarExporter: React.FC<Props> = ({
   event,
   instance,
-  tiny: inputTiny = false,
-  anonymousRsvpPath,
+  tiny: inputTiny,
 }) => {
   const mediaQuery = useMedia();
-  const tiny = inputTiny || !mediaQuery.gtXs;
+  const tiny = inputTiny === true || (inputTiny === undefined && !mediaQuery.gtXs);
   const accountOrServer = useFederatedAccountOrServer(event);
   // const server = accountOrServer.server;
   const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
+  const serverTheme = useServerTheme(accountOrServer.server);
+  const {navTextColor} = serverTheme;
   // const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer;
   const primaryInstanceIdString = instance.id;
@@ -45,12 +46,17 @@ export const EventCalendarExporter: React.FC<Props> = ({
     ? `/g/${groupLinkId}/e/${detailsLinkId}`
     : `/event/${detailsLinkId}`;
 
-  const eventPath = anonymousRsvpPath ?? eventLinkPath;
-  const eventLink = `http://${window.location.host}${eventPath}`;
+  const { anonymousAuthToken } = useAnonymousAuthToken(instance.id);
+
+  const eventPath = eventLinkPath;
+  const hasRsvpAssociated = anonymousAuthToken && (event?.info?.allowsAnonymousRsvps || instance?.info?.rsvpInfo?.allowsAnonymousRsvps);
+  const eventLink = hasRsvpAssociated
+    ? `http://${window.location.host}${eventPath}?anonymousAuthToken=${encodeURIComponent(anonymousAuthToken)}`
+    : `http://${window.location.host}${eventPath}`;
 
   const calendarEvent: CalendarEvent = {
     title: event.post?.title ?? 'Title Data Missing',
-    description: anonymousRsvpPath
+    description: hasRsvpAssociated
       ? `${event.post?.content ?? ''}\n\nmanage your RSVP at:\n${eventLink}`
       : `${event.post?.content ?? ''}\n\nvia: ${eventLink}`,
     url: eventLink,
@@ -77,22 +83,24 @@ export const EventCalendarExporter: React.FC<Props> = ({
     <Tooltip.Trigger>
       <Popover size="$5" stayInFrame onOpenChange={setOpen} placement='bottom-end'>
         <Popover.Trigger asChild>
-          {/* <Tooltip>
-        <Tooltip.Trigger> */}
-
-          <Button my='auto' h={tiny ? '$3' : 'auto'} icon={Calendar} iconAfter={ArrowRightFromLine} >
-            {tiny ? undefined : <YStack ai='center'>
-              {anonymousRsvpPath
-                ? <>
-                  <Paragraph lineHeight='$1' size='$3'>Export</Paragraph>
-                  <Paragraph lineHeight='$1' size='$3'>Private Link</Paragraph>
-                  <Paragraph lineHeight='$1' size='$3'>to Calendar...</Paragraph>
-                </>
-                : <>
-                  <Paragraph lineHeight='$1' size='$3'>Export to</Paragraph>
-                  <Paragraph lineHeight='$1' size='$3'>Calendar...</Paragraph>
-                </>}
-            </YStack>}
+          <Button my='auto' h={tiny ? '$3' : 'auto'}
+            icon={Calendar} iconAfter={ArrowRightFromLine}
+            {...highlightedButtonBackground(serverTheme, 'nav')}
+            >
+            {tiny
+              ? undefined
+              : <YStack ai='center'>
+                {hasRsvpAssociated
+                  ? <>
+                    <Paragraph color={navTextColor} lineHeight='$1' size='$3'>Export</Paragraph>
+                    <Paragraph color={navTextColor} lineHeight='$1' size='$3'>Private Link</Paragraph>
+                    <Paragraph color={navTextColor} lineHeight='$1' size='$3'>to Calendar...</Paragraph>
+                  </>
+                  : <>
+                    <Paragraph color={navTextColor} lineHeight='$1' size='$3'>Export to</Paragraph>
+                    <Paragraph color={navTextColor} lineHeight='$1' size='$3'>Calendar...</Paragraph>
+                  </>}
+              </YStack>}
           </Button>
         </Popover.Trigger>
 
@@ -117,7 +125,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
             <YStack gap="$3" h='100%'>
               {/* {willAdaptEdit ?
           <Popover.Sheet.ScrollView f={1}> */}
-              <Heading size='$1'>Export</Heading>
+              <Heading size='$1'>{hasRsvpAssociated ? 'Export Private Link' : 'Export'}</Heading>
               <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...icsLink}><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>ICS (iCal/Apple)</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
               <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
               <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...office365Link} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Office 365</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>

@@ -2,7 +2,7 @@ import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, use
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, ListItem, Text, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { useGroupContext } from "app/contexts/group_context";
 import { useAnonymousAuthToken, useComponentKey, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
@@ -455,12 +455,29 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               : undefined}
 
             {newRsvpMode === 'anonymous' && !currentAnonRsvp//!anonymousAuthToken
-              ? <Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
-                Event owner approval required.
-                You will be assigned a unique RSVP link.
-                Use it to edit or delete your RSVP later.
-                Save it in your browser bookmarks, notes app, or calendar app of choice.
-              </Paragraph>
+              ? //<Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
+              // <Text fontFamily='$body' fontSize='$1' mr='$4'>{'• '}
+              <YStack mx='auto'>
+              <XStack mb='$2' ai='center'>
+                <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
+                <Text fontFamily='$body' fontSize='$1'>You will be assigned a private RSVP link.
+                </Text>
+              </XStack>
+                <XStack mb='$2' ai='center'>
+                  <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
+                  <Text fontFamily='$body' fontSize='$1'>Use it to edit or delete your RSVP later.
+                  </Text>
+                </XStack>
+                <XStack mb='$2' ai='center'>
+                  <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
+                  <Text fontFamily='$body' fontSize='$1'>Save it in your browser bookmarks, notes app, or calendar app of choice.
+                  </Text>
+                </XStack>
+              </YStack>
+              //{/* You will be assigned a unique RSVP link.
+              // Use it to edit or delete your RSVP later.
+              //   Save it in your browser bookmarks, notes app, or calendar app of choice. */}
+              //   {/* </Paragraph> */}
               : undefined}
 
             <XStack w='100%'>
@@ -541,10 +558,10 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
               ? <>
                 <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$2' als='center' ta='center'>
-                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later, or export the link to your favorite calendar:
+                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
                 </Paragraph>
                 <XStack mx='auto'>
-                  <EventCalendarExporter event={event} instance={instance} anonymousRsvpPath={anonymousRsvpPath} />
+                  <EventCalendarExporter event={event} instance={instance} tiny={false} />
                 </XStack>
               </>
               : undefined}
@@ -617,7 +634,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     /*disabled={busy}*/ opacity={/*busy ||*/ privateNote == '' ? 0.5 : 1}
                     h={(privateNote?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
                     onChangeText={setPrivateNote}
-                    placeholder={`Private note (optional). Markdown is supported.`} />
+                    placeholder={`Private note for the event owner (optional). Markdown is supported.`} />
                 </YStack>
                 : undefined}
             </AnimatePresence>
