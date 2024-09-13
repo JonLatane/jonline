@@ -79,7 +79,7 @@ const initialState: Config = {
   hideNavigation: false,
   imagePostBackgrounds: true,
   fancyPostBackgrounds: false,
-  shrinkPreviews: false,
+  shrinkPreviews: window.innerWidth < 800,
   dateTimeRenderer: 'native',
   showBigCalendar: true,
   starredPostIds: [],
