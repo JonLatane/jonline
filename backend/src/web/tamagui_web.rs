@@ -100,7 +100,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("Latest - {}", server_name)),
+            title: Some(format!("Latest | {}", server_name)),
             description: Some("Posts and Events from a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -116,7 +116,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("Posts - {}", server_name)),
+            title: Some(format!("Posts | {}", server_name)),
             description: Some("Posts from a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -131,7 +131,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("Events - {}", server_name)),
+            title: Some(format!("Events | {}", server_name)),
             description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -146,7 +146,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("About Community - {}", server_name)),
+            title: Some(format!("About Community | {}", server_name)),
             description: Some("Information a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -231,7 +231,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("People - {}", server_name)),
+            title: Some(format!("People | {}", server_name)),
             description: Some("User listings for a Jonline community".to_string()),
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -246,7 +246,7 @@ webui!(
      server_logo: Option<String>,
      _path: Path| {
         Some(JonlineSummary {
-            title: Some(format!("Follow Requests - {}", server_name)),
+            title: Some(format!("Follow Requests | {}", server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -263,7 +263,7 @@ webui!(
         let group_name = group_name(&path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Latest - {}", group_name, server_name)),
+            title: Some(format!("{}: Latest | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -280,7 +280,7 @@ webui!(
         let group_name = group_name(&path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Posts - {}", group_name, server_name)),
+            title: Some(format!("{}: Posts | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -334,7 +334,7 @@ webui!(
         .flatten()
         .unwrap_or("Group".to_string());
         Some(JonlineSummary {
-            title: Some(format!("{}: Events - {}", group_name, server_name)),
+            title: Some(format!("{}: Events | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -378,7 +378,7 @@ webui!(
         let group_name = group_name(&path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Members - {}", group_name, server_name)),
+            title: Some(format!("Members | {} | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -395,7 +395,7 @@ webui!(
         let group_name = group_name(&path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{} - Member Details - {}", group_name, server_name)),
+            title: Some(format!("{} | Member Details | {}", group_name, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
@@ -447,7 +447,7 @@ fn post_summary(
 ) -> Option<JonlineSummary> {
     let basic_logo = server_logo.or(Some("/favicon.ico".to_string()));
     let server_and_group_name = match group_name {
-        Some(group_name) => format!("{} - {}", group_name, server_name),
+        Some(group_name) => format!("{} | {}", group_name, server_name),
         None => server_name,
     };
     let (title, description, image) = match post {
@@ -475,10 +475,10 @@ fn post_summary(
             };
 
             let mut title = ancestor_post.title.map_or(
-                format!("{} Details - {}", ancestor_entity_type, server_and_group_name),
+                format!("{} Details | {}", ancestor_entity_type, server_and_group_name),
                 |title| {
                     format!(
-                        "{} - {} Details - {}",
+                        "{} | {} Details | {}",
                         title.clone(),
                         ancestor_entity_type,
                         server_and_group_name
@@ -486,7 +486,7 @@ fn post_summary(
                 },
             );
             if ancestor_post.id != post.id {
-                title = format!("Comments - {}", title);
+                title = format!("Comments | {}", title);
             }
             let image_ref: Option<&MediaReference> = post
                 .media
@@ -500,7 +500,7 @@ fn post_summary(
             (title, post.content.clone(), image)
         }
         _ => (
-            format!("{} Details - {}", entity_type, server_and_group_name),
+            format!("{} Details | {}", entity_type, server_and_group_name),
             None,
             basic_logo,
         ),
