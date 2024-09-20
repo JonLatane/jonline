@@ -214,7 +214,7 @@ export function PostDetailsScreen() {
     }
   }, [interactionType, pathPostId]);
   useEffect(() => {
-    let title = '';
+    let title = undefined as string | undefined;
     if (subjectPost) {
       if (subjectPostTitle && subjectPostTitle.length > 0) {
         title = subjectPostTitle;
@@ -224,8 +224,16 @@ export function PostDetailsScreen() {
     } else if (failedToLoadPost) {
       title = 'Post Not Found';
     } else {
-      title = 'Loading Post...';
+      // This doesn't really work. The idea is, when the BE server set the title
+      // on the page, we don't want to display "Loading Post...". But we'd like
+      // it to behave well both with and without the BE server's magic!
+      if (!document.title.includes(serverName)) {
+        title = 'Loading Post...';
+      }
     }
+
+    if (title === undefined) return;
+
     title += ` - ${serverName}`;
     if (pathShortname && pathShortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
