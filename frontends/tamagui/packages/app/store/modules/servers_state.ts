@@ -86,7 +86,7 @@ setTimeout(async () => {
   }
 
   while (!globalThis.window) {
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 10));
   }
 
   if (!store.getState().servers.currentServerId) {
@@ -114,7 +114,7 @@ function initializeWithServer(initialServer: JonlineServer) {
       const getPrimaryServer = () => store.getState().servers.entities[serverID(initialServer)];
       while (!getPrimaryServer()) {
         console.warn('polling for initial server configuration');
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 10));
       }
       const primaryServer = getPrimaryServer();
       if (!primaryServer) return;
