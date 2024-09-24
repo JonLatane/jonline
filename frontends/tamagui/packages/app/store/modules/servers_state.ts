@@ -131,17 +131,35 @@ function initializeWithServer(initialServer: JonlineServer) {
       for (const { host, configuredByDefault, pinnedByDefault } of allFederatedServers) {
         const recommendedServer = { host: host, secure: host !== 'localhost' };
         const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
+        const promises: Promise<void>[] = [];
         if (configuredByDefault) {
-          await getServerClient(recommendedServer)
+          promises.push(getServerClient(recommendedServer)
             .then(async () => {
               if (pinnedByDefault) {
                 store.dispatch(pinServer(pinnedServer));
-                await new Promise((resolve) => setTimeout(resolve, 25));
+                // await new Promise((resolve) => setTimeout(resolve, 25));
               }
             }).catch(() => {
               console.error(`Failed to configure federated server ${host}`);
-            });
+            }));
         }
+
+        // Wait for all servers to be initialized before continuing.
+        await Promise.all(promises);
+
+        // Ensure federated servers are arranged in the order
+        // specified by the initial server.
+        const actualOrder = store.getState().servers.ids as string[];
+        const expectedOrder = [
+          serverID(initialServer),
+          ...federatedServers.map(s => actualOrder.find(id => serverIDHost(id as string) === s.host))
+        ].filter(id => id !== undefined) as string[];
+
+        if (actualOrder.length === expectedOrder.length &&
+          JSON.stringify(actualOrder) !== JSON.stringify(expectedOrder)) {
+          store.dispatch(setServerIdOrder(expectedOrder));
+        }
+
       };
     }
     store.dispatch(finishConfiguringFederation());
@@ -244,6 +262,9 @@ const serversSlice = createSlice({
         state.ids.splice(index + 1, 0, element);
       }
     },
+    setServerIdOrder: (state, action: PayloadAction<string[]>) => {
+      state.ids = action.payload;
+    },
     startConfiguringFederation: (state) => {
       state.configuringFederation = true;
     },
@@ -286,6 +307,7 @@ export const {
   resetServers,
   moveServerUp,
   moveServerDown,
+  setServerIdOrder,
   selectCreationServer
   // startConfiguringFederation,
   // finishConfiguringFederation
