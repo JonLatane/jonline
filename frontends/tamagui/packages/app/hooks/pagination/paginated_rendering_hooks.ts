@@ -98,8 +98,8 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
   }
 ): Pagination<T> {
   const pageCount = Math.ceil(dataSet.length / pageSize);
-  const standardPageParams = usePageParam();
-  const [page, setPage] = args?.pageParamHook?.() ?? standardPageParams;
+  // const standardPageParams = usePageParam();
+  const [page, setPage] = args?.pageParamHook?.() ?? usePageParam();
   const [loadingPage, setLoadingPage] = useState(false);
 
   // useEffect(() => {
@@ -114,13 +114,13 @@ export function usePaginatedRendering<T extends HasIdFromServer>(
     const results = dataSet.slice(lowerBoundPage * pageSize, upperBoundPage * pageSize);
     const hasNextPage = dataSet.length > upperBoundPage * pageSize;
 
-    const lastItem = results[results.length - 1];
-    const onPageLoaded = args?.itemIdResolver && lastItem
-      ? (page: number) => setTimeout(
-        () => document.getElementById(args.itemIdResolver!(lastItem))
-          ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
-        3000
-      ) : undefined;
+    // const lastItem = results[results.length - 1];
+    // const onPageLoaded = args?.itemIdResolver && lastItem
+    //   ? (page: number) => setTimeout(
+    //     () => document.getElementById(args.itemIdResolver!(lastItem))
+    //       ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+    //     3000
+    //   ) : undefined;
 
     const reset = () => {
       if (loadingPage) return;

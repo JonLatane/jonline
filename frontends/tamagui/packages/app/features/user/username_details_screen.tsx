@@ -1,5 +1,5 @@
 import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, Input, Paragraph, ScrollView, Spinner, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
@@ -350,8 +350,9 @@ export function UsernameDetailsScreen() {
             </Button>
             {/* <XStack f={1} /> */}
           </XStack>
-        </YStack> : undefined}>
-      <YStack f={1} jc="center" ai="center" gap margin='$3' w='100%' px='$3'>
+        </YStack> : undefined}
+    >
+      <YStack f={1} jc="center" ai="center" gap my='$2' w='100%'>
         {user ? <>
           {/* <ScrollView w='100%'> */}
           <FlipMove style={{
@@ -373,11 +374,13 @@ export function UsernameDetailsScreen() {
                 setAvatar={setAvatar} /> */}
             </div>
 
-            {user.hasAdvancedData
-              ? <div key='federated-profiles' style={{}}>
-                <FederatedProfiles user={user} />
+            {/* {user.hasAdvancedData
+              ? <div key='federated-profiles' style={{ maxWidth: 800, width: '100%' }}>
+                <ScrollView horizontal>
+                  <FederatedProfiles user={user} />
+                </ScrollView>
               </div>
-              : undefined}
+              : undefined} */}
 
             <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
               <AccountOrServerContextProvider value={accountOrServer}>
@@ -616,194 +619,209 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
       });
   }
 
-  return <AnimatePresence>
-    {expanded ? <YStack animation='standard' key='user-visibility-permissions'
-      p='$3'
-      ac='center'
-      jc='center'
-      opacity={1}
-      scale={1}
-      y={0}
-      enterStyle={{
-        y: -50,
-        opacity: 0,
-      }}
-      exitStyle={{
-        opacity: 0,
-      }}>
-      <XStack ac='center' jc='center' mb='$2'>
-        {mediaQuery.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
-          Visibility
-        </Heading> : undefined}
-        <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}
-          visibility={visibility} onChange={setVisibility}
-          disabled={disableInputs}
-          visibilityDescription={(v) => {
-            switch (v) {
-              case Visibility.PRIVATE:
-                return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'this'} profile.`;
-              case Visibility.LIMITED:
-                return `Only followers can see ${isCurrentUser ? 'your' : 'this'} profile.`;
-              case Visibility.SERVER_PUBLIC:
-                return `Anyone on this server can see ${isCurrentUser ? 'your' : 'this'} profile.`;
-              case Visibility.GLOBAL_PUBLIC:
-                return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'this'} profile.`;
-              default:
-                return 'Unknown';
-            }
-          }} />
-      </XStack>
-      <ToggleRow name={`Require${editMode && isCurrentUser ? '' : 's'} Permission to Follow`}
-        value={pending(defaultFollowModeration)}
-        setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
-        disabled={disableInputs} />
-      <XStack h='$1' />
-      <PermissionsEditor {...permissionsEditorProps} />
-      {isCurrentUser || isAdmin ?
-        <>
+  return <YStack animation='standard' key='user-visibility-permissions'
+    p='$3'
+    ac='center'
+    jc='center'
+    opacity={1}
+    scale={1}
+    y={0}
+    enterStyle={{
+      y: -50,
+      opacity: 0,
+    }}
+    exitStyle={{
+      opacity: 0,
+    }}>
+    <XStack ac='center' jc='center' mb='$2'>
+      {mediaQuery.gtSm ? <Heading size='$3' marginVertical='auto' f={1} o={disableInputs ? 0.5 : 1}>
+        Visibility
+      </Heading> : undefined}
+      <VisibilityPicker label={`${isCurrentUser ? 'Profile' : 'User'} Visibility`}
+        visibility={visibility} onChange={setVisibility}
+        disabled={disableInputs}
+        visibilityDescription={(v) => {
+          switch (v) {
+            case Visibility.PRIVATE:
+              return `Only ${isCurrentUser ? 'you' : 'they'} can see ${isCurrentUser ? 'your' : 'this'} profile.`;
+            case Visibility.LIMITED:
+              return `Only followers can see ${isCurrentUser ? 'your' : 'this'} profile.`;
+            case Visibility.SERVER_PUBLIC:
+              return `Anyone on this server can see ${isCurrentUser ? 'your' : 'this'} profile.`;
+            case Visibility.GLOBAL_PUBLIC:
+              return `Anyone on the internet can see ${isCurrentUser ? 'your' : 'this'} profile.`;
+            default:
+              return 'Unknown';
+          }
+        }} />
+    </XStack>
+    {/* <ToggleRow name={editMode && isCurrentUser
+      ? `Require Permission to Follow`
+      : `Requires Permission to Follow`}
+      value={pending(defaultFollowModeration)}
+      setter={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}
+      disabled={disableInputs} /> */}
+    <XStack gap='$1' o={disableInputs ? 0.5 : 1} my='auto' ai='center'>
+      <Label htmlFor='permission-to-follow' my='auto' f={1}>
+        <Heading size='$3'>
+          Require Permission to Follow
+        </Heading>
+      </Label>
+      <Switch name='permission-to-follow' id='permission-to-follow' size="$3"
+        defaultChecked={pending(defaultFollowModeration)}
+        checked={pending(defaultFollowModeration)}
+        value={pending(defaultFollowModeration).toString()}
+        disabled={disableInputs}
+        onCheckedChange={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}>
+        <Switch.Thumb animation='standard' backgroundColor='$background' />
+      </Switch>
+    </XStack>
+    <XStack h='$1' />
+    <PermissionsEditor {...permissionsEditorProps} />
+    {isCurrentUser || isAdmin ?
+      <>
 
-          <Dialog>
-            <Dialog.Trigger asChild>
-              <Button icon={<SquareAsterisk />} mb='$2'>
-                Reset Password
-              </Button>
-            </Dialog.Trigger>
-            <Dialog.Portal zi={1000011}>
-              <Dialog.Overlay
-                key="overlay"
-                animation='standard'
-                o={0.5}
-                enterStyle={{ o: 0 }}
-                exitStyle={{ o: 0 }}
-              />
-              <Dialog.Content
-                bordered
-                elevate
-                key="content"
-                animation={[
-                  'standard',
-                  {
-                    opacity: {
-                      overshootClamping: true,
-                    },
+        <Dialog>
+          <Dialog.Trigger asChild>
+            <Button icon={<SquareAsterisk />} mb='$2'>
+              Reset Password
+            </Button>
+          </Dialog.Trigger>
+          <Dialog.Portal zi={1000011}>
+            <Dialog.Overlay
+              key="overlay"
+              animation='standard'
+              o={0.5}
+              enterStyle={{ o: 0 }}
+              exitStyle={{ o: 0 }}
+            />
+            <Dialog.Content
+              bordered
+              elevate
+              key="content"
+              animation={[
+                'standard',
+                {
+                  opacity: {
+                    overshootClamping: true,
                   },
-                ]}
-                m='$3'
-                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                x={0}
-                scale={1}
-                opacity={1}
-                y={0}
-              >
-                <YStack space>
-                  <Dialog.Title>Reset Password</Dialog.Title>
-                  <Dialog.Description>
-                    <YStack gap='$2'>
-                      <Paragraph size="$2">New Password:</Paragraph>
-                      <XStack gap='$2'>
-                        <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
-                          value={resetUserPassword}
-                          onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
-                        <Button circular icon={showPasswordPlaintext ? SquareAsterisk : Eye}
-                          onPress={() => setShowPasswordPlaintext(!showPasswordPlaintext)} />
-                        {/* <Text fontFamily='$body'>weeks</Text> */}
+                },
+              ]}
+              m='$3'
+              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              x={0}
+              scale={1}
+              opacity={1}
+              y={0}
+            >
+              <YStack space>
+                <Dialog.Title>Reset Password</Dialog.Title>
+                <Dialog.Description>
+                  <YStack gap='$2'>
+                    <Paragraph size="$2">New Password:</Paragraph>
+                    <XStack gap='$2'>
+                      <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
+                        value={resetUserPassword}
+                        onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
+                      <Button circular icon={showPasswordPlaintext ? SquareAsterisk : Eye}
+                        onPress={() => setShowPasswordPlaintext(!showPasswordPlaintext)} />
+                      {/* <Text fontFamily='$body'>weeks</Text> */}
 
-                      </XStack>
-                      <Paragraph size="$2">Confirm Password:</Paragraph>
-                      <XStack>
-                        <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Confirm password`}
-                          value={confirmUserPassword}
-                          onChange={(data) => { setConfirmUserPassword(data.nativeEvent.text) }} />
+                    </XStack>
+                    <Paragraph size="$2">Confirm Password:</Paragraph>
+                    <XStack>
+                      <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Confirm password`}
+                        value={confirmUserPassword}
+                        onChange={(data) => { setConfirmUserPassword(data.nativeEvent.text) }} />
 
-                        <ZStack w='$2' h='$2' my='auto' ml='$4' mr='$2' pr='$2'>
-                          <XStack m='auto' animation='standard' pr='$1'
-                            o={resetPasswordValid ? 1 : 0}>
-                            <CheckCircle color={navColor} />
-                          </XStack>
-                          <XStack m='auto' animation='standard' pr='$1'
-                            o={confirmPasswordInvalid ? 1 : 0}>
-                            <XCircle />
-                          </XStack>
-                        </ZStack>
-                        {/* <Text fontFamily='$body'>weeks</Text> */}
-                      </XStack>
-                    </YStack>
-                  </Dialog.Description>
+                      <ZStack w='$2' h='$2' my='auto' ml='$4' mr='$2' pr='$2'>
+                        <XStack m='auto' animation='standard' pr='$1'
+                          o={resetPasswordValid ? 1 : 0}>
+                          <CheckCircle color={navColor} />
+                        </XStack>
+                        <XStack m='auto' animation='standard' pr='$1'
+                          o={confirmPasswordInvalid ? 1 : 0}>
+                          <XCircle />
+                        </XStack>
+                      </ZStack>
+                      {/* <Text fontFamily='$body'>weeks</Text> */}
+                    </XStack>
+                  </YStack>
+                </Dialog.Description>
 
-                  <XStack gap="$3" jc="flex-end">
-                    <Dialog.Close asChild>
-                      <Button>Cancel</Button>
-                    </Dialog.Close>
-                    {/* <Theme inverse> */}
-                    <Dialog.Close asChild>
+                <XStack gap="$3" jc="flex-end">
+                  <Dialog.Close asChild>
+                    <Button>Cancel</Button>
+                  </Dialog.Close>
+                  {/* <Theme inverse> */}
+                  <Dialog.Close asChild>
 
-                      <Button onPress={doResetPassword}
-                        {...themedButtonBackground(primaryColor, primaryTextColor)}
-                        opacity={resetPasswordValid ? 1 : 0.5}
-                        disabled={!resetPasswordValid}>Reset Password</Button>
-                    </Dialog.Close>
+                    <Button onPress={doResetPassword}
+                      {...themedButtonBackground(primaryColor, primaryTextColor)}
+                      opacity={resetPasswordValid ? 1 : 0.5}
+                      disabled={!resetPasswordValid}>Reset Password</Button>
+                  </Dialog.Close>
 
-                    {/* </Theme> */}
-                  </XStack>
-                </YStack>
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog>
-          <Dialog>
-            <Dialog.Trigger asChild>
-              <Button icon={<Trash />} color="red" mb='$3'>
-                Delete Account
-              </Button>
-            </Dialog.Trigger>
-            <Dialog.Portal zi={1000011}>
-              <Dialog.Overlay
-                key="overlay"
-                animation='standard'
-                o={0.5}
-                enterStyle={{ o: 0 }}
-                exitStyle={{ o: 0 }}
-              />
-              <Dialog.Content
-                bordered
-                elevate
-                key="content"
-                animation={[
-                  'standard',
-                  {
-                    opacity: {
-                      overshootClamping: true,
-                    },
+                  {/* </Theme> */}
+                </XStack>
+              </YStack>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog>
+        <Dialog>
+          <Dialog.Trigger asChild>
+            <Button icon={<Trash />} color="red" mb='$3'>
+              Delete Account
+            </Button>
+          </Dialog.Trigger>
+          <Dialog.Portal zi={1000011}>
+            <Dialog.Overlay
+              key="overlay"
+              animation='standard'
+              o={0.5}
+              enterStyle={{ o: 0 }}
+              exitStyle={{ o: 0 }}
+            />
+            <Dialog.Content
+              bordered
+              elevate
+              key="content"
+              animation={[
+                'standard',
+                {
+                  opacity: {
+                    overshootClamping: true,
                   },
-                ]}
-                m='$3'
-                enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-                exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-                x={0}
-                scale={1}
-                opacity={1}
-                y={0}
-              >
-                <YStack space>
-                  <Dialog.Title>Delete Account</Dialog.Title>
-                  <Dialog.Description>
-                    Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
-                  </Dialog.Description>
+                },
+              ]}
+              m='$3'
+              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              x={0}
+              scale={1}
+              opacity={1}
+              y={0}
+            >
+              <YStack space>
+                <Dialog.Title>Delete Account</Dialog.Title>
+                <Dialog.Description>
+                  Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
+                </Dialog.Description>
 
-                  <XStack gap="$3" jc="flex-end">
-                    <Dialog.Close asChild>
-                      <Button>Cancel</Button>
-                    </Dialog.Close>
-                    <Theme inverse>
-                      <Button onPress={doDeleteUser}>Delete</Button>
-                    </Theme>
-                  </XStack>
-                </YStack>
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog>
-          {/* <ResetPasswordDialog user={user} /> */}
-        </> : undefined}
-    </YStack> : undefined}
-  </AnimatePresence>;
+                <XStack gap="$3" jc="flex-end">
+                  <Dialog.Close asChild>
+                    <Button>Cancel</Button>
+                  </Dialog.Close>
+                  <Theme inverse>
+                    <Button onPress={doDeleteUser}>Delete</Button>
+                  </Theme>
+                </XStack>
+              </YStack>
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog>
+        {/* <ResetPasswordDialog user={user} /> */}
+      </> : undefined}
+  </YStack>;
 }

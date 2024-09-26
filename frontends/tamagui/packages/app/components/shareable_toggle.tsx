@@ -54,7 +54,7 @@ export function ShareableToggle({
       value={value.toString()}
       disabled={disabled}
       onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-      <Switch.Thumb animation='standard' backgroundColor='black' />
+      <Switch.Thumb animation='standard' backgroundColor='$background' />
     </Switch>
   </YStack>;
 }

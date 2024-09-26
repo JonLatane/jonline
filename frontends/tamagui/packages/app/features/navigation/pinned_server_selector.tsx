@@ -105,7 +105,7 @@ export function PinnedServerSelector({
 
   const { transparentBackgroundColor } = useServerTheme();
   const renderPinnedServers = showPinnedServers || simplified && !disabled;
-  const childMargins = { paddingTop: 4, paddingBottom: 4 };
+  const childMargins = { paddingTop: 2, paddingBottom: 2 };
   return <div id={affectsNavigation ? 'navigation-pinned-servers' : undefined} style={{ width: '100%' }} >
     <FlipMove style={{ width: '100%' }} >
       {[
@@ -196,7 +196,8 @@ export function PinnedServerSelector({
                     ? [
                       availableServers.map(server => {
                         let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
-                        return <div key={`server-${server.host}`} style={{ display: 'flex', marginRight: 5, ...childMargins }}>
+                        return <div key={`server-${server.host}`}
+                         style={{ display: 'flex', marginRight: 5, ...childMargins }}>
                           <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
                         </div>;
                       }),
@@ -302,7 +303,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
   const loadingEvents = useAppSelector(state => state.events.pagesStatus.values[server.host] === 'loading');
   const loadingUsers = useAppSelector(state => state.users.pagesStatus.values[server.host] === 'loading');
   return <YStack maw={170}>
-    <XStack zi={1000000} pointerEvents="none" mx='auto'>
+    <XStack zi={1000000} position='absolute' pointerEvents="none" mx='auto'>
       <XStack position='absolute' animation='standard' o={loadingUsers ? 1 : 0}
         pointerEvents="none" ml={-20} mt={12}>
         <Spinner size='large' color={navColor} scaleX={-1.7} scaleY={1.7} />

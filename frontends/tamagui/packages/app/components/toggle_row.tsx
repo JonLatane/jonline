@@ -16,7 +16,7 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
   const dispatch = useAppDispatch();
   const nameKey = name.toLowerCase().replace(/[^\w]/g, '_');
   const value = !!optionalValue;
-  return <XStack gap='$3' o={disabled ? 0.5 : 1} my='$1'>
+  return <XStack gap='$3' o={disabled ? 0.5 : 1} my='$1' ai='center'>
     <Label htmlFor={nameKey} my='auto' f={1}>
       <YStack w='100%'>
         <Paragraph size='$5' my='auto'>
@@ -29,13 +29,13 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
           : description}
       </YStack>
     </Label>
-    <Switch name={nameKey} size="$5" margin='auto'
+    <Switch name={nameKey} size="$5" my='auto'
       defaultChecked={value}
       checked={value}
       value={value.toString()}
       disabled={disabled}
       onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-      <Switch.Thumb animation='standard' backgroundColor='black' />
+      <Switch.Thumb animation='standard' backgroundColor='$background' />
     </Switch>
   </XStack>;
 }

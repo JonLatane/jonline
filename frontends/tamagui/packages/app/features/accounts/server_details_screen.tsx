@@ -635,7 +635,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                     checked={server.configuredByDefault} value={server.configuredByDefault?.toString()}
                                     disabled={!isAdmin}
                                     onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
-                                    <Switch.Thumb animation='standard' backgroundColor='black' />
+                                    <Switch.Thumb animation='standard' backgroundColor='$background' />
                                   </Switch>
                                   <Label pr="$0" miw={90} jc="flex-end" size='$2'
                                     o={server.configuredByDefault ? 1 : 0.5}
@@ -649,7 +649,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                     checked={server.pinnedByDefault} value={server.pinnedByDefault?.toString()}
                                     disabled={!isAdmin}
                                     onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
-                                    <Switch.Thumb animation='standard' backgroundColor='black' />
+                                    <Switch.Thumb animation='standard' backgroundColor='$background' />
                                   </Switch>
                                   <Label pr="$0" miw={90} jc="flex-end" size='$2' o={server.pinnedByDefault ? 1 : 0.5}
                                     htmlFor={`${server.host}-pin-by-default`}>
@@ -718,7 +718,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                       onCheckedChange={(checked) => setExternalCdnConfig(
                         checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
                       )}>
-                      <Switch.Thumb animation='standard' backgroundColor='black' />
+                      <Switch.Thumb animation='standard' backgroundColor='$background' />
                     </Switch>
                   </XStack>
                   {isAdmin || externalCdnConfig
@@ -767,7 +767,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                           ? { ...externalCdnConfig, cdnGrpc: checked }
                           : undefined
                       )}>
-                      <Switch.Thumb animation='standard' backgroundColor='black' />
+                      <Switch.Thumb animation='standard' backgroundColor='$background' />
                     </Switch>
                   </XStack>
                 </>

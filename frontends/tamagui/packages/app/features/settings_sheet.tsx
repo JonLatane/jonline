@@ -127,7 +127,7 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
                     value={inlineNavigation.toString()}
                     disabled={app.inlineFeatureNavigation === undefined}
                     onCheckedChange={(checked) => dispatch(setInlineFeatureNavigation(checked))}>
-                    <Switch.Thumb animation='standard' backgroundColor='black' />
+                    <Switch.Thumb animation='standard' backgroundColor='$background' />
                   </Switch>
                   <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
                     <YStack w='100%'>

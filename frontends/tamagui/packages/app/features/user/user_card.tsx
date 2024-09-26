@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, Theme, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, DateViewer, Heading, Image, Input, Paragraph, ScrollView, Theme, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui';
 import { Bot, Building2, Shield } from "@tamagui/lucide-icons";
 
 import { standardAnimation } from "@jonline/ui";
@@ -16,6 +16,7 @@ import { SingleMediaChooser } from '../accounts/single_media_chooser';
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 import { postBackgroundSize } from "../post/post_card";
 import { MembershipManager } from "./membership_manager";
+import { FederatedProfiles } from "./federated_profiles";
 
 export type Editable = {
   editable?: boolean;
@@ -153,7 +154,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           // autoCapitalize='words'
           value={realName}
           onChange={(data) => { setRealName(data.nativeEvent.text) }} />
-        : <Heading size="$7" color={usernameColor} fontSize='$7' lh='$2' marginRight='auto' w='100%'>{displayedRealName}</Heading>}
+        : <Heading size="$7" color={usernameColor} fontSize='$7' lh='$2' marginRight='auto' w='100%' pr='$1'>{displayedRealName}</Heading>}
     </YStack>
     {/* {showServerInfo
       ?  */}
@@ -169,7 +170,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const mainImage = <YStack w='100%'>
     {(!isPreview && hasAvatarUrl)
       ? <Image
-        mb='$3'
+        mt='$2'
         width={fullAvatarHeight}
         height={fullAvatarHeight}
         resizeMode="contain"
@@ -233,7 +234,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </AnimatePresence>
   </YStack>
 
-  const footerContent = <YStack mt='$2' mr='$3' w='100%'>
+  const footerContent = <YStack mt='$2' mr='$3' ml='$1' w='100%'>
     <XStack>
       <Heading size='$1' f={1}>{user.followerCount} {user.followerCount === 1 ? 'follower' : 'followers'}</Heading>
       <Heading size='$1' f={1} ta='right'>{user.followingCount} following</Heading>
@@ -269,47 +270,49 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
         opacity={1}
         y={0}
       >
-        <Card.Header>
-          <XStack w='100%' gap='$1' ai='center'>
-            {isPreview
-              ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
-                {usernameRegion}
-              </Anchor>
-              : usernameRegion}
+        <Card.Header pb={0} pt='$2' px='$3'>
+          <YStack gap='$2'>
+            <XStack w='100%' gap='$1' ai='center'>
+              {isPreview
+                ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
+                  {usernameRegion}
+                </Anchor>
+                : usernameRegion}
 
-            {hasAdminPermission(user)
-              ? <Tooltip placement="bottom-end">
-                <Tooltip.Trigger>
-                  <Shield />
-                </Tooltip.Trigger>
-                <Tooltip.Content>
-                  <Heading size='$2'>User is an admin.</Heading>
-                </Tooltip.Content>
-              </Tooltip> : undefined}
-            {hasPermission(user, Permission.BUSINESS)
-              ? <Tooltip placement="bottom-end">
-                <Tooltip.Trigger>
-                  <Building2 />
-                </Tooltip.Trigger>
-                <Tooltip.Content>
-                  <Heading size='$2' ta='center' als='center'>Business Account</Heading>
-                  {/* <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading> */}
-                </Tooltip.Content>
-              </Tooltip> : undefined}
-            {hasPermission(user, Permission.RUN_BOTS)
-              ? <Tooltip placement="bottom-end">
-                <Tooltip.Trigger>
-                  <Bot />
-                </Tooltip.Trigger>
-                <Tooltip.Content>
-                  <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
-                  <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
-                </Tooltip.Content>
-              </Tooltip> : undefined}
-          </XStack>
+              {hasAdminPermission(user)
+                ? <Tooltip placement="bottom-end">
+                  <Tooltip.Trigger>
+                    <Shield />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Heading size='$2'>User is an admin.</Heading>
+                  </Tooltip.Content>
+                </Tooltip> : undefined}
+              {hasPermission(user, Permission.BUSINESS)
+                ? <Tooltip placement="bottom-end">
+                  <Tooltip.Trigger>
+                    <Building2 />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Heading size='$2' ta='center' als='center'>Business Account</Heading>
+                    {/* <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading> */}
+                  </Tooltip.Content>
+                </Tooltip> : undefined}
+              {hasPermission(user, Permission.RUN_BOTS)
+                ? <Tooltip placement="bottom-end">
+                  <Tooltip.Trigger>
+                    <Bot />
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <Heading size='$2' ta='center' als='center'>User may be (or run) a bot.</Heading>
+                    <Heading size='$1' ta='center' als='center'>Posts may be written by an algorithm rather than a human.</Heading>
+                  </Tooltip.Content>
+                </Tooltip> : undefined}
+            </XStack>
+          </YStack>
         </Card.Header>
-        <Card.Footer p={shrinkPreviews ? 0 : '$3'} animation='standard'>
-          <YStack mt='$2' mr='$3' w='100%'>
+        <Card.Footer pb={shrinkPreviews ? 0 : '$2'} px='$3' animation='standard'>
+          <YStack mt='$1' mr='$3' w='100%'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
                 {mainImage}
@@ -324,7 +327,15 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
                   </Anchor>
                 : footerContent}
             </AnimatePresence>
+
             <MembershipManager user={user} />
+
+            {!isPreview && user.hasAdvancedData &&
+              (user.federatedProfiles.length > 0 || isCurrentUser)
+              ? <ScrollView horizontal>
+                <FederatedProfiles user={user} />
+              </ScrollView>
+              : undefined}
           </YStack>
         </Card.Footer>
         {imagePostBackgrounds

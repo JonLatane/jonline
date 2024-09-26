@@ -246,8 +246,8 @@ export function BaseCreatePostSheet({
   return (
     <>
       {button?.(() => setOpen(!open)) ??
-        <Tooltip>
-          <Tooltip.Trigger>
+        // <Tooltip>
+        //   <Tooltip.Trigger>
             <Button //{...themedButtonBackground(primaryColor)} 
               w='$3'
               p={0}
@@ -261,13 +261,13 @@ export function BaseCreatePostSheet({
             Create {entityName}
           </Heading> */}
             </Button>
-          </Tooltip.Trigger>
-          <Tooltip.Content>
-            <Paragraph>
-              {text}
-            </Paragraph>
-          </Tooltip.Content>
-        </Tooltip>
+        //   </Tooltip.Trigger>
+        //   <Tooltip.Content>
+        //     <Paragraph>
+        //       {text}
+        //     </Paragraph>
+        //   </Tooltip.Content>
+        // </Tooltip>
       }
       {true //true && (open || renderSheet)
         ? <Sheet

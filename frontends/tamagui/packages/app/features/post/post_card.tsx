@@ -366,7 +366,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   pressStyle={{ scale: 0.91 }}
                   onPress={onPressParentPreview}
                 >
-                  <Card.Footer>
+                  <Card.Footer p={0}>
                     <YStack w='100%'>
                       <XStack mah={200} w='100%'>
                         <TamaguiMarkdown text={previewParent.content} shrink />

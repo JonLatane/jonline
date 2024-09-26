@@ -144,7 +144,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         flex: 1,
         display: 'flex', flexDirection: 'column',
         justifyContent: 'center', alignItems: 'center',
-        marginTop: 5,
+        // marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20
       }}
