@@ -378,7 +378,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         openedPostId// && basePost
                           ? [
                             <div key={`fullsize-starred-post-card-${openedPostId}`} style={{ width: '100%', paddingTop: 4 }}>
-                              <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize />
+                              <StarredPostCard key='fullsize-post' {...{ postId: openedPostId }} fullSize hasMainServerPrimaryBackground />
                             </div>,
                             basePost ? conversationCommentList : undefined
                           ]
@@ -387,7 +387,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                               <XStack w='100%'
                                 animation='standard' {...standardAnimation}>
                                 <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
-                                  unsortable={!!starredPostFilter} />
+                                  unsortable={!!starredPostFilter} hasMainServerPrimaryBackground />
                               </XStack>
                             </div>)
                         : undefined}

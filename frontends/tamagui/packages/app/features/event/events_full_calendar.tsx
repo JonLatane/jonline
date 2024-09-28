@@ -503,15 +503,16 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           // maw={bigCalWidth}
           w={Math.min(800, bigCalWidth)}
           mah={borderedScreenHeight}
+          p='$2'
           enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
           exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
-          gap="$4"
+          gap="$2"
         >
           {/* <Unspaced> */}
           <YStack gap='$2' h='100%'>
-            <XStack w='100%'>
+            <XStack w='100%' gap='$2' mx='$2' pr='$2'>
               <Button
-                ml='$3' size='$2'
+                size='$2'
                 circular
                 icon={ChevronLeft}
                 disabled={!prevEvent}
@@ -519,7 +520,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 onPress={() => setModalInstanceId(federateId(prevEvent!.instances[0]!.id, prevEvent!.serverHost))}
               />
               <Button
-                ml='$3' size='$2'
+                size='$2'
                 circular
                 icon={ChevronRight}
                 disabled={!nextEvent}
@@ -528,7 +529,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
               />
               <Dialog.Close asChild>
                 <Button
-                  ml='auto' mr='$3' size='$2'
+                  ml='auto' 
+                  mr='$2'
+                  size='$2'
                   circular
                   icon={XIcon}
                 />
@@ -537,7 +540,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
             {/* <YStack w='100%' my='auto' f={1}> */}
             <ScrollView f={1}>
               {modalInstance
-                ? <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview />
+                ? <XStack mt={-9}>
+                  <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview />
+                </XStack>
                 : undefined}
             </ScrollView>
             {/* </YStack> */}

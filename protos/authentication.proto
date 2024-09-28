@@ -79,3 +79,23 @@ message ResetPasswordRequest {
   // The new password to set.
   string password = 3;
 }
+
+// Response for `GetUserRefreshTokens` RPC. Returns all refresh tokens associated with the current user.
+message UserRefreshTokensResponse {
+  // The refresh tokens associated with the current user.
+  repeated RefreshTokenMetadata refresh_tokens = 1;
+}
+
+// Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
+// Does not include the token itself.
+message RefreshTokenMetadata {
+  // The DB ID of the refresh token. Used when deleting the token or updating the device_name.
+  uint64 id = 1;
+  // Expiration date of the refresh token.
+  optional google.protobuf.Timestamp expires_at = 2;
+  // The device name the refresh token is on. User-updateable.
+  optional string device_name = 3;
+  // Whether the refresh token is associated with the current device
+  // (based on what user is making the request).
+  bool is_this_device = 4;
+}

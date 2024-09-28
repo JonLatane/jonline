@@ -1,16 +1,13 @@
-import { RootState, loadUser, selectUserById, useRootSelector, useServerTheme } from "app/store";
-import React, { useEffect, useState } from "react";
+import { RootState, useRootSelector, useServerTheme } from "app/store";
+import React, { useState } from "react";
 
 import { Author, Permission, Post } from "@jonline/api";
-import { Anchor, DateViewer, Heading, Image, Paragraph, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
-import { PermissionIndicator } from "@jonline/ui";
-import { useCurrentAccountOrServer, useAppDispatch, useCredentialDispatch, useProvidedDispatch, useCurrentServer } from "app/hooks";
+import { Anchor, DateViewer, Image, Paragraph, PermissionIndicator, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
+import { useProvidedDispatch } from "app/hooks";
 import { useMediaUrl } from "app/hooks/use_media_url";
 import { federateId, federatedIDPair } from "app/store/federation";
 import { hasAdminPermission, hasPermission } from "app/utils/permission_utils";
-import { View } from "react-native";
 import { useLink } from "solito/link";
-import { useAccountOrServerContext } from "app/contexts";
 
 export type AuthorInfoProps = {
   author?: Author;
@@ -56,12 +53,6 @@ export const AuthorInfo = ({
   const permissionBadgeColor = inputTextColor;
 
   const mediaQuery = useMedia();
-  const authorUser = useRootSelector((state: RootState) => federatedAuthorId ?
-    selectUserById(state.users, federatedAuthorId) : undefined);
-  // const authorAvatar = useRootSelector((state: RootState) => authorId ? state.users.avatars[authorId] : undefined);
-  const authorLoadFailed = useRootSelector((state: RootState) => federatedAuthorId ? state.users.failedUserIds.includes(federatedAuthorId) : false);
-
-  const [loadingAuthor, setLoadingAuthor] = useState(false);
   const authorLink = useLink({
     href: `/${federatedAuthorName}`
   });
@@ -73,24 +64,7 @@ export const AuthorInfo = ({
       authorOnPress?.(event);
     }
   }
-  // console.log("RENDER loading author", federatedAuthorId, authorUser);
-  // const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
-
-  // useEffect(() => {
-  //   if (server && serverAuthorId && isVisible) {
-  //     if (!loadingAuthor && !authorUser && !authorLoadFailed) {
-  //       // console.log('BEGIN loading author', federatedAuthorId, serverAuthorId, accountOrServer.server?.host, author)
-  //       dispatch(loadUser({ userId: serverAuthorId, ...accountOrServer })).then((action) => {
-  //         // setLoadingAuthor(false);
-  //         // console.log('FINISH loading author', action)
-  //       });
-  //       setLoadingAuthor(true);
-  //     } else if (loadingAuthor && authorUser) {
-  //       setLoadingAuthor(false);
-  //     }
-  //   }
-  // }, [!!server, serverAuthorId, isVisible, authorLoadFailed, loadingAuthor, author, authorUser]);
-  const avatarUrl = useMediaUrl(author?.avatar?.id ?? authorUser?.avatar?.id, accountOrServer);
+  const avatarUrl = useMediaUrl(author?.avatar?.id, accountOrServer);
   const avatarSize = mediaQuery.gtXs
     ? shrink ? 30 : 50
     : shrink ? 18 : 26;
@@ -106,31 +80,29 @@ export const AuthorInfo = ({
   </XStack>;
 
   const permissionsIndicators = [
-    author && hasAdminPermission(authorUser ?? author)
+    author && hasAdminPermission(author)
       ? <PermissionIndicator key='admin' permission={Permission.ADMIN} color={permissionBadgeColor} /> : undefined,
-    author && hasPermission(authorUser ?? author, Permission.RUN_BOTS)
+    author && hasPermission(author, Permission.RUN_BOTS)
       ? <PermissionIndicator key='bot' permission={Permission.RUN_BOTS} color={permissionBadgeColor} /> : undefined
   ];
-  
+
   const username = author?.username ?? authorName;
-  const realName = authorUser?.realName;
-  const renderAsLoading = false;//loadingAuthor || (!authorUser && !authorLoadFailed);
+  const realName = author?.realName;
+
+  const renderAsLoading = false;
+
   return <XStack alignContent='flex-start'>
     <YStack w={detailsMargins} />
     {(!nameOnly && !dateOnly && avatarUrl && avatarUrl != '')
       ? <YStack marginVertical='auto'>
         {disableLink
           ?
-          // <FadeInView>
           { avatarImage }
-          // </FadeInView>
           :
-          // <FadeInView>
           <Anchor {...authorLinkProps}
             mr={mediaQuery.gtXs ? '$3' : '$2'}>
             {avatarImage}
           </Anchor>
-          // </FadeInView>
         }
       </YStack>
       : undefined}
@@ -140,13 +112,21 @@ export const AuthorInfo = ({
         {dateOnly
           ? undefined
           : <XStack ai='center'>
-            {/* <Heading size="$1" mr='$1' marginVertical='auto'>by</Heading> */}
-
-            {/* <Heading size={larger ? '$7' : "$1"} ml='$1' mr='$2'
-              marginVertical='auto' color={textColor}> */}
             {author ?? authorName
               ? disableLink
-                ? `${username}`
+                ? username
+                // ? <>
+                //   <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
+                //     {username}
+                //   </Paragraph>
+                //   {realName
+                //     ? <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
+                //       {' ('}
+                //       {<Text fontWeight='bold' color={textColor}>{authorUser.realName}</Text>}
+                //       {')'}
+                //     </Paragraph>
+                //     : undefined}
+                // </>
                 : <Anchor flexDirection='row' {...authorLinkProps} color={textColor}>
                   <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
                     {username}
@@ -154,7 +134,7 @@ export const AuthorInfo = ({
                   {realName
                     ? <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
                       {' ('}
-                      {<Text fontWeight='bold' color={textColor}>{authorUser.realName}</Text>}
+                      {<Text fontWeight='bold' color={textColor}>{realName}</Text>}
                       {')'}
                     </Paragraph>
                     : undefined}
@@ -162,7 +142,6 @@ export const AuthorInfo = ({
               : 'anonymous'}
             <Spinner size='small' ml='$2' animation='standard' color={textColor}
               opacity={renderAsLoading ? 0.5 : 0} />
-            {/* </Heading> */}
             {nameOnly ? permissionsIndicators : undefined}
           </XStack>}
         {nameOnly

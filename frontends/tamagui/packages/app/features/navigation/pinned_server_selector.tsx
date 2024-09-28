@@ -103,7 +103,7 @@ export function PinnedServerSelector({
           ? `From ${shortServerName} and ${pinnedServerCount} other ${pinnedServerCount === 1 ? 'server' : 'servers'}`
           : `From ${shortServerName} and ${pinnedServerCount} of ${totalServerCount} other ${totalServerCount === 1 ? 'server' : 'servers'}`;
 
-  const { transparentBackgroundColor } = useServerTheme();
+  // const { transparentBackgroundColor } = useServerTheme();
   const renderPinnedServers = showPinnedServers || simplified && !disabled;
   const childMargins = { paddingTop: 2, paddingBottom: 2 };
   return <div id={affectsNavigation ? 'navigation-pinned-servers' : undefined} style={{ width: '100%' }} >
@@ -303,7 +303,7 @@ export function PinnableServer({ server, pinnedServer, simplified }: PinnableSer
   const loadingEvents = useAppSelector(state => state.events.pagesStatus.values[server.host] === 'loading');
   const loadingUsers = useAppSelector(state => state.users.pagesStatus.values[server.host] === 'loading');
   return <YStack maw={170}>
-    <XStack zi={1000000} position='absolute' pointerEvents="none" mx='auto'>
+    <XStack zi={1000000} pointerEvents="none" mx='auto'>
       <XStack position='absolute' animation='standard' o={loadingUsers ? 1 : 0}
         pointerEvents="none" ml={-20} mt={12}>
         <Spinner size='large' color={navColor} scaleX={-1.7} scaleY={1.7} />

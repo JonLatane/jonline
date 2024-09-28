@@ -330,7 +330,7 @@ export function GroupsSheet({
       <Sheet.ScrollView px="$3" py='$2' w='100%'>
         <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
 
-          {open
+          {open || true
             ? [
               <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
                 <PageChooser {...pagination} width='auto' maxWidth='100%' />

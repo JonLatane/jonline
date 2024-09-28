@@ -27,6 +27,7 @@ export type StarredPostCardProps = {
   unreadCount?: number;
   hideCurrentUser?: boolean;
   showPermalink?: boolean;
+  hasMainServerPrimaryBackground?: boolean;
 };
 
 const selectStarredPostEventData = (
@@ -72,8 +73,9 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
   const [loadingPost, setLoadingPost] = useState(false);
 
   const hasFailedToLoadPost = useAppSelector(state => state.posts.failedPostIds.includes(postId));
+  const shouldReloadPost = !basePost && isServerReady && !loadingServer && !loadingPost && !hasFailedToLoadPost && postId && (isVisible ?? true);
   useEffect(() => {
-    if (!basePost && isServerReady && !loadingServer && !loadingPost && !hasFailedToLoadPost && postId && (isVisible ?? true)) {
+    if (shouldReloadPost) {
       console.log('StarredPosts: Fetching post', postId);
       setLoadingPost(true);
       dispatch(loadPost({ ...accountOrServer, id: serverPostId! }))
@@ -126,7 +128,19 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
       });
     }
   }, [basePost?.context, eventWithSingleInstance?.id, isServerReady, loadingEvent]);
-  return { basePost, eventInstanceId, event, serverPostId, serverHost, serverEventInstanceId, eventWithSingleInstance, isServerReady, loadingServer, loadingPost, loadingEvent };
+  return {
+    basePost,
+    eventInstanceId,
+    event,
+    serverPostId,
+    serverHost,
+    serverEventInstanceId,
+    eventWithSingleInstance,
+    isServerReady,
+    loadingServer,
+    loadingPost: loadingPost || shouldReloadPost,
+    loadingEvent
+  };
 }
 
 
@@ -142,7 +156,7 @@ const selectStarredMovability = (
   );
 
 
-export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount, hideCurrentUser, showPermalink }: StarredPostCardProps) {
+export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCount, hideCurrentUser, showPermalink, hasMainServerPrimaryBackground }: StarredPostCardProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
 
@@ -162,7 +176,9 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   } = useStarredPostDetails(postId, isVisible);
 
   const server = useFederatedAccountOrServer(serverHost)?.server;
-  const { navColor, navTextColor, navAnchorColor } = useServerTheme(server);
+  const mainServerPrimaryTextColor = useServerTheme(useCurrentServer())?.primaryTextColor;
+  // debugger;
+  const { navColor, navTextColor, navAnchorColor, primaryTextColor } = useServerTheme(server);
 
   const pinnedServer: PinnedServer | undefined = useAppSelector(state => state.accounts.pinnedServers.find(s => server && s.serverId === serverID(server)));
 
@@ -210,10 +226,10 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
         <StarButton post={{ ...Post.create({ id: serverPostId }), serverHost }} />
       </XStack>
       {isServerReady && !loadingServer && !loadingPost
-        ? <Paragraph size='$3' ta='center' o={0.5}>Post {postId} not found</Paragraph>
+        ? <Paragraph size='$3' ta='center' o={0.5} color={hasMainServerPrimaryBackground ? mainServerPrimaryTextColor : undefined}>Post {postId} not found</Paragraph>
         : <>
           <Spinner color={navAnchorColor} />
-          <Paragraph size='$3' ml='$2' o={0.5}>Post {postId} is loading...</Paragraph>
+          <Paragraph size='$3' ml='$2' o={0.5} color={hasMainServerPrimaryBackground ? mainServerPrimaryTextColor : undefined}>Post {postId} is loading...</Paragraph>
         </>}
       <XStack w='$3' h='$3' ml='auto'>
         <ServerNameAndLogo server={server} shrinkToSquare />

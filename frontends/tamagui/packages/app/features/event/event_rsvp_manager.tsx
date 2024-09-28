@@ -212,7 +212,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     function resetUpserting() {
       setTimeout(() => setUpserting(false), 500);
     }
-    client.upsertEventAttendance((attendance ?? upsertableAttendance)!, client.credential).then((result) => {
+    return client.upsertEventAttendance((attendance ?? upsertableAttendance)!, client.credential).then((result) => {
       // setUpserting(false);
       setUpsertSuccess(true);
       updateAttendance(result);
@@ -458,11 +458,11 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               ? //<Paragraph size='$1' mx='auto' my='$1' ta='left' maw={500}>
               // <Text fontFamily='$body' fontSize='$1' mr='$4'>{'• '}
               <YStack mx='auto'>
-              <XStack mb='$2' ai='center'>
-                <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
-                <Text fontFamily='$body' fontSize='$1'>You will be assigned a private RSVP link.
-                </Text>
-              </XStack>
+                <XStack mb='$2' ai='center'>
+                  <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
+                  <Text fontFamily='$body' fontSize='$1'>You will be assigned a private RSVP link.
+                  </Text>
+                </XStack>
                 <XStack mb='$2' ai='center'>
                   <Text fontFamily='$body' fontSize='$1' mr='$2'>•</Text>
                   <Text fontFamily='$body' fontSize='$1'>Use it to edit or delete your RSVP later.
@@ -491,6 +491,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
                     if (canRsvpWhenStatusSet && !upserting && !deleting) {
                       upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
+                        .then(() => !currentRsvp && !currentAnonRsvp
+                          ? setShowRsvpCards(true)
+                          : undefined)
                       // setTimeout(upsertRsvp, 200);
                     }
                   }}
@@ -555,24 +558,16 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             </Paragraph>
               : undefined}
 
-            {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
-              ? <>
-                <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$2' als='center' ta='center'>
-                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
-                </Paragraph>
-                <XStack mx='auto'>
-                  <EventCalendarExporter event={event} instance={instance} tiny={false} />
-                </XStack>
-              </>
-              : undefined}
-
             {/* {isPreview
               ? undefined
               :  */}
-            <Button h='auto' onPress={() => setShowDetails(!showDetails)} mb={showDetails ? '$2' : 0}>
-              <XStack>
-                <Heading size='$2' my='auto'>Details</Heading>
-                <XStack my='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
+            <Button h='auto'
+              mt={editingRsvpRejected ? 0 : -3}
+              onPress={() => setShowDetails(!showDetails)}
+              mb={showDetails ? '$2' : 0}>
+              <XStack ai='center' w='100%'>
+                <Heading size='$2' my='auto'>Attendees & Notes</Heading>
+                <XStack my='auto' mr='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
                   <ChevronRight size='$1' />
                 </XStack>
               </XStack>
@@ -638,6 +633,19 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </YStack>
                 : undefined}
             </AnimatePresence>
+
+
+            {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0 && currentAnonRsvp
+              ? <>
+                <Paragraph size={isPreview ? '$2' : '$4'} mx='$4' mb='$2' als='center' ta='center'>
+                  Save <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update your RSVP later.
+                </Paragraph>
+                <XStack mx='auto'>
+                  <EventCalendarExporter event={event} instance={instance} tiny={false} />
+                </XStack>
+              </>
+              : undefined}
+
             <XStack w='100%' gap='$2'>
 
               {newRsvpMode === 'anonymous' && anonymousAuthToken && anonymousAuthToken.length > 0
