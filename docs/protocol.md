@@ -12,8 +12,10 @@
     - [CreateAccountRequest](#jonline-CreateAccountRequest)
     - [ExpirableToken](#jonline-ExpirableToken)
     - [LoginRequest](#jonline-LoginRequest)
+    - [RefreshTokenMetadata](#jonline-RefreshTokenMetadata)
     - [RefreshTokenResponse](#jonline-RefreshTokenResponse)
     - [ResetPasswordRequest](#jonline-ResetPasswordRequest)
+    - [UserRefreshTokensResponse](#jonline-UserRefreshTokensResponse)
   
 - [visibility_moderation.proto](#visibility_moderation-proto)
     - [Moderation](#jonline-Moderation)
@@ -341,6 +343,25 @@ Request to login to an existing account.
 
 
 
+<a name="jonline-RefreshTokenMetadata"></a>
+
+### RefreshTokenMetadata
+Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
+Does not include the token itself.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [uint64](#uint64) |  | The DB ID of the refresh token. Used when deleting the token or updating the device_name. |
+| expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Expiration date of the refresh token. |
+| device_name | [string](#string) | optional | The device name the refresh token is on. User-updateable. |
+| is_this_device | [bool](#bool) |  | Whether the refresh token is associated with the current device (based on what user is making the request). |
+
+
+
+
+
+
 <a name="jonline-RefreshTokenResponse"></a>
 
 ### RefreshTokenResponse
@@ -368,6 +389,21 @@ Request to reset a password.
 | ----- | ---- | ----- | ----------- |
 | user_id | [string](#string) | optional | If not set, use the current user of the request. |
 | password | [string](#string) |  | The new password to set. |
+
+
+
+
+
+
+<a name="jonline-UserRefreshTokensResponse"></a>
+
+### UserRefreshTokensResponse
+Response for `GetUserRefreshTokens` RPC. Returns all refresh tokens associated with the current user.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| refresh_tokens | [RefreshTokenMetadata](#jonline-RefreshTokenMetadata) | repeated | The refresh tokens associated with the current user. |
 
 
 

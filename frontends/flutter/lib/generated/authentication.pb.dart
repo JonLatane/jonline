@@ -11,6 +11,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
@@ -628,6 +629,153 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(3)
   void clearPassword() => clearField(3);
+}
+
+/// Response for `GetUserRefreshTokens` RPC. Returns all refresh tokens associated with the current user.
+class UserRefreshTokensResponse extends $pb.GeneratedMessage {
+  factory UserRefreshTokensResponse({
+    $core.Iterable<RefreshTokenMetadata>? refreshTokens,
+  }) {
+    final $result = create();
+    if (refreshTokens != null) {
+      $result.refreshTokens.addAll(refreshTokens);
+    }
+    return $result;
+  }
+  UserRefreshTokensResponse._() : super();
+  factory UserRefreshTokensResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UserRefreshTokensResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserRefreshTokensResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..pc<RefreshTokenMetadata>(1, _omitFieldNames ? '' : 'refreshTokens', $pb.PbFieldType.PM, subBuilder: RefreshTokenMetadata.create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UserRefreshTokensResponse clone() => UserRefreshTokensResponse()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UserRefreshTokensResponse copyWith(void Function(UserRefreshTokensResponse) updates) => super.copyWith((message) => updates(message as UserRefreshTokensResponse)) as UserRefreshTokensResponse;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UserRefreshTokensResponse create() => UserRefreshTokensResponse._();
+  UserRefreshTokensResponse createEmptyInstance() => create();
+  static $pb.PbList<UserRefreshTokensResponse> createRepeated() => $pb.PbList<UserRefreshTokensResponse>();
+  @$core.pragma('dart2js:noInline')
+  static UserRefreshTokensResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserRefreshTokensResponse>(create);
+  static UserRefreshTokensResponse? _defaultInstance;
+
+  /// The refresh tokens associated with the current user.
+  @$pb.TagNumber(1)
+  $core.List<RefreshTokenMetadata> get refreshTokens => $_getList(0);
+}
+
+/// Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
+/// Does not include the token itself.
+class RefreshTokenMetadata extends $pb.GeneratedMessage {
+  factory RefreshTokenMetadata({
+    $fixnum.Int64? id,
+    $9.Timestamp? expiresAt,
+    $core.String? deviceName,
+    $core.bool? isThisDevice,
+  }) {
+    final $result = create();
+    if (id != null) {
+      $result.id = id;
+    }
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    if (deviceName != null) {
+      $result.deviceName = deviceName;
+    }
+    if (isThisDevice != null) {
+      $result.isThisDevice = isThisDevice;
+    }
+    return $result;
+  }
+  RefreshTokenMetadata._() : super();
+  factory RefreshTokenMetadata.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory RefreshTokenMetadata.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..a<$fixnum.Int64>(1, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOS(3, _omitFieldNames ? '' : 'deviceName')
+    ..aOB(4, _omitFieldNames ? '' : 'isThisDevice')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  RefreshTokenMetadata clone() => RefreshTokenMetadata()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  RefreshTokenMetadata copyWith(void Function(RefreshTokenMetadata) updates) => super.copyWith((message) => updates(message as RefreshTokenMetadata)) as RefreshTokenMetadata;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static RefreshTokenMetadata create() => RefreshTokenMetadata._();
+  RefreshTokenMetadata createEmptyInstance() => create();
+  static $pb.PbList<RefreshTokenMetadata> createRepeated() => $pb.PbList<RefreshTokenMetadata>();
+  @$core.pragma('dart2js:noInline')
+  static RefreshTokenMetadata getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<RefreshTokenMetadata>(create);
+  static RefreshTokenMetadata? _defaultInstance;
+
+  /// The DB ID of the refresh token. Used when deleting the token or updating the device_name.
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get id => $_getI64(0);
+  @$pb.TagNumber(1)
+  set id($fixnum.Int64 v) { $_setInt64(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearId() => clearField(1);
+
+  /// Expiration date of the refresh token.
+  @$pb.TagNumber(2)
+  $9.Timestamp get expiresAt => $_getN(1);
+  @$pb.TagNumber(2)
+  set expiresAt($9.Timestamp v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasExpiresAt() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearExpiresAt() => clearField(2);
+  @$pb.TagNumber(2)
+  $9.Timestamp ensureExpiresAt() => $_ensure(1);
+
+  /// The device name the refresh token is on. User-updateable.
+  @$pb.TagNumber(3)
+  $core.String get deviceName => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set deviceName($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasDeviceName() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearDeviceName() => clearField(3);
+
+  /// Whether the refresh token is associated with the current device
+  /// (based on what user is making the request).
+  @$pb.TagNumber(4)
+  $core.bool get isThisDevice => $_getBF(3);
+  @$pb.TagNumber(4)
+  set isThisDevice($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasIsThisDevice() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearIsThisDevice() => clearField(4);
 }
 
 

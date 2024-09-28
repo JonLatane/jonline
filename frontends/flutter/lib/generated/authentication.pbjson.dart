@@ -155,3 +155,38 @@ final $typed_data.Uint8List resetPasswordRequestDescriptor = $convert.base64Deco
     'ChRSZXNldFBhc3N3b3JkUmVxdWVzdBIcCgd1c2VyX2lkGAEgASgJSABSBnVzZXJJZIgBARIaCg'
     'hwYXNzd29yZBgDIAEoCVIIcGFzc3dvcmRCCgoIX3VzZXJfaWQ=');
 
+@$core.Deprecated('Use userRefreshTokensResponseDescriptor instead')
+const UserRefreshTokensResponse$json = {
+  '1': 'UserRefreshTokensResponse',
+  '2': [
+    {'1': 'refresh_tokens', '3': 1, '4': 3, '5': 11, '6': '.jonline.RefreshTokenMetadata', '10': 'refreshTokens'},
+  ],
+};
+
+/// Descriptor for `UserRefreshTokensResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List userRefreshTokensResponseDescriptor = $convert.base64Decode(
+    'ChlVc2VyUmVmcmVzaFRva2Vuc1Jlc3BvbnNlEkQKDnJlZnJlc2hfdG9rZW5zGAEgAygLMh0uam'
+    '9ubGluZS5SZWZyZXNoVG9rZW5NZXRhZGF0YVINcmVmcmVzaFRva2Vucw==');
+
+@$core.Deprecated('Use refreshTokenMetadataDescriptor instead')
+const RefreshTokenMetadata$json = {
+  '1': 'RefreshTokenMetadata',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 4, '10': 'id'},
+    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
+    {'1': 'device_name', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'deviceName', '17': true},
+    {'1': 'is_this_device', '3': 4, '4': 1, '5': 8, '10': 'isThisDevice'},
+  ],
+  '8': [
+    {'1': '_expires_at'},
+    {'1': '_device_name'},
+  ],
+};
+
+/// Descriptor for `RefreshTokenMetadata`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List refreshTokenMetadataDescriptor = $convert.base64Decode(
+    'ChRSZWZyZXNoVG9rZW5NZXRhZGF0YRIOCgJpZBgBIAEoBFICaWQSPgoKZXhwaXJlc19hdBgCIA'
+    'EoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAFIJZXhwaXJlc0F0iAEBEiQKC2Rldmlj'
+    'ZV9uYW1lGAMgASgJSAFSCmRldmljZU5hbWWIAQESJAoOaXNfdGhpc19kZXZpY2UYBCABKAhSDG'
+    'lzVGhpc0RldmljZUINCgtfZXhwaXJlc19hdEIOCgxfZGV2aWNlX25hbWU=');
+

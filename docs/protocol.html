@@ -171,8 +171,10 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li><a href="#jonline-CreateAccountRequest">CreateAccountRequest</a></li>
           <li><a href="#jonline-ExpirableToken">ExpirableToken</a></li>
           <li><a href="#jonline-LoginRequest">LoginRequest</a></li>
+          <li><a href="#jonline-RefreshTokenMetadata">RefreshTokenMetadata</a></li>
           <li><a href="#jonline-RefreshTokenResponse">RefreshTokenResponse</a></li>
           <li><a href="#jonline-ResetPasswordRequest">ResetPasswordRequest</a></li>
+          <li><a href="#jonline-UserRefreshTokensResponse">UserRefreshTokensResponse</a></li>
         </ul>
       </li>
       <li><a href="#visibility_moderation-proto">visibility_moderation.proto</a>
@@ -928,6 +930,48 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-RefreshTokenMetadata"></a></p>
+    <h3 id="refreshtokenmetadata"><a class="anchor" aria-hidden="true" tabindex="-1" href="#refreshtokenmetadata"><span class="octicon octicon-link"></span></a>RefreshTokenMetadata</h3>
+    <p>
+      Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
+      Does not include the token itself.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>The DB ID of the refresh token. Used when deleting the token or updating the device_name.</td>
+        </tr>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Expiration date of the refresh token.</td>
+        </tr>
+        <tr>
+          <td>device_name</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>The device name the refresh token is on. User-updateable.</td>
+        </tr>
+        <tr>
+          <td>is_this_device</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether the refresh token is associated with the current device (based on what user is making the request).</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-RefreshTokenResponse"></a></p>
     <h3 id="refreshtokenresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#refreshtokenresponse"><span class="octicon octicon-link"></span></a>RefreshTokenResponse</h3>
     <p>Returned when creating an account or logging in.</p>
@@ -985,6 +1029,27 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#string">string</a></td>
           <td></td>
           <td>The new password to set.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-UserRefreshTokensResponse"></a></p>
+    <h3 id="userrefreshtokensresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#userrefreshtokensresponse"><span class="octicon octicon-link"></span></a>UserRefreshTokensResponse</h3>
+    <p>Response for <code>GetUserRefreshTokens</code> RPC. Returns all refresh tokens associated with the current user.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>refresh_tokens</td>
+          <td><a href="#jonline-RefreshTokenMetadata">RefreshTokenMetadata</a></td>
+          <td>repeated</td>
+          <td>The refresh tokens associated with the current user.</td>
         </tr>
       </tbody>
     </table>

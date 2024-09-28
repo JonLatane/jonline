@@ -5,6 +5,7 @@
 // source: authentication.proto
 
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
 import { ContactMethod, User } from "./users";
@@ -106,6 +107,34 @@ export interface ResetPasswordRequest {
     | undefined;
   /** The new password to set. */
   password: string;
+}
+
+/** Response for `GetUserRefreshTokens` RPC. Returns all refresh tokens associated with the current user. */
+export interface UserRefreshTokensResponse {
+  /** The refresh tokens associated with the current user. */
+  refreshTokens: RefreshTokenMetadata[];
+}
+
+/**
+ * Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
+ * Does not include the token itself.
+ */
+export interface RefreshTokenMetadata {
+  /** The DB ID of the refresh token. Used when deleting the token or updating the device_name. */
+  id: number;
+  /** Expiration date of the refresh token. */
+  expiresAt?:
+    | string
+    | undefined;
+  /** The device name the refresh token is on. User-updateable. */
+  deviceName?:
+    | string
+    | undefined;
+  /**
+   * Whether the refresh token is associated with the current device
+   * (based on what user is making the request).
+   */
+  isThisDevice: boolean;
 }
 
 function createBaseCreateAccountRequest(): CreateAccountRequest {
@@ -765,6 +794,171 @@ export const ResetPasswordRequest = {
   },
 };
 
+function createBaseUserRefreshTokensResponse(): UserRefreshTokensResponse {
+  return { refreshTokens: [] };
+}
+
+export const UserRefreshTokensResponse = {
+  encode(message: UserRefreshTokensResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.refreshTokens) {
+      RefreshTokenMetadata.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UserRefreshTokensResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUserRefreshTokensResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.refreshTokens.push(RefreshTokenMetadata.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UserRefreshTokensResponse {
+    return {
+      refreshTokens: globalThis.Array.isArray(object?.refreshTokens)
+        ? object.refreshTokens.map((e: any) => RefreshTokenMetadata.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: UserRefreshTokensResponse): unknown {
+    const obj: any = {};
+    if (message.refreshTokens?.length) {
+      obj.refreshTokens = message.refreshTokens.map((e) => RefreshTokenMetadata.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UserRefreshTokensResponse>, I>>(base?: I): UserRefreshTokensResponse {
+    return UserRefreshTokensResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<UserRefreshTokensResponse>, I>>(object: I): UserRefreshTokensResponse {
+    const message = createBaseUserRefreshTokensResponse();
+    message.refreshTokens = object.refreshTokens?.map((e) => RefreshTokenMetadata.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseRefreshTokenMetadata(): RefreshTokenMetadata {
+  return { id: 0, expiresAt: undefined, deviceName: undefined, isThisDevice: false };
+}
+
+export const RefreshTokenMetadata = {
+  encode(message: RefreshTokenMetadata, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== 0) {
+      writer.uint32(8).uint64(message.id);
+    }
+    if (message.expiresAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.expiresAt), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.deviceName !== undefined) {
+      writer.uint32(26).string(message.deviceName);
+    }
+    if (message.isThisDevice !== false) {
+      writer.uint32(32).bool(message.isThisDevice);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RefreshTokenMetadata {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRefreshTokenMetadata();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 8) {
+            break;
+          }
+
+          message.id = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.expiresAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        case 3:
+          if (tag !== 26) {
+            break;
+          }
+
+          message.deviceName = reader.string();
+          continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.isThisDevice = reader.bool();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RefreshTokenMetadata {
+    return {
+      id: isSet(object.id) ? globalThis.Number(object.id) : 0,
+      expiresAt: isSet(object.expiresAt) ? globalThis.String(object.expiresAt) : undefined,
+      deviceName: isSet(object.deviceName) ? globalThis.String(object.deviceName) : undefined,
+      isThisDevice: isSet(object.isThisDevice) ? globalThis.Boolean(object.isThisDevice) : false,
+    };
+  },
+
+  toJSON(message: RefreshTokenMetadata): unknown {
+    const obj: any = {};
+    if (message.id !== 0) {
+      obj.id = Math.round(message.id);
+    }
+    if (message.expiresAt !== undefined) {
+      obj.expiresAt = message.expiresAt;
+    }
+    if (message.deviceName !== undefined) {
+      obj.deviceName = message.deviceName;
+    }
+    if (message.isThisDevice !== false) {
+      obj.isThisDevice = message.isThisDevice;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RefreshTokenMetadata>, I>>(base?: I): RefreshTokenMetadata {
+    return RefreshTokenMetadata.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<RefreshTokenMetadata>, I>>(object: I): RefreshTokenMetadata {
+    const message = createBaseRefreshTokenMetadata();
+    message.id = object.id ?? 0;
+    message.expiresAt = object.expiresAt ?? undefined;
+    message.deviceName = object.deviceName ?? undefined;
+    message.isThisDevice = object.isThisDevice ?? false;
+    return message;
+  },
+};
+
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
 export type DeepPartial<T> = T extends Builtin ? T
@@ -788,6 +982,21 @@ function fromTimestamp(t: Timestamp): string {
   let millis = (t.seconds || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis).toISOString();
+}
+
+function longToNumber(long: Long): number {
+  if (long.gt(globalThis.Number.MAX_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (long.lt(globalThis.Number.MIN_SAFE_INTEGER)) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
 }
 
 function isSet(value: any): boolean {
