@@ -132,7 +132,7 @@ function initializeWithServer(initialServer: JonlineServer) {
         const recommendedServer = { host: host, secure: host !== 'localhost' };
         const pinnedServer = { serverId: serverID(recommendedServer), pinned: true };
         const promises: Promise<void>[] = [];
-        if (configuredByDefault) {
+        if (configuredByDefault && host !== primaryServer.host) {
           promises.push(getServerClient(recommendedServer)
             .then(async () => {
               if (pinnedByDefault) {
