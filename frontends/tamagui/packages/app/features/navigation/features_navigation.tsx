@@ -25,6 +25,7 @@ export enum AppSection {
   GROUP = 'group',
   MEDIA = 'media',
   INFO = 'info',
+  AUTH = 'auth',
 }
 
 const MENU_SECTIONS = [
@@ -92,6 +93,8 @@ export function sectionTitle(section: AppSection): string {
       return 'Members';
     case AppSection.MEMBER:
       return 'Member';
+    case AppSection.AUTH:
+      return 'Authentication';
     // default:
     //   return 'Latest';
   }

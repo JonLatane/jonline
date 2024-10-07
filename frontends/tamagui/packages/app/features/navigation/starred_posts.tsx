@@ -21,21 +21,27 @@ type StarredPostFilter = 'posts' | 'events' | undefined;
 
 const selectFilteredPostIds = (
   starredPostFilter: StarredPostFilter
-): Selector<string[]> =>
+): Selector<{ filteredPostIds: string[], hasPosts: boolean, hasEvents: boolean }> =>
   createSelector(
     [(state: RootState) => {
       const { starredPostIds } = state.config;
+      let filteredPostIds: string[];
       if (starredPostFilter === 'posts') {
-        return starredPostIds.map(id => state.posts.entities[id])
+        filteredPostIds = starredPostIds.map(id => state.posts.entities[id])
           .filter(p => p && p?.context !== PostContext.EVENT_INSTANCE)
           .map(p => federatedId(p!));
       } else if (starredPostFilter === 'events') {
-        return starredPostIds.map(id => state.posts.entities[id])
+        filteredPostIds = starredPostIds.map(id => state.posts.entities[id])
           .filter(p => p?.context === PostContext.EVENT_INSTANCE)
           .map(p => federatedId(p!));
       } else {
-        return starredPostIds;
+        filteredPostIds = starredPostIds;
       }
+      return {
+        filteredPostIds,
+        hasPosts: starredPostIds.some(id => [PostContext.POST, PostContext.REPLY].includes(state.posts.entities[id]?.context!)),
+        hasEvents: starredPostIds.some(id => state.posts.entities[id]?.context === PostContext.EVENT_INSTANCE)
+      };
     }],
     (data) => data
   );
@@ -55,7 +61,13 @@ export function StarredPosts({ }: StarredPostsProps) {
     dispatch(setOpenedStarredPost(postId));
   const [starredPostFilter, setStarredPostFilter] = useState<StarredPostFilter>(undefined);
 
-  const filteredPostIds = useAppSelector(selectFilteredPostIds(starredPostFilter));
+  const { filteredPostIds, hasPosts, hasEvents } = useAppSelector(selectFilteredPostIds(starredPostFilter));
+
+  useEffect(() => {
+    if (starredPostFilter && !hasPosts && !hasEvents) {
+      setStarredPostFilter(undefined);
+    }
+  }, [starredPostFilter, hasPosts, hasEvents]);
 
   // const starredPostUnreadCounts: Dictionary<number> = useAppSelector(state => {
   //   const counts = {} as Dictionary<number>;
@@ -143,6 +155,8 @@ export function StarredPosts({ }: StarredPostsProps) {
     }
   }, []);
 
+  const showFilters = hasPosts && hasEvents;
+
   return <AccountOrServerContextProvider value={accountOrServer}>
     <ConversationContextProvider value={conversationContext}>
       <AnimatePresence>
@@ -202,24 +216,30 @@ export function StarredPosts({ }: StarredPostsProps) {
                         </div>,
                         // <div key='flex-1' style={{ flex: 1 }} />
                       ] : [
-                        <div key='posts-filter'>
-                          <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : primaryTextColor)}
-                            onPress={() => setStarredPostFilter(
-                              starredPostFilter === 'posts' ? undefined : 'posts'
-                            )}
-                            transparent
-                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
-                          />
-                        </div>,
-                        <div key='events-filter' style={{ marginRight: 10 }}>
-                          <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : primaryTextColor)}
-                            onPress={() => setStarredPostFilter(
-                              starredPostFilter === 'events' ? undefined : 'events'
-                            )}
-                            transparent
-                            {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
-                          />
-                        </div>,
+                        showFilters
+                          ? <div key='posts-filter'>
+                            <Button icon={menuIcon(AppSection.POSTS, starredPostFilter === 'posts' ? navTextColor : primaryTextColor)}
+                              px='$3'
+                              onPress={() => setStarredPostFilter(
+                                starredPostFilter === 'posts' ? undefined : 'posts'
+                              )}
+                              transparent
+                              {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
+                            />
+                          </div>
+                          : undefined,
+                        showFilters
+                          ? <div key='events-filter' style={{ marginRight: 10 }}>
+                            <Button icon={menuIcon(AppSection.EVENTS, starredPostFilter === 'events' ? navTextColor : primaryTextColor)}
+                              px='$3'
+                              onPress={() => setStarredPostFilter(
+                                starredPostFilter === 'events' ? undefined : 'events'
+                              )}
+                              transparent
+                              {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
+                            />
+                          </div>
+                          : undefined,
                       ]}
                     {basePost
                       ? <div key='post-name' style={{ flex: 1 }}>
@@ -235,35 +255,38 @@ export function StarredPosts({ }: StarredPostsProps) {
                           </YStack>
                         </Button>
                       </div>
-                      : <div key='starred-heading' style={{ flex: 1 }}>
+                      : [
+                        <div key='heading-spacer' style={{ width: showFilters ? undefined : 10 }} />,
+                        <div key='starred-heading' style={{ flex: 1 }}>
 
-                        <Tooltip>
-                          <Tooltip.Trigger>
-                            <FlipMove style={{ width: '100%' }}>
-                              <div key='starred'>
-                                <XStack ai='center' gap='$2'>
-                                  <Heading size='$4' color={primaryTextColor}>Starred</Heading>
-                                  <Info size={16} o={0.5} color={primaryTextColor} />
-                                </XStack>
-                              </div>
-                              {starredPostFilter === 'posts'
-                                ?
-                                <div key='starred-posts'>
-                                  <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Posts</Heading>
+                          <Tooltip>
+                            <Tooltip.Trigger>
+                              <FlipMove style={{ width: '100%' }}>
+                                <div key='heading-spacer' style={{ height: showFilters ? undefined : 5 }} />
+                                <div key='starred'>
+                                  <XStack ai='center' gap='$2'>
+                                    <Heading size='$4' color={primaryTextColor}>Starred</Heading>
+                                    <Info size={16} o={0.5} color={primaryTextColor} />
+                                  </XStack>
                                 </div>
-                                : starredPostFilter === 'events'
+                                {starredPostFilter === 'posts'
                                   ?
-                                  <div key='starred-events'>
-                                    <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Events</Heading>
+                                  <div key='starred-posts'>
+                                    <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Posts</Heading>
                                   </div>
-                                  : undefined}
-                            </FlipMove>
-                          </Tooltip.Trigger>
-                          <Tooltip.Content>
-                            <Paragraph size='$1' >
-                              Starred Posts/Events are completely anonymous and not tracked outside this {browser} session at {location.hostname}.
-                            </Paragraph>
-                            {/* <YStack ai='flex-start'>
+                                  : starredPostFilter === 'events'
+                                    ?
+                                    <div key='starred-events'>
+                                      <Heading size='$5' whiteSpace="nowrap" color={primaryTextColor}>Events</Heading>
+                                    </div>
+                                    : undefined}
+                              </FlipMove>
+                            </Tooltip.Trigger>
+                            <Tooltip.Content>
+                              <Paragraph size='$1' >
+                                Starred Posts/Events are completely anonymous and not tracked outside this {browser} session at {location.hostname}.
+                              </Paragraph>
+                              {/* <YStack ai='flex-start'>
                               <Paragraph size='$1' >
                                 Starred Posts/Events are stored only in your current browser.
                               </Paragraph>
@@ -274,9 +297,10 @@ export function StarredPosts({ }: StarredPostsProps) {
                                 Don't take Star Counts seriously. They are anonymous tallies, easily prone to manipulation, and don't affect who sees anything.
                               </Paragraph>
                             </YStack> */}
-                          </Tooltip.Content>
-                        </Tooltip>
-                      </div>}
+                            </Tooltip.Content>
+                          </Tooltip>
+                        </div>
+                      ]}
                     {/* <div key='flex-2' style={{ flex: 1 }} /> */}
 
                     {eventWithSingleInstance

@@ -70,8 +70,8 @@ pub fn update_post(
                 existing_post.media = request
                     .media
                     .iter()
-                    .map(|m| m.id.to_db_id_or_err("media.id"))
-                    .collect::<Result<Vec<i64>, Status>>()
+                    .map(|m| m.id.to_db_id_or_err("media.id").map(|r| Some(r)))
+                    .collect::<Result<Vec<Option<i64>>, Status>>()
                     .map_err(|_| diesel::result::Error::RollbackTransaction)?;
                 existing_post.embed_link = request.embed_link;
                 existing_post.shareable = request.shareable;

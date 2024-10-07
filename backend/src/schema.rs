@@ -1,4 +1,6 @@
-table! {
+// @generated automatically by Diesel CLI.
+
+diesel::table! {
     event_attendances (id) {
         id -> Int8,
         event_instance_id -> Int8,
@@ -15,7 +17,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     event_instances (id) {
         id -> Int8,
         event_id -> Int8,
@@ -29,7 +31,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     events (id) {
         id -> Int8,
         post_id -> Int8,
@@ -39,7 +41,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     federated_accounts (id) {
         id -> Int8,
         federated_server_id -> Nullable<Int8>,
@@ -48,7 +50,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     federated_profiles (id) {
         id -> Int8,
         user_id -> Int8,
@@ -57,14 +59,14 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     federated_servers (id) {
         id -> Int8,
         server_location -> Varchar,
     }
 }
 
-table! {
+diesel::table! {
     federated_users (id) {
         id -> Int8,
         remote_user_id -> Varchar,
@@ -73,7 +75,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     follows (id) {
         id -> Int8,
         user_id -> Int8,
@@ -84,7 +86,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     group_posts (id) {
         id -> Int8,
         group_id -> Int8,
@@ -96,7 +98,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     groups (id) {
         id -> Int8,
         name -> Varchar,
@@ -118,7 +120,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     media (id) {
         id -> Int8,
         user_id -> Nullable<Int8>,
@@ -137,7 +139,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     memberships (id) {
         id -> Int8,
         user_id -> Int8,
@@ -150,7 +152,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     posts (id) {
         id -> Int8,
         user_id -> Nullable<Int8>,
@@ -161,7 +163,7 @@ table! {
         response_count -> Int4,
         reply_count -> Int4,
         group_count -> Int4,
-        media -> Array<Int8>,
+        media -> Array<Nullable<Int8>>,
         media_generated -> Bool,
         embed_link -> Bool,
         shareable -> Bool,
@@ -176,7 +178,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     push_token_posts (id) {
         id -> Int8,
         push_token_id -> Int8,
@@ -185,7 +187,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     push_tokens (id) {
         id -> Int8,
         token -> Varchar,
@@ -194,7 +196,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     server_configurations (id) {
         id -> Int8,
         active -> Bool,
@@ -215,7 +217,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user_access_tokens (id) {
         id -> Int8,
         refresh_token_id -> Int8,
@@ -225,7 +227,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user_devices (id) {
         id -> Int8,
         user_id -> Int8,
@@ -233,7 +235,7 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user_posts (id) {
         id -> Int8,
         user_id -> Int8,
@@ -243,17 +245,19 @@ table! {
     }
 }
 
-table! {
+diesel::table! {
     user_refresh_tokens (id) {
         id -> Int8,
         user_id -> Int8,
         token -> Varchar,
         created_at -> Timestamp,
         expires_at -> Nullable<Timestamp>,
+        device_name -> Nullable<Varchar>,
+        third_party -> Bool,
     }
 }
 
-table! {
+diesel::table! {
     users (id) {
         id -> Int8,
         username -> Varchar,
@@ -278,31 +282,31 @@ table! {
     }
 }
 
-joinable!(event_attendances -> event_instances (event_instance_id));
-joinable!(event_instances -> events (event_id));
-joinable!(event_instances -> posts (post_id));
-joinable!(events -> posts (post_id));
-joinable!(federated_accounts -> federated_servers (federated_server_id));
-joinable!(federated_accounts -> users (user_id));
-joinable!(federated_profiles -> federated_users (federated_user_id));
-joinable!(federated_profiles -> users (user_id));
-joinable!(group_posts -> groups (group_id));
-joinable!(group_posts -> posts (post_id));
-joinable!(group_posts -> users (user_id));
-joinable!(groups -> media (avatar_media_id));
-joinable!(memberships -> groups (group_id));
-joinable!(memberships -> users (user_id));
-joinable!(posts -> users (user_id));
-joinable!(push_token_posts -> posts (post_id));
-joinable!(push_token_posts -> push_tokens (push_token_id));
-joinable!(push_tokens -> users (user_id));
-joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
-joinable!(user_devices -> users (user_id));
-joinable!(user_posts -> posts (post_id));
-joinable!(user_posts -> users (user_id));
-joinable!(user_refresh_tokens -> users (user_id));
+diesel::joinable!(event_attendances -> event_instances (event_instance_id));
+diesel::joinable!(event_instances -> events (event_id));
+diesel::joinable!(event_instances -> posts (post_id));
+diesel::joinable!(events -> posts (post_id));
+diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
+diesel::joinable!(federated_accounts -> users (user_id));
+diesel::joinable!(federated_profiles -> federated_users (federated_user_id));
+diesel::joinable!(federated_profiles -> users (user_id));
+diesel::joinable!(group_posts -> groups (group_id));
+diesel::joinable!(group_posts -> posts (post_id));
+diesel::joinable!(group_posts -> users (user_id));
+diesel::joinable!(groups -> media (avatar_media_id));
+diesel::joinable!(memberships -> groups (group_id));
+diesel::joinable!(memberships -> users (user_id));
+diesel::joinable!(posts -> users (user_id));
+diesel::joinable!(push_token_posts -> posts (post_id));
+diesel::joinable!(push_token_posts -> push_tokens (push_token_id));
+diesel::joinable!(push_tokens -> users (user_id));
+diesel::joinable!(user_access_tokens -> user_refresh_tokens (refresh_token_id));
+diesel::joinable!(user_devices -> users (user_id));
+diesel::joinable!(user_posts -> posts (post_id));
+diesel::joinable!(user_posts -> users (user_id));
+diesel::joinable!(user_refresh_tokens -> users (user_id));
 
-allow_tables_to_appear_in_same_query!(
+diesel::allow_tables_to_appear_in_same_query!(
     event_attendances,
     event_instances,
     events,

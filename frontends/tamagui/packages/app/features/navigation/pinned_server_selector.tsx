@@ -20,6 +20,7 @@ export type PinnedServerSelectorProps = {
   pagesStatuses?: FederatedPagesStatus[];
   simplified?: boolean;
   showShrinkPreviews?: boolean;
+  withServerPinning?: boolean;
 };
 
 
@@ -40,8 +41,9 @@ export function PinnedServerSelector({
   transparent,
   affectsNavigation,
   pagesStatuses,
-  simplified,
-  showShrinkPreviews
+  simplified = false,
+  showShrinkPreviews,
+  withServerPinning = simplified
 }: PinnedServerSelectorProps) {
   const mediaQuery = useMedia();
   const dispatch = useAppDispatch();
@@ -106,6 +108,7 @@ export function PinnedServerSelector({
   // const { transparentBackgroundColor } = useServerTheme();
   const renderPinnedServers = showPinnedServers || simplified && !disabled;
   const childMargins = { paddingTop: 2, paddingBottom: 2 };
+  // debugger
   return <div id={affectsNavigation ? 'navigation-pinned-servers' : undefined} style={{ width: '100%' }} >
     <FlipMove style={{ width: '100%' }} >
       {[
@@ -148,6 +151,9 @@ export function PinnedServerSelector({
                     : undefined}
 
                   <Button key='pinned-server-toggle' py='$1'
+                    disabled={!withServerPinning}
+                    o={withServerPinning ? 1 : 0}
+                    pointerEvents={withServerPinning ? 'auto' : 'none'}
                     pl='$2' pr='$1'
                     h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
                     <XStack mr='auto' maw='100%' ai='center'>
@@ -160,6 +166,9 @@ export function PinnedServerSelector({
                     </XStack>
                   </Button>
                   <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
+                    disabled={!withServerPinning}
+                    o={withServerPinning ? 1 : 0}
+                    pointerEvents={withServerPinning ? 'auto' : 'none'}
                     onPress={toggleExcludeCurrentServer}>
                     <XStack ml='auto' gap='$2'>
                       {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
@@ -187,7 +196,7 @@ export function PinnedServerSelector({
               }
             </XStack>
           </div>,
-          showPinnedServers ? <div key='server-selector'>
+          showPinnedServers && withServerPinning ? <div key='server-selector'>
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
               <XStack mx='$3'
                 ai='center' gap='$2' key='available-servers'>
@@ -197,7 +206,7 @@ export function PinnedServerSelector({
                       availableServers.map(server => {
                         let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
                         return <div key={`server-${server.host}`}
-                         style={{ display: 'flex', marginRight: 5, ...childMargins }}>
+                          style={{ display: 'flex', marginRight: 5, ...childMargins }}>
                           <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
                         </div>;
                       }),

@@ -26,7 +26,7 @@ async fn main() {
         for post in posts {
             log::info!("Removing Media {} from Post {}", media.id, post.id);
             let mut post_media = post.media.clone();
-            post_media.retain(|&x| x != media.id);
+            post_media.retain(|&x| x != Some(media.id));
             let _ = diesel::update(posts::table.find(post.id))
                 .set(posts::media.eq(post_media))
                 .execute(&mut conn)

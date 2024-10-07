@@ -48,7 +48,7 @@ pub struct Post {
     pub reply_count: i32,
     pub group_count: i32,
 
-    pub media: Vec<i64>,
+    pub media: Vec<Option<i64>>,
     pub media_generated: bool,
     pub embed_link: bool,
     pub shareable: bool,

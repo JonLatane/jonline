@@ -10,7 +10,7 @@ import { publicVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { createEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from "./event_actions";
+import { createEvent, loadEvent, loadEventsPage, updateEvent } from "./event_actions";
 import { loadGroupPostsPage } from "./group_actions";
 import { LoadPost, createPost, defaultPostListingType, deletePost, loadPost, loadPostReplies, loadPostsPage, replyToPost, updatePost } from './post_actions';
 import { loadUserPosts, loadUserReplies } from "./user_actions";
@@ -226,7 +226,6 @@ export const postsSlice = createSlice({
       postsAdapter.upsertMany(state, federatedEntities(posts, action));
     };
     builder.addCase(loadEvent.fulfilled, saveEventPosts);
-    builder.addCase(loadEventByInstance.fulfilled, saveEventPosts);
     builder.addCase(updateEvent.fulfilled, saveEventPosts);
     builder.addCase(createEvent.fulfilled, saveEventPosts);
     builder.addCase(loadEventsPage.fulfilled, (state, action) => {

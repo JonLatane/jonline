@@ -1,10 +1,10 @@
 import { AnimatePresence, Button, Paragraph, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, standardHorizontalAnimation, useMedia, useWindowDimensions } from "@jonline/ui";
-import { ChevronLeft, ChevronRight, Home as HomeIcon } from '@tamagui/lucide-icons';
+import { ChevronLeft, ChevronRight, Home as HomeIcon, PanelTopClose, PanelTopOpen } from '@tamagui/lucide-icons';
 import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from 'app/contexts';
 import { AuthSheetContextProvider, useNewAuthSheetContext } from "app/contexts/auth_sheet_context";
 import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
-import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setForceHideAccountSheetGuide, store, useRootSelector, useServerTheme } from "app/store";
+import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setForceHideAccountSheetGuide, setHideNavigation, store, useRootSelector, useServerTheme } from "app/store";
 import FlipMove from "lumen5-react-flip-move";
 import { useEffect, useState } from "react";
 import { useLink } from "solito/link";
@@ -37,6 +37,7 @@ export type TabsNavigationProps = {
   bottomChrome?: React.ReactNode;
   loading?: boolean;
   showShrinkPreviews?: boolean;
+  minimal?: boolean;
 };
 
 // export const tabNavBaseHeight = 64;
@@ -60,7 +61,11 @@ export const useTabsNavigationHeight = () => {
     _setShowPinnedServers(showPinnedServers);
   }, [showPinnedServers]);
 
-  return { topNavHeight, bottomNavHeight };
+  function remeasure() {
+    _setShowPinnedServers(showPinnedServers);
+  }
+
+  return { topNavHeight, bottomNavHeight, remeasure };
 }
 
 export function TabsNavigation({
@@ -77,7 +82,8 @@ export function TabsNavigation({
   topChrome,
   bottomChrome,
   loading,
-  showShrinkPreviews
+  showShrinkPreviews,
+  minimal
 }: TabsNavigationProps) {
   const mediaQuery = useMedia()
   const mediaContext = useNewMediaContext();
@@ -167,6 +173,7 @@ export function TabsNavigation({
   const showServerInfo = (primaryEntity && primaryEntity.serverHost !== currentServer?.host) ||
     (selectedGroup && selectedGroup.serverHost !== currentServer?.host);
   const shrinkHomeButton = !!selectedGroup || showServerInfo;
+  const { alwaysShowHideButton } = useLocalConfiguration();
   const hideNavigation = useHideNavigation();
 
   useEffect(() => {
@@ -322,44 +329,70 @@ export function TabsNavigation({
                     {showServerInfo
                       ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                       : undefined}
-                    <GroupsSheet key='main' isPrimaryNavigation
-                      open={groupsSheetOpen}
-                      setOpen={setGroupsSheetOpen}
-                    // selectedGroup={selectedGroup}
-                    // primaryEntity={primaryEntity}
-                    />
-
-                    <GroupDetailsSheet />
-
-                    <MediaSheet />
-
                     <AuthSheet />
+                    {minimal ? undefined : <>
+                      <GroupsSheet key='main' isPrimaryNavigation
+                        open={groupsSheetOpen}
+                        setOpen={setGroupsSheetOpen}
+                      // selectedGroup={selectedGroup}
+                      // primaryEntity={primaryEntity}
+                      />
 
-                    {!scrollGroupsSheet
-                      ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
-                        <GroupsSheetButton key='main' isPrimaryNavigation
-                          selectedGroup={selectedGroup}
-                          open={groupsSheetOpen}
-                          setOpen={setGroupsSheetOpen} />
+                      <GroupDetailsSheet />
 
-                      </XStack>
-                      : undefined}
-                    <ScrollView horizontal>
-                      <XStack ai='center'>
-                        {!scrollGroupsSheet
-                          ? undefined
-                          : <XStack ml='$1' my='auto' className='main-groups-button'>
-                            <GroupsSheetButton key='main' isPrimaryNavigation
-                              selectedGroup={selectedGroup}
-                              open={groupsSheetOpen}
-                              setOpen={setGroupsSheetOpen} />
+                      <MediaSheet />
+
+
+                      {!scrollGroupsSheet
+                        ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
+                          <GroupsSheetButton key='main' isPrimaryNavigation
+                            selectedGroup={selectedGroup}
+                            open={groupsSheetOpen}
+                            setOpen={setGroupsSheetOpen} />
+
+                        </XStack>
+                        : undefined}
+                      <ScrollView horizontal>
+                        <XStack ai='center'>
+                          {!scrollGroupsSheet
+                            ? undefined
+                            : <XStack ml='$1' my='auto' className='main-groups-button'>
+                              <GroupsSheetButton key='main' isPrimaryNavigation
+                                selectedGroup={selectedGroup}
+                                open={groupsSheetOpen}
+                                setOpen={setGroupsSheetOpen} />
+                            </XStack>
+                          }
+                          <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                        </XStack>
+                      </ScrollView>
+                      <XStack f={1} />
+                      {!withServerPinning &&
+                        (alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short))
+                        ? <Button key='hide-nav-button' py='$1' px='$2' h='$3' transparent
+                          // animation='standard' {...reverseHorizontalAnimation}
+                          onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
+                          <XStack position='absolute' animation='standard'
+                            key='open-icon'
+                            o={hideNavigation ? 1 : 0}
+                            transform={[{ translateY: hideNavigation ? 0 : 10 }]}
+                          // scale={hideNavigation ? 1 : 2}
+                          >
+                            <PanelTopOpen size='$1' color={primaryTextColor} />
                           </XStack>
-                        }
-                        <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
-                      </XStack>
-                    </ScrollView>
-                    <XStack f={1} />
-                    <StarredPosts />
+                          <XStack position='absolute' animation='standard'
+                            key='close-icon'
+                            o={hideNavigation ? 0 : 1}
+                            transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
+                          // scale={hideNavigation ? 0.2 : 1}
+                          >
+                            <PanelTopClose size='$1' color={primaryTextColor} />
+                          </XStack>
+                        </Button>
+                        : undefined}
+
+                      <StarredPosts />
+                    </>}
                     {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
                     <XStack w={5} />
                   </XStack>}
@@ -377,6 +410,7 @@ export function TabsNavigation({
                       show={(withServerPinning && !selectedGroup) || hideNavigation}
                       showShrinkPreviews={showShrinkPreviews}
                       affectsNavigation
+                      withServerPinning={withServerPinning}
                       transparent />
                   </XStack>
 

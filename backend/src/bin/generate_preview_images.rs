@@ -11,12 +11,12 @@ use headless_chrome::protocol::cdp::Page::CaptureScreenshotFormatOption::*;
 use headless_chrome::{protocol::cdp::Target::CreateTarget, Browser};
 
 use jonline::db_connection::PgPooledConnection;
-use jonline::{init_crypto, marshaling::*};
 use jonline::models;
 use jonline::models::{get_user, Post};
 use jonline::protos::Visibility;
-use jonline::{db_connection, init_bin_logging, minio_connection};
 use jonline::schema::{media, posts};
+use jonline::{db_connection, init_bin_logging, minio_connection};
+use jonline::{init_crypto, marshaling::*};
 use s3::Bucket;
 use uuid::Uuid;
 
@@ -106,14 +106,11 @@ async fn update_post(
                         .get_result::<models::Media>(conn)
                         .unwrap();
 
-                    let mut new_media = vec![media.id];
+                    let mut new_media = vec![Some(media.id)];
                     new_media.append(&mut post.media.clone());
                     update(posts::table)
                         .filter(posts::id.eq(post.id))
-                        .set((
-                            posts::media.eq(new_media),
-                            posts::media_generated.eq(true)
-                        ))
+                        .set((posts::media.eq(new_media), posts::media_generated.eq(true)))
                         .execute(conn)
                         .unwrap();
                 }

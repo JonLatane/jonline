@@ -263,7 +263,7 @@ export function PostDetailsScreen() {
                 }}>
                 {mediaQuery.gtSm
                   ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
-                    {subjectPostTitle || 'Loading...'}
+                    {subjectPostTitle ?? (failedToLoadPost ? 'Post Not Found' : 'Loading...')}
                   </Paragraph>
                   : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>{subjectPost?.context === PostContext.REPLY ? 'Comments' : 'Post'}</Heading>}
               </Button>

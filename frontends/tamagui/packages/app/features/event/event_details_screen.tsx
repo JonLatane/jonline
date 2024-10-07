@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Toolt
 import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { federateId, loadEventByInstance, parseFederatedId, selectEventById, selectPostById, serverID, useServerTheme } from 'app/store';
+import { federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -47,8 +47,11 @@ export function EventDetailsScreen() {
   const subjectEvent = useAppSelector(state => eventId
     ? selectEventById(state.events, eventId)
     : undefined);
-  const subjectPost = useAppSelector((state) =>
-    selectPostById(state.posts, federateId(subjectEvent?.post?.id ?? '', serverHost)));
+  const subjectPostId = federateId(subjectEvent?.post?.id ?? '', serverHost);
+
+  const subjectPost = useAppSelector((state) => selectPostById(state.posts, subjectPostId));
+
+  // debugger
 
   const subjectInstances = subjectEvent?.instances;
   const [subjectInstance, setSubjectInstance] = useState<EventInstance | undefined>(undefined);
@@ -95,12 +98,9 @@ export function EventDetailsScreen() {
 
   useEffect(() => {
     if (instanceId && serverInstanceId && server) {
-      if ((!subjectEvent || !loadedEvent) && !loadingEvent) {
+      if ((!subjectEvent || !loadedEvent) && !loadingEvent && !failedToLoadEvent) {
         setLoadingEvent(true);
-        // console.log('loadEventByInstance', instanceId!)
-        // setTimeout(() =>
-        // console.log('loadEventByInstance', { ...accountOrServer, instanceId: serverInstanceId });
-        dispatch(loadEventByInstance({ ...accountOrServer, instanceId: serverInstanceId }))
+        dispatch(loadEvent({ ...accountOrServer, instanceId: serverInstanceId }))
           .then((action) => {
             setTimeout(() => setLoadingEvent(false), 100);
             // setLoadedEvent(true);
@@ -163,7 +163,7 @@ export function EventDetailsScreen() {
                 }}>
                 {mediaQuery.gtSm
                   ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
-                    {subjectPost?.title || 'Loading...'}
+                    {subjectPost?.title ?? (failedToLoadEvent ? 'Event Not Found' : 'Loading...')}
                   </Paragraph>
                   : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Event</Heading>}
               </Button>
@@ -209,7 +209,7 @@ export function EventDetailsScreen() {
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
-                  debugger;
+                  // debugger;
                   if (chatUI) {
                     scrollToCommentsBottom(federatedInstancePostId);
                   } else {

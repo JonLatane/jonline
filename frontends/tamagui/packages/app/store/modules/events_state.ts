@@ -9,7 +9,7 @@ import {
 import moment from "moment";
 import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { LoadEvent, LoadEventByInstance, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventByInstance, loadEventsPage, updateEvent } from './event_actions';
+import { LoadEvent, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
@@ -26,6 +26,7 @@ export interface EventsState {
   eventInstancePages: Federated<GroupedEventInstancePages>;
   failedEventIds: string[];
   failedInstanceIds: string[];
+  failedPostIds: string[];
   // Maps Post IDs to Event IDs.
   postEvents: Dictionary<string>;
   // Maps Post IDs to EventInstance IDs.
@@ -54,6 +55,7 @@ const initialState: EventsState = {
   pagesStatus: createFederatedPagesStatus(),
   failedEventIds: [],
   failedInstanceIds: [],
+  failedPostIds: [],
   eventInstancePages: createFederated({}),
   instanceEvents: {},
   postEvents: {},
@@ -167,17 +169,16 @@ export const eventsSlice = createSlice({
       mergeEvent(state, event, action);
     };
     builder.addCase(loadEvent.fulfilled, saveSingleEvent);
-    builder.addCase(loadEventByInstance.fulfilled, saveSingleEvent);
     builder.addCase(loadEvent.rejected, (state, action) => {
-      const eventId = (action.meta.arg as LoadEvent).id;
+      const { id: eventId, postId, instanceId } = action.meta.arg;
       if (eventId) {
-        state.failedEventIds.push(federateId((action.meta.arg as LoadEvent).id ?? '', action));
+        state.failedEventIds.push(federateId(eventId, action));
       }
-    });
-
-    builder.addCase(loadEventByInstance.rejected, (state, action) => {
-      if (action.meta.arg.server) {
-        state.failedInstanceIds.push(federateId((action.meta.arg as LoadEventByInstance).instanceId, action));
+      if (postId) {
+        state.failedPostIds.push(federateId(postId, action));
+      }
+      if (instanceId) {
+        state.failedInstanceIds.push(federateId(instanceId, action));
       }
     });
 

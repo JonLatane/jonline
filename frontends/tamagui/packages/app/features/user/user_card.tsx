@@ -330,12 +330,12 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
 
             <MembershipManager user={user} />
 
-            {!isPreview && user.hasAdvancedData &&
+            {/* {!isPreview && user.hasAdvancedData &&
               (user.federatedProfiles.length > 0 || isCurrentUser)
               ? <ScrollView horizontal>
                 <FederatedProfiles user={user} />
               </ScrollView>
-              : undefined}
+              : undefined} */}
           </YStack>
         </Card.Footer>
         {imagePostBackgrounds

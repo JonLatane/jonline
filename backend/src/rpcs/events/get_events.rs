@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use diesel::*;
 use log::info;
 use tonic::{Code, Status};
@@ -14,6 +12,7 @@ use crate::protos::*;
 use crate::rpcs::validate_group_permission;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::*;
+use prost_wkt_types::Timestamp;
 
 const PAGE_SIZE: i64 = 1000;
 
@@ -66,14 +65,20 @@ pub fn get_events(
 
 macro_rules! query_visible_events {
     ($user:expr, $timefilter:expr) => {{
+        let instance_posts = alias!(posts as instance_posts);
+        let instance_users = alias!(users as instance_users);
+
         let ends_after = $timefilter
             .map(|f| f.ends_after.map(|t| t.to_db()))
             .flatten()
-            .unwrap_or(SystemTime::now());
-        println!("ends_after={:?}", ends_after);
-
-        let instance_posts = alias!(posts as instance_posts);
-        let instance_users = alias!(users as instance_users);
+            .unwrap_or(
+                Timestamp {
+                    seconds: 100,
+                    nanos: 0,
+                }
+                .to_db(),
+            );
+        info!("query_visible_events ends_after={:?}", ends_after);
 
         event_instances::table
             .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
@@ -108,6 +113,7 @@ macro_rules! query_visible_events {
                 instance_posts.fields(posts::all_columns),
                 instance_users.fields(AUTHOR_COLUMNS).nullable(),
             ))
+            //TODO UNCOMMENT THISSSS
             .filter(
                 posts::visibility
                     .eq_any(public_string_visibilities($user))
@@ -139,8 +145,12 @@ macro_rules! query_visible_events {
                         .field(posts::user_id)
                         .eq($user.as_ref().map(|u| u.id).unwrap_or(0))),
             )
+            .filter(
+                posts::moderation
+                    .eq_any(PASSING_MODERATIONS)
+                    .or(posts::user_id.eq($user.as_ref().map(|u| u.id).unwrap_or(0))),
+            )
             .filter(posts::user_id.is_not_null())
-            // .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
             .filter(event_instances::ends_at.gt(ends_after))
             .order(event_instances::starts_at)
             .distinct()
@@ -209,6 +219,7 @@ fn get_event_by_instance_id(
         user,
         conn,
     )?;
+    info!("get_event_by_instance_id instance: {:?}", instance);
     get_event_by_id(user, &instance.event_id.to_proto_id(), conn)
 }
 
@@ -250,39 +261,45 @@ fn get_event_by_id(
         Ok(db_id) => db_id,
         Err(_) => return Err(Status::new(Code::InvalidArgument, "post_id_invalid")),
     };
-    let event = query_visible_events!(user, None::<TimeFilter>)
-        .select((
-            events::all_columns,
-            posts::all_columns,
-            AUTHOR_COLUMNS.nullable(),
-        ))
-        .filter(events::id.eq(event_db_id))
-        .get_result::<(models::Event, models::Post, Option<models::Author>)>(conn)
-        .map(|(event, event_post, author)| {
-            let instances = models::get_event_instances(event_db_id, user, conn).unwrap_or(vec![]);
-            MarshalableEvent(
-                event,
-                MarshalablePost(event_post, author, None, vec![]),
-                instances
-                    .iter()
-                    .map(|(instance, instance_post, instance_author)| {
-                        MarshalableEventInstance(
-                            instance.clone(),
-                            MarshalablePost(
-                                instance_post.clone(),
-                                instance_author.clone(),
-                                None,
-                                vec![],
-                            ),
-                        )
-                    })
-                    .collect(),
-            )
-        });
+    info!("get_event_by_id event_db_id: {}", event_db_id);
+    let query = query_visible_events!(user, None::<TimeFilter>).filter(events::id.eq(event_db_id));
+    let binding = query.load::<EventLoadData>(conn).unwrap();
+    let event_data: Vec<&EventLoadData> = binding.iter().collect();
+    info!("get_event_by_id event_data: {:?}", event_data);
+    if event_data.is_empty() {
+        // info!("get_event_by_id event_data.is_empty");
+        return Err(Status::new(Code::NotFound, "event_not_found"));
+    }
 
-    event
-        .map(|e| vec![e])
-        .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
+    let event_model = event_data[0].1.clone();
+    let event_post = event_data[0].2.clone();
+    let event_author = event_data[0].3.clone();
+
+    let event = MarshalableEvent(
+        event_model,
+        MarshalablePost(event_post, event_author, None, vec![]),
+        event_data
+            .iter()
+            .map(
+                |(instance, _event, _event_post, _event_author, instance_post, instance_author)| {
+                    MarshalableEventInstance(
+                        instance.clone(),
+                        MarshalablePost(
+                            instance_post.clone(),
+                            instance_author.clone(),
+                            None,
+                            vec![],
+                        ),
+                    )
+                },
+            )
+            .collect(),
+    );
+    info!("get_event_by_id event: {:?}", event);
+
+    Ok(vec![event])
+    // .map(|e| vec![e])
+    // .map_err(|_| Status::new(Code::NotFound, "event_not_found"))
 }
 
 fn get_group_events(

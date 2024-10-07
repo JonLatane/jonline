@@ -115,7 +115,7 @@ export function AuthSheet({ }: AuthSheetProps) {
       }
     });
   }, [server, newAccountUser, newAccountPass]);
-  const {push} = useRouter();
+  const { push } = useRouter();
   const createServerAccount = useCallback(() => {
     dispatch(clearAccountAlerts());
     dispatch(createAccount({
@@ -298,7 +298,7 @@ export function AuthSheet({ }: AuthSheetProps) {
                       ? <XStack w='100%' animation='standard'  {...standardAnimation}>
                         <Input secureTextEntry w='100%'
                           ref={passwordRef}
-                          textContentType={loginMethod == LoginMethod.Login ? "password" : "newPassword"}
+                          textContentType={loginMethod === LoginMethod.Login ? "password" : "newPassword"}
                           placeholder="Password"
                           editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
                           onKeyPress={(e) => {

@@ -264,7 +264,106 @@ class LoginRequest extends $pb.GeneratedMessage {
   void clearUserId() => clearField(5);
 }
 
-/// Returned when creating an account or logging in.
+///  Request to create a new third-party refresh token. Unlike `LoginRequest` or `CreateAccountRequest`, the user must be logged in to create a third-party refresh token.
+///
+///  Generally, this is used to create a refresh token for another Jonline instance,
+///  e.g., accessing `bullcity.social/jon`'s data from `jonline.io`. On the web side, this is implemented as follows:
+///
+///  1. When the `bullcity.social` user wants to login on `jonline.io`, `bullcity.social` will redirect
+///  the user to `jonline.io/third_party_auth?to=bullcity.social`.
+///  2. `jonline.io` will force the user to login if needed on this page.
+///  3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh + access token for `bullcity.social`.
+///  4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&token=<Base64RefreshTokenResponse>` with the refresh token POSTed in form data.
+///      * (`<Base64RefreshTokenResponse>` is a base64-encoded `RefreshTokenResponse` message.)
+///  6. `bullcity.social` will ensure it can `GetCurrentUser` on `jonline.io` with its new auth token.
+///  5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
+///  7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).
+///
+///  Note that refresh tokens
+class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
+  factory CreateThirdPartyRefreshTokenRequest({
+    $9.Timestamp? expiresAt,
+    $core.String? userId,
+    $core.String? deviceName,
+  }) {
+    final $result = create();
+    if (expiresAt != null) {
+      $result.expiresAt = expiresAt;
+    }
+    if (userId != null) {
+      $result.userId = userId;
+    }
+    if (deviceName != null) {
+      $result.deviceName = deviceName;
+    }
+    return $result;
+  }
+  CreateThirdPartyRefreshTokenRequest._() : super();
+  factory CreateThirdPartyRefreshTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory CreateThirdPartyRefreshTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateThirdPartyRefreshTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOS(3, _omitFieldNames ? '' : 'userId')
+    ..aOS(4, _omitFieldNames ? '' : 'deviceName')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  CreateThirdPartyRefreshTokenRequest clone() => CreateThirdPartyRefreshTokenRequest()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  CreateThirdPartyRefreshTokenRequest copyWith(void Function(CreateThirdPartyRefreshTokenRequest) updates) => super.copyWith((message) => updates(message as CreateThirdPartyRefreshTokenRequest)) as CreateThirdPartyRefreshTokenRequest;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static CreateThirdPartyRefreshTokenRequest create() => CreateThirdPartyRefreshTokenRequest._();
+  CreateThirdPartyRefreshTokenRequest createEmptyInstance() => create();
+  static $pb.PbList<CreateThirdPartyRefreshTokenRequest> createRepeated() => $pb.PbList<CreateThirdPartyRefreshTokenRequest>();
+  @$core.pragma('dart2js:noInline')
+  static CreateThirdPartyRefreshTokenRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<CreateThirdPartyRefreshTokenRequest>(create);
+  static CreateThirdPartyRefreshTokenRequest? _defaultInstance;
+
+  /// The third-party refresh token's expiration time.
+  @$pb.TagNumber(2)
+  $9.Timestamp get expiresAt => $_getN(0);
+  @$pb.TagNumber(2)
+  set expiresAt($9.Timestamp v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasExpiresAt() => $_has(0);
+  @$pb.TagNumber(2)
+  void clearExpiresAt() => clearField(2);
+  @$pb.TagNumber(2)
+  $9.Timestamp ensureExpiresAt() => $_ensure(0);
+
+  /// The third-party refresh token's user ID.
+  @$pb.TagNumber(3)
+  $core.String get userId => $_getSZ(1);
+  @$pb.TagNumber(3)
+  set userId($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasUserId() => $_has(1);
+  @$pb.TagNumber(3)
+  void clearUserId() => clearField(3);
+
+  /// The third-party refresh token's device name.
+  @$pb.TagNumber(4)
+  $core.String get deviceName => $_getSZ(2);
+  @$pb.TagNumber(4)
+  set deviceName($core.String v) { $_setString(2, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasDeviceName() => $_has(2);
+  @$pb.TagNumber(4)
+  void clearDeviceName() => clearField(4);
+}
+
+/// Returned when creating an account, logging in, or creating a third-party refresh token.
 class RefreshTokenResponse extends $pb.GeneratedMessage {
   factory RefreshTokenResponse({
     ExpirableToken? refreshToken,
@@ -685,6 +784,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
     $9.Timestamp? expiresAt,
     $core.String? deviceName,
     $core.bool? isThisDevice,
+    $core.bool? thirdParty,
   }) {
     final $result = create();
     if (id != null) {
@@ -699,6 +799,9 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
     if (isThisDevice != null) {
       $result.isThisDevice = isThisDevice;
     }
+    if (thirdParty != null) {
+      $result.thirdParty = thirdParty;
+    }
     return $result;
   }
   RefreshTokenMetadata._() : super();
@@ -710,6 +813,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
     ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
     ..aOS(3, _omitFieldNames ? '' : 'deviceName')
     ..aOB(4, _omitFieldNames ? '' : 'isThisDevice')
+    ..aOB(5, _omitFieldNames ? '' : 'thirdParty')
     ..hasRequiredFields = false
   ;
 
@@ -776,6 +880,15 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   $core.bool hasIsThisDevice() => $_has(3);
   @$pb.TagNumber(4)
   void clearIsThisDevice() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.bool get thirdParty => $_getBF(4);
+  @$pb.TagNumber(5)
+  set thirdParty($core.bool v) { $_setBool(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasThirdParty() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearThirdParty() => clearField(5);
 }
 
 

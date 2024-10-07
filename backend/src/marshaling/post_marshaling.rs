@@ -31,17 +31,19 @@ pub fn convert_posts(data: &Vec<MarshalablePost>, conn: &mut PgPooledConnection)
             let mut ids = post.0.media.to_owned();
             post.1
                 .as_ref()
-                .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+                .map(|a| a.avatar_media_id.map(|id| ids.push(Some(id))));
             post.3.iter().for_each(|reply| {
                 ids.extend(reply.0.media.iter());
                 reply
                     .1
                     .as_ref()
-                    .map(|a| a.avatar_media_id.map(|id| ids.push(id)));
+                    .map(|a| a.avatar_media_id.map(|id| ids.push(Some(id))));
             });
             ids
         })
         .flatten()
+        .filter(|v| v.is_some())
+        .map(|v| v.unwrap())
         .collect();
 
     let lookup = load_media_lookup(media_ids, conn);
@@ -79,8 +81,11 @@ impl ToProtoMarshalablePost for MarshalablePost {
                 Some(lookup) => post
                     .media
                     .iter()
-                    .map(|v| match lookup.get(v) {
-                        Some(media) => Some(media.to_proto()),
+                    .map(|v| match v {
+                        Some(v) => match lookup.get(v) {
+                            Some(media) => Some(media.to_proto()),
+                            None => None,
+                        }
                         None => None,
                     })
                     .filter(|v| v.is_some())

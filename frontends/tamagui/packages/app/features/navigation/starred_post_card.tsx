@@ -115,9 +115,9 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
       ...event,
       instances: [targetInstance]
     } : undefined;
-
+  const hasFailedToLoadEvent = useAppSelector(state => state.events.failedPostIds.includes(postId));
   useEffect(() => {
-    if (isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent) {
+    if (isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent) {
       console.log('StarredPosts: Fetching event by postId', postId);
       setLoadingEvent(true);
       dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {

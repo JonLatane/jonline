@@ -1,8 +1,8 @@
 import { FederatedAccount } from "@jonline/api";
-import { Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack } from "@jonline/ui";
-import { AlertCircle, CheckCircle, X as XIcon } from '@tamagui/lucide-icons';
-import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch } from "app/hooks";
-import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, useServerTheme } from 'app/store';
+import { AnimatePresence, Button, Heading, Paragraph, Popover, ScrollView, standardAnimation, Tooltip, XStack, YStack } from "@jonline/ui";
+import { AlertCircle, CheckCircle, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
+import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
+import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, setShowPinnedServers, useServerTheme } from 'app/store';
 import { themedButtonBackground } from "app/utils";
 import { useEffect, useState } from "react";
 import FlipMove from 'lumen5-react-flip-move';
@@ -15,6 +15,7 @@ import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
 
 interface Props {
   user: FederatedUser;
+  onShowHide?: () => void;
 }
 
 export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
@@ -31,32 +32,63 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
     !profiles.some(profile => profile.host === account.server.host && profile.userId === account.user.id)
   );
 
-  return <YStack mb={profiles.length > 0 || isCurrentUser ? '$2' : undefined}>
-    {profiles.length > 0 ? <Heading size='$1'>Other Profiles</Heading> : undefined}
-    <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
-      {profiles.map(profile =>
-        <div key={`profile-${profile.userId}@${profile.host}`} style={{ marginRight: 3, marginLeft: 3 }}>
-          <FederatedProfileSelector user={user} profile={profile} />
-        </div>)}
-      {isCurrentUser && federableAccounts.length > 0
-        ? <div key='federate-profile' style={{ marginRight: 3, marginLeft: 3 }}>
-          <Popover allowFlip>
-            <Popover.Trigger>
-              <Button>
-                Link Profile...
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content>
-              <ScrollView w='100%' h='100%'>
-                {federableAccounts.map(account =>
-                  <FederatedProfileCreator key={accountID(account)} user={user} account={account} />
-                )}
-              </ScrollView>
-            </Popover.Content>
-          </Popover>
-        </div>
+  const { showPinnedServers } = useLocalConfiguration();
+
+  // const showOtherProfiles = showPinnedServers;
+  // const dispatch = useAppDispatch();
+  // const setShowOtherProfiles = (show: boolean) => dispatch(setShowPinnedServers(show));
+
+  const [showOtherProfiles, setShowOtherProfiles] = useState(showPinnedServers);
+  // useEffect(() => { dispatch(setShowPinnedServers(showOtherProfiles)) }, [showOtherProfiles]);
+
+  const showOtherProfilesButton = profiles.length > 0 || isCurrentUser;
+  return <YStack w='100%'>
+    {showOtherProfilesButton ?
+      <Button h='auto' w='100%' transparent px='$2' onPress={() => setShowOtherProfiles(!showOtherProfiles)}>
+        <XStack mr='auto' maw='100%' ai='center'>
+          <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+            Other Profiles
+          </Paragraph>
+          <XStack my='auto' animation='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
+            <ChevronRight size='$1' />
+          </XStack>
+        </XStack>
+      </Button> : undefined}
+    <AnimatePresence>
+      {showOtherProfiles
+        ? <XStack w='100%' animation='standard' {...standardAnimation}>
+          <ScrollView horizontal w='100%'>
+            <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+              {[
+                ...profiles.map(profile =>
+                  <div key={`profile-${profile.userId}@${profile.host}`} style={{ marginRight: 3, marginLeft: 3 }}>
+                    <FederatedProfileSelector user={user} profile={profile} />
+                  </div>),
+                isCurrentUser && federableAccounts.length > 0
+                  ? <div key='federate-profile' style={{ marginRight: 3, marginLeft: 3 }}>
+                    <Popover allowFlip>
+                      <Popover.Trigger>
+                        <Button>
+                          Link Profile...
+                        </Button>
+                      </Popover.Trigger>
+                      <Popover.Content>
+                        <ScrollView w='100%' h='100%'>
+                          {federableAccounts.map(account =>
+                            <FederatedProfileCreator key={accountID(account)} user={user} account={account} />
+                          )}
+                        </ScrollView>
+                      </Popover.Content>
+                    </Popover>
+                  </div>
+                  : undefined
+              ]}
+            </FlipMove>
+          </ScrollView>
+        </XStack>
         : undefined}
-    </FlipMove>
+
+    </AnimatePresence>
   </YStack >
 }
 
@@ -112,14 +144,14 @@ const FederatedProfileSelector: React.FC<{
 
   const { navAnchorColor: validatedColor } = useServerTheme(useCurrentServer());
 
-  return <YStack ai='center' gap='$2'>
+  return <XStack gap='$2'>
     <Button h='auto' {...(profileUser ? link : {})} {...themedButtonBackground(primaryColor, primaryTextColor)}>
       <YStack ai='center' gap='$1' py='$1'>
         <AccountAvatarAndUsername /*account={profileAccount}*/ user={profileUser} textColor={primaryTextColor} />
         <ServerNameAndLogo server={server} textColor={primaryTextColor} />
       </YStack>
     </Button>
-    <XStack ai='center' gap='$3'>
+    <XStack ai='center' gap='$3' mt='auto' mb='$1' ml={-32}>
       {validated
         ? <Tooltip>
           <Tooltip.Trigger>
@@ -145,7 +177,7 @@ const FederatedProfileSelector: React.FC<{
         ? <Button mt='$1' circular size='$1' icon={XIcon} onPress={defederateProfile} />
         : undefined}
     </XStack>
-  </YStack>;
+  </XStack>;
 }
 
 

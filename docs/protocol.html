@@ -169,6 +169,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <li><a href="#jonline-AccessTokenRequest">AccessTokenRequest</a></li>
           <li><a href="#jonline-AccessTokenResponse">AccessTokenResponse</a></li>
           <li><a href="#jonline-CreateAccountRequest">CreateAccountRequest</a></li>
+          <li><a href="#jonline-CreateThirdPartyRefreshTokenRequest">CreateThirdPartyRefreshTokenRequest</a></li>
           <li><a href="#jonline-ExpirableToken">ExpirableToken</a></li>
           <li><a href="#jonline-LoginRequest">LoginRequest</a></li>
           <li><a href="#jonline-RefreshTokenMetadata">RefreshTokenMetadata</a></li>
@@ -858,6 +859,60 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-CreateThirdPartyRefreshTokenRequest"></a></p>
+    <h3 id="createthirdpartyrefreshtokenrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#createthirdpartyrefreshtokenrequest"><span class="octicon octicon-link"></span></a>CreateThirdPartyRefreshTokenRequest</h3>
+    <p>Request to create a new third-party refresh token. Unlike <code>LoginRequest</code> or <code>CreateAccountRequest</code>, the user must be logged in to create a third-party refresh token.</p>
+    <p>
+      Generally, this is used to create a refresh token for another Jonline instance,
+      e.g., accessing <code>bullcity.social/jon</code>'s data from <code>jonline.io</code>. On the web side, this is implemented as follows:
+    </p>
+    <ol>
+      <li>
+        When the <code>bullcity.social</code> user wants to login on <code>jonline.io</code>, <code>bullcity.social</code> will redirect
+        the user to <code>jonline.io/third_party_auth?to=bullcity.social</code>.
+      </li>
+      <li><code>jonline.io</code> will force the user to login if needed on this page.</li>
+      <li><code>jonline.io</code> will prompt/warn the user, and then call this RPC to create a refresh + access token for <code>bullcity.social</code>.</li>
+      <li><code>jonline.io</code> will redirect the user back to <code>bullcity.social/third_party_auth?from=jonline.io&#x26;amp;token=&#x26;lt;Base64RefreshTokenResponse&#x26;gt;</code> with the refresh token POSTed in form data.
+        <ul>
+          <li>(<code>&#x26;lt;Base64RefreshTokenResponse&#x26;gt;</code> is a base64-encoded <code>RefreshTokenResponse</code> message.)</li>
+        </ul>
+      </li>
+      <li><code>bullcity.social</code> will ensure it can <code>GetCurrentUser</code> on <code>jonline.io</code> with its new auth token.</li>
+      <li><code>bullcity.social</code> will replace the current location with <code>bullcity.social/third_party_auth?from=jonline.io</code>.</li>
+      <li><code>bullcity.social</code> will use the access token to make requests to <code>jonline.io</code> (the same as with <code>bullcity.social</code>).</li>
+    </ol>
+    <p>Note that refresh tokens</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>expires_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The third-party refresh token's expiration time.</td>
+        </tr>
+        <tr>
+          <td>user_id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The third-party refresh token's user ID.</td>
+        </tr>
+        <tr>
+          <td>device_name</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The third-party refresh token's device name.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-ExpirableToken"></a></p>
     <h3 id="expirabletoken"><a class="anchor" aria-hidden="true" tabindex="-1" href="#expirabletoken"><span class="octicon octicon-link"></span></a>ExpirableToken</h3>
     <p>Generic type for refresh and access tokens.</p>
@@ -970,11 +1025,17 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td></td>
           <td>Whether the refresh token is associated with the current device (based on what user is making the request).</td>
         </tr>
+        <tr>
+          <td>third_party</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td></td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-RefreshTokenResponse"></a></p>
     <h3 id="refreshtokenresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#refreshtokenresponse"><span class="octicon octicon-link"></span></a>RefreshTokenResponse</h3>
-    <p>Returned when creating an account or logging in.</p>
+    <p>Returned when creating an account, logging in, or creating a third-party refresh token.</p>
     <table>
       <thead>
         <tr>

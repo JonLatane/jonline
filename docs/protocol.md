@@ -10,6 +10,7 @@
     - [AccessTokenRequest](#jonline-AccessTokenRequest)
     - [AccessTokenResponse](#jonline-AccessTokenResponse)
     - [CreateAccountRequest](#jonline-CreateAccountRequest)
+    - [CreateThirdPartyRefreshTokenRequest](#jonline-CreateThirdPartyRefreshTokenRequest)
     - [ExpirableToken](#jonline-ExpirableToken)
     - [LoginRequest](#jonline-LoginRequest)
     - [RefreshTokenMetadata](#jonline-RefreshTokenMetadata)
@@ -308,6 +309,38 @@ Request to create a new account.
 
 
 
+<a name="jonline-CreateThirdPartyRefreshTokenRequest"></a>
+
+### CreateThirdPartyRefreshTokenRequest
+Request to create a new third-party refresh token. Unlike `LoginRequest` or `CreateAccountRequest`, the user must be logged in to create a third-party refresh token.
+
+Generally, this is used to create a refresh token for another Jonline instance,
+e.g., accessing `bullcity.social/jon`&#39;s data from `jonline.io`. On the web side, this is implemented as follows:
+
+1. When the `bullcity.social` user wants to login on `jonline.io`, `bullcity.social` will redirect 
+the user to `jonline.io/third_party_auth?to=bullcity.social`.
+2. `jonline.io` will force the user to login if needed on this page.
+3. `jonline.io` will prompt/warn the user, and then call this RPC to create a refresh &#43; access token for `bullcity.social`.
+4. `jonline.io` will redirect the user back to `bullcity.social/third_party_auth?from=jonline.io&amp;token=&lt;Base64RefreshTokenResponse&gt;` with the refresh token POSTed in form data.
+    * (`&lt;Base64RefreshTokenResponse&gt;` is a base64-encoded `RefreshTokenResponse` message.)
+6. `bullcity.social` will ensure it can `GetCurrentUser` on `jonline.io` with its new auth token.
+5. `bullcity.social` will replace the current location with `bullcity.social/third_party_auth?from=jonline.io`.
+7. `bullcity.social` will use the access token to make requests to `jonline.io` (the same as with `bullcity.social`).
+
+Note that refresh tokens
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The third-party refresh token&#39;s expiration time. |
+| user_id | [string](#string) |  | The third-party refresh token&#39;s user ID. |
+| device_name | [string](#string) |  | The third-party refresh token&#39;s device name. |
+
+
+
+
+
+
 <a name="jonline-ExpirableToken"></a>
 
 ### ExpirableToken
@@ -356,6 +389,7 @@ Does not include the token itself.
 | expires_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Expiration date of the refresh token. |
 | device_name | [string](#string) | optional | The device name the refresh token is on. User-updateable. |
 | is_this_device | [bool](#bool) |  | Whether the refresh token is associated with the current device (based on what user is making the request). |
+| third_party | [bool](#bool) |  |  |
 
 
 
@@ -365,7 +399,7 @@ Does not include the token itself.
 <a name="jonline-RefreshTokenResponse"></a>
 
 ### RefreshTokenResponse
-Returned when creating an account or logging in.
+Returned when creating an account, logging in, or creating a third-party refresh token.
 
 
 | Field | Type | Label | Description |

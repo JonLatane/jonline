@@ -86,8 +86,12 @@ pub fn create_event(
         v => v,
     };
     match visibility {
-        Visibility::GlobalPublic => validate_permission(&Some(user), Permission::PublishEventsGlobally)?,
-        Visibility::ServerPublic => validate_permission(&Some(user), Permission::PublishEventsLocally)?,
+        Visibility::GlobalPublic => {
+            validate_permission(&Some(user), Permission::PublishEventsGlobally)?
+        }
+        Visibility::ServerPublic => {
+            validate_permission(&Some(user), Permission::PublishEventsLocally)?
+        }
         _ => {}
     };
     let author = user.to_author();
@@ -120,37 +124,38 @@ pub fn create_event(
         let inserted_event = insert_into(events::table)
             .values(&models::NewEvent {
                 post_id: event_post.id,
-                info: serde_json::to_value(request.info).unwrap_or(json!({}))
+                info: serde_json::to_value(request.info).unwrap_or(json!({})),
             })
             .get_result::<models::Event>(conn)?;
         let mut inserted_instances: Vec<MarshalableEventInstance> = vec![];
         for instance in &instances {
             let new_post = instance.post.as_ref().map_or(
                 models::NewPost {
-                user_id: Some(user.id),
-                parent_post_id: None,
-                title: None,
-                link: None,
-                content: None,
-                visibility: post.visibility.to_string_visibility(),
-                embed_link: false,
-                context: PostContext::EventInstance.as_str_name().to_string(),
-                moderation: moderation.to_string(),
-                media: vec![],
-            }, |p| models::NewPost {
-                user_id: Some(user.id),
-                parent_post_id: None,
-                title: p.title.to_owned(),
-                link: p.link.to_link(),
-                content: p.content.to_owned(),
-                visibility: p.visibility.to_string_visibility(),
-                embed_link: p.embed_link.to_owned(),
-                context: PostContext::EventInstance.as_str_name().to_string(),
-                moderation: moderation.to_string(),
-                media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
-            });
-            let instance_post: models::Post = 
-            insert_into(posts::table)
+                    user_id: Some(user.id),
+                    parent_post_id: None,
+                    title: None,
+                    link: None,
+                    content: None,
+                    visibility: post.visibility.to_string_visibility(),
+                    embed_link: false,
+                    context: PostContext::EventInstance.as_str_name().to_string(),
+                    moderation: moderation.to_string(),
+                    media: vec![],
+                },
+                |p| models::NewPost {
+                    user_id: Some(user.id),
+                    parent_post_id: None,
+                    title: p.title.to_owned(),
+                    link: p.link.to_link(),
+                    content: p.content.to_owned(),
+                    visibility: p.visibility.to_string_visibility(),
+                    embed_link: p.embed_link.to_owned(),
+                    context: PostContext::EventInstance.as_str_name().to_string(),
+                    moderation: moderation.to_string(),
+                    media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
+                },
+            );
+            let instance_post: models::Post = insert_into(posts::table)
                 .values(&new_post)
                 .get_result::<models::Post>(conn)?;
             // let instance_post: Option<models::Post> = match &instance.post {
@@ -192,9 +197,9 @@ pub fn create_event(
             inserted_instances.push(marshalable_instance);
 
             update(users::table)
-            .filter(users::id.eq(user.id))
-            .set(users::event_count.eq(users::event_count + 1))
-            .execute(conn)?;
+                .filter(users::id.eq(user.id))
+                .set(users::event_count.eq(users::event_count + 1))
+                .execute(conn)?;
         }
         Ok(MarshalableEvent(
             inserted_event,
@@ -211,18 +216,24 @@ pub fn create_event(
             let instances = &marshalable_event.2;
             log::info!("Event created! EventID: {:?}", event.id);
             let mut media_ids = post.media.clone();
-            user.avatar_media_id.map(|id| media_ids.push(id));
+            user.avatar_media_id.map(|id| media_ids.push(Some(id)));
             media_ids.append(
                 &mut instances
                     .iter()
-                    .map(|MarshalableEventInstance(_, p)| {
-                        p.0.media.clone()
-                    })
+                    .map(|MarshalableEventInstance(_, p)| p.0.media.clone())
                     .flatten()
-                    .collect::<Vec<i64>>(),
+                    .filter(|v| v.is_some())
+                    // .map(|v| v.unwrap())
+                    .collect::<Vec<Option<i64>>>(),
             );
-            let media_references: Vec<models::MediaReference> =
-                models::get_all_media(media_ids, conn)?;
+            let media_references: Vec<models::MediaReference> = models::get_all_media(
+                media_ids
+                    .iter()
+                    .filter(|v| v.is_some())
+                    .map(|v| v.unwrap())
+                    .collect(),
+                conn,
+            )?;
             let media_lookup: MediaLookup = media_lookup(media_references);
             // let author = models::Author {
             //     id: user.id,

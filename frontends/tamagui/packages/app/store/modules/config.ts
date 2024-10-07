@@ -12,12 +12,14 @@ import { store } from "../store";
 import { Dictionary } from "@reduxjs/toolkit";
 import { getServerClient } from "../clients";
 import { FederatedGroup } from "./groups_state";
+import { storeInitializer } from "../store_initializer";
 
 export type DateTimeRenderer = 'custom' | 'native';
 
 export type CalendarImplementation = 'fullcalendar' | 'big-calendar' | 'daypilot';
 
 export type Config = {
+  deviceName: string;
   showIntro: boolean;
   darkModeAuto: boolean;
   darkMode: boolean;
@@ -55,7 +57,32 @@ export type Config = {
   alwaysShowHideButton: boolean;
 }
 
+const generateDeviceName = () => {
+  let device = "Unknown";
+  const ua = {
+    "Generic Linux": /Linux/i,
+    "Android": /Android/i,
+    "BlackBerry": /BlackBerry/i,
+    "Bluebird": /EF500/i,
+    "Chrome OS": /CrOS/i,
+    "Datalogic": /DL-AXIS/i,
+    "Honeywell": /CT50/i,
+    "iPad": /iPad/i,
+    "iPhone": /iPhone/i,
+    "iPod": /iPod/i,
+    "macOS": /Macintosh/i,
+    "Windows": /IEMobile|Windows/i,
+    "Zebra": /TC70|TC55/i,
+  }
+  Object.keys(ua).map(v => navigator.userAgent.match(ua[v]) && (device = v));
+
+  return `${device} at ${location.hostname} (first accessed ${new Date().toISOString()})`;
+}
+
+const defaultDeviceName = `New Device (first accessed ${new Date().toISOString()})`;
+
 const initialState: Config = {
+  deviceName: defaultDeviceName,
   showIntro: true,
   darkModeAuto: true,
   darkMode: false,
@@ -90,21 +117,26 @@ const initialState: Config = {
   alwaysShowHideButton: false,
 };
 
-setTimeout(async () => {
-  if (store.getState().config.dateTimeRenderer === undefined) {
-    // while (!globalThis.navigator) {
-    //   await new Promise((resolve) => setTimeout(resolve, 100));
-    // }
+
+storeInitializer(async () => {
+  if (store.getState().config.deviceName === defaultDeviceName) {
+    store.dispatch(setDeviceName(generateDeviceName()));
+  }
+});
+
+storeInitializer(async () => {
+  const state = store.getState();
+  if (state.config.dateTimeRenderer === undefined) {
 
     store.dispatch(setDateTimeRenderer(
       'native'
       // isSafari() ? 'native' : 'custom'
     ))
   }
-  if (store.getState().config.starredPostIds === undefined) {
+  if (state.config.starredPostIds === undefined) {
     store.dispatch(setStarredPostIds([]))
   }
-  if (store.getState().config.starredPostLastOpenedResponseCounts === undefined) {
+  if (state.config.starredPostLastOpenedResponseCounts === undefined) {
     store.dispatch(updateStarredPostLastOpenedResponseCount({
       postId: 'data-migration-artifact',
       count: 0
@@ -253,6 +285,9 @@ export const configSlice = createSlice({
     setAlwaysShowHideButton: (state, action: PayloadAction<boolean>) => {
       state.alwaysShowHideButton = action.payload;
     },
+    setDeviceName: (state, action: PayloadAction<string>) => {
+      state.deviceName = action.payload;
+    }
   },
   extraReducers: (builder) => {
   },
@@ -265,7 +300,7 @@ export const { setShowIntro, setDarkMode, setDarkModeAuto, setAllowServerSelecti
   setShowHelp, setShowPinnedServers, setAutoHideNavigation, setHideNavigation, setFancyPostBackgrounds, setShrinkPreviews,
   setDateTimeRenderer, setShowBigCalendar, setImagePostBackgrounds, setStarredPostIds, starPost, unstarPost,
   moveStarredPostDown, moveStarredPostUp, setOpenedStarredPost, updateStarredPostLastOpenedResponseCount,
-  setEventPagesOnHome,setCalendarImplementation, setHasOpenedAccounts, setAlwaysShowHideButton
+  setEventPagesOnHome, setCalendarImplementation, setHasOpenedAccounts, setAlwaysShowHideButton, setDeviceName
 } = configSlice.actions;
 export const configReducer = configSlice.reducer;
 export default configReducer;

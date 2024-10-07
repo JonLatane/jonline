@@ -66,6 +66,26 @@ final $typed_data.Uint8List loginRequestDescriptor = $convert.base64Decode(
     'FtZYgBARIcCgd1c2VyX2lkGAUgASgJSAJSBnVzZXJJZIgBAUINCgtfZXhwaXJlc19hdEIOCgxf'
     'ZGV2aWNlX25hbWVCCgoIX3VzZXJfaWQ=');
 
+@$core.Deprecated('Use createThirdPartyRefreshTokenRequestDescriptor instead')
+const CreateThirdPartyRefreshTokenRequest$json = {
+  '1': 'CreateThirdPartyRefreshTokenRequest',
+  '2': [
+    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
+    {'1': 'user_id', '3': 3, '4': 1, '5': 9, '10': 'userId'},
+    {'1': 'device_name', '3': 4, '4': 1, '5': 9, '10': 'deviceName'},
+  ],
+  '8': [
+    {'1': '_expires_at'},
+  ],
+};
+
+/// Descriptor for `CreateThirdPartyRefreshTokenRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List createThirdPartyRefreshTokenRequestDescriptor = $convert.base64Decode(
+    'CiNDcmVhdGVUaGlyZFBhcnR5UmVmcmVzaFRva2VuUmVxdWVzdBI+CgpleHBpcmVzX2F0GAIgAS'
+    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAUglleHBpcmVzQXSIAQESFwoHdXNlcl9p'
+    'ZBgDIAEoCVIGdXNlcklkEh8KC2RldmljZV9uYW1lGAQgASgJUgpkZXZpY2VOYW1lQg0KC19leH'
+    'BpcmVzX2F0');
+
 @$core.Deprecated('Use refreshTokenResponseDescriptor instead')
 const RefreshTokenResponse$json = {
   '1': 'RefreshTokenResponse',
@@ -176,6 +196,7 @@ const RefreshTokenMetadata$json = {
     {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
     {'1': 'device_name', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'deviceName', '17': true},
     {'1': 'is_this_device', '3': 4, '4': 1, '5': 8, '10': 'isThisDevice'},
+    {'1': 'third_party', '3': 5, '4': 1, '5': 8, '10': 'thirdParty'},
   ],
   '8': [
     {'1': '_expires_at'},
@@ -188,5 +209,6 @@ final $typed_data.Uint8List refreshTokenMetadataDescriptor = $convert.base64Deco
     'ChRSZWZyZXNoVG9rZW5NZXRhZGF0YRIOCgJpZBgBIAEoBFICaWQSPgoKZXhwaXJlc19hdBgCIA'
     'EoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAFIJZXhwaXJlc0F0iAEBEiQKC2Rldmlj'
     'ZV9uYW1lGAMgASgJSAFSCmRldmljZU5hbWWIAQESJAoOaXNfdGhpc19kZXZpY2UYBCABKAhSDG'
-    'lzVGhpc0RldmljZUINCgtfZXhwaXJlc19hdEIOCgxfZGV2aWNlX25hbWU=');
+    'lzVGhpc0RldmljZRIfCgt0aGlyZF9wYXJ0eRgFIAEoCFIKdGhpcmRQYXJ0eUINCgtfZXhwaXJl'
+    'c19hdEIOCgxfZGV2aWNlX25hbWU=');
 

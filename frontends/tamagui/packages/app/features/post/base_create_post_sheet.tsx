@@ -231,7 +231,7 @@ export function BaseCreatePostSheet({
   const isPosting = posting;
   const disableInputs = isPosting;
   const disablePreview = disableInputs || !valid;
-  const disableCreate = disableInputs || !valid;
+  const disableCreate = disableInputs || !valid || !canCreate;
 
   const availableCreationServers = useAvailableCreationServers(requiredPermissions);
   const otherServerCount = availableCreationServers.filter(s => s.host != server?.host).length;
@@ -243,24 +243,33 @@ export function BaseCreatePostSheet({
   // return <></>;
 
   const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
+  const onCreatePressed = () => doCreate(
+    previewPost,
+    group,
+    resetPost,
+    () => setPosting(false),
+    (e) => {
+      console.error('Error creating post/event', e);
+      setPostingError(e?.toString());
+    });
   return (
     <>
       {button?.(() => setOpen(!open)) ??
         // <Tooltip>
         //   <Tooltip.Trigger>
-            <Button //{...themedButtonBackground(primaryColor)} 
-              w='$3'
-              p={0}
-              disabled={server === undefined}
-              transparent
-              onPress={() => setOpen(!open)}>
-              {entityName === 'Post'
-                ? <Plus color={navAnchorColor} />
-                : <CalendarPlus color={navAnchorColor} />}
-              {/* <Heading size='$2' ta='center' color={primaryTextColor}>
+        <Button //{...themedButtonBackground(primaryColor)} 
+          w='$3'
+          p={0}
+          disabled={server === undefined}
+          transparent
+          onPress={() => setOpen(!open)}>
+          {entityName === 'Post'
+            ? <Plus color={navAnchorColor} />
+            : <CalendarPlus color={navAnchorColor} />}
+          {/* <Heading size='$2' ta='center' color={primaryTextColor}>
             Create {entityName}
           </Heading> */}
-            </Button>
+        </Button>
         //   </Tooltip.Trigger>
         //   <Tooltip.Content>
         //     <Paragraph>
@@ -307,16 +316,11 @@ export function BaseCreatePostSheet({
                 </Button> */}
                     <Tooltip>
                       <Tooltip.Trigger>
-                        <Button {...themedButtonBackground(primaryColor, primaryTextColor)} disabled={disableCreate} opacity={disableCreate ? 0.5 : 1}
-                          onPress={() => doCreate(
-                            previewPost,
-                            group,
-                            resetPost,
-                            () => setPosting(false),
-                            (e) => {
-                              console.error('Error creating post/event', e);
-                              setPostingError(e?.toString());
-                            })}>
+                        <Button
+                          {...themedButtonBackground(primaryColor, primaryTextColor, disableCreate ? 0.5 : 1)}
+                          disabled={disableCreate}
+                          // o={disableCreate ? 0.5 : 1}
+                          onPress={onCreatePressed}>
                           <Heading size='$1' color={primaryTextColor}>Create</Heading>
                         </Button>
                       </Tooltip.Trigger>

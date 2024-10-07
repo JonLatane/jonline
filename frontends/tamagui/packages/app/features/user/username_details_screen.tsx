@@ -295,6 +295,12 @@ export function UsernameDetailsScreen() {
       selectedGroup={group}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/m/${pathUsername}`}
       groupPageReverse={`/${pathUsername}`}
+      topChrome= { user ? 
+        // <ScrollView horizontal w='100%'>
+          <FederatedProfiles user={user} />
+        // </ScrollView>
+        : undefined
+      }
       bottomChrome={canEdit
         ? <YStack w='100%' paddingVertical='$2' alignContent='center'>
           <XStack mx='auto' px='$3' w='100%' maw={800}>
