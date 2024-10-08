@@ -124,7 +124,7 @@ fn get_by_post_id(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     if result.len() == 0 {
@@ -148,7 +148,7 @@ fn get_public_and_following_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect()
 }
 
@@ -169,7 +169,7 @@ fn get_my_group_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -188,7 +188,11 @@ fn get_group_posts(
                 .map(|u| get_membership(group_id, u.id, conn).ok())
                 .flatten();
             validate_group_permission(&group, &membership.as_ref(), user, Permission::ViewPosts)?;
+            let group_post_users = alias!(users as group_post_users);
             let result: Vec<MarshalablePost> = query_visible_posts!(user)
+                .left_join(
+                    group_post_users.on(group_posts::user_id.eq(group_post_users.field(users::id))),
+                )
                 .filter(posts::context.eq(PostContext::Post.as_str_name()))
                 .filter(group_posts::group_id.eq(group_id))
                 .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
@@ -196,16 +200,24 @@ fn get_group_posts(
                     posts::all_columns,
                     models::AUTHOR_COLUMNS.nullable(),
                     group_posts::all_columns.nullable(),
+                    group_post_users.fields(models::AUTHOR_COLUMNS.nullable()),
                 ))
                 .load::<(
                     models::Post,
                     Option<models::Author>,
                     Option<models::GroupPost>,
+                    Option<models::Author>,
                 )>(conn)
                 .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
                 .iter()
-                .map(|(post, author, group_post)| {
-                    MarshalablePost(post.clone(), author.clone(), group_post.clone(), vec![])
+                .map(|(post, author, group_post, group_post_author)| {
+                    MarshalablePost(
+                        post.clone(),
+                        author.clone(),
+                        group_post.clone(),
+                        group_post_author.clone(),
+                        vec![],
+                    )
                 })
                 .collect();
 
@@ -235,7 +247,7 @@ fn get_user_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -252,7 +264,7 @@ fn get_following_posts(
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, vec![]))
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -291,9 +303,9 @@ fn get_replies_to_post_id(
                     conn,
                 )
                 .unwrap_or(vec![]);
-                MarshalablePost(post.clone(), author.clone(), None, replies)
+                MarshalablePost(post.clone(), author.clone(), None, None, replies)
             } else {
-                MarshalablePost(post.clone(), author.clone(), None, vec![])
+                MarshalablePost(post.clone(), author.clone(), None, None, vec![])
             }
         })
         .collect();

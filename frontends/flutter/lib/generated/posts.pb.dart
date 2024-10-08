@@ -641,9 +641,11 @@ class GroupPost extends $pb.GeneratedMessage {
   factory GroupPost({
     $core.String? groupId,
     $core.String? postId,
+  @$core.Deprecated('This field is deprecated.')
     $core.String? userId,
     $10.Moderation? groupModeration,
     $9.Timestamp? createdAt,
+    $4.Author? sharedBy,
   }) {
     final $result = create();
     if (groupId != null) {
@@ -653,6 +655,7 @@ class GroupPost extends $pb.GeneratedMessage {
       $result.postId = postId;
     }
     if (userId != null) {
+      // ignore: deprecated_member_use_from_same_package
       $result.userId = userId;
     }
     if (groupModeration != null) {
@@ -660,6 +663,9 @@ class GroupPost extends $pb.GeneratedMessage {
     }
     if (createdAt != null) {
       $result.createdAt = createdAt;
+    }
+    if (sharedBy != null) {
+      $result.sharedBy = sharedBy;
     }
     return $result;
   }
@@ -673,6 +679,7 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'userId')
     ..e<$10.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$4.Author>(6, _omitFieldNames ? '' : 'sharedBy', subBuilder: $4.Author.create)
     ..hasRequiredFields = false
   ;
 
@@ -717,13 +724,17 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearPostId() => clearField(2);
 
-  /// The ID of the user who cross-posted the post.
+  /// **Deprecated.** Prefer to use `shared_by`. The ID of the user who cross-posted the post.
+  @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(3)
   $core.String get userId => $_getSZ(2);
+  @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(3)
   set userId($core.String v) { $_setString(2, v); }
+  @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(3)
   $core.bool hasUserId() => $_has(2);
+  @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(3)
   void clearUserId() => clearField(3);
 
@@ -748,6 +759,18 @@ class GroupPost extends $pb.GeneratedMessage {
   void clearCreatedAt() => clearField(5);
   @$pb.TagNumber(5)
   $9.Timestamp ensureCreatedAt() => $_ensure(4);
+
+  /// Author info for the user who cross-posted the post.
+  @$pb.TagNumber(6)
+  $4.Author get sharedBy => $_getN(5);
+  @$pb.TagNumber(6)
+  set sharedBy($4.Author v) { setField(6, v); }
+  @$pb.TagNumber(6)
+  $core.bool hasSharedBy() => $_has(5);
+  @$pb.TagNumber(6)
+  void clearSharedBy() => clearField(6);
+  @$pb.TagNumber(6)
+  $4.Author ensureSharedBy() => $_ensure(5);
 }
 
 /// A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.

@@ -2699,7 +2699,7 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>user_id</td>
           <td><a href="#string">string</a></td>
           <td></td>
-          <td>The ID of the user who cross-posted the post.</td>
+          <td><strong>Deprecated.</strong> Deprecated.** Prefer to use <code>shared_by</code>. The ID of the user who cross-posted the post.</td>
         </tr>
         <tr>
           <td>group_moderation</td>
@@ -2712,6 +2712,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
           <td></td>
           <td>The time the post was cross-posted.</td>
+        </tr>
+        <tr>
+          <td>shared_by</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>Author info for the user who cross-posted the post.</td>
         </tr>
       </tbody>
     </table>

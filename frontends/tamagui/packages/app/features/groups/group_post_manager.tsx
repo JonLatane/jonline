@@ -160,21 +160,23 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
   const isPrimaryServer = server?.host === currentServer?.host;
   const isSameServer = group.serverHost === post.serverHost;
   const shared = groupPost != undefined;
-  const authorUser = useAppSelector(state => groupPost
-    ? state.users.entities[groupPost?.userId ?? '']
-    : undefined);
-  useEffect(() => {
-    if (groupPost && !authorUser) {
-      dispatch(loadUser({ userId: groupPost.userId, ...accountOrServer }));
-    }
-  }, [groupPost, authorUser]);
+  const sharedBy = groupPost?.sharedBy;
+  // const authorUser = useAppSelector(state => groupPost
+  //   ? state.users.entities[groupPost?.userId ?? '']
+  //   : undefined);
+  // useEffect(() => {
+  //   if (groupPost && !sharedBy) {
+  //     dispatch(loadUser({ userId: groupPost.userId, ...accountOrServer }));
+  //   }
+  // }, [groupPost, authorUser]);
   const authorData = groupPost ? Post.fromPartial({
     createdAt: groupPost.createdAt,
-    author: {
-      userId: groupPost.userId,
-      username: authorUser?.username,
-      avatar: authorUser?.avatar,
-    }
+    author: sharedBy
+    // {
+    //   userId: groupPost.userId,
+    //   username: authorUser?.username,
+    //   avatar: authorUser?.avatar,
+    // }
   }) : undefined;
   // const accountOrServer = useAccountOrServer();
   const { navColor, navTextColor, primaryAnchorColor, textColor: themeTextColor } = useServerTheme(server);

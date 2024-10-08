@@ -335,12 +335,20 @@ export interface GroupPost {
   groupId: string;
   /** The ID of the post. */
   postId: string;
-  /** The ID of the user who cross-posted the post. */
+  /**
+   * *Deprecated.** Prefer to use `shared_by`. The ID of the user who cross-posted the post.
+   *
+   * @deprecated
+   */
   userId: string;
   /** The moderation of the post in the group. */
   groupModeration: Moderation;
   /** The time the post was cross-posted. */
-  createdAt: string | undefined;
+  createdAt:
+    | string
+    | undefined;
+  /** Author info for the user who cross-posted the post. */
+  sharedBy: Author | undefined;
 }
 
 /**
@@ -1020,7 +1028,7 @@ export const Post = {
 };
 
 function createBaseGroupPost(): GroupPost {
-  return { groupId: "", postId: "", userId: "", groupModeration: 0, createdAt: undefined };
+  return { groupId: "", postId: "", userId: "", groupModeration: 0, createdAt: undefined, sharedBy: undefined };
 }
 
 export const GroupPost = {
@@ -1039,6 +1047,9 @@ export const GroupPost = {
     }
     if (message.createdAt !== undefined) {
       Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(42).fork()).ldelim();
+    }
+    if (message.sharedBy !== undefined) {
+      Author.encode(message.sharedBy, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1085,6 +1096,13 @@ export const GroupPost = {
 
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           continue;
+        case 6:
+          if (tag !== 50) {
+            break;
+          }
+
+          message.sharedBy = Author.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1101,6 +1119,7 @@ export const GroupPost = {
       userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
       groupModeration: isSet(object.groupModeration) ? moderationFromJSON(object.groupModeration) : 0,
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      sharedBy: isSet(object.sharedBy) ? Author.fromJSON(object.sharedBy) : undefined,
     };
   },
 
@@ -1121,6 +1140,9 @@ export const GroupPost = {
     if (message.createdAt !== undefined) {
       obj.createdAt = message.createdAt;
     }
+    if (message.sharedBy !== undefined) {
+      obj.sharedBy = Author.toJSON(message.sharedBy);
+    }
     return obj;
   },
 
@@ -1134,6 +1156,9 @@ export const GroupPost = {
     message.userId = object.userId ?? "";
     message.groupModeration = object.groupModeration ?? 0;
     message.createdAt = object.createdAt ?? undefined;
+    message.sharedBy = (object.sharedBy !== undefined && object.sharedBy !== null)
+      ? Author.fromPartial(object.sharedBy)
+      : undefined;
     return message;
   },
 };

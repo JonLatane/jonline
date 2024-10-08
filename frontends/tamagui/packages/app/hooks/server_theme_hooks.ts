@@ -110,7 +110,7 @@ function getServerTheme(
   };
 }
 
-type ColorMeta = {
+export type ColorMeta = {
   // A string representation of the int-encoded server color data.
   color: string;
   // Foreground color for text on top of this color
@@ -120,6 +120,7 @@ type ColorMeta = {
   // This color, if it is suitable for dark backgrounds. Otherwise, a lighter version of this color that is.
   lightColor: string;
   luma: number;
+  isDark: boolean;
 }
 
 const _colorMetas = new Map<string, ColorMeta>();
@@ -156,10 +157,11 @@ export function colorMeta(sourceColor?: string): ColorMeta {
   const green = g / 255;
   const blue = b / 255;
   const luma = 0.2126 * red + 0.7152 * green + 0.0722 * blue;
+  const isDark = luma > 0.5;
 
   let textColor: string, darkColor: string, lightColor: string
 
-  if (luma > 0.5) {
+  if (isDark) {
     textColor = '#000000';
     lightColor = color;
     darkColor = shadeColor(colorAsHex, -20);
@@ -189,7 +191,7 @@ export function colorMeta(sourceColor?: string): ColorMeta {
   }
 
   // debugger;
-  const meta = { color, textColor, darkColor, lightColor, luma }
+  const meta = { color, textColor, darkColor, lightColor, luma, isDark };
   _colorMetas[color] = meta;
   return meta;
 }

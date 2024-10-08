@@ -7,10 +7,11 @@ use crate::logic::*;
 use crate::marshaling::*;
 use crate::models;
 use crate::models::get_group_and_membership;
+use crate::models::AUTHOR_COLUMNS;
 use crate::protos::Moderation::*;
 use crate::protos::Permission::ModeratePosts;
 use crate::protos::*;
-use crate::schema::{group_posts, posts};
+use crate::schema::{group_posts, posts, users};
 
 use crate::rpcs::validations::validate_group_permission;
 
@@ -24,30 +25,40 @@ pub fn get_group_posts(
     let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let query = group_posts::table
         .inner_join(posts::table.on(group_posts::post_id.eq(posts::id)))
+        .left_join(users::table.on(group_posts::user_id.eq(users::id)))
         // .left_join(memberships::table.on(memberships::group_id.eq(group_posts::group_id)))
         .select((
             group_posts::all_columns,
+            AUTHOR_COLUMNS.nullable(),
             posts::visibility,
             // memberships::all_columns.nullable(),
         ));
-    let results: Vec<(models::GroupPost, String)> = match request.group_id {
+    let results: Vec<(models::GroupPost, Option<models::Author>, String)> = match request.group_id {
         None => query
             .filter(group_posts::post_id.eq(post_id))
-            .load::<(models::GroupPost, String)>(conn)
+            .load::<(models::GroupPost, Option<models::Author>, String)>(conn)
             .unwrap(),
         Some(group_id) => {
             let group_id = group_id.to_db_id_or_err("group_id")?;
             query
                 .filter(group_posts::group_id.eq(group_id))
                 .filter(group_posts::post_id.eq(post_id))
-                .load::<(models::GroupPost, String)>(conn)
+                .load::<(models::GroupPost, Option<models::Author>, String)>(conn)
                 .unwrap()
         }
     };
 
+    let author_avatar_media_ids = results
+        .iter()
+        .map(|(_, author, _)| author.as_ref().map(|a| a.avatar_media_id).flatten())
+        .filter_map(|x| x)
+        .collect::<Vec<i64>>();
+    let media_lookup = load_media_lookup(author_avatar_media_ids, conn);
+    //     .map(|(gp, author, _)| author.avatar))
+
     let filtered_results = results
         .iter()
-        .filter_map(|(group_post, post_visibility)| {
+        .filter_map(|(group_post, author, post_visibility)| {
             let (group, membership) =
                 get_group_and_membership(group_post.group_id, user.as_ref().map(|u| u.id), conn)
                     .ok()?;
@@ -84,7 +95,7 @@ pub fn get_group_posts(
             };
 
             if moderations.contains(&group_post.group_moderation.to_proto_moderation().unwrap()) {
-                Some(group_post.to_proto())
+                Some(group_post.to_proto(&author, media_lookup.as_ref()))
             } else {
                 None
             }

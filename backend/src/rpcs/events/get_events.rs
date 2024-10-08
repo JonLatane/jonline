@@ -167,12 +167,19 @@ macro_rules! marshalable_event_data {
                     info!("instance: {:?}", instance);
                     MarshalableEvent(
                         event.clone(),
-                        MarshalablePost(event_post.clone(), event_author.clone(), None, vec![]),
+                        MarshalablePost(
+                            event_post.clone(),
+                            event_author.clone(),
+                            None,
+                            None,
+                            vec![],
+                        ),
                         vec![MarshalableEventInstance(
                             instance.clone(),
                             MarshalablePost(
                                 instance_post.clone(),
                                 instance_author.clone(),
+                                None,
                                 None,
                                 vec![],
                             ),
@@ -277,7 +284,7 @@ fn get_event_by_id(
 
     let event = MarshalableEvent(
         event_model,
-        MarshalablePost(event_post, event_author, None, vec![]),
+        MarshalablePost(event_post, event_author, None, None, vec![]),
         event_data
             .iter()
             .map(
@@ -287,6 +294,7 @@ fn get_event_by_id(
                         MarshalablePost(
                             instance_post.clone(),
                             instance_author.clone(),
+                            None,
                             None,
                             vec![],
                         ),

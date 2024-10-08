@@ -11,7 +11,7 @@ import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
-import { FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
+import { ColorMeta, FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { ChevronLeft, ChevronRight, X as XIcon } from '@tamagui/lucide-icons';
@@ -21,7 +21,7 @@ import { createParam } from 'solito';
 import EventCard from './event_card';
 import { useTabsNavigationHeight } from '../navigation/tabs_navigation';
 import { useHideNavigation } from "../navigation/use_hide_navigation";
-import { createSelector } from "@reduxjs/toolkit";
+import { createSelector, Dictionary } from "@reduxjs/toolkit";
 
 export function useScreenWidthAndHeight() {
   const minBigCalWidth = 150;
@@ -49,12 +49,12 @@ export type EventsFullCalendarProps = {
 }
 
 const selectServerColors = (
-): Selector<{}> =>
+): Selector<Dictionary<ColorMeta>> =>
   createSelector(
     [(state: RootState) => selectAllServers(state.servers).reduce(
       (result, server: JonlineServer) => {
         if (server.serverConfiguration?.serverInfo?.colors?.primary) {
-          result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary).color;
+          result[server.host] = colorIntMeta(server.serverConfiguration.serverInfo.colors.primary);
 
         }
         return result;
@@ -196,17 +196,17 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   ).subtract(30, 'minutes');
   const { calendarImplementation } = useLocalConfiguration();
   // const [calendarImplementation]: 'fullcalendar' | 'big-calendar' = 'big-calendar';
-  const convertedEvents = allEvents.map((event) => {
+  const fullCalendarEvents = allEvents.map((event) => {
     const starred = starredPostIds.includes(
       federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
     );
     return {
       id: federateId(event.instances[0]?.id ?? '', event.serverHost),
       title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
-      color: serverColors[event.serverHost],
+      color: serverColors[event.serverHost]?.color,
       style: {
-        backgroundColor: serverColors[event.serverHost],
-        color: colorMeta(serverColors[event.serverHost]).textColor,
+        backgroundColor: serverColors[event.serverHost]?.color,
+        color: serverColors[event.serverHost]?.textColor,
         // borderRadius: 10,
         // borderColor: 'blue',
       },
@@ -361,7 +361,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 ]}
               // width='100%'
               height='100%'
-              events={convertedEvents}
+              events={fullCalendarEvents}
               eventClick={disableSelection ? undefined : (modelEvent) => {
                 setModalInstanceId(modelEvent.event.id);
                 // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
@@ -398,37 +398,40 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
 
                   }}
 
+                  scrollToTime={scrollToTime.toDate()}
+                  defaultDate={scrollToTime.toDate()}
                   events={allEvents.map((event) => {
-                    const starred = starredPostIds.includes(
-                      federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                    );
+                    const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
                     return {
-                      id: federateId(event.instances[0]?.id ?? '', event.serverHost),
                       serverHost: event.serverHost,
-                      title: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
+                      resource: { event, federatedId },
+                      title: event.post?.title,
                       selected: true,
                       start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
                       end: moment(event.instances[0]?.endsAt ?? 0).toDate()
                     }
                   })}
-                  scrollToTime={scrollToTime.toDate()}
-                  defaultDate={scrollToTime.toDate()}
                   eventPropGetter={(event) => {
                     // console.log('BigCalendar EventPropGetter', event);
-                    const serverEventId = parseFederatedId(event.id).id;
+                    const serverEventId = parseFederatedId(event.resource.federatedId).id;
+                    const starred = starredPostIds.includes(
+                      federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                    );
+                    // event.resource.
                     return {
+                      className: starred ? serverColors[event.serverHost]?.isDark ? 'starred lightText' : 'starred darkText' : undefined,
                       style: {
                         backgroundColor: hasNewEvent && serverEventId
-                          ? `${serverColors[event.serverHost]}33`
-                          : serverColors[event.serverHost],
+                          ? `${serverColors[event.serverHost]?.color}33`
+                          : serverColors[event.serverHost]?.color,
                         // opacity: hasNewEvent && !event.id ? 0.5 : 1,
-                        color: colorMeta(serverColors[event.serverHost]).textColor,
+                        color: serverColors[event.serverHost]?.textColor,
                         fontSize: mediaQuery.gtXxs ? undefined : '11px'
                       }
                     }
                   }}
                   onSelectEvent={disableSelection ? undefined : (modelEvent) => {
-                    setModalInstanceId(modelEvent.id);
+                    setModalInstanceId(modelEvent.resource.federatedId);
                   }}
                   dayPropGetter={(date) => {
                     return {
@@ -529,7 +532,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
               />
               <Dialog.Close asChild>
                 <Button
-                  ml='auto' 
+                  ml='auto'
                   mr='$2'
                   size='$2'
                   circular

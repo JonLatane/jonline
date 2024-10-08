@@ -21,6 +21,7 @@ pub struct MarshalablePost(
     pub models::Post,
     pub Option<models::Author>,
     pub Option<models::GroupPost>,
+    pub Option<models::Author>, // GroupPost author
     pub Vec<MarshalablePost>,
 );
 
@@ -32,7 +33,10 @@ pub fn convert_posts(data: &Vec<MarshalablePost>, conn: &mut PgPooledConnection)
             post.1
                 .as_ref()
                 .map(|a| a.avatar_media_id.map(|id| ids.push(Some(id))));
-            post.3.iter().for_each(|reply| {
+            post.3
+                .as_ref()
+                .map(|a| a.avatar_media_id.map(|id| ids.push(Some(id))));
+            post.4.iter().for_each(|reply| {
                 ids.extend(reply.0.media.iter());
                 reply
                     .1
@@ -62,7 +66,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
         let post = &self.0;
         let author = &self.1;
         let group_post = &self.2;
-        let replies = self.3.to_owned();
+        let replies = self.4.to_owned();
         Post {
             id: post.id.to_proto_id(),
             reply_to_post_id: post.parent_post_id.map(|i| i.to_proto_id()),
@@ -76,7 +80,9 @@ impl ToProtoMarshalablePost for MarshalablePost {
             reply_count: post.reply_count,
             group_count: post.group_count,
             unauthenticated_star_count: post.unauthenticated_star_count,
-            current_group_post: group_post.as_ref().map(|gp| gp.to_proto()),
+            current_group_post: group_post
+                .as_ref()
+                .map(|gp| gp.to_proto(author, media_lookup)),
             media: match media_lookup {
                 Some(lookup) => post
                     .media
@@ -85,7 +91,7 @@ impl ToProtoMarshalablePost for MarshalablePost {
                         Some(v) => match lookup.get(v) {
                             Some(media) => Some(media.to_proto()),
                             None => None,
-                        }
+                        },
                         None => None,
                     })
                     .filter(|v| v.is_some())
@@ -115,17 +121,26 @@ impl ToProtoMarshalablePost for MarshalablePost {
 }
 
 pub trait ToProtoGroupPost {
-    fn to_proto(&self) -> GroupPost;
+    fn to_proto(
+        &self,
+        author: &Option<models::Author>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> GroupPost;
     fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status>;
 }
 impl ToProtoGroupPost for models::GroupPost {
-    fn to_proto(&self) -> GroupPost {
+    fn to_proto(
+        &self,
+        author: &Option<models::Author>,
+        media_lookup: Option<&MediaLookup>,
+    ) -> GroupPost {
         return GroupPost {
             group_id: self.group_id.to_proto_id().to_string(),
             post_id: self.post_id.to_proto_id().to_string(),
             user_id: self.user_id.to_proto_id().to_string(),
             group_moderation: self.group_moderation.to_i32_moderation(),
             created_at: Some(self.created_at.to_proto()),
+            shared_by: author.as_ref().map(|a| a.to_proto(media_lookup)),
             // updated_at: self.updated_at.map(|t| t.to_proto()),
         };
     }

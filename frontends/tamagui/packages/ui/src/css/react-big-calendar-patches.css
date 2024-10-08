@@ -1,4 +1,19 @@
 /* Make the react-big-calendar toolbar better on small screens*/
 .rbc-calendar .rbc-toolbar {
-  flex-direction: row!important;
+  flex-direction: row !important;
+}
+
+.rbc-event.starred .rbc-event-label:before {
+  content: "★";
+}
+
+
+.rbc-event.starred.darkText .rbc-event-label:before {
+  /* content: "★"; */
+  color: white;
+}
+
+.rbc-event.starred.lightText .rbc-event-label:before {
+  /* content: "★"; */
+  color: black;
 }

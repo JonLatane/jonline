@@ -170,18 +170,27 @@ const GroupPost$json = {
   '2': [
     {'1': 'group_id', '3': 1, '4': 1, '5': 9, '10': 'groupId'},
     {'1': 'post_id', '3': 2, '4': 1, '5': 9, '10': 'postId'},
-    {'1': 'user_id', '3': 3, '4': 1, '5': 9, '10': 'userId'},
+    {
+      '1': 'user_id',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '8': {'3': true},
+      '10': 'userId',
+    },
     {'1': 'group_moderation', '3': 4, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'groupModeration'},
     {'1': 'created_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
+    {'1': 'shared_by', '3': 6, '4': 1, '5': 11, '6': '.jonline.Author', '10': 'sharedBy'},
   ],
 };
 
 /// Descriptor for `GroupPost`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List groupPostDescriptor = $convert.base64Decode(
     'CglHcm91cFBvc3QSGQoIZ3JvdXBfaWQYASABKAlSB2dyb3VwSWQSFwoHcG9zdF9pZBgCIAEoCV'
-    'IGcG9zdElkEhcKB3VzZXJfaWQYAyABKAlSBnVzZXJJZBI+ChBncm91cF9tb2RlcmF0aW9uGAQg'
-    'ASgOMhMuam9ubGluZS5Nb2RlcmF0aW9uUg9ncm91cE1vZGVyYXRpb24SOQoKY3JlYXRlZF9hdB'
-    'gFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCWNyZWF0ZWRBdA==');
+    'IGcG9zdElkEhsKB3VzZXJfaWQYAyABKAlCAhgBUgZ1c2VySWQSPgoQZ3JvdXBfbW9kZXJhdGlv'
+    'bhgEIAEoDjITLmpvbmxpbmUuTW9kZXJhdGlvblIPZ3JvdXBNb2RlcmF0aW9uEjkKCmNyZWF0ZW'
+    'RfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSLAoJc2hh'
+    'cmVkX2J5GAYgASgLMg8uam9ubGluZS5BdXRob3JSCHNoYXJlZEJ5');
 
 @$core.Deprecated('Use userPostDescriptor instead')
 const UserPost$json = {

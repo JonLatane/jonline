@@ -1158,9 +1158,10 @@ the time it was cross-posted and the user who did the cross-posting.
 | ----- | ---- | ----- | ----------- |
 | group_id | [string](#string) |  | The ID of the group this post is in. |
 | post_id | [string](#string) |  | The ID of the post. |
-| user_id | [string](#string) |  | The ID of the user who cross-posted the post. |
+| user_id | [string](#string) |  | **Deprecated.** Deprecated.** Prefer to use `shared_by`. The ID of the user who cross-posted the post. |
 | group_moderation | [Moderation](#jonline-Moderation) |  | The moderation of the post in the group. |
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the post was cross-posted. |
+| shared_by | [Author](#jonline-Author) |  | Author info for the user who cross-posted the post. |
 
 
 

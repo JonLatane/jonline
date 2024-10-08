@@ -87,8 +87,12 @@ pub fn create_post(
         v => v,
     };
     match visibility {
-        Visibility::GlobalPublic => validate_permission(&Some(user), Permission::PublishPostsGlobally)?,
-        Visibility::ServerPublic => validate_permission(&Some(user), Permission::PublishPostsLocally)?,
+        Visibility::GlobalPublic => {
+            validate_permission(&Some(user), Permission::PublishPostsGlobally)?
+        }
+        Visibility::ServerPublic => {
+            validate_permission(&Some(user), Permission::PublishPostsLocally)?
+        }
         _ => {}
     };
 
@@ -160,7 +164,8 @@ pub fn create_post(
         Ok(post) => {
             log::info!("Post created! PostID:{:?}", post.id);
             let author = models::get_author(user.id, conn)?;
-            Ok(MarshalablePost(post, Some(author), None, vec![]).to_proto(Some(&media_lookup)))
+            Ok(MarshalablePost(post, Some(author), None, None, vec![])
+                .to_proto(Some(&media_lookup)))
         }
         Err(e) => {
             log::error!("Error creating post! {:?}", e);

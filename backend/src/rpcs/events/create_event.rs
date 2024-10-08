@@ -192,7 +192,7 @@ pub fn create_event(
                 .get_result::<models::EventInstance>(conn)?;
             let marshalable_instance = MarshalableEventInstance(
                 inserted_instance,
-                MarshalablePost(instance_post, Some(author.clone()), None, vec![]),
+                MarshalablePost(instance_post, Some(author.clone()), None, None, vec![]),
             );
             inserted_instances.push(marshalable_instance);
 
@@ -203,7 +203,7 @@ pub fn create_event(
         }
         Ok(MarshalableEvent(
             inserted_event,
-            MarshalablePost(event_post, Some(author), None, vec![]),
+            MarshalablePost(event_post, Some(author), None, None, vec![]),
             inserted_instances,
         ))
     });

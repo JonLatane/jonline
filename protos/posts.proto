@@ -167,17 +167,19 @@ message Post {
 // A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
 // information about the moderation of the post in the group, as well as
 // the time it was cross-posted and the user who did the cross-posting.
-message GroupPost{
+message GroupPost {
   // The ID of the group this post is in.
   string group_id = 1;
   // The ID of the post.
   string post_id = 2;
-  // The ID of the user who cross-posted the post.
-  string user_id = 3;
+  // **Deprecated.** Prefer to use `shared_by`. The ID of the user who cross-posted the post.
+  string user_id = 3 [deprecated = true];
   // The moderation of the post in the group.
   Moderation group_moderation = 4;
   // The time the post was cross-posted.
   google.protobuf.Timestamp created_at = 5;
+  // Author info for the user who cross-posted the post.
+  Author shared_by = 6;
 }
 
 // A `UserPost` is a "direct share" of a `Post` to a `User`. Currently unused/unimplemented.

@@ -15,7 +15,12 @@ pub fn create_group_post(
 ) -> Result<GroupPost, Status> {
     let group_id = request.group_id.to_db_id_or_err("group_id")?;
     let (group, membership) = models::get_group_and_membership(group_id, Some(user.id), conn)?;
-    validate_group_permission(&group, &membership.as_ref(), &Some(user), Permission::CreatePosts)?;
+    validate_group_permission(
+        &group,
+        &membership.as_ref(),
+        &Some(user),
+        Permission::CreatePosts,
+    )?;
 
     let post_id = request.post_id.to_db_id_or_err("post_id")?;
     let post = models::get_post(post_id, conn)?;
@@ -46,5 +51,9 @@ pub fn create_group_post(
         Status::new(Code::Internal, "data_error")
     })?;
     group_post.update_related_counts(conn)?;
-    Ok(group_post.to_proto())
+    let media_lookup = load_media_lookup(
+        user.avatar_media_id.map(|mid| vec![mid]).unwrap_or(vec![]),
+        conn,
+    );
+    Ok(group_post.to_proto(&Some(user.to_author()), media_lookup.as_ref()))
 }

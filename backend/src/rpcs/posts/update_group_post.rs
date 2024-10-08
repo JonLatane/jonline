@@ -31,6 +31,13 @@ pub fn update_group_post(
     existing_group_post.group_moderation = request.group_moderation.to_string_moderation();
     existing_group_post.updated_at = SystemTime::now().into();
 
+    let media_lookup = load_media_lookup(
+        current_user
+            .avatar_media_id
+            .map(|mid| vec![mid])
+            .unwrap_or(vec![]),
+        conn,
+    );
     match diesel::update(group_posts::table)
         .filter(group_posts::group_id.eq(request.group_id.to_db_id().unwrap()))
         .filter(group_posts::post_id.eq(request.post_id.to_db_id().unwrap()))
@@ -39,7 +46,10 @@ pub fn update_group_post(
     {
         Ok(_) => {
             existing_group_post.update_related_counts(conn)?;
-            Ok(existing_group_post.to_proto())
+            Ok(
+                existing_group_post
+                    .to_proto(&Some(current_user.to_author()), media_lookup.as_ref()),
+            )
         }
         Err(e) => {
             log::error!("Error updating group_post: {:?}", e);

@@ -52,11 +52,15 @@ export const PageChooser: React.FC<Pagination<any> & {
         if (pageTopId) return;
         if (noAutoScroll) return;
 
-        setTimeout(
-          () => document.getElementById(pageButtonId(currentPage))
-            ?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }),
-          300
-        );
+        // requestAnimationFrame(() => {
+        document.getElementById(pageButtonId(currentPage))
+          ?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' })
+        // });
+        // setTimeout(
+        //   () => document.getElementById(pageButtonId(currentPage))
+        //     ?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' }),
+        //   1
+        // );
       },
       [currentPage]
     );
