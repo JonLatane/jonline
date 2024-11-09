@@ -103,14 +103,15 @@ export const eventsSlice = createSlice({
     saveHiddenLocation(state, action: PayloadAction<{ location: Location, event: FederatedEvent, instance: EventInstance }>) {
       const { location, event, instance } = action.payload;
       const existingEvent = selectEventById(state, federatedId(event));
-      debugger;
+      // // debugger;
       if (!existingEvent) return;
-
+      // debugger;
       if (existingEvent?.instances.find(i => i.id === instance.id)?.location) {
         existingEvent.instances.find(i => i.id === instance.id)!.location = location;
       }
-      debugger;
-      eventsAdapter.upsertOne(state, existingEvent);
+      // // debugger;
+      // eventsAdapter.upsertOne(state, existingEvent);
+      mergeEvent(state, existingEvent, event.serverHost);
     }
   },
   extraReducers: (builder) => {

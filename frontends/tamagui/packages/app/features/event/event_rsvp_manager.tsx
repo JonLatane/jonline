@@ -144,9 +144,9 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             anonymousAttendeeAuthToken: anonymousAuthToken
           }, client.credential);
           setAttendances(eventAttendancesResponse.attendances);
-          debugger;
-          if (!instance.location && eventAttendancesResponse.hiddenLocation) {
-            dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation, event, instance }))
+          if (event.info?.hideLocationUntilRsvpApproved && !instance.location && eventAttendancesResponse.hiddenLocation) {
+            debugger;
+            setTimeout(() => dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation!, event, instance })), 1000);
           }
         } catch (e) {
           console.error('Failed to load event attendances', e)
