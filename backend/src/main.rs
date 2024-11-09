@@ -27,23 +27,24 @@ extern crate awscreds;
 extern crate bytes;
 extern crate ico;
 extern crate percent_encoding;
+extern crate rand;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
-extern crate rand;
 
-pub mod minio_connection;
-pub mod db_connection;
-pub mod schema;
-pub mod models;
 pub mod auth;
-pub mod protos;
-pub mod marshaling;
-pub mod logic;
-pub mod rpcs;
+pub mod db_connection;
 pub mod jonline_service;
-pub mod web;
+pub mod logic;
+pub mod marshaling;
+pub mod minio_connection;
+pub mod models;
+pub mod protos;
+pub mod rpcs;
+pub mod schema;
 pub mod servers;
+pub mod web;
+pub mod web_push;
 
 use ::jonline::{env_var, init_crypto, init_service_logging, report_error};
 use diesel::*;
@@ -59,13 +60,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_service_logging();
     db_connection::migrate_database();
 
-    log::info!("Starting Jonline...
+    log::info!(
+        "Starting Jonline...
 ┏┳ ┏┓ ┳┓ ┓  ┳ ┳┓ ┏┓
  ┃ ┃┃ ┃┃ ┃  ┃ ┃┃ ┣ 
 ┗┛ ┗┛ ┛┗ ┗┛ ┻ ┛┗ ┗┛
  (Jonline Server)
 A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
-");
+"
+    );
 
     let pool = Arc::new(db_connection::establish_pool());
     let bucket = Arc::new(

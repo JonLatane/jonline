@@ -23,6 +23,10 @@ impl ToDbServerConfiguration for ServerConfiguration {
                 .external_cdn_config
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
+            web_push_config: self
+                .web_push_config
+                .as_ref()
+                .map(|c| serde_json::to_value(c).unwrap()),
             private_user_strategy: self.private_user_strategy.to_string_private_user_strategy(),
             authentication_features: self
                 .authentication_features
@@ -51,6 +55,12 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
             .external_cdn_config
             .to_owned()
             .map(|c| serde_json::from_value(c).unwrap_or_else(|_| ExternalCdnConfig::default()));
+        let web_push_config: Option<WebPushConfig> = self
+            .web_push_config
+            .to_owned()
+            .map_or(Some(None), |c| serde_json::from_value(c).ok())
+            .flatten();
+        // .map(|c| serde_json::from_value(c).unwrap_or_else(|_| None));
 
         ServerConfiguration {
             server_info: Some(server_info),
@@ -74,7 +84,7 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
                 .authentication_features
                 .to_i32_authentication_features(),
             external_cdn_config: external_cdn_config,
-            // ..Default::default()
+            web_push_config: web_push_config, // ..Default::default()
         }
     }
 }

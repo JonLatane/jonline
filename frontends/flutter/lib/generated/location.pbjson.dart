@@ -29,18 +29,3 @@ final $typed_data.Uint8List locationDescriptor = $convert.base64Decode(
     'lkEj4KG3VuaWZvcm1seV9mb3JtYXR0ZWRfYWRkcmVzcxgDIAEoCVIZdW5pZm9ybWx5Rm9ybWF0'
     'dGVkQWRkcmVzcw==');
 
-@$core.Deprecated('Use locationAliasDescriptor instead')
-const LocationAlias$json = {
-  '1': 'LocationAlias',
-  '2': [
-    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'alias', '3': 2, '4': 1, '5': 9, '10': 'alias'},
-    {'1': 'creator_id', '3': 3, '4': 1, '5': 9, '10': 'creatorId'},
-  ],
-};
-
-/// Descriptor for `LocationAlias`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List locationAliasDescriptor = $convert.base64Decode(
-    'Cg1Mb2NhdGlvbkFsaWFzEg4KAmlkGAEgASgJUgJpZBIUCgVhbGlhcxgCIAEoCVIFYWxpYXMSHQ'
-    'oKY3JlYXRvcl9pZBgDIAEoCVIJY3JlYXRvcklk');
-

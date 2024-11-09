@@ -9,9 +9,11 @@ import _m0 from "protobufjs/minimal";
 
 export const protobufPackage = "jonline";
 
-/** Locations */
+/** Locations are places where events can happen. */
 export interface Location {
+  /** The ID of the location. May not be unique. */
   id: string;
+  /** The User ID of the location's creator, if available. */
   creatorId: string;
   /**
    * This should probably come from OpenStreetMap APIs, with an option for Google Maps.
@@ -19,12 +21,6 @@ export interface Location {
    * but give the user the option to use Google Maps.
    */
   uniformlyFormattedAddress: string;
-}
-
-export interface LocationAlias {
-  id: string;
-  alias: string;
-  creatorId: string;
 }
 
 function createBaseLocation(): Location {
@@ -114,95 +110,6 @@ export const Location = {
     message.id = object.id ?? "";
     message.creatorId = object.creatorId ?? "";
     message.uniformlyFormattedAddress = object.uniformlyFormattedAddress ?? "";
-    return message;
-  },
-};
-
-function createBaseLocationAlias(): LocationAlias {
-  return { id: "", alias: "", creatorId: "" };
-}
-
-export const LocationAlias = {
-  encode(message: LocationAlias, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
-    }
-    if (message.alias !== "") {
-      writer.uint32(18).string(message.alias);
-    }
-    if (message.creatorId !== "") {
-      writer.uint32(26).string(message.creatorId);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): LocationAlias {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseLocationAlias();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag !== 10) {
-            break;
-          }
-
-          message.id = reader.string();
-          continue;
-        case 2:
-          if (tag !== 18) {
-            break;
-          }
-
-          message.alias = reader.string();
-          continue;
-        case 3:
-          if (tag !== 26) {
-            break;
-          }
-
-          message.creatorId = reader.string();
-          continue;
-      }
-      if ((tag & 7) === 4 || tag === 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): LocationAlias {
-    return {
-      id: isSet(object.id) ? globalThis.String(object.id) : "",
-      alias: isSet(object.alias) ? globalThis.String(object.alias) : "",
-      creatorId: isSet(object.creatorId) ? globalThis.String(object.creatorId) : "",
-    };
-  },
-
-  toJSON(message: LocationAlias): unknown {
-    const obj: any = {};
-    if (message.id !== "") {
-      obj.id = message.id;
-    }
-    if (message.alias !== "") {
-      obj.alias = message.alias;
-    }
-    if (message.creatorId !== "") {
-      obj.creatorId = message.creatorId;
-    }
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<LocationAlias>, I>>(base?: I): LocationAlias {
-    return LocationAlias.fromPartial(base ?? ({} as any));
-  },
-  fromPartial<I extends Exact<DeepPartial<LocationAlias>, I>>(object: I): LocationAlias {
-    const message = createBaseLocationAlias();
-    message.id = object.id ?? "";
-    message.alias = object.alias ?? "";
-    message.creatorId = object.creatorId ?? "";
     return message;
   },
 };

@@ -60,11 +60,22 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
         let event = self.0.to_owned();
         let post = self.1.to_owned();
         let instances = self.2.to_owned();
+        let hide_location = event.info["hide_location_until_rsvp_approved"]
+            .as_bool()
+            .unwrap_or(false);
+        log::info!(
+            "ToProtoMarshalableEvent hide_location={} info={:?}",
+            hide_location,
+            event.info
+        );
         // self.to_proto(username, None)
         Event {
             id: event.id.to_proto_id(),
             post: Some(post.to_proto(media_lookup)),
-            instances: instances.iter().map(|i| i.to_proto(media_lookup)).collect(),
+            instances: instances
+                .iter()
+                .map(|i| i.to_proto(media_lookup, hide_location))
+                .collect(),
             info: serde_json::from_value(self.0.info.to_owned()).ok(),
             ..Default::default()
         }
@@ -72,17 +83,18 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
 }
 
 pub trait ToProtoMarshalableEventInstance {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> EventInstance;
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>, hide_location: bool) -> EventInstance;
 }
 
 impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> EventInstance {
+    fn to_proto(&self, media_lookup: Option<&MediaLookup>, hide_location: bool) -> EventInstance {
         let event_instance = self.0.to_owned();
         let marshalable_post = self.1.to_owned();
-        let location: Option<Location> = event_instance
-            .location
-            .to_owned()
-            .map(|c| serde_json::from_value(c).unwrap());
+        let location: Option<Location> = if hide_location {
+            None
+        } else {
+            event_instance.location.map(|c| c.to_proto_location())
+        };
         EventInstance {
             id: event_instance.id.to_proto_id(),
             event_id: event_instance.event_id.to_proto_id(),
@@ -95,6 +107,16 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
             location,
             ..Default::default()
         }
+    }
+}
+
+pub trait ToProtoLocation {
+    fn to_proto_location(&self) -> Location;
+}
+
+impl ToProtoLocation for serde_json::Value {
+    fn to_proto_location(&self) -> Location {
+        serde_json::from_value(self.to_owned()).unwrap()
     }
 }
 

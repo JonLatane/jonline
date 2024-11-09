@@ -12,7 +12,7 @@ import { store } from "../store";
 import { Dictionary } from "@reduxjs/toolkit";
 import { getServerClient } from "../clients";
 import { FederatedGroup } from "./groups_state";
-import { storeInitializer } from "../store_initializer";
+import { pageInitializer } from "../../utils/page_initializer";
 
 export type DateTimeRenderer = 'custom' | 'native';
 
@@ -118,13 +118,13 @@ const initialState: Config = {
 };
 
 
-storeInitializer(async () => {
+pageInitializer(async () => {
   if (store.getState().config.deviceName === defaultDeviceName) {
     store.dispatch(setDeviceName(generateDeviceName()));
   }
 });
 
-storeInitializer(async () => {
+pageInitializer(async () => {
   const state = store.getState();
   if (state.config.dateTimeRenderer === undefined) {
 

@@ -472,6 +472,8 @@ class EventInfo extends $pb.GeneratedMessage {
     $core.bool? allowsRsvps,
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
+    $core.bool? hideLocationUntilRsvpApproved,
+    $10.Moderation? defaultRsvpModeration,
   }) {
     final $result = create();
     if (allowsRsvps != null) {
@@ -483,6 +485,12 @@ class EventInfo extends $pb.GeneratedMessage {
     if (maxAttendees != null) {
       $result.maxAttendees = maxAttendees;
     }
+    if (hideLocationUntilRsvpApproved != null) {
+      $result.hideLocationUntilRsvpApproved = hideLocationUntilRsvpApproved;
+    }
+    if (defaultRsvpModeration != null) {
+      $result.defaultRsvpModeration = defaultRsvpModeration;
+    }
     return $result;
   }
   EventInfo._() : super();
@@ -493,6 +501,8 @@ class EventInfo extends $pb.GeneratedMessage {
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
+    ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
+    ..e<$10.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
     ..hasRequiredFields = false
   ;
 
@@ -546,6 +556,30 @@ class EventInfo extends $pb.GeneratedMessage {
   $core.bool hasMaxAttendees() => $_has(2);
   @$pb.TagNumber(3)
   void clearMaxAttendees() => clearField(3);
+
+  /// Hide the location until the user RSVPs (and it's accepted).
+  /// From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
+  /// Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
+  /// user whose attendance is approved (or the event owner).
+  @$pb.TagNumber(4)
+  $core.bool get hideLocationUntilRsvpApproved => $_getBF(3);
+  @$pb.TagNumber(4)
+  set hideLocationUntilRsvpApproved($core.bool v) { $_setBool(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasHideLocationUntilRsvpApproved() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearHideLocationUntilRsvpApproved() => clearField(4);
+
+  /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
+  /// Anonymous RSVPs are always moderated (default to `PENDING`).
+  @$pb.TagNumber(5)
+  $10.Moderation get defaultRsvpModeration => $_getN(4);
+  @$pb.TagNumber(5)
+  set defaultRsvpModeration($10.Moderation v) { setField(5, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasDefaultRsvpModeration() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearDefaultRsvpModeration() => clearField(5);
 }
 
 /// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
@@ -1003,10 +1037,14 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
+    $12.Location? hiddenLocation,
   }) {
     final $result = create();
     if (attendances != null) {
       $result.attendances.addAll(attendances);
+    }
+    if (hiddenLocation != null) {
+      $result.hiddenLocation = hiddenLocation;
     }
     return $result;
   }
@@ -1016,6 +1054,7 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
+    ..aOM<$12.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $12.Location.create)
     ..hasRequiredFields = false
   ;
 
@@ -1043,6 +1082,18 @@ class EventAttendances extends $pb.GeneratedMessage {
   /// The attendance data for the event, in no particular order.
   @$pb.TagNumber(1)
   $core.List<EventAttendance> get attendances => $_getList(0);
+
+  /// When `hide_location_until_rsvp_approved` is set, the location of the event.
+  @$pb.TagNumber(2)
+  $12.Location get hiddenLocation => $_getN(1);
+  @$pb.TagNumber(2)
+  set hiddenLocation($12.Location v) { setField(2, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasHiddenLocation() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearHiddenLocation() => clearField(2);
+  @$pb.TagNumber(2)
+  $12.Location ensureHiddenLocation() => $_ensure(1);
 }
 
 enum EventAttendance_Attendee {

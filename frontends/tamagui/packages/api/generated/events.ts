@@ -290,7 +290,23 @@ export interface EventInfo {
     | boolean
     | undefined;
   /** Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. */
-  maxAttendees?: number | undefined;
+  maxAttendees?:
+    | number
+    | undefined;
+  /**
+   * Hide the location until the user RSVPs (and it's accepted).
+   * From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
+   * Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
+   * user whose attendance is approved (or the event owner).
+   */
+  hideLocationUntilRsvpApproved?:
+    | boolean
+    | undefined;
+  /**
+   * Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
+   * Anonymous RSVPs are always moderated (default to `PENDING`).
+   */
+  defaultRsvpModeration?: Moderation | undefined;
 }
 
 /**
@@ -389,6 +405,8 @@ export interface GetEventAttendancesRequest {
 export interface EventAttendances {
   /** The attendance data for the event, in no particular order. */
   attendances: EventAttendance[];
+  /** When `hide_location_until_rsvp_approved` is set, the location of the event. */
+  hiddenLocation?: Location | undefined;
 }
 
 /**
@@ -939,7 +957,13 @@ export const Event = {
 };
 
 function createBaseEventInfo(): EventInfo {
-  return { allowsRsvps: undefined, allowsAnonymousRsvps: undefined, maxAttendees: undefined };
+  return {
+    allowsRsvps: undefined,
+    allowsAnonymousRsvps: undefined,
+    maxAttendees: undefined,
+    hideLocationUntilRsvpApproved: undefined,
+    defaultRsvpModeration: undefined,
+  };
 }
 
 export const EventInfo = {
@@ -952,6 +976,12 @@ export const EventInfo = {
     }
     if (message.maxAttendees !== undefined) {
       writer.uint32(24).uint32(message.maxAttendees);
+    }
+    if (message.hideLocationUntilRsvpApproved !== undefined) {
+      writer.uint32(32).bool(message.hideLocationUntilRsvpApproved);
+    }
+    if (message.defaultRsvpModeration !== undefined) {
+      writer.uint32(40).int32(message.defaultRsvpModeration);
     }
     return writer;
   },
@@ -984,6 +1014,20 @@ export const EventInfo = {
 
           message.maxAttendees = reader.uint32();
           continue;
+        case 4:
+          if (tag !== 32) {
+            break;
+          }
+
+          message.hideLocationUntilRsvpApproved = reader.bool();
+          continue;
+        case 5:
+          if (tag !== 40) {
+            break;
+          }
+
+          message.defaultRsvpModeration = reader.int32() as any;
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1000,6 +1044,12 @@ export const EventInfo = {
         ? globalThis.Boolean(object.allowsAnonymousRsvps)
         : undefined,
       maxAttendees: isSet(object.maxAttendees) ? globalThis.Number(object.maxAttendees) : undefined,
+      hideLocationUntilRsvpApproved: isSet(object.hideLocationUntilRsvpApproved)
+        ? globalThis.Boolean(object.hideLocationUntilRsvpApproved)
+        : undefined,
+      defaultRsvpModeration: isSet(object.defaultRsvpModeration)
+        ? moderationFromJSON(object.defaultRsvpModeration)
+        : undefined,
     };
   },
 
@@ -1014,6 +1064,12 @@ export const EventInfo = {
     if (message.maxAttendees !== undefined) {
       obj.maxAttendees = Math.round(message.maxAttendees);
     }
+    if (message.hideLocationUntilRsvpApproved !== undefined) {
+      obj.hideLocationUntilRsvpApproved = message.hideLocationUntilRsvpApproved;
+    }
+    if (message.defaultRsvpModeration !== undefined) {
+      obj.defaultRsvpModeration = moderationToJSON(message.defaultRsvpModeration);
+    }
     return obj;
   },
 
@@ -1025,6 +1081,8 @@ export const EventInfo = {
     message.allowsRsvps = object.allowsRsvps ?? undefined;
     message.allowsAnonymousRsvps = object.allowsAnonymousRsvps ?? undefined;
     message.maxAttendees = object.maxAttendees ?? undefined;
+    message.hideLocationUntilRsvpApproved = object.hideLocationUntilRsvpApproved ?? undefined;
+    message.defaultRsvpModeration = object.defaultRsvpModeration ?? undefined;
     return message;
   },
 };
@@ -1519,13 +1577,16 @@ export const GetEventAttendancesRequest = {
 };
 
 function createBaseEventAttendances(): EventAttendances {
-  return { attendances: [] };
+  return { attendances: [], hiddenLocation: undefined };
 }
 
 export const EventAttendances = {
   encode(message: EventAttendances, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     for (const v of message.attendances) {
       EventAttendance.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.hiddenLocation !== undefined) {
+      Location.encode(message.hiddenLocation, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -1544,6 +1605,13 @@ export const EventAttendances = {
 
           message.attendances.push(EventAttendance.decode(reader, reader.uint32()));
           continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.hiddenLocation = Location.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1558,6 +1626,7 @@ export const EventAttendances = {
       attendances: globalThis.Array.isArray(object?.attendances)
         ? object.attendances.map((e: any) => EventAttendance.fromJSON(e))
         : [],
+      hiddenLocation: isSet(object.hiddenLocation) ? Location.fromJSON(object.hiddenLocation) : undefined,
     };
   },
 
@@ -1565,6 +1634,9 @@ export const EventAttendances = {
     const obj: any = {};
     if (message.attendances?.length) {
       obj.attendances = message.attendances.map((e) => EventAttendance.toJSON(e));
+    }
+    if (message.hiddenLocation !== undefined) {
+      obj.hiddenLocation = Location.toJSON(message.hiddenLocation);
     }
     return obj;
   },
@@ -1575,6 +1647,9 @@ export const EventAttendances = {
   fromPartial<I extends Exact<DeepPartial<EventAttendances>, I>>(object: I): EventAttendances {
     const message = createBaseEventAttendances();
     message.attendances = object.attendances?.map((e) => EventAttendance.fromPartial(e)) || [];
+    message.hiddenLocation = (object.hiddenLocation !== undefined && object.hiddenLocation !== null)
+      ? Location.fromPartial(object.hiddenLocation)
+      : undefined;
     return message;
   },
 };

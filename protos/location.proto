@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package jonline;
 
-// Locations
+// Locations are places where events can happen.
 message Location {
+  // The ID of the location. May not be unique.
   string id = 1;
+  // The User ID of the location's creator, if available.
   string creator_id = 2;
   // This should probably come from OpenStreetMap APIs, with an option for Google Maps.
   // Ideally both the Flutter and React apps, and any others, should prefer OpenStreetMap
@@ -12,8 +14,8 @@ message Location {
   string uniformly_formatted_address = 3;
 }
 
-message LocationAlias {
-  string id = 1;
-  string alias = 2;
-  string creator_id = 3;
-}
+// message LocationAlias {
+//   string id = 1;
+//   string alias = 2;
+//   string creator_id = 3;
+// }

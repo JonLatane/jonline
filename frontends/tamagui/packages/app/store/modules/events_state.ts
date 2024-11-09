@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType, TimeFilter } from "@jonline/api";
+import { Event, EventInstance, EventListingType, TimeFilter, Location } from "@jonline/api";
 import {
   Dictionary,
   EntityAdapter,
@@ -99,6 +99,18 @@ export const eventsSlice = createSlice({
       //   state.upcomingEventsTimeFilter = timeFilter;
       // }
       // return state.upcomingEventsTimeFilter;
+    },
+    saveHiddenLocation(state, action: PayloadAction<{ location: Location, event: FederatedEvent, instance: EventInstance }>) {
+      const { location, event, instance } = action.payload;
+      const existingEvent = selectEventById(state, federatedId(event));
+      debugger;
+      if (!existingEvent) return;
+
+      if (existingEvent?.instances.find(i => i.id === instance.id)?.location) {
+        existingEvent.instances.find(i => i.id === instance.id)!.location = location;
+      }
+      debugger;
+      eventsAdapter.upsertOne(state, existingEvent);
     }
   },
   extraReducers: (builder) => {
@@ -222,7 +234,7 @@ const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
 
-export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter } = eventsSlice.actions;
+export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter, saveHiddenLocation } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;

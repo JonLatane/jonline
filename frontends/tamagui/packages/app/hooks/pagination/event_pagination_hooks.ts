@@ -54,7 +54,7 @@ export function useServerEventPages(
   const someUnloadedServers = useAppSelector(state => someUnloaded(state.events.pagesStatus, servers));
   const hasMorePages = useAppSelector(state => getHasMoreEventPages(state.events, listingType, timeFilter, throughPage, servers));
 
-  const { pollForLoadingLocked, lockLoading, unlockLoading, createReload } = useLoadingLock(loadingMutex);
+  const { createReload } = useLoadingLock(loadingMutex);
 
   const reload = createReload(loading, async (force) => {
     const serversToUpdate = force ? servers : serversMissingEventsPage;

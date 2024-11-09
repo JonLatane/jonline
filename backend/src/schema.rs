@@ -214,6 +214,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         federation_info -> Jsonb,
+        web_push_config -> Nullable<Jsonb>,
     }
 }
 

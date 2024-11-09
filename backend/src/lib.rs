@@ -39,6 +39,7 @@ pub mod rpcs;
 pub mod schema;
 pub mod servers;
 pub mod web;
+pub mod web_push;
 
 pub use marshaling::*;
 

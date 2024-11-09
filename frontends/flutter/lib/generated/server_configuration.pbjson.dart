@@ -79,11 +79,13 @@ const ServerConfiguration$json = {
     {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 2, '10': 'externalCdnConfig', '17': true},
     {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
     {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
+    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.jonline.WebPushConfig', '9': 3, '10': 'webPushConfig', '17': true},
   ],
   '8': [
     {'1': '_server_info'},
     {'1': '_federation_info'},
     {'1': '_external_cdn_config'},
+    {'1': '_web_push_config'},
   ],
 };
 
@@ -106,8 +108,9 @@ final $typed_data.Uint8List serverConfigurationDescriptor = $convert.base64Decod
     'ZG5Db25maWeIAQESUAoVcHJpdmF0ZV91c2VyX3N0cmF0ZWd5GGQgASgOMhwuam9ubGluZS5Qcm'
     'l2YXRlVXNlclN0cmF0ZWd5UhNwcml2YXRlVXNlclN0cmF0ZWd5ElcKF2F1dGhlbnRpY2F0aW9u'
     'X2ZlYXR1cmVzGGUgAygOMh4uam9ubGluZS5BdXRoZW50aWNhdGlvbkZlYXR1cmVSFmF1dGhlbn'
-    'RpY2F0aW9uRmVhdHVyZXNCDgoMX3NlcnZlcl9pbmZvQhIKEF9mZWRlcmF0aW9uX2luZm9CFgoU'
-    'X2V4dGVybmFsX2Nkbl9jb25maWc=');
+    'RpY2F0aW9uRmVhdHVyZXMSQwoPd2ViX3B1c2hfY29uZmlnGG4gASgLMhYuam9ubGluZS5XZWJQ'
+    'dXNoQ29uZmlnSANSDXdlYlB1c2hDb25maWeIAQFCDgoMX3NlcnZlcl9pbmZvQhIKEF9mZWRlcm'
+    'F0aW9uX2luZm9CFgoUX2V4dGVybmFsX2Nkbl9jb25maWdCEgoQX3dlYl9wdXNoX2NvbmZpZw==');
 
 @$core.Deprecated('Use externalCDNConfigDescriptor instead')
 const ExternalCDNConfig$json = {
@@ -279,4 +282,18 @@ final $typed_data.Uint8List serverColorsDescriptor = $convert.base64Decode(
     'EhkKBWFkbWluGAQgASgNSANSBWFkbWluiAEBEiEKCW1vZGVyYXRvchgFIAEoDUgEUgltb2Rlcm'
     'F0b3KIAQFCCgoIX3ByaW1hcnlCDQoLX25hdmlnYXRpb25CCQoHX2F1dGhvckIICgZfYWRtaW5C'
     'DAoKX21vZGVyYXRvcg==');
+
+@$core.Deprecated('Use webPushConfigDescriptor instead')
+const WebPushConfig$json = {
+  '1': 'WebPushConfig',
+  '2': [
+    {'1': 'public_vapid_key', '3': 1, '4': 1, '5': 9, '10': 'publicVapidKey'},
+    {'1': 'private_vapid_key', '3': 2, '4': 1, '5': 9, '10': 'privateVapidKey'},
+  ],
+};
+
+/// Descriptor for `WebPushConfig`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List webPushConfigDescriptor = $convert.base64Decode(
+    'Cg1XZWJQdXNoQ29uZmlnEigKEHB1YmxpY192YXBpZF9rZXkYASABKAlSDnB1YmxpY1ZhcGlkS2'
+    'V5EioKEXByaXZhdGVfdmFwaWRfa2V5GAIgASgJUg9wcml2YXRlVmFwaWRLZXk=');
 

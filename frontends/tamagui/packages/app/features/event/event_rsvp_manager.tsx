@@ -1,4 +1,4 @@
-import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, useServerTheme } from "app/store";
+import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, saveHiddenLocation, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, EventAttendance, EventInstance, Permission } from "@jonline/api";
@@ -139,11 +139,15 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         try {
           // console.log('loading attendance data with auth token', anonymousAuthToken);
           const client = await getCredentialClient(accountOrServer);
-          const data = await client.getEventAttendances({
+          const eventAttendancesResponse = await client.getEventAttendances({
             eventInstanceId: instance?.id,
             anonymousAttendeeAuthToken: anonymousAuthToken
           }, client.credential);
-          setAttendances(data.attendances);
+          setAttendances(eventAttendancesResponse.attendances);
+          debugger;
+          if (!instance.location && eventAttendancesResponse.hiddenLocation) {
+            dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation, event, instance }))
+          }
         } catch (e) {
           console.error('Failed to load event attendances', e)
           setLoadFailed(true);

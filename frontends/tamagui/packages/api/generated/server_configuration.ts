@@ -255,6 +255,8 @@ export interface ServerConfiguration {
    * Eventually, external auth too hopefully!
    */
   authenticationFeatures: AuthenticationFeature[];
+  /** Web Push (VAPID) configuration for the server. */
+  webPushConfig?: WebPushConfig | undefined;
 }
 
 /**
@@ -456,6 +458,17 @@ export interface ServerColors {
   moderator?: number | undefined;
 }
 
+/** Web Push (VAPID) configuration for the server. */
+export interface WebPushConfig {
+  /** Public VAPID key for the server. */
+  publicVapidKey: string;
+  /**
+   * Private VAPID key for the server. *Never serialized to the client.*
+   * Admins: Edit this in the database's JSONB column directly.
+   */
+  privateVapidKey: string;
+}
+
 function createBaseServerConfiguration(): ServerConfiguration {
   return {
     serverInfo: undefined,
@@ -471,6 +484,7 @@ function createBaseServerConfiguration(): ServerConfiguration {
     externalCdnConfig: undefined,
     privateUserStrategy: 0,
     authenticationFeatures: [],
+    webPushConfig: undefined,
   };
 }
 
@@ -523,6 +537,9 @@ export const ServerConfiguration = {
       writer.int32(v);
     }
     writer.ldelim();
+    if (message.webPushConfig !== undefined) {
+      WebPushConfig.encode(message.webPushConfig, writer.uint32(882).fork()).ldelim();
+    }
     return writer;
   },
 
@@ -664,6 +681,13 @@ export const ServerConfiguration = {
           }
 
           break;
+        case 110:
+          if (tag !== 882) {
+            break;
+          }
+
+          message.webPushConfig = WebPushConfig.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -700,6 +724,7 @@ export const ServerConfiguration = {
       authenticationFeatures: globalThis.Array.isArray(object?.authenticationFeatures)
         ? object.authenticationFeatures.map((e: any) => authenticationFeatureFromJSON(e))
         : [],
+      webPushConfig: isSet(object.webPushConfig) ? WebPushConfig.fromJSON(object.webPushConfig) : undefined,
     };
   },
 
@@ -744,6 +769,9 @@ export const ServerConfiguration = {
     if (message.authenticationFeatures?.length) {
       obj.authenticationFeatures = message.authenticationFeatures.map((e) => authenticationFeatureToJSON(e));
     }
+    if (message.webPushConfig !== undefined) {
+      obj.webPushConfig = WebPushConfig.toJSON(message.webPushConfig);
+    }
     return obj;
   },
 
@@ -781,6 +809,9 @@ export const ServerConfiguration = {
       : undefined;
     message.privateUserStrategy = object.privateUserStrategy ?? 0;
     message.authenticationFeatures = object.authenticationFeatures?.map((e) => e) || [];
+    message.webPushConfig = (object.webPushConfig !== undefined && object.webPushConfig !== null)
+      ? WebPushConfig.fromPartial(object.webPushConfig)
+      : undefined;
     return message;
   },
 };
@@ -1569,6 +1600,80 @@ export const ServerColors = {
     message.author = object.author ?? undefined;
     message.admin = object.admin ?? undefined;
     message.moderator = object.moderator ?? undefined;
+    return message;
+  },
+};
+
+function createBaseWebPushConfig(): WebPushConfig {
+  return { publicVapidKey: "", privateVapidKey: "" };
+}
+
+export const WebPushConfig = {
+  encode(message: WebPushConfig, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.publicVapidKey !== "") {
+      writer.uint32(10).string(message.publicVapidKey);
+    }
+    if (message.privateVapidKey !== "") {
+      writer.uint32(18).string(message.privateVapidKey);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): WebPushConfig {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseWebPushConfig();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag !== 10) {
+            break;
+          }
+
+          message.publicVapidKey = reader.string();
+          continue;
+        case 2:
+          if (tag !== 18) {
+            break;
+          }
+
+          message.privateVapidKey = reader.string();
+          continue;
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): WebPushConfig {
+    return {
+      publicVapidKey: isSet(object.publicVapidKey) ? globalThis.String(object.publicVapidKey) : "",
+      privateVapidKey: isSet(object.privateVapidKey) ? globalThis.String(object.privateVapidKey) : "",
+    };
+  },
+
+  toJSON(message: WebPushConfig): unknown {
+    const obj: any = {};
+    if (message.publicVapidKey !== "") {
+      obj.publicVapidKey = message.publicVapidKey;
+    }
+    if (message.privateVapidKey !== "") {
+      obj.privateVapidKey = message.privateVapidKey;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<WebPushConfig>, I>>(base?: I): WebPushConfig {
+    return WebPushConfig.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<WebPushConfig>, I>>(object: I): WebPushConfig {
+    const message = createBaseWebPushConfig();
+    message.publicVapidKey = object.publicVapidKey ?? "";
+    message.privateVapidKey = object.privateVapidKey ?? "";
     return message;
   },
 };

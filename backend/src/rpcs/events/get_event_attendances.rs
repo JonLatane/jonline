@@ -20,21 +20,18 @@ pub fn get_event_attendances(
 ) -> Result<EventAttendances, Status> {
     let event_instance_id = request.event_instance_id.to_db_id_or_err("id")?;
 
-    let (_event, event_post, _event_instance): (
-        models::Event,
-        models::Post,
-        models::EventInstance,
-    ) = event_instances::table
-        .inner_join(events::table.on(event_instances::event_id.eq(events::id)))
-        .inner_join(posts::table.on(events::post_id.eq(posts::id)))
-        .filter(event_instances::id.eq(event_instance_id))
-        .select((
-            events::all_columns,
-            posts::all_columns,
-            event_instances::all_columns,
-        ))
-        .first::<(models::Event, models::Post, models::EventInstance)>(conn)
-        .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
+    let (event, event_post, event_instance): (models::Event, models::Post, models::EventInstance) =
+        event_instances::table
+            .inner_join(events::table.on(event_instances::event_id.eq(events::id)))
+            .inner_join(posts::table.on(events::post_id.eq(posts::id)))
+            .filter(event_instances::id.eq(event_instance_id))
+            .select((
+                events::all_columns,
+                posts::all_columns,
+                event_instances::all_columns,
+            ))
+            .first::<(models::Event, models::Post, models::EventInstance)>(conn)
+            .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;
 
     let is_event_owner = user.is_some()
         && event_post.user_id.is_some()
@@ -85,15 +82,34 @@ pub fn get_event_attendances(
                 Status::new(Code::Internal, "failed_to_load_event_attendances")
             })?;
 
+    let is_approved_attendee = is_event_owner
+        || attendances.iter().any(|(a, _)| {
+            a.moderation == Moderation::Approved.to_string_moderation()
+                && ((user.is_some() && a.user_id == user.map(|u| u.id))
+                    || (request.anonymous_attendee_auth_token.is_some()
+                        && a.anonymous_attendee.is_some()
+                        && a.anonymous_attendee.as_ref().unwrap()["auth_token"]
+                            .as_str()
+                            .unwrap()
+                            == request.anonymous_attendee_auth_token.as_ref().unwrap()))
+        });
+
+    let hidden_location = if is_approved_attendee
+        || !event.info["hide_location_until_rsvp_approved"]
+            .as_bool()
+            .unwrap_or(false)
+    {
+        event_instance.location.map(|l| l.to_proto_location())
+    } else {
+        None
+    };
+
     let media_ids = attendances
         .iter()
         .filter_map(|(_, author)| author.as_ref().map(|a| a.avatar_media_id))
         .map(|id| id.unwrap_or(0))
         .collect();
-    let lookup = load_media_lookup(
-        media_ids,
-        conn,
-    );
+    let lookup = load_media_lookup(media_ids, conn);
     Ok(EventAttendances {
         attendances: attendances
             .into_iter()
@@ -125,5 +141,7 @@ pub fn get_event_attendances(
                 (a, attendee).to_proto(include_private_note, include_private_note, lookup.as_ref())
             })
             .collect(),
+
+        hidden_location,
     })
 }

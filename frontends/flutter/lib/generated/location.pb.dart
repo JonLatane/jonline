@@ -13,7 +13,7 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-/// Locations
+/// Locations are places where events can happen.
 class Location extends $pb.GeneratedMessage {
   factory Location({
     $core.String? id,
@@ -64,6 +64,7 @@ class Location extends $pb.GeneratedMessage {
   static Location getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Location>(create);
   static Location? _defaultInstance;
 
+  /// The ID of the location. May not be unique.
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
@@ -73,6 +74,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   void clearId() => clearField(1);
 
+  /// The User ID of the location's creator, if available.
   @$pb.TagNumber(2)
   $core.String get creatorId => $_getSZ(1);
   @$pb.TagNumber(2)
@@ -93,84 +95,6 @@ class Location extends $pb.GeneratedMessage {
   $core.bool hasUniformlyFormattedAddress() => $_has(2);
   @$pb.TagNumber(3)
   void clearUniformlyFormattedAddress() => clearField(3);
-}
-
-class LocationAlias extends $pb.GeneratedMessage {
-  factory LocationAlias({
-    $core.String? id,
-    $core.String? alias,
-    $core.String? creatorId,
-  }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (alias != null) {
-      $result.alias = alias;
-    }
-    if (creatorId != null) {
-      $result.creatorId = creatorId;
-    }
-    return $result;
-  }
-  LocationAlias._() : super();
-  factory LocationAlias.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory LocationAlias.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LocationAlias', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOS(2, _omitFieldNames ? '' : 'alias')
-    ..aOS(3, _omitFieldNames ? '' : 'creatorId')
-    ..hasRequiredFields = false
-  ;
-
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  LocationAlias clone() => LocationAlias()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  LocationAlias copyWith(void Function(LocationAlias) updates) => super.copyWith((message) => updates(message as LocationAlias)) as LocationAlias;
-
-  $pb.BuilderInfo get info_ => _i;
-
-  @$core.pragma('dart2js:noInline')
-  static LocationAlias create() => LocationAlias._();
-  LocationAlias createEmptyInstance() => create();
-  static $pb.PbList<LocationAlias> createRepeated() => $pb.PbList<LocationAlias>();
-  @$core.pragma('dart2js:noInline')
-  static LocationAlias getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<LocationAlias>(create);
-  static LocationAlias? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.String get id => $_getSZ(0);
-  @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasId() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearId() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.String get alias => $_getSZ(1);
-  @$pb.TagNumber(2)
-  set alias($core.String v) { $_setString(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasAlias() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearAlias() => clearField(2);
-
-  @$pb.TagNumber(3)
-  $core.String get creatorId => $_getSZ(2);
-  @$pb.TagNumber(3)
-  set creatorId($core.String v) { $_setString(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasCreatorId() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearCreatorId() => clearField(3);
 }
 
 

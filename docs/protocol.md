@@ -90,6 +90,7 @@
     - [ServerConfiguration](#jonline-ServerConfiguration)
     - [ServerInfo](#jonline-ServerInfo)
     - [ServerLogo](#jonline-ServerLogo)
+    - [WebPushConfig](#jonline-WebPushConfig)
   
     - [AuthenticationFeature](#jonline-AuthenticationFeature)
     - [PrivateUserStrategy](#jonline-PrivateUserStrategy)
@@ -1357,6 +1358,7 @@ Response to get RSVP data for an event.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | attendances | [EventAttendance](#jonline-EventAttendance) | repeated | The attendance data for the event, in no particular order. |
+| hidden_location | [Location](#jonline-Location) | optional | When `hide_location_until_rsvp_approved` is set, the location of the event. |
 
 
 
@@ -1375,6 +1377,8 @@ Stored as JSON in the database.
 | allows_rsvps | [bool](#bool) | optional | Whether to allow RSVPs for the event. |
 | allows_anonymous_rsvps | [bool](#bool) | optional | Whether to allow anonymous RSVPs for the event. |
 | max_attendees | [uint32](#uint32) | optional | Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported. |
+| hide_location_until_rsvp_approved | [bool](#bool) | optional | Hide the location until the user RSVPs (and it&#39;s accepted). From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP&#39;d. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner). |
+| default_rsvp_moderation | [Moderation](#jonline-Moderation) | optional | Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`). Anonymous RSVPs are always moderated (default to `PENDING`). |
 
 
 
@@ -1713,6 +1717,7 @@ Configuration for a Jonline server instance.
 | external_cdn_config | [ExternalCDNConfig](#jonline-ExternalCDNConfig) | optional | If set, enables External CDN support for the server. This means that the non-secure HTTP server (on port 80) will *not* redirect to the secure server, and instead serve up Tamagui Web/Flutter clients directly. This allows you to point Cloudflare&#39;s &#34;CNAME HTTPS Proxy&#34; feature at your Jonline server to serve up HTML/CS/JS and Media files with caching from Cloudflare&#39;s CDN. See ExternalCDNConfig for more details on securing this setup. |
 | private_user_strategy | [PrivateUserStrategy](#jonline-PrivateUserStrategy) |  | Strategy when a user sets their visibility to `PRIVATE`. Defaults to `ACCOUNT_IS_FROZEN`. |
 | authentication_features | [AuthenticationFeature](#jonline-AuthenticationFeature) | repeated | (TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully! |
+| web_push_config | [WebPushConfig](#jonline-WebPushConfig) | optional | Web Push (VAPID) configuration for the server. |
 
 
 
@@ -1754,6 +1759,22 @@ Logo data for the server. Built atop Jonline [`Media` APIs](#jonline-Media).
 | squareMediaIdDark | [string](#string) | optional | The media ID for the square logo in dark mode. |
 | wideMediaId | [string](#string) | optional | The media ID for the wide logo. |
 | wideMediaIdDark | [string](#string) | optional | The media ID for the wide logo in dark mode. |
+
+
+
+
+
+
+<a name="jonline-WebPushConfig"></a>
+
+### WebPushConfig
+Web Push (VAPID) configuration for the server.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| public_vapid_key | [string](#string) |  | Public VAPID key for the server. |
+| private_vapid_key | [string](#string) |  | Private VAPID key for the server. *Never serialized to the client.* Admins: Edit this in the database&#39;s JSONB column directly. |
 
 
 

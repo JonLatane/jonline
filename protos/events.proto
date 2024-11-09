@@ -124,6 +124,14 @@ message EventInfo {
   optional bool allows_anonymous_rsvps = 2;
   // Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
   optional uint32 max_attendees = 3;
+  // Hide the location until the user RSVPs (and it's accepted).
+  // From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
+  // Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous)
+  // user whose attendance is approved (or the event owner).
+  optional bool hide_location_until_rsvp_approved = 4;
+  // Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
+  // Anonymous RSVPs are always moderated (default to `PENDING`).
+  optional Moderation default_rsvp_moderation = 5;
 }
 
 // The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
@@ -211,6 +219,8 @@ message GetEventAttendancesRequest {
 message EventAttendances {
   // The attendance data for the event, in no particular order.
   repeated EventAttendance attendances = 1;
+  // When `hide_location_until_rsvp_approved` is set, the location of the event.
+  optional Location hidden_location = 2;
 }
 
 // Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:

@@ -153,11 +153,15 @@ const EventInfo$json = {
     {'1': 'allows_rsvps', '3': 1, '4': 1, '5': 8, '9': 0, '10': 'allowsRsvps', '17': true},
     {'1': 'allows_anonymous_rsvps', '3': 2, '4': 1, '5': 8, '9': 1, '10': 'allowsAnonymousRsvps', '17': true},
     {'1': 'max_attendees', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'maxAttendees', '17': true},
+    {'1': 'hide_location_until_rsvp_approved', '3': 4, '4': 1, '5': 8, '9': 3, '10': 'hideLocationUntilRsvpApproved', '17': true},
+    {'1': 'default_rsvp_moderation', '3': 5, '4': 1, '5': 14, '6': '.jonline.Moderation', '9': 4, '10': 'defaultRsvpModeration', '17': true},
   ],
   '8': [
     {'1': '_allows_rsvps'},
     {'1': '_allows_anonymous_rsvps'},
     {'1': '_max_attendees'},
+    {'1': '_hide_location_until_rsvp_approved'},
+    {'1': '_default_rsvp_moderation'},
   ],
 };
 
@@ -165,8 +169,12 @@ const EventInfo$json = {
 final $typed_data.Uint8List eventInfoDescriptor = $convert.base64Decode(
     'CglFdmVudEluZm8SJgoMYWxsb3dzX3JzdnBzGAEgASgISABSC2FsbG93c1JzdnBziAEBEjkKFm'
     'FsbG93c19hbm9ueW1vdXNfcnN2cHMYAiABKAhIAVIUYWxsb3dzQW5vbnltb3VzUnN2cHOIAQES'
-    'KAoNbWF4X2F0dGVuZGVlcxgDIAEoDUgCUgxtYXhBdHRlbmRlZXOIAQFCDwoNX2FsbG93c19yc3'
-    'Zwc0IZChdfYWxsb3dzX2Fub255bW91c19yc3Zwc0IQCg5fbWF4X2F0dGVuZGVlcw==');
+    'KAoNbWF4X2F0dGVuZGVlcxgDIAEoDUgCUgxtYXhBdHRlbmRlZXOIAQESTQohaGlkZV9sb2NhdG'
+    'lvbl91bnRpbF9yc3ZwX2FwcHJvdmVkGAQgASgISANSHWhpZGVMb2NhdGlvblVudGlsUnN2cEFw'
+    'cHJvdmVkiAEBElAKF2RlZmF1bHRfcnN2cF9tb2RlcmF0aW9uGAUgASgOMhMuam9ubGluZS5Nb2'
+    'RlcmF0aW9uSARSFWRlZmF1bHRSc3ZwTW9kZXJhdGlvbogBAUIPCg1fYWxsb3dzX3JzdnBzQhkK'
+    'F19hbGxvd3NfYW5vbnltb3VzX3JzdnBzQhAKDl9tYXhfYXR0ZW5kZWVzQiQKIl9oaWRlX2xvY2'
+    'F0aW9uX3VudGlsX3JzdnBfYXBwcm92ZWRCGgoYX2RlZmF1bHRfcnN2cF9tb2RlcmF0aW9u');
 
 @$core.Deprecated('Use eventInstanceDescriptor instead')
 const EventInstance$json = {
@@ -276,13 +284,18 @@ const EventAttendances$json = {
   '1': 'EventAttendances',
   '2': [
     {'1': 'attendances', '3': 1, '4': 3, '5': 11, '6': '.jonline.EventAttendance', '10': 'attendances'},
+    {'1': 'hidden_location', '3': 2, '4': 1, '5': 11, '6': '.jonline.Location', '9': 0, '10': 'hiddenLocation', '17': true},
+  ],
+  '8': [
+    {'1': '_hidden_location'},
   ],
 };
 
 /// Descriptor for `EventAttendances`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List eventAttendancesDescriptor = $convert.base64Decode(
     'ChBFdmVudEF0dGVuZGFuY2VzEjoKC2F0dGVuZGFuY2VzGAEgAygLMhguam9ubGluZS5FdmVudE'
-    'F0dGVuZGFuY2VSC2F0dGVuZGFuY2Vz');
+    'F0dGVuZGFuY2VSC2F0dGVuZGFuY2VzEj8KD2hpZGRlbl9sb2NhdGlvbhgCIAEoCzIRLmpvbmxp'
+    'bmUuTG9jYXRpb25IAFIOaGlkZGVuTG9jYXRpb26IAQFCEgoQX2hpZGRlbl9sb2NhdGlvbg==');
 
 @$core.Deprecated('Use eventAttendanceDescriptor instead')
 const EventAttendance$json = {

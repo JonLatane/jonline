@@ -19,6 +19,7 @@ import { PinnedServerSelector } from "./pinned_server_selector";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
+import { webPushSupport } from 'app/features/web_push/web_push';
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -124,20 +125,6 @@ export function TabsNavigation({
       '/'
   });
 
-  // Start the push notification service worker
-  // useEffect(() => {
-  //   if ('serviceWorker' in navigator) {
-  //     navigator.serviceWorker
-  //       .register('/service-worker.js', { scope: '/' })
-  //       .then((registration) => {
-  //         console.log('Jonline Web Push /service-worker.js launched with scope', registration.scope);
-  //         // registration.pushManager.subscribe({
-  //         //   userVisibleOnly: true,
-  //         //   applicationServerKey,
-  //         // });
-  //       });
-  //   }
-  // }, []);
   const serverName = primaryServer?.serverConfiguration?.serverInfo?.name || '...';
   const app = useRootSelector((state: RootState) => state.config);
   const [_serverNameBeforeEmoji, serverNameEmoji, _serverNameAfterEmoji] = splitOnFirstEmoji(serverName, true)

@@ -354,6 +354,9 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
             <p><a href="#jonline-ServerLogo">ServerLogo</a></p>
           </li>
           <li>
+            <p><a href="#jonline-WebPushConfig">WebPushConfig</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-AuthenticationFeature">AuthenticationFeature</a></p>
           </li>
           <li>
@@ -3206,6 +3209,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>repeated</td>
           <td>The attendance data for the event, in no particular order.</td>
         </tr>
+        <tr>
+          <td>hidden_location</td>
+          <td><a href="#jonline-Location">Location</a></td>
+          <td>optional</td>
+          <td>When <code>hide_location_until_rsvp_approved</code> is set, the location of the event.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-EventInfo"></a></p>
@@ -3241,6 +3250,18 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#uint32">uint32</a></td>
           <td>optional</td>
           <td>Limit the max number of attendees. No effect unless <code>allows_rsvps</code> is true. Not yet supported.</td>
+        </tr>
+        <tr>
+          <td>hide_location_until_rsvp_approved</td>
+          <td><a href="#bool">bool</a></td>
+          <td>optional</td>
+          <td>Hide the location until the user RSVPs (and it's accepted). From a system perspective, when this is set, Events will not include the <code>Location</code> until the user has RSVP'd. Location will always be returned in EventAttendances if the request for the EventAttendances came from a (logged in or anonymous) user whose attendance is approved (or the event owner).</td>
+        </tr>
+        <tr>
+          <td>default_rsvp_moderation</td>
+          <td><a href="#jonline-Moderation">Moderation</a></td>
+          <td>optional</td>
+          <td>Default moderation for RSVPs from logged-in users (either <code>PENDING</code> or <code>APPROVED</code>). Anonymous RSVPs are always moderated (default to <code>PENDING</code>).</td>
         </tr>
       </tbody>
     </table>
@@ -4014,6 +4035,12 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td>repeated</td>
           <td>(TODO) Allows admins to enable/disable creating accounts and logging in. Eventually, external auth too hopefully!</td>
         </tr>
+        <tr>
+          <td>web_push_config</td>
+          <td><a href="#jonline-WebPushConfig">WebPushConfig</a></td>
+          <td>optional</td>
+          <td>Web Push (VAPID) configuration for the server.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-ServerInfo"></a></p>
@@ -4121,6 +4148,33 @@ customElements.define('markdown-style', MarkdownStyle);</script><markdown-style 
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>The media ID for the wide logo in dark mode.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-WebPushConfig"></a></p>
+    <h3 id="webpushconfig"><a class="anchor" aria-hidden="true" tabindex="-1" href="#webpushconfig"><span class="octicon octicon-link"></span></a>WebPushConfig</h3>
+    <p>Web Push (VAPID) configuration for the server.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>public_vapid_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Public VAPID key for the server.</td>
+        </tr>
+        <tr>
+          <td>private_vapid_key</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Private VAPID key for the server. <em>Never serialized to the client.</em> Admins: Edit this in the database's JSONB column directly.</td>
         </tr>
       </tbody>
     </table>

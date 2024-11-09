@@ -36,6 +36,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ExternalCDNConfig? externalCdnConfig,
     PrivateUserStrategy? privateUserStrategy,
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
+    WebPushConfig? webPushConfig,
   }) {
     final $result = create();
     if (serverInfo != null) {
@@ -77,6 +78,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     if (authenticationFeatures != null) {
       $result.authenticationFeatures.addAll(authenticationFeatures);
     }
+    if (webPushConfig != null) {
+      $result.webPushConfig = webPushConfig;
+    }
     return $result;
   }
   ServerConfiguration._() : super();
@@ -97,6 +101,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig', subBuilder: ExternalCDNConfig.create)
     ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
     ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
+    ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig', subBuilder: WebPushConfig.create)
     ..hasRequiredFields = false
   ;
 
@@ -269,6 +274,18 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   /// Eventually, external auth too hopefully!
   @$pb.TagNumber(101)
   $core.List<AuthenticationFeature> get authenticationFeatures => $_getList(12);
+
+  /// Web Push (VAPID) configuration for the server.
+  @$pb.TagNumber(110)
+  WebPushConfig get webPushConfig => $_getN(13);
+  @$pb.TagNumber(110)
+  set webPushConfig(WebPushConfig v) { setField(110, v); }
+  @$pb.TagNumber(110)
+  $core.bool hasWebPushConfig() => $_has(13);
+  @$pb.TagNumber(110)
+  void clearWebPushConfig() => clearField(110);
+  @$pb.TagNumber(110)
+  WebPushConfig ensureWebPushConfig() => $_ensure(13);
 }
 
 /// Useful for setting your Jonline instance up to run underneath a CDN.
@@ -1022,6 +1039,74 @@ class ServerColors extends $pb.GeneratedMessage {
   $core.bool hasModerator() => $_has(4);
   @$pb.TagNumber(5)
   void clearModerator() => clearField(5);
+}
+
+/// Web Push (VAPID) configuration for the server.
+class WebPushConfig extends $pb.GeneratedMessage {
+  factory WebPushConfig({
+    $core.String? publicVapidKey,
+    $core.String? privateVapidKey,
+  }) {
+    final $result = create();
+    if (publicVapidKey != null) {
+      $result.publicVapidKey = publicVapidKey;
+    }
+    if (privateVapidKey != null) {
+      $result.privateVapidKey = privateVapidKey;
+    }
+    return $result;
+  }
+  WebPushConfig._() : super();
+  factory WebPushConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory WebPushConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'WebPushConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+    ..aOS(1, _omitFieldNames ? '' : 'publicVapidKey')
+    ..aOS(2, _omitFieldNames ? '' : 'privateVapidKey')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  WebPushConfig clone() => WebPushConfig()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  WebPushConfig copyWith(void Function(WebPushConfig) updates) => super.copyWith((message) => updates(message as WebPushConfig)) as WebPushConfig;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static WebPushConfig create() => WebPushConfig._();
+  WebPushConfig createEmptyInstance() => create();
+  static $pb.PbList<WebPushConfig> createRepeated() => $pb.PbList<WebPushConfig>();
+  @$core.pragma('dart2js:noInline')
+  static WebPushConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WebPushConfig>(create);
+  static WebPushConfig? _defaultInstance;
+
+  /// Public VAPID key for the server.
+  @$pb.TagNumber(1)
+  $core.String get publicVapidKey => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set publicVapidKey($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasPublicVapidKey() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearPublicVapidKey() => clearField(1);
+
+  /// Private VAPID key for the server. *Never serialized to the client.*
+  /// Admins: Edit this in the database's JSONB column directly.
+  @$pb.TagNumber(2)
+  $core.String get privateVapidKey => $_getSZ(1);
+  @$pb.TagNumber(2)
+  set privateVapidKey($core.String v) { $_setString(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasPrivateVapidKey() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearPrivateVapidKey() => clearField(2);
 }
 
 

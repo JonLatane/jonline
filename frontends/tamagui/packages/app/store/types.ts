@@ -20,6 +20,7 @@ export type JonlineAccount = {
   lastSynced?: number;
   needsReauthentication?: boolean;
   lastSyncFailed?: boolean;
+  pushSubscription?: PushSubscription;
 }
 
 // Note that this is inclusive-or. The account, if provided, should always have the same server as the server field.

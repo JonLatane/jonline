@@ -46,7 +46,7 @@ export const useLoadingLock = (mutex: LoadingMutex) => {
   };
 
   return {
-    pollForLoadingLocked, lockLoading, unlockLoading,
+    // pollForLoadingLocked, lockLoading, unlockLoading,
     createReload: (loading: boolean, reload: (force?: boolean) => Promise<void>) => (force?: boolean) => {
       if (loading) return;
       if (pollForLoadingLocked()) {

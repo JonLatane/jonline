@@ -1,5 +1,5 @@
 
-export function storeInitializer(initializer: () => Promise<void>, timeout?: number) {
+export function pageInitializer(initializer: () => Promise<void>, timeout?: number) {
   setTimeout(async () => {
     while (!globalThis.window) {
       await new Promise((resolve) => setTimeout(resolve, 10));

@@ -30,6 +30,8 @@ pub struct ServerConfiguration {
     pub updated_at: SystemTime,
 
     pub federation_info: serde_json::Value,
+
+    pub web_push_config: Option<serde_json::Value>,
 }
 #[derive(Debug, Insertable)]
 #[diesel(table_name = server_configurations)]
@@ -46,6 +48,7 @@ pub struct NewServerConfiguration {
     pub private_user_strategy: String,
     pub authentication_features: serde_json::Value,
     pub federation_info: serde_json::Value,
+    pub web_push_config: Option<serde_json::Value>,
 }
 
 pub fn default_server_configuration() -> NewServerConfiguration {
@@ -167,6 +170,7 @@ I will, however, not sell your data to advertisers nor deliberately expose any v
         })
         .unwrap(),
         external_cdn_config: None,
+        web_push_config: None,
         private_user_strategy: PrivateUserStrategy::AccountIsFrozen
             .as_str_name()
             .to_string(),

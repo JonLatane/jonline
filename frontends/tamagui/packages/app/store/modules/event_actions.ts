@@ -22,6 +22,7 @@ export const updateEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk
     return await client.updateEvent(request, client.credential);
   }
 );
+
 export type DeleteEvent = AccountOrServer & Event;
 export const deleteEvent: AsyncThunk<Event, CreateEvent, any> = createAsyncThunk<Event, DeleteEvent>(
   "events/delete",

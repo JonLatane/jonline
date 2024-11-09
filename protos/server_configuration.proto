@@ -67,6 +67,9 @@ message ServerConfiguration {
   // (TODO) Allows admins to enable/disable creating accounts and logging in.
   // Eventually, external auth too hopefully!
   repeated AuthenticationFeature authentication_features = 101;
+
+  // Web Push (VAPID) configuration for the server.
+  optional WebPushConfig web_push_config = 110;
 }
 
 // Useful for setting your Jonline instance up to run underneath a CDN.
@@ -228,4 +231,13 @@ message ServerColors {
   optional uint32 admin = 4;
   // Color used on author for moderator posts.
   optional uint32 moderator = 5;
+}
+
+// Web Push (VAPID) configuration for the server.
+message WebPushConfig {
+  // Public VAPID key for the server.
+  string public_vapid_key = 1;
+  // Private VAPID key for the server. *Never serialized to the client.*
+  // Admins: Edit this in the database's JSONB column directly.
+  string private_vapid_key = 2;
 }

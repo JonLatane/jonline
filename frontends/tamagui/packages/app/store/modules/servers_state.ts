@@ -10,7 +10,7 @@ import { Platform } from 'react-native';
 import { accountIDHost, deleteClient, getServerClient, pinServer, resetCredentialedData, selectAccount, store } from "..";
 import { JonlineServer } from "../types";
 import { FederatedServer } from "@jonline/api";
-import { storeInitializer } from "../store_initializer";
+import { pageInitializer } from "../../utils/page_initializer";
 
 export function optServerID(server: JonlineServer | undefined): string | undefined {
   return server ? serverID(server) : undefined;
@@ -74,7 +74,7 @@ export const upsertServer = createAsyncThunk<JonlineServer, JonlineServer>(
   }
 );
 
-storeInitializer(async () => {
+pageInitializer(async () => {
   if (Platform.OS !== 'web') {
     const initialServer = {
       host: 'jonline.io',

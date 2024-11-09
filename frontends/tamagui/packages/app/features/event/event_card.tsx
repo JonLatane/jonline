@@ -107,6 +107,7 @@ export const EventCard: React.FC<Props> = ({
 
   const [editedAllowRsvps, setEditedAllowRsvps] = useState(event.info?.allowsRsvps ?? false);
   const [editedAllowAnonymousRsvps, setEditedAllowAnonymousRsvps] = useState(event.info?.allowsAnonymousRsvps ?? false);
+  const [editedHideLocation, setEditedHideLocation] = useState(event.info?.hideLocationUntilRsvpApproved ?? false);
 
   const title = editing ? editedTitle : eventPost.title;
   const content = editing ? editedContent : eventPost.content;
@@ -153,6 +154,7 @@ export const EventCard: React.FC<Props> = ({
         ...event.info,
         allowsRsvps: editedAllowRsvps,
         allowsAnonymousRsvps: editedAllowRsvps && editedAllowAnonymousRsvps,
+        hideLocationUntilRsvpApproved: editedHideLocation,
       },
       post: {
         ...eventPost,
@@ -171,7 +173,7 @@ export const EventCard: React.FC<Props> = ({
       setPreviewingEdits(false);
       setEditedInstances(result.payload?.instances);
     });
-  }, [event, editedAllowRsvps, editedAllowAnonymousRsvps, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
+  }, [event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
 
   const addInstance = useCallback(() => {
     const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };
@@ -260,7 +262,7 @@ export const EventCard: React.FC<Props> = ({
   const onPressDetails = onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
     : undefined;
-  const detailsLink = isPreview ? {...(onPressDetails ?? eventLink), cursor: 'pointer'} : undefined;
+  const detailsLink = isPreview ? { ...(onPressDetails ?? eventLink), cursor: 'pointer' } : undefined;
   const postLink = eventPost.link ? useLink({ href: eventPost.link }) : undefined;
   const authorLinkProps = eventPost.author ? authorLink : undefined;
   const contentLengthShadowThreshold = horizontal ? 180 : 700;
@@ -830,17 +832,20 @@ export const EventCard: React.FC<Props> = ({
                       : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                         px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
                         {primaryInstance// && (!isPreview || isVisible)
-                          ? <XStack mx='$3' mt='$1'>
-                            <LocationControl key='location-control' location={editingOrPrimary(i => i?.location ?? Location.create({}))}
-                              readOnly={!editing || previewingEdits}
-                              preview={isPreview}
-                              link={isPreview ? eventLink : undefined}
-                              setLocation={(location: Location) => {
-                                if (editingInstance) {
-                                  updateEditingInstance({ ...editingInstance, location });
-                                }
-                              }} />
-                          </XStack>
+                          ? event.info?.hideLocationUntilRsvpApproved && (primaryInstance.location?.uniformlyFormattedAddress?.length ?? 0) === 0
+                            ? <Paragraph size='$1' my='$1' fontStyle='italic'>Location will be revealed to attendees after RSVP approval.</Paragraph>
+                            : <XStack mx='$3' mt='$1'>
+                              <LocationControl key='location-control'
+                                location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                                readOnly={!editing || previewingEdits}
+                                preview={isPreview}
+                                link={isPreview ? eventLink : undefined}
+                                setLocation={(location: Location) => {
+                                  if (editingInstance) {
+                                    updateEditingInstance({ ...editingInstance, location });
+                                  }
+                                }} />
+                            </XStack>
                           : undefined}
                         <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
                           {editing && !previewingEdits
@@ -870,10 +875,16 @@ export const EventCard: React.FC<Props> = ({
                         </YStack>
                         {editing && !previewingEdits
                           ? <>
-                            <ToggleRow key='rsvp-toggle' name='Allow RSVPs' value={editedAllowRsvps} setter={setEditedAllowRsvps} />
-                            <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs' value={editedAllowRsvps && editedAllowAnonymousRsvps}
-                              disabled={!editedAllowRsvps}
-                              setter={setEditedAllowAnonymousRsvps} />
+                            <ToggleRow key='rsvp-toggle' name='Allow RSVPs'
+                              value={editedAllowRsvps} setter={setEditedAllowRsvps} />
+                            <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs'
+                              value={editedAllowRsvps && editedAllowAnonymousRsvps}
+                              setter={setEditedAllowAnonymousRsvps}
+                              disabled={!editedAllowRsvps} />
+
+                            <ToggleRow key='anonymous-rsvp-toggle' name='Hide Location from Non-Attendees'
+                              value={editedHideLocation} setter={setEditedHideLocation}
+                              disabled={!editedAllowRsvps} />
                           </>
                           : undefined}
 
