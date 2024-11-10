@@ -11,6 +11,8 @@ import { useLink } from "solito/link";
 import { useGroupContext } from "app/contexts/group_context";
 import { set } from 'immer/dist/internal';
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
+import { useSelector } from "react-redux";
+import { selectRsvpData } from "./event_rsvp_manager";
 
 type Props = {
   event: FederatedEvent,
@@ -28,15 +30,14 @@ export const EventCalendarExporter: React.FC<Props> = ({
   // const server = accountOrServer.server;
   const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
   const serverTheme = useServerTheme(accountOrServer.server);
-  const {navTextColor} = serverTheme;
+  const { navTextColor } = serverTheme;
   // const currentAndPinnedServers = useCurrentAndPinnedServers();
   const showServerInfo = !isPrimaryServer;
-  const primaryInstanceIdString = instance.id;
   const { selectedGroup } = useGroupContext();
 
   const detailsLinkId = showServerInfo
-    ? federateId(primaryInstanceIdString, accountOrServer.server)
-    : primaryInstanceIdString;
+    ? federateId(instance.id, accountOrServer.server)
+    : instance.id;
   const groupLinkId = selectedGroup ?
     (showServerInfo
       ? federateId(selectedGroup.shortname, accountOrServer.server)
@@ -54,13 +55,15 @@ export const EventCalendarExporter: React.FC<Props> = ({
     ? `http://${window.location.host}${eventPath}?anonymousAuthToken=${encodeURIComponent(anonymousAuthToken)}`
     : `http://${window.location.host}${eventPath}`;
 
+  const rsvpData = useSelector(selectRsvpData(federateId(instance.id, accountOrServer.server)));
+  const location = rsvpData?.hiddenLocation ?? instance.location;
   const calendarEvent: CalendarEvent = {
     title: event.post?.title ?? 'Title Data Missing',
     description: hasRsvpAssociated
       ? `${event.post?.content ?? ''}\n\nmanage your RSVP at:\n${eventLink}`
       : `${event.post?.content ?? ''}\n\nvia: ${eventLink}`,
     url: eventLink,
-    location: instance.location?.uniformlyFormattedAddress,
+    location: location?.uniformlyFormattedAddress,
     start: moment(instance.startsAt).toISOString(),
     end: moment(instance.endsAt).toISOString(),
     // duration: [3, "hour"],
@@ -86,7 +89,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
           <Button my='auto' h={tiny ? '$3' : 'auto'}
             icon={Calendar} iconAfter={ArrowRightFromLine}
             {...highlightedButtonBackground(serverTheme, 'nav')}
-            >
+          >
             {tiny
               ? undefined
               : <YStack ai='center'>
