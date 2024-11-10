@@ -1,14 +1,16 @@
-import { FederatedEvent, accountOrServerId, federateId, getCredentialClient, saveHiddenLocation, useServerTheme } from "app/store";
+import { FederatedEvent, RootState, accountOrServerId, federateId, getCredentialClient, loadRsvpData, useServerTheme } from "app/store";
 import React, { useEffect, useState } from "react";
 
 import { AttendanceStatus, EventAttendance, EventInstance, Permission } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, ListItem, Text, Paragraph, RadioGroup, Select, SizeTokens, Spinner, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useTheme, useToastController } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, RadioGroup, Select, SizeTokens, Spinner, Text, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from "@jonline/ui";
+import { createSelector } from "@reduxjs/toolkit";
 import { AlertCircle, AlertTriangle, Check, CheckCircle, ChevronDown, ChevronRight, Edit3 as Edit, Plus, ShieldAlert } from "@tamagui/lucide-icons";
 import { useGroupContext } from "app/contexts/group_context";
 import { useAnonymousAuthToken, useComponentKey, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from "app/hooks";
 import { passes, pending, rejected } from "app/utils/moderation_utils";
 import { hasPermission } from "app/utils/permission_utils";
 import { isPastInstance } from "app/utils/time";
+import { useSelector } from 'react-redux';
 import { createParam } from "solito";
 import { useLink } from "solito/link";
 import { EventCalendarExporter } from "./event_calendar_exporter";
@@ -27,6 +29,11 @@ export type RsvpMode = 'anonymous' | 'user' | undefined;
 
 const { useParam: useSectionParam } = createParam<{ section: string }>()
 
+export const selectRsvpData = (instanceId: string) =>
+  createSelector(
+    (state: RootState) => state.events.rsvpData[instanceId],
+    (rsvpData) => rsvpData
+  );
 export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   event,
   instance,
@@ -132,34 +139,49 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [newRsvpMode]);
 
+  const rsvpData = useSelector(selectRsvpData(federateId(instance.id, event.serverHost)));
   useEffect(() => {
-    if (instance && !loading && !loaded) {
+    if (instance && !loading && !loaded && !rsvpData) {
       setLoading(true);
-      setTimeout(async () => {
-        try {
-          // console.log('loading attendance data with auth token', anonymousAuthToken);
-          const client = await getCredentialClient(accountOrServer);
-          const eventAttendancesResponse = await client.getEventAttendances({
-            eventInstanceId: instance?.id,
-            anonymousAttendeeAuthToken: anonymousAuthToken
-          }, client.credential);
-          setAttendances(eventAttendancesResponse.attendances);
-          if (event.info?.hideLocationUntilRsvpApproved && !instance.location && eventAttendancesResponse.hiddenLocation) {
-            debugger;
-            setTimeout(() => dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation!, event, instance })), 1000);
-          }
-        } catch (e) {
-          console.error('Failed to load event attendances', e)
-          setLoadFailed(true);
-        } finally {
+      dispatch(loadRsvpData({ eventInstanceId: instance.id, anonymousAttendeeAuthToken: anonymousAuthToken, ...accountOrServer }))
+        .finally(() => {
           setLoaded(true);
           setLoading(false);
-        }
-      }, 1);
-
-      // setLoaded(true);
+        });
     }
-  }, [accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
+  }, [rsvpData, accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
+  useEffect(() => {
+    setAttendances(rsvpData?.attendances ?? []);
+  }, [rsvpData]);
+
+  // useEffect(() => {
+  //   if (instance && !loading && !loaded) {
+  //     setLoading(true);
+  //     setTimeout(async () => {
+  //       try {
+  //         // console.log('loading attendance data with auth token', anonymousAuthToken);
+  //         // const client = await getCredentialClient(accountOrServer);
+  //         // const eventAttendancesResponse = await client.getEventAttendances({
+  //         //   eventInstanceId: instance?.id,
+  //         //   anonymousAttendeeAuthToken: anonymousAuthToken
+  //         // }, client.credential);
+  //         // setAttendances(eventAttendancesResponse.attendances);
+  //         // if (event.info?.hideLocationUntilRsvpApproved && !instance.location && eventAttendancesResponse.hiddenLocation) {
+  //         //   // debugger;
+  //         //   setTimeout(() => dispatch(saveHiddenLocation({ location: eventAttendancesResponse.hiddenLocation!, event, instance })), 1000);
+  //         // }
+  //       } catch (e) {
+  //         console.error('Failed to load event attendances', e)
+  //         setLoadFailed(true);
+  //       } finally {
+  //         setLoaded(true);
+  //         setLoading(false);
+  //       }
+  //     }, 1);
+
+  //     // setLoaded(true);
+  //   }
+  // }, [accountOrServerId(accountOrServer), event?.id, instance?.id, loading, anonymousAuthToken]);
 
   useEffect(() => {
     setLoaded(false);
@@ -289,7 +311,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   (attendance.status === AttendanceStatus.NOT_GOING
     ? AttendanceStatus.UNRECOGNIZED
     : attendance.status)
-  const sortedAttendances = attendances
+  const sortedAttendances = [...attendances]
     .sort((a, b) => (a.userAttendee ? -1 : 1) - (b.userAttendee ? -1 : 1))
     .sort((a, b) => sortedStatus(b) - sortedStatus(a));
   const editingAttendance = newRsvpMode === 'anonymous' ? currentAnonRsvp : newRsvpMode === 'user' ? currentRsvp : undefined;

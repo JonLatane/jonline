@@ -1,4 +1,4 @@
-import { Event, EventListingType, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
+import { Event, EventAttendances, EventListingType, GetEventAttendancesRequest, GetEventsRequest, GetEventsResponse, TimeFilter } from "@jonline/api";
 import {
   AsyncThunk,
   createAsyncThunk
@@ -72,5 +72,20 @@ export const loadEvent: AsyncThunk<Event, LoadEvent, any> = createAsyncThunk<Eve
     if (response.events.length == 0) throw 'Event not found';
     const event = response.events[0]!;
     return event;
+  }
+);
+
+export type LoadRsvpData = GetEventAttendancesRequest & AccountOrServer;
+export const loadRsvpData: AsyncThunk<EventAttendances, LoadRsvpData, any> = createAsyncThunk<EventAttendances, LoadRsvpData>(
+  "events/loadRsvpData",
+  async (request) => {
+    const client = await getCredentialClient(request);
+
+    const eventAttendancesResponse = await client.getEventAttendances({
+      eventInstanceId: request.eventInstanceId,
+      anonymousAttendeeAuthToken: request.anonymousAttendeeAuthToken
+    }, client.credential);
+
+    return eventAttendancesResponse;
   }
 );

@@ -1,4 +1,4 @@
-import { Event, EventInstance, EventListingType, TimeFilter, Location } from "@jonline/api";
+import { Event, EventAttendances, EventInstance, EventListingType, TimeFilter } from "@jonline/api";
 import {
   Dictionary,
   EntityAdapter,
@@ -9,7 +9,7 @@ import {
 import moment from "moment";
 import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
-import { LoadEvent, createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, updateEvent } from './event_actions';
+import { createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
 import { loadUserEvents } from "./user_actions";
 export * from './event_actions';
@@ -33,6 +33,8 @@ export interface EventsState {
   postInstances: Dictionary<string>;
   upcomingEventsTime: string;
   upcomingEventsTimeFilter?: TimeFilter;
+  // Maps EventInstance IDs to RSVP data.
+  rsvpData: Dictionary<EventAttendances>;
 }
 
 // Stores pages of listed event *instances* for listing types used in the UI.
@@ -61,6 +63,7 @@ const initialState: EventsState = {
   postEvents: {},
   postInstances: {},
   upcomingEventsTime: moment(Date.now()).toISOString(true),
+  rsvpData: {},
   ...eventsAdapter.getInitialState(),
 };
 
@@ -100,19 +103,6 @@ export const eventsSlice = createSlice({
       // }
       // return state.upcomingEventsTimeFilter;
     },
-    saveHiddenLocation(state, action: PayloadAction<{ location: Location, event: FederatedEvent, instance: EventInstance }>) {
-      const { location, event, instance } = action.payload;
-      const existingEvent = selectEventById(state, federatedId(event));
-      // // debugger;
-      if (!existingEvent) return;
-      // debugger;
-      if (existingEvent?.instances.find(i => i.id === instance.id)?.location) {
-        existingEvent.instances.find(i => i.id === instance.id)!.location = location;
-      }
-      // // debugger;
-      // eventsAdapter.upsertOne(state, existingEvent);
-      mergeEvent(state, existingEvent, event.serverHost);
-    }
   },
   extraReducers: (builder) => {
     builder.addCase(createEvent.fulfilled, (state, action) => {
@@ -211,6 +201,11 @@ export const eventsSlice = createSlice({
     builder.addCase(deleteEvent.fulfilled, (state, action) => {
       eventsAdapter.removeOne(state, federatedId(federatedPayload(action)));
     });
+    builder.addCase(loadRsvpData.fulfilled, (state, action) => {
+      const rsvpData = action.payload;
+      const instanceId = federateId(action.meta.arg.eventInstanceId, action);
+      state.rsvpData[instanceId] = rsvpData;
+    })
   },
 });
 
@@ -235,7 +230,7 @@ const mergeEvent = (state: EventsState, event: FederatedEvent, action: HasServer
   eventsAdapter.upsertOne(state, { ...event, instances });
 };
 
-export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter, saveHiddenLocation } = eventsSlice.actions;
+export const { removeEvent, resetEvents, setUpcomingEventsTimeFilter } = eventsSlice.actions;
 export const { selectAll: selectAllEvents, selectById: selectEventById } = eventsAdapter.getSelectors();
 export const eventsReducer = eventsSlice.reducer;
 export const upsertEvent = eventsAdapter.upsertOne;

@@ -23,9 +23,10 @@ import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { StarButton } from '../post/star_button';
 import { defaultEventInstance, } from "./create_event_sheet";
 import { EventCalendarExporter } from './event_calendar_exporter';
-import { EventRsvpManager, RsvpMode } from './event_rsvp_manager';
+import { EventRsvpManager, RsvpMode, selectRsvpData } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
+import { useSelector } from 'react-redux';
 
 interface Props {
   event: FederatedEvent;
@@ -93,6 +94,7 @@ export const EventCard: React.FC<Props> = ({
   const [editedVisibility, setEditedVisibility] = useState(eventPost.visibility);
   const [editedShareable, setEditedShareable] = useState(eventPost.shareable);
 
+
   const [editedInstances, setEditedInstances] = useState(event.instances);
   useEffect(() => {
     setEditedInstances(editedInstances.map(i => ({
@@ -129,6 +131,27 @@ export const EventCard: React.FC<Props> = ({
       ? undefined
       : selectedInstance ?? (instances.length === 1 ? instances[0] : undefined);
 
+  function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
+    if (editingInstance) {
+      return getter(editingInstance);
+    } else {
+      return getter(primaryInstance);
+    }
+  }
+
+  const rsvpData = useSelector(selectRsvpData(editingOrPrimary(instance => federateId(instance?.id ?? '', event.serverHost))));
+  const currentInstanceLocation = editingOrPrimary(instance => {
+    if (event.info?.hideLocationUntilRsvpApproved && !instance?.location && rsvpData?.hiddenLocation) {
+      return rsvpData?.hiddenLocation;
+    }
+    return instance?.location ?? Location.create({});
+  })
+  const setCurrentInstanceLocation = useCallback((location: Location) => {
+    if (editingInstance) {
+      updateEditingInstance({ ...editingInstance, location });
+    }
+  }, [editingInstance?.id]);
+  console.log("EventCard", { currentInstanceLocation, rsvpData });
   // const post = useAppSelector(state => state.posts.entities[event.postId]);
   // Retrieve the Instance's post from the Posts store first.
   const storedInstancePost = useAppSelector(state => primaryInstance?.post?.id
@@ -137,13 +160,6 @@ export const EventCard: React.FC<Props> = ({
   const instancePost = primaryInstance?.post
     ? storedInstancePost ?? federatedEntity(primaryInstance?.post, server)
     : undefined;
-  function editingOrPrimary<T>(getter: (i: EventInstance | undefined) => T): T {
-    if (editingInstance) {
-      return getter(editingInstance);
-    } else {
-      return getter(primaryInstance);
-    }
-  }
 
   const saveEdits = useCallback(() => {
     setSavingEdits(true);
@@ -250,7 +266,7 @@ export const EventCard: React.FC<Props> = ({
       ? xs ? 275 : 350
       : 500)
     - (event.info?.allowsRsvps ? 100 : 0)
-    - (primaryInstance?.location?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
+    - (currentInstanceLocation?.uniformlyFormattedAddress?.length ?? 0 > 0 ? 43 : 0)
     : undefined;
   // console.log({ maxTotalContentHeight })
   const numContentSections = ((content?.length ?? 0) > 0 ? 1 : 0)
@@ -517,7 +533,7 @@ export const EventCard: React.FC<Props> = ({
           id: `unsynchronized-event-instance-${newEventId++}`,
           startsAt: moment(editingInstance.startsAt).add(weeksAfter, 'weeks').toISOString(),
           endsAt: moment(editingInstance.endsAt).add(weeksAfter, 'weeks').toISOString(),
-          location: editingInstance.location,
+          location: currentInstanceLocation,
           post: Post.create({
             visibility: eventPost.visibility,
           })
@@ -529,7 +545,7 @@ export const EventCard: React.FC<Props> = ({
   }, [
     repeatWeeks,
     editingInstance?.startsAt,
-    editingInstance?.endsAt, editingInstance?.location?.uniformlyFormattedAddress
+    editingInstance?.endsAt, currentInstanceLocation?.uniformlyFormattedAddress
   ]);
 
   const doRepeatInstance = useCallback(() => {
@@ -832,19 +848,21 @@ export const EventCard: React.FC<Props> = ({
                       : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
                         px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
                         {primaryInstance// && (!isPreview || isVisible)
-                          ? event.info?.hideLocationUntilRsvpApproved && (primaryInstance.location?.uniformlyFormattedAddress?.length ?? 0) === 0
+                          ? event.info?.hideLocationUntilRsvpApproved && !rsvpData?.hiddenLocation
                             ? <Paragraph size='$1' my='$1' fontStyle='italic'>Location will be revealed to attendees after RSVP approval.</Paragraph>
                             : <XStack mx='$3' mt='$1'>
                               <LocationControl key='location-control'
-                                location={editingOrPrimary(i => i?.location ?? Location.create({}))}
+                                location={currentInstanceLocation}
                                 readOnly={!editing || previewingEdits}
                                 preview={isPreview}
                                 link={isPreview ? eventLink : undefined}
-                                setLocation={(location: Location) => {
-                                  if (editingInstance) {
-                                    updateEditingInstance({ ...editingInstance, location });
-                                  }
-                                }} />
+                                setLocation={setCurrentInstanceLocation}
+                              // setLocation={(location: Location) => {
+                              //   if (editingInstance) {
+                              //     updateEditingInstance({ ...editingInstance, location });
+                              //   }
+                              // }}
+                              />
                             </XStack>
                           : undefined}
                         <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
