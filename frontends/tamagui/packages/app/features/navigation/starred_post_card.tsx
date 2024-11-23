@@ -116,9 +116,17 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
       instances: [targetInstance]
     } : undefined;
   const hasFailedToLoadEvent = useAppSelector(state => state.events.failedPostIds.includes(postId));
+
+  const shouldLoadEvent =
+    isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent;
+  // if (postId) debugger;
   useEffect(() => {
-    if (isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent) {
-      console.log('StarredPosts: Fetching event by postId', postId);
+    console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventInstanceContext: PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+    // if (postId) debugger;
+
+    if (shouldLoadEvent) {
+      // console.log('StarredPosts: Fetching event by postId', postId);
+      console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
       setLoadingEvent(true);
       dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {
         setTimeout(() =>
@@ -127,7 +135,7 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
         );
       });
     }
-  }, [basePost?.context, eventWithSingleInstance?.id, isServerReady, loadingEvent]);
+  }, [basePost?.id, shouldLoadEvent]);
   return {
     basePost,
     eventInstanceId,
