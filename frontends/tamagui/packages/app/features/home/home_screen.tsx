@@ -36,7 +36,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   const mediaQuery = useMedia();
   const app = useRootSelector((state: RootState) => state.config);
   // const showEvents = app.showEvents ?? true;
-  const { showEvents, setShowEvents } = useShowEvents();
+  const { showEvents: showEvents, setShowEvents } = useShowEvents();
+  // const showEvents = false;
   const { bigCalendar, setBigCalendar } = useBigCalendar();
 
   const [showScrollPreserver, setShowScrollPreserver] = useState(needsScrollPreservers());
@@ -134,9 +135,6 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       withServerPinning
       showShrinkPreviews
       loading={loadingPosts || loadingEvents}
-    //   bottomChrome={
-    //   <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
-    // }
     >
       <FlipMove style={{
         width: '100%',
@@ -148,10 +146,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         maxWidth: 1400,
         paddingBottom: 20
       }}
+        typeName={null}
       >
-        {/* <div key='create' style={{ width: '100%', max<Width>: 800, paddingLeft: 18, paddingRight: 18 }}>
-          <DynamicCreateButton selectedGroup={selectedGroup} showPosts showEvents />
-        </div> */}
         <div key='latest-events-header' style={{ width: '100%' }}>
           <XStack w='100%' pt={0}
             px={mediaQuery.gtXxs ? '$3' : 0}
@@ -169,15 +165,17 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 <ChevronRight />
               </XStack>
             </Button>
-            <Button onPress={() => setBigCalendar(!bigCalendar)} ml='$2'
-              icon={CalendarIcon}
-              transparent
-              {...themedButtonBackground(
-                bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-              animation='standard'
-              disabled={!showEvents || !allEvents.length}
-              o={showEvents ? allEvents.length ? 1 : 0.5 : 0}
-            />
+            <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+              <Button onPress={() => setBigCalendar(!bigCalendar)} ml='$2'
+                icon={CalendarIcon}
+                transparent
+                {...themedButtonBackground(
+                  bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+                // animation='standard'
+                disabled={!showEvents || !allEvents.length}
+
+              />
+            </XStack>
 
             <div style={{ flex: 1 }} />
             <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
@@ -187,11 +185,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         </div>
         {showEvents
           ? bigCalendar
-            ? [
-              <div key='full-calendar' style={{ marginBottom: 10 }}>
-                <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
-              </div>
-            ]
+            ? <div key='full-calendar' style={{ marginBottom: 10 }}>
+              <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
+            </div>
             : [
               allEvents.length > 0 && eventPagesOnHome ?
                 <div key='upcoming-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
@@ -200,16 +196,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                 </div> : undefined,
               <div key='latest-events' style={{ width: '100%' }}>
                 <YStack w='100%'>
+                  <div id='events-top' />
                   <ScrollView horizontal w='100%'>
                     <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
-
                       <FlipMove style={{ display: 'flex' }}>
-                        <div id='events-top' />
                         {allEvents.length == 0 && !loadingEvents
                           ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
                             <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px={mediaQuery.gtXxs ? '$2' : 0} mt='$3'>
                               <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
-                              {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
                             </YStack>
                           </div>
                           : undefined}
@@ -226,17 +220,15 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                             </XStack>
                           </div>
                           : undefined}
-                        {showEvents
-                          ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                            <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...allEventsLink}>
-                              <YStack ai='center' py='$3' jc='center'>
-                                <Heading size='$4'>All</Heading>
-                                <Heading size='$5'>Events</Heading>
-                                <ChevronRight />
-                              </YStack>
-                            </Button>
-                          </div>
-                          : undefined}
+                        <div key='all-events-button' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+                          <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...allEventsLink}>
+                            <YStack ai='center' py='$3' jc='center'>
+                              <Heading size='$4'>All</Heading>
+                              <Heading size='$5'>Events</Heading>
+                              <ChevronRight />
+                            </YStack>
+                          </Button>
+                        </div>
                       </FlipMove>
                     </XStack>
                   </ScrollView>

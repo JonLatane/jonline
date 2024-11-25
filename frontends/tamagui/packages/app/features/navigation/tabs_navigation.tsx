@@ -420,17 +420,22 @@ export function TabsNavigation({
                 </XStack>
               </XStack>
 
-              <FlipMove style={{ display: 'flex', flexDirection: 'flex-column', gap: 10, width: '100%', minHeight: '50vh' }}>
-                <YStack key={`navigation-padding-${topNavHeight}`} style={{ height: topNavHeight }} />
-                <YStack key='children' f={1} w='100%' jc="center" ac='center' ai="center" //backgroundColor={bgColor}
-                  maw={window.innerWidth}
-                  mt={topNavHeight}
-                  mb={bottomNavHeight}
-                  overflow="hidden"
-                >
-                  {children}
-                </YStack>
-                <YStack key={`navigation-padding-bottom-${bottomNavHeight}`} h={bottomNavHeight} />
+              <FlipMove /*typeName={null}*/ style={{ display: 'flex', flexDirection: 'flex-column', gap: 10, width: '100%', minHeight: '50vh' }}>
+                <div key={`navigation-padding-${topNavHeight}`} style={{ height: topNavHeight }} />
+
+                <div key='children' style={{ width: '100%', flex: 1 }} >
+                  <YStack f={1} w='100%' jc="center" ac='center' ai="center"
+                    //backgroundColor={bgColor}
+                    maw={window.innerWidth}
+                    mt={topNavHeight}
+                    mb={bottomNavHeight}
+                    overflow="hidden"
+                  >
+                    {children}
+                  </YStack>
+                </div>
+                <div key={`navigation-padding-bottom-${bottomNavHeight}`}
+                  style={{ height: bottomNavHeight }} />
               </FlipMove>
 
               {bottomChrome

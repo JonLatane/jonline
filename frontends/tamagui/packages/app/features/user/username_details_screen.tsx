@@ -41,6 +41,7 @@ export function UsernameDetailsScreen() {
   const linkProps = useLink({ href: '/' });
   const { bigCalendar, setBigCalendar } = useBigCalendar();
   const { showEvents, setShowEvents } = useShowEvents();
+  // const [showEvents, setShowEvents] = useState(false);
 
   const { primaryColor, primaryTextColor, primaryAnchorColor, navColor, navTextColor } = useServerTheme(server);
   const usernameIds = useAppSelector(state => getFederated(state.users.usernameIds, server));
@@ -295,9 +296,9 @@ export function UsernameDetailsScreen() {
       selectedGroup={group}
       groupPageForwarder={(groupIdentifier) => `/g/${groupIdentifier}/m/${pathUsername}`}
       groupPageReverse={`/${pathUsername}`}
-      topChrome= { user ? 
+      topChrome={user ?
         // <ScrollView horizontal w='100%'>
-          <FederatedProfiles user={user} />
+        <FederatedProfiles user={user} />
         // </ScrollView>
         : undefined
       }
@@ -420,16 +421,18 @@ export function UsernameDetailsScreen() {
                       </XStack>
                     </Button>
 
-                    <Button onPress={() => setBigCalendar(!bigCalendar)}
-                      icon={CalendarIcon}
-                      transparent
-                      {...themedButtonBackground(
-                        bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                      animation='standard'
-                      disabled={!showEvents || allEvents.length === 0}
-                      o={!showEvents || allEvents.length === 0
-                        ? 0 : 1}
-                    />
+                    <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+                      <Button onPress={() => setBigCalendar(!bigCalendar)}
+                        icon={CalendarIcon}
+                        transparent
+                        {...themedButtonBackground(
+                          bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+                        // animation='standard'
+                        disabled={!showEvents || allEvents.length === 0}
+                      // o={!showEvents || allEvents.length === 0
+                      // ? 0 : 1}
+                      />
+                    </XStack>
                     {isCurrentUser
                       ? <>
                         <XStack f={1} mr='auto' />

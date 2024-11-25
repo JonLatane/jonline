@@ -14,3 +14,4 @@ export * from './store_hooks';
 export * from './server_theme_hooks';
 export * from './pagination/user_pagination_hooks';
 export * from './account_or_server'
+export * from './use_trace_update'

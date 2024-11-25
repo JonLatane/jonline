@@ -50,34 +50,36 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
       {/* <XStack gap='$2'> */}
       <FlipMove style={{ display: 'flex', gap: 10, }}>
         {media.map((mediaRef, index) =>
-          <ZStack key={`media-renderer-${mediaRef.id}`} w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
-            {/* <ZStack> */}
-            <MediaRenderer key={`media-renderer-${mediaRef.id}`} media={mediaRef} />
-            <XStack w='100%' my='auto' zi={1000}>
-              <Button ml='$2' circular o={index == 0 ? 0.3 : 0.9} icon={ArrowLeft} onPress={() => {
-                const updatedMedia = new Array<MediaReference>(...media);
-                const leftValue = updatedMedia[index - 1]!;
-                updatedMedia[index - 1] = mediaRef;
-                updatedMedia[index] = leftValue;
-                setMedia(updatedMedia);
-              }} />
-              <YStack f={1} />
-              <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
-                const updatedMedia = new Array<MediaReference>(...media);
-                const rightValue = updatedMedia[index + 1]!;
-                updatedMedia[index + 1] = mediaRef;
-                updatedMedia[index] = rightValue;
-                setMedia(updatedMedia);
-              }} />
-            </XStack>
-            <XStack w='100%' zi={1000}>
-              <YStack f={1} />
-              <Button size='$2' mr='$2' circular icon={Delete} onPress={() => {
-                setMedia(media.filter((_, i) => i != index));
-              }} />
-            </XStack>
-            {/* </ZStack> */}
-          </ZStack>
+          <div key={`media-renderer-${mediaRef.id}`}>
+            <ZStack w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
+              {/* <ZStack> */}
+              <MediaRenderer key={`media-renderer-${mediaRef.id}`} media={mediaRef} />
+              <XStack w='100%' my='auto' zi={1000}>
+                <Button ml='$2' circular o={index == 0 ? 0.3 : 0.9} icon={ArrowLeft} onPress={() => {
+                  const updatedMedia = new Array<MediaReference>(...media);
+                  const leftValue = updatedMedia[index - 1]!;
+                  updatedMedia[index - 1] = mediaRef;
+                  updatedMedia[index] = leftValue;
+                  setMedia(updatedMedia);
+                }} />
+                <YStack f={1} />
+                <Button mr='$2' circular o={index < media.length - 1 ? 0.9 : 0.3} icon={ArrowRight} onPress={() => {
+                  const updatedMedia = new Array<MediaReference>(...media);
+                  const rightValue = updatedMedia[index + 1]!;
+                  updatedMedia[index + 1] = mediaRef;
+                  updatedMedia[index] = rightValue;
+                  setMedia(updatedMedia);
+                }} />
+              </XStack>
+              <XStack w='100%' zi={1000}>
+                <YStack f={1} />
+                <Button size='$2' mr='$2' circular icon={Delete} onPress={() => {
+                  setMedia(media.filter((_, i) => i != index));
+                }} />
+              </XStack>
+              {/* </ZStack> */}
+            </ZStack>
+          </div>
         )}
       </FlipMove>
       {/* </XStack> */}

@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, 
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers } from "app/hooks";
+import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers, useTraceUpdate } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -151,7 +151,7 @@ export const EventCard: React.FC<Props> = ({
       updateEditingInstance({ ...editingInstance, location });
     }
   }, [editingInstance?.id]);
-  console.log("EventCard", { currentInstanceLocation, rsvpData });
+  // console.log("EventCard", { currentInstanceLocation, rsvpData });
   // const post = useAppSelector(state => state.posts.entities[event.postId]);
   // Retrieve the Instance's post from the Posts store first.
   const storedInstancePost = useAppSelector(state => primaryInstance?.post?.id
