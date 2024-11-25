@@ -214,15 +214,17 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
                           </div>
                           : undefined}
                         {paginatedEvents.map((event) =>
-                          <span key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                          <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
                             <XStack mx='$1' px='$1' pb='$5'>
                               <EventCard event={event} isPreview horizontal xs />
                             </XStack>
-                          </span>)}
+                          </div>)}
                         {loadingEvents && allEvents.length == 0
-                          ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
-                            <Spinner size='large' color={navColor} />
-                          </XStack>
+                          ? <div key='events-spinner'>
+                            <XStack mx={window.innerWidth / 2 - 50} my='auto'>
+                              <Spinner size='large' color={navColor} />
+                            </XStack>
+                          </div>
                           : undefined}
                         {showEvents
                           ? <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
@@ -273,16 +275,16 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             : undefined
           : undefined}
         {/* <div style={{ width: '100%' }} {...swipeHandlers}> */}
-          {paginatedPosts.map((post) => {
-            return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
-              style={{
-                width: '100%', maxWidth: 800,
-                paddingLeft: mediaQuery.gtXxs ? 18 : 0,
-                paddingRight: mediaQuery.gtXxs ? 18 : 0
-              }}>
-              <PostCard post={post} isPreview />
-            </div>;
-          })}
+        {paginatedPosts.map((post) => {
+          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
+            style={{
+              width: '100%', maxWidth: 800,
+              paddingLeft: mediaQuery.gtXxs ? 18 : 0,
+              paddingRight: mediaQuery.gtXxs ? 18 : 0
+            }}>
+            <PostCard post={post} isPreview />
+          </div>;
+        })}
         {/* </div> */}
 
         {postPagination.pageCount > 1
