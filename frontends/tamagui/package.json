@@ -8,7 +8,7 @@
   "scripts": {
     "native": "cd apps/expo && yarn start",
     "watch": "yarn workspaces foreach -pi run watch",
-    "version:install": "yarn set version 4.0 && yarn install",
+    "version:install": "yarn set version 4.5 && yarn install",
     "web": "yarn build && cd apps/next && TAMAGUI_TARGET=web yarn next",
     "web:extract": "DISABLE_EXTRACTION=false yarn workspace next-app dev",
     "web:prod:build": "yarn workspace next-app build",
@@ -45,7 +45,7 @@
     "turbo": "^1.13.4",
     "typescript": "^5.4.5"
   },
-  "packageManager": "yarn@4.5.0",
+  "packageManager": "yarn@4.5.3",
   "engines": {
     "node": "22",
     "npm": "10.8"
