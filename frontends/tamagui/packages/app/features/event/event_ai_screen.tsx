@@ -124,11 +124,11 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
       webllm.CreateMLCEngine(
         llmModel,
         {
-          chatOpts: {
-            max_gen_len: 512000,
-            // temperature: 0.9,
-          },
           initProgressCallback: llmInitCallback
+        },
+        {
+          // max_gen_len: 512000,
+          // temperature: 0.9,
         }
       ).then(setLlmEngine);
     }

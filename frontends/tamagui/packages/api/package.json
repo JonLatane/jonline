@@ -13,6 +13,6 @@
     "watch": "tamagui-build --watch"
   },
   "devDependencies": {
-    "@tamagui/build": "^1.119.3"
+    "@tamagui/build": "^1.120.0"
   }
 }

@@ -42,11 +42,15 @@
     "node-gyp": "^9.4.1",
     "prettier": "^2.8.8",
     "ts-proto": "^1.181.2",
-    "turbo": "^1.13.3",
+    "turbo": "^1.13.4",
     "typescript": "^5.4.5"
   },
-  "packageManager": "yarn@4.0.2",
+  "packageManager": "yarn@4.5.0",
+  "engines": {
+    "node": "22",
+    "npm": "10.8"
+  },
   "devDependencies": {
-    "eslint-plugin-react-hooks": "^4.6.2"
+    "@biomejs/biome": "^1.9.3"
   }
 }

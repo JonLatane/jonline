@@ -292,7 +292,7 @@ export function TabsNavigation({
                       {showAccountSheetGuide
                         ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
                           <XStack>
-                            <XStack mt='$1' pt='$1'>
+                            <XStack mt='$1' pt='$1' key='chevron'>
                               <ChevronLeft color={primaryTextColor} size='$1' />
                             </XStack>
                             <YStack>
@@ -343,7 +343,7 @@ export function TabsNavigation({
                         <XStack ai='center'>
                           {!scrollGroupsSheet
                             ? undefined
-                            : <XStack ml='$1' my='auto' className='main-groups-button'>
+                            : <XStack ml='$1' my='auto' key='main-groups-button' className='main-groups-button'>
                               <GroupsSheetButton key='main' isPrimaryNavigation
                                 selectedGroup={selectedGroup}
                                 open={groupsSheetOpen}
@@ -408,13 +408,14 @@ export function TabsNavigation({
                 {/* </StickyBox> */}
               </div>
 
-              <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }} animation='standard' o={loading && hideNavigation ? 1 : 0}
+              <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
+                animation='standard' o={loading && hideNavigation ? 1 : 0}
                 top={dimensions.height / 2 - 50}>
-                <XStack position='absolute'
+                <XStack position='absolute' key='primary-spinner'
                   transform={[{ translateX: -17 }]}>
                   <Spinner size='large' color={primaryColor} scale={2.4} />
                 </XStack>
-                <XStack position='absolute'
+                <XStack position='absolute' key='other-spinner'
                   transform={[{ translateX: -17 }]}>
                   <Spinner size='large' color={navColor} scaleX={1.8} scaleY={-1.8} />
                 </XStack>

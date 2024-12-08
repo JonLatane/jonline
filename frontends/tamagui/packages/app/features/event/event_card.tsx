@@ -819,14 +819,14 @@ export const EventCard: React.FC<Props> = ({
                     {editingInstance && editing && !previewingEdits
                       ? <>
                         <XStack mx='$2' key={`startsAt-${editingInstance?.id}`}>
-                          <Heading size='$2' f={1} marginVertical='auto'>Start Time</Heading>
+                          <Heading size='$2' key='label' f={1} marginVertical='auto'>Start Time</Heading>
 
                           <XStack ml='auto' my='auto'>
                             <DateTimePicker value={editingInstance.startsAt ?? moment(0).toISOString()} onChange={(v) => setStartTime(v)} />
                           </XStack>
                         </XStack>
                         <XStack mx='$2' key={`endsAt-${editingInstance?.id}`}>
-                          <Heading size='$2' f={1} marginVertical='auto'>End Time</Heading>
+                          <Heading size='$2' key='label' f={1} marginVertical='auto'>End Time</Heading>
                           <XStack ml='auto' my='auto'>
                             <DateTimePicker value={editingInstance.endsAt ?? moment(0).toISOString()} onChange={(v) => setEndTime(v)} />
                           </XStack>
@@ -900,7 +900,7 @@ export const EventCard: React.FC<Props> = ({
                               setter={setEditedAllowAnonymousRsvps}
                               disabled={!editedAllowRsvps} />
 
-                            <ToggleRow key='anonymous-rsvp-toggle' name='Hide Location from Non-Attendees'
+                            <ToggleRow key='hide-location-toggle' name='Hide Location from Non-Attendees'
                               value={editedHideLocation} setter={setEditedHideLocation}
                               disabled={!editedAllowRsvps} />
                           </>
@@ -994,13 +994,13 @@ export const EventCard: React.FC<Props> = ({
 
                   <XStack {...detailsShadowProps} key='details' pl='$3' mb='$3'
                     mt={shrinkContent ? '$1' : undefined}>{/*showEdit ? -11 : -15} >*/}
-                    <XStack f={1}>
-                      <AuthorInfo key='author-details' {...{ post: eventPost }} />
+                    <XStack f={1} key='author-details'>
+                      <AuthorInfo {...{ post: eventPost }} />
                     </XStack>
 
 
                     {showPermalink
-                      ? <Button circular icon={Link2} {...detailsLink}
+                      ? <Button circular icon={Link2} key='details-link' {...detailsLink}
                         my='auto' size='$2' mr='$2' />
                       : undefined}
                     <Anchor key='discussion-anchor' textDecorationLine='none' {...{ ...(isPreview ? detailsLink : {}) }}>
