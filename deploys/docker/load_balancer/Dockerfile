@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 debian:stable-slim
 
-RUN apt-get update && apt-get -y install libpq5 nginx
+RUN apt-get update && apt-get -y install libpq5 nginx libc6
 #curl postgresql-client
 
 # Old Ubuntu OpenSSL thing
