@@ -1,4 +1,5 @@
-# my new project
+# Jonline Elm FE
+
 > 🌳  built with [elm-spa](https://elm-spa.dev)
 
 ## dependencies
