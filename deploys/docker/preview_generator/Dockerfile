@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 debian:stable-slim
+FROM --platform=linux/amd64 debian:testing-slim
 
 # The preview generator image only includes the background job binary and a tool to delete images. Other Jonline binaries aren't really useful;
 # the bulk of this image will be the Chrome distro included.
