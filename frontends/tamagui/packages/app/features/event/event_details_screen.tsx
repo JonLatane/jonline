@@ -244,7 +244,7 @@ export function EventDetailsScreen() {
         <AccountOrServerContextProvider value={accountOrServer}>
 
           <ConversationContextProvider value={conversationContext}>
-            <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+            <YStack f={1} jc="center" ai="center" mt='$3' gap='$2' w='100%' maw={800}>
               <ScrollView w='100%'>
                 <AnimatePresence>
                   {interactionType === 'post'

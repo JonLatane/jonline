@@ -6,7 +6,7 @@ import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
 import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setForceHideAccountSheetGuide, setHideNavigation, store, useRootSelector, useServerTheme } from "app/store";
 import FlipMove from "lumen5-react-flip-move";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
 import { AccountsSheet } from "../accounts/accounts_sheet";
@@ -421,7 +421,7 @@ export function TabsNavigation({
                 </XStack>
               </XStack>
 
-              <FlipMove /*typeName={null}*/ style={{ display: 'flex', flexDirection: 'flex-column', gap: 10, width: '100%', minHeight: '50vh' }}>
+              <FlipMove /*typeName={null}*/ style={{ display: 'flex', flexDirection: 'flex-column', width: '100%', minHeight: '50vh' }}>
                 <div key={`navigation-padding-${topNavHeight}`} style={{ height: topNavHeight }} />
 
                 <div key='children' style={{ width: '100%', flex: 1 }} >

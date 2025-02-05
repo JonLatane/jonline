@@ -150,7 +150,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       >
         <div key='latest-events-header' style={{ width: '100%' }}>
           <XStack w='100%' pt={0}
-            px={mediaQuery.gtXxs ? '$3' : 0}
+            // px={mediaQuery.gtXxs ? '$3' : 0}
+            px='$2'
             ai='center'
           // flexDirection='row-reverse'
           >
@@ -243,7 +244,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           paddingLeft: mediaQuery.gtXxs ? 18 : 0,
           paddingRight: mediaQuery.gtXxs ? 18 : 0
         }}>
-          <XStack ai='center' w='100%' overflow='hidden'>
+          <XStack ai='center' w='100%' overflow='hidden' px='$2'>
             <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
             {/* <XStack f={1}> */}
             <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />

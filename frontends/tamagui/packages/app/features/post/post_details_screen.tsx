@@ -341,7 +341,7 @@ export function PostDetailsScreen() {
           : <Spinner size='large' color={navColor} scale={2} />
         : <AccountOrServerContextProvider value={accountOrServer}>
           <ConversationContextProvider value={conversationContext}>
-            <YStack f={1} jc="center" ai="center" mt='$3' space w='100%' maw={800}>
+            <YStack f={1} jc="center" ai="center" gap='$2' w='100%' maw={800}>
               <ScrollView w='100%'>
                 <FlipMove>
                   {interactionType === 'post'
