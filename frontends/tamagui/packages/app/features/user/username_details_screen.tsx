@@ -359,7 +359,7 @@ export function UsernameDetailsScreen() {
           </XStack>
         </YStack> : undefined}
     >
-      <YStack f={1} jc="center" ai="center" gap my='$2' w='100%'>
+      <YStack f={1} jc="center" ai="center" gap='$2' my='$2' w='100%'>
         {user ? <>
           {/* <ScrollView w='100%'> */}
           <FlipMove style={{

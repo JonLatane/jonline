@@ -320,7 +320,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
             opacity={1}
             y={0}
           >
-            <YStack gap maw={400}>
+            <YStack gap='$2' maw={400}>
               <AlertDialog.Title>Really Delete?</AlertDialog.Title>
               <AlertDialog.Description>
                 Are you sure you want to delete <Text fontFamily='$mono'>{deletingMedia?.name ?? 'this media'}</Text>? It will immediately be removed from your media, but it may continue to be available for the next 12 hours for some users.

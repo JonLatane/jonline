@@ -267,7 +267,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
         </XStack>
         <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
           <FlipMove style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>
-            {/* <YStack maxWidth={800} gap width='100%' alignSelf='center'> */}
+            {/* <YStack maxWidth={800} gap='$2' width='100%' alignSelf='center'> */}
             {renderContent ? [
               browsingServers
                 ? <div key='server-header'>
