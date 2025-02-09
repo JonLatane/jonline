@@ -326,11 +326,13 @@ export function PostDetailsScreen() {
         </XStack>
       }
       bottomChrome={
-        <AccountOrServerContextProvider value={accountOrServer}>
-          <ReplyArea replyingToPath={replyPostIdPath}
-            onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
-            hidden={!showReplyArea} />
-        </AccountOrServerContextProvider>}
+        accountOrServer.account || interactionType !== 'post' ?
+          <AccountOrServerContextProvider value={accountOrServer}>
+            <ReplyArea replyingToPath={replyPostIdPath}
+              onStopReplying={() => serverPostId && setReplyPostIdPath([serverPostId])}
+              hidden={!showReplyArea} />
+          </AccountOrServerContextProvider>
+          : undefined}
     >
       {!subjectPost
         ? failedToLoadPost

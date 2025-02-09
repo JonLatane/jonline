@@ -225,12 +225,14 @@ export function EventDetailsScreen() {
         </XStack>
       }
       bottomChrome={
-        <AccountOrServerContextProvider value={accountOrServer}>
-          <ReplyArea
-            replyingToPath={replyPostIdPath}
-            onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
-            hidden={!showReplyArea} />
-        </AccountOrServerContextProvider>
+        accountOrServer.account || interactionType !== 'post'
+          ? <AccountOrServerContextProvider value={accountOrServer}>
+            <ReplyArea
+              replyingToPath={replyPostIdPath}
+              onStopReplying={() => instancePostId && setReplyPostIdPath([instancePostId])}
+              hidden={!showReplyArea} />
+          </AccountOrServerContextProvider>
+          : undefined
       }
     >
       {!subjectEvent || !subjectPost
