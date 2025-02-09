@@ -391,7 +391,7 @@ export function UsernameDetailsScreen() {
 
             <div key='user-bio' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center' }}>
               <AccountOrServerContextProvider value={accountOrServer}>
-                <YStack als='center' w='100%' paddingHorizontal='$2' gap>
+                <YStack als='center' w='100%' paddingHorizontal='$2' gap='$2'>
                   {editMode ?
                     <TextArea key='bio-edit' animation='standard' {...standardHorizontalAnimation}
                       value={bio} onChangeText={t => setBio(t)}
