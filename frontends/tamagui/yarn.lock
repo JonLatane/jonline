@@ -4112,12 +4112,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@mlc-ai/web-llm@npm:^0.2.77":
-  version: 0.2.77
-  resolution: "@mlc-ai/web-llm@npm:0.2.77"
+"@mlc-ai/web-llm@npm:^0.2.78":
+  version: 0.2.78
+  resolution: "@mlc-ai/web-llm@npm:0.2.78"
   dependencies:
     loglevel: "npm:^1.9.1"
-  checksum: 10/fd508d5c4dac116fd65569d1b3d2d413fd4fb2b9b59315ff49cda4e4df1d1685df54352bbd57890dedf8d1936e83cca6066c91abb13d263babc35fbb2830da4d
+  checksum: 10/ba10add06a8cae3086ef8302efcfd72684d70f01ffdd88abfbda0cc92bc2e32cf10809d44ec3dcaa1963cd02194213bd3059b2fb4ff9707a0c5b5b7722d8adaf
   languageName: node
   linkType: hard
 
@@ -8343,7 +8343,7 @@ __metadata:
     "@improbable-eng/grpc-web": "npm:^0.15.0"
     "@improbable-eng/grpc-web-react-native-transport": "npm:^0.15.0"
     "@jonline/ui": "npm:*"
-    "@mlc-ai/web-llm": "npm:^0.2.77"
+    "@mlc-ai/web-llm": "npm:^0.2.78"
     "@react-native-async-storage/async-storage": "npm:^1.23.1"
     "@reduxjs/toolkit": "npm:^1.9.7"
     "@smakss/react-scroll-direction": "npm:^4.1.0"
@@ -8381,7 +8381,7 @@ __metadata:
     react-native-safe-area-context: "npm:4.10.1"
     react-player: "npm:^2.16.0"
     react-redux: "npm:^8.1.3"
-    react-social-media-embed: "npm:^2.5.13"
+    react-social-media-embed: "npm:^2.5.17"
     react-sticky-box: "npm:^2.0.5"
     react-syntax-highlighter: "npm:^15.5.0"
     recyclerlistview: "npm:^4.2.1"
@@ -18711,9 +18711,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-social-media-embed@npm:^2.5.13":
-  version: 2.5.13
-  resolution: "react-social-media-embed@npm:2.5.13"
+"react-social-media-embed@npm:^2.5.17":
+  version: 2.5.17
+  resolution: "react-social-media-embed@npm:2.5.17"
   dependencies:
     "@types/youtube-player": "npm:^5.5.5"
     classnames: "npm:^2.5.1"
@@ -18724,7 +18724,7 @@ __metadata:
   peerDependencies:
     react: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
     react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
-  checksum: 10/06922e5b1f323f3b572c81afb09f6fa7373bd1369d5bd9354037e78b61fe7e24fd3a6cf387a383d1133b5cbce1e7b22ee10211fd6e4458a9e99bb065216c5b76
+  checksum: 10/c299f23eba4ae0675b8ee2994a9128274f8dabc7df7414df9d6a0ec3a34a77bea92995710817890d40e09155d6ca080aa00cf3d91d1579709f4c2bd8fafe7774
   languageName: node
   linkType: hard
 

@@ -90,23 +90,32 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   }, [debouncedApiKey]);
 
   const [llmStatusText, setLlmStatusText] = useState<string>(
-    isSafariBrowser ? 'WebLLM is not supported in Safari.'
+    isSafariBrowser ? 'WebLLM in Safari requires enabling the WebGPU feature flag.'
       : 'Initializing WebLLM...');
   const [llmReady, setLlmReady] = useState(false);
   const availableModels = webllm.prebuiltAppConfig.model_list.map((model) => model.model_id);
 
-  const [llmModel, setLlmModel] = useLocalStorageString('weblLlmModel', 'Llama-3-8B-Instruct-q4f32_1');
+  const [llmModel, setLlmModel] = useLocalStorageString('weblLlmModel', availableModels[0]!);
+  useEffect(() => {
+    if (!availableModels.includes(llmModel)) {
+      setLlmModel(availableModels[0]!);
+    }
+  }, [llmModel]);
   // const selectedModel = "Llama-3-8B-Instruct-q4f32_1";
   const [llmEngine, setLlmEngine] = useState<webllm.MLCEngineInterface | undefined>(undefined);
-  useEffect(() => { llmEngine?.reload(llmModel); }, [llmModel]);
+ 
+  // useEffect(() => { llmEngine?.reload(llmModel); }, [llmModel]);
 
   useEffect(() => {
-    if (aiBackend === 'openAi') {
-      llmEngine?.unload();
-    } else {
-      llmEngine?.reload(llmModel);
+    switch (aiBackend) {
+      case 'webLlm':
+        llmEngine?.reload(llmModel);
+        break;
+      case 'openAi':
+        llmEngine?.unload();
+        break;
     }
-  }, [aiBackend])
+  }, [aiBackend, llmEngine === undefined, llmModel]);
 
   const llmInitCallback = (report: webllm.InitProgressReport) => {
     setLlmStatusText(report.text);
@@ -157,7 +166,7 @@ I am going to send you a list of one or more events pasted from a user. Please p
 ]
 \`\`\`
 
-All generated events should have only one instance. Do not invent content if there is none - title-only events are fine.
+All generated events should have only one instance. Do not include the example "Sunrise Yoga" event, unless it is in the actual user input at the end of this request. Do not invent content if there is none - title-only events are fine.
 
 ${trimmedInstructions ?
       `${trimmedInstructions}${trimmedInstructions.endsWith('.') ||
