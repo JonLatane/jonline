@@ -5,25 +5,25 @@ import { useAppDispatch, useAppSelector, useComponentKey } from 'app/hooks';
 import { CalendarImplementation, resetAllData, selectAccountTotal, selectServer, selectServerTotal, serverIDHost, setAllowServerSelection, setAlwaysShowHideButton, setAutoHideNavigation, setAutoRefreshDiscussions, setBrowseRsvpsFromPreviews, setCalendarImplementation, setDateTimeRenderer, setDiscussionRefreshIntervalSeconds, setEventPagesOnHome, setFancyPostBackgrounds, setImagePostBackgrounds, setInlineFeatureNavigation, setShowUserIds, setShrinkFeatureNavigation, useServerTheme } from 'app/store';
 import moment from 'moment';
 import React, { useCallback, useState } from 'react';
-import { ToggleRow } from '../components/toggle_row';
-import { federatedEntity } from '../store/federation';
-import { EventsFullCalendar } from './event/events_full_calendar';
-import { FeaturesNavigation, useInlineFeatureNavigation } from './navigation/features_navigation';
+import { ToggleRow } from '../../components/toggle_row';
+import { federatedEntity } from '../../store/federation';
+import { EventsFullCalendar } from '../event/events_full_calendar';
+import { FeaturesNavigation, useInlineFeatureNavigation } from '../navigation/features_navigation';
+import { useSettingsSheetContext } from 'app/contexts/settings_sheet_context';
 
 
 export type SettingsSheetProps = {
-  size?: SizeTokens;
-  showIcon?: boolean;
-  circular?: boolean;
 }
 
-export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
+export function SettingsSheet({ }: SettingsSheetProps) {
   const mediaQuery = useMedia();
   // const [_, forceUpdate] = useReducer((x) => x + 1, 0);
   const forceUpdate = React.useReducer(() => ({}), {})[1] as () => void
   const { primaryColor, primaryAnchorColor } = useServerTheme();
 
-  const [open, setOpen] = useState(false);
+  // const [open, setOpen] = useState(false);
+  const { open: [open, setOpen] } = useSettingsSheetContext();
+
   const openDebounced = useDebounceValue(open, 3000);
   const [position, setPosition] = useState(0)
   const dispatch = useAppDispatch();
@@ -50,14 +50,14 @@ export function SettingsSheet({ size = '$3' }: SettingsSheetProps) {
 
   return (
     <>
-      <Button
+      {/* <Button
         size={size}
         icon={SettingsIcon}
         circular
         onPress={() => setOpen((x) => !x)}
-      />
+      /> */}
       <Sheet
-        zIndex={500001}
+        zIndex={600000}
         modal
         open={open}
         onOpenChange={setOpen}

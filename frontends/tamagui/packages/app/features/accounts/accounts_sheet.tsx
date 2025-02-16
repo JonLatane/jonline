@@ -12,12 +12,13 @@ import { useLink } from 'solito/link';
 import { v4 as uuidv4 } from 'uuid';
 import { physicallyHostingServerId } from '../about/about_screen';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
-import { SettingsSheet } from '../settings_sheet';
+import { SettingsSheet } from '../settings/settings_sheet';
 import AccountCard from './account_card';
 import { AuthSheet } from './auth_sheet';
 import RecommendedServer from './recommended_server';
 import ServerCard from './server_card';
 import { AuthSheetButton } from './auth_sheet_button';
+import { SettingsSheetButton } from '../settings/settings_sheet_button';
 
 export type AccountsSheetProps = {
   size?: SizeTokens;
@@ -265,7 +266,7 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
           </Button>
 
           <DarkModeToggle />
-          <SettingsSheet size='$3' />
+          <SettingsSheetButton size='$3' />
         </XStack>
         <Sheet.ScrollView px="$4" pb='$4' pt='$1' f={1}>
           <FlipMove style={{ maxWidth: 800, width: '100%', alignSelf: 'center' }}>

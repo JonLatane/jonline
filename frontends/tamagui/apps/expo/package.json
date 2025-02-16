@@ -39,7 +39,7 @@
   "devDependencies": {
     "@babel/core": "^7.24.5",
     "@expo/metro-config": "~0.10.0",
-    "@tamagui/babel-plugin": "^1.124.4",
+    "@tamagui/babel-plugin": "^1.125.2",
     "metro-minify-terser": "^0.80.9",
     "typescript": "^5.4.5"
   },
