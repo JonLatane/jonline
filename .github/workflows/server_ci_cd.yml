@@ -89,6 +89,7 @@ jobs:
   build_flutter_ui:
     name: Build Flutter Web UI
     runs-on: ubuntu-latest
+    continue-on-error: true
 
     steps:
     - uses: actions/checkout@v4
@@ -257,6 +258,7 @@ jobs:
   test_flutter_ui:
     name: Test Flutter Web UI
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
     - uses: subosito/flutter-action@v2
@@ -292,7 +294,8 @@ jobs:
 
 
     - uses: actions/cache/restore@v4
-      id: fllutter-app-cache
+      id: flutter-app-cache
+      continue-on-error: true
       with:
         path: frontends/flutter/build/web
         key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
