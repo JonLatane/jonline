@@ -148,10 +148,20 @@ export function AuthSheet({ }: AuthSheetProps) {
     } else if (!accountsLoading && forceDisableAccountButtons) {
       setForceDisableAccountButtons(false);
     }
-    if (!addingAccount && accountsOnServer.length == 0) {
+    if (!addingAccount && accountsOnServer.length == 0 && !accountsLoading) {
       setAddingAccount(true);
     }
   }, [accountsLoading, forceDisableAccountButtons, addingAccount, accountsOnServer.length]);
+
+  useEffect(() => {
+    if (open) {
+      if (addingAccount && accountsOnServer.length > 0) {
+        setAddingAccount(false);
+      } else if (!addingAccount && accountsOnServer.length == 0) {
+        setAddingAccount(true);
+      }
+    }
+  }, [open]);
 
   const alreadyHasAccounts = accountsOnServer.length > 0;
   return (

@@ -91,12 +91,14 @@ export function TabsNavigation({
   const authSheetContext = useNewAuthSheetContext();
 
   const { hasOpenedAccounts } = useLocalConfiguration();
+  const { configuringFederation } = useAppSelector(state => state.servers);
   const [showAccountSheetGuide, setShowAccountSheetGuide] = useState(false);
   const dispatch = useAppDispatch();
   const forceHideAccountSheetGuide = useAppSelector(state => state.temporaryConfig.forceHideAccountSheetGuide);
 
   useEffect(() => {
-    if (!loading && !hasOpenedAccounts && !showAccountSheetGuide && !forceHideAccountSheetGuide) {
+    if (!loading && !configuringFederation &&
+      !hasOpenedAccounts && !showAccountSheetGuide && !forceHideAccountSheetGuide) {
       setTimeout(() => {
         if (store.getState().config.hasOpenedAccounts) return;
 
@@ -104,7 +106,7 @@ export function TabsNavigation({
       }
         , 3000);
     }
-  }, [hasOpenedAccounts, loading]);
+  }, [hasOpenedAccounts, configuringFederation, loading]);
   useEffect(() => {
     if (hasOpenedAccounts && showAccountSheetGuide) {
       setShowAccountSheetGuide(false);
@@ -188,32 +190,13 @@ export function TabsNavigation({
 
   const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
   const [mediaSheetOpen, setMediaSheetOpen] = useState(false);
-  // const ref = useRef() as React.MutableRefObject<HTMLDivElement>;
-
-  // const isFullscreen = window.innerHeight == screen.height;
-  // const requestFullscreen = () => {
-  //   if (!ref.current) return;
-
-  //   const element = ref.current as any;
-  //   const goFullscreen = element.requestFullscreen || element.webkitRequestFullscreen || element.mozRequestFullScreen || element.msRequestFullscreen;
-
-  //   console.log("doRequeset", goFullscreen)
-  //   try {
-  //     goFullscreen.call(element);
-  //   } catch (e) {
-  //     console.warn('Failed to request fullscreen', e);
-  //   }
-  // };
-  // useEffect(() => {
-  //   if (!mediaQuery.gtXShort) {
-  //     requestFullscreen();
-  //   }
-  // }, [mediaQuery.gtXShort]);
 
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);
   const isKeyboardOpen = useDetectKeyboardOpen();
   const { topNavHeight, bottomNavHeight } = useTabsNavigationHeight();
-  // console.log('TabsNavigation', { topNavHeight, bottomNavHeight });
+
+  const showSpinners = loading || configuringFederation;
+
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
@@ -244,13 +227,13 @@ export function TabsNavigation({
                     <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
                       <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
                         selectedGroup={selectedGroup} />
-                      <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}
+                      <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
                         pointerEvents="none"
                         ml={(measuredHomeButtonWidth - 30) / 2}
                         mt={(measuredHomeButtonHeight - 10) / 2}>
                         <Spinner size='large' color={primaryColor} scale={1.4} />
                       </XStack>
-                      <XStack position='absolute' zi={10000} animation='standard' o={loading ? 1 : 0}
+                      <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
                         pointerEvents="none"
                         ml={(measuredHomeButtonWidth - 30) / 2}
                         mt={(measuredHomeButtonHeight - 10) / 2}>
@@ -409,7 +392,7 @@ export function TabsNavigation({
               </div>
 
               <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
-                animation='standard' o={loading && hideNavigation ? 1 : 0}
+                animation='standard' o={showSpinners && hideNavigation ? 1 : 0}
                 top={dimensions.height / 2 - 50}>
                 <XStack position='absolute' key='primary-spinner'
                   transform={[{ translateX: -17 }]}>

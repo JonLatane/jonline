@@ -3,7 +3,7 @@ import { AnimatePresence, Button, Heading, Paragraph, ScrollView, Spinner, Toolt
 import { ListEnd } from '@tamagui/lucide-icons';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useAppSelector, useCurrentServer, useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useServerTheme } from 'app/store';
+import { accountID, federateId, loadEvent, parseFederatedId, selectEventById, selectPostById, serverID, useDebouncedAccountOrServer, useServerTheme } from 'app/store';
 import { isPastInstance, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
 import { createParam } from 'solito';
@@ -29,7 +29,7 @@ export function EventDetailsScreen() {
 
   const { serverHost, id: serverInstanceId } = parseFederatedId(pathInstanceId ?? '', currentServer?.host);
   const { dispatch, accountOrServer } = useFederatedDispatch(serverHost);
-  const server = accountOrServer.server;
+  const { account, server } = accountOrServer;
 
   const instanceId = federateId(serverInstanceId, serverHost);
 
@@ -95,10 +95,19 @@ export function EventDetailsScreen() {
       }, { web: { replace: true } });
     }
   }
+  const debouncedAccountOrServer = useDebouncedAccountOrServer(accountOrServer);
 
+  console.log("EventDetailsScreen", {
+    // serverHost,
+    debouncedAccountOrServer,
+    // eventId,
+    subjectEvent: subjectEvent?.id,
+    instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver, failedToLoadEvent
+  })
   useEffect(() => {
     if (instanceId && serverInstanceId && server) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent && !failedToLoadEvent) {
+        console.log("EventDetailsScreen.loadEvent", { accountOrServer, serverInstanceId });
         setLoadingEvent(true);
         dispatch(loadEvent({ ...accountOrServer, instanceId: serverInstanceId }))
           .then((action) => {
@@ -114,8 +123,8 @@ export function EventDetailsScreen() {
         dismissScrollPreserver(setShowScrollPreserver);
       }
     }
-  }, [server ? serverID(server) : undefined, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
-
+  }, [debouncedAccountOrServer, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
+  // debugger;
   useEffect(() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     let title = '';

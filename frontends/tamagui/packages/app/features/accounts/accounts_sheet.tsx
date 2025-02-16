@@ -42,15 +42,17 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const [newServerSecure, setNewServerSecure] = useState(true);
 
   const openDebounced = useDebounceValue(open, 3000);
-  // const [hasOpened, setHasOpened] = useState(open);
+  // useEffect(() => {
+  //   if (openDebounced && !hasOpenedAccounts) {
+  //     requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
+  //   }
+  // }, [openDebounced, hasOpenedAccounts]);
+
   useEffect(() => {
-    // if (open && !hasOpened) {
-    //   setHasOpened(true);
-    // }
-    if (openDebounced && !hasOpenedAccounts) {
+    if (!hasOpenedAccounts && open) {
       requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
     }
-  }, [openDebounced, hasOpenedAccounts]);
+  }, [open]);
 
   // useEffect(() => {
   //   if (!openDebounced) {

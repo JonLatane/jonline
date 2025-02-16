@@ -1,8 +1,9 @@
 import { ExpirableToken } from "@jonline/api";
+import { useDebounceValue } from "@jonline/ui";
 import moment from "moment";
 import { Metadata } from "nice-grpc-web";
 import 'react-native-get-random-values';
-import { JonlineClientCreationArgs, accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers } from ".";
+import { JonlineClientCreationArgs, accountID, accountsSlice, getServerClient, resetEvents, resetGroups, resetMedia, resetPosts, resetUsers, serverID } from ".";
 import { store } from "./store";
 import { AccountOrServer, JonlineAccount, JonlineCredentialClient } from "./types";
 
@@ -136,6 +137,15 @@ export function resetCredentialedData(serverHost: string | undefined) {
     store.dispatch(resetPosts({ serverHost }));
     store.dispatch(resetGroups({ serverHost }));
     store.dispatch(resetUsers({ serverHost }));
-  }, 2000);
+  }, 1000);
 }
 const pendingServerHostResets = new Set<string | undefined>();
+
+// To be used when resetting data that depends on the selected server/account.
+export function useDebouncedAccountOrServer(accountOrServer: AccountOrServer): { serverId: string | undefined, accountId: string | undefined } {
+  const { server, account } = accountOrServer;
+  return useDebounceValue({
+    serverId: server ? serverID(server) : undefined,
+    accountId: account ? accountID(account) : undefined
+  }, 3000);
+}

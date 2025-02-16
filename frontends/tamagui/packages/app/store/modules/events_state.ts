@@ -7,7 +7,7 @@ import {
   createSlice
 } from "@reduxjs/toolkit";
 import moment from "moment";
-import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, setFederated } from '../federation';
+import { Federated, FederatedEntity, HasServer, createFederated, federateId, federatedEntities, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, PaginatedIds, createFederatedPagesStatus } from "../pagination";
 import { createEvent, defaultEventListingType, deleteEvent, loadEvent, loadEventsPage, loadRsvpData, updateEvent } from './event_actions';
 import { loadGroupEventsPage } from "./group_actions";
@@ -76,22 +76,22 @@ export const eventsSlice = createSlice({
     resetEvents: (state, action: PayloadAction<{ serverHost: string | undefined }>) => {
       if (!action.payload.serverHost) return;
 
-      // const eventsIdsToRemove = state.ids
-      //   .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
-      // eventsAdapter.removeMany(state, eventsIdsToRemove);
-      // Object.keys(state.instanceEvents)
-      //   .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-      //   .forEach(id => delete state.instanceEvents[id]);
-      // Object.keys(state.postEvents)
-      //   .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-      //   .forEach(id => delete state.postEvents[id]);
-      // Object.keys(state.postInstances)
-      //   .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
-      //   .forEach(id => delete state.postInstances[id]);
-      // state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      // state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
-      // delete state.eventInstancePages.values[action.payload.serverHost];
-      // delete state.pagesStatus.values[action.payload.serverHost];
+      const eventsIdsToRemove = state.ids
+        .filter(id => parseFederatedId(id as string).serverHost === action.payload.serverHost);
+      eventsAdapter.removeMany(state, eventsIdsToRemove);
+      Object.keys(state.instanceEvents)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.instanceEvents[id]);
+      Object.keys(state.postEvents)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.postEvents[id]);
+      Object.keys(state.postInstances)
+        .filter(id => parseFederatedId(id).serverHost === action.payload.serverHost)
+        .forEach(id => delete state.postInstances[id]);
+      state.failedEventIds = state.failedEventIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      state.failedInstanceIds = state.failedInstanceIds.filter(id => parseFederatedId(id).serverHost !== action.payload.serverHost);
+      delete state.eventInstancePages.values[action.payload.serverHost];
+      delete state.pagesStatus.values[action.payload.serverHost];
     },
     setUpcomingEventsTimeFilter: (state, action: PayloadAction<{ timeFilter: TimeFilter }>) => {
       state.upcomingEventsTimeFilter = action.payload.timeFilter;

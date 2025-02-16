@@ -1,5 +1,5 @@
 import { PostContext } from '@jonline/api/index'
-import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui'
+import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useDebounce, useDebounceValue, useMedia } from '@jonline/ui'
 import { createSelector } from '@reduxjs/toolkit'
 import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
@@ -7,7 +7,7 @@ import { useGroupFromPath } from 'app/features/groups/group_home_screen'
 import { AppSection } from 'app/features/navigation/features_navigation'
 import { TabsNavigation } from 'app/features/navigation/tabs_navigation'
 import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
-import { FederatedPost, RootState, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useServerTheme } from 'app/store'
+import { FederatedPost, RootState, accountID, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, serverID, setDiscussionChatUI, useDebouncedAccountOrServer, useServerTheme } from 'app/store'
 import { HasServer, federateId } from 'app/store/federation'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
@@ -75,6 +75,9 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
       }
     }
   }, [subjectPost?.id, subjectPost?.serverHost]);
+
+
+  const debouncedAccountOrServer = useDebouncedAccountOrServer(accountOrServer);
   useEffect(() => {
     for (const idx in ancestorPostIds) {
       const postId = ancestorPostIds[idx]!;
@@ -85,7 +88,7 @@ export function useReplyAncestors(subjectPost?: FederatedPost) {
       }
     }
 
-  }, [ancestorPostIds]);
+  }, [ancestorPostIds, debouncedAccountOrServer]);
 
   useEffect(() => {
     if (ancestorPosts[0]?.replyToPostId) {
