@@ -22,8 +22,7 @@ COPY backend/target/release/to_proto_id__server_release /opt/to_proto_id
 COPY backend/target/release/generate_preview_images__server_release /opt/generate_preview_images
 
 # Flutter web app release (served from the filesystem by Rocket within Jonline)
-RUN mkdir -p frontends/flutter/build/web/
-RUN touch frontends/flutter/build/web/flutter-is-broken
+RUN mkdir -p /frontends/flutter/build/web/
 COPY frontends/flutter/build/web/ /opt/flutter_web
 
 # Tamagui web app release (served from the filesystem by Rocket within Jonline)
