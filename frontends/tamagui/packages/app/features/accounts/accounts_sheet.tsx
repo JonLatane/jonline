@@ -1,7 +1,7 @@
 import { Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@jonline/ui';
 import { AlertCircle, Cpu, Router, AlertTriangle, ArrowDownUp, AtSign, ChevronDown, ChevronLeft, ChevronRight, Info, Plus, SeparatorHorizontal, Server } from '@tamagui/lucide-icons';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
-import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration } from 'app/hooks';
+import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
 import { useMediaUrl } from 'app/hooks/use_media_url';
 import { FederatedEntity, FederatedGroup, RootState, accountID, clearServerAlerts, selectAllAccounts, selectAllServers, serverID, setBrowsingServers, setHasOpenedAccounts, setSeparateAccountsByServer, setViewingRecommendedServers, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
@@ -54,6 +54,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
       requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
     }
   }, [open]);
+
+
 
   // useEffect(() => {
   //   if (!openDebounced) {
@@ -155,6 +157,16 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   </Tooltip>, [currentServer, browsingOn]);
 
   const renderContent = open || openDebounced;
+
+  const pinnedServers = usePinnedAccountsAndServers().map(aos =>
+    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`);
+
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => setOpen(false));
+    }
+  }, [pinnedServers]);
+
   return <>
     <Button
       my='auto'

@@ -2,7 +2,7 @@ import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YSt
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { TamaguiMarkdown } from 'app/components';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
-import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
+import { useAppDispatch, useCreationServer, useCurrentServer, usePinnedAccountsAndServers } from 'app/hooks';
 import { accountID, actionSucceeded, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useCallback, useEffect, useState } from 'react';
@@ -164,6 +164,16 @@ export function AuthSheet({ }: AuthSheetProps) {
   }, [open]);
 
   const alreadyHasAccounts = accountsOnServer.length > 0;
+
+
+  const pinnedServers = usePinnedAccountsAndServers().map(aos =>
+    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`);
+
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => setOpen(false));
+    }
+  }, [pinnedServers]);
   return (
     <>
       <Sheet
