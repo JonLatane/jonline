@@ -275,9 +275,23 @@ http {
             })?;
 
             let cert_file = &format!("{host}.crt.jbl");
-            fs::write(cert_file, cert)?;
+            fs::write(
+                cert_file,
+                &format!(
+                    "-----BEGIN TRUSTED CERTIFICATE-----
+{cert}
+-----END TRUSTED CERTIFICATE-----"
+                ),
+            )?;
             let key_file = &format!("{host}.key.jbl");
-            fs::write(key_file, key)?;
+            fs::write(
+                key_file,
+                &format!(
+                    "-----BEGIN PRIVATE KEY-----
+{key}
+-----END PRIVATE KEY-----"
+                ),
+            )?;
 
             log::info!(
                 "Wrote cert and key for server {host} in namespace {namespace} to files {cert_file} and {key_file}...",
