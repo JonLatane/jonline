@@ -20,16 +20,7 @@ use structopt::StructOpt;
 use tokio;
 
 #[derive(StructOpt)]
-struct Options {
-    // addr: String,
-    // /// cert file
-    // #[structopt(short = "c", long = "cert", parse(from_os_str))]
-    // cert: PathBuf,
-
-    // /// key file
-    // #[structopt(short = "k", long = "key", parse(from_os_str))]
-    // key: PathBuf,
-}
+struct Options {}
 
 const NGINX_CONF: &str = "nginx.conf.jbl";
 
@@ -276,7 +267,7 @@ async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfi
             append_to_conf(&format!(
                 "
     server  {{
-        listen  443 ssl;
+        listen 443;
         server_name {host};
         ssl on;
         ssl_certificate {cert_file};
@@ -307,5 +298,10 @@ fn append_to_conf(content: &str) -> io::Result<()> {
         .append(true)
         .open(NGINX_CONF)
         .unwrap();
-    writeln!(file, "\n{}", content)
+    let appended_value = match content.chars().next() {
+        Some('\n') => content.to_string(),
+        _ => format!("\n{}", content),
+    };
+
+    writeln!(file, "{}", appended_value)
 }
