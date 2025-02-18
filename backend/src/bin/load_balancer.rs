@@ -281,9 +281,8 @@ http {
             append_to_conf(&format!(
                 "
     server  {{
-        listen 443;
+        listen 443 ssl;
         server_name {host};
-        ssl on;
         ssl_certificate {cert_file};
         ssl_certificate_key {key_file};
         include /etc/letsencrypt/options-ssl-nginx.conf;
