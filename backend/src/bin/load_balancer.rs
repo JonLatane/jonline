@@ -64,6 +64,7 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
         });
         return Ok(());
     } else {
+        log::info!("NGINX config:\n{}\n", fs::read_to_string(NGINX_CONF)?);
         log::info!("Starting NGINX...");
         let mut nginx = match std::process::Command::new("nginx")
             .args(&[
