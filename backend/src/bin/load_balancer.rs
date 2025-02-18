@@ -286,7 +286,7 @@ http {
         server_name {host};
         ssl_certificate {cert_file};
         ssl_certificate_key {key_file};
-        include /etc/letsencrypt/options-ssl-nginx.conf;
+        # include /etc/letsencrypt/options-ssl-nginx.conf;
         location  / {{
             proxy_pass  https://{host}:80/;
             proxy_http_version 1.1;
