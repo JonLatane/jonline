@@ -293,14 +293,14 @@ http {
                 ),
             )?;
 
-            log::info!(
-                "Wrote cert and key for server {host} in namespace {namespace} to files {cert_file} and {key_file}...",
-                host = host,
-                namespace = namespace,
-                cert_file = cert_file,
-                key_file = key_file
-            );
-            log::info!("Cert file contents: \n{:?}", fs::read_to_string(cert_file)?);
+            // log::info!(
+            //     "Wrote cert and key for server {host} in namespace {namespace} to files {cert_file} and {key_file}...",
+            //     host = host,
+            //     namespace = namespace,
+            //     cert_file = cert_file,
+            //     key_file = key_file
+            // );
+            log::info!("Cert file contents: \n{}", fs::read_to_string(cert_file)?);
 
             append_to_conf(&format!(
                 "

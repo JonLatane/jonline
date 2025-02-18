@@ -50,11 +50,13 @@ spec:
         - image: docker.io/jonlatane/jbl:0.2.533
           name: jonline-lb
           env:
-          - name: SERVERS
-            valueFrom:
-              configMapKeyRef:
-                name: jonline-lb-config
-                key: servers
+            - name: SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: jonline-lb-config
+                  key: servers
+            - name: NO_CERTS
+              value: "true"
 
           # env:
           #   - name: DATABASE_URL
