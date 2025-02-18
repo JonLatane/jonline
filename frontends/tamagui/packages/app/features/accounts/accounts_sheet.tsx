@@ -159,7 +159,8 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const renderContent = open || openDebounced;
 
   const pinnedServers = usePinnedAccountsAndServers().map(aos =>
-    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`);
+    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`)
+    .sort().join(',');
 
   useEffect(() => {
     if (open) {

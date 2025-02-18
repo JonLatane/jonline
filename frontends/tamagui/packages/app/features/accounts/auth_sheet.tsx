@@ -166,8 +166,10 @@ export function AuthSheet({ }: AuthSheetProps) {
   const alreadyHasAccounts = accountsOnServer.length > 0;
 
 
-  const pinnedServers = usePinnedAccountsAndServers().map(aos =>
-    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`);
+  const pinnedServers = usePinnedAccountsAndServers()
+    .map(aos =>
+      `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`)
+    .sort().join(',');
 
   useEffect(() => {
     if (open) {

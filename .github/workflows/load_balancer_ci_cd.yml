@@ -153,5 +153,5 @@ jobs:
     - name: Deploy to Jonline-BE via DigitalOcean Kubernetes
       run: kubectl apply -f deploys/k8s/load_balancer.yaml -n jonline
 
-    - name: Verify Server deployment
+    - name: Verify LB deployment
       run: kubectl rollout status deployment/jonline-lb -n jonline --timeout 2m

@@ -31,6 +31,8 @@ struct Options {
     // key: PathBuf,
 }
 
+const NGINX_CONF: &str = "nginx.conf.jbl";
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     init_crypto();
@@ -69,13 +71,15 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
         return Ok(());
     } else {
         log::info!("Starting NGINX...");
-        let _nginx = match std::process::Command::new("nginx")
-            .args(&["-c", "nginx.conf.jbl", "-p", &pwd])
+        let mut nginx = match std::process::Command::new("nginx")
+            .args(&["-c", NGINX_CONF, "-p", &pwd, "-g", "daemon off;"])
             .spawn()
         {
             Ok(process) => process,
             Err(err) => panic!("Nginx crashed: {}", err),
         };
+
+        nginx.wait().expect("Nginx crashed");
     }
 
     Ok(())
@@ -121,10 +125,12 @@ async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfi
 
     let env_servers = env::var("SERVERS")
         .expect("SERVERS must be set, JSON of the format [{\"host\": \"\", \"namespace\": \"\"}]");
+    let env_no_certs = env::var("NO_CERTS").unwrap_or("false".to_string());
     // TODO:
     log::info!("SERVERS={:?}", env_servers);
     let servers: Vec<Server> = serde_json::from_str(&env_servers)
         .expect(format!("Invalid SERVERS JSON: {}", env_servers).as_str());
+    let no_certs = env_no_certs == "true";
     log::info!("Parsed servers: {:?}", &servers);
 
     // Source: https://stackoverflow.com/questions/73418121/how-allow-pod-from-default-namespace-read-secret-from-other-namespace/73419051#73419051
@@ -160,122 +166,146 @@ async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfi
             )
         })?;
 
-    let nginx_conf = "nginx.conf.jbl";
-    fs::write(nginx_conf, "events {}")?;
+    fs::write(NGINX_CONF, "events {}")?;
+    append_to_conf("http {")?;
     for server in &servers {
         let host = &server.host;
         let namespace = &server.namespace;
 
-        log::info!("Fetching certs for server {host} in namespace {namespace}...");
-        let secrets_url = format!(
-            "https://{}:{}/api/v1/namespaces/{}/secrets",
-            k8s_server_host, k8s_server_port, &server.namespace
-        );
+        if no_certs {
+            log::info!("Skipping fetching certs for server {host} in namespace {namespace}...");
 
-        // THE LOG BELOW SHOULD DEFINITELY NOT RUN IN REAL PRODUCTION ENVIRIONMENTS (but is needed to test security internally)
-        // log::info!("Secrets URL: {:?}", secrets_url);
-        // log::info!("K8s Secrets Token: {:?}", k8s_token);
-
-        let secrets = client
-            .get(secrets_url)
-            .send()
-            .await
-            .map_err(|e| {
-                log::error!("Failed to fetch secrets: {:?}", e);
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Failed to fetch secrets: {:?}", e),
-                )
-            })?
-            .text()
-            .await
-            .map_err(|e| {
-                log::error!("Failed to read secrets: {:?}", e);
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Failed to read secrets: {:?}", e),
-                )
-            })?;
-        // log::debug!("Secrets response for server {:?}: {:?}", server, secrets);
-
-        let parsed_secrets = serde_json::from_str::<KubernetesSecrets>(&secrets).map_err(|e| {
-            log::error!("Failed to parse secrets: {:?}", e);
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to parse secrets: {:?}", e),
-            )
-        })?;
-
-        let tls_secrets = parsed_secrets
-            .items
-            .iter()
-            .filter(|item| item.metadata.name == "jonline-generated-tls")
-            .next()
-            .ok_or_else(|| {
-                log::error!("Failed to find tls secret for server: {:?}", server);
-                io::Error::new(
-                    io::ErrorKind::InvalidInput,
-                    format!("Failed to find tls secret for server: {:?}", server),
-                )
-            })?;
-
-        log::info!(
-            "Parsed TLS secrets for server {:?}: {:?}",
-            server,
-            tls_secrets
-        );
-
-        let cert = tls_secrets.data.get("tls.crt").ok_or_else(|| {
-            log::error!("Failed to find tls.crt for server: {:?}", server);
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to find tls.crt for server: {:?}", server),
-            )
-        })?;
-
-        let key = tls_secrets.data.get("tls.key").ok_or_else(|| {
-            log::error!("Failed to find tls.key for server: {:?}", server);
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Failed to find tls.key for server: {:?}", server),
-            )
-        })?;
-
-        let cert_file = &format!("{host}.crt.jbl");
-        fs::write(cert_file, cert)?;
-        let key_file = &format!("{host}.key.jbl");
-        fs::write(key_file, key)?;
-
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .append(true)
-            .open(nginx_conf)
-            .unwrap();
-
-        if let Err(e) = writeln!(
-            file,
-            "
-server  {{
-    listen  443 ssl;
-    server_name {host};
-    ssl on;
-    ssl_certificate {cert_file};
-    ssl_certificate_key {key_file};
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    location  / {{
-        proxy_pass  https://{host}:80/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
+            append_to_conf(&format!(
+                "
+    server  {{
+        listen 80;
+        server_name {host};
+        location  / {{
+            proxy_pass  https://{host}:80/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }}
     }}
-}}
 "
-        ) {
-            eprintln!("Couldn't write to NGINX config file: {}", e);
+            ))?;
+        } else {
+            log::info!("Fetching certs for server {host} in namespace {namespace}...");
+            let secrets_url = format!(
+                "https://{}:{}/api/v1/namespaces/{}/secrets",
+                k8s_server_host, k8s_server_port, &server.namespace
+            );
+
+            // THE LOG BELOW SHOULD DEFINITELY NOT RUN IN REAL PRODUCTION ENVIRIONMENTS (but is needed to test security internally)
+            // log::info!("Secrets URL: {:?}", secrets_url);
+            // log::info!("K8s Secrets Token: {:?}", k8s_token);
+
+            let secrets = client
+                .get(secrets_url)
+                .send()
+                .await
+                .map_err(|e| {
+                    log::error!("Failed to fetch secrets: {:?}", e);
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to fetch secrets: {:?}", e),
+                    )
+                })?
+                .text()
+                .await
+                .map_err(|e| {
+                    log::error!("Failed to read secrets: {:?}", e);
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to read secrets: {:?}", e),
+                    )
+                })?;
+            // log::debug!("Secrets response for server {:?}: {:?}", server, secrets);
+
+            let parsed_secrets =
+                serde_json::from_str::<KubernetesSecrets>(&secrets).map_err(|e| {
+                    log::error!("Failed to parse secrets: {:?}", e);
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to parse secrets: {:?}", e),
+                    )
+                })?;
+
+            let tls_secrets = parsed_secrets
+                .items
+                .iter()
+                .filter(|item| item.metadata.name == "jonline-generated-tls")
+                .next()
+                .ok_or_else(|| {
+                    log::error!("Failed to find tls secret for server: {:?}", server);
+                    io::Error::new(
+                        io::ErrorKind::InvalidInput,
+                        format!("Failed to find tls secret for server: {:?}", server),
+                    )
+                })?;
+
+            log::info!(
+                "Parsed TLS secrets for server {:?}: {:?}",
+                server,
+                tls_secrets
+            );
+
+            let cert = tls_secrets.data.get("tls.crt").ok_or_else(|| {
+                log::error!("Failed to find tls.crt for server: {:?}", server);
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Failed to find tls.crt for server: {:?}", server),
+                )
+            })?;
+
+            let key = tls_secrets.data.get("tls.key").ok_or_else(|| {
+                log::error!("Failed to find tls.key for server: {:?}", server);
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("Failed to find tls.key for server: {:?}", server),
+                )
+            })?;
+
+            let cert_file = &format!("{host}.crt.jbl");
+            fs::write(cert_file, cert)?;
+            let key_file = &format!("{host}.key.jbl");
+            fs::write(key_file, key)?;
+
+            append_to_conf(&format!(
+                "
+    server  {{
+        listen  443 ssl;
+        server_name {host};
+        ssl on;
+        ssl_certificate {cert_file};
+        ssl_certificate_key {key_file};
+        include /etc/letsencrypt/options-ssl-nginx.conf;
+        location  / {{
+            proxy_pass  https://{host}:80/;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }}
+    }}
+"
+            ))?;
         }
     }
 
+    append_to_conf("}")?;
+
     Ok(JonlineServerConfig { servers })
+}
+
+fn append_to_conf(content: &str) -> io::Result<()> {
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .append(true)
+        .open(NGINX_CONF)
+        .unwrap();
+    writeln!(file, "\n{}", content)
 }
