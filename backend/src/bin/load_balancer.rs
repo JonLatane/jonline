@@ -22,6 +22,9 @@ use tokio;
 #[derive(StructOpt)]
 struct Options {}
 
+// Jonline Balancer of Loads (JBL) mostly just generates an NGINX configuration
+// from some environment variables and Kubernetes secrets, puts them in this file,
+// and then starts NGINX (in the foreground) with that configuration.
 const NGINX_CONF: &str = "nginx.conf.jbl";
 
 #[tokio::main]
@@ -63,7 +66,14 @@ A Rust load balancer for Jonline servers deployed on Kubernetes
     } else {
         log::info!("Starting NGINX...");
         let mut nginx = match std::process::Command::new("nginx")
-            .args(&["-c", NGINX_CONF, "-p", &pwd, "-g", "daemon off;"])
+            .args(&[
+                "-c",
+                NGINX_CONF,
+                "-p",
+                &pwd,
+                "-g",
+                "daemon off; error_log /dev/stdout info;",
+            ])
             .spawn()
         {
             Ok(process) => process,
@@ -158,7 +168,11 @@ async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfi
         })?;
 
     fs::write(NGINX_CONF, "events {}")?;
-    append_to_conf("http {")?;
+    append_to_conf(
+        "
+http {
+    access_log /dev/stdout;",
+    )?;
     for server in &servers {
         let host = &server.host;
         let namespace = &server.namespace;
@@ -287,7 +301,11 @@ async fn setup_nginx_config(_options: &Options) -> io::Result<JonlineServerConfi
         }
     }
 
-    append_to_conf("}")?;
+    append_to_conf(
+        "
+}
+    ",
+    )?;
 
     Ok(JonlineServerConfig { servers })
 }
