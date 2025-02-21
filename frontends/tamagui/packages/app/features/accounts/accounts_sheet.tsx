@@ -292,70 +292,27 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
                       ? <Heading size='$5' marginRight='$2'>Servers</Heading>
                       : undefined}
 
-                    {browsingServers ? <Button
-                      size="$3"
-                      icon={Plus}
-                      marginLeft='auto'
-                      // circular
-                      onPress={() => setAddingServer((x) => !x)}
-                    >
-                      Add
-                    </Button> : undefined}
-                    <Sheet
-                      modal
-                      open={addingServer}
-                      onOpenChange={setAddingServer}
-                      // snapPoints={[80]}
-                      snapPoints={[81]} dismissOnSnapToBottom
-                      position={position}
-                      onPositionChange={setPosition}
-                    // dismissOnSnapToBottom
-                    >
-                      <Sheet.Overlay />
-                      <Sheet.Frame padding="$5">
-                        <Sheet.Handle />
-                        <Button
-                          alignSelf='center'
-                          size="$6"
-                          circular
-                          icon={ChevronDown}
-                          onPress={() => {
-                            setAddingServer(false)
-                          }}
-                        />
-                        <YStack gap="$2" maxWidth={600} width='100%' alignSelf='center'>
-                          <Heading size="$10" f={1}>Add Server</Heading>
-                          <YStack>
-                            <Input textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
-                              editable={!serversLoading}
-                              opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
-                              value={newServerHost}
-                              onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
-                          </YStack>
-                          {(newServerHostNotBlank && newServerExists && !serversState.successMessage) ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading> : undefined}
-                          <XStack>
-                            <YStack f={1} mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
-                              <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
-                                defaultChecked
-                                onCheckedChange={(checked) => setNewServerSecure(checked)}
-                                disabled={disableSecureSelection} >
-                                <Switch.Thumb animation='standard' disabled={disableSecureSelection} />
-                              </Switch>
-
-                              <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
-                                <Heading size="$2">Secure</Heading>
-                              </Label>
-                            </YStack>
-                            <Button f={2} backgroundColor={primaryColor} color={primaryTextColor}
-                              onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
-                              Add Server
-                            </Button>
-                          </XStack>
-                          {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
-                          {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined}
-                        </YStack>
-                      </Sheet.Frame>
-                    </Sheet>
+                    {browsingServers
+                      ? addingServer
+                        ? <Button
+                          size="$3"
+                          icon={ChevronLeft}
+                          marginLeft='auto'
+                          // circular
+                          onPress={() => setAddingServer((x) => !x)}
+                        >
+                          Done
+                        </Button>
+                        : <Button
+                          size="$3"
+                          icon={Plus}
+                          marginLeft='auto'
+                          // circular
+                          onPress={() => setAddingServer((x) => !x)}
+                        >
+                          Add
+                        </Button>
+                      : undefined}
                   </XStack>
                 </div>
                 : <div key='primary-server-logo'>
@@ -383,6 +340,52 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
 
                   </XStack>
                 </div>,
+              addingServer
+                ? <div key='add-server'>
+                  <XStack gap="$2" mt='$2' w='100%' maxWidth={600} width='100%' ai='center' alignSelf='center'>
+                    {/* <Heading size="$10" f={1}>Add Server</Heading> */}
+                    {/* <YStack> */}
+                    <Input f={1} textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                      editable={!serversLoading}
+                      opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
+                      value={newServerHost}
+                      onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
+                    {/* </YStack> */}
+                    {/* <XStack> */}
+                    {disableSecureSelection || true
+                      ? undefined
+                      : <YStack mt='$1' mx='auto' opacity={disableSecureSelection ? 0.5 : 1}>
+                        <Switch size="$1" style={{ marginLeft: 'auto', marginRight: 'auto' }} id={`newServerSecure-${secureLabelUuid}`} aria-label='Secure'
+                          defaultChecked
+                          onCheckedChange={(checked) => setNewServerSecure(checked)}
+                          disabled={disableSecureSelection} >
+                          <Switch.Thumb animation='standard' disabled={disableSecureSelection} />
+                        </Switch>
+
+                        <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
+                          <Heading size="$2">Secure</Heading>
+                        </Label>
+                      </YStack>}
+                    <Button backgroundColor={primaryColor} color={primaryTextColor}
+                      onPress={addServer} disabled={serversLoading || !newServerValid} opacity={serversLoading || !newServerValid ? 0.5 : 1}>
+                      Add
+                    </Button>
+                    {/* </XStack> */}
+                    {/* {serversState.errorMessage ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading> : undefined}
+                    {serversState.successMessage ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading> : undefined} */}
+                  </XStack>
+                </div>
+                : undefined,
+              (newServerHostNotBlank && newServerExists && !serversState.successMessage)
+                ? <Heading size="$2" color="red" alignSelf='center'>Server already exists</Heading>
+                : undefined,
+
+              addingServer && serversState.errorMessage
+                ? <Heading size="$2" color="red" alignSelf='center'>{serversState.errorMessage}</Heading>
+                : undefined,
+              addingServer && serversState.successMessage
+                ? <Heading size="$2" color="green" alignSelf='center'>{serversState.successMessage}</Heading>
+                : undefined,
               servers.length === 0
                 ?
                 <div key='no-servers'>

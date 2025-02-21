@@ -58,39 +58,6 @@ spec:
             - name: NO_CERTS
               value: "true"
 
-          # env:
-          #   - name: DATABASE_URL
-          #     value: postgres://admin:secure_password1@jonline-postgres/jonline
-          #   - name: MINIO_ENDPOINT
-          #     value: http://jonline-minio:9000
-          #   - name: MINIO_REGION
-          #     value: ''
-          #   - name: MINIO_BUCKET
-          #     value: jonline
-          #   - name: MINIO_ACCESS_KEY
-          #     value: minio
-          #   - name: MINIO_SECRET_KEY
-          #     value: minio123
-          #   - name: RUST_BACKTRACE
-          #     value: full
-          #   - name: TLS_KEY
-          #     valueFrom:
-          #       secretKeyRef:
-          #         name: jonline-generated-tls
-          #         key: tls.key
-          #         optional: true
-          #   - name: TLS_CERT
-          #     valueFrom:
-          #       secretKeyRef:
-          #         name: jonline-generated-tls
-          #         key: tls.crt
-          #         optional: true
-          #   - name: CA_CERT
-          #     valueFrom:
-          #       configMapKeyRef:
-          #         name: jonline-generated-ca
-          #         key: ca.crt
-          #         optional: true
           ports:
             - containerPort: 27707
               protocol: TCP
