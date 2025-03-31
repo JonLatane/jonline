@@ -6,7 +6,7 @@ import {
   createEntityAdapter,
   createSlice
 } from "@reduxjs/toolkit";
-import { publicVisibility } from "app/utils/visibility_utils";
+import { publicOrPrivateVisibility } from "app/utils/visibility_utils";
 import moment from "moment";
 import { Federated, FederatedEntity, createFederated, federateId, federatedEntities, federatedEntity, federatedId, federatedPayload, getFederated, parseFederatedId, setFederated } from '../federation';
 import { FederatedPagesStatus, GroupedPages, PaginatedIds, createFederatedPagesStatus } from "../pagination";
@@ -75,7 +75,7 @@ export const postsSlice = createSlice({
       // setFederated(state.status, action, "loaded");
       const post = federatedPayload(action);
       postsAdapter.upsertOne(state, post);
-      if (publicVisibility(action.payload.visibility)) {
+      if (publicOrPrivateVisibility(action.payload.visibility)) {
 
         const serverPostPages: GroupedPages = getFederated(state.postPages, action);
         if (!serverPostPages[defaultPostListingType]) serverPostPages[defaultPostListingType] = [];

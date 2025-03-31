@@ -96,6 +96,18 @@ export function AccountsSheet({ size = '$5', selectedGroup, primaryEntity }: Acc
   const accountsOnPrimaryServer = primaryServer ? accounts.filter(a => serverID(a.server) == serverID(primaryServer!)) : [];
   const accountsElsewhere = accounts.filter(a => !accountsOnPrimaryServer.includes(a));
   const displayedAccounts = accounts;
+  const successMessageDebounce = useDebounceValue(serversState.successMessage, 3000);
+  useEffect(() => {
+    if (successMessageDebounce) {
+      clearServerAlerts();
+    }
+  }, [successMessageDebounce]);
+  const errorMessageDebounce = useDebounceValue(serversState.errorMessage, 10000);
+  useEffect(() => {
+    if (errorMessageDebounce) {
+      clearServerAlerts();
+    }
+  }, [errorMessageDebounce]);
 
 
   const currentServerHosts = servers.map(s => s.host);

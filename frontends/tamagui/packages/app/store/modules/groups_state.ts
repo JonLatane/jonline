@@ -177,10 +177,11 @@ export const groupsSlice = createSlice({
       state.postIdGroupPosts[postId] = [groupPost,
         ...(state.postIdGroupPosts[postId] ?? [])];
 
-      setTimeout(() => {
-        store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 }));
-        store.dispatch(loadGroupEventsPage({ groupId: action.payload.groupId, page: 0 }));
-      }, 1);
+      requestAnimationFrame(() => {
+        store.dispatch(loadGroupPostsPage({ groupId: action.payload.groupId, page: 0 })).then(() => {
+          store.dispatch(loadGroupEventsPage({ groupId: action.payload.groupId, page: 0 }));
+        });
+      });
     });
 
     builder.addCase(deleteGroupPost.fulfilled, (state, action) => {
@@ -225,7 +226,7 @@ export const groupsSlice = createSlice({
       action.payload.forEach(serverGroup => {
         const group = federatedEntity(serverGroup, action);
         groupsAdapter.upsertOne(state, group);
-        state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedId(group);  
+        state.shortnameIds[federatedShortname(group).toLowerCase()] = federatedId(group);
       });
     });
     builder.addCase(joinLeaveGroup.pending, (state, action) => {

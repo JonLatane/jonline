@@ -493,6 +493,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           key="overlay"
           animation="slow"
           opacity={0.5}
+
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         />

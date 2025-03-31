@@ -287,7 +287,7 @@ export function BaseCreatePostSheet({
           snapPoints={[95]} dismissOnSnapToBottom
           position={position}
           onPositionChange={setPosition}
-          zIndex={100000}
+        // zIndex={100000}
         // dismissOnSnapToBottom
         >
           <Sheet.Overlay />
