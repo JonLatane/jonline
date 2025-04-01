@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: authentication.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -16,6 +16,8 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'users.pb.dart' as $4;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 /// Request to create a new account.
 class CreateAccountRequest extends $pb.GeneratedMessage {
@@ -91,7 +93,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasUsername() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUsername() => clearField(1);
+  void clearUsername() => $_clearField(1);
 
   /// Password for the account to be created. Must be at least 8 characters.
   @$pb.TagNumber(2)
@@ -101,17 +103,17 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPassword() => clearField(2);
+  void clearPassword() => $_clearField(2);
 
   /// Email to be used as a contact method.
   @$pb.TagNumber(3)
   $4.ContactMethod get email => $_getN(2);
   @$pb.TagNumber(3)
-  set email($4.ContactMethod v) { setField(3, v); }
+  set email($4.ContactMethod v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasEmail() => $_has(2);
   @$pb.TagNumber(3)
-  void clearEmail() => clearField(3);
+  void clearEmail() => $_clearField(3);
   @$pb.TagNumber(3)
   $4.ContactMethod ensureEmail() => $_ensure(2);
 
@@ -119,11 +121,11 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $4.ContactMethod get phone => $_getN(3);
   @$pb.TagNumber(4)
-  set phone($4.ContactMethod v) { setField(4, v); }
+  set phone($4.ContactMethod v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasPhone() => $_has(3);
   @$pb.TagNumber(4)
-  void clearPhone() => clearField(4);
+  void clearPhone() => $_clearField(4);
   @$pb.TagNumber(4)
   $4.ContactMethod ensurePhone() => $_ensure(3);
 
@@ -131,11 +133,11 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp get expiresAt => $_getN(4);
   @$pb.TagNumber(5)
-  set expiresAt($9.Timestamp v) { setField(5, v); }
+  set expiresAt($9.Timestamp v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasExpiresAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearExpiresAt() => clearField(5);
+  void clearExpiresAt() => $_clearField(5);
   @$pb.TagNumber(5)
   $9.Timestamp ensureExpiresAt() => $_ensure(4);
 
@@ -147,7 +149,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.bool hasDeviceName() => $_has(5);
   @$pb.TagNumber(6)
-  void clearDeviceName() => clearField(6);
+  void clearDeviceName() => $_clearField(6);
 }
 
 /// Request to login to an existing account.
@@ -219,7 +221,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasUsername() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUsername() => clearField(1);
+  void clearUsername() => $_clearField(1);
 
   /// Password for the account to be logged into.
   @$pb.TagNumber(2)
@@ -229,17 +231,17 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPassword() => clearField(2);
+  void clearPassword() => $_clearField(2);
 
   /// Request an expiration time for the Auth Token returned. By default it will not expire.
   @$pb.TagNumber(3)
   $9.Timestamp get expiresAt => $_getN(2);
   @$pb.TagNumber(3)
-  set expiresAt($9.Timestamp v) { setField(3, v); }
+  set expiresAt($9.Timestamp v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasExpiresAt() => $_has(2);
   @$pb.TagNumber(3)
-  void clearExpiresAt() => clearField(3);
+  void clearExpiresAt() => $_clearField(3);
   @$pb.TagNumber(3)
   $9.Timestamp ensureExpiresAt() => $_ensure(2);
 
@@ -251,7 +253,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasDeviceName() => $_has(3);
   @$pb.TagNumber(4)
-  void clearDeviceName() => clearField(4);
+  void clearDeviceName() => $_clearField(4);
 
   /// (TODO) If provided, username is ignored and login is initiated via user_id instead.
   @$pb.TagNumber(5)
@@ -261,7 +263,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool hasUserId() => $_has(4);
   @$pb.TagNumber(5)
-  void clearUserId() => clearField(5);
+  void clearUserId() => $_clearField(5);
 }
 
 ///  Request to create a new third-party refresh token. Unlike `LoginRequest` or `CreateAccountRequest`, the user must be logged in to create a third-party refresh token.
@@ -334,11 +336,11 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(0);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(0);
   @$pb.TagNumber(2)
-  void clearExpiresAt() => clearField(2);
+  void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
   $9.Timestamp ensureExpiresAt() => $_ensure(0);
 
@@ -350,7 +352,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(3)
-  void clearUserId() => clearField(3);
+  void clearUserId() => $_clearField(3);
 
   /// The third-party refresh token's device name.
   @$pb.TagNumber(4)
@@ -360,7 +362,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasDeviceName() => $_has(2);
   @$pb.TagNumber(4)
-  void clearDeviceName() => clearField(4);
+  void clearDeviceName() => $_clearField(4);
 }
 
 /// Returned when creating an account, logging in, or creating a third-party refresh token.
@@ -419,11 +421,11 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)
-  set refreshToken(ExpirableToken v) { setField(1, v); }
+  set refreshToken(ExpirableToken v) { $_setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRefreshToken() => clearField(1);
+  void clearRefreshToken() => $_clearField(1);
   @$pb.TagNumber(1)
   ExpirableToken ensureRefreshToken() => $_ensure(0);
 
@@ -431,11 +433,11 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
-  set accessToken(ExpirableToken v) { setField(2, v); }
+  set accessToken(ExpirableToken v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasAccessToken() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAccessToken() => clearField(2);
+  void clearAccessToken() => $_clearField(2);
   @$pb.TagNumber(2)
   ExpirableToken ensureAccessToken() => $_ensure(1);
 
@@ -443,11 +445,11 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $4.User get user => $_getN(2);
   @$pb.TagNumber(3)
-  set user($4.User v) { setField(3, v); }
+  set user($4.User v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasUser() => $_has(2);
   @$pb.TagNumber(3)
-  void clearUser() => clearField(3);
+  void clearUser() => $_clearField(3);
   @$pb.TagNumber(3)
   $4.User ensureUser() => $_ensure(2);
 }
@@ -506,17 +508,17 @@ class ExpirableToken extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasToken() => $_has(0);
   @$pb.TagNumber(1)
-  void clearToken() => clearField(1);
+  void clearToken() => $_clearField(1);
 
   /// Optional expiration time for the token. If not set, the token will not expire.
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
-  void clearExpiresAt() => clearField(2);
+  void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
   $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
@@ -575,17 +577,17 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRefreshToken() => clearField(1);
+  void clearRefreshToken() => $_clearField(1);
 
   /// Optional *requested* expiration time for the token. Server may ignore this.
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
-  void clearExpiresAt() => clearField(2);
+  void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
   $9.Timestamp ensureExpiresAt() => $_ensure(1);
 }
@@ -642,11 +644,11 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)
-  set refreshToken(ExpirableToken v) { setField(1, v); }
+  set refreshToken(ExpirableToken v) { $_setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRefreshToken() => clearField(1);
+  void clearRefreshToken() => $_clearField(1);
   @$pb.TagNumber(1)
   ExpirableToken ensureRefreshToken() => $_ensure(0);
 
@@ -654,11 +656,11 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
-  set accessToken(ExpirableToken v) { setField(2, v); }
+  set accessToken(ExpirableToken v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasAccessToken() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAccessToken() => clearField(2);
+  void clearAccessToken() => $_clearField(2);
   @$pb.TagNumber(2)
   ExpirableToken ensureAccessToken() => $_ensure(1);
 }
@@ -717,7 +719,7 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUserId() => clearField(1);
+  void clearUserId() => $_clearField(1);
 
   /// The new password to set.
   @$pb.TagNumber(3)
@@ -727,7 +729,7 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(3)
-  void clearPassword() => clearField(3);
+  void clearPassword() => $_clearField(3);
 }
 
 /// Response for `GetUserRefreshTokens` RPC. Returns all refresh tokens associated with the current user.
@@ -773,7 +775,7 @@ class UserRefreshTokensResponse extends $pb.GeneratedMessage {
 
   /// The refresh tokens associated with the current user.
   @$pb.TagNumber(1)
-  $core.List<RefreshTokenMetadata> get refreshTokens => $_getList(0);
+  $pb.PbList<RefreshTokenMetadata> get refreshTokens => $_getList(0);
 }
 
 /// Metadata on a refresh token for the current user, used when managing refresh tokens as a user.
@@ -846,17 +848,17 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// Expiration date of the refresh token.
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { setField(2, v); }
+  set expiresAt($9.Timestamp v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
-  void clearExpiresAt() => clearField(2);
+  void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
   $9.Timestamp ensureExpiresAt() => $_ensure(1);
 
@@ -868,7 +870,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasDeviceName() => $_has(2);
   @$pb.TagNumber(3)
-  void clearDeviceName() => clearField(3);
+  void clearDeviceName() => $_clearField(3);
 
   /// Whether the refresh token is associated with the current device
   /// (based on what user is making the request).
@@ -879,7 +881,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasIsThisDevice() => $_has(3);
   @$pb.TagNumber(4)
-  void clearIsThisDevice() => clearField(4);
+  void clearIsThisDevice() => $_clearField(4);
 
   @$pb.TagNumber(5)
   $core.bool get thirdParty => $_getBF(4);
@@ -888,7 +890,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool hasThirdParty() => $_has(4);
   @$pb.TagNumber(5)
-  void clearThirdParty() => clearField(5);
+  void clearThirdParty() => $_clearField(5);
 }
 
 

@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: federation.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -12,6 +12,8 @@
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 /// Version information for the Jonline server.
 class GetServiceVersionResponse extends $pb.GeneratedMessage {
@@ -63,7 +65,7 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasVersion() => $_has(0);
   @$pb.TagNumber(1)
-  void clearVersion() => clearField(1);
+  void clearVersion() => $_clearField(1);
 }
 
 /// The federation configuration for a Jonline server.
@@ -109,7 +111,7 @@ class FederationInfo extends $pb.GeneratedMessage {
 
   /// A list of servers that this server will federate with.
   @$pb.TagNumber(1)
-  $core.List<FederatedServer> get servers => $_getList(0);
+  $pb.PbList<FederatedServer> get servers => $_getList(0);
 }
 
 /// A server that this server will federate with.
@@ -171,7 +173,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasHost() => $_has(0);
   @$pb.TagNumber(1)
-  void clearHost() => clearField(1);
+  void clearHost() => $_clearField(1);
 
   /// Indicates to UI clients that they should enable/configure the indicated server by default.
   @$pb.TagNumber(2)
@@ -181,7 +183,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasConfiguredByDefault() => $_has(1);
   @$pb.TagNumber(2)
-  void clearConfiguredByDefault() => clearField(2);
+  void clearConfiguredByDefault() => $_clearField(2);
 
   /// Indicates to UI clients that they should pin the indicated server by default
   /// (showing its Events and Posts alongside the "main" server).
@@ -192,7 +194,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasPinnedByDefault() => $_has(2);
   @$pb.TagNumber(3)
-  void clearPinnedByDefault() => clearField(3);
+  void clearPinnedByDefault() => $_clearField(3);
 }
 
 /// Some user on a Jonline server.
@@ -251,7 +253,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasHost() => $_has(0);
   @$pb.TagNumber(1)
-  void clearHost() => clearField(1);
+  void clearHost() => $_clearField(1);
 
   /// The user ID of the user on the server.
   @$pb.TagNumber(2)
@@ -261,7 +263,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearUserId() => clearField(2);
+  void clearUserId() => $_clearField(2);
 }
 
 

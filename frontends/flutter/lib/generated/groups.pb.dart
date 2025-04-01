@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: groups.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -19,6 +19,8 @@ import 'media.pb.dart' as $5;
 import 'permissions.pbenum.dart' as $11;
 import 'users.pb.dart' as $4;
 import 'visibility_moderation.pbenum.dart' as $10;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'groups.pbenum.dart';
 
@@ -151,7 +153,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// Mutable name of the group. Must be unique, such that the derived `shortname` is also unique.
   @$pb.TagNumber(2)
@@ -161,7 +163,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearName() => clearField(2);
+  void clearName() => $_clearField(2);
 
   /// Immutable shortname of the group. Derived from changes to `name` when the `Group` is updated.
   @$pb.TagNumber(3)
@@ -171,7 +173,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasShortname() => $_has(2);
   @$pb.TagNumber(3)
-  void clearShortname() => clearField(3);
+  void clearShortname() => $_clearField(3);
 
   /// A description of the group.
   @$pb.TagNumber(4)
@@ -181,65 +183,65 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasDescription() => $_has(3);
   @$pb.TagNumber(4)
-  void clearDescription() => clearField(4);
+  void clearDescription() => $_clearField(4);
 
   /// An avatar for the group.
   @$pb.TagNumber(5)
   $5.MediaReference get avatar => $_getN(4);
   @$pb.TagNumber(5)
-  set avatar($5.MediaReference v) { setField(5, v); }
+  set avatar($5.MediaReference v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasAvatar() => $_has(4);
   @$pb.TagNumber(5)
-  void clearAvatar() => clearField(5);
+  void clearAvatar() => $_clearField(5);
   @$pb.TagNumber(5)
   $5.MediaReference ensureAvatar() => $_ensure(4);
 
   /// The default permissions for new members of the group.
   @$pb.TagNumber(6)
-  $core.List<$11.Permission> get defaultMembershipPermissions => $_getList(5);
+  $pb.PbList<$11.Permission> get defaultMembershipPermissions => $_getList(5);
 
   /// The default moderation for new members of the group.
   /// Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   @$pb.TagNumber(7)
   $10.Moderation get defaultMembershipModeration => $_getN(6);
   @$pb.TagNumber(7)
-  set defaultMembershipModeration($10.Moderation v) { setField(7, v); }
+  set defaultMembershipModeration($10.Moderation v) { $_setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasDefaultMembershipModeration() => $_has(6);
   @$pb.TagNumber(7)
-  void clearDefaultMembershipModeration() => clearField(7);
+  void clearDefaultMembershipModeration() => $_clearField(7);
 
   /// The default moderation for new posts in the group.
   @$pb.TagNumber(8)
   $10.Moderation get defaultPostModeration => $_getN(7);
   @$pb.TagNumber(8)
-  set defaultPostModeration($10.Moderation v) { setField(8, v); }
+  set defaultPostModeration($10.Moderation v) { $_setField(8, v); }
   @$pb.TagNumber(8)
   $core.bool hasDefaultPostModeration() => $_has(7);
   @$pb.TagNumber(8)
-  void clearDefaultPostModeration() => clearField(8);
+  void clearDefaultPostModeration() => $_clearField(8);
 
   /// The default moderation for new events in the group.
   @$pb.TagNumber(9)
   $10.Moderation get defaultEventModeration => $_getN(8);
   @$pb.TagNumber(9)
-  set defaultEventModeration($10.Moderation v) { setField(9, v); }
+  set defaultEventModeration($10.Moderation v) { $_setField(9, v); }
   @$pb.TagNumber(9)
   $core.bool hasDefaultEventModeration() => $_has(8);
   @$pb.TagNumber(9)
-  void clearDefaultEventModeration() => clearField(9);
+  void clearDefaultEventModeration() => $_clearField(9);
 
   /// LIMITED visibility groups are only visible to members. PRIVATE groups are only
   /// visibile to users with the ADMIN group permission.
   @$pb.TagNumber(10)
   $10.Visibility get visibility => $_getN(9);
   @$pb.TagNumber(10)
-  set visibility($10.Visibility v) { setField(10, v); }
+  set visibility($10.Visibility v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasVisibility() => $_has(9);
   @$pb.TagNumber(10)
-  void clearVisibility() => clearField(10);
+  void clearVisibility() => $_clearField(10);
 
   /// The number of members in the group.
   @$pb.TagNumber(11)
@@ -249,7 +251,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.bool hasMemberCount() => $_has(10);
   @$pb.TagNumber(11)
-  void clearMemberCount() => clearField(11);
+  void clearMemberCount() => $_clearField(11);
 
   /// The number of posts in the group.
   @$pb.TagNumber(12)
@@ -259,7 +261,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $core.bool hasPostCount() => $_has(11);
   @$pb.TagNumber(12)
-  void clearPostCount() => clearField(12);
+  void clearPostCount() => $_clearField(12);
 
   /// The number of events in the group.
   @$pb.TagNumber(13)
@@ -269,21 +271,21 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   $core.bool hasEventCount() => $_has(12);
   @$pb.TagNumber(13)
-  void clearEventCount() => clearField(13);
+  void clearEventCount() => $_clearField(13);
 
   /// The permissions given to non-members of the group.
   @$pb.TagNumber(18)
-  $core.List<$11.Permission> get nonMemberPermissions => $_getList(13);
+  $pb.PbList<$11.Permission> get nonMemberPermissions => $_getList(13);
 
   /// The membership for the current user, if any.
   @$pb.TagNumber(19)
   $4.Membership get currentUserMembership => $_getN(14);
   @$pb.TagNumber(19)
-  set currentUserMembership($4.Membership v) { setField(19, v); }
+  set currentUserMembership($4.Membership v) { $_setField(19, v); }
   @$pb.TagNumber(19)
   $core.bool hasCurrentUserMembership() => $_has(14);
   @$pb.TagNumber(19)
-  void clearCurrentUserMembership() => clearField(19);
+  void clearCurrentUserMembership() => $_clearField(19);
   @$pb.TagNumber(19)
   $4.Membership ensureCurrentUserMembership() => $_ensure(14);
 
@@ -291,11 +293,11 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   $9.Timestamp get createdAt => $_getN(15);
   @$pb.TagNumber(20)
-  set createdAt($9.Timestamp v) { setField(20, v); }
+  set createdAt($9.Timestamp v) { $_setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(15);
   @$pb.TagNumber(20)
-  void clearCreatedAt() => clearField(20);
+  void clearCreatedAt() => $_clearField(20);
   @$pb.TagNumber(20)
   $9.Timestamp ensureCreatedAt() => $_ensure(15);
 
@@ -303,11 +305,11 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   $9.Timestamp get updatedAt => $_getN(16);
   @$pb.TagNumber(21)
-  set updatedAt($9.Timestamp v) { setField(21, v); }
+  set updatedAt($9.Timestamp v) { $_setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(16);
   @$pb.TagNumber(21)
-  void clearUpdatedAt() => clearField(21);
+  void clearUpdatedAt() => $_clearField(21);
   @$pb.TagNumber(21)
   $9.Timestamp ensureUpdatedAt() => $_ensure(16);
 }
@@ -381,7 +383,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasGroupId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearGroupId() => clearField(1);
+  void clearGroupId() => $_clearField(1);
 
   /// The name of the group to get.
   @$pb.TagNumber(2)
@@ -391,7 +393,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasGroupName() => $_has(1);
   @$pb.TagNumber(2)
-  void clearGroupName() => clearField(2);
+  void clearGroupName() => $_clearField(2);
 
   /// The shortname of the group to get.
   /// Group shortname search is case-insensitive.
@@ -402,17 +404,17 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasGroupShortname() => $_has(2);
   @$pb.TagNumber(3)
-  void clearGroupShortname() => clearField(3);
+  void clearGroupShortname() => $_clearField(3);
 
   /// The group listing type.
   @$pb.TagNumber(10)
   GroupListingType get listingType => $_getN(3);
   @$pb.TagNumber(10)
-  set listingType(GroupListingType v) { setField(10, v); }
+  set listingType(GroupListingType v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasListingType() => $_has(3);
   @$pb.TagNumber(10)
-  void clearListingType() => clearField(10);
+  void clearListingType() => $_clearField(10);
 
   /// The page of results to get.
   @$pb.TagNumber(11)
@@ -422,7 +424,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.bool hasPage() => $_has(4);
   @$pb.TagNumber(11)
-  void clearPage() => clearField(11);
+  void clearPage() => $_clearField(11);
 }
 
 /// Response to a GetGroupsRequest.
@@ -473,7 +475,7 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
 
   /// The groups that matched the request.
   @$pb.TagNumber(1)
-  $core.List<Group> get groups => $_getList(0);
+  $pb.PbList<Group> get groups => $_getList(0);
 
   /// Whether there are more groups to get.
   @$pb.TagNumber(2)
@@ -483,7 +485,7 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
-  void clearHasNextPage() => clearField(2);
+  void clearHasNextPage() => $_clearField(2);
 }
 
 /// Used when fetching group members using the `GetMembers` RPC.
@@ -536,11 +538,11 @@ class Member extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $4.User get user => $_getN(0);
   @$pb.TagNumber(1)
-  set user($4.User v) { setField(1, v); }
+  set user($4.User v) { $_setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasUser() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUser() => clearField(1);
+  void clearUser() => $_clearField(1);
   @$pb.TagNumber(1)
   $4.User ensureUser() => $_ensure(0);
 
@@ -548,11 +550,11 @@ class Member extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $4.Membership get membership => $_getN(1);
   @$pb.TagNumber(2)
-  set membership($4.Membership v) { setField(2, v); }
+  set membership($4.Membership v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasMembership() => $_has(1);
   @$pb.TagNumber(2)
-  void clearMembership() => clearField(2);
+  void clearMembership() => $_clearField(2);
   @$pb.TagNumber(2)
   $4.Membership ensureMembership() => $_ensure(1);
 }
@@ -621,7 +623,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasGroupId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearGroupId() => clearField(1);
+  void clearGroupId() => $_clearField(1);
 
   /// The username of the members to search for.
   @$pb.TagNumber(2)
@@ -631,18 +633,18 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
-  void clearUsername() => clearField(2);
+  void clearUsername() => $_clearField(2);
 
   /// The membership status to filter members by.
   /// If not specified, all members are returned.
   @$pb.TagNumber(3)
   $10.Moderation get groupModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set groupModeration($10.Moderation v) { setField(3, v); }
+  set groupModeration($10.Moderation v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasGroupModeration() => $_has(2);
   @$pb.TagNumber(3)
-  void clearGroupModeration() => clearField(3);
+  void clearGroupModeration() => $_clearField(3);
 
   /// The page of results to get.
   @$pb.TagNumber(10)
@@ -652,7 +654,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   $core.bool hasPage() => $_has(3);
   @$pb.TagNumber(10)
-  void clearPage() => clearField(10);
+  void clearPage() => $_clearField(10);
 }
 
 /// Response to a GetMembersRequest.
@@ -703,7 +705,7 @@ class GetMembersResponse extends $pb.GeneratedMessage {
 
   /// The members that matched the request.
   @$pb.TagNumber(1)
-  $core.List<Member> get members => $_getList(0);
+  $pb.PbList<Member> get members => $_getList(0);
 
   /// Whether there are more members to get.
   @$pb.TagNumber(2)
@@ -713,7 +715,7 @@ class GetMembersResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
-  void clearHasNextPage() => clearField(2);
+  void clearHasNextPage() => $_clearField(2);
 }
 
 

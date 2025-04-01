@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: events.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -21,6 +21,8 @@ import 'permissions.pbenum.dart' as $11;
 import 'posts.pb.dart' as $7;
 import 'users.pb.dart' as $4;
 import 'visibility_moderation.pbenum.dart' as $10;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'events.pbenum.dart';
 
@@ -125,7 +127,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasEventId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventId() => clearField(1);
+  void clearEventId() => $_clearField(1);
 
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
@@ -135,7 +137,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasAuthorUserId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAuthorUserId() => clearField(2);
+  void clearAuthorUserId() => $_clearField(2);
 
   /// Limits results to those in the given group ID (via `GroupPost` association's for the Event's internal `Post`).
   @$pb.TagNumber(3)
@@ -145,7 +147,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasGroupId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearGroupId() => clearField(3);
+  void clearGroupId() => $_clearField(3);
 
   /// Limits results to those with the given event instance ID.
   @$pb.TagNumber(4)
@@ -155,17 +157,17 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasEventInstanceId() => $_has(3);
   @$pb.TagNumber(4)
-  void clearEventInstanceId() => clearField(4);
+  void clearEventInstanceId() => $_clearField(4);
 
   /// Filters returned `EventInstance`s by time.
   @$pb.TagNumber(5)
   TimeFilter get timeFilter => $_getN(4);
   @$pb.TagNumber(5)
-  set timeFilter(TimeFilter v) { setField(5, v); }
+  set timeFilter(TimeFilter v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasTimeFilter() => $_has(4);
   @$pb.TagNumber(5)
-  void clearTimeFilter() => clearField(5);
+  void clearTimeFilter() => $_clearField(5);
   @$pb.TagNumber(5)
   TimeFilter ensureTimeFilter() => $_ensure(4);
 
@@ -178,12 +180,12 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.bool hasAttendeeId() => $_has(5);
   @$pb.TagNumber(6)
-  void clearAttendeeId() => clearField(6);
+  void clearAttendeeId() => $_clearField(6);
 
   /// If set, only return events for which the current user's attendance status matches one of the given statuses. If `attendee_id` is also set,
   /// only returns events where the given user's status matches one of the given statuses.
   @$pb.TagNumber(7)
-  $core.List<AttendanceStatus> get attendanceStatuses => $_getList(6);
+  $pb.PbList<AttendanceStatus> get attendanceStatuses => $_getList(6);
 
   /// Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`.
   @$pb.TagNumber(8)
@@ -193,17 +195,17 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.bool hasPostId() => $_has(7);
   @$pb.TagNumber(8)
-  void clearPostId() => clearField(8);
+  void clearPostId() => $_clearField(8);
 
   /// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   @$pb.TagNumber(10)
   EventListingType get listingType => $_getN(8);
   @$pb.TagNumber(10)
-  set listingType(EventListingType v) { setField(10, v); }
+  set listingType(EventListingType v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasListingType() => $_has(8);
   @$pb.TagNumber(10)
-  void clearListingType() => clearField(10);
+  void clearListingType() => $_clearField(10);
 }
 
 /// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
@@ -267,11 +269,11 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $9.Timestamp get startsAfter => $_getN(0);
   @$pb.TagNumber(1)
-  set startsAfter($9.Timestamp v) { setField(1, v); }
+  set startsAfter($9.Timestamp v) { $_setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasStartsAfter() => $_has(0);
   @$pb.TagNumber(1)
-  void clearStartsAfter() => clearField(1);
+  void clearStartsAfter() => $_clearField(1);
   @$pb.TagNumber(1)
   $9.Timestamp ensureStartsAfter() => $_ensure(0);
 
@@ -279,11 +281,11 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get endsAfter => $_getN(1);
   @$pb.TagNumber(2)
-  set endsAfter($9.Timestamp v) { setField(2, v); }
+  set endsAfter($9.Timestamp v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasEndsAfter() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEndsAfter() => clearField(2);
+  void clearEndsAfter() => $_clearField(2);
   @$pb.TagNumber(2)
   $9.Timestamp ensureEndsAfter() => $_ensure(1);
 
@@ -291,11 +293,11 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $9.Timestamp get startsBefore => $_getN(2);
   @$pb.TagNumber(3)
-  set startsBefore($9.Timestamp v) { setField(3, v); }
+  set startsBefore($9.Timestamp v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasStartsBefore() => $_has(2);
   @$pb.TagNumber(3)
-  void clearStartsBefore() => clearField(3);
+  void clearStartsBefore() => $_clearField(3);
   @$pb.TagNumber(3)
   $9.Timestamp ensureStartsBefore() => $_ensure(2);
 
@@ -303,11 +305,11 @@ class TimeFilter extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $9.Timestamp get endsBefore => $_getN(3);
   @$pb.TagNumber(4)
-  set endsBefore($9.Timestamp v) { setField(4, v); }
+  set endsBefore($9.Timestamp v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasEndsBefore() => $_has(3);
   @$pb.TagNumber(4)
-  void clearEndsBefore() => clearField(4);
+  void clearEndsBefore() => $_clearField(4);
   @$pb.TagNumber(4)
   $9.Timestamp ensureEndsBefore() => $_ensure(3);
 }
@@ -364,7 +366,7 @@ class GetEventsResponse extends $pb.GeneratedMessage {
   static GetEventsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
-  $core.List<Event> get events => $_getList(0);
+  $pb.PbList<Event> get events => $_getList(0);
 }
 
 ///  An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
@@ -434,17 +436,17 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// The Post containing the underlying data for the event (names). Its `PostContext` should be `EVENT`.
   @$pb.TagNumber(2)
   $7.Post get post => $_getN(1);
   @$pb.TagNumber(2)
-  set post($7.Post v) { setField(2, v); }
+  set post($7.Post v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPost() => clearField(2);
+  void clearPost() => $_clearField(2);
   @$pb.TagNumber(2)
   $7.Post ensurePost() => $_ensure(1);
 
@@ -452,17 +454,17 @@ class Event extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   EventInfo get info => $_getN(2);
   @$pb.TagNumber(3)
-  set info(EventInfo v) { setField(3, v); }
+  set info(EventInfo v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasInfo() => $_has(2);
   @$pb.TagNumber(3)
-  void clearInfo() => clearField(3);
+  void clearInfo() => $_clearField(3);
   @$pb.TagNumber(3)
   EventInfo ensureInfo() => $_ensure(2);
 
   /// A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   @$pb.TagNumber(4)
-  $core.List<EventInstance> get instances => $_getList(3);
+  $pb.PbList<EventInstance> get instances => $_getList(3);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -535,7 +537,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasAllowsRsvps() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAllowsRsvps() => clearField(1);
+  void clearAllowsRsvps() => $_clearField(1);
 
   /// Whether to allow anonymous RSVPs for the event.
   @$pb.TagNumber(2)
@@ -545,7 +547,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasAllowsAnonymousRsvps() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAllowsAnonymousRsvps() => clearField(2);
+  void clearAllowsAnonymousRsvps() => $_clearField(2);
 
   /// Limit the max number of attendees. No effect unless `allows_rsvps` is true. Not yet supported.
   @$pb.TagNumber(3)
@@ -555,7 +557,7 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasMaxAttendees() => $_has(2);
   @$pb.TagNumber(3)
-  void clearMaxAttendees() => clearField(3);
+  void clearMaxAttendees() => $_clearField(3);
 
   /// Hide the location until the user RSVPs (and it's accepted).
   /// From a system perspective, when this is set, Events will not include the `Location` until the user has RSVP'd.
@@ -568,18 +570,18 @@ class EventInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasHideLocationUntilRsvpApproved() => $_has(3);
   @$pb.TagNumber(4)
-  void clearHideLocationUntilRsvpApproved() => clearField(4);
+  void clearHideLocationUntilRsvpApproved() => $_clearField(4);
 
   /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
   $10.Moderation get defaultRsvpModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set defaultRsvpModeration($10.Moderation v) { setField(5, v); }
+  set defaultRsvpModeration($10.Moderation v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasDefaultRsvpModeration() => $_has(4);
   @$pb.TagNumber(5)
-  void clearDefaultRsvpModeration() => clearField(5);
+  void clearDefaultRsvpModeration() => $_clearField(5);
 }
 
 /// The time-based component of an `Event`. Has a `starts_at` and `ends_at` time,
@@ -663,7 +665,7 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// ID of the parent `Event`.
   @$pb.TagNumber(2)
@@ -673,17 +675,17 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasEventId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventId() => clearField(2);
+  void clearEventId() => $_clearField(2);
 
   /// Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
   @$pb.TagNumber(3)
   $7.Post get post => $_getN(2);
   @$pb.TagNumber(3)
-  set post($7.Post v) { setField(3, v); }
+  set post($7.Post v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasPost() => $_has(2);
   @$pb.TagNumber(3)
-  void clearPost() => clearField(3);
+  void clearPost() => $_clearField(3);
   @$pb.TagNumber(3)
   $7.Post ensurePost() => $_ensure(2);
 
@@ -691,11 +693,11 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   EventInstanceInfo get info => $_getN(3);
   @$pb.TagNumber(4)
-  set info(EventInstanceInfo v) { setField(4, v); }
+  set info(EventInstanceInfo v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasInfo() => $_has(3);
   @$pb.TagNumber(4)
-  void clearInfo() => clearField(4);
+  void clearInfo() => $_clearField(4);
   @$pb.TagNumber(4)
   EventInstanceInfo ensureInfo() => $_ensure(3);
 
@@ -703,11 +705,11 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp get startsAt => $_getN(4);
   @$pb.TagNumber(5)
-  set startsAt($9.Timestamp v) { setField(5, v); }
+  set startsAt($9.Timestamp v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasStartsAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearStartsAt() => clearField(5);
+  void clearStartsAt() => $_clearField(5);
   @$pb.TagNumber(5)
   $9.Timestamp ensureStartsAt() => $_ensure(4);
 
@@ -715,11 +717,11 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $9.Timestamp get endsAt => $_getN(5);
   @$pb.TagNumber(6)
-  set endsAt($9.Timestamp v) { setField(6, v); }
+  set endsAt($9.Timestamp v) { $_setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasEndsAt() => $_has(5);
   @$pb.TagNumber(6)
-  void clearEndsAt() => clearField(6);
+  void clearEndsAt() => $_clearField(6);
   @$pb.TagNumber(6)
   $9.Timestamp ensureEndsAt() => $_ensure(5);
 
@@ -727,11 +729,11 @@ class EventInstance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $12.Location get location => $_getN(6);
   @$pb.TagNumber(7)
-  set location($12.Location v) { setField(7, v); }
+  set location($12.Location v) { $_setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasLocation() => $_has(6);
   @$pb.TagNumber(7)
-  void clearLocation() => clearField(7);
+  void clearLocation() => $_clearField(7);
   @$pb.TagNumber(7)
   $12.Location ensureLocation() => $_ensure(6);
 }
@@ -782,11 +784,11 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   EventInstanceRsvpInfo get rsvpInfo => $_getN(0);
   @$pb.TagNumber(1)
-  set rsvpInfo(EventInstanceRsvpInfo v) { setField(1, v); }
+  set rsvpInfo(EventInstanceRsvpInfo v) { $_setField(1, v); }
   @$pb.TagNumber(1)
   $core.bool hasRsvpInfo() => $_has(0);
   @$pb.TagNumber(1)
-  void clearRsvpInfo() => clearField(1);
+  void clearRsvpInfo() => $_clearField(1);
   @$pb.TagNumber(1)
   EventInstanceRsvpInfo ensureRsvpInfo() => $_ensure(0);
 }
@@ -881,7 +883,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasAllowsRsvps() => $_has(0);
   @$pb.TagNumber(1)
-  void clearAllowsRsvps() => clearField(1);
+  void clearAllowsRsvps() => $_clearField(1);
 
   /// Overrides `EventInfo.allows_anonymous_rsvps`, if set, for this instance.
   @$pb.TagNumber(2)
@@ -891,7 +893,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasAllowsAnonymousRsvps() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAllowsAnonymousRsvps() => clearField(2);
+  void clearAllowsAnonymousRsvps() => $_clearField(2);
 
   /// Overrides `EventInfo.max_attendees`, if set, for this instance. Not yet supported.
   @$pb.TagNumber(3)
@@ -901,7 +903,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasMaxAttendees() => $_has(2);
   @$pb.TagNumber(3)
-  void clearMaxAttendees() => clearField(3);
+  void clearMaxAttendees() => $_clearField(3);
 
   /// The number of users who have RSVP'd to the event.
   @$pb.TagNumber(4)
@@ -911,7 +913,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasGoingRsvps() => $_has(3);
   @$pb.TagNumber(4)
-  void clearGoingRsvps() => clearField(4);
+  void clearGoingRsvps() => $_clearField(4);
 
   /// The number of attendees who have RSVP'd to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(5)
@@ -921,7 +923,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool hasGoingAttendees() => $_has(4);
   @$pb.TagNumber(5)
-  void clearGoingAttendees() => clearField(5);
+  void clearGoingAttendees() => $_clearField(5);
 
   /// The number of users who have signaled interest in the event.
   @$pb.TagNumber(6)
@@ -931,7 +933,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.bool hasInterestedRsvps() => $_has(5);
   @$pb.TagNumber(6)
-  void clearInterestedRsvps() => clearField(6);
+  void clearInterestedRsvps() => $_clearField(6);
 
   /// The number of attendees who have signaled interest in the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(7)
@@ -941,7 +943,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.bool hasInterestedAttendees() => $_has(6);
   @$pb.TagNumber(7)
-  void clearInterestedAttendees() => clearField(7);
+  void clearInterestedAttendees() => $_clearField(7);
 
   /// The number of users who have been invited to the event.
   @$pb.TagNumber(8)
@@ -951,7 +953,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.bool hasInvitedRsvps() => $_has(7);
   @$pb.TagNumber(8)
-  void clearInvitedRsvps() => clearField(8);
+  void clearInvitedRsvps() => $_clearField(8);
 
   /// The number of attendees who have been invited to the event. (RSVPs may have multiple attendees, i.e. guests.)
   @$pb.TagNumber(9)
@@ -961,7 +963,7 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $core.bool hasInvitedAttendees() => $_has(8);
   @$pb.TagNumber(9)
-  void clearInvitedAttendees() => clearField(9);
+  void clearInvitedAttendees() => $_clearField(9);
 }
 
 /// Request to get RSVP data for an event.
@@ -1018,7 +1020,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasEventInstanceId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearEventInstanceId() => clearField(1);
+  void clearEventInstanceId() => $_clearField(1);
 
   /// If set, and if the token has an RSVP for this even, request that RSVP data
   /// in addition to the rest of the RSVP data. (The event creator can always
@@ -1030,7 +1032,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasAnonymousAttendeeAuthToken() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAnonymousAttendeeAuthToken() => clearField(2);
+  void clearAnonymousAttendeeAuthToken() => $_clearField(2);
 }
 
 /// Response to get RSVP data for an event.
@@ -1081,17 +1083,17 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   /// The attendance data for the event, in no particular order.
   @$pb.TagNumber(1)
-  $core.List<EventAttendance> get attendances => $_getList(0);
+  $pb.PbList<EventAttendance> get attendances => $_getList(0);
 
   /// When `hide_location_until_rsvp_approved` is set, the location of the event.
   @$pb.TagNumber(2)
   $12.Location get hiddenLocation => $_getN(1);
   @$pb.TagNumber(2)
-  set hiddenLocation($12.Location v) { setField(2, v); }
+  set hiddenLocation($12.Location v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasHiddenLocation() => $_has(1);
   @$pb.TagNumber(2)
-  void clearHiddenLocation() => clearField(2);
+  void clearHiddenLocation() => $_clearField(2);
   @$pb.TagNumber(2)
   $12.Location ensureHiddenLocation() => $_ensure(1);
 }
@@ -1208,7 +1210,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   static EventAttendance? _defaultInstance;
 
   EventAttendance_Attendee whichAttendee() => _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
-  void clearAttendee() => clearField($_whichOneof(0));
+  void clearAttendee() => $_clearField($_whichOneof(0));
 
   /// Unique server-generated ID for the attendance.
   @$pb.TagNumber(1)
@@ -1218,7 +1220,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// ID of the `EventInstance` the attendance is for.
   @$pb.TagNumber(2)
@@ -1228,17 +1230,17 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasEventInstanceId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearEventInstanceId() => clearField(2);
+  void clearEventInstanceId() => $_clearField(2);
 
   /// If the attendance is non-anonymous, core data about the user.
   @$pb.TagNumber(3)
   UserAttendee get userAttendee => $_getN(2);
   @$pb.TagNumber(3)
-  set userAttendee(UserAttendee v) { setField(3, v); }
+  set userAttendee(UserAttendee v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasUserAttendee() => $_has(2);
   @$pb.TagNumber(3)
-  void clearUserAttendee() => clearField(3);
+  void clearUserAttendee() => $_clearField(3);
   @$pb.TagNumber(3)
   UserAttendee ensureUserAttendee() => $_ensure(2);
 
@@ -1246,11 +1248,11 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   AnonymousAttendee get anonymousAttendee => $_getN(3);
   @$pb.TagNumber(4)
-  set anonymousAttendee(AnonymousAttendee v) { setField(4, v); }
+  set anonymousAttendee(AnonymousAttendee v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasAnonymousAttendee() => $_has(3);
   @$pb.TagNumber(4)
-  void clearAnonymousAttendee() => clearField(4);
+  void clearAnonymousAttendee() => $_clearField(4);
   @$pb.TagNumber(4)
   AnonymousAttendee ensureAnonymousAttendee() => $_ensure(3);
 
@@ -1262,17 +1264,17 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool hasNumberOfGuests() => $_has(4);
   @$pb.TagNumber(5)
-  void clearNumberOfGuests() => clearField(5);
+  void clearNumberOfGuests() => $_clearField(5);
 
   /// The user's RSVP to an `EventInstance` (one of `INTERESTED`, `REQUESTED` (i.e. invited), `GOING`, `NOT_GOING`)
   @$pb.TagNumber(6)
   AttendanceStatus get status => $_getN(5);
   @$pb.TagNumber(6)
-  set status(AttendanceStatus v) { setField(6, v); }
+  set status(AttendanceStatus v) { $_setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasStatus() => $_has(5);
   @$pb.TagNumber(6)
-  void clearStatus() => clearField(6);
+  void clearStatus() => $_clearField(6);
 
   /// User who invited the attendee. (Not yet used.)
   @$pb.TagNumber(7)
@@ -1282,7 +1284,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.bool hasInvitingUserId() => $_has(6);
   @$pb.TagNumber(7)
-  void clearInvitingUserId() => clearField(7);
+  void clearInvitingUserId() => $_clearField(7);
 
   /// Public note for everyone who can see the event to see.
   @$pb.TagNumber(8)
@@ -1292,7 +1294,7 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.bool hasPrivateNote() => $_has(7);
   @$pb.TagNumber(8)
-  void clearPrivateNote() => clearField(8);
+  void clearPrivateNote() => $_clearField(8);
 
   /// Private note for the event owner.
   @$pb.TagNumber(9)
@@ -1302,27 +1304,27 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $core.bool hasPublicNote() => $_has(8);
   @$pb.TagNumber(9)
-  void clearPublicNote() => clearField(9);
+  void clearPublicNote() => $_clearField(9);
 
   /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   @$pb.TagNumber(10)
   $10.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
-  set moderation($10.Moderation v) { setField(10, v); }
+  set moderation($10.Moderation v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(10)
-  void clearModeration() => clearField(10);
+  void clearModeration() => $_clearField(10);
 
   /// The time the attendance was created.
   @$pb.TagNumber(11)
   $9.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(11)
-  set createdAt($9.Timestamp v) { setField(11, v); }
+  set createdAt($9.Timestamp v) { $_setField(11, v); }
   @$pb.TagNumber(11)
   $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(11)
-  void clearCreatedAt() => clearField(11);
+  void clearCreatedAt() => $_clearField(11);
   @$pb.TagNumber(11)
   $9.Timestamp ensureCreatedAt() => $_ensure(10);
 
@@ -1330,11 +1332,11 @@ class EventAttendance extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $9.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(12)
-  set updatedAt($9.Timestamp v) { setField(12, v); }
+  set updatedAt($9.Timestamp v) { $_setField(12, v); }
   @$pb.TagNumber(12)
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(12)
-  void clearUpdatedAt() => clearField(12);
+  void clearUpdatedAt() => $_clearField(12);
   @$pb.TagNumber(12)
   $9.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
@@ -1401,11 +1403,11 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasName() => $_has(0);
   @$pb.TagNumber(1)
-  void clearName() => clearField(1);
+  void clearName() => $_clearField(1);
 
   /// Contact methods for anonymous attendees. Currently not linked to Contact methods for users.
   @$pb.TagNumber(2)
-  $core.List<$4.ContactMethod> get contactMethods => $_getList(1);
+  $pb.PbList<$4.ContactMethod> get contactMethods => $_getList(1);
 
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
@@ -1418,7 +1420,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasAuthToken() => $_has(2);
   @$pb.TagNumber(3)
-  void clearAuthToken() => clearField(3);
+  void clearAuthToken() => $_clearField(3);
 }
 
 /// Wire-identical to [Author](#author), but with a different name to avoid confusion.
@@ -1490,7 +1492,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUserId() => clearField(1);
+  void clearUserId() => $_clearField(1);
 
   /// The username of the attendee.
   @$pb.TagNumber(2)
@@ -1500,17 +1502,17 @@ class UserAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
-  void clearUsername() => clearField(2);
+  void clearUsername() => $_clearField(2);
 
   /// The attendee's user avatar.
   @$pb.TagNumber(3)
   $5.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)
-  set avatar($5.MediaReference v) { setField(3, v); }
+  set avatar($5.MediaReference v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasAvatar() => $_has(2);
   @$pb.TagNumber(3)
-  void clearAvatar() => clearField(3);
+  void clearAvatar() => $_clearField(3);
   @$pb.TagNumber(3)
   $5.MediaReference ensureAvatar() => $_ensure(2);
 
@@ -1521,10 +1523,10 @@ class UserAttendee extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasRealName() => $_has(3);
   @$pb.TagNumber(4)
-  void clearRealName() => clearField(4);
+  void clearRealName() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $core.List<$11.Permission> get permissions => $_getList(4);
+  $pb.PbList<$11.Permission> get permissions => $_getList(4);
 }
 
 

@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: location.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -12,6 +12,8 @@
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 /// Locations are places where events can happen.
 class Location extends $pb.GeneratedMessage {
@@ -72,7 +74,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// The User ID of the location's creator, if available.
   @$pb.TagNumber(2)
@@ -82,7 +84,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasCreatorId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearCreatorId() => clearField(2);
+  void clearCreatorId() => $_clearField(2);
 
   /// This should probably come from OpenStreetMap APIs, with an option for Google Maps.
   /// Ideally both the Flutter and React apps, and any others, should prefer OpenStreetMap
@@ -94,7 +96,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasUniformlyFormattedAddress() => $_has(2);
   @$pb.TagNumber(3)
-  void clearUniformlyFormattedAddress() => clearField(3);
+  void clearUniformlyFormattedAddress() => $_clearField(3);
 }
 
 

@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: posts.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -19,6 +19,8 @@ import 'media.pb.dart' as $5;
 import 'posts.pbenum.dart';
 import 'users.pb.dart' as $4;
 import 'visibility_moderation.pbenum.dart' as $10;
+
+export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'posts.pbenum.dart';
 
@@ -121,7 +123,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasPostId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPostId() => clearField(1);
+  void clearPostId() => $_clearField(1);
 
   /// Limits results to those by the given author user ID.
   @$pb.TagNumber(2)
@@ -131,7 +133,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasAuthorUserId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAuthorUserId() => clearField(2);
+  void clearAuthorUserId() => $_clearField(2);
 
   /// Limits results to those in the given group ID.
   @$pb.TagNumber(3)
@@ -141,7 +143,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasGroupId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearGroupId() => clearField(3);
+  void clearGroupId() => $_clearField(3);
 
   /// Only supported for depth=2 for now.
   @$pb.TagNumber(4)
@@ -151,17 +153,17 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasReplyDepth() => $_has(3);
   @$pb.TagNumber(4)
-  void clearReplyDepth() => clearField(4);
+  void clearReplyDepth() => $_clearField(4);
 
   /// Only POST and REPLY are supported for now.
   @$pb.TagNumber(5)
   PostContext get context => $_getN(4);
   @$pb.TagNumber(5)
-  set context(PostContext v) { setField(5, v); }
+  set context(PostContext v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasContext() => $_has(4);
   @$pb.TagNumber(5)
-  void clearContext() => clearField(5);
+  void clearContext() => $_clearField(5);
 
   /// Returns expanded posts with the given IDs.
   @$pb.TagNumber(9)
@@ -171,17 +173,17 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $core.bool hasPostIds() => $_has(5);
   @$pb.TagNumber(9)
-  void clearPostIds() => clearField(9);
+  void clearPostIds() => $_clearField(9);
 
   /// The listing type of the request. See `PostListingType` for more info.
   @$pb.TagNumber(10)
   PostListingType get listingType => $_getN(6);
   @$pb.TagNumber(10)
-  set listingType(PostListingType v) { setField(10, v); }
+  set listingType(PostListingType v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasListingType() => $_has(6);
   @$pb.TagNumber(10)
-  void clearListingType() => clearField(10);
+  void clearListingType() => $_clearField(10);
 
   /// The page of results to return. Defaults to 0.
   @$pb.TagNumber(15)
@@ -191,7 +193,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(15)
   $core.bool hasPage() => $_has(7);
   @$pb.TagNumber(15)
-  void clearPage() => clearField(15);
+  void clearPage() => $_clearField(15);
 }
 
 /// Used for getting posts.
@@ -237,7 +239,7 @@ class GetPostsResponse extends $pb.GeneratedMessage {
 
   /// The posts returned by the request.
   @$pb.TagNumber(1)
-  $core.List<Post> get posts => $_getList(0);
+  $pb.PbList<Post> get posts => $_getList(0);
 }
 
 ///  A `Post` is a message that can be posted to the server. Its `visibility`
@@ -405,17 +407,17 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearId() => clearField(1);
+  void clearId() => $_clearField(1);
 
   /// The author of the post. This is a smaller version of User.
   @$pb.TagNumber(2)
   $4.Author get author => $_getN(1);
   @$pb.TagNumber(2)
-  set author($4.Author v) { setField(2, v); }
+  set author($4.Author v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasAuthor() => $_has(1);
   @$pb.TagNumber(2)
-  void clearAuthor() => clearField(2);
+  void clearAuthor() => $_clearField(2);
   @$pb.TagNumber(2)
   $4.Author ensureAuthor() => $_ensure(1);
 
@@ -427,7 +429,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool hasReplyToPostId() => $_has(2);
   @$pb.TagNumber(3)
-  void clearReplyToPostId() => clearField(3);
+  void clearReplyToPostId() => $_clearField(3);
 
   /// The title of the post. This is invalid for replies.
   @$pb.TagNumber(4)
@@ -437,7 +439,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool hasTitle() => $_has(3);
   @$pb.TagNumber(4)
-  void clearTitle() => clearField(4);
+  void clearTitle() => $_clearField(4);
 
   /// The link of the post. This is invalid for replies.
   @$pb.TagNumber(5)
@@ -447,7 +449,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool hasLink() => $_has(4);
   @$pb.TagNumber(5)
-  void clearLink() => clearField(5);
+  void clearLink() => $_clearField(5);
 
   /// The content of the post. This is required for replies.
   @$pb.TagNumber(6)
@@ -457,7 +459,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.bool hasContent() => $_has(5);
   @$pb.TagNumber(6)
-  void clearContent() => clearField(6);
+  void clearContent() => $_clearField(6);
 
   /// The number of responses (replies *and* replies to replies, etc.) to this post.
   @$pb.TagNumber(7)
@@ -467,7 +469,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $core.bool hasResponseCount() => $_has(6);
   @$pb.TagNumber(7)
-  void clearResponseCount() => clearField(7);
+  void clearResponseCount() => $_clearField(7);
 
   /// The number of *direct* replies to this post.
   @$pb.TagNumber(8)
@@ -477,7 +479,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.bool hasReplyCount() => $_has(7);
   @$pb.TagNumber(8)
-  void clearReplyCount() => clearField(8);
+  void clearReplyCount() => $_clearField(8);
 
   /// The number of groups this post is in.
   @$pb.TagNumber(9)
@@ -487,11 +489,11 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $core.bool hasGroupCount() => $_has(8);
   @$pb.TagNumber(9)
-  void clearGroupCount() => clearField(9);
+  void clearGroupCount() => $_clearField(9);
 
   /// List of Media IDs associated with this post. Order is preserved.
   @$pb.TagNumber(10)
-  $core.List<$5.MediaReference> get media => $_getList(9);
+  $pb.PbList<$5.MediaReference> get media => $_getList(9);
 
   /// Flag indicating whether Media has been generated for this Post.
   /// Currently previews are generated for any Link post.
@@ -502,7 +504,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.bool hasMediaGenerated() => $_has(10);
   @$pb.TagNumber(11)
-  void clearMediaGenerated() => clearField(11);
+  void clearMediaGenerated() => $_clearField(11);
 
   /// Flag indicating
   @$pb.TagNumber(12)
@@ -512,7 +514,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $core.bool hasEmbedLink() => $_has(11);
   @$pb.TagNumber(12)
-  void clearEmbedLink() => clearField(12);
+  void clearEmbedLink() => $_clearField(12);
 
   /// Flag indicating a `LIMITED` or `SERVER_PUBLIC` post can be shared with groups and individuals,
   /// and a `DIRECT` post can be shared with individuals.
@@ -523,48 +525,48 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   $core.bool hasShareable() => $_has(12);
   @$pb.TagNumber(13)
-  void clearShareable() => clearField(13);
+  void clearShareable() => $_clearField(13);
 
   /// Context of the Post (`POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`.)
   @$pb.TagNumber(14)
   PostContext get context => $_getN(13);
   @$pb.TagNumber(14)
-  set context(PostContext v) { setField(14, v); }
+  set context(PostContext v) { $_setField(14, v); }
   @$pb.TagNumber(14)
   $core.bool hasContext() => $_has(13);
   @$pb.TagNumber(14)
-  void clearContext() => clearField(14);
+  void clearContext() => $_clearField(14);
 
   /// The visibility of the Post.
   @$pb.TagNumber(15)
   $10.Visibility get visibility => $_getN(14);
   @$pb.TagNumber(15)
-  set visibility($10.Visibility v) { setField(15, v); }
+  set visibility($10.Visibility v) { $_setField(15, v); }
   @$pb.TagNumber(15)
   $core.bool hasVisibility() => $_has(14);
   @$pb.TagNumber(15)
-  void clearVisibility() => clearField(15);
+  void clearVisibility() => $_clearField(15);
 
   /// The moderation of the Post.
   @$pb.TagNumber(16)
   $10.Moderation get moderation => $_getN(15);
   @$pb.TagNumber(16)
-  set moderation($10.Moderation v) { setField(16, v); }
+  set moderation($10.Moderation v) { $_setField(16, v); }
   @$pb.TagNumber(16)
   $core.bool hasModeration() => $_has(15);
   @$pb.TagNumber(16)
-  void clearModeration() => clearField(16);
+  void clearModeration() => $_clearField(16);
 
   /// If the Post was retrieved from GetPosts with a group_id, the GroupPost
   /// metadata may be returned along with the Post.
   @$pb.TagNumber(18)
   GroupPost get currentGroupPost => $_getN(16);
   @$pb.TagNumber(18)
-  set currentGroupPost(GroupPost v) { setField(18, v); }
+  set currentGroupPost(GroupPost v) { $_setField(18, v); }
   @$pb.TagNumber(18)
   $core.bool hasCurrentGroupPost() => $_has(16);
   @$pb.TagNumber(18)
-  void clearCurrentGroupPost() => clearField(18);
+  void clearCurrentGroupPost() => $_clearField(18);
   @$pb.TagNumber(18)
   GroupPost ensureCurrentGroupPost() => $_ensure(16);
 
@@ -573,17 +575,17 @@ class Post extends $pb.GeneratedMessage {
   /// hidden by moderation or visibility. Replies are not generally loaded by default, but can be added to Posts
   /// in the frontend.
   @$pb.TagNumber(19)
-  $core.List<Post> get replies => $_getList(17);
+  $pb.PbList<Post> get replies => $_getList(17);
 
   /// The time the post was created.
   @$pb.TagNumber(20)
   $9.Timestamp get createdAt => $_getN(18);
   @$pb.TagNumber(20)
-  set createdAt($9.Timestamp v) { setField(20, v); }
+  set createdAt($9.Timestamp v) { $_setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(18);
   @$pb.TagNumber(20)
-  void clearCreatedAt() => clearField(20);
+  void clearCreatedAt() => $_clearField(20);
   @$pb.TagNumber(20)
   $9.Timestamp ensureCreatedAt() => $_ensure(18);
 
@@ -591,11 +593,11 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   $9.Timestamp get updatedAt => $_getN(19);
   @$pb.TagNumber(21)
-  set updatedAt($9.Timestamp v) { setField(21, v); }
+  set updatedAt($9.Timestamp v) { $_setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(19);
   @$pb.TagNumber(21)
-  void clearUpdatedAt() => clearField(21);
+  void clearUpdatedAt() => $_clearField(21);
   @$pb.TagNumber(21)
   $9.Timestamp ensureUpdatedAt() => $_ensure(19);
 
@@ -603,11 +605,11 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(22)
   $9.Timestamp get publishedAt => $_getN(20);
   @$pb.TagNumber(22)
-  set publishedAt($9.Timestamp v) { setField(22, v); }
+  set publishedAt($9.Timestamp v) { $_setField(22, v); }
   @$pb.TagNumber(22)
   $core.bool hasPublishedAt() => $_has(20);
   @$pb.TagNumber(22)
-  void clearPublishedAt() => clearField(22);
+  void clearPublishedAt() => $_clearField(22);
   @$pb.TagNumber(22)
   $9.Timestamp ensurePublishedAt() => $_ensure(20);
 
@@ -615,11 +617,11 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(23)
   $9.Timestamp get lastActivityAt => $_getN(21);
   @$pb.TagNumber(23)
-  set lastActivityAt($9.Timestamp v) { setField(23, v); }
+  set lastActivityAt($9.Timestamp v) { $_setField(23, v); }
   @$pb.TagNumber(23)
   $core.bool hasLastActivityAt() => $_has(21);
   @$pb.TagNumber(23)
-  void clearLastActivityAt() => clearField(23);
+  void clearLastActivityAt() => $_clearField(23);
   @$pb.TagNumber(23)
   $9.Timestamp ensureLastActivityAt() => $_ensure(21);
 
@@ -631,7 +633,7 @@ class Post extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   $core.bool hasUnauthenticatedStarCount() => $_has(22);
   @$pb.TagNumber(24)
-  void clearUnauthenticatedStarCount() => clearField(24);
+  void clearUnauthenticatedStarCount() => $_clearField(24);
 }
 
 /// A `GroupPost` is a cross-post of a `Post` to a `Group`. It contains
@@ -712,7 +714,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasGroupId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearGroupId() => clearField(1);
+  void clearGroupId() => $_clearField(1);
 
   /// The ID of the post.
   @$pb.TagNumber(2)
@@ -722,7 +724,7 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasPostId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPostId() => clearField(2);
+  void clearPostId() => $_clearField(2);
 
   /// **Deprecated.** Prefer to use `shared_by`. The ID of the user who cross-posted the post.
   @$core.Deprecated('This field is deprecated.')
@@ -736,27 +738,27 @@ class GroupPost extends $pb.GeneratedMessage {
   $core.bool hasUserId() => $_has(2);
   @$core.Deprecated('This field is deprecated.')
   @$pb.TagNumber(3)
-  void clearUserId() => clearField(3);
+  void clearUserId() => $_clearField(3);
 
   /// The moderation of the post in the group.
   @$pb.TagNumber(4)
   $10.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($10.Moderation v) { setField(4, v); }
+  set groupModeration($10.Moderation v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
-  void clearGroupModeration() => clearField(4);
+  void clearGroupModeration() => $_clearField(4);
 
   /// The time the post was cross-posted.
   @$pb.TagNumber(5)
   $9.Timestamp get createdAt => $_getN(4);
   @$pb.TagNumber(5)
-  set createdAt($9.Timestamp v) { setField(5, v); }
+  set createdAt($9.Timestamp v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasCreatedAt() => $_has(4);
   @$pb.TagNumber(5)
-  void clearCreatedAt() => clearField(5);
+  void clearCreatedAt() => $_clearField(5);
   @$pb.TagNumber(5)
   $9.Timestamp ensureCreatedAt() => $_ensure(4);
 
@@ -764,11 +766,11 @@ class GroupPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $4.Author get sharedBy => $_getN(5);
   @$pb.TagNumber(6)
-  set sharedBy($4.Author v) { setField(6, v); }
+  set sharedBy($4.Author v) { $_setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasSharedBy() => $_has(5);
   @$pb.TagNumber(6)
-  void clearSharedBy() => clearField(6);
+  void clearSharedBy() => $_clearField(6);
   @$pb.TagNumber(6)
   $4.Author ensureSharedBy() => $_ensure(5);
 }
@@ -833,7 +835,7 @@ class UserPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearUserId() => clearField(1);
+  void clearUserId() => $_clearField(1);
 
   /// The ID of the post shared.
   @$pb.TagNumber(2)
@@ -843,17 +845,17 @@ class UserPost extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasPostId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearPostId() => clearField(2);
+  void clearPostId() => $_clearField(2);
 
   /// The time the post was shared.
   @$pb.TagNumber(3)
   $9.Timestamp get createdAt => $_getN(2);
   @$pb.TagNumber(3)
-  set createdAt($9.Timestamp v) { setField(3, v); }
+  set createdAt($9.Timestamp v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasCreatedAt() => $_has(2);
   @$pb.TagNumber(3)
-  void clearCreatedAt() => clearField(3);
+  void clearCreatedAt() => $_clearField(3);
   @$pb.TagNumber(3)
   $9.Timestamp ensureCreatedAt() => $_ensure(2);
 }
@@ -912,7 +914,7 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool hasPostId() => $_has(0);
   @$pb.TagNumber(1)
-  void clearPostId() => clearField(1);
+  void clearPostId() => $_clearField(1);
 
   /// The ID of the group to get `GroupPost`s for.
   @$pb.TagNumber(2)
@@ -922,7 +924,7 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool hasGroupId() => $_has(1);
   @$pb.TagNumber(2)
-  void clearGroupId() => clearField(2);
+  void clearGroupId() => $_clearField(2);
 }
 
 /// Used for getting context about `GroupPost`s of an existing `Post`.
@@ -968,7 +970,7 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
 
   /// The `GroupPost`s for the given `Post` or `Group`.
   @$pb.TagNumber(1)
-  $core.List<GroupPost> get groupPosts => $_getList(0);
+  $pb.PbList<GroupPost> get groupPosts => $_getList(0);
 }
 
 

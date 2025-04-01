@@ -2,7 +2,7 @@
 //  Generated code. Do not modify.
 //  source: events.proto
 //
-// @dart = 2.12
+// @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
 // ignore_for_file: constant_identifier_names, library_prefixes
@@ -17,13 +17,23 @@ import 'package:protobuf/protobuf.dart' as $pb;
 ///
 ///  Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
 class EventListingType extends $pb.ProtobufEnum {
+  /// Gets `SERVER_PUBLIC` and `GLOBAL_PUBLIC` events depending on whether the user is logged in, `LIMITED` events from authors the user is following, and `PRIVATE` events owned by, or directly addressed to, the current user.
   static const EventListingType ALL_ACCESSIBLE_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_EVENTS');
+  /// Returns events from users the user is following.
   static const EventListingType FOLLOWING_EVENTS = EventListingType._(1, _omitEnumNames ? '' : 'FOLLOWING_EVENTS');
+  /// Returns events from any group the user is a member of.
   static const EventListingType MY_GROUPS_EVENTS = EventListingType._(2, _omitEnumNames ? '' : 'MY_GROUPS_EVENTS');
+  /// Returns `DIRECT` events that are directly addressed to the user.
   static const EventListingType DIRECT_EVENTS = EventListingType._(3, _omitEnumNames ? '' : 'DIRECT_EVENTS');
+  /// Returns events pending moderation by the server-level mods/admins.
   static const EventListingType EVENTS_PENDING_MODERATION = EventListingType._(4, _omitEnumNames ? '' : 'EVENTS_PENDING_MODERATION');
+  /// Returns events from a specific group. Requires group_id parameterRequires group_id parameter
   static const EventListingType GROUP_EVENTS = EventListingType._(10, _omitEnumNames ? '' : 'GROUP_EVENTS');
+  /// Returns pending_moderation events from a specific group. Requires group_id
+  /// parameter and user must have group (or server) admin permissions.
   static const EventListingType GROUP_EVENTS_PENDING_MODERATION = EventListingType._(11, _omitEnumNames ? '' : 'GROUP_EVENTS_PENDING_MODERATION');
+  /// Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter).
+  /// Returned EventInstances will be ordered by creation time rather than start time.
   static const EventListingType NEWLY_ADDED_EVENTS = EventListingType._(20, _omitEnumNames ? '' : 'NEWLY_ADDED_EVENTS');
 
   static const $core.List<EventListingType> values = <EventListingType> [
@@ -40,7 +50,7 @@ class EventListingType extends $pb.ProtobufEnum {
   static final $core.Map<$core.int, EventListingType> _byValue = $pb.ProtobufEnum.initByValue(values);
   static EventListingType? valueOf($core.int value) => _byValue[value];
 
-  const EventListingType._($core.int v, $core.String n) : super(v, n);
+  const EventListingType._(super.v, super.n);
 }
 
 /// EventInstance attendance statuses. State transitions may generally happen
@@ -50,9 +60,13 @@ class EventListingType extends $pb.ProtobufEnum {
 /// * `WENT` and `DID_NOT_GO` cannot be selected if the EventInstance has not started (start time is in the future).
 /// `INTERESTED` and `REQUESTED` can apply regardless of whether an event has started or ended.
 class AttendanceStatus extends $pb.ProtobufEnum {
+  /// The user is (or was) interested in attending. This is the default status.
   static const AttendanceStatus INTERESTED = AttendanceStatus._(0, _omitEnumNames ? '' : 'INTERESTED');
+  /// Another user has invited the user to the event.
   static const AttendanceStatus REQUESTED = AttendanceStatus._(1, _omitEnumNames ? '' : 'REQUESTED');
+  /// The user plans to go to the event, or went to the event.
   static const AttendanceStatus GOING = AttendanceStatus._(2, _omitEnumNames ? '' : 'GOING');
+  /// The user does not plan to go to the event, or did not go to the event.
   static const AttendanceStatus NOT_GOING = AttendanceStatus._(3, _omitEnumNames ? '' : 'NOT_GOING');
 
   static const $core.List<AttendanceStatus> values = <AttendanceStatus> [
@@ -65,7 +79,7 @@ class AttendanceStatus extends $pb.ProtobufEnum {
   static final $core.Map<$core.int, AttendanceStatus> _byValue = $pb.ProtobufEnum.initByValue(values);
   static AttendanceStatus? valueOf($core.int value) => _byValue[value];
 
-  const AttendanceStatus._($core.int v, $core.String n) : super(v, n);
+  const AttendanceStatus._(super.v, super.n);
 }
 
 
