@@ -44,14 +44,13 @@ pub fn access_token(
                 Err(Status::new(Code::Unauthenticated, "not_authorized"))
             }
             Some(t)
-                if t < SystemTime::now()
-                    && t.add(Duration::from_secs(60 * 60 * 24 * RENEWAL_PERIOD_DAYS))
-                        > SystemTime::now() =>
+                if t.add(Duration::from_secs(60 * 60 * 24 * RENEWAL_PERIOD_DAYS))
+                    > SystemTime::now() =>
             {
                 log::info!(
-                    "Updating refresh token for user_id={}, generating access token...",
-                    user_id
-                );
+                            "Generating both refresh token and access token for user_id={}, refresh_token_id={}...",
+                            user_id, refresh_token_id
+                        );
                 let new_expiry =
                     SystemTime::now().add(Duration::from_secs(60 * 60 * 24 * LIFETIME_DAYS));
                 let new_token_pair = auth::generate_refresh_and_access_token(
@@ -62,6 +61,18 @@ pub fn access_token(
                 Ok(AccessTokenResponse {
                     access_token: new_token_pair.access_token,
                     refresh_token: new_token_pair.refresh_token,
+                })
+            }
+            Some(t) => {
+                log::info!(
+                    "Generating access token for user_id={}, refresh_token_id={}...",
+                    user_id,
+                    refresh_token_id
+                );
+                let access_token = auth::generate_access_token(refresh_token_id, conn);
+                Ok(AccessTokenResponse {
+                    access_token: Some(access_token),
+                    refresh_token: None,
                 })
             }
             None => {
@@ -106,15 +117,14 @@ pub fn access_token(
                 //     access_token: Some(access_token),
                 //     refresh_token: None,
                 // })
-            }
-            _ => {
-                log::debug!("Generating access token for user_id={}", user_id);
-                let access_token = auth::generate_access_token(refresh_token_id, conn);
-                Ok(AccessTokenResponse {
-                    access_token: Some(access_token),
-                    refresh_token: None,
-                })
-            }
+            } // _ => {
+              //     log::debug!("Generating access token for user_id={}", user_id);
+              //     let access_token = auth::generate_access_token(refresh_token_id, conn);
+              //     Ok(AccessTokenResponse {
+              //         access_token: Some(access_token),
+              //         refresh_token: None,
+              //     })
+              // }
         },
     }
 }

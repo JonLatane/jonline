@@ -33,7 +33,7 @@ export function AboutJonlineScreen() {
 
   useEffect(() => {
     setDocumentTitle(`About Jonline`);
-  });
+  }, []);
 
   return (
     <TabsNavigation appSection={AppSection.INFO}>

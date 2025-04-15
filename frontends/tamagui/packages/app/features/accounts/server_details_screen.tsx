@@ -113,7 +113,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
 
   useEffect(() => {
     setDocumentTitle(`About ${specificServer ? 'Community' : 'Server'}${serverName && serverName != '' ? ` | ${serverName}` : ''}`)
-  });//, [serverName]);
+  }, [specificServer, serverName]);
 
   const serverDescription = serverConfiguration?.serverInfo?.description;
   const [description, setDescription] = useState(serverDescription || undefined);

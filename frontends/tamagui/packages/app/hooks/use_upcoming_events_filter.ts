@@ -1,9 +1,8 @@
 import { TimeFilter } from "@jonline/api";
-import { useAppDispatch, useAppSelector } from "./store_hooks";
-import moment from "moment";
 import { toProtoISOString } from "@jonline/ui/src";
-import { useEffect } from "react";
 import { setUpcomingEventsTimeFilter } from "app/store";
+import moment from "moment";
+import { useAppDispatch, useAppSelector } from "./store_hooks";
 
 export function useUpcomingEventsFilter(): TimeFilter {
   const dispatch = useAppDispatch();
@@ -15,6 +14,5 @@ export function useUpcomingEventsFilter(): TimeFilter {
     dispatch(setUpcomingEventsTimeFilter({ timeFilter }));
     return timeFilter;
   };
-  // useEffect(() => { }, [filter]);
   return filter ?? createFilter();
 }

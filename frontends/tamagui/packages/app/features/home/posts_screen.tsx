@@ -28,11 +28,14 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
 
   // const [loadingPosts, setLoadingPosts] = useState(false);
 
-  useEffect(() => {
+  const documentTitle = (() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    setDocumentTitle(`Posts | ${title}`);
-  });
+    return title;
+  })();
+  useEffect(() => {
+    setDocumentTitle(documentTitle);
+  }, [documentTitle]);
 
   const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded } =
     usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);

@@ -53,11 +53,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const dimensions = useWindowDimensions();
 
-  useEffect(() => {
+  const documentTitle = (() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    setDocumentTitle(`Latest | ${title}`)
-  });
+    return `Latest | ${title}`;
+  })();
+  useEffect(() => {
+    setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } =
     usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);

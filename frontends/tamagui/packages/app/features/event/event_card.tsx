@@ -8,7 +8,7 @@ import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, 
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
 import { AuthorInfo, LinkProps, PostMediaManager, PostMediaRenderer, TamaguiMarkdown, postBackgroundSize, postVisibilityDescription } from "app/features/post";
-import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers, useTraceUpdate } from "app/hooks";
+import { useAppSelector, useComponentKey, useCurrentAccountOrServer, useFederatedDispatch, useForceUpdate, useLocalConfiguration, useMediaUrl, usePinnedAccountsAndServers } from "app/hooks";
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { instanceTimeSort, isNotPastInstance, isPastInstance } from "app/utils/time";
 import moment from "moment";
@@ -18,6 +18,7 @@ import { useLink } from "solito/link";
 import { PayloadAction } from '@reduxjs/toolkit';
 import { ShareableToggle } from 'app/components/shareable_toggle';
 import { AccountOrServerContextProvider, useGroupContext } from 'app/contexts';
+import { useSelector } from 'react-redux';
 import { federatedId } from '../../store/federation';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { StarButton } from '../post/star_button';
@@ -26,7 +27,6 @@ import { EventCalendarExporter } from './event_calendar_exporter';
 import { EventRsvpManager, RsvpMode, selectRsvpData } from './event_rsvp_manager';
 import { InstanceTime } from "./instance_time";
 import { LocationControl } from "./location_control";
-import { useSelector } from 'react-redux';
 
 interface Props {
   event: FederatedEvent;
@@ -162,34 +162,40 @@ export const EventCard: React.FC<Props> = ({
     : undefined;
 
   const saveEdits = useCallback(() => {
-    setSavingEdits(true);
-    dispatch(updateEvent({
-      ...accountOrServer,
-      ...event,
-      info: {
-        ...event.info,
-        allowsRsvps: editedAllowRsvps,
-        allowsAnonymousRsvps: editedAllowRsvps && editedAllowAnonymousRsvps,
-        hideLocationUntilRsvpApproved: editedHideLocation,
-      },
-      post: {
-        ...eventPost,
-        title: editedTitle,
-        link: editedLink,
-        content: editedContent,
-        media: editedMedia,
-        visibility: editedVisibility,
-        shareable: editedShareable,
-      },
-      instances: editedInstances,
-    })).then((result: PayloadAction<Event, any, any, any>) => {
-      onInstancesUpdated?.(result.payload?.instances);
-      setEditing(false);
-      setSavingEdits(false);
-      setPreviewingEdits(false);
-      setEditedInstances(result.payload?.instances);
+    if (savingEdits) return;
+
+    requestAnimationFrame(() => {
+      setSavingEdits(true);
+      dispatch(updateEvent({
+        ...accountOrServer,
+        ...event,
+        info: {
+          ...event.info,
+          allowsRsvps: editedAllowRsvps,
+          allowsAnonymousRsvps: editedAllowRsvps && editedAllowAnonymousRsvps,
+          hideLocationUntilRsvpApproved: editedHideLocation,
+        },
+        post: {
+          ...eventPost,
+          title: editedTitle,
+          link: editedLink,
+          content: editedContent,
+          media: editedMedia,
+          visibility: editedVisibility,
+          shareable: editedShareable,
+        },
+        instances: editedInstances,
+      })).then((result: PayloadAction<Event, any, any, any>) => {
+        onInstancesUpdated?.(result.payload?.instances);
+        setEditing(false);
+        setPreviewingEdits(false);
+        setEditedInstances(result.payload?.instances);
+      })
+        .finally(() => requestAnimationFrame(() => {
+          setSavingEdits(false);
+        }));
     });
-  }, [event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
+  }, [savingEdits, event, editedAllowRsvps, editedAllowAnonymousRsvps, editedHideLocation, eventPost, editedTitle, editedLink, editedContent, editedMedia, editedVisibility, editedShareable, editedInstances]);
 
   const addInstance = useCallback(() => {
     const newInstance = { ...defaultEventInstance(), id: `unsynchronized-event-instance-${newEventId++}` };

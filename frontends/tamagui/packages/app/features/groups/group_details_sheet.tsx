@@ -132,25 +132,27 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
 
   const toast = useToastController();
   function doUpdateGroup() {
-    dispatch(updateGroup(updatedGroup)).then((action: PayloadAction<Group, any, any>) => {
-      setSavingEdits(false);
-      setEditing(false);
-      setPreviewingEdits(false);
+    requestAnimationFrame(() => {
+      dispatch(updateGroup(updatedGroup)).then((action: PayloadAction<Group, any, any>) => {
+        setSavingEdits(false);
+        setEditing(false);
+        setPreviewingEdits(false);
 
-      if (actionFailed(action)) {
-        toast.show('Failed to update group.');
-        console.error('Failed to update group', action);
-        return action;
-      }
+        if (actionFailed(action)) {
+          toast.show('Failed to update group.');
+          console.error('Failed to update group', action);
+          return action;
+        }
 
-      const updatedShortname = action.payload.shortname;
+        const updatedShortname = action.payload.shortname;
 
-      // console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
-      if (queryShortname !== undefined && queryShortname.length > 0 && updatedShortname.length > 0
-        && queryShortname === infoRenderingGroup?.shortname && queryShortname !== updatedShortname) {
-        console.log('replacing shortname')
-        updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
-      }
+        // console.log('shortname', shortname, 'infoRenderingGroup?.shortname', infoRenderingGroup?.shortname);
+        if (queryShortname !== undefined && queryShortname.length > 0 && updatedShortname.length > 0
+          && queryShortname === infoRenderingGroup?.shortname && queryShortname !== updatedShortname) {
+          console.log('replacing shortname')
+          updateParams({ shortname: action.payload.shortname }, { web: { replace: true } });
+        }
+      });
     });
   }
 

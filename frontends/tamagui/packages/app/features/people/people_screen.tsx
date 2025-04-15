@@ -90,14 +90,16 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   const userPagesStatus = useAppSelector(state => getFederated(state.users.pagesStatus, server));
 
   useEffect(pagination.reset, [debouncedSearchText]);
-  useEffect(() => {
+  const documentTitle = (() => {
     let title = isForGroupMembers ? 'Members' :
       listingType == UserListingType.FOLLOW_REQUESTS ? 'Follow Requests' : 'People';
     title += ` | ${server?.serverConfiguration?.serverInfo?.name || '...'}`;
-    setDocumentTitle(title)
-  });//, [isForGroupMembers, listingType, server?.serverConfiguration?.serverInfo?.name]);
+    return title;
 
-
+  })();
+  useEffect(() => {
+    setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   useEffect(() => {
     if (firstPageLoaded && showScrollPreserver) {

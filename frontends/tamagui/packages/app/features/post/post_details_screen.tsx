@@ -216,7 +216,7 @@ export function PostDetailsScreen() {
       setShowContext(false);
     }
   }, [interactionType, pathPostId]);
-  useEffect(() => {
+  const documentTitle = (() => {
     let title = undefined as string | undefined;
     if (subjectPost) {
       if (subjectPostTitle && subjectPostTitle.length > 0) {
@@ -241,8 +241,12 @@ export function PostDetailsScreen() {
     if (pathShortname && pathShortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
-    setDocumentTitle(title)
-  });
+    return title;
+  })();
+  useEffect(() => {
+    if (documentTitle)
+      setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   return (
     <TabsNavigation appSection={AppSection.POSTS} selectedGroup={group}

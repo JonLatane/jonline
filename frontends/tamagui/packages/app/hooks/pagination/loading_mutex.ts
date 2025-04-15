@@ -27,7 +27,7 @@ export const useLoadingLock = (mutex: LoadingMutex) => {
   const forceUpdate = useForceUpdate();
   const tryReload = () => setTimeout(forceUpdate, 100);
   const [initiatedLoading, setInitiatedLoading] = useState(false);
-  useEffect(() => { mutex.loading && !initiatedLoading ? tryReload() : undefined });
+  useEffect(() => { mutex.loading && !initiatedLoading ? tryReload() : undefined }, [mutex.loading && !initiatedLoading]);
 
   const pollForLoadingLocked = () => {
     const result = mutex.loading;

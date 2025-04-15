@@ -152,7 +152,9 @@ export const postsSlice = createSlice({
     builder.addCase(updatePost.fulfilled, (state, action) => {
       const federatedPost = federatedPayload(action);
       const oldPost = selectPostById(state, federatedId(federatedPost));
+      // debugger;
       postsAdapter.upsertOne(state, { ...federatedPost, replies: oldPost?.replies ?? action.payload.replies });
+
       // if (action.meta.arg.postIdPath && action.meta.arg.postIdPath.length > 1) {
       //   debugger;
       //   const post = state.entities[action.meta.arg.postIdPath[0]!];

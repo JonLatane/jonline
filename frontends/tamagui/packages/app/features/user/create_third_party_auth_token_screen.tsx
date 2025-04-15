@@ -1,29 +1,14 @@
-import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
-import { AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
-import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useCurrentAccountOrServer, useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
-import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
-import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
-import { hasAdminPermission, highlightedButtonBackground, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
-import moment from 'moment';
-import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
+import { Button, Heading, Paragraph, Text, XStack, YStack, useMedia } from '@jonline/ui';
+import { useCurrentAccountOrServer } from 'app/hooks';
+import { useServerTheme } from 'app/store';
+import { highlightedButtonBackground } from 'app/utils';
+import React, { useCallback } from 'react';
 import { createParam } from 'solito';
-import { useLink } from 'solito/link';
-import { useAppDispatch, useAppSelector } from '../../hooks/store_hooks';
-import { EventCard } from '../event/event_card';
+import { federatedEntity } from '../../store/federation';
 import { useGroupFromPath } from '../groups/group_home_screen';
-import { DynamicCreateButton } from '../home/dynamic_create_button';
-import { EventsFullCalendar } from '../event/events_full_calendar';
-import { PageChooser } from '../home/page_chooser';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
-import { PostCard } from '../post/post_card';
-import { FederatedProfiles } from './federated_profiles';
-import { EditableUserDetails, UserCard, useFullAvatarHeight } from './user_card';
-import { AccountOrServerContextProvider } from 'app/contexts';
-import { federatedEntity } from '../../store/federation';
+import { UserCard } from './user_card';
 
 const { useParam } = createParam<{ from?: string, to?: string, token?: string | undefined }>()
 const { useParam: useShortnameParam } = createParam<{ from: string | undefined, to: string | undefined, token: string | undefined }>();

@@ -1,14 +1,9 @@
-import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
-import { ChevronLeft } from '@tamagui/lucide-icons';
-import { TamaguiMarkdown } from 'app/components';
-import { useAppDispatch, useCreationServer, useCurrentServer } from 'app/hooks';
-import { accountID, actionSucceeded, clearAccountAlerts, createAccount, useServerTheme, JonlineAccount, JonlineServer, login, RootState, selectAllAccounts, serverID, store, useRootSelector } from 'app/store';
-import { themedButtonBackground } from 'app/utils';
-import React, { useEffect, useState } from 'react';
-import { TextInput } from 'react-native';
-import AccountCard from './account_card';
-import { CreationServerSelector } from './creation_server_selector';
+import { Button, Heading, useMedia } from '@jonline/ui';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
+import { useCreationServer, useCurrentServer } from 'app/hooks';
+import { JonlineServer, useServerTheme } from 'app/store';
+import { themedButtonBackground } from 'app/utils';
+import React from 'react';
 
 export type AuthSheetButtonProps = {
   server?: JonlineServer;

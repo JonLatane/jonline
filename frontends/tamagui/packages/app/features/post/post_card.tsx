@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph,Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController, useDebounceValue } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -97,6 +97,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const toast = useToastController();
   const [previewingEdits, setPreviewingEdits] = useState(false);
   const [savingEdits, setSavingEdits] = useState(false);
+  // const savingEditsDebounce = useDebounceValue(savingEdits, 500);
 
   const [editedContent, setEditedContent] = useState(post.content);
   const [editedMedia, setEditedMedia] = useState(post.media);
@@ -112,22 +113,30 @@ export const PostCard: React.FC<PostCardProps> = ({
   const { imagePostBackgrounds, fancyPostBackgrounds, shrinkPreviews: appShrinkPreviews } = useLocalConfiguration();
 
   const saveEdits = useCallback(() => {
-    setSavingEdits(true);
-    console.log('saveEdits replyPostIdPath', replyPostIdPath);
-    dispatch(updatePost({
-      ...accountOrServer, ...post,
-      content: editedContent,
-      media: editedMedia,
-      embedLink: editedEmbedLink,
-      visibility: editedVisibility,
-      shareable: editedShareable,
-      postIdPath: replyPostIdPath
-    })).then(() => {
-      setEditing(false);
-      setSavingEdits(false);
-      setPreviewingEdits(false);
-    });
-  }, [accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable]);
+    if (savingEdits) return;
+
+    requestAnimationFrame(() => {
+      setSavingEdits(true);
+      console.log('saveEdits replyPostIdPath', replyPostIdPath);
+      dispatch(updatePost({
+        ...accountOrServer, ...post,
+        content: editedContent,
+        media: editedMedia,
+        embedLink: editedEmbedLink,
+        visibility: editedVisibility,
+        shareable: editedShareable,
+        postIdPath: replyPostIdPath
+      }))
+        .then(() => requestAnimationFrame(() => {
+          setEditing(false);
+          setPreviewingEdits(false);
+        }))
+        .finally(() => requestAnimationFrame(() => {
+          setSavingEdits(false);
+        }));
+
+    })
+  }, [savingEdits, accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable]);
 
   const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
@@ -196,7 +205,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     if (loadingReplies && (post.replyCount == 0 || post.replies.length > 0)) {
       setLoadingReplies(false);
     }
-  });
+  }, [loadingReplies, post.replyCount, post.replies.length]);
   const toggleReplies = useCallback((e: GestureResponderEvent) => {
     e.stopPropagation();
     // setTimeout(() => {
@@ -508,23 +517,23 @@ export const PostCard: React.FC<PostCardProps> = ({
                           {showEdit
                             ? editing
                               ? <>
-                                <Button my='auto' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
+                                <Button my='auto' key='save' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
                                   Save
                                 </Button>
-                                <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+                                <Button my='auto' key='cancel' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
                                   Cancel
                                 </Button>
                                 {previewingEdits
-                                  ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                  ? <Button my='auto' key='preview-edit' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
                                     Edit
                                   </Button>
                                   :
-                                  <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+                                  <Button my='auto' key='preview' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
                                     Preview
                                   </Button>}
                               </>
                               : <>
-                                <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+                                <Button my='auto' key='edit' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
                                   Edit
                                 </Button>
 

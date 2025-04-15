@@ -125,7 +125,7 @@ export function EventDetailsScreen() {
     }
   }, [debouncedAccountOrServer, instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver]);
   // debugger;
-  useEffect(() => {
+  const documentTitle = (() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     let title = '';
     if (subjectPost) {
@@ -143,8 +143,11 @@ export function EventDetailsScreen() {
     if (pathShortname && pathShortname.length > 0 && group && group.name.length > 0) {
       title += `- ${group.name}`;
     }
-    setDocumentTitle(title)
-  });//, [subjectPost?.id, group?.id, server ? serverID(server) : undefined])
+    return title;
+  })();
+  useEffect(() => {
+    setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   function scrollToBottom() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });

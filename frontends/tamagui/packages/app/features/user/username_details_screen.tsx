@@ -242,13 +242,16 @@ export function UsernameDetailsScreen() {
   const toast = useToastController()
 
   const isBusiness = permissions.includes(Permission.BUSINESS);
-  useEffect(() => {
+  const documentTitle = (() => {
     const serverName = server?.serverConfiguration?.serverInfo?.name || '...';
     const realName = (user?.realName?.length ?? 0) > 0 ? user?.realName : undefined;
     let title = realName ?? username ?? 'User';
     title += ` | ${isBusiness ? 'Business Profile' : 'Profile'} | ${serverName}`;
-    setDocumentTitle(title)
-  });//, [user, username]);
+    return title;
+  })()
+  useEffect(() => {
+    setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   async function saveUser() {
     if (!canEdit && !user) return;

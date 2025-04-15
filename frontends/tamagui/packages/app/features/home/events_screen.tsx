@@ -109,11 +109,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   };
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
   // console.log('timeFilter', timeFilter);
-  useEffect(() => {
+  const documentTitle = (() => {
     const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
     const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
-    setDocumentTitle(`Events | ${title}`)
-  });
+    return `Events | ${title}`
+  })()
+  useEffect(() => {
+    setDocumentTitle(documentTitle)
+  }, [documentTitle]);
 
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });

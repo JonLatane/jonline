@@ -60,12 +60,11 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   const mediaQuery = useMedia();
   const { bigCalendar, setBigCalendar } = useBigCalendar();
 
-
+  const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
   useEffect(() => {
-    const serverName = currentServer?.serverConfiguration?.serverInfo?.name || '...';
     // const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     setDocumentTitle(`AI Event Importer | ${serverName}`)
-  });
+  }, [serverName]);
 
   const { screenWidth, screenHeight } = useScreenWidthAndHeight();
 
@@ -103,7 +102,7 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   }, [llmModel]);
   // const selectedModel = "Llama-3-8B-Instruct-q4f32_1";
   const [llmEngine, setLlmEngine] = useState<webllm.MLCEngineInterface | undefined>(undefined);
- 
+
   // useEffect(() => { llmEngine?.reload(llmModel); }, [llmModel]);
 
   useEffect(() => {
