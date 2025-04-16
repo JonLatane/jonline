@@ -86,9 +86,9 @@ export const PageChooser: React.FC<Pagination<any> & {
     const renderedPage = currentPage + 1;
     const lowerPage = Math.max(1, currentPage + 2 - maxPagesToRender);
     const upperPage = currentPage + 1;
-    const text = lowerPage === upperPage
-      ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
-      : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
+    // const text = lowerPage === upperPage
+    //   ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
+    //   : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
     return <YStack w={width} h={height} maxWidth={maxWidth} ai='center'>
       <ScrollView f={1} w='100%' horizontal>
@@ -100,14 +100,19 @@ export const PageChooser: React.FC<Pagination<any> & {
                 {...highlightedButtonBackground(theme, 'nav', page === currentPage)}
                 transparent={page !== currentPage}
                 onPress={() => {
-                  setPage(page)
-                  // onSetPage?.();
-                  if (pageTopId) {
-                    // setTimeout(() => {
-                    const pageTop = document.getElementById(pageTopId);
-                    pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-                    // }, 300);
-                  }
+                  requestAnimationFrame(() => {
+                    setPage(page);
+                    // onSetPage?.();
+
+                    if (pageTopId) {
+                      // setTimeout(() => {
+                      // setTimeout(() => {
+                      const pageTop = document.getElementById(pageTopId);
+                      pageTop?.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+                      // }, 300);
+                      // }, 500);
+                    }
+                  });
                 }}
               >
                 {(page + 1).toString()}

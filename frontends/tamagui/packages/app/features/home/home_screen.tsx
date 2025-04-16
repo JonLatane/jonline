@@ -286,7 +286,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         {postPagination.pageCount > 1
           ? <div key='page-chooser-bottom'
             style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-            <PageChooser {...postPagination} pageTopId='latest-posts-header'
+            <PageChooser {...postPagination} pageTopId='latest-posts-header' showResultCounts
               entityName={{ singular: 'post', plural: 'posts' }} />
           </div>
           : undefined}
