@@ -17,23 +17,19 @@ pub fn access_token(
     conn: &mut PgPooledConnection,
 ) -> Result<AccessTokenResponse, Status> {
     log::info!("AccessToken called.");
-    let requested_token = &request.refresh_token;
+    let refresh_token = &request.refresh_token;
     let token_user_expiry: Result<(i64, i64, Option<SystemTime>), _> = user_refresh_tokens::table
         .select((
             user_refresh_tokens::id,
             user_refresh_tokens::user_id,
             user_refresh_tokens::expires_at,
         ))
-        .filter(user_refresh_tokens::token.eq(requested_token))
+        .filter(user_refresh_tokens::token.eq(refresh_token))
         .first::<(i64, i64, Option<SystemTime>)>(conn);
 
     const LIFETIME_DAYS: u64 = 7;
-    const RENEWAL_PERIOD_DAYS: u64 = 1;
+    const RENEWAL_PERIOD_DAYS: u64 = 6;
     match token_user_expiry {
-        Err(_) => {
-            log::warn!("Auth token {} not found.", requested_token);
-            Err(Status::new(Code::Unauthenticated, "not_authorized"))
-        }
         Ok((refresh_token_id, user_id, expires_at)) => match expires_at {
             Some(t) if t > SystemTime::now() => {
                 log::warn!(
@@ -63,7 +59,7 @@ pub fn access_token(
                     refresh_token: new_token_pair.refresh_token,
                 })
             }
-            Some(t) => {
+            Some(_) => {
                 log::info!(
                     "Generating access token for user_id={}, refresh_token_id={}...",
                     user_id,
@@ -110,21 +106,11 @@ pub fn access_token(
                         })
                     }
                 }
-                // let num = rand::thread_rng().gen_range(0..=0);
-
-                // let access_token = auth::generate_access_token(refresh_token_id, conn);
-                // Ok(AccessTokenResponse {
-                //     access_token: Some(access_token),
-                //     refresh_token: None,
-                // })
-            } // _ => {
-              //     log::debug!("Generating access token for user_id={}", user_id);
-              //     let access_token = auth::generate_access_token(refresh_token_id, conn);
-              //     Ok(AccessTokenResponse {
-              //         access_token: Some(access_token),
-              //         refresh_token: None,
-              //     })
-              // }
+            }
         },
+        Err(_) => {
+            log::warn!("Auth token {} not found.", refresh_token);
+            Err(Status::new(Code::Unauthenticated, "not_authorized"))
+        }
     }
 }

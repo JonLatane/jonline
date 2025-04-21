@@ -30,10 +30,10 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
       </YStack>
     </Label>
     <Switch name={nameKey} size="$5" my='auto'
-      defaultChecked={value}
+      // defaultChecked={value}
       checked={value}
-      value={value.toString()}
-      disabled={disabled}
+      // value={value.toString()}
+      disabled={false}
       onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
       <Switch.Thumb animation='standard' backgroundColor='$background' />
     </Switch>
