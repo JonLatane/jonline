@@ -4,13 +4,14 @@ import { Selector, useAppDispatch, useAppSelector, useCurrentAccount, useCurrent
 
 import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, RootState, accountID, pinAccount, pinServer, selectAccountById, selectAllServers, serverID, setExcludeCurrentServer, setHideNavigation, setShowPinnedServers, setShrinkPreviews, setViewingRecommendedServers, unpinAccount, useServerTheme } from "app/store";
 import { themedButtonBackground } from "app/utils/themed_button_background";
-import FlipMove from 'lumen5-react-flip-move';
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
 import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
 import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { User } from "@jonline/api";
 import { createSelector } from "@reduxjs/toolkit";
+import { AutoAnimatedList } from "../post";
 
+import React from 'react';
 
 
 export type PinnedServerSelectorProps = {
@@ -110,107 +111,107 @@ export function PinnedServerSelector({
   const childMargins = { paddingTop: 2, paddingBottom: 2 };
   // debugger
   return <div id={affectsNavigation ? 'navigation-pinned-servers' : undefined} style={{ width: '100%' }} >
-    <FlipMove style={{ width: '100%' }} >
-      {[
-        configuringFederation ?
-          <div key='configuring-servers'>
-            <XStack mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
-              <Spinner size='small' color={primaryAnchorColor} />
-              <Paragraph size='$1'>Configuring servers...</Paragraph>
-            </XStack>
-          </div>
-          : undefined,
-        show && !disabled ? [
-          <div key='toggle-row'>
-            <XStack key='pinned-server-toggle-row'>
-              {simplified
-                ? undefined
-                : <>
+    <AutoAnimatedList style={{ width: '100%' }}>
+      {<>
+        {configuringFederation ?
+          // <div key='configuring-servers'>
+          <XStack key='configuring-servers' w='100%' mx='$2' my='$1' gap='$2' ai='center' animation='standard' {...standardAnimation}>
+            <Spinner size='small' color={primaryAnchorColor} />
+            <Paragraph size='$1'>Configuring servers...</Paragraph>
+          </XStack>
+          // </div>
+          : undefined}
+        {show && !disabled ? <>
 
-                  {alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
-                    ? <Button key='hide-nav-button' py='$1' h='auto' transparent
-                      // animation='standard' {...reverseHorizontalAnimation}
-                      onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                      <XStack position='absolute' animation='standard'
-                        key='open-icon'
-                        o={hideNavigation ? 1 : 0}
-                        transform={[{ translateY: hideNavigation ? 0 : 10 }]}
-                      // scale={hideNavigation ? 1 : 2}
-                      >
-                        <PanelTopOpen size='$1' />
-                      </XStack>
-                      <XStack position='absolute' animation='standard'
-                        key='close-icon'
-                        o={hideNavigation ? 0 : 1}
-                        transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
-                      // scale={hideNavigation ? 0.2 : 1}
-                      >
-                        <PanelTopClose size='$1' />
-                      </XStack>
-                    </Button>
-                    : undefined}
+          <XStack key='toggle-row' w='100%'>
+            {simplified
+              ? undefined
+              : <>
 
-                  <Button key='pinned-server-toggle' py='$1'
-                    disabled={!withServerPinning}
-                    o={withServerPinning ? 1 : 0}
-                    pointerEvents={withServerPinning ? 'auto' : 'none'}
-                    pl='$2' pr='$1'
-                    h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
-                    <XStack mr='auto' maw='100%' ai='center'>
-                      <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-                        {description}
-                      </Paragraph>
-                      <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
-                        <ChevronRight size='$1' />
-                      </XStack>
+                {alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short)
+                  ? <Button key='hide-nav-button' py='$1' h='auto' transparent
+                    // animation='standard' {...reverseHorizontalAnimation}
+                    onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
+                    <XStack position='absolute' animation='standard'
+                      key='open-icon'
+                      o={hideNavigation ? 1 : 0}
+                      transform={[{ translateY: hideNavigation ? 0 : 10 }]}
+                    // scale={hideNavigation ? 1 : 2}
+                    >
+                      <PanelTopOpen size='$1' />
+                    </XStack>
+                    <XStack position='absolute' animation='standard'
+                      key='close-icon'
+                      o={hideNavigation ? 0 : 1}
+                      transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
+                    // scale={hideNavigation ? 0.2 : 1}
+                    >
+                      <PanelTopClose size='$1' />
                     </XStack>
                   </Button>
-                  <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
-                    disabled={!withServerPinning}
-                    o={withServerPinning ? 1 : 0}
-                    pointerEvents={withServerPinning ? 'auto' : 'none'}
-                    onPress={toggleExcludeCurrentServer}>
-                    <XStack ml='auto' gap='$2'>
-                      {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
-                      <Paragraph my='auto' size='$1'>
-                        Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
-                      </Paragraph>
+                  : undefined}
+
+                <Button key='pinned-server-toggle' py='$1'
+                  disabled={!withServerPinning}
+                  o={withServerPinning ? 1 : 0}
+                  pointerEvents={withServerPinning ? 'auto' : 'none'}
+                  pl='$2' pr='$1'
+                  h='auto' transparent onPress={() => dispatch(setShowPinnedServers(!showPinnedServers))} f={1}>
+                  <XStack mr='auto' maw='100%' ai='center'>
+                    <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
+                      {description}
+                    </Paragraph>
+                    <XStack my='auto' animation='standard' rotate={showPinnedServers ? '90deg' : '0deg'}>
+                      <ChevronRight size='$1' />
+                    </XStack>
+                  </XStack>
+                </Button>
+                <Button key='exclude-current-server-toggle' py='$1' h='auto' transparent
+                  disabled={!withServerPinning}
+                  o={withServerPinning ? 1 : 0}
+                  pointerEvents={withServerPinning ? 'auto' : 'none'}
+                  onPress={toggleExcludeCurrentServer}>
+                  <XStack ml='auto' gap='$2'>
+                    {excludeCurrentServer ? <CheckCircle size='$1' /> : <Circle size='$1' />}
+                    <Paragraph my='auto' size='$1'>
+                      Exclude{excludeCurrentServer || mediaQuery.gtSm ? ` ${shortServerName}` : ''}
+                    </Paragraph>
+                  </XStack>
+                </Button>
+
+                {/* <AnimatePresence> */}
+                {showShrinkPreviews
+                  ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
+                    // animation='standard' {...reverseHorizontalAnimation}
+                    onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
+                    <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
+                      <Maximize2 size='$1' />
+                    </XStack>
+                    <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
+                      <Minimize2 size='$1' />
                     </XStack>
                   </Button>
+                  : undefined}
+                {/* </AnimatePresence> */}
+              </>
+            }
+          </XStack>
 
-                  {/* <AnimatePresence> */}
-                  {showShrinkPreviews
-                    ? <Button key='shrink-previews-button' py='$1' h='auto' transparent
-                      // animation='standard' {...reverseHorizontalAnimation}
-                      onPress={() => dispatch(setShrinkPreviews(!shrinkPreviews))}>
-                      <XStack position='absolute' animation='standard' o={shrinkPreviews ? 1 : 0} scale={shrinkPreviews ? 1 : 2}>
-                        <Maximize2 size='$1' />
-                      </XStack>
-                      <XStack position='absolute' animation='standard' o={shrinkPreviews ? 0 : 1} scale={shrinkPreviews ? 0.2 : 1}>
-                        <Minimize2 size='$1' />
-                      </XStack>
-                    </Button>
-                    : undefined}
-                  {/* </AnimatePresence> */}
-                </>
-              }
-            </XStack>
-          </div>,
-          showPinnedServers && withServerPinning ? <div key='server-selector'>
+          {showPinnedServers && withServerPinning ?
             <ScrollView key='pinned-server-scroller' w='100%' horizontal>
               <XStack mx='$3'
                 ai='center' gap='$2' key='available-servers'>
-                <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+                <AutoAnimatedList direction='horizontal'>
                   {renderPinnedServers
-                    ? [
-                      availableServers.map(server => {
+                    ? <>
+                      {availableServers.map(server => {
                         let pinnedServer = pinnedServers.find(s => s.serverId === serverID(server));
                         return <div key={`server-${server.host}`}
                           style={{ display: 'flex', marginRight: 5, ...childMargins }}>
                           <PinnableServer {...{ server, pinnedServer, simplified: simplified }} />
                         </div>;
-                      }),
-                      recommendedServerHosts.length > 0
+                      })}
+                      {recommendedServerHosts.length > 0
                         ? <div key='recommended-servers-button' style={{ display: 'flex', marginRight: -10, ...childMargins }}/*animation='standard' {...standardAnimation}*/>
                           <Button h='auto' py='$1' mr='$1' size='$2'
                             onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
@@ -238,14 +239,14 @@ export function PinnedServerSelector({
                             </XStack>
                           </Button>
                         </div>
-                        : undefined,
-                      viewingRecommendedServers ?
+                        : undefined}
+                      {viewingRecommendedServers ?
                         // <XStack key='recommended-servers' animation='standard' {...standardHorizontalAnimation}>
                         recommendedServerHosts.map((host, index) => {
                           const precedingServer = index > 0 ? recommendedServerHosts[index - 1]! : undefined;
                           // console.log('ugh', host, index, 'preceding:', precedingServer, currentServerRecommendedHosts, currentServerRecommendedHosts.includes(host), precedingServer && currentServerRecommendedHosts.includes(precedingServer))
-                          return [
-                            precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
+                          return <>
+                            {precedingServer && !currentServerRecommendedHosts.includes(host) && currentServerRecommendedHosts.includes(precedingServer)
                               ? <div key='separator' style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
                                 <Tooltip>
                                   <Tooltip.Trigger>
@@ -256,26 +257,26 @@ export function PinnedServerSelector({
                                   </Tooltip.Content>
                                 </Tooltip>
                               </div>
-                              : undefined,
+                              : undefined}
                             <div key={`server-${host}`} style={{ display: 'flex', marginTop: 'auto', marginBottom: 'auto', ...childMargins }}>
                               <RecommendedServer host={host} tiny />
                             </div>
-                          ]
+                          </>
                         })
                         // </XStack>
                         : recommendedServerHosts.length > 0
                           ? <XStack key='recommendedServerHosts-spacer' w='$10' />
-                          : undefined
-                    ]
+                          : undefined}
+                    </>
 
                     : undefined}
-                </FlipMove>
+                </AutoAnimatedList>
               </XStack>
             </ScrollView>
-          </div> : undefined
-        ] : undefined
-      ]}
-    </FlipMove>
+            : undefined}
+        </> : undefined}
+      </>}
+    </AutoAnimatedList>
   </div>;
 }
 

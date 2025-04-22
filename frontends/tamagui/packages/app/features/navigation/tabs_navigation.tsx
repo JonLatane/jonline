@@ -6,7 +6,6 @@ import { NavigationContextProvider } from "app/contexts/navigation_context";
 import { SettingsSheetContextProvider, useNewSettingsSheetContext } from "app/contexts/settings_sheet_context";
 import { useAppDispatch, useAppSelector, useCreationServer, useCurrentServer, useLocalConfiguration } from "app/hooks";
 import { FederatedEntity, FederatedGroup, RootState, colorMeta, federatedId, markGroupVisit, selectAllServers, setForceHideAccountSheetGuide, setHideNavigation, store, useRootSelector, useServerTheme } from "app/store";
-import FlipMove from "lumen5-react-flip-move";
 import React, { useEffect, useState } from "react";
 import { useLink } from "solito/link";
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
@@ -15,6 +14,7 @@ import { AuthSheet } from "../accounts/auth_sheet";
 import { GroupDetailsSheet } from "../groups/group_details_sheet";
 import { GroupsSheet, GroupsSheetButton } from "../groups/groups_sheet";
 import { MediaSheet } from "../media/media_sheet";
+import { AutoAnimatedList } from "../post";
 import { SettingsSheet } from "../settings/settings_sheet";
 import { AppSection, AppSubsection, FeaturesNavigation, useInlineFeatureNavigation } from "./features_navigation";
 import { PinnedServerSelector } from "./pinned_server_selector";
@@ -226,7 +226,6 @@ export function TabsNavigation({
                     {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
                       pointerEvents={hideNavigation ? 'none' : undefined}
                       backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
-                      {/* <XStack w={5} /> */}
                       <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
                         <AccountsSheet size='$4' //onlyShowServer={onlyShowServer}
                           selectedGroup={selectedGroup} />
@@ -292,31 +291,13 @@ export function TabsNavigation({
                                 setShowAccountSheetGuide(false);
                                 // dispatch(setHasOpenedAccounts(true));
                               }}>Got it!</Button>
-                            {/* <XStack>
-                            <ChevronLeft color={primaryTextColor} size='$1' />
-                            <Paragraph color={primaryTextColor} size='$1'>Home/Latest</Paragraph>
-                          </XStack> */}
                           </YStack>
                           : undefined}
                       </AnimatePresence>
                       {showServerInfo
                         ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
                         : undefined}
-                      <AuthSheet />
-                      <SettingsSheet />
                       {minimal ? undefined : <>
-                        <GroupsSheet key='main' isPrimaryNavigation
-                          open={groupsSheetOpen}
-                          setOpen={setGroupsSheetOpen}
-                        // selectedGroup={selectedGroup}
-                        // primaryEntity={primaryEntity}
-                        />
-
-                        <GroupDetailsSheet />
-
-                        <MediaSheet />
-
-
                         {!scrollGroupsSheet
                           ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
                             <GroupsSheetButton key='main' isPrimaryNavigation
@@ -367,13 +348,9 @@ export function TabsNavigation({
 
                         <StarredPosts />
                       </>}
-                      {/* <AccountsSheet size='$4' circular={circularAccountsSheet} onlyShowServer={onlyShowServer} /> */}
                       <XStack w={5} />
                     </XStack>}
 
-                    {/* <YStack w='100%' backgroundColor='$background'>
-                <TabsTutorial />
-              </YStack> */}
 
                     <XStack w='100%' id='nav-pinned-server-selector'
                       backgroundColor={transparentBackgroundColor}
@@ -392,7 +369,6 @@ export function TabsNavigation({
                       {topChrome}
                     </XStack>
                   </YStack>
-                  {/* </StickyBox> */}
                 </div>
 
                 <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
@@ -408,23 +384,19 @@ export function TabsNavigation({
                   </XStack>
                 </XStack>
 
-                <FlipMove /*typeName={null}*/ style={{ display: 'flex', flexDirection: 'flex-column', width: '100%', minHeight: '50vh' }}>
-                  <div key={`navigation-padding-${topNavHeight}`} style={{ height: topNavHeight }} />
-
-                  <div key='children' style={{ width: '100%', flex: 1 }} >
-                    <YStack f={1} w='100%' jc="center" ac='center' ai="center"
-                      //backgroundColor={bgColor}
-                      maw={window.innerWidth}
-                      mt={topNavHeight}
-                      mb={bottomNavHeight}
-                      overflow="hidden"
-                    >
-                      {children}
-                    </YStack>
-                  </div>
-                  <div key={`navigation-padding-bottom-${bottomNavHeight}`}
-                    style={{ height: bottomNavHeight }} />
-                </FlipMove>
+                <AutoAnimatedList style={{ width: '100%', minHeight: '50vh' }}>
+                  {/* <XStack key={`navigation-padding-${topNavHeight}`} h={topNavHeight} /> */}
+                  <YStack key='children' f={1} w='100%' jc="center" ac='center' ai="center"
+                    //backgroundColor={bgColor}
+                    maw={window.innerWidth}
+                    mt={topNavHeight}
+                    mb={bottomNavHeight}
+                    overflow="hidden"
+                  >
+                    {children}
+                  </YStack>
+                  <XStack key={`navigation-padding-bottom-${bottomNavHeight}`} h={bottomNavHeight} />
+                </AutoAnimatedList>
 
                 {bottomChrome
                   ?
@@ -440,15 +412,23 @@ export function TabsNavigation({
                   </div>
                   : undefined}
               </YStack>
+
+
+              <GroupsSheet isPrimaryNavigation
+                open={groupsSheetOpen}
+                setOpen={setGroupsSheetOpen}
+              // selectedGroup={selectedGroup}
+              // primaryEntity={primaryEntity}
+              />
+              <GroupDetailsSheet />
+              <MediaSheet />
+              <AuthSheet />
+              <SettingsSheet />
             </NavigationContextProvider>
           </GroupContextProvider>
         </MediaContextProvider>
       </SettingsSheetContextProvider>
     </AuthSheetContextProvider>
   </Theme>
-
-  {/* <XStack position='absolute' bottom={5} right={5} zi={9999}>
-      <Button icon={Fullscreen} onPress={() => requestFullscreen()} />
-    </XStack> */}
-  ;
+    ;
 }

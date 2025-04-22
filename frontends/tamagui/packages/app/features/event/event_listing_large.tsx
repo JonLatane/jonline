@@ -8,7 +8,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import FlipMove from 'lumen5-react-flip-move';
 import EventCard from './event_card';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
@@ -87,73 +86,59 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
 
 
   return bigCalendar
-    ? <div key='bigcalendar-rendering' style={{ width: '100%',
-      display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+    ? <div key='bigcalendar-rendering' style={{
+      width: '100%',
+      display: 'flex', flexDirection: 'column', alignItems: 'center'
+    }}>
       <EventsFullCalendar events={events}
         scrollToTime={events[0]?.instances[0]?.startsAt} />
     </div>
     : renderInColumns
       ? [
-        <div key='pages-top' id='pages-top'>
-          <PageChooser {...pagination} />
-        </div>,
-        <div key={`multi-column-rendering-page-${pagination.page}`}>
-          {/* <YStack gap='$2' width='100%' > */}
-          <XStack mx='auto' jc='center' flexWrap='wrap'>
-            {/* <AnimatePresence> */}
-            {events.length === 0
-              ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
-              // animation='standard' {...standardAnimation}
-              >
-                <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                  <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
-                </YStack>
+        <PageChooser key='pages-top' id='pages-top' {...pagination} maxWidth='100%' />,
+        <XStack key={`multi-column-rendering-page-${pagination.page}`} mx='auto' jc='center' flexWrap='wrap'>
+          {/* <AnimatePresence> */}
+          {events.length === 0
+            ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
+            // animation='standard' {...standardAnimation}
+            >
+              <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
+              </YStack>
+            </XStack>
+            : undefined}
+          {paginatedEvents.map((event) => {
+            return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
+              animation='standard' {...standardAnimation}
+            >
+              <XStack w={eventCardWidth}
+                mx='$1' px='$1'>
+                <EventCard event={event} isPreview />
               </XStack>
-              : undefined}
-            {paginatedEvents.map((event) => {
-              return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
-                animation='standard' {...standardAnimation}
-              >
-                <XStack w={eventCardWidth}
-                  mx='$1' px='$1'>
-                  <EventCard event={event} isPreview />
-                </XStack>
-              </XStack>;
-            })}
-            {/* </FlipMove> */}
-            {/* </AnimatePresence> */}
-          </XStack>
-        </div>,
-        <div key='pages-bottom' id='pages-bottom'>
-          <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-            entityName={{ singular: 'event', plural: 'events' }} />
-        </div>,
+            </XStack>;
+          })}
+        </XStack>,
+        <PageChooser {...pagination} pageTopId='pages-top' key='pages-bottom' id='pages-bottom' showResultCounts maxWidth='100%'
+          entityName={{ singular: 'event', plural: 'events' }} />
+        ,
       ]
       : [
-        <div id='pages-top' key='pagest-top'>
-          <PageChooser {...pagination} />
-        </div>,
+        <PageChooser id='pages-top' key='pages-top' {...pagination} maxWidth='100%' />,
 
         events.length === 0
-          ? <div key='no-events-found' style={{ width: '100%', margin: 'auto' }}>
-            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-              <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
-              {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-            </YStack>
-          </div>
+          ? <YStack key='no-events-found' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+            <Heading size='$5' o={0.5} mb='$3'>No events found.</Heading>
+            {/* <Heading size='$2' o={0.5} ta='center'>The events you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
+          </YStack>
           : undefined,
 
         paginatedEvents.map((event) => {
-          return <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-            <XStack w='100%'>
-              <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
-            </XStack>
-          </div>
+          return <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} w='100%'>
+            <EventCard event={event} key={federateId(event.instances[0]?.id ?? '', currentServer)} isPreview />
+          </XStack>
         }),
 
-        <div key='pages-bottom' style={{ width: '100%', margin: 'auto' }}>
-          <PageChooser {...pagination} pageTopId='pages-top' showResultCounts
-            entityName={{ singular: 'event', plural: 'events' }} />
-        </div>
+        <PageChooser {...pagination} key='pages-bottom' pageTopId='pages-top' showResultCounts maxWidth='100%'
+          entityName={{ singular: 'event', plural: 'events' }} />
       ];
 }

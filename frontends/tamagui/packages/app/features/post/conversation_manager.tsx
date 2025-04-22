@@ -1,11 +1,11 @@
 import { Post } from '@jonline/api';
-import { AnimatePresence, Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
+import { Button, Heading, Spinner, Tooltip, XStack, YStack, dismissScrollPreserver, isClient, needsScrollPreservers, standardAnimation, useWindowDimensions } from '@jonline/ui';
 import { ListEnd } from '@tamagui/lucide-icons';
 import { useFederatedDispatch, useLocalConfiguration } from 'app/hooks';
-import { FederatedPost, RootState, federatedId, useServerTheme, loadPostReplies, setDiscussionChatUI, useRootSelector } from 'app/store';
+import { FederatedPost, federatedId, loadPostReplies, setDiscussionChatUI, useServerTheme } from 'app/store';
 import moment, { Moment } from 'moment';
 import React, { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
+import { AutoAnimatedList } from '.';
 import { ConversationContextType, useConversationContext } from './conversation_context';
 import PostCard from './post_card';
 import { usePostInteractionType } from './post_details_screen';
@@ -39,7 +39,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   const conversationContext = useConversationContext()!;
   const commentList = useConversationCommentList({ post, disableScrollPreserver, forStarredPost, conversationContext });
   return <YStack w='100%' key='comments'>
-    <FlipMove>
+    <AutoAnimatedList>
       {interactionType === 'post'
         ? <XStack animation='standard' {...standardAnimation}>
           <XStack f={1} />
@@ -94,8 +94,8 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
         </XStack>
         : undefined}
       {/* <ConversationCommentList post={post} /> */}
-      {commentList}
-    </FlipMove>
+      {...commentList}
+    </AutoAnimatedList>
   </YStack>;
 }
 
@@ -242,33 +242,24 @@ export function useConversationCommentList({
   let replyAboveCurrent: Post | undefined = undefined;
   const [interactionType] = usePostInteractionType();
   return [
-    <div key='top'>
-      <XStack key='top' id={post ? getTopId(federatedId(post)) : undefined} />
-    </div>,
+    <XStack key='top' id={post ? getTopId(federatedId(post)) : undefined} />,
     flattenedReplies.length == 0
       ? post && !loadingRepliesFor
-        ? <div key='no-replies' style={{
-          display: 'flex',
-          width: '100%',
-          paddingTop: forStarredPost ? 50
+        ? <Heading key='no-replies' size='$3' mx='auto' w='100%'
+          pt={forStarredPost ? 50
             : interactionType === 'post' ? 100
-              : window.innerHeight / 2 - 200,
-          paddingBottom: forStarredPost ? 50
-            : window.innerHeight / 2,
-        }}>
-          <Heading size='$3' mx='auto'>No replies yet.</Heading>
-        </div>
-        : <div key='no-replies' style={{
-          display: 'flex',
-          width: chatUI ? undefined : '100%',
-          paddingTop: forStarredPost ? 50
+              : window.innerHeight / 2 - 200}
+          pb={forStarredPost ? 50
+            : window.innerHeight / 2}
+        >No replies yet.</Heading>
+        : <XStack key='no-replies' w='100%'
+          pt={forStarredPost ? 50
             : interactionType === 'post' ? 100
-              : window.innerHeight / 2 - 200,
-          paddingBottom: forStarredPost ? 50
-            : window.innerHeight / 2,
-        }}>
+              : window.innerHeight / 2 - 200}
+          pb={forStarredPost ? 50
+            : window.innerHeight / 2}>
           <Spinner size='large' mx='auto' color={primaryColor} />
-        </div>
+        </XStack>
       : undefined,
     ...flattenedReplies.map(({ reply, postIdPath, parentPost, lastReplyTo }) => {
       let stripeColor = navColor;
@@ -277,7 +268,7 @@ export function useConversationCommentList({
         && parentPost?.id != replyAboveCurrent?.id
         && parentPost?.id != replyAboveCurrent?.replyToPostId;
       const hideTopMargin = chatUI && parentPost?.id != post?.id && (parentPost?.id == replyAboveCurrent?.id || parentPost?.id == replyAboveCurrent?.replyToPostId);
-      const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`}
+      const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`} w='100%'
         // w='100%' f={1}
         mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == post?.id) ? '$3' : 0}
       // animation='standard'
@@ -330,15 +321,9 @@ export function useConversationCommentList({
         </XStack>
       </XStack>;
       replyAboveCurrent = reply;
-      return <div key={`post-reply-${reply.id}`}>
-        {result}
-      </div>;
+      return result;
     }),
-    <div key='bottom'>
-      <XStack key='bottom' id={post ? getBottomId(federatedId(post)) : undefined} f={1} />
-    </div>,
-    <div key='scrollPreserver'>
-      <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
-    </div>
+    <XStack key='bottom' id={post ? getBottomId(federatedId(post)) : undefined} f={1} />,
+    <YStack key='scrollPreserver' h={showScrollPreserver && !disableScrollPreserver ? 100000 : 0} ></YStack>
   ];
 }

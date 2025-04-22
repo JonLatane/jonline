@@ -1,5 +1,5 @@
 import { PostContext } from '@jonline/api/index'
-import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useDebounce, useDebounceValue, useMedia } from '@jonline/ui'
+import { Button, Heading, Paragraph, ScrollView, Spinner, Tooltip, XStack, YStack, ZStack, useMedia } from '@jonline/ui'
 import { createSelector } from '@reduxjs/toolkit'
 import { ChevronRight, ChevronUp, CircleEllipsis, ListEnd } from '@tamagui/lucide-icons'
 import { AccountOrServerContextProvider } from 'app/contexts'
@@ -7,12 +7,12 @@ import { useGroupFromPath } from 'app/features/groups/group_home_screen'
 import { AppSection } from 'app/features/navigation/features_navigation'
 import { TabsNavigation } from 'app/features/navigation/tabs_navigation'
 import { Selector, useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch, useHash, useLocalConfiguration } from 'app/hooks'
-import { FederatedPost, RootState, accountID, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, serverID, setDiscussionChatUI, useDebouncedAccountOrServer, useServerTheme } from 'app/store'
+import { FederatedPost, RootState, loadEvent, loadPost, parseFederatedId, selectEventById, selectPostById, setDiscussionChatUI, useDebouncedAccountOrServer, useServerTheme } from 'app/store'
 import { HasServer, federateId } from 'app/store/federation'
 import { setDocumentTitle, themedButtonBackground } from 'app/utils'
 import React, { useEffect, useState } from 'react'
-import FlipMove from 'lumen5-react-flip-move'
 import { createParam } from 'solito'
+import { AutoAnimatedList } from '.'
 import { StarredPostCard } from '../navigation/starred_post_card'
 import { ConversationContextProvider, useStatefulConversationContext } from './conversation_context'
 import { ConversationManager, scrollToCommentsBottom } from './conversation_manager'
@@ -352,70 +352,65 @@ export function PostDetailsScreen() {
           <ConversationContextProvider value={conversationContext}>
             <YStack f={1} jc="center" ai="center" gap='$2' w='100%' maw={800}>
               <ScrollView w='100%'>
-                <FlipMove>
+                <AutoAnimatedList>
                   {interactionType === 'post'
-                    ? [
-                      showContext
+                    ? <>
+                      {showContext
                         ? federatedAncestorPostIds.map(
                           id =>
-                            <div key={`context-${id}`} style={{ display: 'flex', flexDirection: 'column' }}>
-                              <YStack w='100%' px='$3'>
-                                <XStack w='100%'>
-                                  <XStack mt='$7'>
-                                    <ChevronRight />
-                                  </XStack>
-                                  <YStack f={1} >
-                                    <StarredPostCard key={`post-card-ancestor-${id}`}
-                                      postId={id}
-                                      fullSize
-                                      showPermalink
-                                      hideCurrentUser />
-                                  </YStack>
+                            <YStack key={`context-${id}`} w='100%' px='$3'>
+                              <XStack w='100%'>
+                                <XStack mt='$7'>
+                                  <ChevronRight />
                                 </XStack>
-                                <XStack ml='$7'><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                              </YStack>
-                            </div>
+                                <YStack f={1} >
+                                  <StarredPostCard key={`post-card-ancestor-${id}`}
+                                    postId={id}
+                                    fullSize
+                                    showPermalink
+                                    hideCurrentUser />
+                                </YStack>
+                              </XStack>
+                              <XStack ml='$7'><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                            </YStack>
                         )
-                        : undefined,
+                        : undefined}
 
-                      federatedAncestorPostIds.length > 0
-                        ? <div key='show-hide-context' style={{ paddingLeft: 15, paddingRight: 15 }}>
-                          <Button onPress={() => setShowContext(!showContext)} mx='auto' px='$2' py='$1'
-                            animation='slow' mt={showContext ? '$3' : undefined}
-                            w='100%'
-                            icon={<ZStack w='$2' h='$2'>
-                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{ rotate: !showContext ? '0deg' : '-180deg' }]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{ rotate: showContext ? '0deg' : '180deg' }]}><ChevronUp /></XStack>
-                            </ZStack>}
-                          // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
-                          >
-                            <ZStack w='$15' h='$2'>
-                              <XStack m='auto' animation='standard' o={!showContext ? 1 : 0}>
-                                <Heading size='$4'>Show Context</Heading>
-                              </XStack>
-                              <XStack m='auto' animation='standard' o={showContext ? 1 : 0}>
-                                <Heading size='$4'>Hide Context</Heading>
-                              </XStack>
-                            </ZStack>
-                          </Button>
-                        </div>
-                        : undefined,
-                      <div key='subjectPost'>
-                        <XStack w='100%' px={mediaQuery.gtXxs ? '$3' : 0}
-                        // animation='standard' {...standardHorizontalAnimation}
+                      {federatedAncestorPostIds.length > 0
+                        ?
+                        <Button key='show-hide-context' onPress={() => setShowContext(!showContext)} mx='auto' px='$2' py='$1'
+                          animation='slow' mt={showContext ? '$3' : undefined}
+                          w='100%'
+                          icon={<ZStack w='$2' h='$2'>
+                            <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{ rotate: !showContext ? '0deg' : '-180deg' }]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                            <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{ rotate: showContext ? '0deg' : '180deg' }]}><ChevronUp /></XStack>
+                          </ZStack>}
+                        // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
                         >
-                          <PostCard key={`post-card-main-${serverPostId}`}
-                            post={subjectPost}
-                            onEditingChange={editHandler(subjectPost.id)}
-                            isSubjectPost />
-                        </XStack>
-                      </div>
-                    ]
+                          <ZStack w='$15' h='$2'>
+                            <XStack m='auto' animation='standard' o={!showContext ? 1 : 0}>
+                              <Heading size='$4'>Show Context</Heading>
+                            </XStack>
+                            <XStack m='auto' animation='standard' o={showContext ? 1 : 0}>
+                              <Heading size='$4'>Hide Context</Heading>
+                            </XStack>
+                          </ZStack>
+                        </Button>
+                        : undefined}
+
+                      <XStack key='subjectPost' w='100%'>
+                        <PostCard key={`post-card-main-${serverPostId}`}
+                          post={subjectPost}
+                          onEditingChange={editHandler(subjectPost.id)}
+                          isSubjectPost />
+                      </XStack>
+
+                    </>
                     : undefined}
-                  <div key='convo'>
-                    <ConversationManager key='convo' post={subjectPost} />
-                  </div>
-                </FlipMove>
+
+                  <ConversationManager key='convo' post={subjectPost} />
+
+                </AutoAnimatedList>
               </ScrollView>
 
 

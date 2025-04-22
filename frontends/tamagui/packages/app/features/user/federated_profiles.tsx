@@ -5,13 +5,13 @@ import { useAppDispatch, useAppSelector, useCurrentServer, useFederatedDispatch,
 import { FederatedUser, JonlineAccount, accountID, defederateAccounts, federateAccounts, loadUser, selectAllAccounts, selectUserById, setShowPinnedServers, useServerTheme } from 'app/store';
 import { themedButtonBackground } from "app/utils";
 import { useEffect, useState } from "react";
-import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from "solito/link";
 import { useFederatedAccountOrServer } from '../../hooks/account_or_server/use_federated_account_or_server';
 import { federateId } from '../../store/federation';
 import { useJonlineServerInfo } from "../accounts/recommended_server";
 import { AccountAvatarAndUsername } from "../navigation/pinned_server_selector";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
+import { AutoAnimatedList } from "../post";
 
 interface Props {
   user: FederatedUser;
@@ -58,7 +58,7 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
       {showOtherProfiles
         ? <XStack w='100%' animation='standard' {...standardAnimation}>
           <ScrollView horizontal w='100%'>
-            <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+            <AutoAnimatedList direction='horizontal'>
               {[
                 ...profiles.map(profile =>
                   <div key={`profile-${profile.userId}@${profile.host}`} style={{ marginRight: 3, marginLeft: 3 }}>
@@ -83,7 +83,7 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
                   </div>
                   : undefined
               ]}
-            </FlipMove>
+            </AutoAnimatedList>
           </ScrollView>
         </XStack>
         : undefined}

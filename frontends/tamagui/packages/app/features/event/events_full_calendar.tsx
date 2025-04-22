@@ -271,220 +271,223 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   // }, [nextEventId, prevEventId]);
   return (<>
 
-    <YStack zi={1}
-      // onKeyPress={undefined}
-      // key={`calendar-rendering-${serializedTimeFilter}`} 
-      mx='$1'
-      animation='standard' {...reverseStandardAnimation}
-      //  w='100%'
+    <YStack w='100%' px='$1'>
+      <YStack zi={1}
+        // onKeyPress={undefined}
+        // key={`calendar-rendering-${serializedTimeFilter}`} 
+        // mx='$1'
+        animation='standard' {...reverseStandardAnimation}
+        //  w='100%'
 
-      width={width ?? bigCalWidth}
-      height={bigCalHeight}
-      // p='$2'
+        // width={width ?? bigCalWidth}
+        w='100%'
+        height={bigCalHeight}
+        // p='$2'
 
-      backgroundColor='whitesmoke'
-      borderRadius='$3'>
+        backgroundColor='whitesmoke'
+        borderRadius='$3'>
 
-      {isEmpty
-        ? <YStack zi={2} position='absolute' top={100} left='50%'
-          transform='translate(-50%, 0)'
-        >
-          <Heading color='black' size='$12' ta='center'>No Events.</Heading>
-        </YStack>
-        : undefined}
-      <Text fontFamily='$body' color='black' width='100%'
-        pointerEvents={isEmpty ? 'none' : undefined}
-        opacity={isEmpty ? 0.4 : 1}>
-        <div
-          style={{
-            display: 'block',
-            width: width ?? bigCalWidth,//- 10,
-            height: bigCalHeight,// - 10,
-            // height: '100%'
-          }} >
+        {isEmpty
+          ? <YStack zi={2} position='absolute' top={100} left='50%'
+            transform='translate(-50%, 0)'
+          >
+            <Heading color='black' size='$12' ta='center'>No Events.</Heading>
+          </YStack>
+          : undefined}
+        <Text fontFamily='$body' color='black' width='100%'
+          pointerEvents={isEmpty ? 'none' : undefined}
+          opacity={isEmpty ? 0.4 : 1}>
+          <div
+            style={{
+              display: 'block',
+              // width: width ?? bigCalWidth,//- 10,
+              height: bigCalHeight,// - 10,
+              // height: '100%'
+            }} >
 
-          {calendarImplementation === 'fullcalendar' //|| calendarImplementation === undefined
-            ? <FullCalendar
+            {calendarImplementation === 'fullcalendar' //|| calendarImplementation === undefined
+              ? <FullCalendar
 
-              key={renderingKey}
-              selectable
-              dateClick={({ date, view }) => {
-                view.calendar.changeView('listDay', date);
-              }}
-              // scrollTime={modeStartTime}
-              scrollTime={scrollToTime.format('HH:mm:ss')}
-              {...weeklyOnly
-                ? {
-                  headerToolbar: {
-                    start: 'prev,next',
-                    center: 'title',
-                    end: mediaQuery.gtXs ? 'today' : undefined
-                    // end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
-                  },
-                }
-                : mediaQuery.xShort && mediaQuery.gtXs
+                key={renderingKey}
+                selectable
+                dateClick={({ date, view }) => {
+                  view.calendar.changeView('listDay', date);
+                }}
+                // scrollTime={modeStartTime}
+                scrollTime={scrollToTime.format('HH:mm:ss')}
+                {...weeklyOnly
                   ? {
                     headerToolbar: {
-                      start: 'prev,next, today',
+                      start: 'prev,next',
                       center: 'title',
-                      end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
+                      end: mediaQuery.gtXs ? 'today' : undefined
+                      // end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
                     },
-                    // footerToolbar: {
-                    //   start: 'today',
-                    //   center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                    //   end: 'listMonth',
-                    // }
-                  } : {
-                    headerToolbar: {
-                      start: 'prev', end: 'next',
-                      center: 'title',
-                    },
-                    footerToolbar: {
-                      start: 'today',
-                      center: 'dayGridMonth,timeGridWeek,timeGridDay',
-                      end: 'listMonth',
-                    }
-                  }}
-              plugins={weeklyOnly ?
-                [
-                  // daygridPlugin,
-                  timegridPlugin,
-                  // multimonthPlugin,
-                  // listPlugin,
-                  // interactionPlugin
-                ] : [
-                  daygridPlugin,
-                  timegridPlugin,
-                  multimonthPlugin,
-                  listPlugin,
-                  interactionPlugin
-                ]}
-              // width='100%'
-              height='100%'
-              events={fullCalendarEvents}
-              eventClick={disableSelection ? undefined : (modelEvent) => {
-                setModalInstanceId(modelEvent.event.id);
-                // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
-                // const isPrimaryServer = serverHost === currentServer?.host;
-                // const detailsLinkId = !isPrimaryServer
-                //   ? federateId(instanceId, serverHost)
-                //   : instanceId;
-                // setModalInstanceId(detailsLinkId);
-                // const groupLinkId = selectedGroup ?
-                //   (selectedGroup?.serverHost !== currentServer?.host
-                //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
-                //     : selectedGroup.shortname)
-                //   : undefined;
-                // const href = selectedGroup
-                //   ? `/g/${groupLinkId}/e/${detailsLinkId}`
-                //   : `/event/${detailsLinkId}`;
-                // window.location.pathname = href;
-              }}
-            />
-
-            : calendarImplementation === 'big-calendar' || calendarImplementation === undefined
-              ? <YStack w='100%' h='100%'>
-                <BigCalendar
-                  // key={renderingKey}
-                  // key={`calendar-rendering-${scrollToTime}`}
-                  localizer={localizer}
-
-                  // defaultDate={new Date()}
-                  defaultView={weeklyOnly ? 'week' : undefined}
-                  views={weeklyOnly ? ['week'] : undefined}//mediaQuery.gtSm ? undefined : ['month', 'week', 'agenda']}
-                  formats={{
-                    // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
-                    timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
-
-                  }}
-
-                  scrollToTime={scrollToTime.toDate()}
-                  defaultDate={scrollToTime.toDate()}
-                  events={allEvents.map((event) => {
-                    const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
-                    return {
-                      serverHost: event.serverHost,
-                      resource: { event, federatedId },
-                      title: event.post?.title,
-                      selected: true,
-                      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
-                    }
-                  })}
-                  eventPropGetter={(event) => {
-                    // console.log('BigCalendar EventPropGetter', event);
-                    const serverEventId = parseFederatedId(event.resource.federatedId).id;
-                    const starred = starredPostIds.includes(
-                      federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                    );
-                    // event.resource.
-                    return {
-                      className: starred ? serverColors[event.serverHost]?.isDark ? 'starred lightText' : 'starred darkText' : undefined,
-                      style: {
-                        backgroundColor: hasNewEvent && serverEventId
-                          ? `${serverColors[event.serverHost]?.color}33`
-                          : serverColors[event.serverHost]?.color,
-                        // opacity: hasNewEvent && !event.id ? 0.5 : 1,
-                        color: serverColors[event.serverHost]?.textColor,
-                        fontSize: mediaQuery.gtXxs ? undefined : '11px'
+                  }
+                  : mediaQuery.xShort && mediaQuery.gtXs
+                    ? {
+                      headerToolbar: {
+                        start: 'prev,next, today',
+                        center: 'title',
+                        end: 'dayGridMonth,timeGridWeek,timeGridDay, listMonth',
+                      },
+                      // footerToolbar: {
+                      //   start: 'today',
+                      //   center: 'dayGridMonth,timeGridWeek,timeGridDay',
+                      //   end: 'listMonth',
+                      // }
+                    } : {
+                      headerToolbar: {
+                        start: 'prev', end: 'next',
+                        center: 'title',
+                      },
+                      footerToolbar: {
+                        start: 'today',
+                        center: 'dayGridMonth,timeGridWeek,timeGridDay',
+                        end: 'listMonth',
                       }
-                    }
-                  }}
-                  onSelectEvent={disableSelection ? undefined : (modelEvent) => {
-                    setModalInstanceId(modelEvent.resource.federatedId);
-                  }}
-                  dayPropGetter={(date) => {
-                    return {
-                      style: {
-                        // borderColor: 'black',
-                        backgroundColor: moment(date).isBefore(earliestDate)
-                          || moment(date).isAfter(latestDate)
-                          ? '#F0F0F0'
-                          : moment(date).startOf('day').unix() === moment().startOf('day').unix()
-                            ? `${navLightColor}44`
-                            : '#FFFFFF'
-                      }
-                    }
+                    }}
+                plugins={weeklyOnly ?
+                  [
+                    // daygridPlugin,
+                    timegridPlugin,
+                    // multimonthPlugin,
+                    // listPlugin,
+                    // interactionPlugin
+                  ] : [
+                    daygridPlugin,
+                    timegridPlugin,
+                    multimonthPlugin,
+                    listPlugin,
+                    interactionPlugin
+                  ]}
+                // width='100%'
+                height='100%'
+                events={fullCalendarEvents}
+                eventClick={disableSelection ? undefined : (modelEvent) => {
+                  setModalInstanceId(modelEvent.event.id);
+                  // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
+                  // const isPrimaryServer = serverHost === currentServer?.host;
+                  // const detailsLinkId = !isPrimaryServer
+                  //   ? federateId(instanceId, serverHost)
+                  //   : instanceId;
+                  // setModalInstanceId(detailsLinkId);
+                  // const groupLinkId = selectedGroup ?
+                  //   (selectedGroup?.serverHost !== currentServer?.host
+                  //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
+                  //     : selectedGroup.shortname)
+                  //   : undefined;
+                  // const href = selectedGroup
+                  //   ? `/g/${groupLinkId}/e/${detailsLinkId}`
+                  //   : `/event/${detailsLinkId}`;
+                  // window.location.pathname = href;
+                }}
+              />
 
-                  }}
-                  style={{ width: '100%', height: '100%' }}
-                />
-              </YStack>
-              : calendarImplementation === 'daypilot'
-                ? <YStack h='100%' overflow="hidden">
-                  <DayPilotCalendar
-                    viewType={"Week"}
-                    // startDate={"2024-09-07"}
-                    timeRangeSelectedHandling={"Disabled"}
+              : calendarImplementation === 'big-calendar' || calendarImplementation === undefined
+                ? <YStack w='100%' h='100%'>
+                  <BigCalendar
+                    // key={renderingKey}
+                    // key={`calendar-rendering-${scrollToTime}`}
+                    localizer={localizer}
+
+                    // defaultDate={new Date()}
+                    defaultView={weeklyOnly ? 'week' : undefined}
+                    views={weeklyOnly ? ['week'] : undefined}//mediaQuery.gtSm ? undefined : ['month', 'week', 'agenda']}
+                    formats={{
+                      // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
+                      timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
+
+                    }}
+
+                    scrollToTime={scrollToTime.toDate()}
+                    defaultDate={scrollToTime.toDate()}
                     events={allEvents.map((event) => {
-                      const starred = starredPostIds.includes(
-                        federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                      );
+                      const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
                       return {
-                        id: federateId(event.instances[0]?.id ?? '', event.serverHost),
-                        text: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
-                        barColor: serverColors[event.serverHost],
-                        start: moment(event.instances[0]?.startsAt ?? 0).utc(false).toDate(),
-                        end: moment(event.instances[0]?.endsAt ?? 0).utc(false).toDate()
+                        serverHost: event.serverHost,
+                        resource: { event, federatedId },
+                        title: event.post?.title,
+                        selected: true,
+                        start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
+                        end: moment(event.instances[0]?.endsAt ?? 0).toDate()
                       }
                     })}
-                    onEventClick={disableSelection ? undefined : (args: any) => {
-                      console.log('DayPilotCalendar onEvent Click', args);
-                      // debugger;
-                      setModalInstanceId(args?.e?.data?.id);
+                    eventPropGetter={(event) => {
+                      // console.log('BigCalendar EventPropGetter', event);
+                      const serverEventId = parseFederatedId(event.resource.federatedId).id;
+                      const starred = starredPostIds.includes(
+                        federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                      );
+                      // event.resource.
+                      return {
+                        className: starred ? serverColors[event.serverHost]?.isDark ? 'starred lightText' : 'starred darkText' : undefined,
+                        style: {
+                          backgroundColor: hasNewEvent && serverEventId
+                            ? `${serverColors[event.serverHost]?.color}33`
+                            : serverColors[event.serverHost]?.color,
+                          // opacity: hasNewEvent && !event.id ? 0.5 : 1,
+                          color: serverColors[event.serverHost]?.textColor,
+                          fontSize: mediaQuery.gtXxs ? undefined : '11px'
+                        }
+                      }
                     }}
-                    // height='100%'
-                    // heightSpec='Parent100Pct'
+                    onSelectEvent={disableSelection ? undefined : (modelEvent) => {
+                      setModalInstanceId(modelEvent.resource.federatedId);
+                    }}
+                    dayPropGetter={(date) => {
+                      return {
+                        style: {
+                          // borderColor: 'black',
+                          backgroundColor: moment(date).isBefore(earliestDate)
+                            || moment(date).isAfter(latestDate)
+                            ? '#F0F0F0'
+                            : moment(date).startOf('day').unix() === moment().startOf('day').unix()
+                              ? `${navLightColor}44`
+                              : '#FFFFFF'
+                        }
+                      }
 
-                    style={{ width: '100%', height: '100%', overflow: 'hidden' }}
-                  // onEventClick={onEventClick}
-                  // controlRef={setCalendar}
+                    }}
+                    style={{ width: '100%', height: '100%' }}
                   />
                 </YStack>
-                : undefined}
+                : calendarImplementation === 'daypilot'
+                  ? <YStack h='100%' overflow="hidden">
+                    <DayPilotCalendar
+                      viewType={"Week"}
+                      // startDate={"2024-09-07"}
+                      timeRangeSelectedHandling={"Disabled"}
+                      events={allEvents.map((event) => {
+                        const starred = starredPostIds.includes(
+                          federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                        );
+                        return {
+                          id: federateId(event.instances[0]?.id ?? '', event.serverHost),
+                          text: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
+                          barColor: serverColors[event.serverHost],
+                          start: moment(event.instances[0]?.startsAt ?? 0).utc(false).toDate(),
+                          end: moment(event.instances[0]?.endsAt ?? 0).utc(false).toDate()
+                        }
+                      })}
+                      onEventClick={disableSelection ? undefined : (args: any) => {
+                        console.log('DayPilotCalendar onEvent Click', args);
+                        // debugger;
+                        setModalInstanceId(args?.e?.data?.id);
+                      }}
+                      // height='100%'
+                      // heightSpec='Parent100Pct'
 
-        </div>
-      </Text>
+                      style={{ width: '100%', height: '100%', overflow: 'hidden' }}
+                    // onEventClick={onEventClick}
+                    // controlRef={setCalendar}
+                    />
+                  </YStack>
+                  : undefined}
+
+          </div>
+        </Text>
+      </YStack>
     </YStack>
     <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
 

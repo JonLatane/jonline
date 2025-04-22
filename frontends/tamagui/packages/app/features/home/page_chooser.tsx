@@ -4,7 +4,7 @@ import { Pagination, maxPagesToRender, useComponentKey, useProvidedAccountOrServ
 import { useServerTheme } from 'app/store';
 import { highlightedButtonBackground } from 'app/utils';
 import React, { useEffect } from "react";
-import FlipMove from 'lumen5-react-flip-move';
+import { AutoAnimatedList } from '../post';
 
 export type Pluralizable = {
   singular: string;
@@ -21,6 +21,7 @@ export const PageChooser: React.FC<Pagination<any> & {
   width?: string | number;
   maxWidth?: string | number;
   height?: string | number;
+  id?: string;
   pageTopId?: string;
   noAutoScroll?: boolean;
   showResultCounts?: boolean;
@@ -36,6 +37,7 @@ export const PageChooser: React.FC<Pagination<any> & {
 
   maxWidth = undefined,
   height = undefined,
+  id,
   pageTopId,
   noAutoScroll = false,
   showResultCounts = false,
@@ -90,9 +92,9 @@ export const PageChooser: React.FC<Pagination<any> & {
     //   ? `Showing page ${lowerPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`
     //   : `Showing pages ${lowerPage} - ${upperPage} of ${pageCount}. ${hasNextPage ? 'Press for more.' : 'No more pages.'}`;
 
-    return <YStack w={width} h={height} maxWidth={maxWidth} ai='center'>
+    return <YStack w={width} id={id} h={height} maxWidth={maxWidth} ai='center'>
       <ScrollView f={1} w='100%' horizontal>
-        <FlipMove style={{ display: 'flex', alignItems: 'center' }}>
+        <AutoAnimatedList direction='horizontal'>
           {pageCount > 1 || currentPage > 0
             ? [...Array(pageCount).keys()].map((page) =>
               <Button key={pageButtonId(page)} mr='$1'
@@ -119,7 +121,7 @@ export const PageChooser: React.FC<Pagination<any> & {
               </Button>
             )
             : undefined}
-        </FlipMove>
+        </AutoAnimatedList>
       </ScrollView>
       {showResultCounts && resultCount > 0
         ? <Paragraph mx='auto' mt='$1' pt='$1' size='$1'>

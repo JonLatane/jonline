@@ -4,8 +4,7 @@ import { ArrowLeft, ArrowRight, Delete } from '@tamagui/lucide-icons';
 import React from 'react';
 import { MediaChooser } from '../media/media_chooser';
 import { MediaRenderer } from '../media/media_renderer';
-import { ToggleRow } from 'app/components';
-import FlipMove from 'lumen5-react-flip-move';
+import { AutoAnimatedList, ToggleRow } from 'app/components';
 
 export type PostMediaManagerProps = {
   entityName?: string;
@@ -40,6 +39,7 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
     setMedia(updatedMedia);
   }
   return <YStack key='post-media-manager' ac='center'
+    maw='100%'
     jc='center'
     marginHorizontal='$5'
     p='$3'
@@ -48,7 +48,7 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
   >
     {media.length > 0 ? <ScrollView horizontal w='100%'>
       {/* <XStack gap='$2'> */}
-      <FlipMove style={{ display: 'flex', gap: 10, }}>
+      <AutoAnimatedList direction='horizontal' gap={10}>
         {media.map((mediaRef, index) =>
           <div key={`media-renderer-${mediaRef.id}`}>
             <ZStack w={mediaQuery.gtXs ? 350 : 148} h={mediaQuery.gtXs ? 280 : 195}>
@@ -81,7 +81,7 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
             </ZStack>
           </div>
         )}
-      </FlipMove>
+      </AutoAnimatedList>
       {/* </XStack> */}
     </ScrollView> : undefined}
     <MediaChooser selectedMedia={media} onMediaSelected={setMedia} multiselect />

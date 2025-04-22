@@ -490,16 +490,18 @@ export const PostCard: React.FC<PostCardProps> = ({
                         flexDirection="row-reverse"
                       >
                         <XStack gap='$2' flexWrap="wrap" ml='auto' maw='100%'>
-                          {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC ? undefined : <XStack key='visibility-edit' my='auto' ml='auto' pl='$2'>
-                            <VisibilityPicker
-                              id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
-                              label='Post Visibility'
-                              visibility={visibility}
-                              onChange={setEditedVisibility}
-                              visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server)}
-                              readOnly={!editing || previewingEdits}
-                            />
-                          </XStack>}
+                          {post.replyToPostId && !editing && post.visibility === Visibility.GLOBAL_PUBLIC
+                            ? undefined
+                            : <XStack key='visibility-edit' my='auto' ml='auto' py='$2' pl='$2'>
+                              <VisibilityPicker
+                                id={`visibility-picker-${post.id}${isPreview ? '-preview' : ''}`}
+                                label='Post Visibility'
+                                visibility={visibility}
+                                onChange={setEditedVisibility}
+                                visibilityDescription={v => postVisibilityDescription(v, selectedGroup, server)}
+                                readOnly={!editing || previewingEdits}
+                              />
+                            </XStack>}
                           <XStack key='shareable-edit' my='auto' ml='auto' pb='$1'>
                             <ShareableToggle value={shareable}
                               setter={setEditedShareable}

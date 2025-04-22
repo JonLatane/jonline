@@ -187,6 +187,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
       animation='standard'
       // w={250}
       // h={50}
+      w='100%'
       backgroundColor={selected ? navColor : undefined}
       scale={0.9}
       // hoverStyle={{ scale: 0.925 }}

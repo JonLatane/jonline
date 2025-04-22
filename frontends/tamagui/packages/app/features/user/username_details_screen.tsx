@@ -1,14 +1,13 @@
 import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
-import { PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
+import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { useAppSelector } from '../../hooks/store_hooks';
@@ -365,13 +364,9 @@ export function UsernameDetailsScreen() {
       <YStack f={1} jc="center" ai="center" gap='$2' my='$2' w='100%'>
         {user ? <>
           {/* <ScrollView w='100%'> */}
-          <FlipMove style={{
+          <AutoAnimatedList style={{
             width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignSelf: 'center',
             maxWidth: 1400,
-            alignItems: 'center'
           }}>
             {/* <YStack maw={1400} w='100%' als='center' p='$2' marginHorizontal='auto' ai='center'> */}
             <div key='user-card' style={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', alignSelf: 'center', marginBottom: 10 }}>
@@ -464,8 +459,7 @@ export function UsernameDetailsScreen() {
                         <ScrollView horizontal w='100%'>
                           <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
 
-                            <FlipMove style={{ display: 'flex' }}>
-
+                            <AutoAnimatedList direction='horizontal'>
                               {loadingEvents && allEvents.length == 0
                                 ? <XStack key='spinner' mx={window.innerWidth / 2 - 50} my='auto'>
                                   <Spinner size='large' color={navColor} />
@@ -487,7 +481,7 @@ export function UsernameDetailsScreen() {
                                   </XStack>
                                 </span>)}
 
-                            </FlipMove>
+                            </AutoAnimatedList>
                           </XStack>
                         </ScrollView>
                       </div>]
@@ -519,7 +513,7 @@ export function UsernameDetailsScreen() {
 
                 <YStack maw={800} w='100%' als='center'>
                   <YStack ai='center' w='100%'>
-                    <FlipMove style={{ width: '100%' }}>
+                    <AutoAnimatedList style={{ width: '100%' }}>
 
                       <div key='posts-pagination'
                         style={{ width: 'auto', maxWidth: '100%', marginTop: 10, marginLeft: 'auto', marginRight: 'auto', paddingLeft: 8, paddingRight: 8 }}
@@ -537,7 +531,7 @@ export function UsernameDetailsScreen() {
                           <PostCard post={post} isPreview forceExpandPreview />
                         </div>
                       )}
-                    </FlipMove>
+                    </AutoAnimatedList>
                   </YStack>
                   {showScrollPreserver ? <YStack h={100000} /> : undefined}
                 </YStack>
@@ -573,7 +567,7 @@ export function UsernameDetailsScreen() {
               : undefined} */}
             {/* </YStack> */}
 
-          </FlipMove>
+          </AutoAnimatedList>
           {/* </ScrollView> */}
         </>
           : userLoadFailed

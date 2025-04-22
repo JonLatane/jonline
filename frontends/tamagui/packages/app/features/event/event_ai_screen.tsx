@@ -7,7 +7,6 @@ import { FederatedEvent, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { useBigCalendar } from "app/hooks/configuration_hooks";
-import FlipMove from 'lumen5-react-flip-move';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 
@@ -19,7 +18,7 @@ import OpenAI from 'openai';
 import { isSafari } from '../../../ui/src/global';
 import { useCreationAccountOrServer } from '../../hooks/account_or_server/use_creation_account_or_server';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
-import { TamaguiMarkdown } from '../post';
+import { AutoAnimatedList, TamaguiMarkdown } from '../post';
 import { EventListingLarge } from './event_listing_large';
 
 export type EventAIScreenProps = {}
@@ -457,7 +456,7 @@ ${aiText}
         // mb={bigCalendar && mediaQuery.xShort ? '$15' : 0}
         px='$3'
         maw={2000}>
-        <FlipMove style={{ width: '100%', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: 25 }}>
+        <AutoAnimatedList gap={25} style={{ width: '100%', minHeight: '100%' }}>
           {[
             aiMode === 'inputText'
               ? <div key='input-text'>
@@ -663,7 +662,7 @@ ${aiText}
               ? eventListing//<EventListingLarge events={resultEvents} />//calendarEventsView
               : undefined
           ]}
-        </FlipMove>
+        </AutoAnimatedList>
 
       </YStack >
     </TabsNavigation >

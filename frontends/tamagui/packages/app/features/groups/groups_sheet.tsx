@@ -7,7 +7,6 @@ import { Selector, useAppSelector, useComponentKey, useCurrentServer, useFederat
 import { FederatedGroup, JonlineAccount, RootState, accountID, federateId, federatedId, useServerTheme, optFederatedId, optServerID, parseFederatedId, pinAccount, selectAccountById, selectAllGroups, selectAllServers, unpinAccount, useRootSelector, FederatedPost } from 'app/store';
 import { hasPermission, themedButtonBackground } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
 import { AuthSheetButton } from '../accounts/auth_sheet_button';
 import { PageChooser } from '../home/page_chooser';
@@ -18,6 +17,7 @@ import { GroupButton } from './group_buttons';
 import { GroupPostChrome } from './group_post_manager';
 import { createSelector } from '@reduxjs/toolkit';
 import { GroupPost } from '../../../api/generated/posts';
+import { AutoAnimatedList } from '../post';
 
 export type GroupsSheetProps = {
   open: boolean;
@@ -61,12 +61,12 @@ const selectServerHostFilteredGroups = (
   createSelector(
     [(state: RootState) =>
       serverHostFilter
-    ? selectAllGroups(state.groups).filter(g => g.serverHost === serverHostFilter)
-    : undefined
+        ? selectAllGroups(state.groups).filter(g => g.serverHost === serverHostFilter)
+        : undefined
     ],
     (data) => data
   );
-  // serverHostFilteredGroups
+// serverHostFilteredGroups
 
 export function GroupsSheet({
   open, setOpen,
@@ -161,7 +161,7 @@ export function GroupsSheet({
     ? selectAllServers(state.servers).find(s => s.host === primaryEntity.serverHost)
     : undefined);
   const pinnedAccountsAndServers = usePinnedAccountsAndServers();
-  const primaryEntityAccount = pinnedAccountsAndServers.find(aos => 
+  const primaryEntityAccount = pinnedAccountsAndServers.find(aos =>
     aos.server?.host === primaryEntity?.serverHost)?.account;
   const canCreateGroups = pinnedAccountsAndServers.some(aos =>
     hasPermission(aos.account?.user, Permission.CREATE_GROUPS)
@@ -254,8 +254,8 @@ export function GroupsSheet({
     dismissOnSnapToBottom
     zIndex={100001}
   >
-    <Sheet.Overlay />
-    <Sheet.Frame>
+    <Sheet.Overlay zi={1000} />
+    <Sheet.Frame zi={1000}>
       <Sheet.Handle />
       {/* <XStack gap='$4' paddingHorizontal='$3' mb='$2'>
               <XStack f={1} />
@@ -328,21 +328,19 @@ export function GroupsSheet({
         {disableSelection || serverHostFilter ? undefined : <PinnedServerSelector show transparent simplified />}
       </YStack>
       <Sheet.ScrollView px="$3" py='$2' w='100%'>
-        <FlipMove style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }}>
+        <AutoAnimatedList style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }} gap={0}>
 
-          {open || true
-            ? [
-              <div id={topPaginationId} key='pagination-top' style={{ marginBottom: 5 }}>
-                <PageChooser {...pagination} width='auto' maxWidth='100%' />
-              </div>,
-              paginatedArrangedGroups.length === 0
-                ? <div key='no-groups' style={{ width: '100%' }}>
-                  <YStack width='100%' maw={600} jc="center" ai="center">
-                    <Heading size='$5' o={0.5} mb='$3'>No groups found.</Heading>
-                  </YStack>
-                </div>
-                : undefined,
-              ...paginatedArrangedGroups.map((group, index) => {
+          {open || openDebounced
+            ? <>
+              <PageChooser id={topPaginationId} key='pagination-top' {...pagination} width='auto' maxWidth='100%' />
+              {paginatedArrangedGroups.length === 0
+                ?
+                <YStack key='no-groups' width='100%' maw={600} jc="center" ai="center">
+                  <Heading size='$5' o={0.5} mb='$3'>No groups found.</Heading>
+                </YStack>
+
+                : undefined}
+              {...paginatedArrangedGroups.map((group, index) => {
                 const prevGroup = index > 0 ? paginatedArrangedGroups[index - 1] : undefined;
                 const prevWasTop = !prevGroup || topGroups.some(tg => federatedId(tg) == federatedId(prevGroup));
                 const isTop = topGroups.some(tg => federatedId(tg) == federatedId(group));
@@ -358,39 +356,39 @@ export function GroupsSheet({
                 return [
                   prevWasTop && !isTop
                     ? isRecent
-                      ? <div key='recent-groups'>
-                        <Heading size='$4' mt='$3' als='center'>Recent Groups</Heading>
-                      </div>
+                      ? <Heading key='recent-groups' size='$4' mt='$3' als='center'>
+                        Recent Groups
+                      </Heading>
                       : moreGroupsHeader
                     : prevWasRecent && !isRecent
                       ? moreGroupsHeader
                       : undefined,
-                  <div key={`groupButton-${federatedId(group)}`}>
-                    <GroupButton
-                      group={group}
-                      onGroupSelected={onGroupSelected}
-                      selected={federatedId(group) === optFederatedId(selectedGroup)}
-                      onShowInfo={() => {
-                        setInfoGroupId(federatedId(group));
-                        // setInfoOpen(true);
-                      }}
-                      setOpen={setOpen}
-                      disabled={disableSelection}
-                      hideInfoButton={hideInfoButtons}
-                      extraListItemChrome={extraListItemChrome}
-                      hideLeaveButton={hideLeaveButtons}
-                    />
-                  </div>,
+                  <GroupButton
+                    key={`groupButton-${federatedId(group)}`}
+                    group={group}
+                    onGroupSelected={onGroupSelected}
+                    selected={federatedId(group) === optFederatedId(selectedGroup)}
+                    onShowInfo={() => {
+                      setInfoGroupId(federatedId(group));
+                      // setInfoOpen(true);
+                    }}
+                    setOpen={setOpen}
+                    disabled={disableSelection}
+                    hideInfoButton={hideInfoButtons}
+                    extraListItemChrome={extraListItemChrome}
+                    hideLeaveButton={hideLeaveButtons}
+                  />
+                  ,
                 ]
-              }).flat(),
+              }).flat()}
               <div key='pagination-bottom' style={{ marginBottom: 5 }}>
                 <PageChooser {...pagination} width='auto' maxWidth='100%' pageTopId={topPaginationId}
                   showResultCounts
                   entityName={{ singular: 'group', plural: 'groups' }} />
               </div>
-            ]
+            </>
             : undefined}
-        </FlipMove>
+        </AutoAnimatedList>
       </Sheet.ScrollView>
       {canCreateGroups
         ? <CreateGroupSheet />

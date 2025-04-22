@@ -5,13 +5,13 @@ import { usePostPages } from 'app/hooks/pagination/post_pagination_hooks';
 import { federatedId, useServerTheme } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
 import { PageChooser } from './page_chooser';
+import { AutoAnimatedList } from '../post';
 
 export function PostsScreen() {
   return <BasePostsScreen />;
@@ -66,50 +66,37 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       loading={loadingPosts}
     >
       <YStack f={1} w='100%' jc="center" ai="center" py="$2"
-        px={mediaQuery.gtXxs ? '$3' : 0}
         maw={800} space>
         <YStack w='100%'>
-          <FlipMove>
-
-            <div id='pages-create' key='pages-create' style={{ display: 'flex' }}>
-              <XStack w='100%'>
-                <PageChooser {...pagination} width='auto' />
-                <XStack f={1} />
-                <XStack>
-                  <DynamicCreateButton showPosts />
-                </XStack>
+          <AutoAnimatedList>
+            <XStack id='pages-create' key='pages-create' w='100%'>
+              <PageChooser {...pagination} width='auto' />
+              <XStack f={1} />
+              <XStack>
+                <DynamicCreateButton showPosts />
               </XStack>
-              {/* <div style={{ marginLeft: 'auto' }}>
-              </div> */}
-            </div>
+            </XStack>
 
             {firstPageLoaded || allPosts.length > 0
               ? allPosts.length === 0
-                ? <div key='no-posts-found' style={{ width: '100%', marginLeft: 'auto', marginRight: 'auto' }}>
-                  <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                    <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
-                    {/* <Heading size='$2' o={0.5} ta='center'>The posts you're looking for may either not exist, not be visible to you, or be hidden by moderators.</Heading> */}
-                  </YStack>
-                </div>
+                ? <YStack key='no-posts-found' width='100%' maw={600} jc="center" ai="center" mx='auto'>
+                  <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
+                </YStack>
                 : undefined
               : undefined}
             {paginatedPosts.map((post) => {
-              return <div key={`post-${federatedId(post)}`} style={{ width: '100%' }}>
-                <XStack w='100%'
-                  animation='standard' {...standardAnimation}>
-                  <PostCard post={post} isPreview />
-                </XStack>
-              </div>;
+              return <XStack key={`post-${federatedId(post)}`} w='100%'
+                animation='standard' {...standardAnimation}>
+                <PostCard post={post} isPreview />
+              </XStack>
+                ;
             })}
             {pagination.pageCount > 1
-              ? <div key='page-chooser-bottom'
-                style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
-                <PageChooser {...pagination} pageTopId='pages-create' showResultCounts
-                  entityName={{ singular: 'post', plural: 'posts' }}
-                />
-              </div>
+              ? <PageChooser key='page-chooser-bottom' {...pagination} pageTopId='pages-create' showResultCounts
+                entityName={{ singular: 'post', plural: 'posts' }}
+              />
               : undefined}
-          </FlipMove>
+          </AutoAnimatedList>
         </YStack>
         {showScrollPreserver ? <YStack h={100000} /> : undefined}
       </YStack>

@@ -1,11 +1,10 @@
 import { Group, MediaReference, Moderation, Permission, Visibility } from '@jonline/api';
 import { Button, Heading, Image, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from '@jonline/ui';
 import { ChevronLeft, Cog, FileImage } from '@tamagui/lucide-icons';
-import { PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
+import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationDispatch, useMediaUrl } from 'app/hooks';
 import { JonlineServer, RootState, actionFailed, createGroup, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { hasPermission, pending, themedButtonBackground } from 'app/utils';
-import FlipMove from 'lumen5-react-flip-move';
 import React, { useEffect, useState } from 'react';
 import { TextInput } from 'react-native';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
@@ -279,7 +278,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                 <Heading size='$1' color='red' p='$2' ac='center' jc='center' ta='center'>{postsState.errorMessage}</Heading> : undefined} */}
 
                 <XStack f={1} mb='$4' gap="$2" maw={600} w='100%' als='center' paddingHorizontal="$5">
-                  <FlipMove style={{ width: '100%' }}>
+                  <AutoAnimatedList style={{ width: '100%' }}>
                     {/* <YStack gap="$2" w='100%'> */}
                     <div key='name-media' style={{ width: '100%', marginBottom: 8 }}>
                       <XStack>
@@ -373,7 +372,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                     {/* {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
                     {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined} */}
                     {/* </YStack> */}
-                  </FlipMove>
+                  </AutoAnimatedList>
                 </XStack>
               </Sheet.ScrollView>
             </YStack>

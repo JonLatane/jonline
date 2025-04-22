@@ -1,9 +1,8 @@
-import { AlertDialog, AnimatePresence, Button, Heading, Paragraph, Sheet, Spinner, Text, Tooltip, XStack, YStack, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AlertDialog, AnimatePresence, Button, Heading, Paragraph, Sheet, Spinner, Tooltip, Text, XStack, YStack, standardAnimation, useMedia, useWindowDimensions } from '@jonline/ui';
 import { useCreationDispatch, usePaginatedRendering } from 'app/hooks';
 import { RootState, deleteMedia, loadMediaPage, selectMediaById, useRootSelector, useServerTheme } from 'app/store';
 import React, { useEffect, useState } from 'react';
 
-import { overlayAnimation } from '@jonline/ui';
 
 import { ChevronLeft, Info, Trash, Wand2 } from '@tamagui/lucide-icons';
 
@@ -11,10 +10,9 @@ import { MediaReference, Permission, Post } from '@jonline/api';
 import { AccountOrServerContextProvider, MediaRef, useMediaContext } from 'app/contexts';
 import { useMediaPages } from 'app/hooks/pagination/media_pagination_hooks';
 import { highlightedButtonBackground } from 'app/utils';
-import FlipMove from 'lumen5-react-flip-move';
 import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { PageChooser } from '../home/page_chooser';
-import { PostMediaRenderer } from '../post';
+import { AutoAnimatedList, PostMediaRenderer } from '../post';
 import { MediaRenderer } from './media_renderer';
 import { MediaUploader } from './media_uploader';
 
@@ -73,7 +71,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
       : undefined
   );
 
-  const [showInfo, setShowInfo] = useState(false);
+  const [showInfo, setShowInfo] = useState(true);
 
   useEffect(() => {
     if (uploadedMediaId
@@ -177,7 +175,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                   </YStack>
                   : undefined
                 : <>
-                  <FlipMove style={{ width: '100%', display: 'flex', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <AutoAnimatedList direction='horizontal' style={{ width: '100%', flexWrap: 'wrap', justifyContent: 'center' }}>
                     {open ?
                       viewerMediaId
                         ? <div key={`media-viewer-${viewerMediaId}`} style={{ margin: 'auto', display: 'inline-block' }}>
@@ -275,6 +273,20 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                       setDeletingMediaId(item.id);
                                     }}
                                   />
+                                  {/* {deletingMediaId === item.id
+                                    ? */}
+                                  {/* <Popover open={true} onOpenChange={(o) => o ? undefined : setDeletingMediaId(undefined)}>
+                                    <Popover.Content
+                                      zIndex={10000000000}
+                                      // sideOffset={5}
+                                      animation='standard'
+                                      {...overlayAnimation}
+                                    >
+                                      <Popover.Arrow />
+                                      <Paragraph>Are you sure?</Paragraph>
+                                    </Popover.Content>
+                                  </Popover> */}
+                                  {/* : undefined} */}
                                 </XStack>
                               </YStack>
                             </div>;
@@ -286,7 +298,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                           </div>
                         ]
                       : undefined}
-                  </FlipMove>
+                  </AutoAnimatedList>
                 </>}
             </YStack>
           </Sheet.ScrollView>
@@ -294,12 +306,13 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
       </Sheet>
 
       <AlertDialog open={!!deletingMediaId} onOpenChange={(o) => o ? undefined : setDeletingMediaId(undefined)}>
-        <AlertDialog.Portal zIndex={1000000}>
-          <AlertDialog.Overlay
-            key="overlay"
-            animation='standard'
-            {...overlayAnimation}
-          />
+        {/* <AlertDialog.Overlay
+          key="overlay"
+          animation='standard'
+        // {...overlayAnimatio}
+        /> */}
+        {/* {!!deletingMediaId ? <AlertDialog.Overlay /> : undefined} */}
+        <AlertDialog.Portal>
           <AlertDialog.Content
             bordered
             elevate

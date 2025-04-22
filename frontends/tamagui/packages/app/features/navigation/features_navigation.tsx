@@ -1,14 +1,14 @@
-import { Group, User, UserListingType } from "@jonline/api";
+import { UserListingType } from "@jonline/api";
 import { Button, Heading, Popover, Tooltip, XStack, YStack, useMedia } from '@jonline/ui';
 import { Calendar, Clapperboard, Menu, MessageSquare, SeparatorVertical, Users2 } from "@tamagui/lucide-icons";
-import { useCurrentAccountOrServer, useCredentialDispatch, useLocalConfiguration, useCurrentServer, usePinnedAccountsAndServers } from "app/hooks";
-import { FederatedGroup, RootState, federateId, getFederated, getUsersPage, loadUsersPage, useRootSelector, useServerTheme } from 'app/store';
+import { useMediaContext } from "app/contexts";
+import { useCurrentServer, useLocalConfiguration, usePinnedAccountsAndServers } from "app/hooks";
+import { FederatedGroup, federateId, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
-import { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useLink } from "solito/link";
 import { useUsersPage } from '../../hooks/pagination/user_pagination_hooks';
-import FlipMove from "lumen5-react-flip-move";
-import { useMediaContext } from "app/contexts";
+import { AutoAnimatedList } from "../post";
 
 export enum AppSection {
   NONE = 'none',
@@ -367,8 +367,8 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
   return inlineNavigation
     ? <>
       <XStack key='feature-nav-spacer' w={selectedGroup ? 11 : 3.5} />
-      <FlipMove key='feature-navigation'
-        style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+      <AutoAnimatedList key='feature-navigation'
+        direction='horizontal' gap={0}>
         {!reorderInlineNavigation && MENU_SECTIONS.includes(appSection)
           ? undefined
           : triggerButton()}
@@ -383,7 +383,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
         {myDataRow}
         {/* </XStack> */}
 
-      </FlipMove>
+      </AutoAnimatedList>
     </>
     : <>
       <XStack w={selectedGroup ? 11 : 3.5} />

@@ -3682,6 +3682,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@formkit/auto-animate@npm:^0.8.2":
+  version: 0.8.2
+  resolution: "@formkit/auto-animate@npm:0.8.2"
+  checksum: 10/4414fbc9d13ddf8f9e39adfa1a96a9d3affca8d5fb3b148bd4bb9149066910a179b8477a9ce0af51d2abb2ee8d126d25d290460845ed8018858c569eed15655f
+  languageName: node
+  linkType: hard
+
 "@fullcalendar/core@npm:^6.1.15":
   version: 6.1.15
   resolution: "@fullcalendar/core@npm:6.1.15"
@@ -8345,6 +8352,7 @@ __metadata:
   dependencies:
     "@daypilot/daypilot-lite-react": "npm:^3.21.0"
     "@formatjs/intl-segmenter": "npm:^11.5.7"
+    "@formkit/auto-animate": "npm:^0.8.2"
     "@fullcalendar/core": "npm:^6.1.15"
     "@fullcalendar/daygrid": "npm:^6.1.15"
     "@fullcalendar/interaction": "npm:^6.1.15"
@@ -8377,14 +8385,12 @@ __metadata:
     calendar-link: "npm:^2.6.0"
     expo-constants: "npm:~14.4.2"
     expo-linking: "npm:~5.0.2"
-    lumen5-react-flip-move: "npm:^3.0.6"
     moment: "npm:^2.30.1"
     nice-grpc-web: "npm:^3.3.5"
     openai: "npm:^4.60.1"
     react-big-calendar: "npm:^1.16.3"
     react-colorful: "npm:^5.6.1"
     react-drag-drop-files: "npm:^2.3.10"
-    react-flip-move: "npm:^3.0.5"
     react-markdown: "npm:^8.0.7"
     react-native-animation-library: "npm:^0.0.8"
     react-native-get-random-values: "npm:^1.11.0"
@@ -15228,16 +15234,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lumen5-react-flip-move@npm:^3.0.6":
-  version: 3.0.6
-  resolution: "lumen5-react-flip-move@npm:3.0.6"
-  peerDependencies:
-    react: ">=16.3.x"
-    react-dom: ">=16.3.x"
-  checksum: 10/83107b075a38962bfcf5029b8eff02a7b1a83668fc08f0a34fdc83c4cae4a8b54c6ddbbc4d61004c35ec8aaf92241d03ddf4aaf0824bd71cbfaad9d052f637fe
-  languageName: node
-  linkType: hard
-
 "luxon@npm:^3.2.1":
   version: 3.4.4
   resolution: "luxon@npm:3.4.4"
@@ -18238,16 +18234,6 @@ __metadata:
     "@types/react-dom":
       optional: true
   checksum: 10/928eb9479693dd9b69a9beab122791faaf498f08004c5495f9ff5e9ede1f20b6747bcfe036f2a89fdb7e3e37fd58f33db7f5dc203d4c691ab0d3a372fe6be388
-  languageName: node
-  linkType: hard
-
-"react-flip-move@npm:^3.0.5":
-  version: 3.0.5
-  resolution: "react-flip-move@npm:3.0.5"
-  peerDependencies:
-    react: ">=16.3.x"
-    react-dom: ">=16.3.x"
-  checksum: 10/7f1e807c4377422c3eca8a21b6ed0bf1ba8c9d5c1fbd0b97f9c8b97333e960e86d9c362e5d4a1b1597b90806df202f312a151b703e3e0cf2a6e9a1a1bc843e97
   languageName: node
   linkType: hard
 

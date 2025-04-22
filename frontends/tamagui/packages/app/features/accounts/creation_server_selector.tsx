@@ -3,11 +3,11 @@ import { ChevronLeft, ExternalLink, Info, SeparatorVertical } from '@tamagui/luc
 import { useAppDispatch, useCreationServer, usePinnedAccountsAndServers, useCurrentServer, useComponentKey, useAppSelector } from 'app/hooks';
 import { JonlineServer, RootState, selectAllServers, serverID, useRootSelector } from 'app/store';
 import React from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from 'solito/link';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import { Permission } from '@jonline/api';
 import { ShortAccountSelectorButton } from '../navigation/pinned_server_selector';
+import { AutoAnimatedList } from '../post';
 
 
 export type CreationServerSelectorProps = {
@@ -76,7 +76,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
         onPress={onPressBack} />
       : undefined}
     <ScrollView horizontal f={1}>
-      <FlipMove style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+      <AutoAnimatedList direction='horizontal'>
         <div id={selectorTopKey} key={selectorTopKey} />
         {server
           ? [
@@ -109,7 +109,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
               </Button>
             </div>
             )}
-      </FlipMove>
+      </AutoAnimatedList>
     </ScrollView>
     {isCurrentServer
       ? undefined :

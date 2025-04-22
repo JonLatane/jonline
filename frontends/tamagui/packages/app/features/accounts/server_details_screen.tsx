@@ -1,7 +1,7 @@
 import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
-import { PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
+import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
 import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -18,7 +18,6 @@ import ServerCard from './server_card';
 import { SingleMediaChooser } from './single_media_chooser';
 import { MediaRef } from 'app/contexts';
 import { PageChooser } from '../home/page_chooser';
-import FlipMove from 'lumen5-react-flip-move';
 import { UserCard } from '../user/user_card';
 
 const { useParam } = createParam<{ id: string, section?: string }>()
@@ -464,7 +463,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {adminList.length > 0
                     ? <Heading size='$4'>Admins</Heading>
                     : undefined}
-                  <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }} >
+                  <AutoAnimatedList style={{ width: '100%', marginLeft: 5, marginRight: 5 }} >
                     <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
                       <PageChooser {...adminPagination} />
                     </div>
@@ -481,7 +480,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         entityName={{ singular: 'admin', plural: 'admins' }}
                       />
                     </div>
-                  </FlipMove>
+                  </AutoAnimatedList>
                 </>
                   : undefined}
                 {/* <AnimatePresence> */}
@@ -583,7 +582,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {(federatedServers?.length ?? 0) === 0 ? <Paragraph size='$1' ml='auto' mr='auto' p='$5'>
                     No federated servers.
                   </Paragraph> : undefined}
-                  <FlipMove>
+                  <AutoAnimatedList>
                     {federatedServers?.map((server, index) =>
 
                       <div key={`server-${server.host}`}>
@@ -662,7 +661,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         </XStack>
                       </div>
                     )}
-                  </FlipMove>
+                  </AutoAnimatedList>
                   {isAdmin
                     ? <>
                       <Input value={newRecommendedHostName ?? ''} opacity={newRecommendedHostName && newRecommendedHostName != '' ? 1 : 0.5}

@@ -9,3 +9,4 @@ export * from './toggle_row';
 export * from './visibility_picker';
 export * from './tamagui_markdown';
 export * from './permissions_editor';
+export * from './auto_animated_list';

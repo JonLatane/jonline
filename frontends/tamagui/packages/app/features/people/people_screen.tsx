@@ -5,13 +5,13 @@ import { useAppSelector, useCurrentServer, useMembersPage, usePaginatedRendering
 import { federatedId, getFederated } from 'app/store';
 import { setDocumentTitle } from 'app/utils';
 import React, { useEffect, useMemo, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { createParam } from 'solito';
 import { HomeScreenProps } from '../home/home_screen';
 import { PageChooser } from '../home/page_chooser';
 import { AppSection, AppSubsection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { UserCard } from '../user/user_card';
+import { AutoAnimatedList } from '../post';
 
 export function FollowRequestsScreen() {
   return <BasePeopleScreen listingType={UserListingType.FOLLOW_REQUESTS} />;
@@ -137,7 +137,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
       }
     >
       <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' pb='$3' maw={800} space>
-        <FlipMove style={{ width: '100%', marginLeft: 5, marginRight: 5 }}>
+        <AutoAnimatedList style={{ width: '100%' }}>
           <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
             <PageChooser {...pagination} />
           </div>
@@ -172,7 +172,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             />
           </div>
           {showScrollPreserver ? <YStack h={100000} /> : undefined}
-        </FlipMove>
+        </AutoAnimatedList>
       </YStack>
     </TabsNavigation>
   )

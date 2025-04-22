@@ -8,7 +8,6 @@ import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, us
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { useLink } from 'solito/link';
 import EventCard from '../event/event_card';
 import { TabsNavigation } from '../navigation/tabs_navigation';
@@ -16,6 +15,7 @@ import PostCard from '../post/post_card';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from './page_chooser';
+import { AutoAnimatedList } from '../post';
 // import { useSwipeable } from 'react-swipeable';
 
 // import Swipeable from '@jonline/ui/src/swipeable';
@@ -139,121 +139,124 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       showShrinkPreviews
       loading={loadingPosts || loadingEvents}
     >
-      <FlipMove style={{
+      <AutoAnimatedList style={{
         width: '100%',
         margin: 'auto',
         flex: 1,
-        display: 'flex', flexDirection: 'column',
-        justifyContent: 'center', alignItems: 'center',
+        // display: 'flex', flexDirection: 'column',
+        // justifyContent: 'center', alignItems: 'center',
         // marginTop: 5,
         maxWidth: 1400,
         paddingBottom: 20
       }}
-        typeName={null}
+      // typeName={null}
       >
-        <div key='latest-events-header' style={{ width: '100%' }}>
-          <XStack w='100%' pt={0}
-            // px={mediaQuery.gtXxs ? '$3' : 0}
-            px='$2'
-            ai='center'
-          // flexDirection='row-reverse'
+        {/* <div key='latest-events-header' style={{ width: '100%' }}> */}
+        <XStack key='latest-events-header' w='100%' pt={0}
+          // px={mediaQuery.gtXxs ? '$3' : 0}
+          px='$2'
+          ai='center'
+        // flexDirection='row-reverse'
+        >
+
+          <Button mr='auto' onPress={() => setShowEvents(!showEvents)}
           >
-
-            <Button mr='auto' my='$2' onPress={() => setShowEvents(!showEvents)}
-            >
-              <YStack ai='center'>
-                <Heading size='$1' lh='$1'>Upcoming</Heading>
-                <Heading size='$3' lh='$1'>Events</Heading>
-              </YStack>
-              <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
-                <ChevronRight />
-              </XStack>
-            </Button>
-            <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
-              <Button onPress={() => setBigCalendar(!bigCalendar)} ml='$2'
-                icon={CalendarIcon}
-                transparent
-                {...themedButtonBackground(
-                  bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                // animation='standard'
-                disabled={!showEvents || !allEvents.length}
-
-              />
+            <YStack ai='center'>
+              <Heading size='$1' lh='$1'>Upcoming</Heading>
+              <Heading size='$3' lh='$1'>Events</Heading>
+            </YStack>
+            <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
+              <ChevronRight />
             </XStack>
+          </Button>
+          <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+            <Button onPress={() => setBigCalendar(!bigCalendar)} ml='$2'
+              icon={CalendarIcon}
+              transparent
+              {...themedButtonBackground(
+                bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
+              // animation='standard'
+              disabled={!showEvents || !allEvents.length}
 
-            <div style={{ flex: 1 }} />
-            <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
-              <DynamicCreateButton showPosts showEvents />
-            </div>
+            />
           </XStack>
-        </div>
+
+          <div style={{ flex: 1 }} />
+          <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
+            <DynamicCreateButton showPosts showEvents />
+          </div>
+        </XStack>
+        {/* </div> */}
         {showEvents
           ? bigCalendar
-            ? <div key='full-calendar' style={{ marginBottom: 10 }}>
+            ? //<div key='full-calendar' style={{ marginBottom: 10 }}>
+            <YStack w='100%' mb='$2'>
               <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
-            </div>
+            </YStack>
+            //</div>
             : [
               allEvents.length > 0 && eventPagesOnHome ?
-                <div key='upcoming-events-pagination' style={{ width: '100%', paddingLeft: 8, paddingRight: 8 }}>
+                <XStack key='upcoming-events-pagination' w='100%' px={8}>
 
-                  <PageChooser {...eventPagination} width='auto' />
-                </div> : undefined,
-              <div key='latest-events' style={{ width: '100%' }}>
-                <YStack w='100%'>
-                  <div id='events-top' />
-                  <ScrollView horizontal w='100%'>
-                    <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
-                      <FlipMove style={{ display: 'flex' }}>
-                        {allEvents.length == 0 && !loadingEvents
-                          ? <div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
-                            <YStack width='100%' maw={600} jc="center" ai="center" mx='auto' my='auto' px={mediaQuery.gtXxs ? '$2' : 0} mt='$3'>
-                              <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
-                            </YStack>
-                          </div>
-                          : undefined}
-                        {paginatedEvents.map((event) =>
-                          <div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
-                            <XStack mx='$1' px='$1' pb='$5'>
-                              <EventCard event={event} isPreview horizontal xs />
-                            </XStack>
-                          </div>)}
-                        {loadingEvents && allEvents.length == 0
-                          ? <div key='events-spinner'>
-                            <XStack mx={window.innerWidth / 2 - 50} my='auto'>
-                              <Spinner size='large' color={navColor} />
-                            </XStack>
-                          </div>
-                          : undefined}
-                        <div key='all-events-button' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                          <Button my='auto' p='$5' ml='$3' mr='$10' h={200} {...allEventsLink}>
-                            <YStack ai='center' py='$3' jc='center'>
-                              <Heading size='$4'>All</Heading>
-                              <Heading size='$5'>Events</Heading>
-                              <ChevronRight />
-                            </YStack>
-                          </Button>
-                        </div>
-                      </FlipMove>
-                    </XStack>
-                  </ScrollView>
-                </YStack>
-              </div>
+                  <PageChooser key='upcoming-events-pagination' {...eventPagination} width='auto' />
+                </XStack> : undefined,
+              // <div key='latest-events' style={{ width: '100%' }}>
+              <YStack key='latest-events' w='100%'>
+                <div id='events-top' />
+                <ScrollView horizontal w='100%'>
+                  <XStack w={eventCardWidth} gap='$2' mx='auto' pl={mediaQuery.gtMd ? '$5' : undefined} my='auto'>
+                    <AutoAnimatedList direction='horizontal'>
+                      {allEvents.length == 0 && !loadingEvents
+                        ? //<div style={{ width: noEventsWidth, marginTop: 'auto', marginBottom: 'auto' }} key='no-events-found'>
+                        <YStack key='no-events-found' width='100%' w={noEventsWidth} maw={600} jc="center" ai="center" mx='auto' my='auto' px={mediaQuery.gtXxs ? '$2' : 0} mt='$3'>
+                          <Heading size='$5' o={0.5} ta='center' mb='$3'>No events found.</Heading>
+                        </YStack>
+                        //                        </div>
+                        : undefined}
+                      {paginatedEvents.map((event) =>
+                        //<div key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`}>
+                        <XStack key={`event-preview-${federatedId(event)}-${event.instances[0]!.id}`} mx='$1' px='$1' pb='$5'>
+                          <EventCard event={event} isPreview horizontal xs />
+                        </XStack>
+                        //                        </div>
+                      )}
+                      {loadingEvents && allEvents.length == 0
+                        ? //<div key='events-spinner'>
+                        <XStack key='events-spinner' mx={window.innerWidth / 2 - 50} my='auto'>
+                          <Spinner size='large' color={navColor} />
+                        </XStack>
+                        //</div>
+                        : undefined}
+                      {/* <div  style={{ marginTop: 'auto', marginBottom: 'auto' }}> */}
+                      <Button key='all-events-button' my='auto' p='$5' ml='$3' mr='$10' h={200} {...allEventsLink}>
+                        <YStack ai='center' py='$3' jc='center'>
+                          <Heading size='$4'>All</Heading>
+                          <Heading size='$5'>Events</Heading>
+                          <ChevronRight />
+                        </YStack>
+                      </Button>
+                      {/* </div> */}
+                    </AutoAnimatedList>
+                  </XStack>
+                </ScrollView>
+              </YStack>
+              // </div>
             ]
           : undefined}
 
-        <div id='latest-posts-header' key='latest-posts-header' style={{
+        {/* <div id='latest-posts-header' key='latest-posts-header' style={{
           width: '100%', maxWidth: 800,
 
-          paddingLeft: mediaQuery.gtXxs ? 18 : 0,
-          paddingRight: mediaQuery.gtXxs ? 18 : 0
-        }}>
-          <XStack ai='center' w='100%' overflow='hidden' px='$2'>
-            <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
-            {/* <XStack f={1}> */}
-            <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />
-            {/* </XStack> */}
-          </XStack>
-        </div>
+          // paddingLeft: mediaQuery.gtXxs ? 18 : 0,
+          // paddingRight: mediaQuery.gtXxs ? 18 : 0
+        }}> */}
+        <XStack id='latest-posts-header' key='latest-posts-header' ai='center' w='100%' overflow='hidden' px='$2' maw={800} mx={mediaQuery.gtXxs ? 18 : 0}>
+          <Heading size='$5' my='$2' pr='$3' mr='auto'>Posts</Heading>
+          {/* <XStack f={1}> */}
+          <PageChooser {...postPagination} noAutoScroll width='auto' maxWidth='67%' />
+          {/* </XStack> */}
+        </XStack>
+        {/* </div> */}
         {/* {postPagination.pageCount > 1 || true
           ? <div key='page-chooser-top'
             style={{ width: '100%', maxWidth: 800, paddingLeft: 18, paddingRight: 18 }}>
@@ -263,23 +266,26 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
         {postsLoaded || allPosts.length > 0
           ? allPosts.length === 0
-            ? <div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
-              <YStack mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
-                <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
-              </YStack>
-            </div>
+            ? //<div key='no-posts-found' style={{ width: '100%', margin: 'auto' }}>
+            <YStack key='no-posts-found' mt={(window.innerHeight - 200) * 0.2} width='100%' maw={600} jc="center" ai="center" mx='auto'>
+              <Heading size='$5' o={0.5} mb='$3'>No posts found.</Heading>
+            </YStack>
+            //</div>
             : undefined
           : undefined}
         {/* <div style={{ width: '100%' }} {...swipeHandlers}> */}
         {paginatedPosts.map((post) => {
-          return <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
-            style={{
-              width: '100%', maxWidth: 800,
-              paddingLeft: mediaQuery.gtXxs ? 18 : 0,
-              paddingRight: mediaQuery.gtXxs ? 18 : 0
-            }}>
-            <PostCard post={post} isPreview />
-          </div>;
+          return (
+            // <div key={`post-${federatedId(post)}`} id={`post-${federatedId(post)}`}
+            //   style={{
+            //     width: '100%', maxWidth: 800,
+            //     paddingLeft: mediaQuery.gtXxs ? 18 : 0,
+            //     paddingRight: mediaQuery.gtXxs ? 18 : 0
+            //   }}>
+            <XStack w='100%' maw={800} key={`post-${federatedId(post)}`}>
+              <PostCard key={`post-${federatedId(post)}`} post={post} isPreview />
+            </XStack>
+          );
         })}
         {/* </div> */}
 
@@ -292,7 +298,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
           : undefined}
         {showScrollPreserver ? <div key='scroll-preserver' style={{ height: 100000 }} /> : undefined}
         {/* </YStack> */}
-      </FlipMove>
+      </AutoAnimatedList>
     </TabsNavigation>
   )
 }

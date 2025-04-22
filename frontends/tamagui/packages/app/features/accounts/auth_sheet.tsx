@@ -1,17 +1,16 @@
 import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronLeft } from '@tamagui/lucide-icons';
-import { TamaguiMarkdown } from 'app/components';
+import { AutoAnimatedList, TamaguiMarkdown } from 'app/components';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
 import { useAppDispatch, useCreationServer, useCurrentServer, usePinnedAccountsAndServers } from 'app/hooks';
 import { accountID, actionSucceeded, clearAccountAlerts, createAccount, login, RootState, selectAllAccounts, serverID, store, useRootSelector, useServerTheme } from 'app/store';
 import { themedButtonBackground } from 'app/utils';
 import React, { useCallback, useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
+import { useRouter } from 'solito/router';
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo';
 import AccountCard from './account_card';
 import { CreationServerSelector } from './creation_server_selector';
-import { useRouter } from 'solito/router';
 
 export type AuthSheetProps = {
   // server?: JonlineServer;
@@ -209,51 +208,46 @@ export function AuthSheet({ }: AuthSheetProps) {
               icon={ChevronLeft}
               onPress={() => setOpen(false)} />
             <XStack h='100%' f={1}>
-              <FlipMove style={{ height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+              <AutoAnimatedList style={{ height: '100%', width: '100%', }}>
                 {alreadyHasAccounts
-                  ? <div key='accounts' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                    {/* <Heading size="$5" alignSelf='center'>Accounts</Heading> */}
-                    {/* <div key='accounts'> */}
-                    <XStack ml='$3'>
-                      <Button h='auto' mih='$3'
-                        {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                        transparent={addingAccount}
-                        borderTopRightRadius={0} borderBottomRightRadius={0}
-                        onPress={() => {
-                          setAddingAccount(false);
-                          setReauthenticating(false);
-                        }}>
-                        {mediaQuery.gtXs
-                          ? <Heading size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
-                          : <YStack ai='center'>
-                            <Heading size='$3' color={addingAccount ? undefined : navTextColor}>Choose</Heading>
-                            <Heading size='$1' color={addingAccount ? undefined : navTextColor}>Account</Heading>
-                          </YStack>}
-                      </Button>
-                      <Button h='auto' mih='$3'
-                        {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                        transparent={!addingAccount}
-                        borderTopLeftRadius={0} borderBottomLeftRadius={0}
-                        // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-                        onPress={() => {
-                          setAddingAccount(true);
-                          setTimeout(() => usernameRef.current.focus(), 100);
-                        }}>
-                        {mediaQuery.gtXs
-                          ? <Heading size='$4' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
-                          : <YStack ai='center'>
-                            <Heading size='$3' color={!addingAccount ? undefined : navTextColor}>Add</Heading>
-                            <Heading size='$1' color={!addingAccount ? undefined : navTextColor}>Account</Heading>
-                          </YStack>}
-                      </Button>
-                    </XStack>
-                    {/* </div> */}
-                  </div>
-                  : <div key='add-account' style={{ marginTop: 'auto', marginBottom: 'auto' }}>
-                    <Heading size="$5" alignSelf='center' my='auto' ml='$3' >Add Account</Heading>
-                  </div>
+                  ? <XStack key='accounts' ml='$3'>
+                    <Button h='auto' mih='$3'
+                      {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
+                      transparent={addingAccount}
+                      borderTopRightRadius={0} borderBottomRightRadius={0}
+                      onPress={() => {
+                        setAddingAccount(false);
+                        setReauthenticating(false);
+                      }}>
+                      {mediaQuery.gtXs
+                        ? <Heading whiteSpace='nowrap' size='$4' color={addingAccount ? undefined : navTextColor}>Choose Account</Heading>
+                        : <YStack ai='center'>
+                          <Heading whiteSpace='nowrap' size='$3' color={addingAccount ? undefined : navTextColor}>Choose</Heading>
+                          <Heading whiteSpace='nowrap' size='$1' color={addingAccount ? undefined : navTextColor}>Account</Heading>
+                        </YStack>}
+                    </Button>
+                    <Button h='auto' mih='$3'
+                      {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
+                      transparent={!addingAccount}
+                      borderTopLeftRadius={0} borderBottomLeftRadius={0}
+                      // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
+                      onPress={() => {
+                        setAddingAccount(true);
+                        setTimeout(() => usernameRef.current.focus(), 100);
+                      }}>
+                      {mediaQuery.gtXs
+                        ?
+                        <Heading size='$4' whiteSpace='nowrap' color={!addingAccount ? undefined : navTextColor}>{reauthenticating ? 'Reauthenticate' : 'Add Account'}</Heading>
+                        : <YStack ai='center'>
+                          <Heading size='$3' whiteSpace='nowrap' color={!addingAccount ? undefined : navTextColor}>Add</Heading>
+                          <Heading size='$1' whiteSpace='nowrap' color={!addingAccount ? undefined : navTextColor}>Account</Heading>
+                        </YStack>}
+                    </Button>
+                  </XStack>
+                  :
+                  <Heading key='add-account' size="$5" whiteSpace='nowrap' alignSelf='center' my='auto' ml='$3' >Add Account</Heading>
                 }
-              </FlipMove>
+              </AutoAnimatedList>
             </XStack>
             {/* {mediaQuery.gtXs || true
               ? <Button
@@ -273,7 +267,7 @@ export function AuthSheet({ }: AuthSheetProps) {
           {/* {newFunction(mediaQuery, setOpen, creationServer, isCurrentServer, server, serverLink, servers, dispatch, setCreationServer, currentServer)} */}
 
           <Sheet.ScrollView width='100%'>
-            <FlipMove style={{
+            <AutoAnimatedList style={{
               maxWidth: 600,
               width: '100%',
               display: 'flex',
@@ -286,124 +280,122 @@ export function AuthSheet({ }: AuthSheetProps) {
             }}>
 
               {/* <YStack gap="$2" maw={600} w='100%' pb='$2' als='center' paddingHorizontal="$5"> */}
-              <div key={`server-logo-${server?.host}`} style={{
+              {/* <div key={`server-logo-${server?.host}`} style={{
                 marginTop: 10,
                 marginBottom: 3,
                 width: '100%',
                 display: 'flex'
-              }}>
-                <XStack mx='auto'>
-                  <ServerNameAndLogo server={server} enlargeSmallText />
-                </XStack>
-              </div>
+              }}> */}
+              <XStack mx='auto' key={`server-logo-${server?.host}`}>
+                <ServerNameAndLogo server={server} enlargeSmallText />
+              </XStack>
+              {/* </div> */}
               {addingAccount
-                ? <div key='add-account-panel' style={{ width: '100%' }}>
-                  <YStack gap="$2" w='100%' pb='$3'>
-                    <Heading size="$6">{server?.host}/</Heading>
-                    <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
-                      editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
-                      autoCapitalize='none'
-                      value={newAccountUser}
-                      ref={usernameRef}
-                      onKeyPress={(e) => {
-                        if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
-                          if (!loginMethod) {
-                            setLoginMethod(LoginMethod.Login);
-                            setTimeout(() => passwordRef.current.focus(), 100);
-                          } else {
-                            passwordRef.current.focus();
-                          }
+                ? <YStack key='add-account-panel' gap="$2" w='100%' pb='$3'>
+                  <Heading size="$6">{server?.host}/</Heading>
+                  <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                    editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
+                    autoCapitalize='none'
+                    value={newAccountUser}
+                    ref={usernameRef}
+                    onKeyPress={(e) => {
+                      if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
+                        if (!loginMethod) {
+                          setLoginMethod(LoginMethod.Login);
+                          setTimeout(() => passwordRef.current.focus(), 100);
+                        } else {
+                          passwordRef.current.focus();
                         }
-                      }}
-                      onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
-                    {loginMethod
-                      ? <XStack w='100%' animation='standard'  {...standardAnimation}>
-                        <Input secureTextEntry w='100%'
-                          ref={passwordRef}
-                          textContentType={loginMethod === LoginMethod.Login ? "password" : "newPassword"}
-                          placeholder="Password"
-                          editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
-                          onKeyPress={(e) => {
-                            if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
-                              if (loginMethod == LoginMethod.Login) {
-                                loginToServer();
-                              } else {
-                                createServerAccount();
-                              }
-                            }
-                          }}
-                          value={newAccountPass}
-                          onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
-                      : undefined}
-
-                    {loginMethod === LoginMethod.CreateAccount
-                      ? <>
-                        <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
-                        <TamaguiMarkdown text={`
-${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
-released under the AGPL. As a user, using this server means you have a fundamental right to view the source code of this software and anything
-using its data. If you suspect that the operator of this server is not using the official Jonline software, or doing anything proprietary/non-open
-with your data, please contact the [Free Software Foundation](https://www.fsf.org/) to evaluate support options.
-                          `} />
-                        {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
-                          ? <>
-                            <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
-                            <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
-                          </> : undefined}
-                        {(server?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
-                          ? <>
-                            <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
-                            <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.mediaPolicy} />
-                          </> : undefined}
-                      </>
-                      : undefined}
-
-                    {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
-                    {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
-
-                    {loginMethod
-                      ? <XStack>
-                        {reauthenticating ? undefined : <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
-                          disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
-                          Back
-                        </Button>}
-                        <Button key='confirm-button' flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
-                          onPress={() => {
+                      }
+                    }}
+                    onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
+                  {loginMethod
+                    ? <XStack w='100%' animation='standard'  {...standardAnimation}>
+                      <Input secureTextEntry w='100%'
+                        ref={passwordRef}
+                        textContentType={loginMethod === LoginMethod.Login ? "password" : "newPassword"}
+                        placeholder="Password"
+                        editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                        onKeyPress={(e) => {
+                          if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
                             if (loginMethod == LoginMethod.Login) {
                               loginToServer();
                             } else {
                               createServerAccount();
                             }
-                          }}
-                          disabled={disableAccountButtons}
-                          opacity={disableAccountButtons ? 0.5 : 1}
-                        >
-                          {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
-                        </Button>
-                      </XStack>
-                      : <XStack gap='$1'>
-                        <Button flex={2} marginRight='$1'
-                          onPress={() => {
-                            setLoginMethod(LoginMethod.CreateAccount);
-                            setTimeout(() => passwordRef.current.focus(), 100);
-                          }}
-                          disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                          Sign Up
-                        </Button>
-                        <Button flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
-                          onPress={() => {
-                            setLoginMethod(LoginMethod.Login);
-                            setTimeout(() => passwordRef.current.focus(), 100);
-                          }}
-                          disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
-                          Login
-                        </Button>
-                      </XStack>}
-                  </YStack>
-                </div>
+                          }
+                        }}
+                        value={newAccountPass}
+                        onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
+                    : undefined}
+
+                  {loginMethod === LoginMethod.CreateAccount
+                    ? <>
+                      <Heading size="$2" alignSelf='center' ta='center'>License</Heading>
+                      <TamaguiMarkdown text={`
+${server?.serverConfiguration?.serverInfo?.name ?? 'This server'} is powered by [Jonline](https://github.com/JonLatane/jonline), which is
+released under the AGPL. As a user, using this server means you have a fundamental right to view the source code of this software and anything
+using its data. If you suspect that the operator of this server is not using the official Jonline software, or doing anything proprietary/non-open
+with your data, please contact the [Free Software Foundation](https://www.fsf.org/) to evaluate support options.
+                          `} />
+                      {(server?.serverConfiguration?.serverInfo?.privacyPolicy?.length ?? 0) > 0
+                        ? <>
+                          <Heading size="$2" alignSelf='center' ta='center'>Privacy Policy</Heading>
+                          <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.privacyPolicy} />
+                        </> : undefined}
+                      {(server?.serverConfiguration?.serverInfo?.mediaPolicy?.length ?? 0) > 0
+                        ? <>
+                          <Heading size="$2" alignSelf='center' ta='center'>Media Policy</Heading>
+                          <TamaguiMarkdown text={server?.serverConfiguration?.serverInfo?.mediaPolicy} />
+                        </> : undefined}
+                    </>
+                    : undefined}
+
+                  {accountsState.errorMessage ? <Heading size="$2" color="red" alignSelf='center' ta='center'>{accountsState.errorMessage}</Heading> : undefined}
+                  {accountsState.successMessage ? <Heading size="$2" color="green" alignSelf='center' ta='center'>{accountsState.successMessage}</Heading> : undefined}
+
+                  {loginMethod
+                    ? <XStack>
+                      {reauthenticating ? undefined : <Button marginRight='$1' onPress={() => { setLoginMethod(undefined); setNewAccountPass(''); }} icon={ChevronLeft}
+                        disabled={disableAccountInputs} opacity={disableAccountInputs ? 0.5 : 1}>
+                        Back
+                      </Button>}
+                      <Button key='confirm-button' flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        onPress={() => {
+                          if (loginMethod == LoginMethod.Login) {
+                            loginToServer();
+                          } else {
+                            createServerAccount();
+                          }
+                        }}
+                        disabled={disableAccountButtons}
+                        opacity={disableAccountButtons ? 0.5 : 1}
+                      >
+                        {loginMethod == LoginMethod.Login ? reauthenticating ? 'Reauthenticate' : 'Login' : 'Sign Up'}
+                      </Button>
+                    </XStack>
+                    : <XStack gap='$1'>
+                      <Button flex={2} marginRight='$1'
+                        onPress={() => {
+                          setLoginMethod(LoginMethod.CreateAccount);
+                          setTimeout(() => passwordRef.current.focus(), 100);
+                        }}
+                        disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                        Sign Up
+                      </Button>
+                      <Button flex={1} {...themedButtonBackground(primaryColor, primaryTextColor)}
+                        onPress={() => {
+                          setLoginMethod(LoginMethod.Login);
+                          setTimeout(() => passwordRef.current.focus(), 100);
+                        }}
+                        disabled={disableLoginMethodButtons} opacity={disableLoginMethodButtons ? 0.5 : 1}>
+                        Login
+                      </Button>
+                    </XStack>}
+                </YStack>
                 : accountsOnServer.length > 0
                   ? accountsOnServer.map((account) =>
-                    <div key={accountID(account)} style={{ width: '100%', marginBottom: 10 }}>
+                    <XStack key={accountID(account)} w='100%'>
                       <AccountCard account={account}
                         totalAccounts={accountsOnServer.length}
                       // onPress={
@@ -411,10 +403,10 @@ with your data, please contact the [Free Software Foundation](https://www.fsf.or
                       //   ? () => onAccountSelected(account) : 
                       //   undefined}
                       />
-                    </div>)
+                    </XStack>)
                   : undefined}
               {/* </YStack> */}
-            </FlipMove>
+            </AutoAnimatedList>
           </Sheet.ScrollView>
         </Sheet.Frame>
       </Sheet>

@@ -1,13 +1,12 @@
 import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
 import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
 import { CalendarPlus, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
-import { ToggleRow, VisibilityPicker } from 'app/components';
+import { AutoAnimatedList, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationAccountOrServer } from 'app/hooks';
 import { FederatedGroup, JonlineServer, RootState, selectAllAccounts, serverID, useRootSelector, useServerTheme } from 'app/store';
 import { highlightedButtonBackground, themedButtonBackground } from 'app/utils';
 import { publicVisibility } from 'app/utils/visibility_utils';
 import React, { useEffect, useState } from 'react';
-import FlipMove from 'lumen5-react-flip-move';
 import { TextInput } from 'react-native';
 import { CreationServerSelector, useAvailableCreationServers } from '../accounts/creation_server_selector';
 import { GroupsSheet, GroupsSheetButton } from '../groups/groups_sheet';
@@ -243,6 +242,7 @@ export function BaseCreatePostSheet({
   // return <></>;
 
   const [groupsSheetOpen, setGroupsSheetOpen] = useState(false);
+  const groupsSheetOpenDebounced = useDebounceValue(groupsSheetOpen, 3000);
   const onCreatePressed = () => doCreate(
     previewPost,
     group,
@@ -290,8 +290,8 @@ export function BaseCreatePostSheet({
         // zIndex={100000}
         // dismissOnSnapToBottom
         >
-          <Sheet.Overlay />
-          <Sheet.Frame>
+          <Sheet.Overlay zi={999} />
+          <Sheet.Frame zi={999}>
             <YStack h='100%'>
               {open || openDebounced
                 ? <>
@@ -401,123 +401,106 @@ export function BaseCreatePostSheet({
                   <XStack f={1} mb='$4' gap="$2" maw={inSplitView ? 1200 : 600} w='100%' als='center'>
                     {showEditor
                       ? <Sheet.ScrollView>
-                        <FlipMove style={{ width: '100%', paddingLeft: 24, paddingRight: 24, marginTop: 12 }}>
+                        <AutoAnimatedList style={{ width: '100%', paddingLeft: 24, paddingRight: 24, marginTop: 12 }}>
                           {/* <YStack gap="$2" w='100%' px="$5" marginTop='$3'> */}
                           {/* <Heading size="$6">{server?.host}/</Heading> */}
-                          <div key='title-etc' style={{ width: '100%', marginBottom: 5 }}>
-                            <YStack gap='$2'>
-                              <XStack gap='$2'>
-                                <Input f={1} textContentType="name"
-                                  placeholder={`${entityName} Title (required)`}
-                                  placeholderTextColor={navAnchorColor}
-                                  disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
-                                  borderColor={title == '' ? navAnchorColor : undefined}
-                                  // color={title == '' ? primaryAnchorColor : undefined}
-                                  onFocus={() => setShowSettings(false)}
-                                  // autoCapitalize='words'
-                                  value={title}
-                                  onChange={(data) => { setTitle(data.nativeEvent.text) }} />
-                                <Button ml='$2'
-                                  {...highlightedButtonBackground(serverTheme, 'nav', showSettings)}
-                                  // {...themedButtonBackground(showSettings ? navColor : undefined)}
-                                  onPress={() => setShowSettings(!showSettings)} circular>
-                                  <Cog color={showSettings ? navTextColor : textColor} />
-                                </Button>
-                              </XStack>
-                              {additionalFields?.(previewPost, group)}
-                              <XStack gap='$2'>
-                                <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
-                                  disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
-                                  onFocus={() => setShowSettings(false)}
-                                  // autoCapitalize='words'
-                                  value={link}
-                                  onChange={(data) => { setLink(data.nativeEvent.text) }} />
+                          <YStack gap='$2' key='title-etc' w='100%'>
+                            <XStack gap='$2'>
+                              <Input f={1} textContentType="name"
+                                placeholder={`${entityName} Title (required)`}
+                                placeholderTextColor={navAnchorColor}
+                                disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
+                                borderColor={title == '' ? navAnchorColor : undefined}
+                                // color={title == '' ? primaryAnchorColor : undefined}
+                                onFocus={() => setShowSettings(false)}
+                                // autoCapitalize='words'
+                                value={title}
+                                onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                              <Button ml='$2'
+                                {...highlightedButtonBackground(serverTheme, 'nav', showSettings)}
+                                // {...themedButtonBackground(showSettings ? navColor : undefined)}
+                                onPress={() => setShowSettings(!showSettings)} circular>
+                                <Cog color={showSettings ? navTextColor : textColor} />
+                              </Button>
+                            </XStack>
+                            {additionalFields?.(previewPost, group)}
+                            <XStack gap='$2'>
+                              <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
+                                disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
+                                onFocus={() => setShowSettings(false)}
+                                // autoCapitalize='words'
+                                value={link}
+                                onChange={(data) => { setLink(data.nativeEvent.text) }} />
 
-                                <ZStack w='$4' ml='$2'>
-                                  <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
-                                    borderRadius={5}
-                                    backgroundColor={showMedia ? primaryColor : navColor}
-                                    color={showMedia ? primaryTextColor : navTextColor}>
-                                    {media.length}
-                                  </Paragraph>
-                                  <Button {...themedButtonBackground(showMedia ? navColor : undefined)}
-                                    onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
-                                    <ImageIcon color={showMedia ? navTextColor : textColor} />
-                                  </Button>
-                                </ZStack>
-                              </XStack>
-                            </YStack>
-                          </div>
+                              <ZStack w='$4' ml='$2'>
+                                <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
+                                  borderRadius={5}
+                                  backgroundColor={showMedia ? primaryColor : navColor}
+                                  color={showMedia ? primaryTextColor : navTextColor}>
+                                  {media.length}
+                                </Paragraph>
+                                <Button {...themedButtonBackground(showMedia ? navColor : undefined)}
+                                  onPress={() => setShowMedia(!showMedia)} circular mr='$2'>
+                                  <ImageIcon color={showMedia ? navTextColor : textColor} />
+                                </Button>
+                              </ZStack>
+                            </XStack>
+                          </YStack>
                           {showSettings
-                            ? <div key='create-post-settings' style={{ width: '100%', marginBottom: 5 }}>
-                              <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$3'
-                                animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
-                              >
-                                {visibility != Visibility.PRIVATE
-                                  ? <YStack w='100%' mb='$2' ai='center'>
-                                    <GroupsSheetButton
-                                      open={groupsSheetOpen}
-                                      setOpen={setGroupsSheetOpen}
-                                      groupNamePrefix='Share to '
-                                      noGroupSelectedText={publicVisibility(visibility)
-                                        ? 'Share Everywhere' : 'Share To A Group'}
-                                      selectedGroup={group}
-                                      onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                                    />
-                                    <GroupsSheet
-                                      open={groupsSheetOpen}
-                                      setOpen={setGroupsSheetOpen}
-                                      groupNamePrefix='Share to '
-                                      noGroupSelectedText={publicVisibility(visibility)
-                                        ? 'Share Everywhere' : 'Share To A Group'}
-                                      serverHostFilter={server?.host}
-                                      selectedGroup={group}
-                                      onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
-                                    />
-                                  </YStack>
-                                  : undefined}
-                                <VisibilityPicker
-                                  label='Post Visibility'
-                                  visibility={visibility}
-                                  onChange={setVisibility}
-                                  canPublishGlobally={canPublishGlobally}
-                                  canPublishLocally={canPublishLocally}
-                                  visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
-                                <ToggleRow
-                                  name={
-                                    publicVisibility(visibility) || visibility == Visibility.LIMITED ?
-                                      `Allow sharing to ${group ? 'other ' : ''}Groups`
-                                      : 'Allow sharing to other users'
-                                  }
-                                  value={shareable}
-                                  setter={(v) => setShareable(v)}
-                                  disabled={disableInputs || visibility == Visibility.PRIVATE} />
-                              </YStack>
-                            </div>
+                            ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$2'
+                              mt='$2'
+                              animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
+                            >
+                              {visibility != Visibility.PRIVATE
+                                ? <YStack w='100%' mb='$2' ai='center'>
+                                  <GroupsSheetButton
+                                    open={groupsSheetOpen}
+                                    setOpen={setGroupsSheetOpen}
+                                    groupNamePrefix='Share to '
+                                    noGroupSelectedText={publicVisibility(visibility)
+                                      ? 'Share Everywhere' : 'Share To A Group'}
+                                    selectedGroup={group}
+                                    onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+                                  />
+                                </YStack>
+                                : undefined}
+                              <VisibilityPicker
+                                label='Post Visibility'
+                                visibility={visibility}
+                                onChange={setVisibility}
+                                canPublishGlobally={canPublishGlobally}
+                                canPublishLocally={canPublishLocally}
+                                visibilityDescription={v => postVisibilityDescription(v, group, server, entityName)} />
+                              <ToggleRow
+                                name={
+                                  publicVisibility(visibility) || visibility == Visibility.LIMITED ?
+                                    `Allow sharing to ${group ? 'other ' : ''}Groups`
+                                    : 'Allow sharing to other users'
+                                }
+                                value={shareable}
+                                setter={(v) => setShareable(v)}
+                                disabled={disableInputs || visibility == Visibility.PRIVATE} />
+                            </YStack>
                             : undefined}
                           {showMedia
-                            ? <div key='media'>
-                              <AccountOrServerContextProvider value={accountOrServer}>
-                                <div key='post-media-manager' style={{ width: '100%', marginBottom: 5 }}>
-                                  <PostMediaManager
-                                    {...{ link, media, setMedia, embedLink, setEmbedLink }} />
-                                </div>
-                              </AccountOrServerContextProvider>
-                            </div>
+                            ? <AccountOrServerContextProvider key='media' value={accountOrServer}>
+                              {/* <XStack w='auto' maw='100%' mx='auto'> */}
+                              <PostMediaManager key='post-media-manager'
+                                {...{ link, media, setMedia, embedLink, setEmbedLink }} />
+                              {/* </XStack> */}
+                            </AccountOrServerContextProvider>
                             : undefined}
 
 
-                          <div key='content'>
-                            <TextArea w='100%' pt='$2' value={content} ref={textAreaRef}
-                              onFocus={() => setShowSettings(false)}
-                              disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
-                              onChangeText={t => setContent(t)}
-                              // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
-                              // onBlur={() => _replyTextFocused = false}
-                              placeholder={`Text content (optional). Markdown is supported.`} />
-                          </div>
+                          <TextArea key='content' w='100%' pt='$1' mt='$2' value={content} ref={textAreaRef}
+                            onFocus={() => setShowSettings(false)}
+                            disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
+                            onChangeText={t => setContent(t)}
+                            // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
+                            // onBlur={() => _replyTextFocused = false}
+                            placeholder={`Text content (optional). Markdown is supported.`} />
                           {/* </YStack> */}
-                        </FlipMove>
+                        </AutoAnimatedList>
                       </Sheet.ScrollView>
                       : undefined}
                     {showFullPreview
@@ -536,6 +519,20 @@ export function BaseCreatePostSheet({
             </YStack>
           </Sheet.Frame>
         </Sheet>
+        : undefined}
+
+
+      {groupsSheetOpen || groupsSheetOpenDebounced
+        ? <GroupsSheet
+          open={groupsSheetOpen}
+          setOpen={setGroupsSheetOpen}
+          groupNamePrefix='Share to '
+          noGroupSelectedText={publicVisibility(visibility)
+            ? 'Share Everywhere' : 'Share To A Group'}
+          serverHostFilter={server?.host}
+          selectedGroup={group}
+          onGroupSelected={(g) => group?.id == g.id ? setGroup(undefined) : setGroup(g)}
+        />
         : undefined}
     </>
   )
