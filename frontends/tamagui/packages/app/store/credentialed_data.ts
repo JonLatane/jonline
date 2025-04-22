@@ -22,7 +22,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
     const metadata = Metadata();
     const accessExpiresAt = moment.utc(account.accessToken.expiresAt);
     const now = moment.utc();
-    const expired = true;//accessExpiresAt.subtract(2, 'minutes').isBefore(now);
+    const expired = accessExpiresAt.subtract(2, 'minutes').isBefore(now);
 
     if (expired) {
       const updatedAccessToken: ExpirableToken | undefined = updatedAccessTokens.get(updatedTokenKey(accountOrServer))?.accessToken;
