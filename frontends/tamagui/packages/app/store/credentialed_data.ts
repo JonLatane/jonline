@@ -31,8 +31,8 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
       } else {
         let accessTokenResult: AccessTokenResponse | undefined = undefined;
         let retries = 0;
-        const maxRetries = 3;
-        while (!accessTokenResult && retries < maxRetries) {
+        const maxAttempts = 1;
+        while (!accessTokenResult && retries < maxAttempts) {
           retries++;
           accessTokenResult = await client
             .accessToken({ refreshToken: account.refreshToken!.token })
