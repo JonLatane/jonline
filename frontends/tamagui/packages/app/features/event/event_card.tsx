@@ -461,8 +461,10 @@ export const EventCard: React.FC<Props> = ({
             {primaryInstance ? <InstanceTime event={event} instance={primaryInstance} highlight noAutoScroll /> : undefined}
           </Anchor>
           {primaryInstance //&& (!isPreview || isVisible)
-            ? <EventCalendarExporter tiny event={event}
-              instance={primaryInstance} />
+            ? <XStack my='$1'>
+              <EventCalendarExporter tiny event={event}
+                instance={primaryInstance} />
+            </XStack>
             : undefined}
         </XStack>
       </>
