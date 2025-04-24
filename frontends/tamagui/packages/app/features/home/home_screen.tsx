@@ -159,7 +159,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
         // flexDirection='row-reverse'
         >
 
-          <Button mr='auto' onPress={() => setShowEvents(!showEvents)}
+          <Button mr='auto' onPress={() => requestAnimationFrame(() => setShowEvents(!showEvents))}
           >
             <YStack ai='center'>
               <Heading size='$1' lh='$1'>Upcoming</Heading>
@@ -170,7 +170,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
             </XStack>
           </Button>
           <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
-            <Button onPress={() => setBigCalendar(!bigCalendar)} ml='$2'
+            <Button onPress={() => requestAnimationFrame(() => setBigCalendar(!bigCalendar))} ml='$2'
               icon={CalendarIcon}
               transparent
               {...themedButtonBackground(

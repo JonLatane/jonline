@@ -118,7 +118,7 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
       : <Button mt='$2' disabled={addingServer} o={addingServer ? 0.5 : 1}
         backgroundColor={buttonBackgroundColor} color={buttonTextColor}
         hoverStyle={{ backgroundColor: buttonBackgroundColor }}
-        onPress={addServer}>
+        onPress={() => requestAnimationFrame(addServer)}>
 
         {tiny ? <YStack gap='$0' ai='center'>
           <Paragraph color={buttonTextColor} lineHeight='$1' size='$1' my='auto'>Add</Paragraph>

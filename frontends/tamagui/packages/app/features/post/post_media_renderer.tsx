@@ -1,5 +1,5 @@
 import { FederatedGroup, federateId, useServerTheme } from "app/store";
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 import { Post } from "@jonline/api";
 import { Anchor, ScrollView, Spinner, XStack, YStack, useMedia } from '@jonline/ui';
@@ -19,6 +19,7 @@ export interface PostMediaRendererProps {
   xsPreview?: boolean;
   detailsLink?: LinkProps;
   renderGeneratedMedia?: boolean;
+  isVisible?: boolean;
 }
 
 export type LinkProps = {
@@ -34,7 +35,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   smallPreview,
   xsPreview,
   detailsLink: parentDetailsLink,
-  renderGeneratedMedia
+  renderGeneratedMedia,
+  isVisible = true,
 }) => {
   const { dispatch, accountOrServer } = usePostDispatch(post);
   const mediaQuery = useMedia();
@@ -108,12 +110,17 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
   // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, media: post.media })
 
+  const [hasBeenVisible, setHasBeenVisible] = useState(isVisible);
+  useEffect(() => { if (isVisible && !hasBeenVisible) setHasBeenVisible(true) }, [isVisible]);
+
   return <YStack zi={1000} width='100%' ai='center'>
+
     {embedComponent
-      ? <FadeInView><div>{embedComponent}</div></FadeInView>
-      : embedComponent
-        ? <Spinner color={primaryColor} />
-        : undefined}
+      ? hasBeenVisible
+        ? embedComponent
+        : <XStack h='$10' />
+      : undefined}
+
     {showScrollableMediaPreviews ?
       <XStack w='100%' maw={800}>
         <ScrollView horizontal w={isPreview ? '260px' : '100%'}

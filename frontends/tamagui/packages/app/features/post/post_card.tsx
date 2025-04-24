@@ -226,27 +226,27 @@ export const PostCard: React.FC<PostCardProps> = ({
     || (post.replies.length > 0 && !toggleCollapseReplies);
   const collapsed = collapseReplies || post.replies?.length == 0;
 
-  const embedSupported = post.embedLink && post.link && post.link.length;
-  let embedComponent: React.ReactNode | undefined = undefined;
-  if (embedSupported) {
-    const url = new URL(post.link!);
-    const hostname = url.hostname.split(':')[0]!;
-    if (hostname.endsWith('twitter.com')) {
-      embedComponent = <TwitterEmbed url={post.link!} />;
-    } else if (hostname.endsWith('instagram.com')) {
-      embedComponent = <InstagramEmbed url={post.link!} />;
-    } else if (hostname.endsWith('facebook.com')) {
-      embedComponent = <FacebookEmbed url={post.link!} />;
-    } else if (hostname.endsWith('youtube.com')) {
-      embedComponent = <YouTubeEmbed url={post.link!} />;
-    } else if (hostname.endsWith('tiktok.com')) {
-      embedComponent = <TikTokEmbed url={post.link!} />;
-    } else if (hostname.endsWith('pinterest.com')) {
-      embedComponent = <PinterestEmbed url={post.link!} />;
-    } else if (hostname.endsWith('linkedin.com')) {
-      embedComponent = <LinkedInEmbed url={post.link!} />;
-    }
-  }
+  // const embedSupported = post.embedLink && post.link && post.link.length;
+  // let embedComponent: React.ReactNode | undefined = undefined;
+  // if (embedSupported) {
+  //   const url = new URL(post.link!);
+  //   const hostname = url.hostname.split(':')[0]!;
+  //   if (hostname.endsWith('twitter.com')) {
+  //     embedComponent = <TwitterEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('instagram.com')) {
+  //     embedComponent = <InstagramEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('facebook.com')) {
+  //     embedComponent = <FacebookEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('youtube.com')) {
+  //     embedComponent = <YouTubeEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('tiktok.com')) {
+  //     embedComponent = <TikTokEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('pinterest.com')) {
+  //     embedComponent = <PinterestEmbed url={post.link!} />;
+  //   } else if (hostname.endsWith('linkedin.com')) {
+  //     embedComponent = <LinkedInEmbed url={post.link!} />;
+  //   }
+  // }
 
   const imagePreview = media?.find(m => m.contentType.startsWith('image'));
   const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
@@ -470,6 +470,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                             />
                             : <PostMediaRenderer
                               groupContext={selectedGroup}
+                              isVisible={isVisible || !isPreview}
                               post={{ ...post, media, embedLink }}
                               {...{ isPreview }} />}
                         </YStack>
