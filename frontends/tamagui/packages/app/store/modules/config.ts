@@ -104,7 +104,7 @@ const initialState: Config = {
   showPinnedServers: true,
   autoHideNavigation: false,
   hideNavigation: false,
-  imagePostBackgrounds: true,
+  imagePostBackgrounds: false,
   fancyPostBackgrounds: false,
   shrinkPreviews: false,
   dateTimeRenderer: 'native',
