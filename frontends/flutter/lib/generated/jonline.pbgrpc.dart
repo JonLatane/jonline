@@ -27,8 +27,92 @@ import 'users.pb.dart' as $4;
 
 export 'jonline.pb.dart';
 
+/// The internet-facing service implementing the Jonline protocol,
+/// generally exposed on port 27707 or 443 (and, when using
+/// [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
+/// A Jonline server is generally also expected to serve up web apps on ports 80/443, where
+/// select APIs are exposed with HTTP interfaces instead of gRPC.
+/// (Specifically, that [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
+/// and [`Media`, for interoperability purposes](#jonline-Media).)
+///
+/// ##### Authentication
+/// Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
+/// and `refresh_token`s.
+/// Authenticated calls require an `access_token` in request metadata to be included
+/// directly as the value of the `authorization` header (no `Bearer ` prefix).
+///
+/// First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
+/// `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
+/// then use the `refresh_token` to call the `AccessToken` RPC for a new one. (The `AccessToken` RPC
+/// may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
+/// one in client storage.)
+///
+/// ##### Dumfederation
+/// Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
+/// Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
+/// [`federation_info` in `ServerConfiguration`](#jonline-ServerConfiguration).
+///
+/// That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
+/// (Eventually, this will affect CORS policies for added security.)
+/// The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
+///
+/// ##### HTTP-based client host negotiation (for external CDNs)
+/// When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
+/// to connect to `jonline.io` via gRPC on 27707/443, the client
+/// is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
+/// (depending upon whether the gRPC server is expected to have TLS). If the `backend_host` string resource
+/// is a valid domain, say, `jonline.io.itsj.online`, the client is expected to connect
+/// to `jonline.io.itsj.online` on port 27707/443 instead. To users, the server should still *generally* appear to
+/// be `jonline.io`. The client can trust `jonline.io/backend_host` to always point to the correct backend host for
+/// `jonline.io`.
+///
+/// This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
+/// more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts)
+/// and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart)
+/// client implementations of this negotiation.
+///
+/// In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
+/// 80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
+/// proxy support. With this, both web and gRPC resources can live behind a CDN.
+///
+/// ##### API Design Notes
+/// ###### Moderation and Visibility
+/// Jonline APIs are designed to support `Moderation` and `Visibility` controls at the level of individual entities. However, to keep things
+/// DRY, moderation and visibility controls are only implemented for `User`s, `Media`, `Group`s, and `Post`s.
+///
+/// `Event`s and future `Post`-like types simply use the same implementation as their contained `Post`s. The intent here is to maximize
+/// both shared code and implementation robustness.
+///
+/// ###### Composition Over Inheritance
+/// Jonline's APIs are designed using composition over inheritance. For instance, an `Event` contains
+/// a `Post` rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
+/// through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
+///
+/// ###### Predictable Atomicity
+/// The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
+/// For instance, `UpdatePost` is fully atomic.
+///
+/// `UpdateEvent`, however, is non-atomic. Given that an `Event` has a `Post` and many `EventInstance`s,
+/// `UpdateEvent` will first update the `Post` atomically (literally calling the `UpdatePost` RPC),
+/// then the `Event` atomically, and then finally process updates to its `EventInstance`s in a final atomic operation.
+///
+/// Because moderation/visibility lives at the `Post` level, this means that a developer error in `UpdateEvents` cannot prevent
+/// visibility and moderation changes from being made in Events, even if there are errors elsewhere.
+/// This should prove a robust pattern for any future entities intended to be shareable at a Group level with visibility and
+/// moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
+/// approach to predictable atomicity.
+///
+/// #### gRPC API
 @$pb.GrpcServiceName('jonline.Jonline')
 class JonlineClient extends $grpc.Client {
+  /// The hostname for this service.
+  static const $core.String defaultHost = '';
+
+  /// OAuth scopes needed for the client.
+  static const $core.List<$core.String> oauthScopes = [
+    '',
+  ];
+
   static final _$getServiceVersion = $grpc.ClientMethod<$0.Empty, $1.GetServiceVersionResponse>(
       '/jonline.Jonline/GetServiceVersion',
       ($0.Empty value) => value.writeToBuffer(),
@@ -210,188 +294,249 @@ class JonlineClient extends $grpc.Client {
       ($7.Post value) => value.writeToBuffer(),
       ($core.List<$core.int> value) => $7.Post.fromBuffer(value));
 
-  JonlineClient($grpc.ClientChannel channel,
-      {$grpc.CallOptions? options,
-      $core.Iterable<$grpc.ClientInterceptor>? interceptors})
-      : super(channel, options: options,
-        interceptors: interceptors);
+  JonlineClient(super.channel, {super.options, super.interceptors});
 
+  /// Get the version (from Cargo) of the Jonline service. *Publicly accessible.*
   $grpc.ResponseFuture<$1.GetServiceVersionResponse> getServiceVersion($0.Empty request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getServiceVersion, request, options: options);
   }
 
+  /// Gets the Jonline server's configuration. *Publicly accessible.*
   $grpc.ResponseFuture<$2.ServerConfiguration> getServerConfiguration($0.Empty request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getServerConfiguration, request, options: options);
   }
 
+  /// Creates a user account and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   $grpc.ResponseFuture<$3.RefreshTokenResponse> createAccount($3.CreateAccountRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createAccount, request, options: options);
   }
 
+  /// Logs in a user and provides a `refresh_token` (along with an `access_token`). *Publicly accessible.*
   $grpc.ResponseFuture<$3.RefreshTokenResponse> login($3.LoginRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$login, request, options: options);
   }
 
+  /// Gets a new `access_token` (and possibly a new `refresh_token`, which should replace the old one in client storage), given a `refresh_token`. *Publicly accessible.*
   $grpc.ResponseFuture<$3.AccessTokenResponse> accessToken($3.AccessTokenRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$accessToken, request, options: options);
   }
 
+  /// Gets the current user. *Authenticated.*
   $grpc.ResponseFuture<$4.User> getCurrentUser($0.Empty request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getCurrentUser, request, options: options);
   }
 
+  /// Resets the current user's - or, for admins, a given user's - password. *Authenticated.*
   $grpc.ResponseFuture<$0.Empty> resetPassword($3.ResetPasswordRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$resetPassword, request, options: options);
   }
 
+  /// Gets Media (Images, Videos, etc) uploaded/owned by the current user. *Authenticated.* To upload/download actual Media blob/binary data, use the [HTTP Media APIs](#media).
   $grpc.ResponseFuture<$5.GetMediaResponse> getMedia($5.GetMediaRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getMedia, request, options: options);
   }
 
+  /// Deletes a media item by ID. *Authenticated.* Note that media may still be accessible for 12 hours after deletes are requested, as separate jobs clean it up from S3/MinIO.
+  /// Deleting other users' media requires `ADMIN` permissions.
   $grpc.ResponseFuture<$0.Empty> deleteMedia($5.Media request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteMedia, request, options: options);
   }
 
+  /// Gets Users. *Publicly accessible **or** Authenticated.*
+  /// Unauthenticated calls only return Users of `GLOBAL_PUBLIC` visibility.
   $grpc.ResponseFuture<$4.GetUsersResponse> getUsers($4.GetUsersRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getUsers, request, options: options);
   }
 
+  /// Update a user by ID. *Authenticated.*
+  /// Updating other users requires `ADMIN` permissions.
   $grpc.ResponseFuture<$4.User> updateUser($4.User request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateUser, request, options: options);
   }
 
+  /// Deletes a user by ID. *Authenticated.*
+  /// Deleting other users requires `ADMIN` permissions.
   $grpc.ResponseFuture<$0.Empty> deleteUser($4.User request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteUser, request, options: options);
   }
 
+  /// Follow (or request to follow) a user. *Authenticated.*
   $grpc.ResponseFuture<$4.Follow> createFollow($4.Follow request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createFollow, request, options: options);
   }
 
+  /// Used to approve follow requests. *Authenticated.*
   $grpc.ResponseFuture<$4.Follow> updateFollow($4.Follow request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateFollow, request, options: options);
   }
 
+  /// Unfollow (or unrequest) a user. *Authenticated.*
   $grpc.ResponseFuture<$0.Empty> deleteFollow($4.Follow request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteFollow, request, options: options);
   }
 
+  /// Gets Groups. *Publicly accessible **or** Authenticated.*
+  /// Unauthenticated calls only return Groups of `GLOBAL_PUBLIC` visibility.
   $grpc.ResponseFuture<$6.GetGroupsResponse> getGroups($6.GetGroupsRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getGroups, request, options: options);
   }
 
+  /// Creates a group with the current user as its admin. *Authenticated.*
+  /// Requires the `CREATE_GROUPS` permission.
   $grpc.ResponseFuture<$6.Group> createGroup($6.Group request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createGroup, request, options: options);
   }
 
+  /// Update a Groups's information, default membership permissions or moderation. *Authenticated.*
+  /// Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   $grpc.ResponseFuture<$6.Group> updateGroup($6.Group request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateGroup, request, options: options);
   }
 
+  /// Delete a Group. *Authenticated.*
+  /// Requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
   $grpc.ResponseFuture<$0.Empty> deleteGroup($6.Group request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteGroup, request, options: options);
   }
 
+  /// Get Members (User+Membership) of a Group. *Publicly accessible **or** Authenticated.*
   $grpc.ResponseFuture<$6.GetMembersResponse> getMembers($6.GetMembersRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getMembers, request, options: options);
   }
 
+  /// Requests to join a group (or joins it), or sends an invite to the user. *Authenticated.*
+  /// Memberships and moderations are set to their defaults.
   $grpc.ResponseFuture<$4.Membership> createMembership($4.Membership request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createMembership, request, options: options);
   }
 
+  /// Update aspects of a user's membership. *Authenticated.*
+  /// Updating permissions requires `ADMIN` permissions within the group, or `ADMIN` permissions for the user.
+  /// Updating moderation (approving/denying/banning) requires the same, or `MODERATE_USERS` permissions within the group.
   $grpc.ResponseFuture<$4.Membership> updateMembership($4.Membership request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateMembership, request, options: options);
   }
 
+  /// Leave a group (or cancel membership request). *Authenticated.*
   $grpc.ResponseFuture<$0.Empty> deleteMembership($4.Membership request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteMembership, request, options: options);
   }
 
+  /// Gets Posts. *Publicly accessible **or** Authenticated.*
+  /// Unauthenticated calls only return Posts of `GLOBAL_PUBLIC` visibility.
   $grpc.ResponseFuture<$7.GetPostsResponse> getPosts($7.GetPostsRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getPosts, request, options: options);
   }
 
+  /// Creates a Post. *Authenticated.*
   $grpc.ResponseFuture<$7.Post> createPost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createPost, request, options: options);
   }
 
+  /// Updates a Post. *Authenticated.*
   $grpc.ResponseFuture<$7.Post> updatePost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updatePost, request, options: options);
   }
 
+  /// (TODO) (Soft) deletes a Post. Returns the deleted version of the Post. *Authenticated.*
   $grpc.ResponseFuture<$7.Post> deletePost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deletePost, request, options: options);
   }
 
+  /// Star a Post. *Unauthenticated.*
   $grpc.ResponseFuture<$7.Post> starPost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$starPost, request, options: options);
   }
 
+  /// Unstar a Post. *Unauthenticated.*
   $grpc.ResponseFuture<$7.Post> unstarPost($7.Post request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$unstarPost, request, options: options);
   }
 
+  /// Get GroupPosts for a Post (and optional group). *Publicly accessible **or** Authenticated.*
   $grpc.ResponseFuture<$7.GetGroupPostsResponse> getGroupPosts($7.GetGroupPostsRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getGroupPosts, request, options: options);
   }
 
+  /// Cross-post a Post to a Group. *Authenticated.*
   $grpc.ResponseFuture<$7.GroupPost> createGroupPost($7.GroupPost request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createGroupPost, request, options: options);
   }
 
+  /// Group Moderators: Approve/Reject a GroupPost. *Authenticated.*
   $grpc.ResponseFuture<$7.GroupPost> updateGroupPost($7.GroupPost request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateGroupPost, request, options: options);
   }
 
+  /// Delete a GroupPost. *Authenticated.*
   $grpc.ResponseFuture<$0.Empty> deleteGroupPost($7.GroupPost request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteGroupPost, request, options: options);
   }
 
+  /// Gets Events. *Publicly accessible **or** Authenticated.*
+  /// Unauthenticated calls only return Events of `GLOBAL_PUBLIC` visibility.
   $grpc.ResponseFuture<$8.GetEventsResponse> getEvents($8.GetEventsRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getEvents, request, options: options);
   }
 
+  /// Creates an Event. *Authenticated.*
   $grpc.ResponseFuture<$8.Event> createEvent($8.Event request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$createEvent, request, options: options);
   }
 
+  /// Updates an Event. *Authenticated.*
   $grpc.ResponseFuture<$8.Event> updateEvent($8.Event request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$updateEvent, request, options: options);
   }
 
+  /// (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.*
   $grpc.ResponseFuture<$8.Event> deleteEvent($8.Event request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteEvent, request, options: options);
   }
 
+  /// Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.*
   $grpc.ResponseFuture<$8.EventAttendances> getEventAttendances($8.GetEventAttendancesRequest request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$getEventAttendances, request, options: options);
   }
 
+  /// Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
+  /// See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee)
+  /// for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token`
+  /// returned by this RPC (the client should save this for the user, and ideally, offer a link
+  /// with the token).
   $grpc.ResponseFuture<$8.EventAttendance> upsertEventAttendance($8.EventAttendance request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$upsertEventAttendance, request, options: options);
   }
 
+  /// Delete an EventAttendance.  *Publicly accessible **or** Authenticated, with anonymous RSVP support.*
   $grpc.ResponseFuture<$0.Empty> deleteEventAttendance($8.EventAttendance request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$deleteEventAttendance, request, options: options);
   }
 
+  /// Federate the current user's profile with another user profile. *Authenticated*.
   $grpc.ResponseFuture<$1.FederatedAccount> federateProfile($1.FederatedAccount request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$federateProfile, request, options: options);
   }
 
+  /// *Authenticated*.
   $grpc.ResponseFuture<$0.Empty> defederateProfile($1.FederatedAccount request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$defederateProfile, request, options: options);
   }
 
+  /// Configure the server (i.e. the response to GetServerConfiguration). *Authenticated.*
+  /// Requires `ADMIN` permissions.
   $grpc.ResponseFuture<$2.ServerConfiguration> configureServer($2.ServerConfiguration request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$configureServer, request, options: options);
   }
 
+  /// Delete ALL Media, Posts, Groups and Users except the user who performed the RPC. *Authenticated.*
+  /// Requires `ADMIN` permissions.
+  /// Note: Server Configuration is not deleted.
   $grpc.ResponseFuture<$0.Empty> resetData($0.Empty request, {$grpc.CallOptions? options}) {
     return $createUnaryCall(_$resetData, request, options: options);
   }
 
+  /// (TODO) Reply streaming interface. Currently just streams fake example data.
   $grpc.ResponseStream<$7.Post> streamReplies($7.Post request, {$grpc.CallOptions? options}) {
     return $createStreamingCall(_$streamReplies, $async.Stream.fromIterable([request]), options: options);
   }

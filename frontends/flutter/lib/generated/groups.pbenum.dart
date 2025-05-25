@@ -31,8 +31,8 @@ class GroupListingType extends $pb.ProtobufEnum {
     INVITED_GROUPS,
   ];
 
-  static final $core.Map<$core.int, GroupListingType> _byValue = $pb.ProtobufEnum.initByValue(values);
-  static GroupListingType? valueOf($core.int value) => _byValue[value];
+  static final $core.List<GroupListingType?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static GroupListingType? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const GroupListingType._(super.v, super.n);
 }

@@ -14,31 +14,31 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'visibility_moderation.pbenum.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
-///  A Jonline `Media` message represents a single media item, such as a photo or video.
-///  Media data is deliberately *not returnable from the gRPC API*. Instead, the client
-///  should fetch media from `http[s]://my.jonline.instance/media/{id}`.
+/// A Jonline `Media` message represents a single media item, such as a photo or video.
+/// Media data is deliberately *not returnable from the gRPC API*. Instead, the client
+/// should fetch media from `http[s]://my.jonline.instance/media/{id}`.
 ///
-///  Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
-///  along with an "Authorization" header (your access token) and a "Content-Type" header.
-///  On success, the endpoint will return the media ID in plaintext.
+/// Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
+/// along with an "Authorization" header (your access token) and a "Content-Type" header.
+/// On success, the endpoint will return the media ID in plaintext.
 ///
-///  `POST /media` supports the following headers:
-///  - `Content-Type` - The MIME content type of the media item.
-///  - `Filename` - An optional title for the media item.
-///  - `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
-///  - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+/// `POST /media` supports the following headers:
+/// - `Content-Type` - The MIME content type of the media item.
+/// - `Filename` - An optional title for the media item.
+/// - `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
+/// - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
 ///
-///  `GET /media` supports the following:
-///  - **Headers**:
-///      - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
-///      - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
-///  - **Query Parameters**:
-///      - `authorization` - Jonline Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
-///  - Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
+/// `GET /media` supports the following:
+/// - **Headers**:
+///     - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
+///     - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
+/// - **Query Parameters**:
+///     - `authorization` - Jonline Access Token for the user. May also be supplied in the `Cookies` or `Authorization` headers.
+/// - Fetching media without authentication requires that it has `GLOBAL_PUBLIC` visibility.
 class Media extends $pb.GeneratedMessage {
   factory Media({
     $core.String? id,
@@ -46,8 +46,8 @@ class Media extends $pb.GeneratedMessage {
     $core.String? contentType,
     $core.String? name,
     $core.String? description,
-    $10.Visibility? visibility,
-    $10.Moderation? moderation,
+    $11.Visibility? visibility,
+    $11.Moderation? moderation,
     $core.bool? generated,
     $core.bool? processed,
     $9.Timestamp? createdAt,
@@ -99,8 +99,8 @@ class Media extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'contentType')
     ..aOS(4, _omitFieldNames ? '' : 'name')
     ..aOS(5, _omitFieldNames ? '' : 'description')
-    ..e<$10.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
-    ..e<$10.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$11.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOB(8, _omitFieldNames ? '' : 'generated')
     ..aOB(9, _omitFieldNames ? '' : 'processed')
     ..aOM<$9.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
@@ -108,15 +108,9 @@ class Media extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Media clone() => Media()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Media copyWith(void Function(Media) updates) => super.copyWith((message) => updates(message as Media)) as Media;
 
   $pb.BuilderInfo get info_ => _i;
@@ -181,9 +175,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Visibility of the media item.
   @$pb.TagNumber(6)
-  $10.Visibility get visibility => $_getN(5);
+  $11.Visibility get visibility => $_getN(5);
   @$pb.TagNumber(6)
-  set visibility($10.Visibility v) { $_setField(6, v); }
+  set visibility($11.Visibility v) { $_setField(6, v); }
   @$pb.TagNumber(6)
   $core.bool hasVisibility() => $_has(5);
   @$pb.TagNumber(6)
@@ -191,9 +185,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Moderation of the media item.
   @$pb.TagNumber(7)
-  $10.Moderation get moderation => $_getN(6);
+  $11.Moderation get moderation => $_getN(6);
   @$pb.TagNumber(7)
-  set moderation($10.Moderation v) { $_setField(7, v); }
+  set moderation($11.Moderation v) { $_setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -280,15 +274,9 @@ class MediaReference extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   MediaReference clone() => MediaReference()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   MediaReference copyWith(void Function(MediaReference) updates) => super.copyWith((message) => updates(message as MediaReference)) as MediaReference;
 
   $pb.BuilderInfo get info_ => _i;
@@ -378,15 +366,9 @@ class GetMediaRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaRequest clone() => GetMediaRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaRequest copyWith(void Function(GetMediaRequest) updates) => super.copyWith((message) => updates(message as GetMediaRequest)) as GetMediaRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -453,15 +435,9 @@ class GetMediaResponse extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaResponse clone() => GetMediaResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaResponse copyWith(void Function(GetMediaResponse) updates) => super.copyWith((message) => updates(message as GetMediaResponse)) as GetMediaResponse;
 
   $pb.BuilderInfo get info_ => _i;

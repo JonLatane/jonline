@@ -16,9 +16,9 @@ import 'package:protobuf/protobuf.dart' as $pb;
 import 'federation.pb.dart' as $1;
 import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $11;
+import 'permissions.pbenum.dart' as $12;
 import 'users.pbenum.dart';
-import 'visibility_moderation.pbenum.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -33,12 +33,12 @@ class User extends $pb.GeneratedMessage {
     $core.String? realName,
     ContactMethod? email,
     ContactMethod? phone,
-    $core.Iterable<$11.Permission>? permissions,
+    $core.Iterable<$12.Permission>? permissions,
     $5.MediaReference? avatar,
     $core.String? bio,
-    $10.Visibility? visibility,
-    $10.Moderation? moderation,
-    $10.Moderation? defaultFollowModeration,
+    $11.Visibility? visibility,
+    $11.Moderation? moderation,
+    $11.Moderation? defaultFollowModeration,
     $core.int? followerCount,
     $core.int? followingCount,
     $core.int? groupCount,
@@ -138,12 +138,12 @@ class User extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'realName')
     ..aOM<ContactMethod>(4, _omitFieldNames ? '' : 'email', subBuilder: ContactMethod.create)
     ..aOM<ContactMethod>(5, _omitFieldNames ? '' : 'phone', subBuilder: ContactMethod.create)
-    ..pc<$11.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..pc<$12.Permission>(6, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
     ..aOM<$5.MediaReference>(7, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(8, _omitFieldNames ? '' : 'bio')
-    ..e<$10.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
-    ..e<$10.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
-    ..e<$10.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Visibility>(20, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$11.Moderation>(21, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Moderation>(30, _omitFieldNames ? '' : 'defaultFollowModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..a<$core.int>(31, _omitFieldNames ? '' : 'followerCount', $pb.PbFieldType.O3)
     ..a<$core.int>(32, _omitFieldNames ? '' : 'followingCount', $pb.PbFieldType.O3)
     ..a<$core.int>(33, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
@@ -160,15 +160,9 @@ class User extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   User clone() => User()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   User copyWith(void Function(User) updates) => super.copyWith((message) => updates(message as User)) as User;
 
   $pb.BuilderInfo get info_ => _i;
@@ -237,7 +231,7 @@ class User extends $pb.GeneratedMessage {
 
   /// The user's permissions. See [`Permission`](#jonline-Permission) for details.
   @$pb.TagNumber(6)
-  $pb.PbList<$11.Permission> get permissions => $_getList(5);
+  $pb.PbList<$12.Permission> get permissions => $_getList(5);
 
   /// The user's avatar. Note that its visibility is managed by the User and thus
   /// it may not be accessible to the current user.
@@ -269,9 +263,9 @@ class User extends $pb.GeneratedMessage {
   /// See server_configuration.proto for details about PRIVATE
   /// users' ability to creep.
   @$pb.TagNumber(20)
-  $10.Visibility get visibility => $_getN(8);
+  $11.Visibility get visibility => $_getN(8);
   @$pb.TagNumber(20)
-  set visibility($10.Visibility v) { $_setField(20, v); }
+  set visibility($11.Visibility v) { $_setField(20, v); }
   @$pb.TagNumber(20)
   $core.bool hasVisibility() => $_has(8);
   @$pb.TagNumber(20)
@@ -279,9 +273,9 @@ class User extends $pb.GeneratedMessage {
 
   /// The user's moderation status. See [`Moderation`](#jonline-Moderation) for details.
   @$pb.TagNumber(21)
-  $10.Moderation get moderation => $_getN(9);
+  $11.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
-  set moderation($10.Moderation v) { $_setField(21, v); }
+  set moderation($11.Moderation v) { $_setField(21, v); }
   @$pb.TagNumber(21)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(21)
@@ -289,9 +283,9 @@ class User extends $pb.GeneratedMessage {
 
   /// Only PENDING or UNMODERATED are valid.
   @$pb.TagNumber(30)
-  $10.Moderation get defaultFollowModeration => $_getN(10);
+  $11.Moderation get defaultFollowModeration => $_getN(10);
   @$pb.TagNumber(30)
-  set defaultFollowModeration($10.Moderation v) { $_setField(30, v); }
+  set defaultFollowModeration($11.Moderation v) { $_setField(30, v); }
   @$pb.TagNumber(30)
   $core.bool hasDefaultFollowModeration() => $_has(10);
   @$pb.TagNumber(30)
@@ -446,7 +440,7 @@ class Author extends $pb.GeneratedMessage {
     $core.String? username,
     $5.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$11.Permission>? permissions,
+    $core.Iterable<$12.Permission>? permissions,
   }) {
     final $result = create();
     if (userId != null) {
@@ -475,19 +469,13 @@ class Author extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$11.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..pc<$12.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Author clone() => Author()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Author copyWith(void Function(Author) updates) => super.copyWith((message) => updates(message as Author)) as Author;
 
   $pb.BuilderInfo get info_ => _i;
@@ -542,7 +530,7 @@ class Author extends $pb.GeneratedMessage {
   void clearRealName() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $pb.PbList<$11.Permission> get permissions => $_getList(4);
+  $pb.PbList<$12.Permission> get permissions => $_getList(4);
 }
 
 /// Model for a user's follow of another user.
@@ -550,7 +538,7 @@ class Follow extends $pb.GeneratedMessage {
   factory Follow({
     $core.String? userId,
     $core.String? targetUserId,
-    $10.Moderation? targetUserModeration,
+    $11.Moderation? targetUserModeration,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
@@ -579,21 +567,15 @@ class Follow extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'targetUserId')
-    ..e<$10.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'targetUserModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<$9.Timestamp>(4, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Follow clone() => Follow()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Follow copyWith(void Function(Follow) updates) => super.copyWith((message) => updates(message as Follow)) as Follow;
 
   $pb.BuilderInfo get info_ => _i;
@@ -628,9 +610,9 @@ class Follow extends $pb.GeneratedMessage {
 
   /// Tracks whether the target user needs to approve the follow.
   @$pb.TagNumber(3)
-  $10.Moderation get targetUserModeration => $_getN(2);
+  $11.Moderation get targetUserModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set targetUserModeration($10.Moderation v) { $_setField(3, v); }
+  set targetUserModeration($11.Moderation v) { $_setField(3, v); }
   @$pb.TagNumber(3)
   $core.bool hasTargetUserModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -668,9 +650,9 @@ class Membership extends $pb.GeneratedMessage {
   factory Membership({
     $core.String? userId,
     $core.String? groupId,
-    $core.Iterable<$11.Permission>? permissions,
-    $10.Moderation? groupModeration,
-    $10.Moderation? userModeration,
+    $core.Iterable<$12.Permission>? permissions,
+    $11.Moderation? groupModeration,
+    $11.Moderation? userModeration,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
@@ -705,23 +687,17 @@ class Membership extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'groupId')
-    ..pc<$11.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
-    ..e<$10.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
-    ..e<$10.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..pc<$12.Permission>(3, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
+    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'userModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(7, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Membership clone() => Membership()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Membership copyWith(void Function(Membership) updates) => super.copyWith((message) => updates(message as Membership)) as Membership;
 
   $pb.BuilderInfo get info_ => _i;
@@ -756,13 +732,13 @@ class Membership extends $pb.GeneratedMessage {
 
   /// Valid Membership Permissions are:  `VIEW_POSTS`, `CREATE_POSTS`, `MODERATE_POSTS`, `VIEW_EVENTS`, CREATE_EVENTS, `MODERATE_EVENTS`, `ADMIN`, `RUN_BOTS`, and `MODERATE_USERS`
   @$pb.TagNumber(3)
-  $pb.PbList<$11.Permission> get permissions => $_getList(2);
+  $pb.PbList<$12.Permission> get permissions => $_getList(2);
 
   /// Tracks whether group moderators need to approve the membership.
   @$pb.TagNumber(4)
-  $10.Moderation get groupModeration => $_getN(3);
+  $11.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($10.Moderation v) { $_setField(4, v); }
+  set groupModeration($11.Moderation v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -770,9 +746,9 @@ class Membership extends $pb.GeneratedMessage {
 
   /// Tracks whether the user needs to approve the membership.
   @$pb.TagNumber(5)
-  $10.Moderation get userModeration => $_getN(4);
+  $11.Moderation get userModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set userModeration($10.Moderation v) { $_setField(5, v); }
+  set userModeration($11.Moderation v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasUserModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -808,7 +784,7 @@ class Membership extends $pb.GeneratedMessage {
 class ContactMethod extends $pb.GeneratedMessage {
   factory ContactMethod({
     $core.String? value,
-    $10.Visibility? visibility,
+    $11.Visibility? visibility,
     $core.bool? supportedByServer,
     $core.bool? verified,
   }) {
@@ -833,21 +809,15 @@ class ContactMethod extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
-    ..e<$10.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
+    ..e<$11.Visibility>(2, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
     ..aOB(3, _omitFieldNames ? '' : 'supportedByServer')
     ..aOB(4, _omitFieldNames ? '' : 'verified')
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ContactMethod clone() => ContactMethod()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ContactMethod copyWith(void Function(ContactMethod) updates) => super.copyWith((message) => updates(message as ContactMethod)) as ContactMethod;
 
   $pb.BuilderInfo get info_ => _i;
@@ -872,9 +842,9 @@ class ContactMethod extends $pb.GeneratedMessage {
 
   /// The visibility of the contact method.
   @$pb.TagNumber(2)
-  $10.Visibility get visibility => $_getN(1);
+  $11.Visibility get visibility => $_getN(1);
   @$pb.TagNumber(2)
-  set visibility($10.Visibility v) { $_setField(2, v); }
+  set visibility($11.Visibility v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasVisibility() => $_has(1);
   @$pb.TagNumber(2)
@@ -939,15 +909,9 @@ class GetUsersRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersRequest clone() => GetUsersRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersRequest copyWith(void Function(GetUsersRequest) updates) => super.copyWith((message) => updates(message as GetUsersRequest)) as GetUsersRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1026,15 +990,9 @@ class GetUsersResponse extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersResponse clone() => GetUsersResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersResponse copyWith(void Function(GetUsersResponse) updates) => super.copyWith((message) => updates(message as GetUsersResponse)) as GetUsersResponse;
 
   $pb.BuilderInfo get info_ => _i;

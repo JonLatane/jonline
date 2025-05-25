@@ -28,8 +28,8 @@ class AuthenticationFeature extends $pb.ProtobufEnum {
     LOGIN,
   ];
 
-  static final $core.Map<$core.int, AuthenticationFeature> _byValue = $pb.ProtobufEnum.initByValue(values);
-  static AuthenticationFeature? valueOf($core.int value) => _byValue[value];
+  static final $core.List<AuthenticationFeature?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static AuthenticationFeature? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const AuthenticationFeature._(super.v, super.n);
 }
@@ -52,8 +52,8 @@ class PrivateUserStrategy extends $pb.ProtobufEnum {
     LET_ME_CREEP_ON_PPL,
   ];
 
-  static final $core.Map<$core.int, PrivateUserStrategy> _byValue = $pb.ProtobufEnum.initByValue(values);
-  static PrivateUserStrategy? valueOf($core.int value) => _byValue[value];
+  static final $core.List<PrivateUserStrategy?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static PrivateUserStrategy? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const PrivateUserStrategy._(super.v, super.n);
 }
@@ -75,8 +75,8 @@ class WebUserInterface extends $pb.ProtobufEnum {
     REACT_TAMAGUI,
   ];
 
-  static final $core.Map<$core.int, WebUserInterface> _byValue = $pb.ProtobufEnum.initByValue(values);
-  static WebUserInterface? valueOf($core.int value) => _byValue[value];
+  static final $core.List<WebUserInterface?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 2);
+  static WebUserInterface? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const WebUserInterface._(super.v, super.n);
 }

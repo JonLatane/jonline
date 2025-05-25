@@ -13,9 +13,9 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-///  The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
+/// The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
 ///
-///  Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
+/// Events returned are ordered by start time unless otherwise specified (specifically, `NEWLY_ADDED_EVENTS`).
 class EventListingType extends $pb.ProtobufEnum {
   /// Gets `SERVER_PUBLIC` and `GLOBAL_PUBLIC` events depending on whether the user is logged in, `LIMITED` events from authors the user is following, and `PRIVATE` events owned by, or directly addressed to, the current user.
   static const EventListingType ALL_ACCESSIBLE_EVENTS = EventListingType._(0, _omitEnumNames ? '' : 'ALL_ACCESSIBLE_EVENTS');
@@ -76,8 +76,8 @@ class AttendanceStatus extends $pb.ProtobufEnum {
     NOT_GOING,
   ];
 
-  static final $core.Map<$core.int, AttendanceStatus> _byValue = $pb.ProtobufEnum.initByValue(values);
-  static AttendanceStatus? valueOf($core.int value) => _byValue[value];
+  static final $core.List<AttendanceStatus?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 3);
+  static AttendanceStatus? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const AttendanceStatus._(super.v, super.n);
 }

@@ -15,30 +15,30 @@ import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'events.pbenum.dart';
 import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'location.pb.dart' as $12;
+import 'location.pb.dart' as $10;
 import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $11;
+import 'permissions.pbenum.dart' as $12;
 import 'posts.pb.dart' as $7;
 import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'events.pbenum.dart';
 
-///  Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
-///  if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
+/// Request to get Events in a formatted *per-EventInstance* structure. i.e. the response will carry duplicate `Event`s with the same ID
+/// if that `Event` has multiple `EventInstance`s in the time frame the client asked for.
 ///
-///  These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
+/// These structured EventInstances are ordered by start time unless otherwise specified (specifically, `EventListingType.NEWLY_ADDED_EVENTS`).
 ///
-///  Valid GetEventsRequest formats:
-///  - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
-///  - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
-///  - `{event_id:}`                                    (TODO: get single event including preview data)
-///  - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
-///                                                     (TODO: get events/events needing moderation for a group)
-///  - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
-///  - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
+/// Valid GetEventsRequest formats:
+/// - `{[listing_type: PublicEvents]}`                 (TODO: get ServerPublic/GlobalPublic events you can see)
+/// - `{listing_type:MyGroupsEvents|FollowingEvents}`  (TODO: get events for groups joined or user followed; auth required)
+/// - `{event_id:}`                                    (TODO: get single event including preview data)
+/// - `{listing_type: GroupEvents| GroupEventsPendingModeration, group_id:}`
+///                                                    (TODO: get events/events needing moderation for a group)
+/// - `{author_user_id:, group_id:}`                   (TODO: get events by a user for a group)
+/// - `{listing_type: AuthorEvents, author_user_id:}`  (TODO: get events by a user)
 class GetEventsRequest extends $pb.GeneratedMessage {
   factory GetEventsRequest({
     $core.String? eventId,
@@ -98,15 +98,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventsRequest clone() => GetEventsRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventsRequest copyWith(void Function(GetEventsRequest) updates) => super.copyWith((message) => updates(message as GetEventsRequest)) as GetEventsRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -244,15 +238,9 @@ class TimeFilter extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   TimeFilter clone() => TimeFilter()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   TimeFilter copyWith(void Function(TimeFilter) updates) => super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter;
 
   $pb.BuilderInfo get info_ => _i;
@@ -314,17 +302,17 @@ class TimeFilter extends $pb.GeneratedMessage {
   $9.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
-///  A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
+/// A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
 ///
-///  Note that `GetEventsResponse` may often include duplicate Events with the same ID.
-///  I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
-///  This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
-///  The client should be able to handle this.
+/// Note that `GetEventsResponse` may often include duplicate Events with the same ID.
+/// I.E. something like: `{events: [{id: a, instances: [{id: x}]}, {id: a, instances: [{id: y}]}, ]}` is a valid response.
+/// This semantically means: "Event A has both instances X and Y in the time frame the client asked for."
+/// The client should be able to handle this.
 ///
-///  In the React/Tamagui client, this is handled by the Redux store, which
-///  effectively "compacts" all response into its own internal Events store, in a form something like:
-///  `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
-///  (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
+/// In the React/Tamagui client, this is handled by the Redux store, which
+/// effectively "compacts" all response into its own internal Events store, in a form something like:
+/// `{events: {a: {id: a, instances: [{id: x}, {id: y}]}, ...}, instanceEventIds: {x:a, y:a}}`.
+/// (In reality it uses `EntityAdapter` which is a bit more complicated, but the idea is the same.)
 class GetEventsResponse extends $pb.GeneratedMessage {
   factory GetEventsResponse({
     $core.Iterable<Event>? events,
@@ -344,15 +332,9 @@ class GetEventsResponse extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventsResponse clone() => GetEventsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventsResponse copyWith(void Function(GetEventsResponse) updates) => super.copyWith((message) => updates(message as GetEventsResponse)) as GetEventsResponse;
 
   $pb.BuilderInfo get info_ => _i;
@@ -369,10 +351,10 @@ class GetEventsResponse extends $pb.GeneratedMessage {
   $pb.PbList<Event> get events => $_getList(0);
 }
 
-///  An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
-///  about the `Event`. Actual time data lies in its `EventInstances`.
+/// An `Event` is a top-level type used to organize calendar events, RSVPs, and messaging/posting
+/// about the `Event`. Actual time data lies in its `EventInstances`.
 ///
-///  (Eventually, Jonline Events should also support ticketing.)
+/// (Eventually, Jonline Events should also support ticketing.)
 class Event extends $pb.GeneratedMessage {
   factory Event({
     $core.String? id,
@@ -407,15 +389,9 @@ class Event extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Event clone() => Event()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Event copyWith(void Function(Event) updates) => super.copyWith((message) => updates(message as Event)) as Event;
 
   $pb.BuilderInfo get info_ => _i;
@@ -475,7 +451,7 @@ class EventInfo extends $pb.GeneratedMessage {
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
     $core.bool? hideLocationUntilRsvpApproved,
-    $10.Moderation? defaultRsvpModeration,
+    $11.Moderation? defaultRsvpModeration,
   }) {
     final $result = create();
     if (allowsRsvps != null) {
@@ -504,19 +480,13 @@ class EventInfo extends $pb.GeneratedMessage {
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
-    ..e<$10.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInfo clone() => EventInfo()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInfo copyWith(void Function(EventInfo) updates) => super.copyWith((message) => updates(message as EventInfo)) as EventInfo;
 
   $pb.BuilderInfo get info_ => _i;
@@ -575,9 +545,9 @@ class EventInfo extends $pb.GeneratedMessage {
   /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
-  $10.Moderation get defaultRsvpModeration => $_getN(4);
+  $11.Moderation get defaultRsvpModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set defaultRsvpModeration($10.Moderation v) { $_setField(5, v); }
+  set defaultRsvpModeration($11.Moderation v) { $_setField(5, v); }
   @$pb.TagNumber(5)
   $core.bool hasDefaultRsvpModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -595,7 +565,7 @@ class EventInstance extends $pb.GeneratedMessage {
     EventInstanceInfo? info,
     $9.Timestamp? startsAt,
     $9.Timestamp? endsAt,
-    $12.Location? location,
+    $10.Location? location,
   }) {
     final $result = create();
     if (id != null) {
@@ -632,19 +602,13 @@ class EventInstance extends $pb.GeneratedMessage {
     ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$12.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $12.Location.create)
+    ..aOM<$10.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $10.Location.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstance clone() => EventInstance()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstance copyWith(void Function(EventInstance) updates) => super.copyWith((message) => updates(message as EventInstance)) as EventInstance;
 
   $pb.BuilderInfo get info_ => _i;
@@ -727,15 +691,15 @@ class EventInstance extends $pb.GeneratedMessage {
 
   /// The location of the event.
   @$pb.TagNumber(7)
-  $12.Location get location => $_getN(6);
+  $10.Location get location => $_getN(6);
   @$pb.TagNumber(7)
-  set location($12.Location v) { $_setField(7, v); }
+  set location($10.Location v) { $_setField(7, v); }
   @$pb.TagNumber(7)
   $core.bool hasLocation() => $_has(6);
   @$pb.TagNumber(7)
   void clearLocation() => $_clearField(7);
   @$pb.TagNumber(7)
-  $12.Location ensureLocation() => $_ensure(6);
+  $10.Location ensureLocation() => $_ensure(6);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -759,15 +723,9 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstanceInfo clone() => EventInstanceInfo()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) => super.copyWith((message) => updates(message as EventInstanceInfo)) as EventInstanceInfo;
 
   $pb.BuilderInfo get info_ => _i;
@@ -854,15 +812,9 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstanceRsvpInfo clone() => EventInstanceRsvpInfo()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventInstanceRsvpInfo copyWith(void Function(EventInstanceRsvpInfo) updates) => super.copyWith((message) => updates(message as EventInstanceRsvpInfo)) as EventInstanceRsvpInfo;
 
   $pb.BuilderInfo get info_ => _i;
@@ -991,15 +943,9 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventAttendancesRequest clone() => GetEventAttendancesRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetEventAttendancesRequest copyWith(void Function(GetEventAttendancesRequest) updates) => super.copyWith((message) => updates(message as GetEventAttendancesRequest)) as GetEventAttendancesRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1039,7 +985,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
-    $12.Location? hiddenLocation,
+    $10.Location? hiddenLocation,
   }) {
     final $result = create();
     if (attendances != null) {
@@ -1056,19 +1002,13 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
-    ..aOM<$12.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $12.Location.create)
+    ..aOM<$10.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $10.Location.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventAttendances clone() => EventAttendances()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventAttendances copyWith(void Function(EventAttendances) updates) => super.copyWith((message) => updates(message as EventAttendances)) as EventAttendances;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1087,15 +1027,15 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   /// When `hide_location_until_rsvp_approved` is set, the location of the event.
   @$pb.TagNumber(2)
-  $12.Location get hiddenLocation => $_getN(1);
+  $10.Location get hiddenLocation => $_getN(1);
   @$pb.TagNumber(2)
-  set hiddenLocation($12.Location v) { $_setField(2, v); }
+  set hiddenLocation($10.Location v) { $_setField(2, v); }
   @$pb.TagNumber(2)
   $core.bool hasHiddenLocation() => $_has(1);
   @$pb.TagNumber(2)
   void clearHiddenLocation() => $_clearField(2);
   @$pb.TagNumber(2)
-  $12.Location ensureHiddenLocation() => $_ensure(1);
+  $10.Location ensureHiddenLocation() => $_ensure(1);
 }
 
 enum EventAttendance_Attendee {
@@ -1119,7 +1059,7 @@ class EventAttendance extends $pb.GeneratedMessage {
     $core.String? invitingUserId,
     $core.String? privateNote,
     $core.String? publicNote,
-    $10.Moderation? moderation,
+    $11.Moderation? moderation,
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
@@ -1182,21 +1122,15 @@ class EventAttendance extends $pb.GeneratedMessage {
     ..aOS(7, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(8, _omitFieldNames ? '' : 'privateNote')
     ..aOS(9, _omitFieldNames ? '' : 'publicNote')
-    ..e<$10.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<$9.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$9.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventAttendance clone() => EventAttendance()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   EventAttendance copyWith(void Function(EventAttendance) updates) => super.copyWith((message) => updates(message as EventAttendance)) as EventAttendance;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1308,9 +1242,9 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   @$pb.TagNumber(10)
-  $10.Moderation get moderation => $_getN(9);
+  $11.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
-  set moderation($10.Moderation v) { $_setField(10, v); }
+  set moderation($11.Moderation v) { $_setField(10, v); }
   @$pb.TagNumber(10)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(10)
@@ -1341,10 +1275,10 @@ class EventAttendance extends $pb.GeneratedMessage {
   $9.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
-///  An anonymous internet user who has RSVP'd to an `EventInstance`.
+/// An anonymous internet user who has RSVP'd to an `EventInstance`.
 ///
-///  (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
-///  make them visible to the event creator.
+/// (TODO:) The visibility on `AnonymousAttendee` `ContactMethod`s should support the `LIMITED` visibility, which will
+/// make them visible to the event creator.
 class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee({
     $core.String? name,
@@ -1374,15 +1308,9 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   AnonymousAttendee clone() => AnonymousAttendee()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) => super.copyWith((message) => updates(message as AnonymousAttendee)) as AnonymousAttendee;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1430,7 +1358,7 @@ class UserAttendee extends $pb.GeneratedMessage {
     $core.String? username,
     $5.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$11.Permission>? permissions,
+    $core.Iterable<$12.Permission>? permissions,
   }) {
     final $result = create();
     if (userId != null) {
@@ -1459,19 +1387,13 @@ class UserAttendee extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'username')
     ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$11.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $11.Permission.valueOf, enumValues: $11.Permission.values, defaultEnumValue: $11.Permission.PERMISSION_UNKNOWN)
+    ..pc<$12.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   UserAttendee clone() => UserAttendee()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   UserAttendee copyWith(void Function(UserAttendee) updates) => super.copyWith((message) => updates(message as UserAttendee)) as UserAttendee;
 
   $pb.BuilderInfo get info_ => _i;
@@ -1526,7 +1448,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   void clearRealName() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $pb.PbList<$11.Permission> get permissions => $_getList(4);
+  $pb.PbList<$12.Permission> get permissions => $_getList(4);
 }
 
 

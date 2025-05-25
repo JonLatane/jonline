@@ -18,28 +18,28 @@ import 'google/protobuf/timestamp.pb.dart' as $9;
 import 'media.pb.dart' as $5;
 import 'posts.pbenum.dart';
 import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $10;
+import 'visibility_moderation.pbenum.dart' as $11;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
 export 'posts.pbenum.dart';
 
-///  Valid GetPostsRequest formats:
+/// Valid GetPostsRequest formats:
 ///
-///  - `{[listing_type: AllAccessiblePosts]}`
-///      - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
-///  - `{listing_type:MyGroupsPosts|FollowingPosts}`
-///      - Get posts from groups you're a member of or from users you're following. Authorization required.
-///  - `{post_id:}`
-///      - Get one post ,including preview data/
-///  - `{post_id:, reply_depth: 1}`
-///      - Get replies to a post - only support for replyDepth=1 is done for now though.
-///  - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
-///      - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
-///  - `{author_user_id:, group_id:}`
-///      - Get posts by a user for a group. (TODO)
-///  - `{listing_type: AuthorPosts, author_user_id:}`
-///      - Get posts by a user. (TODO)
+/// - `{[listing_type: AllAccessiblePosts]}`
+///     - Get ServerPublic/GlobalPublic posts you can see based on your authorization (or lack thereof).
+/// - `{listing_type:MyGroupsPosts|FollowingPosts}`
+///     - Get posts from groups you're a member of or from users you're following. Authorization required.
+/// - `{post_id:}`
+///     - Get one post ,including preview data/
+/// - `{post_id:, reply_depth: 1}`
+///     - Get replies to a post - only support for replyDepth=1 is done for now though.
+/// - `{listing_type: MyGroupsPosts|`GroupPost`sPendingModeration, group_id:}`
+///     - Get posts/posts needing moderation for a group. Authorization may be required depending on group visibility.
+/// - `{author_user_id:, group_id:}`
+///     - Get posts by a user for a group. (TODO)
+/// - `{listing_type: AuthorPosts, author_user_id:}`
+///     - Get posts by a user. (TODO)
 class GetPostsRequest extends $pb.GeneratedMessage {
   factory GetPostsRequest({
     $core.String? postId,
@@ -94,15 +94,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetPostsRequest clone() => GetPostsRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetPostsRequest copyWith(void Function(GetPostsRequest) updates) => super.copyWith((message) => updates(message as GetPostsRequest)) as GetPostsRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -216,15 +210,9 @@ class GetPostsResponse extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetPostsResponse clone() => GetPostsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetPostsResponse copyWith(void Function(GetPostsResponse) updates) => super.copyWith((message) => updates(message as GetPostsResponse)) as GetPostsResponse;
 
   $pb.BuilderInfo get info_ => _i;
@@ -242,13 +230,13 @@ class GetPostsResponse extends $pb.GeneratedMessage {
   $pb.PbList<Post> get posts => $_getList(0);
 }
 
-///  A `Post` is a message that can be posted to the server. Its `visibility`
-///  as well as any associated `GroupPost`s and `UserPost`s determine what users
-///  see it and where.
+/// A `Post` is a message that can be posted to the server. Its `visibility`
+/// as well as any associated `GroupPost`s and `UserPost`s determine what users
+/// see it and where.
 ///
-///  `Post`s are also a fundamental unit of the system. They provide a building block
-///  of Visibility and Moderation management that is used throughout Posts, Replies, Events,
-///  and Event Instances.
+/// `Post`s are also a fundamental unit of the system. They provide a building block
+/// of Visibility and Moderation management that is used throughout Posts, Replies, Events,
+/// and Event Instances.
 class Post extends $pb.GeneratedMessage {
   factory Post({
     $core.String? id,
@@ -265,8 +253,8 @@ class Post extends $pb.GeneratedMessage {
     $core.bool? embedLink,
     $core.bool? shareable,
     PostContext? context,
-    $10.Visibility? visibility,
-    $10.Moderation? moderation,
+    $11.Visibility? visibility,
+    $11.Moderation? moderation,
     GroupPost? currentGroupPost,
     $core.Iterable<Post>? replies,
     $9.Timestamp? createdAt,
@@ -366,8 +354,8 @@ class Post extends $pb.GeneratedMessage {
     ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
     ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..e<$10.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $10.Visibility.VISIBILITY_UNKNOWN, valueOf: $10.Visibility.valueOf, enumValues: $10.Visibility.values)
-    ..e<$10.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..e<$11.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
     ..pc<Post>(19, _omitFieldNames ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
     ..aOM<$9.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
@@ -378,15 +366,9 @@ class Post extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Post clone() => Post()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Post copyWith(void Function(Post) updates) => super.copyWith((message) => updates(message as Post)) as Post;
 
   $pb.BuilderInfo get info_ => _i;
@@ -539,9 +521,9 @@ class Post extends $pb.GeneratedMessage {
 
   /// The visibility of the Post.
   @$pb.TagNumber(15)
-  $10.Visibility get visibility => $_getN(14);
+  $11.Visibility get visibility => $_getN(14);
   @$pb.TagNumber(15)
-  set visibility($10.Visibility v) { $_setField(15, v); }
+  set visibility($11.Visibility v) { $_setField(15, v); }
   @$pb.TagNumber(15)
   $core.bool hasVisibility() => $_has(14);
   @$pb.TagNumber(15)
@@ -549,9 +531,9 @@ class Post extends $pb.GeneratedMessage {
 
   /// The moderation of the Post.
   @$pb.TagNumber(16)
-  $10.Moderation get moderation => $_getN(15);
+  $11.Moderation get moderation => $_getN(15);
   @$pb.TagNumber(16)
-  set moderation($10.Moderation v) { $_setField(16, v); }
+  set moderation($11.Moderation v) { $_setField(16, v); }
   @$pb.TagNumber(16)
   $core.bool hasModeration() => $_has(15);
   @$pb.TagNumber(16)
@@ -645,7 +627,7 @@ class GroupPost extends $pb.GeneratedMessage {
     $core.String? postId,
   @$core.Deprecated('This field is deprecated.')
     $core.String? userId,
-    $10.Moderation? groupModeration,
+    $11.Moderation? groupModeration,
     $9.Timestamp? createdAt,
     $4.Author? sharedBy,
   }) {
@@ -679,21 +661,15 @@ class GroupPost extends $pb.GeneratedMessage {
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..aOS(3, _omitFieldNames ? '' : 'userId')
-    ..e<$10.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $10.Moderation.MODERATION_UNKNOWN, valueOf: $10.Moderation.valueOf, enumValues: $10.Moderation.values)
+    ..e<$11.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
     ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
     ..aOM<$4.Author>(6, _omitFieldNames ? '' : 'sharedBy', subBuilder: $4.Author.create)
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GroupPost clone() => GroupPost()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GroupPost copyWith(void Function(GroupPost) updates) => super.copyWith((message) => updates(message as GroupPost)) as GroupPost;
 
   $pb.BuilderInfo get info_ => _i;
@@ -742,9 +718,9 @@ class GroupPost extends $pb.GeneratedMessage {
 
   /// The moderation of the post in the group.
   @$pb.TagNumber(4)
-  $10.Moderation get groupModeration => $_getN(3);
+  $11.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($10.Moderation v) { $_setField(4, v); }
+  set groupModeration($11.Moderation v) { $_setField(4, v); }
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -806,15 +782,9 @@ class UserPost extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   UserPost clone() => UserPost()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   UserPost copyWith(void Function(UserPost) updates) => super.copyWith((message) => updates(message as UserPost)) as UserPost;
 
   $pb.BuilderInfo get info_ => _i;
@@ -885,15 +855,9 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupPostsRequest clone() => GetGroupPostsRequest()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupPostsRequest copyWith(void Function(GetGroupPostsRequest) updates) => super.copyWith((message) => updates(message as GetGroupPostsRequest)) as GetGroupPostsRequest;
 
   $pb.BuilderInfo get info_ => _i;
@@ -947,15 +911,9 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
     ..hasRequiredFields = false
   ;
 
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupPostsResponse clone() => GetGroupPostsResponse()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
+  @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupPostsResponse copyWith(void Function(GetGroupPostsResponse) updates) => super.copyWith((message) => updates(message as GetGroupPostsResponse)) as GetGroupPostsResponse;
 
   $pb.BuilderInfo get info_ => _i;
