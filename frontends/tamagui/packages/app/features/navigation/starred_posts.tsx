@@ -54,7 +54,8 @@ export function StarredPosts({ }: StarredPostsProps) {
   const starredPostIds = useAppSelector(state => state.config.starredPostIds) ?? [];
 
   const [open, setOpen] = useState(false);
-  const openDebounced = useDebounceValue(open, 3000);
+  // const openDebounced300 = useDebounceValue(open, 300);
+  // const openDebounced3000 = useDebounceValue(open, 3000);
   const openedPostId = useAppSelector(state => state.config.openedStarredPostId);
   const setOpenedPostId = (postId: string | undefined) =>
     dispatch(setOpenedStarredPost(postId));
@@ -395,7 +396,8 @@ export function StarredPosts({ }: StarredPostsProps) {
                       </div>
                       : undefined}
 
-                    {open || openDebounced ?
+                    {true //|| openDebounced300 || openDebounced3000 
+                      ?
                       openedPostId// && basePost
                         ? [
                           <StarredPostCard key={`fullsize-starred-post-card-${openedPostId}`} {...{ postId: openedPostId }} fullSize hasMainServerPrimaryBackground />,

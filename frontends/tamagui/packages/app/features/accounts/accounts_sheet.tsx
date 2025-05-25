@@ -41,7 +41,8 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
   const [newServerHost, setNewServerHost] = useState('');
   const [newServerSecure, setNewServerSecure] = useState(true);
 
-  const openDebounced = useDebounceValue(open, 3000);
+  // const openDebounced300 = useDebounceValue(open, 300);
+  // const openDebounced3000 = useDebounceValue(open, 3000);
   // useEffect(() => {
   //   if (openDebounced && !hasOpenedAccounts) {
   //     requestAnimationFrame(() => dispatch(setHasOpenedAccounts(true)));
@@ -167,11 +168,11 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
     </Tooltip.Content>
   </Tooltip>, [currentServer, browsingOn]);
 
-  const renderContent = open || openDebounced;
+  const renderContent = true;//openDebounced300 || openDebounced3000;
 
-  const pinnedServers = usePinnedAccountsAndServers().map(aos =>
-    `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`)
-    .sort().join(',');
+  // const pinnedServers = usePinnedAccountsAndServers().map(aos =>
+  //   `${aos.server ? serverID(aos.server) : null}-(${aos.account ? accountID(aos.account) : null})`)
+  //   .sort().join(',');
 
   // useEffect(() => {
   //   if (open) {

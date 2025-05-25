@@ -29,10 +29,10 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
   const primaryColorMeta = colorMeta(primaryColor);
 
   function moveUp() {
-    dispatch(moveServerUp(serverID(server)!));
+    requestAnimationFrame(() => dispatch(moveServerUp(serverID(server)!)));
   }
   function moveDown() {
-    dispatch(moveServerDown(serverID(server)!));
+    requestAnimationFrame(() => dispatch(moveServerDown(serverID(server)!)));
   }
   const canMoveUp = serversState.ids.indexOf(serverID(server)!) > 0;
   const canMoveDown = serversState.ids.indexOf(serverID(server)!) < serversState.ids.length - 1;

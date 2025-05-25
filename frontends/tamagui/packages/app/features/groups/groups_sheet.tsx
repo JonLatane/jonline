@@ -243,7 +243,8 @@ export function GroupsSheet({
   const paginatedArrangedGroups = pagination.results;
 
   const topPaginationId = `${componentKey}-top-pagination`;
-  const openDebounced = useDebounceValue(open, 300);
+  // const openDebounced300 = useDebounceValue(open, 300);
+  // const openDebounced3000 = useDebounceValue(open, 3000);
   return <Sheet
     modal
     open={open}
@@ -330,7 +331,7 @@ export function GroupsSheet({
       <Sheet.ScrollView px="$3" py='$2' w='100%'>
         <AutoAnimatedList style={{ maxWidth: 600, width: '100%', alignSelf: 'center' }} gap={0}>
 
-          {open || openDebounced
+          {true //openDebounced300 || openDebounced3000
             ? <>
               <PageChooser id={topPaginationId} key='pagination-top' {...pagination} width='auto' maxWidth='100%' />
               {paginatedArrangedGroups.length === 0

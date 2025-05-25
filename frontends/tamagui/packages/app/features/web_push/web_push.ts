@@ -2,13 +2,13 @@ import { AccountOrServer, JonlineServer } from "app/store";
 import { pageInitializer } from "app/utils/page_initializer";
 
 export const webPushSupport = pageInitializer(async () => {
-  debugger;
+  // debugger;
   if ('serviceWorker' in navigator) {
-    debugger;
+    // debugger;
     navigator.serviceWorker
       .register('/jonline-service-worker.js', { scope: '/' })
       .then(async (registration) => {
-        debugger;
+        // debugger;
         console.log('Jonline Web Push /jonline-service-worker.js launched with scope', registration.scope);
         // const subscription = registration.pushManager.subscribe({
         //   userVisibleOnly: true,

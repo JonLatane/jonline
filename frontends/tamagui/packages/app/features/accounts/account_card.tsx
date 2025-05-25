@@ -128,38 +128,40 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const { allowServerSelection } = useLocalConfiguration();
 
   function doSelectAccount() {
-    if (account.needsReauthentication) {
-      // onReauthenticate(account);
-      setShowReauthenticate(true);
-      return;
-    }
-
-    if (!isCurrentServer) {
-      if (pinned) {
-        dispatch(unpinAccount(account));
-      } else {
-        dispatch(pinAccount(account));
+    requestAnimationFrame(() => {
+      if (account.needsReauthentication) {
+        // onReauthenticate(account);
+        setShowReauthenticate(true);
+        return;
       }
-      return;
-    }
 
-    if (isCurrentServer || allowServerSelection) {
-      if (currentServer?.host != account.server.host) {
-
-        dispatch(selectServer(account.server));
+      if (!isCurrentServer) {
+        if (pinned) {
+          dispatch(unpinAccount(account));
+        } else {
+          dispatch(pinAccount(account));
+        }
+        return;
       }
-      dispatch(selectAccount(account));
-    }
+
+      if (isCurrentServer || allowServerSelection) {
+        if (currentServer?.host != account.server.host) {
+
+          dispatch(selectServer(account.server));
+        }
+        dispatch(selectAccount(account));
+      }
+    });
   }
 
   function doLogout() {
-    dispatch(selectAccount(undefined));
+    requestAnimationFrame(() => dispatch(selectAccount(undefined)));
   }
   function moveUp() {
-    dispatch(moveAccountUp(accountID(account)!));
+    requestAnimationFrame(() => dispatch(moveAccountUp(accountID(account)!)));
   }
   function moveDown() {
-    dispatch(moveAccountDown(accountID(account)!));
+    requestAnimationFrame(() => dispatch(moveAccountDown(accountID(account)!)));
   }
   const accountIds = useAppSelector(selectAccountIds());
   const canMoveUp = accountIds.indexOf(accountID(account)!) > 0;
