@@ -7,7 +7,7 @@ import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createParam } from 'solito';
 import { useLink } from 'solito/link';
 import { useAppSelector } from '../../hooks/store_hooks';
@@ -177,6 +177,9 @@ export function UsernameDetailsScreen() {
   const allEvents = bigCalendar
     ? eventResults
     : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
+  const bigCalendarScrollToTime = useMemo(() =>
+    allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
+    , [allEvents])
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });
@@ -407,7 +410,7 @@ export function UsernameDetailsScreen() {
             {!editMode
               ? allEvents.length > 0 ? [
                 <div key='upcoming-events-header' style={{ width: '100%' }}>
-                  <XStack w='100%' ai='center'>
+                  <XStack w='100%' ai='center' px='$3'>
 
                     <Button mr='$2' my='$2' onPress={() => setShowEvents(!showEvents)}>
                       <YStack ai='center'>
@@ -445,7 +448,7 @@ export function UsernameDetailsScreen() {
                   ? bigCalendar && allEvents.length > 0
                     ? [
                       <div key='full-calendar'>
-                        <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />
+                        <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
                       </div>
                     ]
                     : [
