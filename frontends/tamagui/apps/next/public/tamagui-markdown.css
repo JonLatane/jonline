@@ -1,0 +1,100 @@
+.tamagui-markdown {
+  --f-family: Inter, -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --f-lineHeight-1: 21px;
+  --f-lineHeight-2: 22px;
+  --f-lineHeight-3: 23px;
+  --f-lineHeight-4: 24px;
+  --f-lineHeight-5: 26px;
+  --f-lineHeight-6: 30px;
+  --f-lineHeight-7: 32px;
+  --f-lineHeight-8: 35px;
+  --f-lineHeight-9: 42px;
+  --f-lineHeight-10: 58px;
+  --f-lineHeight-11: 69px;
+  --f-lineHeight-12: 76px;
+  --f-lineHeight-13: 86px;
+  --f-lineHeight-14: 108px;
+  --f-lineHeight-15: 131px;
+  --f-lineHeight-16: 152px;
+  --f-lineHeight-true: 24px;
+  --f-weight-1: 300;
+  --f-weight-2: 300;
+  --f-weight-3: 300;
+  --f-weight-4: 300;
+  --f-weight-5: 300;
+  --f-weight-6: 300;
+  --f-weight-7: 300;
+  --f-weight-8: 300;
+  --f-weight-9: 300;
+  --f-weight-10: 300;
+  --f-weight-11: 300;
+  --f-weight-12: 300;
+  --f-weight-13: 300;
+  --f-weight-14: 300;
+  --f-weight-15: 300;
+  --f-weight-16: 300;
+  --f-weight-true: 300;
+  --f-letterSpacing-1: 0px;
+  --f-letterSpacing-2: 0px;
+  --f-letterSpacing-3: 0px;
+  --f-letterSpacing-4: 0px;
+  --f-letterSpacing-5: 0px;
+  --f-letterSpacing-6: 0px;
+  --f-letterSpacing-7: 0px;
+  --f-letterSpacing-8: 0px;
+  --f-letterSpacing-9: 0px;
+  --f-letterSpacing-10: 0px;
+  --f-letterSpacing-11: 0px;
+  --f-letterSpacing-12: 0px;
+  --f-letterSpacing-13: 0px;
+  --f-letterSpacing-14: 0px;
+  --f-letterSpacing-15: 0px;
+  --f-letterSpacing-16: 0px;
+  --f-letterSpacing-true: 0px;
+  --f-size-1: 11px;
+  --f-size-2: 12px;
+  --f-size-3: 13px;
+  --f-size-4: 14px;
+  --f-size-5: 16px;
+  --f-size-6: 19px;
+  --f-size-7: 21px;
+  --f-size-8: 24px;
+  --f-size-9: 31px;
+  --f-size-10: 47px;
+  --f-size-11: 57px;
+  --f-size-12: 64px;
+  --f-size-13: 74px;
+  --f-size-14: 95px;
+  --f-size-15: 117px;
+  --f-size-16: 138px;
+  --f-size-true: 14px
+}
+
+.tamagui-markdown {
+  font-family: var(--f-family);
+  font-size: var(--f-size-3);
+}
+
+.tamagui-markdown.shrink {
+  font-size: var(--f-size-1);
+}
+
+.tamagui-markdown ul,
+.tamagui-markdown ol {
+  all: revert;
+  margin: 0;
+}
+
+.tamagui-markdown ul li,
+.tamagui-markdown ol li {
+  margin-left: 1.5em;
+  all: revert;
+}
+
+.tamagui-markdown ul li {
+  list-style-type: disc;
+}
+
+.tamagui-markdown ol li {
+  list-style-type: decimal;
+}

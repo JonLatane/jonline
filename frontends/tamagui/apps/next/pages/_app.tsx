@@ -16,7 +16,8 @@ const queryClient = new QueryClient();
 if (process.env.NODE_ENV === 'production') {
   require('../public/tamagui.css')
 }
-require('../public/select-fix.css')
+require('../public/select-fix.css');
+require('../public/tamagui-markdown.css');
 
 function MyApp({ Component, pageProps }: SolitoAppProps) {
   // usePreserveScroll();
