@@ -87,7 +87,7 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false,
     }
   }), [shrink, disableLinks, darkMode, navColor]);
 
-  return <YStack gap={shrink ? '$1' : '$2'} className={shrink ? 'tamagui-markdown shrink' : 'tamagui-markdown'}>
+  return <YStack gap={shrink ? '$1' : '$2'} className={disableLinks ? 'tamagui-markdown disable-links' : 'tamagui-markdown'}>
     <ReactMarkdown
 
       remarkPlugins={[remarkGfm]}

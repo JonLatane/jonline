@@ -248,7 +248,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                   o={enablePasswordInput ? 1 : 0.5}
                   textContentType="password"
                   onChange={(e) => {
-                    console.log('onTextInput', e); setReauthenticationPassword(e.nativeEvent.text)
+                    setReauthenticationPassword(e.nativeEvent.text)
                   }}
                   onKeyPress={(e) => {
                     if (e.nativeEvent.key === 'Enter') {
