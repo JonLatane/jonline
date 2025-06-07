@@ -2,7 +2,7 @@ import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jo
 import { AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
 import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
-import { useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
+import { useCurrentServer, useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { FederatedEvent, FederatedPost, FederatedUser, RootState, actionSucceeded, deleteUser, federatedId, getFederated, loadUserEvents, loadUserPosts, loadUserReplies, loadUsername, resetPassword, selectUserById, serverID, updateUser, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, pending, setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -22,16 +22,28 @@ import { PostCard } from '../post/post_card';
 import { FederatedProfiles } from './federated_profiles';
 import { EditableUserDetails, UserCard, useFullAvatarHeight } from './user_card';
 import { AccountOrServerContextProvider } from 'app/contexts';
+import { useParamState } from '../people/people_screen';
 
-const { useParam } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
-const { useParam: useShortnameParam } = createParam<{ shortname: string | undefined }>();
+const { useParam, useUpdateParams } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 
 export function UsernameDetailsScreen() {
   const mediaQuery = useMedia();
   const { group, pathShortname } = useGroupFromPath();
 
+  const currentServer = useCurrentServer();
   const [pathUsername] = useParam('username');
+  const [_, setPathUsername] = useParamState(pathUsername, '')
+  const updateParams = useUpdateParams();
+
+
+
   const [inputUsername, inputServerHost] = (pathUsername ?? '').split('@');
+  useEffect(() => {
+    // Auto-route https://jonline.io/jon@jonline.io to https://jonline.io/jon
+    if (inputServerHost != null && currentServer?.host === inputServerHost) {
+      updateParams({ username: inputUsername }, { web: { replace: true } });
+    }
+  }, [currentServer, inputServerHost])
 
   const { dispatch, accountOrServer } = useFederatedDispatch(inputServerHost);
 

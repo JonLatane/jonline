@@ -192,7 +192,7 @@ export function ServerNameAndLogo({
     ? disableTooltip
       ? squareLogo
       : <Tooltip>
-        <Tooltip.Trigger>
+        <Tooltip.Trigger w='100%' h='100%' ai='center' jc='center'>
           {squareLogo}
         </Tooltip.Trigger >
         <Tooltip.Content>

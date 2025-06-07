@@ -42,6 +42,7 @@ interface Props {
   onInstancesUpdated?: (instances: EventInstance[]) => void;
   ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
+  disableSharingButton?: boolean;
   onPress?: () => void;
   showPermalink?: boolean;
 }
@@ -62,6 +63,7 @@ export const EventCard: React.FC<Props> = ({
   onInstancesUpdated,
   ignoreShrinkPreview,
   forceShrinkPreview,
+  disableSharingButton,
   onPress,
   showPermalink
 }) => {
@@ -558,7 +560,8 @@ export const EventCard: React.FC<Props> = ({
 
   const doRepeatInstance = useCallback(() => {
     setEditedInstances([...editedInstances, ...repeatedInstances]);
-    setTimeout(forceUpdate, 1);
+    requestAnimationFrame(forceUpdate);
+    // setTimeout(forceUpdate, 1);
   }, [editedInstances, repeatedInstances]);
 
   const renderInstance = useCallback((i: EventInstance) => {
@@ -953,9 +956,17 @@ export const EventCard: React.FC<Props> = ({
                             {/* {isPrimaryServer
                               ?  */}
                             <XStack key='group-post-manager' my='auto' maw='100%' ml='auto'>
-                              <GroupPostManager
-                                post={eventPost}
-                                isVisible={isVisible} />
+
+                              {disableSharingButton
+                                ? <Anchor {...detailsLink}>
+                                  <GroupPostManager
+                                    post={eventPost}
+                                    isVisible={isVisible}
+                                    isDisabled />
+                                </Anchor> :
+                                <GroupPostManager
+                                  post={eventPost}
+                                  isVisible={isVisible} />}
                             </XStack>
                             {/* : undefined} */}
                           </XStack>

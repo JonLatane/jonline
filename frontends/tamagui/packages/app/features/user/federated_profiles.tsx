@@ -47,7 +47,7 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
       <Button h='auto' w='100%' transparent px='$2' onPress={() => setShowOtherProfiles(!showOtherProfiles)}>
         <XStack mr='auto' maw='100%' ai='center'>
           <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
-            Other Profiles
+            {user.realName || user.username} has {profiles.length} other {profiles.length === 1 ? 'profile' : 'profiles'}
           </Paragraph>
           <XStack my='auto' animation='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
             <ChevronRight size='$1' />

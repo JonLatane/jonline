@@ -23,6 +23,7 @@ import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
 import { StarredPosts } from "./starred_posts";
 import { useHideNavigation } from "./use_hide_navigation";
 import { AccountsSheetButton } from "../accounts/accounts_sheet_button";
+import { PortalProvider } from '@tamagui/portal'
 
 export type TabsNavigationProps = {
   children?: React.ReactNode;
@@ -192,217 +193,219 @@ export function TabsNavigation({
   return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
-
     <AccountsSheetContextProvider value={accountsSheetContext}>
       <AuthSheetContextProvider value={authSheetContext}>
         <SettingsSheetContextProvider value={settingsSheetContext}>
           <MediaContextProvider value={mediaContext}>
             <GroupContextProvider value={groupContext}>
               <NavigationContextProvider value={{ appSection, appSubsection, groupPageForwarder, groupPageReverse, primaryEntity }}>
-                <YStack jc="center" ac='center' ai="center"
-                  className={isKeyboardOpen ? 'keyboard-open' : undefined}
-                  w='100%'
-                  backgroundColor={bgColor}
-                  minHeight={window.innerHeight} >
-                  <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    zIndex: 10,
-                    // backgroundColor: transparentBackgroundColor
-                  }}>
 
-                    <YStack w='100%' className='blur' id='jonline-top-navigation'>
-                      {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
-                        pointerEvents={hideNavigation ? 'none' : undefined}
-                        backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
-                        <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
-                          <AccountsSheetButton size='$4' //onlyShowServer={onlyShowServer}
-                            selectedGroup={selectedGroup} primaryEntity={primaryEntity} />
-                          <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
-                            pointerEvents="none"
-                            ml={(measuredHomeButtonWidth - 30) / 2}
-                            mt={(measuredHomeButtonHeight - 10) / 2}>
-                            <Spinner size='large' color={primaryColor} scale={1.4} />
-                          </XStack>
-                          <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
-                            pointerEvents="none"
-                            ml={(measuredHomeButtonWidth - 30) / 2}
-                            mt={(measuredHomeButtonHeight - 10) / 2}>
-                            <Spinner size='large' color={navColor} scaleX={1.1} scaleY={-1.1} />
-                          </XStack>
-                          <Button //size="$4"
-                            id="home-button"
-                            py={0}
-                            px={0}
-                            // px={
-                            //   shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
-                            //     !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
-                            height='auto'
-                            borderTopLeftRadius={0} borderTopRightRadius={0}
-                            // width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
-
-                            overflow='hidden'
-                            icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
-
-                            {...homeProps}
-                          >
-                            <YStack
-                              // o={excludeCurrentServer ? 0.5 : 1}
-                              my={shrinkHomeButton ? 'auto' : undefined}
-                              h={shrinkHomeButton ? '$3' : undefined}
-                              w={shrinkHomeButton ? '100%' : undefined}
-                              ac={shrinkHomeButton ? 'center' : undefined}
-                              jc={shrinkHomeButton ? 'center' : undefined}
-                            >
-                              <ServerNameAndLogo
-                                shrinkToSquare={shrinkHomeButton}
-                                fallbackToHomeIcon
-                                strikethrough={excludeCurrentServer}
-                                server={primaryServer} />
-                            </YStack>
-                          </Button>
-                        </YStack>
-                        <AnimatePresence>
-                          {showAccountSheetGuide
-                            ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
-                              <XStack>
-                                <XStack mt='$1' pt='$1' key='chevron'>
-                                  <ChevronLeft color={primaryTextColor} size='$1' />
-                                </XStack>
-                                <YStack>
-                                  <Paragraph color={primaryTextColor} size='$1'>Accounts, Servers,</Paragraph>
-                                  <Paragraph color={primaryTextColor} size='$1'>and Settings</Paragraph>
-                                </YStack>
-                              </XStack>
-                              <Button size='$1'
-                                onPress={() => {
-                                  dispatch(setForceHideAccountSheetGuide(true));
-                                  setShowAccountSheetGuide(false);
-                                  // dispatch(setHasOpenedAccounts(true));
-                                }}>Got it!</Button>
-                            </YStack>
-                            : undefined}
-                        </AnimatePresence>
-                        {showServerInfo
-                          ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
-                          : undefined}
-                        {minimal ? undefined : <>
-                          {!scrollGroupsSheet
-                            ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
-                              <GroupsSheetButton key='main' isPrimaryNavigation
-                                selectedGroup={selectedGroup}
-                                open={groupsSheetOpen}
-                                setOpen={setGroupsSheetOpen} />
-
-                            </XStack>
-                            : undefined}
-                          <ScrollView horizontal>
-                            <XStack ai='center'>
-                              {!scrollGroupsSheet
-                                ? undefined
-                                : <XStack ml='$1' my='auto' key='main-groups-button' className='main-groups-button'>
-                                  <GroupsSheetButton key='main' isPrimaryNavigation
-                                    selectedGroup={selectedGroup}
-                                    open={groupsSheetOpen}
-                                    setOpen={setGroupsSheetOpen} />
-                                </XStack>
-                              }
-                              <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
-                            </XStack>
-                          </ScrollView>
-                          <XStack f={1} />
-                          {!withServerPinning &&
-                            (alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short))
-                            ? <Button key='hide-nav-button' py='$1' px='$2' h='$3' transparent
-                              // animation='standard' {...reverseHorizontalAnimation}
-                              onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                              <XStack position='absolute' animation='standard'
-                                key='open-icon'
-                                o={hideNavigation ? 1 : 0}
-                                transform={[{ translateY: hideNavigation ? 0 : 10 }]}
-                              // scale={hideNavigation ? 1 : 2}
-                              >
-                                <PanelTopOpen size='$1' color={primaryTextColor} />
-                              </XStack>
-                              <XStack position='absolute' animation='standard'
-                                key='close-icon'
-                                o={hideNavigation ? 0 : 1}
-                                transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
-                              // scale={hideNavigation ? 0.2 : 1}
-                              >
-                                <PanelTopClose size='$1' color={primaryTextColor} />
-                              </XStack>
-                            </Button>
-                            : undefined}
-
-                          <StarredPosts />
-                        </>}
-                        <XStack w={5} />
-                      </XStack>}
-
-
-                      <XStack w='100%' id='nav-pinned-server-selector'
-                        backgroundColor={transparentBackgroundColor}
-                      // pointerEvents={hideNavigation ? 'none' : undefined}
-                      >
-                        <PinnedServerSelector
-                          // show
-                          show={(withServerPinning && !selectedGroup) || hideNavigation}
-                          showShrinkPreviews={showShrinkPreviews}
-                          affectsNavigation
-                          withServerPinning={withServerPinning}
-                          transparent />
-                      </XStack>
-
-                      <XStack w='100%' backgroundColor={transparentBackgroundColor}>
-                        {topChrome}
-                      </XStack>
-                    </YStack>
-                  </div>
-
-                  <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
-                    animation='standard' o={showSpinners && hideNavigation ? 1 : 0}
-                    top={dimensions.height / 2 - 50}>
-                    <XStack position='absolute' key='primary-spinner'
-                      transform={[{ translateX: -17 }]}>
-                      <Spinner size='large' color={primaryColor} scale={2.4} />
-                    </XStack>
-                    <XStack position='absolute' key='other-spinner'
-                      transform={[{ translateX: -17 }]}>
-                      <Spinner size='large' color={navColor} scaleX={1.8} scaleY={-1.8} />
-                    </XStack>
-                  </XStack>
-
-                  <AutoAnimatedList style={{ width: '100%', minHeight: '50vh' }}>
-                    <XStack key={`navigation-padding-${topNavHeight}`} h={topNavHeight} />
-                    <YStack key='children' f={1} w='100%' jc="center" ac='center' ai="center"
-                      //backgroundColor={bgColor}
-                      maw={window.innerWidth}
-                      // mt={topNavHeight}
-                      mb={bottomNavHeight}
-                      overflow="hidden"
-                    >
-                      {children}
-                    </YStack>
-                    <XStack key={`navigation-padding-bottom-${bottomNavHeight}`} h={bottomNavHeight} />
-                  </AutoAnimatedList>
-
-                  {bottomChrome
-                    ?
-                    <div id='jonline-bottom-navigation' className='blur bottomChrome' style={{
+                <PortalProvider shouldAddRootHost>
+                  <YStack jc="center" ac='center' ai="center"
+                    className={isKeyboardOpen ? 'keyboard-open' : undefined}
+                    w='100%'
+                    backgroundColor={bgColor}
+                    minHeight={window.innerHeight} >
+                    <div style={{
                       position: 'fixed',
-                      bottom: 0,
+                      top: 0,
                       left: 0,
                       right: 0,
                       zIndex: 10,
-                      backgroundColor: barelyTransparentBackgroundColor
+                      // backgroundColor: transparentBackgroundColor
                     }}>
-                      {bottomChrome}
+
+                      <YStack w='100%' className='blur' id='jonline-top-navigation'>
+                        {hideNavigation ? undefined : <XStack id='nav-main' ai='center'
+                          pointerEvents={hideNavigation ? 'none' : undefined}
+                          backgroundColor={primaryColor} opacity={hideNavigation ? 0 : 0.92} gap="$1" py='$1' pl='$1' w='100%'>
+                          <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
+                            <AccountsSheetButton size='$4' //onlyShowServer={onlyShowServer}
+                              selectedGroup={selectedGroup} primaryEntity={primaryEntity} />
+                            <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
+                              pointerEvents="none"
+                              ml={(measuredHomeButtonWidth - 30) / 2}
+                              mt={(measuredHomeButtonHeight - 10) / 2}>
+                              <Spinner size='large' color={primaryColor} scale={1.4} />
+                            </XStack>
+                            <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
+                              pointerEvents="none"
+                              ml={(measuredHomeButtonWidth - 30) / 2}
+                              mt={(measuredHomeButtonHeight - 10) / 2}>
+                              <Spinner size='large' color={navColor} scaleX={1.1} scaleY={-1.1} />
+                            </XStack>
+                            <Button //size="$4"
+                              id="home-button"
+                              py={0}
+                              px={0}
+                              // px={
+                              //   shrinkHomeButton && !useWideLogo && !useSquareLogo ? '$3' :
+                              //     !shrinkHomeButton && !useWideLogo && !useSquareLogo && !hasEmoji ? '$2' : 0}
+                              height='auto'
+                              borderTopLeftRadius={0} borderTopRightRadius={0}
+                              // width={shrinkHomeButton && useSquareLogo ? 48 : undefined}
+
+                              overflow='hidden'
+                              icon={showHomeIcon ? <HomeIcon size='$1' /> : undefined}
+
+                              {...homeProps}
+                            >
+                              <YStack
+                                // o={excludeCurrentServer ? 0.5 : 1}
+                                my={shrinkHomeButton ? 'auto' : undefined}
+                                h={shrinkHomeButton ? '$3' : undefined}
+                                w={shrinkHomeButton ? '100%' : undefined}
+                                ac={shrinkHomeButton ? 'center' : undefined}
+                                jc={shrinkHomeButton ? 'center' : undefined}
+                              >
+                                <ServerNameAndLogo
+                                  shrinkToSquare={shrinkHomeButton}
+                                  fallbackToHomeIcon
+                                  strikethrough={excludeCurrentServer}
+                                  server={primaryServer} />
+                              </YStack>
+                            </Button>
+                          </YStack>
+                          <AnimatePresence>
+                            {showAccountSheetGuide
+                              ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
+                                <XStack>
+                                  <XStack mt='$1' pt='$1' key='chevron'>
+                                    <ChevronLeft color={primaryTextColor} size='$1' />
+                                  </XStack>
+                                  <YStack>
+                                    <Paragraph color={primaryTextColor} size='$1'>Accounts, Servers,</Paragraph>
+                                    <Paragraph color={primaryTextColor} size='$1'>and Settings</Paragraph>
+                                  </YStack>
+                                </XStack>
+                                <Button size='$1'
+                                  onPress={() => {
+                                    dispatch(setForceHideAccountSheetGuide(true));
+                                    setShowAccountSheetGuide(false);
+                                    // dispatch(setHasOpenedAccounts(true));
+                                  }}>Got it!</Button>
+                              </YStack>
+                              : undefined}
+                          </AnimatePresence>
+                          {showServerInfo
+                            ? <XStack my='auto' ml={-7} mr={-9}><ChevronRight color={primaryTextColor} /></XStack>
+                            : undefined}
+                          {minimal ? undefined : <>
+                            {!scrollGroupsSheet
+                              ? <XStack gap='$2' ml='$1' mr={showServerInfo ? 0 : -3} my='auto' id='main-groups-button'>
+                                <GroupsSheetButton key='main' isPrimaryNavigation
+                                  selectedGroup={selectedGroup}
+                                  open={groupsSheetOpen}
+                                  setOpen={setGroupsSheetOpen} />
+
+                              </XStack>
+                              : undefined}
+                            <ScrollView horizontal>
+                              <XStack ai='center'>
+                                {!scrollGroupsSheet
+                                  ? undefined
+                                  : <XStack ml='$1' my='auto' key='main-groups-button' className='main-groups-button'>
+                                    <GroupsSheetButton key='main' isPrimaryNavigation
+                                      selectedGroup={selectedGroup}
+                                      open={groupsSheetOpen}
+                                      setOpen={setGroupsSheetOpen} />
+                                  </XStack>
+                                }
+                                <FeaturesNavigation {...{ appSection, appSubsection, selectedGroup }} />
+                              </XStack>
+                            </ScrollView>
+                            <XStack f={1} />
+                            {!withServerPinning &&
+                              (alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short))
+                              ? <Button key='hide-nav-button' py='$1' px='$2' h='$3' transparent
+                                // animation='standard' {...reverseHorizontalAnimation}
+                                onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
+                                <XStack position='absolute' animation='standard'
+                                  key='open-icon'
+                                  o={hideNavigation ? 1 : 0}
+                                  transform={[{ translateY: hideNavigation ? 0 : 10 }]}
+                                // scale={hideNavigation ? 1 : 2}
+                                >
+                                  <PanelTopOpen size='$1' color={primaryTextColor} />
+                                </XStack>
+                                <XStack position='absolute' animation='standard'
+                                  key='close-icon'
+                                  o={hideNavigation ? 0 : 1}
+                                  transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
+                                // scale={hideNavigation ? 0.2 : 1}
+                                >
+                                  <PanelTopClose size='$1' color={primaryTextColor} />
+                                </XStack>
+                              </Button>
+                              : undefined}
+
+                            <StarredPosts />
+                          </>}
+                          <XStack w={5} />
+                        </XStack>}
+
+
+                        <XStack w='100%' id='nav-pinned-server-selector'
+                          backgroundColor={transparentBackgroundColor}
+                        // pointerEvents={hideNavigation ? 'none' : undefined}
+                        >
+                          <PinnedServerSelector
+                            // show
+                            show={(withServerPinning && !selectedGroup) || hideNavigation}
+                            showShrinkPreviews={showShrinkPreviews}
+                            affectsNavigation
+                            withServerPinning={withServerPinning}
+                            transparent />
+                        </XStack>
+
+                        <XStack w='100%' backgroundColor={transparentBackgroundColor}>
+                          {topChrome}
+                        </XStack>
+                      </YStack>
                     </div>
-                    : undefined}
-                </YStack>
+
+                    <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
+                      animation='standard' o={showSpinners && hideNavigation ? 1 : 0}
+                      top={dimensions.height / 2 - 50}>
+                      <XStack position='absolute' key='primary-spinner'
+                        transform={[{ translateX: -17 }]}>
+                        <Spinner size='large' color={primaryColor} scale={2.4} />
+                      </XStack>
+                      <XStack position='absolute' key='other-spinner'
+                        transform={[{ translateX: -17 }]}>
+                        <Spinner size='large' color={navColor} scaleX={1.8} scaleY={-1.8} />
+                      </XStack>
+                    </XStack>
+
+                    <AutoAnimatedList style={{ width: '100%', minHeight: '50vh' }}>
+                      <XStack key={`navigation-padding-${topNavHeight}`} h={topNavHeight} />
+                      <YStack key='children' f={1} w='100%' jc="center" ac='center' ai="center"
+                        //backgroundColor={bgColor}
+                        maw={window.innerWidth}
+                        // mt={topNavHeight}
+                        mb={bottomNavHeight}
+                        overflow="hidden"
+                      >
+                        {children}
+                      </YStack>
+                      <XStack key={`navigation-padding-bottom-${bottomNavHeight}`} h={bottomNavHeight} />
+                    </AutoAnimatedList>
+
+                    {bottomChrome
+                      ?
+                      <div id='jonline-bottom-navigation' className='blur bottomChrome' style={{
+                        position: 'fixed',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 10,
+                        backgroundColor: barelyTransparentBackgroundColor
+                      }}>
+                        {bottomChrome}
+                      </div>
+                      : undefined}
+                  </YStack>
+                </PortalProvider>
 
                 <GroupsSheet isPrimaryNavigation
                   open={groupsSheetOpen}

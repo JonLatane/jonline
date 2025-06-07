@@ -2,7 +2,7 @@ import { Post, PostContext } from "@jonline/api";
 import { Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, standardAnimation, useDebounceValue, useMedia } from "@jonline/ui";
 import { reverseHorizontalAnimation } from '@jonline/ui/src/animations';
 import { createSelector } from "@reduxjs/toolkit";
-import { ChevronLeft, Info, ListEnd, PanelLeftOpen } from "@tamagui/lucide-icons";
+import { ChevronLeft, Fullscreen, Info, ListEnd, PanelLeftOpen } from "@tamagui/lucide-icons";
 import { AccountOrServerContextProvider } from "app/contexts";
 import { Selector, useAppSelector, useFederatedAccountOrServer, useFederatedDispatch } from "app/hooks";
 import { RootState, federatedId, setDiscussionChatUI, setOpenedStarredPost, useServerTheme } from "app/store";
@@ -368,7 +368,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                       h='$2' px='$2' ml='$2'
                       // onPress={() => setOpen(false)}
                       {...basePostLinkWithClose}
-                      iconAfter={PanelLeftOpen} >
+                      iconAfter={Fullscreen} >
                       <Heading size='$4'>Open</Heading>
                     </Button>
                     {/* : undefined} */}

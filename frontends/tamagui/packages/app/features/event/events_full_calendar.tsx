@@ -151,7 +151,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
 
   // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  // console.log('EventsFullCalendar', { modalInstanceId })
+  console.log('EventsFullCalendar', { modalInstanceId })
   const modalInstance = useMemo(
     () => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId),
     [modalInstanceId, allEvents]
@@ -272,7 +272,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   return (<>
 
     <YStack w='100%' px='$1'>
-      <YStack zi={1}
+      <YStack
         // onKeyPress={undefined}
         // key={`calendar-rendering-${serializedTimeFilter}`} 
         // mx='$1'
@@ -496,7 +496,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           key="overlay"
           animation="slow"
           opacity={0.5}
-
+          // zIndex={10000}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         />
@@ -505,6 +505,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           bordered
           elevate
           key="content"
+          // zIndex={10000}
           // animateOnly={['transform', 'opacity']}
           animation='standard'
           // maw={bigCalWidth}
@@ -548,7 +549,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
             <ScrollView f={1}>
               {modalInstance
                 ? <XStack mt={-9}>
-                  <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview />
+                  <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview disableSharingButton />
                 </XStack>
                 : undefined}
             </ScrollView>

@@ -188,10 +188,10 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   const { canMoveUp, canMoveDown } = useAppSelector(selectStarredMovability(postId));
 
   function moveUp() {
-    dispatch(moveStarredPostUp(postId));
+    requestAnimationFrame(() => dispatch(moveStarredPostUp(postId)));
   }
   function moveDown() {
-    dispatch(moveStarredPostDown(postId));
+    requestAnimationFrame(() => dispatch(moveStarredPostDown(postId)));
   }
 
   let renderedCardView: JSX.Element;

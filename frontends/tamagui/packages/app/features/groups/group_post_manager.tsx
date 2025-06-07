@@ -17,6 +17,7 @@ import { AuthorInfo } from "../post/author_info";
 interface Props {
   post: FederatedPost;
   isVisible?: boolean;
+  isDisabled?: boolean;
 }
 
 export function useMostRecentGroup(groups: FederatedGroup[]) {
@@ -37,7 +38,7 @@ export function useMostRecentGroup(groups: FederatedGroup[]) {
 //     (organization) => organization?.name
 //   );
 
-export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) => {
+export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true, isDisabled }) => {
   const { dispatch, accountOrServer } = useFederatedDispatch(post);
   const { server } = accountOrServer;
   const { navColor, navTextColor, primaryAnchorColor } = useServerTheme(server);
@@ -114,7 +115,8 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true }) =>
     <XStack py='$1'>
       {groupsUnavailable
         ? <Paragraph>Groups unavailable</Paragraph>
-        : <Button size='$2' my='$1' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}>
+        : <Button size='$2' my='$1' onPress={() => setSharingPostId(federatedId(post))} {...themedButtonBackground(navColor, navTextColor)}
+          disabled={isDisabled || loading} o={isDisabled || loading ? 0.5 : 1}>
           {singleSharedGroup?.name
             ?? (sharedToSelectedGroup ? selectedGroup?.name : undefined)
             ?? 'Share'}

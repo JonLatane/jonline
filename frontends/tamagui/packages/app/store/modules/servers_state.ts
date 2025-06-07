@@ -282,6 +282,9 @@ const serversSlice = createSlice({
       // }
       console.log(`Server ${action.payload.host} running Jonline v${action.payload.serviceVersion?.version} added.`);
       state.successMessage = `Server added.`;
+      setTimeout(() => {
+        store.dispatch(clearServerAlerts());
+      }, 5000);
     });
     builder.addCase(upsertServer.rejected, (state, action) => {
       state.status = "errored";

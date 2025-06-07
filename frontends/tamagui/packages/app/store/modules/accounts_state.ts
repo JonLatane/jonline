@@ -276,6 +276,9 @@ export const accountsSlice = createSlice({
       }
       accountsAdapter.upsertOne(state, account);
       state.successMessage = `Created account ${account.user.username}`;
+      setTimeout(() => {
+        store.dispatch(clearAccountAlerts());
+      }, 5000);
       resetCredentialedData(account.server.host);
     });
     builder.addCase(createAccount.rejected, (state, action) => {
@@ -299,6 +302,9 @@ export const accountsSlice = createSlice({
 
       accountsAdapter.upsertOne(state, { ...action.payload, lastSyncFailed: false, needsReauthentication: false });
       state.successMessage = `Logged in as ${action.payload.user.username}`;
+      setTimeout(() => {
+        store.dispatch(clearAccountAlerts());
+      }, 5000);
       resetCredentialedData(action.payload.server.host);
     });
     builder.addCase(login.rejected, (state, action) => {

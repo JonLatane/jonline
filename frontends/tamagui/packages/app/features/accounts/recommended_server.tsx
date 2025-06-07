@@ -89,10 +89,10 @@ export const RecommendedServer: React.FC<Props> = ({ host, isPreview = false, di
     // debugger;
     await getServerClient(server, { skipUpsert: false }).then(_client => {
       console.log("Got server client", _client);
-      setTimeout(() => {
-        store.dispatch(pinServer({ serverId: serverID(server), pinned: true }));
-        setAddingServer(false);
-      }, 1500);
+      // setTimeout(() => {
+      store.dispatch(pinServer({ serverId: serverID(server), pinned: true }));
+      setAddingServer(false);
+      // }, 1500);
     });
 
     // });

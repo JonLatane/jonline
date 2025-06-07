@@ -43,9 +43,8 @@ export function useGroupFromPath(): GroupFromPath {
   // console.log("resultShortname", resultShortname);
   useEffect(() => {
     if (resultShortname && resultShortname !== inputShortname) {
-      setTimeout(
-        () => updateParams({ shortname: resultShortname }, { web: { replace: true } }),
-        1
+      requestAnimationFrame(
+        () => updateParams({ shortname: resultShortname }, { web: { replace: true } })
       );
     }
   }, [inputShortname, resultShortname]);

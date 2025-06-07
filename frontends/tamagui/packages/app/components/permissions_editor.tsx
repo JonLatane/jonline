@@ -1,7 +1,6 @@
 import { Permission, permissionToJSON } from '@jonline/api';
-import { Adapt, Button, Heading, Paragraph, Select, Sheet, XStack, YStack } from '@jonline/ui';
-import { LinearGradient } from "@tamagui/linear-gradient";
-import { Check, ChevronDown, ChevronUp, Plus, X as XIcon } from '@tamagui/lucide-icons';
+import { Button, Heading, Paragraph, Select, XStack, YStack } from '@jonline/ui';
+import { Check, ChevronDown, Plus, X as XIcon } from '@tamagui/lucide-icons';
 import { useComponentKey } from 'app/hooks';
 import React from 'react';
 

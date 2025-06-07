@@ -255,8 +255,8 @@ export function GroupsSheet({
     dismissOnSnapToBottom
     zIndex={100001}
   >
-    <Sheet.Overlay zi={1000} />
-    <Sheet.Frame zi={1000}>
+    <Sheet.Overlay zi={100001} />
+    <Sheet.Frame zi={100001}>
       <Sheet.Handle />
       {/* <XStack gap='$4' paddingHorizontal='$3' mb='$2'>
               <XStack f={1} />

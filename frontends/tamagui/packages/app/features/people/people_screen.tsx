@@ -58,7 +58,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
     300
   );
   useEffect(() => {
-    setTimeout(
+    requestAnimationFrame(
       () => {
         // debugger;
         if (searchParamValue ?? '' !== debouncedSearchText) {
@@ -68,9 +68,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             { web: { replace: true } }
           )
         }
-      },
-
-      1);
+      });
   }, [debouncedSearchText])
 
   const filteredUsers = useMemo(

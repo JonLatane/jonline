@@ -101,19 +101,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const onHomePressed = useCallback(() => {
     // console.log('onHomePressed', document.getElementById('events-top'));
-    setTimeout(
-      () => document.getElementById('events-top')?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' }),
-      1
+    requestAnimationFrame(
+      () => document.getElementById('events-top')?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
     );
     if (window.scrollY > 0) {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (postPagination.page > 0 || eventPagination.page > 0) {
-      setTimeout(() => {
+      requestAnimationFrame(() => {
         postPagination.setPage(0);
-      }, 1);
-      setTimeout(() => {
+      });
+      requestAnimationFrame(() => {
         eventPagination.setPage(0);
-      }, 1);
+      });
     } else {
       reloadPosts(true);
       reloadEvents(true);

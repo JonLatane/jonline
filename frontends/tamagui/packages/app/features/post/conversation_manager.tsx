@@ -147,7 +147,7 @@ export function useConversationCommentList({
         const wasAtBottom = isClient && !showScrollPreserver &&
           document.body.scrollHeight - _viewportHeight - window.scrollY < 100;
         const scrollYAtBottom = window.scrollY;
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           if (rootPostId?.split('@')[0]) {
             dispatch(loadPostReplies({ ...accountOrServer, postIdPath: [rootPostId!] })).then(() => {
               if (wasAtBottom && chatUI && (Math.abs(scrollYAtBottom - window.scrollY) < 10)) {
@@ -162,7 +162,7 @@ export function useConversationCommentList({
               forceUpdate();
             }, intervalSeconds * 1000);
           }
-        }, 1);
+        });
       }
     }
   });
