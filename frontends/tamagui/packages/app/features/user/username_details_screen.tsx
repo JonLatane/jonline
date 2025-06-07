@@ -265,7 +265,7 @@ export function UsernameDetailsScreen() {
   })()
   useEffect(() => {
     setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   async function saveUser() {
     if (!canEdit && !user) return;

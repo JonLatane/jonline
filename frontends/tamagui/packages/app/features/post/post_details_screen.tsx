@@ -246,7 +246,7 @@ export function PostDetailsScreen() {
   useEffect(() => {
     if (documentTitle)
       setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   return (
     <TabsNavigation appSection={AppSection.POSTS} selectedGroup={group}

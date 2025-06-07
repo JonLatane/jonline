@@ -60,7 +60,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
   })();
   useEffect(() => {
     setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded: postsLoaded } =
     usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);

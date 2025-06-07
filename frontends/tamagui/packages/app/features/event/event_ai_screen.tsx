@@ -63,7 +63,7 @@ export const EventAIScreen: React.FC<EventAIScreenProps> = () => {
   useEffect(() => {
     // const title = selectedGroup ? `${selectedGroup.name} | ${serverName}` : serverName;
     setDocumentTitle(`AI Event Importer | ${serverName}`)
-  }, [serverName]);
+  }, [serverName, window.location.search]);
 
   const { screenWidth, screenHeight } = useScreenWidthAndHeight();
 

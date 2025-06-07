@@ -1,27 +1,16 @@
-import { Author, Event, Location, Permission } from '@jonline/api';
-import * as webllm from "@mlc-ai/web-llm";
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
-import { Button, Heading, Input, Paragraph, Select, Spinner, TextArea, Tooltip, XStack, YStack, needsScrollPreservers, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { Heading, XStack, YStack, needsScrollPreservers, standardAnimation, useMedia, useToastController } from '@jonline/ui';
 import { FederatedEvent, federateId, federatedId, useServerTheme } from 'app/store';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 import { useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
 import EventCard from './event_card';
-import { AppSection } from '../navigation/features_navigation';
-import { TabsNavigation } from '../navigation/tabs_navigation';
 
 import { EventsFullCalendar, useScreenWidthAndHeight } from "./events_full_calendar";
 
-import { Calendar as CalendarIcon, Check, ChevronDown, ChevronRight, Key, Eye, EyeOff } from '@tamagui/lucide-icons';
-import { hasPermission, highlightedButtonBackground, setDocumentTitle, themedButtonBackground } from 'app/utils';
-import OpenAI from 'openai';
-import { isSafari } from '@jonline/ui/src/global';
-import { useCreationAccountOrServer } from '../../hooks/account_or_server/use_creation_account_or_server';
-import { CreationServerSelector } from '../accounts/creation_server_selector';
 import { PageChooser } from "../home/page_chooser";
-import { TamaguiMarkdown } from '../post';
 
 export type EventListingLargeProps = {
   events: FederatedEvent[];

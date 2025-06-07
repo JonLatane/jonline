@@ -35,7 +35,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
   })();
   useEffect(() => {
     setDocumentTitle(documentTitle);
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   const { results: allPosts, loading: loadingPosts, reload: reloadPosts, hasMorePages, firstPageLoaded } =
     usePostPages(PostListingType.ALL_ACCESSIBLE_POSTS, selectedGroup);

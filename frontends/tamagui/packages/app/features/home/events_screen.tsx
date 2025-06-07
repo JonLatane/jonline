@@ -116,7 +116,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   })()
   useEffect(() => {
     setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   const { results: allEventsUnfiltered, loading: loadingEvents, reload: reloadEvents, hasMorePages, firstPageLoaded } =
     useEventPages(EventListingType.ALL_ACCESSIBLE_EVENTS, selectedGroup, { timeFilter });

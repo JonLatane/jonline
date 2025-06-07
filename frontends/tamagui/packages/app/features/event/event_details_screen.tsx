@@ -147,7 +147,7 @@ export function EventDetailsScreen() {
   })();
   useEffect(() => {
     setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   function scrollToBottom() {
     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });

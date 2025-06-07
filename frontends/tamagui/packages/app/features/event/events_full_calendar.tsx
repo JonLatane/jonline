@@ -151,7 +151,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
 
   // const setBigCalendar = (v: boolean) => dispatch(setShowBigCalendar(v));
   const [modalInstanceId, setModalInstanceId] = useState<string | undefined>(undefined);
-  console.log('EventsFullCalendar', { modalInstanceId })
+  // console.log('EventsFullCalendar', { modalInstanceId })
   const modalInstance = useMemo(
     () => allEvents.find((e) => federateId(e.instances[0]?.id ?? '', e.serverHost) === modalInstanceId),
     [modalInstanceId, allEvents]

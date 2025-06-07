@@ -97,7 +97,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
   })();
   useEffect(() => {
     setDocumentTitle(documentTitle)
-  }, [documentTitle]);
+  }, [documentTitle, window.location.search]);
 
   useEffect(() => {
     if (firstPageLoaded && showScrollPreserver) {
