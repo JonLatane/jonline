@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -20,15 +21,15 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   factory GetServiceVersionResponse({
     $core.String? version,
   }) {
-    final $result = create();
-    if (version != null) {
-      $result.version = version;
-    }
-    return $result;
+    final result = create();
+    if (version != null) result.version = version;
+    return result;
   }
-  GetServiceVersionResponse._() : super();
-  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetServiceVersionResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetServiceVersionResponse._();
+
+  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetServiceVersionResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'version')
@@ -40,10 +41,12 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetServiceVersionResponse copyWith(void Function(GetServiceVersionResponse) updates) => super.copyWith((message) => updates(message as GetServiceVersionResponse)) as GetServiceVersionResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetServiceVersionResponse create() => GetServiceVersionResponse._();
+  @$core.override
   GetServiceVersionResponse createEmptyInstance() => create();
   static $pb.PbList<GetServiceVersionResponse> createRepeated() => $pb.PbList<GetServiceVersionResponse>();
   @$core.pragma('dart2js:noInline')
@@ -55,7 +58,7 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get version => $_getSZ(0);
   @$pb.TagNumber(1)
-  set version($core.String v) { $_setString(0, v); }
+  set version($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasVersion() => $_has(0);
   @$pb.TagNumber(1)
@@ -67,15 +70,15 @@ class FederationInfo extends $pb.GeneratedMessage {
   factory FederationInfo({
     $core.Iterable<FederatedServer>? servers,
   }) {
-    final $result = create();
-    if (servers != null) {
-      $result.servers.addAll(servers);
-    }
-    return $result;
+    final result = create();
+    if (servers != null) result.servers.addAll(servers);
+    return result;
   }
-  FederationInfo._() : super();
-  factory FederationInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederationInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  FederationInfo._();
+
+  factory FederationInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FederationInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
@@ -87,10 +90,12 @@ class FederationInfo extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   FederationInfo copyWith(void Function(FederationInfo) updates) => super.copyWith((message) => updates(message as FederationInfo)) as FederationInfo;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static FederationInfo create() => FederationInfo._();
+  @$core.override
   FederationInfo createEmptyInstance() => create();
   static $pb.PbList<FederationInfo> createRepeated() => $pb.PbList<FederationInfo>();
   @$core.pragma('dart2js:noInline')
@@ -109,21 +114,17 @@ class FederatedServer extends $pb.GeneratedMessage {
     $core.bool? configuredByDefault,
     $core.bool? pinnedByDefault,
   }) {
-    final $result = create();
-    if (host != null) {
-      $result.host = host;
-    }
-    if (configuredByDefault != null) {
-      $result.configuredByDefault = configuredByDefault;
-    }
-    if (pinnedByDefault != null) {
-      $result.pinnedByDefault = pinnedByDefault;
-    }
-    return $result;
+    final result = create();
+    if (host != null) result.host = host;
+    if (configuredByDefault != null) result.configuredByDefault = configuredByDefault;
+    if (pinnedByDefault != null) result.pinnedByDefault = pinnedByDefault;
+    return result;
   }
-  FederatedServer._() : super();
-  factory FederatedServer.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederatedServer.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  FederatedServer._();
+
+  factory FederatedServer.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FederatedServer.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
@@ -137,10 +138,12 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   FederatedServer copyWith(void Function(FederatedServer) updates) => super.copyWith((message) => updates(message as FederatedServer)) as FederatedServer;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static FederatedServer create() => FederatedServer._();
+  @$core.override
   FederatedServer createEmptyInstance() => create();
   static $pb.PbList<FederatedServer> createRepeated() => $pb.PbList<FederatedServer>();
   @$core.pragma('dart2js:noInline')
@@ -151,7 +154,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get host => $_getSZ(0);
   @$pb.TagNumber(1)
-  set host($core.String v) { $_setString(0, v); }
+  set host($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasHost() => $_has(0);
   @$pb.TagNumber(1)
@@ -161,7 +164,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool get configuredByDefault => $_getBF(1);
   @$pb.TagNumber(2)
-  set configuredByDefault($core.bool v) { $_setBool(1, v); }
+  set configuredByDefault($core.bool value) => $_setBool(1, value);
   @$pb.TagNumber(2)
   $core.bool hasConfiguredByDefault() => $_has(1);
   @$pb.TagNumber(2)
@@ -172,7 +175,7 @@ class FederatedServer extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool get pinnedByDefault => $_getBF(2);
   @$pb.TagNumber(3)
-  set pinnedByDefault($core.bool v) { $_setBool(2, v); }
+  set pinnedByDefault($core.bool value) => $_setBool(2, value);
   @$pb.TagNumber(3)
   $core.bool hasPinnedByDefault() => $_has(2);
   @$pb.TagNumber(3)
@@ -187,18 +190,16 @@ class FederatedAccount extends $pb.GeneratedMessage {
     $core.String? host,
     $core.String? userId,
   }) {
-    final $result = create();
-    if (host != null) {
-      $result.host = host;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    return $result;
+    final result = create();
+    if (host != null) result.host = host;
+    if (userId != null) result.userId = userId;
+    return result;
   }
-  FederatedAccount._() : super();
-  factory FederatedAccount.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FederatedAccount.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  FederatedAccount._();
+
+  factory FederatedAccount.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FederatedAccount.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
@@ -211,10 +212,12 @@ class FederatedAccount extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   FederatedAccount copyWith(void Function(FederatedAccount) updates) => super.copyWith((message) => updates(message as FederatedAccount)) as FederatedAccount;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static FederatedAccount create() => FederatedAccount._();
+  @$core.override
   FederatedAccount createEmptyInstance() => create();
   static $pb.PbList<FederatedAccount> createRepeated() => $pb.PbList<FederatedAccount>();
   @$core.pragma('dart2js:noInline')
@@ -225,7 +228,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get host => $_getSZ(0);
   @$pb.TagNumber(1)
-  set host($core.String v) { $_setString(0, v); }
+  set host($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasHost() => $_has(0);
   @$pb.TagNumber(1)
@@ -235,7 +238,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set userId($core.String v) { $_setString(1, v); }
+  set userId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
@@ -243,5 +246,5 @@ class FederatedAccount extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

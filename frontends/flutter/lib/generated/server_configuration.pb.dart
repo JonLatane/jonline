@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -40,54 +41,28 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     $core.Iterable<AuthenticationFeature>? authenticationFeatures,
     WebPushConfig? webPushConfig,
   }) {
-    final $result = create();
-    if (serverInfo != null) {
-      $result.serverInfo = serverInfo;
-    }
-    if (federationInfo != null) {
-      $result.federationInfo = federationInfo;
-    }
-    if (anonymousUserPermissions != null) {
-      $result.anonymousUserPermissions.addAll(anonymousUserPermissions);
-    }
-    if (defaultUserPermissions != null) {
-      $result.defaultUserPermissions.addAll(defaultUserPermissions);
-    }
-    if (basicUserPermissions != null) {
-      $result.basicUserPermissions.addAll(basicUserPermissions);
-    }
-    if (peopleSettings != null) {
-      $result.peopleSettings = peopleSettings;
-    }
-    if (groupSettings != null) {
-      $result.groupSettings = groupSettings;
-    }
-    if (postSettings != null) {
-      $result.postSettings = postSettings;
-    }
-    if (eventSettings != null) {
-      $result.eventSettings = eventSettings;
-    }
-    if (mediaSettings != null) {
-      $result.mediaSettings = mediaSettings;
-    }
-    if (externalCdnConfig != null) {
-      $result.externalCdnConfig = externalCdnConfig;
-    }
-    if (privateUserStrategy != null) {
-      $result.privateUserStrategy = privateUserStrategy;
-    }
-    if (authenticationFeatures != null) {
-      $result.authenticationFeatures.addAll(authenticationFeatures);
-    }
-    if (webPushConfig != null) {
-      $result.webPushConfig = webPushConfig;
-    }
-    return $result;
+    final result = create();
+    if (serverInfo != null) result.serverInfo = serverInfo;
+    if (federationInfo != null) result.federationInfo = federationInfo;
+    if (anonymousUserPermissions != null) result.anonymousUserPermissions.addAll(anonymousUserPermissions);
+    if (defaultUserPermissions != null) result.defaultUserPermissions.addAll(defaultUserPermissions);
+    if (basicUserPermissions != null) result.basicUserPermissions.addAll(basicUserPermissions);
+    if (peopleSettings != null) result.peopleSettings = peopleSettings;
+    if (groupSettings != null) result.groupSettings = groupSettings;
+    if (postSettings != null) result.postSettings = postSettings;
+    if (eventSettings != null) result.eventSettings = eventSettings;
+    if (mediaSettings != null) result.mediaSettings = mediaSettings;
+    if (externalCdnConfig != null) result.externalCdnConfig = externalCdnConfig;
+    if (privateUserStrategy != null) result.privateUserStrategy = privateUserStrategy;
+    if (authenticationFeatures != null) result.authenticationFeatures.addAll(authenticationFeatures);
+    if (webPushConfig != null) result.webPushConfig = webPushConfig;
+    return result;
   }
-  ServerConfiguration._() : super();
-  factory ServerConfiguration.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ServerConfiguration.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ServerConfiguration._();
+
+  factory ServerConfiguration.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ServerConfiguration.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
@@ -112,10 +87,12 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ServerConfiguration copyWith(void Function(ServerConfiguration) updates) => super.copyWith((message) => updates(message as ServerConfiguration)) as ServerConfiguration;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ServerConfiguration create() => ServerConfiguration._();
+  @$core.override
   ServerConfiguration createEmptyInstance() => create();
   static $pb.PbList<ServerConfiguration> createRepeated() => $pb.PbList<ServerConfiguration>();
   @$core.pragma('dart2js:noInline')
@@ -126,7 +103,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ServerInfo get serverInfo => $_getN(0);
   @$pb.TagNumber(1)
-  set serverInfo(ServerInfo v) { $_setField(1, v); }
+  set serverInfo(ServerInfo value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasServerInfo() => $_has(0);
   @$pb.TagNumber(1)
@@ -138,7 +115,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $1.FederationInfo get federationInfo => $_getN(1);
   @$pb.TagNumber(2)
-  set federationInfo($1.FederationInfo v) { $_setField(2, v); }
+  set federationInfo($1.FederationInfo value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasFederationInfo() => $_has(1);
   @$pb.TagNumber(2)
@@ -175,7 +152,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   FeatureSettings get peopleSettings => $_getN(5);
   @$pb.TagNumber(20)
-  set peopleSettings(FeatureSettings v) { $_setField(20, v); }
+  set peopleSettings(FeatureSettings value) => $_setField(20, value);
   @$pb.TagNumber(20)
   $core.bool hasPeopleSettings() => $_has(5);
   @$pb.TagNumber(20)
@@ -189,7 +166,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   FeatureSettings get groupSettings => $_getN(6);
   @$pb.TagNumber(21)
-  set groupSettings(FeatureSettings v) { $_setField(21, v); }
+  set groupSettings(FeatureSettings value) => $_setField(21, value);
   @$pb.TagNumber(21)
   $core.bool hasGroupSettings() => $_has(6);
   @$pb.TagNumber(21)
@@ -203,7 +180,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(22)
   PostSettings get postSettings => $_getN(7);
   @$pb.TagNumber(22)
-  set postSettings(PostSettings v) { $_setField(22, v); }
+  set postSettings(PostSettings value) => $_setField(22, value);
   @$pb.TagNumber(22)
   $core.bool hasPostSettings() => $_has(7);
   @$pb.TagNumber(22)
@@ -217,7 +194,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(23)
   PostSettings get eventSettings => $_getN(8);
   @$pb.TagNumber(23)
-  set eventSettings(PostSettings v) { $_setField(23, v); }
+  set eventSettings(PostSettings value) => $_setField(23, value);
   @$pb.TagNumber(23)
   $core.bool hasEventSettings() => $_has(8);
   @$pb.TagNumber(23)
@@ -231,7 +208,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(24)
   FeatureSettings get mediaSettings => $_getN(9);
   @$pb.TagNumber(24)
-  set mediaSettings(FeatureSettings v) { $_setField(24, v); }
+  set mediaSettings(FeatureSettings value) => $_setField(24, value);
   @$pb.TagNumber(24)
   $core.bool hasMediaSettings() => $_has(9);
   @$pb.TagNumber(24)
@@ -248,7 +225,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(90)
   ExternalCDNConfig get externalCdnConfig => $_getN(10);
   @$pb.TagNumber(90)
-  set externalCdnConfig(ExternalCDNConfig v) { $_setField(90, v); }
+  set externalCdnConfig(ExternalCDNConfig value) => $_setField(90, value);
   @$pb.TagNumber(90)
   $core.bool hasExternalCdnConfig() => $_has(10);
   @$pb.TagNumber(90)
@@ -260,7 +237,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(100)
   PrivateUserStrategy get privateUserStrategy => $_getN(11);
   @$pb.TagNumber(100)
-  set privateUserStrategy(PrivateUserStrategy v) { $_setField(100, v); }
+  set privateUserStrategy(PrivateUserStrategy value) => $_setField(100, value);
   @$pb.TagNumber(100)
   $core.bool hasPrivateUserStrategy() => $_has(11);
   @$pb.TagNumber(100)
@@ -275,7 +252,7 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   @$pb.TagNumber(110)
   WebPushConfig get webPushConfig => $_getN(13);
   @$pb.TagNumber(110)
-  set webPushConfig(WebPushConfig v) { $_setField(110, v); }
+  set webPushConfig(WebPushConfig value) => $_setField(110, value);
   @$pb.TagNumber(110)
   $core.bool hasWebPushConfig() => $_has(13);
   @$pb.TagNumber(110)
@@ -296,30 +273,20 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
     $core.String? mediaIpv6Allowlist,
     $core.bool? cdnGrpc,
   }) {
-    final $result = create();
-    if (frontendHost != null) {
-      $result.frontendHost = frontendHost;
-    }
-    if (backendHost != null) {
-      $result.backendHost = backendHost;
-    }
-    if (secureMedia != null) {
-      $result.secureMedia = secureMedia;
-    }
-    if (mediaIpv4Allowlist != null) {
-      $result.mediaIpv4Allowlist = mediaIpv4Allowlist;
-    }
-    if (mediaIpv6Allowlist != null) {
-      $result.mediaIpv6Allowlist = mediaIpv6Allowlist;
-    }
-    if (cdnGrpc != null) {
-      $result.cdnGrpc = cdnGrpc;
-    }
-    return $result;
+    final result = create();
+    if (frontendHost != null) result.frontendHost = frontendHost;
+    if (backendHost != null) result.backendHost = backendHost;
+    if (secureMedia != null) result.secureMedia = secureMedia;
+    if (mediaIpv4Allowlist != null) result.mediaIpv4Allowlist = mediaIpv4Allowlist;
+    if (mediaIpv6Allowlist != null) result.mediaIpv6Allowlist = mediaIpv6Allowlist;
+    if (cdnGrpc != null) result.cdnGrpc = cdnGrpc;
+    return result;
   }
-  ExternalCDNConfig._() : super();
-  factory ExternalCDNConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ExternalCDNConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ExternalCDNConfig._();
+
+  factory ExternalCDNConfig.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ExternalCDNConfig.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'frontendHost')
@@ -336,10 +303,12 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ExternalCDNConfig copyWith(void Function(ExternalCDNConfig) updates) => super.copyWith((message) => updates(message as ExternalCDNConfig)) as ExternalCDNConfig;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ExternalCDNConfig create() => ExternalCDNConfig._();
+  @$core.override
   ExternalCDNConfig createEmptyInstance() => create();
   static $pb.PbList<ExternalCDNConfig> createRepeated() => $pb.PbList<ExternalCDNConfig>();
   @$core.pragma('dart2js:noInline')
@@ -351,7 +320,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get frontendHost => $_getSZ(0);
   @$pb.TagNumber(1)
-  set frontendHost($core.String v) { $_setString(0, v); }
+  set frontendHost($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasFrontendHost() => $_has(0);
   @$pb.TagNumber(1)
@@ -362,7 +331,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get backendHost => $_getSZ(1);
   @$pb.TagNumber(2)
-  set backendHost($core.String v) { $_setString(1, v); }
+  set backendHost($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasBackendHost() => $_has(1);
   @$pb.TagNumber(2)
@@ -374,7 +343,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool get secureMedia => $_getBF(2);
   @$pb.TagNumber(3)
-  set secureMedia($core.bool v) { $_setBool(2, v); }
+  set secureMedia($core.bool value) => $_setBool(2, value);
   @$pb.TagNumber(3)
   $core.bool hasSecureMedia() => $_has(2);
   @$pb.TagNumber(3)
@@ -386,7 +355,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get mediaIpv4Allowlist => $_getSZ(3);
   @$pb.TagNumber(4)
-  set mediaIpv4Allowlist($core.String v) { $_setString(3, v); }
+  set mediaIpv4Allowlist($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasMediaIpv4Allowlist() => $_has(3);
   @$pb.TagNumber(4)
@@ -398,7 +367,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.String get mediaIpv6Allowlist => $_getSZ(4);
   @$pb.TagNumber(5)
-  set mediaIpv6Allowlist($core.String v) { $_setString(4, v); }
+  set mediaIpv6Allowlist($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
   $core.bool hasMediaIpv6Allowlist() => $_has(4);
   @$pb.TagNumber(5)
@@ -413,7 +382,7 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.bool get cdnGrpc => $_getBF(5);
   @$pb.TagNumber(6)
-  set cdnGrpc($core.bool v) { $_setBool(5, v); }
+  set cdnGrpc($core.bool value) => $_setBool(5, value);
   @$pb.TagNumber(6)
   $core.bool hasCdnGrpc() => $_has(5);
   @$pb.TagNumber(6)
@@ -429,24 +398,18 @@ class FeatureSettings extends $pb.GeneratedMessage {
     $11.Visibility? defaultVisibility,
     $core.String? customTitle,
   }) {
-    final $result = create();
-    if (visible != null) {
-      $result.visible = visible;
-    }
-    if (defaultModeration != null) {
-      $result.defaultModeration = defaultModeration;
-    }
-    if (defaultVisibility != null) {
-      $result.defaultVisibility = defaultVisibility;
-    }
-    if (customTitle != null) {
-      $result.customTitle = customTitle;
-    }
-    return $result;
+    final result = create();
+    if (visible != null) result.visible = visible;
+    if (defaultModeration != null) result.defaultModeration = defaultModeration;
+    if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
+    if (customTitle != null) result.customTitle = customTitle;
+    return result;
   }
-  FeatureSettings._() : super();
-  factory FeatureSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory FeatureSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  FeatureSettings._();
+
+  factory FeatureSettings.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory FeatureSettings.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
@@ -461,10 +424,12 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   FeatureSettings copyWith(void Function(FeatureSettings) updates) => super.copyWith((message) => updates(message as FeatureSettings)) as FeatureSettings;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static FeatureSettings create() => FeatureSettings._();
+  @$core.override
   FeatureSettings createEmptyInstance() => create();
   static $pb.PbList<FeatureSettings> createRepeated() => $pb.PbList<FeatureSettings>();
   @$core.pragma('dart2js:noInline')
@@ -475,7 +440,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool get visible => $_getBF(0);
   @$pb.TagNumber(1)
-  set visible($core.bool v) { $_setBool(0, v); }
+  set visible($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasVisible() => $_has(0);
   @$pb.TagNumber(1)
@@ -490,7 +455,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $11.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($11.Moderation v) { $_setField(2, v); }
+  set defaultModeration($11.Moderation value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -502,7 +467,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $11.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($11.Visibility v) { $_setField(3, v); }
+  set defaultVisibility($11.Visibility value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -513,7 +478,7 @@ class FeatureSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get customTitle => $_getSZ(3);
   @$pb.TagNumber(4)
-  set customTitle($core.String v) { $_setString(3, v); }
+  set customTitle($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasCustomTitle() => $_has(3);
   @$pb.TagNumber(4)
@@ -529,27 +494,19 @@ class PostSettings extends $pb.GeneratedMessage {
     $core.String? customTitle,
     $core.bool? enableReplies,
   }) {
-    final $result = create();
-    if (visible != null) {
-      $result.visible = visible;
-    }
-    if (defaultModeration != null) {
-      $result.defaultModeration = defaultModeration;
-    }
-    if (defaultVisibility != null) {
-      $result.defaultVisibility = defaultVisibility;
-    }
-    if (customTitle != null) {
-      $result.customTitle = customTitle;
-    }
-    if (enableReplies != null) {
-      $result.enableReplies = enableReplies;
-    }
-    return $result;
+    final result = create();
+    if (visible != null) result.visible = visible;
+    if (defaultModeration != null) result.defaultModeration = defaultModeration;
+    if (defaultVisibility != null) result.defaultVisibility = defaultVisibility;
+    if (customTitle != null) result.customTitle = customTitle;
+    if (enableReplies != null) result.enableReplies = enableReplies;
+    return result;
   }
-  PostSettings._() : super();
-  factory PostSettings.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PostSettings.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  PostSettings._();
+
+  factory PostSettings.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory PostSettings.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
@@ -565,10 +522,12 @@ class PostSettings extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   PostSettings copyWith(void Function(PostSettings) updates) => super.copyWith((message) => updates(message as PostSettings)) as PostSettings;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static PostSettings create() => PostSettings._();
+  @$core.override
   PostSettings createEmptyInstance() => create();
   static $pb.PbList<PostSettings> createRepeated() => $pb.PbList<PostSettings>();
   @$core.pragma('dart2js:noInline')
@@ -579,7 +538,7 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.bool get visible => $_getBF(0);
   @$pb.TagNumber(1)
-  set visible($core.bool v) { $_setBool(0, v); }
+  set visible($core.bool value) => $_setBool(0, value);
   @$pb.TagNumber(1)
   $core.bool hasVisible() => $_has(0);
   @$pb.TagNumber(1)
@@ -594,7 +553,7 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $11.Moderation get defaultModeration => $_getN(1);
   @$pb.TagNumber(2)
-  set defaultModeration($11.Moderation v) { $_setField(2, v); }
+  set defaultModeration($11.Moderation value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasDefaultModeration() => $_has(1);
   @$pb.TagNumber(2)
@@ -606,7 +565,7 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $11.Visibility get defaultVisibility => $_getN(2);
   @$pb.TagNumber(3)
-  set defaultVisibility($11.Visibility v) { $_setField(3, v); }
+  set defaultVisibility($11.Visibility value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasDefaultVisibility() => $_has(2);
   @$pb.TagNumber(3)
@@ -617,7 +576,7 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get customTitle => $_getSZ(3);
   @$pb.TagNumber(4)
-  set customTitle($core.String v) { $_setString(3, v); }
+  set customTitle($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasCustomTitle() => $_has(3);
   @$pb.TagNumber(4)
@@ -628,7 +587,7 @@ class PostSettings extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool get enableReplies => $_getBF(4);
   @$pb.TagNumber(5)
-  set enableReplies($core.bool v) { $_setBool(4, v); }
+  set enableReplies($core.bool value) => $_setBool(4, value);
   @$pb.TagNumber(5)
   $core.bool hasEnableReplies() => $_has(4);
   @$pb.TagNumber(5)
@@ -649,40 +608,23 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$core.Deprecated('This field is deprecated.')
     $core.Iterable<$core.String>? recommendedServerHosts,
   }) {
-    final $result = create();
-    if (name != null) {
-      $result.name = name;
-    }
-    if (shortName != null) {
-      $result.shortName = shortName;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (privacyPolicy != null) {
-      $result.privacyPolicy = privacyPolicy;
-    }
-    if (logo != null) {
-      $result.logo = logo;
-    }
-    if (webUserInterface != null) {
-      $result.webUserInterface = webUserInterface;
-    }
-    if (colors != null) {
-      $result.colors = colors;
-    }
-    if (mediaPolicy != null) {
-      $result.mediaPolicy = mediaPolicy;
-    }
-    if (recommendedServerHosts != null) {
-      // ignore: deprecated_member_use_from_same_package
-      $result.recommendedServerHosts.addAll(recommendedServerHosts);
-    }
-    return $result;
+    final result = create();
+    if (name != null) result.name = name;
+    if (shortName != null) result.shortName = shortName;
+    if (description != null) result.description = description;
+    if (privacyPolicy != null) result.privacyPolicy = privacyPolicy;
+    if (logo != null) result.logo = logo;
+    if (webUserInterface != null) result.webUserInterface = webUserInterface;
+    if (colors != null) result.colors = colors;
+    if (mediaPolicy != null) result.mediaPolicy = mediaPolicy;
+    if (recommendedServerHosts != null) result.recommendedServerHosts.addAll(recommendedServerHosts);
+    return result;
   }
-  ServerInfo._() : super();
-  factory ServerInfo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ServerInfo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ServerInfo._();
+
+  factory ServerInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ServerInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
@@ -702,10 +644,12 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ServerInfo copyWith(void Function(ServerInfo) updates) => super.copyWith((message) => updates(message as ServerInfo)) as ServerInfo;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ServerInfo create() => ServerInfo._();
+  @$core.override
   ServerInfo createEmptyInstance() => create();
   static $pb.PbList<ServerInfo> createRepeated() => $pb.PbList<ServerInfo>();
   @$core.pragma('dart2js:noInline')
@@ -716,7 +660,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get name => $_getSZ(0);
   @$pb.TagNumber(1)
-  set name($core.String v) { $_setString(0, v); }
+  set name($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasName() => $_has(0);
   @$pb.TagNumber(1)
@@ -726,7 +670,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get shortName => $_getSZ(1);
   @$pb.TagNumber(2)
-  set shortName($core.String v) { $_setString(1, v); }
+  set shortName($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasShortName() => $_has(1);
   @$pb.TagNumber(2)
@@ -736,7 +680,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get description => $_getSZ(2);
   @$pb.TagNumber(3)
-  set description($core.String v) { $_setString(2, v); }
+  set description($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasDescription() => $_has(2);
   @$pb.TagNumber(3)
@@ -747,7 +691,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get privacyPolicy => $_getSZ(3);
   @$pb.TagNumber(4)
-  set privacyPolicy($core.String v) { $_setString(3, v); }
+  set privacyPolicy($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasPrivacyPolicy() => $_has(3);
   @$pb.TagNumber(4)
@@ -757,7 +701,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   ServerLogo get logo => $_getN(4);
   @$pb.TagNumber(5)
-  set logo(ServerLogo v) { $_setField(5, v); }
+  set logo(ServerLogo value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasLogo() => $_has(4);
   @$pb.TagNumber(5)
@@ -769,7 +713,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   WebUserInterface get webUserInterface => $_getN(5);
   @$pb.TagNumber(6)
-  set webUserInterface(WebUserInterface v) { $_setField(6, v); }
+  set webUserInterface(WebUserInterface value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasWebUserInterface() => $_has(5);
   @$pb.TagNumber(6)
@@ -779,7 +723,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   ServerColors get colors => $_getN(6);
   @$pb.TagNumber(7)
-  set colors(ServerColors v) { $_setField(7, v); }
+  set colors(ServerColors value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasColors() => $_has(6);
   @$pb.TagNumber(7)
@@ -792,7 +736,7 @@ class ServerInfo extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.String get mediaPolicy => $_getSZ(7);
   @$pb.TagNumber(8)
-  set mediaPolicy($core.String v) { $_setString(7, v); }
+  set mediaPolicy($core.String value) => $_setString(7, value);
   @$pb.TagNumber(8)
   $core.bool hasMediaPolicy() => $_has(7);
   @$pb.TagNumber(8)
@@ -812,24 +756,18 @@ class ServerLogo extends $pb.GeneratedMessage {
     $core.String? wideMediaId,
     $core.String? wideMediaIdDark,
   }) {
-    final $result = create();
-    if (squareMediaId != null) {
-      $result.squareMediaId = squareMediaId;
-    }
-    if (squareMediaIdDark != null) {
-      $result.squareMediaIdDark = squareMediaIdDark;
-    }
-    if (wideMediaId != null) {
-      $result.wideMediaId = wideMediaId;
-    }
-    if (wideMediaIdDark != null) {
-      $result.wideMediaIdDark = wideMediaIdDark;
-    }
-    return $result;
+    final result = create();
+    if (squareMediaId != null) result.squareMediaId = squareMediaId;
+    if (squareMediaIdDark != null) result.squareMediaIdDark = squareMediaIdDark;
+    if (wideMediaId != null) result.wideMediaId = wideMediaId;
+    if (wideMediaIdDark != null) result.wideMediaIdDark = wideMediaIdDark;
+    return result;
   }
-  ServerLogo._() : super();
-  factory ServerLogo.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ServerLogo.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ServerLogo._();
+
+  factory ServerLogo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ServerLogo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerLogo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'squareMediaId', protoName: 'squareMediaId')
@@ -844,10 +782,12 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ServerLogo copyWith(void Function(ServerLogo) updates) => super.copyWith((message) => updates(message as ServerLogo)) as ServerLogo;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ServerLogo create() => ServerLogo._();
+  @$core.override
   ServerLogo createEmptyInstance() => create();
   static $pb.PbList<ServerLogo> createRepeated() => $pb.PbList<ServerLogo>();
   @$core.pragma('dart2js:noInline')
@@ -858,7 +798,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get squareMediaId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set squareMediaId($core.String v) { $_setString(0, v); }
+  set squareMediaId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasSquareMediaId() => $_has(0);
   @$pb.TagNumber(1)
@@ -868,7 +808,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get squareMediaIdDark => $_getSZ(1);
   @$pb.TagNumber(2)
-  set squareMediaIdDark($core.String v) { $_setString(1, v); }
+  set squareMediaIdDark($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasSquareMediaIdDark() => $_has(1);
   @$pb.TagNumber(2)
@@ -878,7 +818,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get wideMediaId => $_getSZ(2);
   @$pb.TagNumber(3)
-  set wideMediaId($core.String v) { $_setString(2, v); }
+  set wideMediaId($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasWideMediaId() => $_has(2);
   @$pb.TagNumber(3)
@@ -888,7 +828,7 @@ class ServerLogo extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get wideMediaIdDark => $_getSZ(3);
   @$pb.TagNumber(4)
-  set wideMediaIdDark($core.String v) { $_setString(3, v); }
+  set wideMediaIdDark($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasWideMediaIdDark() => $_has(3);
   @$pb.TagNumber(4)
@@ -904,27 +844,19 @@ class ServerColors extends $pb.GeneratedMessage {
     $core.int? admin,
     $core.int? moderator,
   }) {
-    final $result = create();
-    if (primary != null) {
-      $result.primary = primary;
-    }
-    if (navigation != null) {
-      $result.navigation = navigation;
-    }
-    if (author != null) {
-      $result.author = author;
-    }
-    if (admin != null) {
-      $result.admin = admin;
-    }
-    if (moderator != null) {
-      $result.moderator = moderator;
-    }
-    return $result;
+    final result = create();
+    if (primary != null) result.primary = primary;
+    if (navigation != null) result.navigation = navigation;
+    if (author != null) result.author = author;
+    if (admin != null) result.admin = admin;
+    if (moderator != null) result.moderator = moderator;
+    return result;
   }
-  ServerColors._() : super();
-  factory ServerColors.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ServerColors.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ServerColors._();
+
+  factory ServerColors.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ServerColors.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerColors', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..a<$core.int>(1, _omitFieldNames ? '' : 'primary', $pb.PbFieldType.OU3)
@@ -940,10 +872,12 @@ class ServerColors extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ServerColors copyWith(void Function(ServerColors) updates) => super.copyWith((message) => updates(message as ServerColors)) as ServerColors;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ServerColors create() => ServerColors._();
+  @$core.override
   ServerColors createEmptyInstance() => create();
   static $pb.PbList<ServerColors> createRepeated() => $pb.PbList<ServerColors>();
   @$core.pragma('dart2js:noInline')
@@ -954,7 +888,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.int get primary => $_getIZ(0);
   @$pb.TagNumber(1)
-  set primary($core.int v) { $_setUnsignedInt32(0, v); }
+  set primary($core.int value) => $_setUnsignedInt32(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPrimary() => $_has(0);
   @$pb.TagNumber(1)
@@ -964,7 +898,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.int get navigation => $_getIZ(1);
   @$pb.TagNumber(2)
-  set navigation($core.int v) { $_setUnsignedInt32(1, v); }
+  set navigation($core.int value) => $_setUnsignedInt32(1, value);
   @$pb.TagNumber(2)
   $core.bool hasNavigation() => $_has(1);
   @$pb.TagNumber(2)
@@ -974,7 +908,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.int get author => $_getIZ(2);
   @$pb.TagNumber(3)
-  set author($core.int v) { $_setUnsignedInt32(2, v); }
+  set author($core.int value) => $_setUnsignedInt32(2, value);
   @$pb.TagNumber(3)
   $core.bool hasAuthor() => $_has(2);
   @$pb.TagNumber(3)
@@ -984,7 +918,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.int get admin => $_getIZ(3);
   @$pb.TagNumber(4)
-  set admin($core.int v) { $_setUnsignedInt32(3, v); }
+  set admin($core.int value) => $_setUnsignedInt32(3, value);
   @$pb.TagNumber(4)
   $core.bool hasAdmin() => $_has(3);
   @$pb.TagNumber(4)
@@ -994,7 +928,7 @@ class ServerColors extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.int get moderator => $_getIZ(4);
   @$pb.TagNumber(5)
-  set moderator($core.int v) { $_setUnsignedInt32(4, v); }
+  set moderator($core.int value) => $_setUnsignedInt32(4, value);
   @$pb.TagNumber(5)
   $core.bool hasModerator() => $_has(4);
   @$pb.TagNumber(5)
@@ -1007,18 +941,16 @@ class WebPushConfig extends $pb.GeneratedMessage {
     $core.String? publicVapidKey,
     $core.String? privateVapidKey,
   }) {
-    final $result = create();
-    if (publicVapidKey != null) {
-      $result.publicVapidKey = publicVapidKey;
-    }
-    if (privateVapidKey != null) {
-      $result.privateVapidKey = privateVapidKey;
-    }
-    return $result;
+    final result = create();
+    if (publicVapidKey != null) result.publicVapidKey = publicVapidKey;
+    if (privateVapidKey != null) result.privateVapidKey = privateVapidKey;
+    return result;
   }
-  WebPushConfig._() : super();
-  factory WebPushConfig.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory WebPushConfig.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  WebPushConfig._();
+
+  factory WebPushConfig.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory WebPushConfig.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'WebPushConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'publicVapidKey')
@@ -1031,10 +963,12 @@ class WebPushConfig extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   WebPushConfig copyWith(void Function(WebPushConfig) updates) => super.copyWith((message) => updates(message as WebPushConfig)) as WebPushConfig;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static WebPushConfig create() => WebPushConfig._();
+  @$core.override
   WebPushConfig createEmptyInstance() => create();
   static $pb.PbList<WebPushConfig> createRepeated() => $pb.PbList<WebPushConfig>();
   @$core.pragma('dart2js:noInline')
@@ -1045,7 +979,7 @@ class WebPushConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get publicVapidKey => $_getSZ(0);
   @$pb.TagNumber(1)
-  set publicVapidKey($core.String v) { $_setString(0, v); }
+  set publicVapidKey($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasPublicVapidKey() => $_has(0);
   @$pb.TagNumber(1)
@@ -1056,7 +990,7 @@ class WebPushConfig extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get privateVapidKey => $_getSZ(1);
   @$pb.TagNumber(2)
-  set privateVapidKey($core.String v) { $_setString(1, v); }
+  set privateVapidKey($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPrivateVapidKey() => $_has(1);
   @$pb.TagNumber(2)
@@ -1064,5 +998,5 @@ class WebPushConfig extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

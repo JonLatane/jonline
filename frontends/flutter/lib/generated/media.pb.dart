@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -53,45 +54,25 @@ class Media extends $pb.GeneratedMessage {
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (contentType != null) {
-      $result.contentType = contentType;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (visibility != null) {
-      $result.visibility = visibility;
-    }
-    if (moderation != null) {
-      $result.moderation = moderation;
-    }
-    if (generated != null) {
-      $result.generated = generated;
-    }
-    if (processed != null) {
-      $result.processed = processed;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    return $result;
+    final result = create();
+    if (id != null) result.id = id;
+    if (userId != null) result.userId = userId;
+    if (contentType != null) result.contentType = contentType;
+    if (name != null) result.name = name;
+    if (description != null) result.description = description;
+    if (visibility != null) result.visibility = visibility;
+    if (moderation != null) result.moderation = moderation;
+    if (generated != null) result.generated = generated;
+    if (processed != null) result.processed = processed;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
   }
-  Media._() : super();
-  factory Media.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Media.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Media._();
+
+  factory Media.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Media.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Media', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
@@ -113,10 +94,12 @@ class Media extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Media copyWith(void Function(Media) updates) => super.copyWith((message) => updates(message as Media)) as Media;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Media create() => Media._();
+  @$core.override
   Media createEmptyInstance() => create();
   static $pb.PbList<Media> createRepeated() => $pb.PbList<Media>();
   @$core.pragma('dart2js:noInline')
@@ -127,7 +110,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
@@ -137,7 +120,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set userId($core.String v) { $_setString(1, v); }
+  set userId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
@@ -147,7 +130,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get contentType => $_getSZ(2);
   @$pb.TagNumber(3)
-  set contentType($core.String v) { $_setString(2, v); }
+  set contentType($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasContentType() => $_has(2);
   @$pb.TagNumber(3)
@@ -157,7 +140,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get name => $_getSZ(3);
   @$pb.TagNumber(4)
-  set name($core.String v) { $_setString(3, v); }
+  set name($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasName() => $_has(3);
   @$pb.TagNumber(4)
@@ -167,7 +150,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.String get description => $_getSZ(4);
   @$pb.TagNumber(5)
-  set description($core.String v) { $_setString(4, v); }
+  set description($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
   $core.bool hasDescription() => $_has(4);
   @$pb.TagNumber(5)
@@ -177,7 +160,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $11.Visibility get visibility => $_getN(5);
   @$pb.TagNumber(6)
-  set visibility($11.Visibility v) { $_setField(6, v); }
+  set visibility($11.Visibility value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasVisibility() => $_has(5);
   @$pb.TagNumber(6)
@@ -187,7 +170,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $11.Moderation get moderation => $_getN(6);
   @$pb.TagNumber(7)
-  set moderation($11.Moderation v) { $_setField(7, v); }
+  set moderation($11.Moderation value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -197,7 +180,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.bool get generated => $_getBF(7);
   @$pb.TagNumber(8)
-  set generated($core.bool v) { $_setBool(7, v); }
+  set generated($core.bool value) => $_setBool(7, value);
   @$pb.TagNumber(8)
   $core.bool hasGenerated() => $_has(7);
   @$pb.TagNumber(8)
@@ -208,7 +191,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $core.bool get processed => $_getBF(8);
   @$pb.TagNumber(9)
-  set processed($core.bool v) { $_setBool(8, v); }
+  set processed($core.bool value) => $_setBool(8, value);
   @$pb.TagNumber(9)
   $core.bool hasProcessed() => $_has(8);
   @$pb.TagNumber(9)
@@ -217,7 +200,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(15)
   $9.Timestamp get createdAt => $_getN(9);
   @$pb.TagNumber(15)
-  set createdAt($9.Timestamp v) { $_setField(15, v); }
+  set createdAt($9.Timestamp value) => $_setField(15, value);
   @$pb.TagNumber(15)
   $core.bool hasCreatedAt() => $_has(9);
   @$pb.TagNumber(15)
@@ -228,7 +211,7 @@ class Media extends $pb.GeneratedMessage {
   @$pb.TagNumber(16)
   $9.Timestamp get updatedAt => $_getN(10);
   @$pb.TagNumber(16)
-  set updatedAt($9.Timestamp v) { $_setField(16, v); }
+  set updatedAt($9.Timestamp value) => $_setField(16, value);
   @$pb.TagNumber(16)
   $core.bool hasUpdatedAt() => $_has(10);
   @$pb.TagNumber(16)
@@ -247,24 +230,18 @@ class MediaReference extends $pb.GeneratedMessage {
     $core.String? name,
     $core.bool? generated,
   }) {
-    final $result = create();
-    if (contentType != null) {
-      $result.contentType = contentType;
-    }
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (generated != null) {
-      $result.generated = generated;
-    }
-    return $result;
+    final result = create();
+    if (contentType != null) result.contentType = contentType;
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (generated != null) result.generated = generated;
+    return result;
   }
-  MediaReference._() : super();
-  factory MediaReference.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory MediaReference.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  MediaReference._();
+
+  factory MediaReference.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory MediaReference.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaReference', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'contentType')
@@ -279,10 +256,12 @@ class MediaReference extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   MediaReference copyWith(void Function(MediaReference) updates) => super.copyWith((message) => updates(message as MediaReference)) as MediaReference;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static MediaReference create() => MediaReference._();
+  @$core.override
   MediaReference createEmptyInstance() => create();
   static $pb.PbList<MediaReference> createRepeated() => $pb.PbList<MediaReference>();
   @$core.pragma('dart2js:noInline')
@@ -293,7 +272,7 @@ class MediaReference extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get contentType => $_getSZ(0);
   @$pb.TagNumber(1)
-  set contentType($core.String v) { $_setString(0, v); }
+  set contentType($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasContentType() => $_has(0);
   @$pb.TagNumber(1)
@@ -303,7 +282,7 @@ class MediaReference extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get id => $_getSZ(1);
   @$pb.TagNumber(2)
-  set id($core.String v) { $_setString(1, v); }
+  set id($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasId() => $_has(1);
   @$pb.TagNumber(2)
@@ -313,7 +292,7 @@ class MediaReference extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get name => $_getSZ(2);
   @$pb.TagNumber(3)
-  set name($core.String v) { $_setString(2, v); }
+  set name($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasName() => $_has(2);
   @$pb.TagNumber(3)
@@ -323,7 +302,7 @@ class MediaReference extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool get generated => $_getBF(3);
   @$pb.TagNumber(4)
-  set generated($core.bool v) { $_setBool(3, v); }
+  set generated($core.bool value) => $_setBool(3, value);
   @$pb.TagNumber(4)
   $core.bool hasGenerated() => $_has(3);
   @$pb.TagNumber(4)
@@ -343,21 +322,17 @@ class GetMediaRequest extends $pb.GeneratedMessage {
     $core.String? userId,
     $core.int? page,
   }) {
-    final $result = create();
-    if (mediaId != null) {
-      $result.mediaId = mediaId;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (page != null) {
-      $result.page = page;
-    }
-    return $result;
+    final result = create();
+    if (mediaId != null) result.mediaId = mediaId;
+    if (userId != null) result.userId = userId;
+    if (page != null) result.page = page;
+    return result;
   }
-  GetMediaRequest._() : super();
-  factory GetMediaRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetMediaRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetMediaRequest._();
+
+  factory GetMediaRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetMediaRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'mediaId')
@@ -371,10 +346,12 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaRequest copyWith(void Function(GetMediaRequest) updates) => super.copyWith((message) => updates(message as GetMediaRequest)) as GetMediaRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetMediaRequest create() => GetMediaRequest._();
+  @$core.override
   GetMediaRequest createEmptyInstance() => create();
   static $pb.PbList<GetMediaRequest> createRepeated() => $pb.PbList<GetMediaRequest>();
   @$core.pragma('dart2js:noInline')
@@ -385,7 +362,7 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get mediaId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set mediaId($core.String v) { $_setString(0, v); }
+  set mediaId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasMediaId() => $_has(0);
   @$pb.TagNumber(1)
@@ -395,7 +372,7 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set userId($core.String v) { $_setString(1, v); }
+  set userId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
@@ -404,7 +381,7 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.int get page => $_getIZ(2);
   @$pb.TagNumber(11)
-  set page($core.int v) { $_setUnsignedInt32(2, v); }
+  set page($core.int value) => $_setUnsignedInt32(2, value);
   @$pb.TagNumber(11)
   $core.bool hasPage() => $_has(2);
   @$pb.TagNumber(11)
@@ -416,18 +393,16 @@ class GetMediaResponse extends $pb.GeneratedMessage {
     $core.Iterable<Media>? media,
     $core.bool? hasNextPage,
   }) {
-    final $result = create();
-    if (media != null) {
-      $result.media.addAll(media);
-    }
-    if (hasNextPage != null) {
-      $result.hasNextPage = hasNextPage;
-    }
-    return $result;
+    final result = create();
+    if (media != null) result.media.addAll(media);
+    if (hasNextPage != null) result.hasNextPage = hasNextPage;
+    return result;
   }
-  GetMediaResponse._() : super();
-  factory GetMediaResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetMediaResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetMediaResponse._();
+
+  factory GetMediaResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetMediaResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<Media>(1, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: Media.create)
@@ -440,10 +415,12 @@ class GetMediaResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMediaResponse copyWith(void Function(GetMediaResponse) updates) => super.copyWith((message) => updates(message as GetMediaResponse)) as GetMediaResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetMediaResponse create() => GetMediaResponse._();
+  @$core.override
   GetMediaResponse createEmptyInstance() => create();
   static $pb.PbList<GetMediaResponse> createRepeated() => $pb.PbList<GetMediaResponse>();
   @$core.pragma('dart2js:noInline')
@@ -456,7 +433,7 @@ class GetMediaResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool get hasNextPage => $_getBF(1);
   @$pb.TagNumber(2)
-  set hasNextPage($core.bool v) { $_setBool(1, v); }
+  set hasNextPage($core.bool value) => $_setBool(1, value);
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
@@ -464,5 +441,5 @@ class GetMediaResponse extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

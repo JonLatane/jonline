@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -45,63 +46,31 @@ class Group extends $pb.GeneratedMessage {
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (name != null) {
-      $result.name = name;
-    }
-    if (shortname != null) {
-      $result.shortname = shortname;
-    }
-    if (description != null) {
-      $result.description = description;
-    }
-    if (avatar != null) {
-      $result.avatar = avatar;
-    }
-    if (defaultMembershipPermissions != null) {
-      $result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
-    }
-    if (defaultMembershipModeration != null) {
-      $result.defaultMembershipModeration = defaultMembershipModeration;
-    }
-    if (defaultPostModeration != null) {
-      $result.defaultPostModeration = defaultPostModeration;
-    }
-    if (defaultEventModeration != null) {
-      $result.defaultEventModeration = defaultEventModeration;
-    }
-    if (visibility != null) {
-      $result.visibility = visibility;
-    }
-    if (memberCount != null) {
-      $result.memberCount = memberCount;
-    }
-    if (postCount != null) {
-      $result.postCount = postCount;
-    }
-    if (eventCount != null) {
-      $result.eventCount = eventCount;
-    }
-    if (nonMemberPermissions != null) {
-      $result.nonMemberPermissions.addAll(nonMemberPermissions);
-    }
-    if (currentUserMembership != null) {
-      $result.currentUserMembership = currentUserMembership;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    return $result;
+    final result = create();
+    if (id != null) result.id = id;
+    if (name != null) result.name = name;
+    if (shortname != null) result.shortname = shortname;
+    if (description != null) result.description = description;
+    if (avatar != null) result.avatar = avatar;
+    if (defaultMembershipPermissions != null) result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
+    if (defaultMembershipModeration != null) result.defaultMembershipModeration = defaultMembershipModeration;
+    if (defaultPostModeration != null) result.defaultPostModeration = defaultPostModeration;
+    if (defaultEventModeration != null) result.defaultEventModeration = defaultEventModeration;
+    if (visibility != null) result.visibility = visibility;
+    if (memberCount != null) result.memberCount = memberCount;
+    if (postCount != null) result.postCount = postCount;
+    if (eventCount != null) result.eventCount = eventCount;
+    if (nonMemberPermissions != null) result.nonMemberPermissions.addAll(nonMemberPermissions);
+    if (currentUserMembership != null) result.currentUserMembership = currentUserMembership;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
   }
-  Group._() : super();
-  factory Group.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Group.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Group._();
+
+  factory Group.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Group.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Group', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
@@ -129,10 +98,12 @@ class Group extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Group copyWith(void Function(Group) updates) => super.copyWith((message) => updates(message as Group)) as Group;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Group create() => Group._();
+  @$core.override
   Group createEmptyInstance() => create();
   static $pb.PbList<Group> createRepeated() => $pb.PbList<Group>();
   @$core.pragma('dart2js:noInline')
@@ -143,7 +114,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
@@ -153,7 +124,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get name => $_getSZ(1);
   @$pb.TagNumber(2)
-  set name($core.String v) { $_setString(1, v); }
+  set name($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasName() => $_has(1);
   @$pb.TagNumber(2)
@@ -163,7 +134,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get shortname => $_getSZ(2);
   @$pb.TagNumber(3)
-  set shortname($core.String v) { $_setString(2, v); }
+  set shortname($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasShortname() => $_has(2);
   @$pb.TagNumber(3)
@@ -173,7 +144,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get description => $_getSZ(3);
   @$pb.TagNumber(4)
-  set description($core.String v) { $_setString(3, v); }
+  set description($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasDescription() => $_has(3);
   @$pb.TagNumber(4)
@@ -183,7 +154,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $5.MediaReference get avatar => $_getN(4);
   @$pb.TagNumber(5)
-  set avatar($5.MediaReference v) { $_setField(5, v); }
+  set avatar($5.MediaReference value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasAvatar() => $_has(4);
   @$pb.TagNumber(5)
@@ -200,7 +171,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $11.Moderation get defaultMembershipModeration => $_getN(6);
   @$pb.TagNumber(7)
-  set defaultMembershipModeration($11.Moderation v) { $_setField(7, v); }
+  set defaultMembershipModeration($11.Moderation value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasDefaultMembershipModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -210,7 +181,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $11.Moderation get defaultPostModeration => $_getN(7);
   @$pb.TagNumber(8)
-  set defaultPostModeration($11.Moderation v) { $_setField(8, v); }
+  set defaultPostModeration($11.Moderation value) => $_setField(8, value);
   @$pb.TagNumber(8)
   $core.bool hasDefaultPostModeration() => $_has(7);
   @$pb.TagNumber(8)
@@ -220,7 +191,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(9)
   $11.Moderation get defaultEventModeration => $_getN(8);
   @$pb.TagNumber(9)
-  set defaultEventModeration($11.Moderation v) { $_setField(9, v); }
+  set defaultEventModeration($11.Moderation value) => $_setField(9, value);
   @$pb.TagNumber(9)
   $core.bool hasDefaultEventModeration() => $_has(8);
   @$pb.TagNumber(9)
@@ -231,7 +202,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   $11.Visibility get visibility => $_getN(9);
   @$pb.TagNumber(10)
-  set visibility($11.Visibility v) { $_setField(10, v); }
+  set visibility($11.Visibility value) => $_setField(10, value);
   @$pb.TagNumber(10)
   $core.bool hasVisibility() => $_has(9);
   @$pb.TagNumber(10)
@@ -241,7 +212,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.int get memberCount => $_getIZ(10);
   @$pb.TagNumber(11)
-  set memberCount($core.int v) { $_setUnsignedInt32(10, v); }
+  set memberCount($core.int value) => $_setUnsignedInt32(10, value);
   @$pb.TagNumber(11)
   $core.bool hasMemberCount() => $_has(10);
   @$pb.TagNumber(11)
@@ -251,7 +222,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(12)
   $core.int get postCount => $_getIZ(11);
   @$pb.TagNumber(12)
-  set postCount($core.int v) { $_setUnsignedInt32(11, v); }
+  set postCount($core.int value) => $_setUnsignedInt32(11, value);
   @$pb.TagNumber(12)
   $core.bool hasPostCount() => $_has(11);
   @$pb.TagNumber(12)
@@ -261,7 +232,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(13)
   $core.int get eventCount => $_getIZ(12);
   @$pb.TagNumber(13)
-  set eventCount($core.int v) { $_setUnsignedInt32(12, v); }
+  set eventCount($core.int value) => $_setUnsignedInt32(12, value);
   @$pb.TagNumber(13)
   $core.bool hasEventCount() => $_has(12);
   @$pb.TagNumber(13)
@@ -275,7 +246,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(19)
   $4.Membership get currentUserMembership => $_getN(14);
   @$pb.TagNumber(19)
-  set currentUserMembership($4.Membership v) { $_setField(19, v); }
+  set currentUserMembership($4.Membership value) => $_setField(19, value);
   @$pb.TagNumber(19)
   $core.bool hasCurrentUserMembership() => $_has(14);
   @$pb.TagNumber(19)
@@ -287,7 +258,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   $9.Timestamp get createdAt => $_getN(15);
   @$pb.TagNumber(20)
-  set createdAt($9.Timestamp v) { $_setField(20, v); }
+  set createdAt($9.Timestamp value) => $_setField(20, value);
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(15);
   @$pb.TagNumber(20)
@@ -299,7 +270,7 @@ class Group extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   $9.Timestamp get updatedAt => $_getN(16);
   @$pb.TagNumber(21)
-  set updatedAt($9.Timestamp v) { $_setField(21, v); }
+  set updatedAt($9.Timestamp value) => $_setField(21, value);
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(16);
   @$pb.TagNumber(21)
@@ -317,27 +288,19 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
     GroupListingType? listingType,
     $core.int? page,
   }) {
-    final $result = create();
-    if (groupId != null) {
-      $result.groupId = groupId;
-    }
-    if (groupName != null) {
-      $result.groupName = groupName;
-    }
-    if (groupShortname != null) {
-      $result.groupShortname = groupShortname;
-    }
-    if (listingType != null) {
-      $result.listingType = listingType;
-    }
-    if (page != null) {
-      $result.page = page;
-    }
-    return $result;
+    final result = create();
+    if (groupId != null) result.groupId = groupId;
+    if (groupName != null) result.groupName = groupName;
+    if (groupShortname != null) result.groupShortname = groupShortname;
+    if (listingType != null) result.listingType = listingType;
+    if (page != null) result.page = page;
+    return result;
   }
-  GetGroupsRequest._() : super();
-  factory GetGroupsRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetGroupsRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetGroupsRequest._();
+
+  factory GetGroupsRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetGroupsRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
@@ -353,10 +316,12 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupsRequest copyWith(void Function(GetGroupsRequest) updates) => super.copyWith((message) => updates(message as GetGroupsRequest)) as GetGroupsRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetGroupsRequest create() => GetGroupsRequest._();
+  @$core.override
   GetGroupsRequest createEmptyInstance() => create();
   static $pb.PbList<GetGroupsRequest> createRepeated() => $pb.PbList<GetGroupsRequest>();
   @$core.pragma('dart2js:noInline')
@@ -367,7 +332,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get groupId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set groupId($core.String v) { $_setString(0, v); }
+  set groupId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasGroupId() => $_has(0);
   @$pb.TagNumber(1)
@@ -377,7 +342,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get groupName => $_getSZ(1);
   @$pb.TagNumber(2)
-  set groupName($core.String v) { $_setString(1, v); }
+  set groupName($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasGroupName() => $_has(1);
   @$pb.TagNumber(2)
@@ -388,7 +353,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get groupShortname => $_getSZ(2);
   @$pb.TagNumber(3)
-  set groupShortname($core.String v) { $_setString(2, v); }
+  set groupShortname($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasGroupShortname() => $_has(2);
   @$pb.TagNumber(3)
@@ -398,7 +363,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   GroupListingType get listingType => $_getN(3);
   @$pb.TagNumber(10)
-  set listingType(GroupListingType v) { $_setField(10, v); }
+  set listingType(GroupListingType value) => $_setField(10, value);
   @$pb.TagNumber(10)
   $core.bool hasListingType() => $_has(3);
   @$pb.TagNumber(10)
@@ -408,7 +373,7 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(11)
   $core.int get page => $_getIZ(4);
   @$pb.TagNumber(11)
-  set page($core.int v) { $_setSignedInt32(4, v); }
+  set page($core.int value) => $_setSignedInt32(4, value);
   @$pb.TagNumber(11)
   $core.bool hasPage() => $_has(4);
   @$pb.TagNumber(11)
@@ -421,18 +386,16 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
     $core.Iterable<Group>? groups,
     $core.bool? hasNextPage,
   }) {
-    final $result = create();
-    if (groups != null) {
-      $result.groups.addAll(groups);
-    }
-    if (hasNextPage != null) {
-      $result.hasNextPage = hasNextPage;
-    }
-    return $result;
+    final result = create();
+    if (groups != null) result.groups.addAll(groups);
+    if (hasNextPage != null) result.hasNextPage = hasNextPage;
+    return result;
   }
-  GetGroupsResponse._() : super();
-  factory GetGroupsResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetGroupsResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetGroupsResponse._();
+
+  factory GetGroupsResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetGroupsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<Group>(1, _omitFieldNames ? '' : 'groups', $pb.PbFieldType.PM, subBuilder: Group.create)
@@ -445,10 +408,12 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetGroupsResponse copyWith(void Function(GetGroupsResponse) updates) => super.copyWith((message) => updates(message as GetGroupsResponse)) as GetGroupsResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetGroupsResponse create() => GetGroupsResponse._();
+  @$core.override
   GetGroupsResponse createEmptyInstance() => create();
   static $pb.PbList<GetGroupsResponse> createRepeated() => $pb.PbList<GetGroupsResponse>();
   @$core.pragma('dart2js:noInline')
@@ -463,7 +428,7 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool get hasNextPage => $_getBF(1);
   @$pb.TagNumber(2)
-  set hasNextPage($core.bool v) { $_setBool(1, v); }
+  set hasNextPage($core.bool value) => $_setBool(1, value);
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
@@ -476,18 +441,16 @@ class Member extends $pb.GeneratedMessage {
     $4.User? user,
     $4.Membership? membership,
   }) {
-    final $result = create();
-    if (user != null) {
-      $result.user = user;
-    }
-    if (membership != null) {
-      $result.membership = membership;
-    }
-    return $result;
+    final result = create();
+    if (user != null) result.user = user;
+    if (membership != null) result.membership = membership;
+    return result;
   }
-  Member._() : super();
-  factory Member.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Member.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Member._();
+
+  factory Member.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Member.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Member', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<$4.User>(1, _omitFieldNames ? '' : 'user', subBuilder: $4.User.create)
@@ -500,10 +463,12 @@ class Member extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Member copyWith(void Function(Member) updates) => super.copyWith((message) => updates(message as Member)) as Member;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Member create() => Member._();
+  @$core.override
   Member createEmptyInstance() => create();
   static $pb.PbList<Member> createRepeated() => $pb.PbList<Member>();
   @$core.pragma('dart2js:noInline')
@@ -514,7 +479,7 @@ class Member extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $4.User get user => $_getN(0);
   @$pb.TagNumber(1)
-  set user($4.User v) { $_setField(1, v); }
+  set user($4.User value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasUser() => $_has(0);
   @$pb.TagNumber(1)
@@ -526,7 +491,7 @@ class Member extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $4.Membership get membership => $_getN(1);
   @$pb.TagNumber(2)
-  set membership($4.Membership v) { $_setField(2, v); }
+  set membership($4.Membership value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasMembership() => $_has(1);
   @$pb.TagNumber(2)
@@ -543,24 +508,18 @@ class GetMembersRequest extends $pb.GeneratedMessage {
     $11.Moderation? groupModeration,
     $core.int? page,
   }) {
-    final $result = create();
-    if (groupId != null) {
-      $result.groupId = groupId;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (groupModeration != null) {
-      $result.groupModeration = groupModeration;
-    }
-    if (page != null) {
-      $result.page = page;
-    }
-    return $result;
+    final result = create();
+    if (groupId != null) result.groupId = groupId;
+    if (username != null) result.username = username;
+    if (groupModeration != null) result.groupModeration = groupModeration;
+    if (page != null) result.page = page;
+    return result;
   }
-  GetMembersRequest._() : super();
-  factory GetMembersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetMembersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetMembersRequest._();
+
+  factory GetMembersRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetMembersRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
@@ -575,10 +534,12 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMembersRequest copyWith(void Function(GetMembersRequest) updates) => super.copyWith((message) => updates(message as GetMembersRequest)) as GetMembersRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetMembersRequest create() => GetMembersRequest._();
+  @$core.override
   GetMembersRequest createEmptyInstance() => create();
   static $pb.PbList<GetMembersRequest> createRepeated() => $pb.PbList<GetMembersRequest>();
   @$core.pragma('dart2js:noInline')
@@ -589,7 +550,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get groupId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set groupId($core.String v) { $_setString(0, v); }
+  set groupId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasGroupId() => $_has(0);
   @$pb.TagNumber(1)
@@ -599,7 +560,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
-  set username($core.String v) { $_setString(1, v); }
+  set username($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
@@ -610,7 +571,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $11.Moderation get groupModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set groupModeration($11.Moderation v) { $_setField(3, v); }
+  set groupModeration($11.Moderation value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasGroupModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -620,7 +581,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(10)
   $core.int get page => $_getIZ(3);
   @$pb.TagNumber(10)
-  set page($core.int v) { $_setSignedInt32(3, v); }
+  set page($core.int value) => $_setSignedInt32(3, value);
   @$pb.TagNumber(10)
   $core.bool hasPage() => $_has(3);
   @$pb.TagNumber(10)
@@ -633,18 +594,16 @@ class GetMembersResponse extends $pb.GeneratedMessage {
     $core.Iterable<Member>? members,
     $core.bool? hasNextPage,
   }) {
-    final $result = create();
-    if (members != null) {
-      $result.members.addAll(members);
-    }
-    if (hasNextPage != null) {
-      $result.hasNextPage = hasNextPage;
-    }
-    return $result;
+    final result = create();
+    if (members != null) result.members.addAll(members);
+    if (hasNextPage != null) result.hasNextPage = hasNextPage;
+    return result;
   }
-  GetMembersResponse._() : super();
-  factory GetMembersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetMembersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetMembersResponse._();
+
+  factory GetMembersResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetMembersResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<Member>(1, _omitFieldNames ? '' : 'members', $pb.PbFieldType.PM, subBuilder: Member.create)
@@ -657,10 +616,12 @@ class GetMembersResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetMembersResponse copyWith(void Function(GetMembersResponse) updates) => super.copyWith((message) => updates(message as GetMembersResponse)) as GetMembersResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetMembersResponse create() => GetMembersResponse._();
+  @$core.override
   GetMembersResponse createEmptyInstance() => create();
   static $pb.PbList<GetMembersResponse> createRepeated() => $pb.PbList<GetMembersResponse>();
   @$core.pragma('dart2js:noInline')
@@ -675,7 +636,7 @@ class GetMembersResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool get hasNextPage => $_getBF(1);
   @$pb.TagNumber(2)
-  set hasNextPage($core.bool v) { $_setBool(1, v); }
+  set hasNextPage($core.bool value) => $_setBool(1, value);
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
@@ -683,5 +644,5 @@ class GetMembersResponse extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

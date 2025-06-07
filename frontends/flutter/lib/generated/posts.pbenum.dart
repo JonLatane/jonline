@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -45,7 +46,7 @@ class PostListingType extends $pb.ProtobufEnum {
   static final $core.Map<$core.int, PostListingType> _byValue = $pb.ProtobufEnum.initByValue(values);
   static PostListingType? valueOf($core.int value) => _byValue[value];
 
-  const PostListingType._(super.v, super.n);
+  const PostListingType._(super.value, super.name);
 }
 
 /// Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
@@ -81,8 +82,8 @@ class PostContext extends $pb.ProtobufEnum {
   static final $core.Map<$core.int, PostContext> _byValue = $pb.ProtobufEnum.initByValue(values);
   static PostContext? valueOf($core.int value) => _byValue[value];
 
-  const PostContext._(super.v, super.n);
+  const PostContext._(super.value, super.name);
 }
 
 
-const _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');
+const $core.bool _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');

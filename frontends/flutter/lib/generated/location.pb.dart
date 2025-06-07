@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -22,21 +23,17 @@ class Location extends $pb.GeneratedMessage {
     $core.String? creatorId,
     $core.String? uniformlyFormattedAddress,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (creatorId != null) {
-      $result.creatorId = creatorId;
-    }
-    if (uniformlyFormattedAddress != null) {
-      $result.uniformlyFormattedAddress = uniformlyFormattedAddress;
-    }
-    return $result;
+    final result = create();
+    if (id != null) result.id = id;
+    if (creatorId != null) result.creatorId = creatorId;
+    if (uniformlyFormattedAddress != null) result.uniformlyFormattedAddress = uniformlyFormattedAddress;
+    return result;
   }
-  Location._() : super();
-  factory Location.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Location.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Location._();
+
+  factory Location.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Location.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Location', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
@@ -50,10 +47,12 @@ class Location extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Location copyWith(void Function(Location) updates) => super.copyWith((message) => updates(message as Location)) as Location;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Location create() => Location._();
+  @$core.override
   Location createEmptyInstance() => create();
   static $pb.PbList<Location> createRepeated() => $pb.PbList<Location>();
   @$core.pragma('dart2js:noInline')
@@ -64,7 +63,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
@@ -74,7 +73,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get creatorId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set creatorId($core.String v) { $_setString(1, v); }
+  set creatorId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasCreatorId() => $_has(1);
   @$pb.TagNumber(2)
@@ -86,7 +85,7 @@ class Location extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get uniformlyFormattedAddress => $_getSZ(2);
   @$pb.TagNumber(3)
-  set uniformlyFormattedAddress($core.String v) { $_setString(2, v); }
+  set uniformlyFormattedAddress($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasUniformlyFormattedAddress() => $_has(2);
   @$pb.TagNumber(3)
@@ -94,5 +93,5 @@ class Location extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

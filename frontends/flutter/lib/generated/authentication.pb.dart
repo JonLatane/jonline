@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -29,30 +30,20 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
     $9.Timestamp? expiresAt,
     $core.String? deviceName,
   }) {
-    final $result = create();
-    if (username != null) {
-      $result.username = username;
-    }
-    if (password != null) {
-      $result.password = password;
-    }
-    if (email != null) {
-      $result.email = email;
-    }
-    if (phone != null) {
-      $result.phone = phone;
-    }
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    if (deviceName != null) {
-      $result.deviceName = deviceName;
-    }
-    return $result;
+    final result = create();
+    if (username != null) result.username = username;
+    if (password != null) result.password = password;
+    if (email != null) result.email = email;
+    if (phone != null) result.phone = phone;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (deviceName != null) result.deviceName = deviceName;
+    return result;
   }
-  CreateAccountRequest._() : super();
-  factory CreateAccountRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateAccountRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  CreateAccountRequest._();
+
+  factory CreateAccountRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory CreateAccountRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
@@ -69,10 +60,12 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   CreateAccountRequest copyWith(void Function(CreateAccountRequest) updates) => super.copyWith((message) => updates(message as CreateAccountRequest)) as CreateAccountRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static CreateAccountRequest create() => CreateAccountRequest._();
+  @$core.override
   CreateAccountRequest createEmptyInstance() => create();
   static $pb.PbList<CreateAccountRequest> createRepeated() => $pb.PbList<CreateAccountRequest>();
   @$core.pragma('dart2js:noInline')
@@ -83,7 +76,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
-  set username($core.String v) { $_setString(0, v); }
+  set username($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUsername() => $_has(0);
   @$pb.TagNumber(1)
@@ -93,7 +86,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get password => $_getSZ(1);
   @$pb.TagNumber(2)
-  set password($core.String v) { $_setString(1, v); }
+  set password($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(2)
@@ -103,7 +96,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $4.ContactMethod get email => $_getN(2);
   @$pb.TagNumber(3)
-  set email($4.ContactMethod v) { $_setField(3, v); }
+  set email($4.ContactMethod value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasEmail() => $_has(2);
   @$pb.TagNumber(3)
@@ -115,7 +108,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $4.ContactMethod get phone => $_getN(3);
   @$pb.TagNumber(4)
-  set phone($4.ContactMethod v) { $_setField(4, v); }
+  set phone($4.ContactMethod value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasPhone() => $_has(3);
   @$pb.TagNumber(4)
@@ -127,7 +120,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp get expiresAt => $_getN(4);
   @$pb.TagNumber(5)
-  set expiresAt($9.Timestamp v) { $_setField(5, v); }
+  set expiresAt($9.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasExpiresAt() => $_has(4);
   @$pb.TagNumber(5)
@@ -139,7 +132,7 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $core.String get deviceName => $_getSZ(5);
   @$pb.TagNumber(6)
-  set deviceName($core.String v) { $_setString(5, v); }
+  set deviceName($core.String value) => $_setString(5, value);
   @$pb.TagNumber(6)
   $core.bool hasDeviceName() => $_has(5);
   @$pb.TagNumber(6)
@@ -155,27 +148,19 @@ class LoginRequest extends $pb.GeneratedMessage {
     $core.String? deviceName,
     $core.String? userId,
   }) {
-    final $result = create();
-    if (username != null) {
-      $result.username = username;
-    }
-    if (password != null) {
-      $result.password = password;
-    }
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    if (deviceName != null) {
-      $result.deviceName = deviceName;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    return $result;
+    final result = create();
+    if (username != null) result.username = username;
+    if (password != null) result.password = password;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (deviceName != null) result.deviceName = deviceName;
+    if (userId != null) result.userId = userId;
+    return result;
   }
-  LoginRequest._() : super();
-  factory LoginRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory LoginRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  LoginRequest._();
+
+  factory LoginRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory LoginRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LoginRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
@@ -191,10 +176,12 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   LoginRequest copyWith(void Function(LoginRequest) updates) => super.copyWith((message) => updates(message as LoginRequest)) as LoginRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static LoginRequest create() => LoginRequest._();
+  @$core.override
   LoginRequest createEmptyInstance() => create();
   static $pb.PbList<LoginRequest> createRepeated() => $pb.PbList<LoginRequest>();
   @$core.pragma('dart2js:noInline')
@@ -205,7 +192,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
-  set username($core.String v) { $_setString(0, v); }
+  set username($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUsername() => $_has(0);
   @$pb.TagNumber(1)
@@ -215,7 +202,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get password => $_getSZ(1);
   @$pb.TagNumber(2)
-  set password($core.String v) { $_setString(1, v); }
+  set password($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(2)
@@ -225,7 +212,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $9.Timestamp get expiresAt => $_getN(2);
   @$pb.TagNumber(3)
-  set expiresAt($9.Timestamp v) { $_setField(3, v); }
+  set expiresAt($9.Timestamp value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasExpiresAt() => $_has(2);
   @$pb.TagNumber(3)
@@ -237,7 +224,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get deviceName => $_getSZ(3);
   @$pb.TagNumber(4)
-  set deviceName($core.String v) { $_setString(3, v); }
+  set deviceName($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasDeviceName() => $_has(3);
   @$pb.TagNumber(4)
@@ -247,7 +234,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.String get userId => $_getSZ(4);
   @$pb.TagNumber(5)
-  set userId($core.String v) { $_setString(4, v); }
+  set userId($core.String value) => $_setString(4, value);
   @$pb.TagNumber(5)
   $core.bool hasUserId() => $_has(4);
   @$pb.TagNumber(5)
@@ -276,21 +263,17 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
     $core.String? userId,
     $core.String? deviceName,
   }) {
-    final $result = create();
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (deviceName != null) {
-      $result.deviceName = deviceName;
-    }
-    return $result;
+    final result = create();
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (userId != null) result.userId = userId;
+    if (deviceName != null) result.deviceName = deviceName;
+    return result;
   }
-  CreateThirdPartyRefreshTokenRequest._() : super();
-  factory CreateThirdPartyRefreshTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory CreateThirdPartyRefreshTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  CreateThirdPartyRefreshTokenRequest._();
+
+  factory CreateThirdPartyRefreshTokenRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory CreateThirdPartyRefreshTokenRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateThirdPartyRefreshTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
@@ -304,10 +287,12 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   CreateThirdPartyRefreshTokenRequest copyWith(void Function(CreateThirdPartyRefreshTokenRequest) updates) => super.copyWith((message) => updates(message as CreateThirdPartyRefreshTokenRequest)) as CreateThirdPartyRefreshTokenRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static CreateThirdPartyRefreshTokenRequest create() => CreateThirdPartyRefreshTokenRequest._();
+  @$core.override
   CreateThirdPartyRefreshTokenRequest createEmptyInstance() => create();
   static $pb.PbList<CreateThirdPartyRefreshTokenRequest> createRepeated() => $pb.PbList<CreateThirdPartyRefreshTokenRequest>();
   @$core.pragma('dart2js:noInline')
@@ -318,7 +303,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(0);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { $_setField(2, v); }
+  set expiresAt($9.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(0);
   @$pb.TagNumber(2)
@@ -330,7 +315,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(3)
-  set userId($core.String v) { $_setString(1, v); }
+  set userId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(3)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(3)
@@ -340,7 +325,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get deviceName => $_getSZ(2);
   @$pb.TagNumber(4)
-  set deviceName($core.String v) { $_setString(2, v); }
+  set deviceName($core.String value) => $_setString(2, value);
   @$pb.TagNumber(4)
   $core.bool hasDeviceName() => $_has(2);
   @$pb.TagNumber(4)
@@ -354,21 +339,17 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
     ExpirableToken? accessToken,
     $4.User? user,
   }) {
-    final $result = create();
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
-    }
-    if (accessToken != null) {
-      $result.accessToken = accessToken;
-    }
-    if (user != null) {
-      $result.user = user;
-    }
-    return $result;
+    final result = create();
+    if (refreshToken != null) result.refreshToken = refreshToken;
+    if (accessToken != null) result.accessToken = accessToken;
+    if (user != null) result.user = user;
+    return result;
   }
-  RefreshTokenResponse._() : super();
-  factory RefreshTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RefreshTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  RefreshTokenResponse._();
+
+  factory RefreshTokenResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory RefreshTokenResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ExpirableToken>(1, _omitFieldNames ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
@@ -382,10 +363,12 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   RefreshTokenResponse copyWith(void Function(RefreshTokenResponse) updates) => super.copyWith((message) => updates(message as RefreshTokenResponse)) as RefreshTokenResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static RefreshTokenResponse create() => RefreshTokenResponse._();
+  @$core.override
   RefreshTokenResponse createEmptyInstance() => create();
   static $pb.PbList<RefreshTokenResponse> createRepeated() => $pb.PbList<RefreshTokenResponse>();
   @$core.pragma('dart2js:noInline')
@@ -397,7 +380,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)
-  set refreshToken(ExpirableToken v) { $_setField(1, v); }
+  set refreshToken(ExpirableToken value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
@@ -409,7 +392,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
-  set accessToken(ExpirableToken v) { $_setField(2, v); }
+  set accessToken(ExpirableToken value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasAccessToken() => $_has(1);
   @$pb.TagNumber(2)
@@ -421,7 +404,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $4.User get user => $_getN(2);
   @$pb.TagNumber(3)
-  set user($4.User v) { $_setField(3, v); }
+  set user($4.User value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasUser() => $_has(2);
   @$pb.TagNumber(3)
@@ -436,18 +419,16 @@ class ExpirableToken extends $pb.GeneratedMessage {
     $core.String? token,
     $9.Timestamp? expiresAt,
   }) {
-    final $result = create();
-    if (token != null) {
-      $result.token = token;
-    }
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    return $result;
+    final result = create();
+    if (token != null) result.token = token;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    return result;
   }
-  ExpirableToken._() : super();
-  factory ExpirableToken.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ExpirableToken.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ExpirableToken._();
+
+  factory ExpirableToken.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ExpirableToken.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExpirableToken', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'token')
@@ -460,10 +441,12 @@ class ExpirableToken extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ExpirableToken copyWith(void Function(ExpirableToken) updates) => super.copyWith((message) => updates(message as ExpirableToken)) as ExpirableToken;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ExpirableToken create() => ExpirableToken._();
+  @$core.override
   ExpirableToken createEmptyInstance() => create();
   static $pb.PbList<ExpirableToken> createRepeated() => $pb.PbList<ExpirableToken>();
   @$core.pragma('dart2js:noInline')
@@ -474,7 +457,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get token => $_getSZ(0);
   @$pb.TagNumber(1)
-  set token($core.String v) { $_setString(0, v); }
+  set token($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasToken() => $_has(0);
   @$pb.TagNumber(1)
@@ -484,7 +467,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { $_setField(2, v); }
+  set expiresAt($9.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
@@ -499,18 +482,16 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
     $core.String? refreshToken,
     $9.Timestamp? expiresAt,
   }) {
-    final $result = create();
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
-    }
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    return $result;
+    final result = create();
+    if (refreshToken != null) result.refreshToken = refreshToken;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    return result;
   }
-  AccessTokenRequest._() : super();
-  factory AccessTokenRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory AccessTokenRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  AccessTokenRequest._();
+
+  factory AccessTokenRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory AccessTokenRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'refreshToken')
@@ -523,10 +504,12 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   AccessTokenRequest copyWith(void Function(AccessTokenRequest) updates) => super.copyWith((message) => updates(message as AccessTokenRequest)) as AccessTokenRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static AccessTokenRequest create() => AccessTokenRequest._();
+  @$core.override
   AccessTokenRequest createEmptyInstance() => create();
   static $pb.PbList<AccessTokenRequest> createRepeated() => $pb.PbList<AccessTokenRequest>();
   @$core.pragma('dart2js:noInline')
@@ -537,7 +520,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get refreshToken => $_getSZ(0);
   @$pb.TagNumber(1)
-  set refreshToken($core.String v) { $_setString(0, v); }
+  set refreshToken($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
@@ -547,7 +530,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { $_setField(2, v); }
+  set expiresAt($9.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
@@ -562,18 +545,16 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
     ExpirableToken? refreshToken,
     ExpirableToken? accessToken,
   }) {
-    final $result = create();
-    if (refreshToken != null) {
-      $result.refreshToken = refreshToken;
-    }
-    if (accessToken != null) {
-      $result.accessToken = accessToken;
-    }
-    return $result;
+    final result = create();
+    if (refreshToken != null) result.refreshToken = refreshToken;
+    if (accessToken != null) result.accessToken = accessToken;
+    return result;
   }
-  AccessTokenResponse._() : super();
-  factory AccessTokenResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory AccessTokenResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  AccessTokenResponse._();
+
+  factory AccessTokenResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory AccessTokenResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ExpirableToken>(1, _omitFieldNames ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
@@ -586,10 +567,12 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   AccessTokenResponse copyWith(void Function(AccessTokenResponse) updates) => super.copyWith((message) => updates(message as AccessTokenResponse)) as AccessTokenResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static AccessTokenResponse create() => AccessTokenResponse._();
+  @$core.override
   AccessTokenResponse createEmptyInstance() => create();
   static $pb.PbList<AccessTokenResponse> createRepeated() => $pb.PbList<AccessTokenResponse>();
   @$core.pragma('dart2js:noInline')
@@ -602,7 +585,7 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   ExpirableToken get refreshToken => $_getN(0);
   @$pb.TagNumber(1)
-  set refreshToken(ExpirableToken v) { $_setField(1, v); }
+  set refreshToken(ExpirableToken value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasRefreshToken() => $_has(0);
   @$pb.TagNumber(1)
@@ -614,7 +597,7 @@ class AccessTokenResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   ExpirableToken get accessToken => $_getN(1);
   @$pb.TagNumber(2)
-  set accessToken(ExpirableToken v) { $_setField(2, v); }
+  set accessToken(ExpirableToken value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasAccessToken() => $_has(1);
   @$pb.TagNumber(2)
@@ -629,18 +612,16 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
     $core.String? userId,
     $core.String? password,
   }) {
-    final $result = create();
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (password != null) {
-      $result.password = password;
-    }
-    return $result;
+    final result = create();
+    if (userId != null) result.userId = userId;
+    if (password != null) result.password = password;
+    return result;
   }
-  ResetPasswordRequest._() : super();
-  factory ResetPasswordRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ResetPasswordRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ResetPasswordRequest._();
+
+  factory ResetPasswordRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ResetPasswordRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ResetPasswordRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
@@ -653,10 +634,12 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ResetPasswordRequest copyWith(void Function(ResetPasswordRequest) updates) => super.copyWith((message) => updates(message as ResetPasswordRequest)) as ResetPasswordRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ResetPasswordRequest create() => ResetPasswordRequest._();
+  @$core.override
   ResetPasswordRequest createEmptyInstance() => create();
   static $pb.PbList<ResetPasswordRequest> createRepeated() => $pb.PbList<ResetPasswordRequest>();
   @$core.pragma('dart2js:noInline')
@@ -667,7 +650,7 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
+  set userId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
@@ -677,7 +660,7 @@ class ResetPasswordRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get password => $_getSZ(1);
   @$pb.TagNumber(3)
-  set password($core.String v) { $_setString(1, v); }
+  set password($core.String value) => $_setString(1, value);
   @$pb.TagNumber(3)
   $core.bool hasPassword() => $_has(1);
   @$pb.TagNumber(3)
@@ -689,15 +672,15 @@ class UserRefreshTokensResponse extends $pb.GeneratedMessage {
   factory UserRefreshTokensResponse({
     $core.Iterable<RefreshTokenMetadata>? refreshTokens,
   }) {
-    final $result = create();
-    if (refreshTokens != null) {
-      $result.refreshTokens.addAll(refreshTokens);
-    }
-    return $result;
+    final result = create();
+    if (refreshTokens != null) result.refreshTokens.addAll(refreshTokens);
+    return result;
   }
-  UserRefreshTokensResponse._() : super();
-  factory UserRefreshTokensResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory UserRefreshTokensResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  UserRefreshTokensResponse._();
+
+  factory UserRefreshTokensResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory UserRefreshTokensResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserRefreshTokensResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<RefreshTokenMetadata>(1, _omitFieldNames ? '' : 'refreshTokens', $pb.PbFieldType.PM, subBuilder: RefreshTokenMetadata.create)
@@ -709,10 +692,12 @@ class UserRefreshTokensResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   UserRefreshTokensResponse copyWith(void Function(UserRefreshTokensResponse) updates) => super.copyWith((message) => updates(message as UserRefreshTokensResponse)) as UserRefreshTokensResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static UserRefreshTokensResponse create() => UserRefreshTokensResponse._();
+  @$core.override
   UserRefreshTokensResponse createEmptyInstance() => create();
   static $pb.PbList<UserRefreshTokensResponse> createRepeated() => $pb.PbList<UserRefreshTokensResponse>();
   @$core.pragma('dart2js:noInline')
@@ -734,27 +719,19 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
     $core.bool? isThisDevice,
     $core.bool? thirdParty,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (expiresAt != null) {
-      $result.expiresAt = expiresAt;
-    }
-    if (deviceName != null) {
-      $result.deviceName = deviceName;
-    }
-    if (isThisDevice != null) {
-      $result.isThisDevice = isThisDevice;
-    }
-    if (thirdParty != null) {
-      $result.thirdParty = thirdParty;
-    }
-    return $result;
+    final result = create();
+    if (id != null) result.id = id;
+    if (expiresAt != null) result.expiresAt = expiresAt;
+    if (deviceName != null) result.deviceName = deviceName;
+    if (isThisDevice != null) result.isThisDevice = isThisDevice;
+    if (thirdParty != null) result.thirdParty = thirdParty;
+    return result;
   }
-  RefreshTokenMetadata._() : super();
-  factory RefreshTokenMetadata.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory RefreshTokenMetadata.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  RefreshTokenMetadata._();
+
+  factory RefreshTokenMetadata.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory RefreshTokenMetadata.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..a<$fixnum.Int64>(1, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
@@ -770,10 +747,12 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   RefreshTokenMetadata copyWith(void Function(RefreshTokenMetadata) updates) => super.copyWith((message) => updates(message as RefreshTokenMetadata)) as RefreshTokenMetadata;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static RefreshTokenMetadata create() => RefreshTokenMetadata._();
+  @$core.override
   RefreshTokenMetadata createEmptyInstance() => create();
   static $pb.PbList<RefreshTokenMetadata> createRepeated() => $pb.PbList<RefreshTokenMetadata>();
   @$core.pragma('dart2js:noInline')
@@ -784,7 +763,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $fixnum.Int64 get id => $_getI64(0);
   @$pb.TagNumber(1)
-  set id($fixnum.Int64 v) { $_setInt64(0, v); }
+  set id($fixnum.Int64 value) => $_setInt64(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
@@ -794,7 +773,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $9.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp v) { $_setField(2, v); }
+  set expiresAt($9.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
@@ -806,7 +785,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get deviceName => $_getSZ(2);
   @$pb.TagNumber(3)
-  set deviceName($core.String v) { $_setString(2, v); }
+  set deviceName($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasDeviceName() => $_has(2);
   @$pb.TagNumber(3)
@@ -817,7 +796,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool get isThisDevice => $_getBF(3);
   @$pb.TagNumber(4)
-  set isThisDevice($core.bool v) { $_setBool(3, v); }
+  set isThisDevice($core.bool value) => $_setBool(3, value);
   @$pb.TagNumber(4)
   $core.bool hasIsThisDevice() => $_has(3);
   @$pb.TagNumber(4)
@@ -826,7 +805,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $core.bool get thirdParty => $_getBF(4);
   @$pb.TagNumber(5)
-  set thirdParty($core.bool v) { $_setBool(4, v); }
+  set thirdParty($core.bool value) => $_setBool(4, value);
   @$pb.TagNumber(5)
   $core.bool hasThirdParty() => $_has(4);
   @$pb.TagNumber(5)
@@ -834,5 +813,5 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');

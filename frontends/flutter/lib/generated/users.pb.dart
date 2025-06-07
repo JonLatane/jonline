@@ -5,9 +5,10 @@
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
-// ignore_for_file: constant_identifier_names, library_prefixes
-// ignore_for_file: non_constant_identifier_names, prefer_final_fields
-// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+// ignore_for_file: constant_identifier_names
+// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:core' as $core;
 
@@ -53,84 +54,38 @@ class User extends $pb.GeneratedMessage {
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
-    final $result = create();
-    if (id != null) {
-      $result.id = id;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (realName != null) {
-      $result.realName = realName;
-    }
-    if (email != null) {
-      $result.email = email;
-    }
-    if (phone != null) {
-      $result.phone = phone;
-    }
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    if (avatar != null) {
-      $result.avatar = avatar;
-    }
-    if (bio != null) {
-      $result.bio = bio;
-    }
-    if (visibility != null) {
-      $result.visibility = visibility;
-    }
-    if (moderation != null) {
-      $result.moderation = moderation;
-    }
-    if (defaultFollowModeration != null) {
-      $result.defaultFollowModeration = defaultFollowModeration;
-    }
-    if (followerCount != null) {
-      $result.followerCount = followerCount;
-    }
-    if (followingCount != null) {
-      $result.followingCount = followingCount;
-    }
-    if (groupCount != null) {
-      $result.groupCount = groupCount;
-    }
-    if (postCount != null) {
-      $result.postCount = postCount;
-    }
-    if (responseCount != null) {
-      $result.responseCount = responseCount;
-    }
-    if (eventCount != null) {
-      $result.eventCount = eventCount;
-    }
-    if (currentUserFollow != null) {
-      $result.currentUserFollow = currentUserFollow;
-    }
-    if (targetCurrentUserFollow != null) {
-      $result.targetCurrentUserFollow = targetCurrentUserFollow;
-    }
-    if (currentGroupMembership != null) {
-      $result.currentGroupMembership = currentGroupMembership;
-    }
-    if (hasAdvancedData != null) {
-      $result.hasAdvancedData = hasAdvancedData;
-    }
-    if (federatedProfiles != null) {
-      $result.federatedProfiles.addAll(federatedProfiles);
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    return $result;
+    final result = create();
+    if (id != null) result.id = id;
+    if (username != null) result.username = username;
+    if (realName != null) result.realName = realName;
+    if (email != null) result.email = email;
+    if (phone != null) result.phone = phone;
+    if (permissions != null) result.permissions.addAll(permissions);
+    if (avatar != null) result.avatar = avatar;
+    if (bio != null) result.bio = bio;
+    if (visibility != null) result.visibility = visibility;
+    if (moderation != null) result.moderation = moderation;
+    if (defaultFollowModeration != null) result.defaultFollowModeration = defaultFollowModeration;
+    if (followerCount != null) result.followerCount = followerCount;
+    if (followingCount != null) result.followingCount = followingCount;
+    if (groupCount != null) result.groupCount = groupCount;
+    if (postCount != null) result.postCount = postCount;
+    if (responseCount != null) result.responseCount = responseCount;
+    if (eventCount != null) result.eventCount = eventCount;
+    if (currentUserFollow != null) result.currentUserFollow = currentUserFollow;
+    if (targetCurrentUserFollow != null) result.targetCurrentUserFollow = targetCurrentUserFollow;
+    if (currentGroupMembership != null) result.currentGroupMembership = currentGroupMembership;
+    if (hasAdvancedData != null) result.hasAdvancedData = hasAdvancedData;
+    if (federatedProfiles != null) result.federatedProfiles.addAll(federatedProfiles);
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
   }
-  User._() : super();
-  factory User.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory User.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  User._();
+
+  factory User.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory User.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'User', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
@@ -165,10 +120,12 @@ class User extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   User copyWith(void Function(User) updates) => super.copyWith((message) => updates(message as User)) as User;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static User create() => User._();
+  @$core.override
   User createEmptyInstance() => create();
   static $pb.PbList<User> createRepeated() => $pb.PbList<User>();
   @$core.pragma('dart2js:noInline')
@@ -179,7 +136,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get id => $_getSZ(0);
   @$pb.TagNumber(1)
-  set id($core.String v) { $_setString(0, v); }
+  set id($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasId() => $_has(0);
   @$pb.TagNumber(1)
@@ -189,7 +146,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
-  set username($core.String v) { $_setString(1, v); }
+  set username($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
@@ -199,7 +156,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.String get realName => $_getSZ(2);
   @$pb.TagNumber(3)
-  set realName($core.String v) { $_setString(2, v); }
+  set realName($core.String value) => $_setString(2, value);
   @$pb.TagNumber(3)
   $core.bool hasRealName() => $_has(2);
   @$pb.TagNumber(3)
@@ -209,7 +166,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   ContactMethod get email => $_getN(3);
   @$pb.TagNumber(4)
-  set email(ContactMethod v) { $_setField(4, v); }
+  set email(ContactMethod value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasEmail() => $_has(3);
   @$pb.TagNumber(4)
@@ -221,7 +178,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   ContactMethod get phone => $_getN(4);
   @$pb.TagNumber(5)
-  set phone(ContactMethod v) { $_setField(5, v); }
+  set phone(ContactMethod value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasPhone() => $_has(4);
   @$pb.TagNumber(5)
@@ -238,7 +195,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $5.MediaReference get avatar => $_getN(6);
   @$pb.TagNumber(7)
-  set avatar($5.MediaReference v) { $_setField(7, v); }
+  set avatar($5.MediaReference value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasAvatar() => $_has(6);
   @$pb.TagNumber(7)
@@ -250,7 +207,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(8)
   $core.String get bio => $_getSZ(7);
   @$pb.TagNumber(8)
-  set bio($core.String v) { $_setString(7, v); }
+  set bio($core.String value) => $_setString(7, value);
   @$pb.TagNumber(8)
   $core.bool hasBio() => $_has(7);
   @$pb.TagNumber(8)
@@ -265,7 +222,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(20)
   $11.Visibility get visibility => $_getN(8);
   @$pb.TagNumber(20)
-  set visibility($11.Visibility v) { $_setField(20, v); }
+  set visibility($11.Visibility value) => $_setField(20, value);
   @$pb.TagNumber(20)
   $core.bool hasVisibility() => $_has(8);
   @$pb.TagNumber(20)
@@ -275,7 +232,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(21)
   $11.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(21)
-  set moderation($11.Moderation v) { $_setField(21, v); }
+  set moderation($11.Moderation value) => $_setField(21, value);
   @$pb.TagNumber(21)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(21)
@@ -285,7 +242,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(30)
   $11.Moderation get defaultFollowModeration => $_getN(10);
   @$pb.TagNumber(30)
-  set defaultFollowModeration($11.Moderation v) { $_setField(30, v); }
+  set defaultFollowModeration($11.Moderation value) => $_setField(30, value);
   @$pb.TagNumber(30)
   $core.bool hasDefaultFollowModeration() => $_has(10);
   @$pb.TagNumber(30)
@@ -295,7 +252,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(31)
   $core.int get followerCount => $_getIZ(11);
   @$pb.TagNumber(31)
-  set followerCount($core.int v) { $_setSignedInt32(11, v); }
+  set followerCount($core.int value) => $_setSignedInt32(11, value);
   @$pb.TagNumber(31)
   $core.bool hasFollowerCount() => $_has(11);
   @$pb.TagNumber(31)
@@ -305,7 +262,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(32)
   $core.int get followingCount => $_getIZ(12);
   @$pb.TagNumber(32)
-  set followingCount($core.int v) { $_setSignedInt32(12, v); }
+  set followingCount($core.int value) => $_setSignedInt32(12, value);
   @$pb.TagNumber(32)
   $core.bool hasFollowingCount() => $_has(12);
   @$pb.TagNumber(32)
@@ -315,7 +272,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(33)
   $core.int get groupCount => $_getIZ(13);
   @$pb.TagNumber(33)
-  set groupCount($core.int v) { $_setSignedInt32(13, v); }
+  set groupCount($core.int value) => $_setSignedInt32(13, value);
   @$pb.TagNumber(33)
   $core.bool hasGroupCount() => $_has(13);
   @$pb.TagNumber(33)
@@ -325,7 +282,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(34)
   $core.int get postCount => $_getIZ(14);
   @$pb.TagNumber(34)
-  set postCount($core.int v) { $_setSignedInt32(14, v); }
+  set postCount($core.int value) => $_setSignedInt32(14, value);
   @$pb.TagNumber(34)
   $core.bool hasPostCount() => $_has(14);
   @$pb.TagNumber(34)
@@ -335,7 +292,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(35)
   $core.int get responseCount => $_getIZ(15);
   @$pb.TagNumber(35)
-  set responseCount($core.int v) { $_setSignedInt32(15, v); }
+  set responseCount($core.int value) => $_setSignedInt32(15, value);
   @$pb.TagNumber(35)
   $core.bool hasResponseCount() => $_has(15);
   @$pb.TagNumber(35)
@@ -345,7 +302,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(36)
   $core.int get eventCount => $_getIZ(16);
   @$pb.TagNumber(36)
-  set eventCount($core.int v) { $_setSignedInt32(16, v); }
+  set eventCount($core.int value) => $_setSignedInt32(16, value);
   @$pb.TagNumber(36)
   $core.bool hasEventCount() => $_has(16);
   @$pb.TagNumber(36)
@@ -356,7 +313,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(50)
   Follow get currentUserFollow => $_getN(17);
   @$pb.TagNumber(50)
-  set currentUserFollow(Follow v) { $_setField(50, v); }
+  set currentUserFollow(Follow value) => $_setField(50, value);
   @$pb.TagNumber(50)
   $core.bool hasCurrentUserFollow() => $_has(17);
   @$pb.TagNumber(50)
@@ -369,7 +326,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(51)
   Follow get targetCurrentUserFollow => $_getN(18);
   @$pb.TagNumber(51)
-  set targetCurrentUserFollow(Follow v) { $_setField(51, v); }
+  set targetCurrentUserFollow(Follow value) => $_setField(51, value);
   @$pb.TagNumber(51)
   $core.bool hasTargetCurrentUserFollow() => $_has(18);
   @$pb.TagNumber(51)
@@ -383,7 +340,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(52)
   Membership get currentGroupMembership => $_getN(19);
   @$pb.TagNumber(52)
-  set currentGroupMembership(Membership v) { $_setField(52, v); }
+  set currentGroupMembership(Membership value) => $_setField(52, value);
   @$pb.TagNumber(52)
   $core.bool hasCurrentGroupMembership() => $_has(19);
   @$pb.TagNumber(52)
@@ -395,7 +352,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(80)
   $core.bool get hasAdvancedData => $_getBF(20);
   @$pb.TagNumber(80)
-  set hasAdvancedData($core.bool v) { $_setBool(20, v); }
+  set hasAdvancedData($core.bool value) => $_setBool(20, value);
   @$pb.TagNumber(80)
   $core.bool hasHasAdvancedData() => $_has(20);
   @$pb.TagNumber(80)
@@ -411,7 +368,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(100)
   $9.Timestamp get createdAt => $_getN(22);
   @$pb.TagNumber(100)
-  set createdAt($9.Timestamp v) { $_setField(100, v); }
+  set createdAt($9.Timestamp value) => $_setField(100, value);
   @$pb.TagNumber(100)
   $core.bool hasCreatedAt() => $_has(22);
   @$pb.TagNumber(100)
@@ -423,7 +380,7 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(101)
   $9.Timestamp get updatedAt => $_getN(23);
   @$pb.TagNumber(101)
-  set updatedAt($9.Timestamp v) { $_setField(101, v); }
+  set updatedAt($9.Timestamp value) => $_setField(101, value);
   @$pb.TagNumber(101)
   $core.bool hasUpdatedAt() => $_has(23);
   @$pb.TagNumber(101)
@@ -442,27 +399,19 @@ class Author extends $pb.GeneratedMessage {
     $core.String? realName,
     $core.Iterable<$12.Permission>? permissions,
   }) {
-    final $result = create();
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (username != null) {
-      $result.username = username;
-    }
-    if (avatar != null) {
-      $result.avatar = avatar;
-    }
-    if (realName != null) {
-      $result.realName = realName;
-    }
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    return $result;
+    final result = create();
+    if (userId != null) result.userId = userId;
+    if (username != null) result.username = username;
+    if (avatar != null) result.avatar = avatar;
+    if (realName != null) result.realName = realName;
+    if (permissions != null) result.permissions.addAll(permissions);
+    return result;
   }
-  Author._() : super();
-  factory Author.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Author.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Author._();
+
+  factory Author.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Author.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Author', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
@@ -478,10 +427,12 @@ class Author extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Author copyWith(void Function(Author) updates) => super.copyWith((message) => updates(message as Author)) as Author;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Author create() => Author._();
+  @$core.override
   Author createEmptyInstance() => create();
   static $pb.PbList<Author> createRepeated() => $pb.PbList<Author>();
   @$core.pragma('dart2js:noInline')
@@ -492,7 +443,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
+  set userId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
@@ -502,7 +453,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get username => $_getSZ(1);
   @$pb.TagNumber(2)
-  set username($core.String v) { $_setString(1, v); }
+  set username($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUsername() => $_has(1);
   @$pb.TagNumber(2)
@@ -512,7 +463,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $5.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)
-  set avatar($5.MediaReference v) { $_setField(3, v); }
+  set avatar($5.MediaReference value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasAvatar() => $_has(2);
   @$pb.TagNumber(3)
@@ -523,7 +474,7 @@ class Author extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.String get realName => $_getSZ(3);
   @$pb.TagNumber(4)
-  set realName($core.String v) { $_setString(3, v); }
+  set realName($core.String value) => $_setString(3, value);
   @$pb.TagNumber(4)
   $core.bool hasRealName() => $_has(3);
   @$pb.TagNumber(4)
@@ -542,27 +493,19 @@ class Follow extends $pb.GeneratedMessage {
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
-    final $result = create();
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (targetUserId != null) {
-      $result.targetUserId = targetUserId;
-    }
-    if (targetUserModeration != null) {
-      $result.targetUserModeration = targetUserModeration;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    return $result;
+    final result = create();
+    if (userId != null) result.userId = userId;
+    if (targetUserId != null) result.targetUserId = targetUserId;
+    if (targetUserModeration != null) result.targetUserModeration = targetUserModeration;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
   }
-  Follow._() : super();
-  factory Follow.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Follow.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Follow._();
+
+  factory Follow.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Follow.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Follow', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
@@ -578,10 +521,12 @@ class Follow extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Follow copyWith(void Function(Follow) updates) => super.copyWith((message) => updates(message as Follow)) as Follow;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Follow create() => Follow._();
+  @$core.override
   Follow createEmptyInstance() => create();
   static $pb.PbList<Follow> createRepeated() => $pb.PbList<Follow>();
   @$core.pragma('dart2js:noInline')
@@ -592,7 +537,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
+  set userId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
@@ -602,7 +547,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get targetUserId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set targetUserId($core.String v) { $_setString(1, v); }
+  set targetUserId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasTargetUserId() => $_has(1);
   @$pb.TagNumber(2)
@@ -612,7 +557,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $11.Moderation get targetUserModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set targetUserModeration($11.Moderation v) { $_setField(3, v); }
+  set targetUserModeration($11.Moderation value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasTargetUserModeration() => $_has(2);
   @$pb.TagNumber(3)
@@ -622,7 +567,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $9.Timestamp get createdAt => $_getN(3);
   @$pb.TagNumber(4)
-  set createdAt($9.Timestamp v) { $_setField(4, v); }
+  set createdAt($9.Timestamp value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasCreatedAt() => $_has(3);
   @$pb.TagNumber(4)
@@ -634,7 +579,7 @@ class Follow extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $9.Timestamp get updatedAt => $_getN(4);
   @$pb.TagNumber(5)
-  set updatedAt($9.Timestamp v) { $_setField(5, v); }
+  set updatedAt($9.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasUpdatedAt() => $_has(4);
   @$pb.TagNumber(5)
@@ -656,33 +601,21 @@ class Membership extends $pb.GeneratedMessage {
     $9.Timestamp? createdAt,
     $9.Timestamp? updatedAt,
   }) {
-    final $result = create();
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (groupId != null) {
-      $result.groupId = groupId;
-    }
-    if (permissions != null) {
-      $result.permissions.addAll(permissions);
-    }
-    if (groupModeration != null) {
-      $result.groupModeration = groupModeration;
-    }
-    if (userModeration != null) {
-      $result.userModeration = userModeration;
-    }
-    if (createdAt != null) {
-      $result.createdAt = createdAt;
-    }
-    if (updatedAt != null) {
-      $result.updatedAt = updatedAt;
-    }
-    return $result;
+    final result = create();
+    if (userId != null) result.userId = userId;
+    if (groupId != null) result.groupId = groupId;
+    if (permissions != null) result.permissions.addAll(permissions);
+    if (groupModeration != null) result.groupModeration = groupModeration;
+    if (userModeration != null) result.userModeration = userModeration;
+    if (createdAt != null) result.createdAt = createdAt;
+    if (updatedAt != null) result.updatedAt = updatedAt;
+    return result;
   }
-  Membership._() : super();
-  factory Membership.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory Membership.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  Membership._();
+
+  factory Membership.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory Membership.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Membership', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
@@ -700,10 +633,12 @@ class Membership extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   Membership copyWith(void Function(Membership) updates) => super.copyWith((message) => updates(message as Membership)) as Membership;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static Membership create() => Membership._();
+  @$core.override
   Membership createEmptyInstance() => create();
   static $pb.PbList<Membership> createRepeated() => $pb.PbList<Membership>();
   @$core.pragma('dart2js:noInline')
@@ -714,7 +649,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get userId => $_getSZ(0);
   @$pb.TagNumber(1)
-  set userId($core.String v) { $_setString(0, v); }
+  set userId($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUserId() => $_has(0);
   @$pb.TagNumber(1)
@@ -724,7 +659,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get groupId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set groupId($core.String v) { $_setString(1, v); }
+  set groupId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasGroupId() => $_has(1);
   @$pb.TagNumber(2)
@@ -738,7 +673,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $11.Moderation get groupModeration => $_getN(3);
   @$pb.TagNumber(4)
-  set groupModeration($11.Moderation v) { $_setField(4, v); }
+  set groupModeration($11.Moderation value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasGroupModeration() => $_has(3);
   @$pb.TagNumber(4)
@@ -748,7 +683,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   $11.Moderation get userModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set userModeration($11.Moderation v) { $_setField(5, v); }
+  set userModeration($11.Moderation value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasUserModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -758,7 +693,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $9.Timestamp get createdAt => $_getN(5);
   @$pb.TagNumber(6)
-  set createdAt($9.Timestamp v) { $_setField(6, v); }
+  set createdAt($9.Timestamp value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasCreatedAt() => $_has(5);
   @$pb.TagNumber(6)
@@ -770,7 +705,7 @@ class Membership extends $pb.GeneratedMessage {
   @$pb.TagNumber(7)
   $9.Timestamp get updatedAt => $_getN(6);
   @$pb.TagNumber(7)
-  set updatedAt($9.Timestamp v) { $_setField(7, v); }
+  set updatedAt($9.Timestamp value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasUpdatedAt() => $_has(6);
   @$pb.TagNumber(7)
@@ -788,24 +723,18 @@ class ContactMethod extends $pb.GeneratedMessage {
     $core.bool? supportedByServer,
     $core.bool? verified,
   }) {
-    final $result = create();
-    if (value != null) {
-      $result.value = value;
-    }
-    if (visibility != null) {
-      $result.visibility = visibility;
-    }
-    if (supportedByServer != null) {
-      $result.supportedByServer = supportedByServer;
-    }
-    if (verified != null) {
-      $result.verified = verified;
-    }
-    return $result;
+    final result = create();
+    if (value != null) result.value = value;
+    if (visibility != null) result.visibility = visibility;
+    if (supportedByServer != null) result.supportedByServer = supportedByServer;
+    if (verified != null) result.verified = verified;
+    return result;
   }
-  ContactMethod._() : super();
-  factory ContactMethod.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory ContactMethod.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  ContactMethod._();
+
+  factory ContactMethod.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory ContactMethod.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ContactMethod', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'value')
@@ -820,10 +749,12 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   ContactMethod copyWith(void Function(ContactMethod) updates) => super.copyWith((message) => updates(message as ContactMethod)) as ContactMethod;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static ContactMethod create() => ContactMethod._();
+  @$core.override
   ContactMethod createEmptyInstance() => create();
   static $pb.PbList<ContactMethod> createRepeated() => $pb.PbList<ContactMethod>();
   @$core.pragma('dart2js:noInline')
@@ -834,7 +765,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get value => $_getSZ(0);
   @$pb.TagNumber(1)
-  set value($core.String v) { $_setString(0, v); }
+  set value($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasValue() => $_has(0);
   @$pb.TagNumber(1)
@@ -844,7 +775,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $11.Visibility get visibility => $_getN(1);
   @$pb.TagNumber(2)
-  set visibility($11.Visibility v) { $_setField(2, v); }
+  set visibility($11.Visibility value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasVisibility() => $_has(1);
   @$pb.TagNumber(2)
@@ -855,7 +786,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(3)
   $core.bool get supportedByServer => $_getBF(2);
   @$pb.TagNumber(3)
-  set supportedByServer($core.bool v) { $_setBool(2, v); }
+  set supportedByServer($core.bool value) => $_setBool(2, value);
   @$pb.TagNumber(3)
   $core.bool hasSupportedByServer() => $_has(2);
   @$pb.TagNumber(3)
@@ -866,7 +797,7 @@ class ContactMethod extends $pb.GeneratedMessage {
   @$pb.TagNumber(4)
   $core.bool get verified => $_getBF(3);
   @$pb.TagNumber(4)
-  set verified($core.bool v) { $_setBool(3, v); }
+  set verified($core.bool value) => $_setBool(3, value);
   @$pb.TagNumber(4)
   $core.bool hasVerified() => $_has(3);
   @$pb.TagNumber(4)
@@ -882,24 +813,18 @@ class GetUsersRequest extends $pb.GeneratedMessage {
     $core.int? page,
     UserListingType? listingType,
   }) {
-    final $result = create();
-    if (username != null) {
-      $result.username = username;
-    }
-    if (userId != null) {
-      $result.userId = userId;
-    }
-    if (page != null) {
-      $result.page = page;
-    }
-    if (listingType != null) {
-      $result.listingType = listingType;
-    }
-    return $result;
+    final result = create();
+    if (username != null) result.username = username;
+    if (userId != null) result.userId = userId;
+    if (page != null) result.page = page;
+    if (listingType != null) result.listingType = listingType;
+    return result;
   }
-  GetUsersRequest._() : super();
-  factory GetUsersRequest.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetUsersRequest.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetUsersRequest._();
+
+  factory GetUsersRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetUsersRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
@@ -914,10 +839,12 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersRequest copyWith(void Function(GetUsersRequest) updates) => super.copyWith((message) => updates(message as GetUsersRequest)) as GetUsersRequest;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetUsersRequest create() => GetUsersRequest._();
+  @$core.override
   GetUsersRequest createEmptyInstance() => create();
   static $pb.PbList<GetUsersRequest> createRepeated() => $pb.PbList<GetUsersRequest>();
   @$core.pragma('dart2js:noInline')
@@ -928,7 +855,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(1)
   $core.String get username => $_getSZ(0);
   @$pb.TagNumber(1)
-  set username($core.String v) { $_setString(0, v); }
+  set username($core.String value) => $_setString(0, value);
   @$pb.TagNumber(1)
   $core.bool hasUsername() => $_has(0);
   @$pb.TagNumber(1)
@@ -938,7 +865,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.String get userId => $_getSZ(1);
   @$pb.TagNumber(2)
-  set userId($core.String v) { $_setString(1, v); }
+  set userId($core.String value) => $_setString(1, value);
   @$pb.TagNumber(2)
   $core.bool hasUserId() => $_has(1);
   @$pb.TagNumber(2)
@@ -948,7 +875,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(99)
   $core.int get page => $_getIZ(2);
   @$pb.TagNumber(99)
-  set page($core.int v) { $_setSignedInt32(2, v); }
+  set page($core.int value) => $_setSignedInt32(2, value);
   @$pb.TagNumber(99)
   $core.bool hasPage() => $_has(2);
   @$pb.TagNumber(99)
@@ -958,7 +885,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(100)
   UserListingType get listingType => $_getN(3);
   @$pb.TagNumber(100)
-  set listingType(UserListingType v) { $_setField(100, v); }
+  set listingType(UserListingType value) => $_setField(100, value);
   @$pb.TagNumber(100)
   $core.bool hasListingType() => $_has(3);
   @$pb.TagNumber(100)
@@ -971,18 +898,16 @@ class GetUsersResponse extends $pb.GeneratedMessage {
     $core.Iterable<User>? users,
     $core.bool? hasNextPage,
   }) {
-    final $result = create();
-    if (users != null) {
-      $result.users.addAll(users);
-    }
-    if (hasNextPage != null) {
-      $result.hasNextPage = hasNextPage;
-    }
-    return $result;
+    final result = create();
+    if (users != null) result.users.addAll(users);
+    if (hasNextPage != null) result.hasNextPage = hasNextPage;
+    return result;
   }
-  GetUsersResponse._() : super();
-  factory GetUsersResponse.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory GetUsersResponse.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  GetUsersResponse._();
+
+  factory GetUsersResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
+  factory GetUsersResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetUsersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<User>(1, _omitFieldNames ? '' : 'users', $pb.PbFieldType.PM, subBuilder: User.create)
@@ -995,10 +920,12 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
   GetUsersResponse copyWith(void Function(GetUsersResponse) updates) => super.copyWith((message) => updates(message as GetUsersResponse)) as GetUsersResponse;
 
+  @$core.override
   $pb.BuilderInfo get info_ => _i;
 
   @$core.pragma('dart2js:noInline')
   static GetUsersResponse create() => GetUsersResponse._();
+  @$core.override
   GetUsersResponse createEmptyInstance() => create();
   static $pb.PbList<GetUsersResponse> createRepeated() => $pb.PbList<GetUsersResponse>();
   @$core.pragma('dart2js:noInline')
@@ -1013,7 +940,7 @@ class GetUsersResponse extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   $core.bool get hasNextPage => $_getBF(1);
   @$pb.TagNumber(2)
-  set hasNextPage($core.bool v) { $_setBool(1, v); }
+  set hasNextPage($core.bool value) => $_setBool(1, value);
   @$pb.TagNumber(2)
   $core.bool hasHasNextPage() => $_has(1);
   @$pb.TagNumber(2)
@@ -1021,5 +948,5 @@ class GetUsersResponse extends $pb.GeneratedMessage {
 }
 
 
-const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
