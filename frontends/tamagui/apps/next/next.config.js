@@ -65,12 +65,12 @@ module.exports = function () {
     typescript: {
       ignoreBuildErrors: true,
     },
-    modularizeImports: {
-      '@tamagui/lucide-icons': {
-        transform: `@tamagui/lucide-icons/dist/esm/icons/{{kebabCase member}}`,
-        skipDefaultConversion: true,
-      },
-    },
+    // modularizeImports: {
+    //   '@tamagui/lucide-icons': {
+    //     transform: `@tamagui/lucide-icons/dist/esm/icons/{{kebabCase member}}`,
+    //     skipDefaultConversion: true,
+    //   },
+    // },
     // images: {
     //   disableStaticImages: true,
     // },
@@ -102,6 +102,9 @@ module.exports = function () {
     experimental: {
       scrollRestoration: true,
     },
+    // env: {
+    //   TAMAGUI_ENVIRONMENT: process.env.NODE_ENV,
+    // },
   }
 
   for (const plugin of plugins) {

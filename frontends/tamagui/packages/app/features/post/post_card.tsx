@@ -148,7 +148,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     });
   }, [accountOrServer, post]);
 
-  const ref = React.useRef() as React.MutableRefObject<HTMLElement | View>;
+  const ref = React.useRef(undefined as never) as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
 
   const postHasWebLink = !!post.link && post.link.startsWith('http');

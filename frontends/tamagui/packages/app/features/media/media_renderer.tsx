@@ -41,7 +41,7 @@ export const MediaRenderer: React.FC<Props> = ({
 
   if (!server) return <></>;
 
-  let view: JSX.Element;
+  // let view: React.JSX.Element;
   switch (type) {
     case 'image':
       return <FadeInView w='100%' h='100%'>

@@ -50,8 +50,8 @@ export function AuthSheet({ }: AuthSheetProps) {
   const specifiedServer = creationServer;
 
 
-  const usernameRef = React.useRef() as React.MutableRefObject<TextInput>;
-  const passwordRef = React.useRef() as React.MutableRefObject<TextInput>;
+  const usernameRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
+  const passwordRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
 
   const currentServer = useCurrentServer();
   const server = specifiedServer ?? currentServer;

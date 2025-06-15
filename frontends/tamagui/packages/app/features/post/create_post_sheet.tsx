@@ -8,7 +8,7 @@ import { AccountOrServerContext, AccountOrServerContextProvider } from 'app/cont
 
 export type CreatePostSheetProps = {
   selectedGroup?: FederatedGroup;
-  button?: (onPress: () => void) => JSX.Element;
+  button?: (onPress: () => void) => React.JSX.Element;
 };
 
 export function CreatePostSheet({ selectedGroup, button }: CreatePostSheetProps) {

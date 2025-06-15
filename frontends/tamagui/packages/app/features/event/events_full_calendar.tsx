@@ -7,7 +7,7 @@ import timegridPlugin from "@fullcalendar/timegrid";
 import { Calendar as BigCalendar, momentLocalizer } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 // import { , momentLocalizer } from "react-big-calendar";
-import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
+// import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
 import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
@@ -361,129 +361,80 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                     listPlugin,
                     interactionPlugin
                   ]}
-                // width='100%'
                 height='100%'
                 events={fullCalendarEvents}
                 eventClick={disableSelection ? undefined : (modelEvent) => {
                   setModalInstanceId(modelEvent.event.id);
-                  // const { id: instanceId, serverHost } = parseFederatedId(modelEvent.event.id);
-                  // const isPrimaryServer = serverHost === currentServer?.host;
-                  // const detailsLinkId = !isPrimaryServer
-                  //   ? federateId(instanceId, serverHost)
-                  //   : instanceId;
-                  // setModalInstanceId(detailsLinkId);
-                  // const groupLinkId = selectedGroup ?
-                  //   (selectedGroup?.serverHost !== currentServer?.host
-                  //     ? federateId(selectedGroup.shortname, selectedGroup.serverHost)
-                  //     : selectedGroup.shortname)
-                  //   : undefined;
-                  // const href = selectedGroup
-                  //   ? `/g/${groupLinkId}/e/${detailsLinkId}`
-                  //   : `/event/${detailsLinkId}`;
-                  // window.location.pathname = href;
                 }}
               />
 
-              : calendarImplementation === 'big-calendar' || calendarImplementation === undefined
-                ? <YStack w='100%' h='100%'>
-                  <BigCalendar
-                    // key={renderingKey}
-                    // key={`calendar-rendering-${scrollToTime}`}
-                    localizer={localizer}
+              : <YStack w='100%' h='100%'>
+                <BigCalendar
+                  // key={renderingKey}
+                  // key={`calendar-rendering-${scrollToTime}`}
+                  localizer={localizer}
 
-                    // defaultDate={new Date()}
-                    defaultView={weeklyOnly ? 'week' : undefined}
-                    views={weeklyOnly ? ['week'] : undefined}//mediaQuery.gtSm ? undefined : ['month', 'week', 'agenda']}
-                    formats={{
-                      // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
-                      timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
+                  // defaultDate={new Date()}
+                  defaultView={weeklyOnly ? 'week' : undefined}
+                  views={weeklyOnly ? ['week'] : undefined}//mediaQuery.gtSm ? undefined : ['month', 'week', 'agenda']}
+                  formats={{
+                    // timeGutterFormat: weeklyOnly ? ' ' : undefined,//'h'
+                    timeGutterFormat: mediaQuery.gtXxs ? 'ha' : ' '
 
-                    }}
+                  }}
 
-                    scrollToTime={scrollToTime.toDate()}
-                    defaultDate={scrollToTime.toDate()}
-                    events={allEvents.map((event) => {
-                      const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
-                      return {
-                        serverHost: event.serverHost,
-                        resource: { event, federatedId },
-                        title: event.post?.title,
-                        selected: true,
-                        start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
-                        end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+                  scrollToTime={scrollToTime.toDate()}
+                  defaultDate={scrollToTime.toDate()}
+                  events={allEvents.map((event) => {
+                    const federatedId = federateId(event.instances[0]?.id ?? '', event.serverHost);
+                    return {
+                      serverHost: event.serverHost,
+                      resource: { event, federatedId },
+                      title: event.post?.title,
+                      selected: true,
+                      start: moment(event.instances[0]?.startsAt ?? 0).toDate(),
+                      end: moment(event.instances[0]?.endsAt ?? 0).toDate()
+                    }
+                  })}
+                  eventPropGetter={(event) => {
+                    // console.log('BigCalendar EventPropGetter', event);
+                    const serverEventId = parseFederatedId(event.resource.federatedId).id;
+                    const starred = starredPostIds.includes(
+                      federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
+                    );
+                    // event.resource.
+                    return {
+                      className: starred ? serverColors[event.serverHost]?.isDark ? 'starred lightText' : 'starred darkText' : undefined,
+                      style: {
+                        backgroundColor: hasNewEvent && serverEventId
+                          ? `${serverColors[event.serverHost]?.color}33`
+                          : serverColors[event.serverHost]?.color,
+                        // opacity: hasNewEvent && !event.id ? 0.5 : 1,
+                        color: serverColors[event.serverHost]?.textColor,
+                        fontSize: mediaQuery.gtXxs ? undefined : '11px'
                       }
-                    })}
-                    eventPropGetter={(event) => {
-                      // console.log('BigCalendar EventPropGetter', event);
-                      const serverEventId = parseFederatedId(event.resource.federatedId).id;
-                      const starred = starredPostIds.includes(
-                        federateId(event.resource.event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                      );
-                      // event.resource.
-                      return {
-                        className: starred ? serverColors[event.serverHost]?.isDark ? 'starred lightText' : 'starred darkText' : undefined,
-                        style: {
-                          backgroundColor: hasNewEvent && serverEventId
-                            ? `${serverColors[event.serverHost]?.color}33`
-                            : serverColors[event.serverHost]?.color,
-                          // opacity: hasNewEvent && !event.id ? 0.5 : 1,
-                          color: serverColors[event.serverHost]?.textColor,
-                          fontSize: mediaQuery.gtXxs ? undefined : '11px'
-                        }
+                    }
+                  }}
+                  onSelectEvent={disableSelection ? undefined : (modelEvent) => {
+                    setModalInstanceId(modelEvent.resource.federatedId);
+                  }}
+                  dayPropGetter={(date) => {
+                    return {
+                      style: {
+                        // borderColor: 'black',
+                        backgroundColor: moment(date).isBefore(earliestDate)
+                          || moment(date).isAfter(latestDate)
+                          ? '#F0F0F0'
+                          : moment(date).startOf('day').unix() === moment().startOf('day').unix()
+                            ? `${navLightColor}44`
+                            : '#FFFFFF'
                       }
-                    }}
-                    onSelectEvent={disableSelection ? undefined : (modelEvent) => {
-                      setModalInstanceId(modelEvent.resource.federatedId);
-                    }}
-                    dayPropGetter={(date) => {
-                      return {
-                        style: {
-                          // borderColor: 'black',
-                          backgroundColor: moment(date).isBefore(earliestDate)
-                            || moment(date).isAfter(latestDate)
-                            ? '#F0F0F0'
-                            : moment(date).startOf('day').unix() === moment().startOf('day').unix()
-                              ? `${navLightColor}44`
-                              : '#FFFFFF'
-                        }
-                      }
+                    }
 
-                    }}
-                    style={{ width: '100%', height: '100%' }}
-                  />
-                </YStack>
-                : calendarImplementation === 'daypilot'
-                  ? <YStack h='100%' overflow="hidden">
-                    <DayPilotCalendar
-                      viewType={"Week"}
-                      // startDate={"2024-09-07"}
-                      timeRangeSelectedHandling={"Disabled"}
-                      events={allEvents.map((event) => {
-                        const starred = starredPostIds.includes(
-                          federateId(event.instances[0]?.post?.id ?? 'invalid', event.serverHost)
-                        );
-                        return {
-                          id: federateId(event.instances[0]?.id ?? '', event.serverHost),
-                          text: starred ? `⭐️ ${event.post?.title}` : event.post?.title,
-                          barColor: serverColors[event.serverHost],
-                          start: moment(event.instances[0]?.startsAt ?? 0).utc(false).toDate(),
-                          end: moment(event.instances[0]?.endsAt ?? 0).utc(false).toDate()
-                        }
-                      })}
-                      onEventClick={disableSelection ? undefined : (args: any) => {
-                        console.log('DayPilotCalendar onEvent Click', args);
-                        // debugger;
-                        setModalInstanceId(args?.e?.data?.id);
-                      }}
-                      // height='100%'
-                      // heightSpec='Parent100Pct'
-
-                      style={{ width: '100%', height: '100%', overflow: 'hidden' }}
-                    // onEventClick={onEventClick}
-                    // controlRef={setCalendar}
-                    />
-                  </YStack>
-                  : undefined}
+                  }}
+                  style={{ width: '100%', height: '100%' }}
+                />
+              </YStack>}
 
           </div>
         </Text>
@@ -491,7 +442,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
     </YStack>
     <Dialog modal open={!!modalInstance} onOpenChange={(o) => o ? null : setModalInstanceId(undefined)}>
 
-      <Dialog.Portal>
+      <Dialog.Portal zi={100000}>
         <Dialog.Overlay
           key="overlay"
           animation="slow"
@@ -499,9 +450,11 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           // zIndex={10000}
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
+          zi={100000}
         />
 
         <Dialog.Content
+          zi={100000}
           bordered
           elevate
           key="content"

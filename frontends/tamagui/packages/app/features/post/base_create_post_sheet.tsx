@@ -25,18 +25,18 @@ export type BaseCreatePostSheetProps = {
   ) => void;
   preview: (
     post: Post,
-    group: Group | undefined) => JSX.Element;
+    group: Group | undefined) => React.JSX.Element;
   feedPreview: (
     post: Post,
-    group: Group | undefined) => JSX.Element;
+    group: Group | undefined) => React.JSX.Element;
   additionalFields?: (
     post: Post,
-    group: Group | undefined) => JSX.Element;
+    group: Group | undefined) => React.JSX.Element;
   onFreshOpen?: () => void;
   invalid?: boolean;
   canPublishLocally?: boolean;
   canPublishGlobally?: boolean;
-  button?: (onPress: () => void) => JSX.Element;
+  button?: (onPress: () => void) => React.JSX.Element;
   requiredPermissions?: Permission[];
 }
 

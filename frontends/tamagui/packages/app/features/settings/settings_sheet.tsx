@@ -276,17 +276,17 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                         <Paragraph size='$5'>Full Calendar</Paragraph>
                         <Anchor target='_blank' href='https://fullcalendar.io' color={primaryAnchorColor} size='$2'>https://fullcalendar.io</Anchor>
                       </YStack>} />
-                    <RadioGroupItemWithLabel value="daypilot"
+                    {/* <RadioGroupItemWithLabel value="daypilot"
                       label={<YStack my='$2' w='100%'>
                         <Paragraph size='$5'>Daypilot Calendar</Paragraph>
                         <Anchor target='_blank' href='https://daypilot.org' color={primaryAnchorColor} size='$2'>https://daypilot.org</Anchor>
                         <Paragraph size='$2' maw='100%'>TESTING ONLY. Daypilot devs: heightSpec=Parent100Pct is not working as documented; this breaks scrolling for this calendar option.</Paragraph>
                       </YStack>}
-                    />
+                    /> */}
                   </RadioGroup>
                 </YStack>
 
-                <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
+                {/* <Heading size='$5' mt='$3'>DateTime Inputs</Heading>
                 <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
                   <YStack ai='center' mx='center'>
                     <DateTimePicker value={moment(0).toISOString()} onChange={(v) => { }} />
@@ -327,7 +327,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                       </YStack>
                     </Label>
                   </XStack>
-                </YStack>
+                </YStack> */}
 
                 {/* <Heading size='$5' mt='$5'>Accounts</Heading>
               <YStack gap='$1' p='$2' backgroundColor='$backgroundFocus' borderRadius='$3' borderColor='$backgroundPress' borderWidth={1}>
@@ -491,7 +491,7 @@ export function CheckboxWithLabel({
 export function RadioGroupItemWithLabel(props: {
   size?: SizeTokens
   value: string
-  label: string | JSX.Element
+  label: string | React.JSX.Element
 }) {
   const id = `radiogroup-${props.value}`
   return (

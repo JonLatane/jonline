@@ -8,7 +8,7 @@ import React from 'react';
 export type AuthSheetButtonProps = {
   server?: JonlineServer;
   operation?: string;
-  button?: (onPress: () => void) => JSX.Element;
+  button?: (onPress: () => void) => React.JSX.Element;
 }
 
 export function AuthSheetButton({ server: taggedServer, operation, button }: AuthSheetButtonProps) {

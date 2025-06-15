@@ -305,7 +305,7 @@ ${aiText}
     (aiBackend === 'webLlm' && llmReady) ||
     (aiBackend === 'openAi' && openAi && openAiKey.length > 0)
   );
-  const eventListing = EventListingLarge({ events: resultEvents });
+  const eventListing = < EventListingLarge events={resultEvents} />;
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}

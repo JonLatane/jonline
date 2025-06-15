@@ -28,7 +28,7 @@ export function useIsVisible(ref/*: React.MutableRefObject<Element>*/, noisy?: b
   return isIntersecting;
 }
 
-export default function useIsVisibleHorizontal(ref: RefObject<HTMLElement>) {
+export default function useIsVisibleHorizontal(ref: RefObject<HTMLElement | null>) {
   const [isIntersecting, setIntersecting] = useState(false)
 
   const observer = useMemo(() => new IntersectionObserver(

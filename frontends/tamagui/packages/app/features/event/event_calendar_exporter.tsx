@@ -9,7 +9,7 @@ import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-
 import moment from "moment";
 import { useLink } from "solito/link";
 import { useGroupContext } from "app/contexts/group_context";
-import { set } from 'immer/dist/internal';
+// import { set } from 'immer/dist/internal';
 import { highlightedButtonBackground, themedButtonBackground } from "app/utils";
 import { useSelector } from "react-redux";
 import { selectRsvpData } from "./event_rsvp_manager";
@@ -83,7 +83,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
   }, [open, hasOpened]);
 
   return <Tooltip>
-    <Tooltip.Trigger>
+    <Tooltip.Trigger zi={100000}>
       <Popover size="$5" stayInFrame onOpenChange={setOpen} placement='bottom-end'>
         <Popover.Trigger asChild>
           <Button my='auto' h={tiny ? '$3' : 'auto'}
@@ -110,6 +110,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
         {hasOpened
           ? <Popover.Content
             borderWidth={1}
+            zi={100001}
             borderColor="$borderColor"
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: -10, opacity: 0 }}
@@ -146,7 +147,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
           : undefined}
       </Popover >
     </Tooltip.Trigger>
-    {tiny ? <Tooltip.Content>
+    {tiny ? <Tooltip.Content zi={100001}>
       <Paragraph lineHeight='$1' size='$3'>Export to Calendar...</Paragraph>
     </Tooltip.Content> : undefined}
   </Tooltip>

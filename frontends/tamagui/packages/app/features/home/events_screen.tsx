@@ -255,7 +255,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     </AnimatePresence>
   </YStack>;
 
-  const eventListing = EventListingLarge({ events: allEvents });
+  const eventListing = <EventListingLarge events={allEvents} />;
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}

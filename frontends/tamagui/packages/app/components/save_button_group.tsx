@@ -90,9 +90,9 @@ function arrayEquals(a: Array<any>, b: Array<any>) {
 export type SaveButtonGroupProps = {
   entityType: 'Post' | 'Event' | 'Group' | 'User' | 'Comment' | 'Media';
   entityName?: string;
-  deleteDialogText?: JSX.Element | string;
+  deleteDialogText?: React.JSX.Element | string;
   // When set, implicitly hides the delete button.
-  deleteInstructions?: JSX.Element | string;
+  deleteInstructions?: React.JSX.Element | string;
 
   doUpdate: () => void;
   doDelete: () => void;
@@ -170,7 +170,7 @@ export function SaveButtonGroup({
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
-                  // zIndex={2000011}
+                // zIndex={2000011}
                 />
                 <Dialog.Content
                   bordered

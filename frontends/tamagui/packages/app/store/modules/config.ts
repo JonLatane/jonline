@@ -14,6 +14,7 @@ import { getServerClient } from "../clients";
 import { FederatedGroup } from "./groups_state";
 import { pageInitializer } from "../../utils/page_initializer";
 
+// TODO: Fully remove this type as we no longer use react-datetime-picker
 export type DateTimeRenderer = 'custom' | 'native';
 
 export type CalendarImplementation = 'fullcalendar' | 'big-calendar' | 'daypilot';

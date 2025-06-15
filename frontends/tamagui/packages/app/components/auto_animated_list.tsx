@@ -1,4 +1,4 @@
-import { J } from '@fullcalendar/core/internal-common';
+// import { J } from '@fullcalendar/core/internal-common';
 import { GetThemeValueForKey, Heading, Label, Paragraph, Switch, XStack, YStack } from '@jonline/ui';
 import { useAppDispatch } from 'app/hooks';
 import React, { useEffect, useRef } from 'react';

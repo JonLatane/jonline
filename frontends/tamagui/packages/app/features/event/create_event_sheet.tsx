@@ -19,7 +19,7 @@ export const defaultEventInstance: () => EventInstance = () => EventInstance.cre
 
 export type CreateEventSheetProps = {
   selectedGroup?: FederatedGroup;
-  button?: (onPress: () => void) => JSX.Element;
+  button?: (onPress: () => void) => React.JSX.Element;
 };
 
 export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProps) {

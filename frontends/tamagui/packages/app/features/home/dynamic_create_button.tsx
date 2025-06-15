@@ -16,7 +16,7 @@ interface DynamicCreateButtonProps {
   // selectedGroup?: FederatedGroup;
   showPosts?: boolean;
   showEvents?: boolean;
-  button?: (onPress: () => void) => JSX.Element;
+  button?: (onPress: () => void) => React.JSX.Element;
   hideIfUnusable?: boolean;
 }
 

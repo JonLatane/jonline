@@ -30,7 +30,7 @@ export type GroupsSheetProps = {
   itemTitle?: string;
   disableSelection?: boolean;
   hideInfoButtons?: boolean;
-  extraListItemChrome?: (group: FederatedGroup) => JSX.Element | undefined;
+  extraListItemChrome?: (group: FederatedGroup) => React.JSX.Element | undefined;
   hideAdditionalGroups?: boolean;
   hideLeaveButtons?: boolean;
   groupNamePrefix?: string;

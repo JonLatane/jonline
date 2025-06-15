@@ -194,7 +194,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
     requestAnimationFrame(() => dispatch(moveStarredPostDown(postId)));
   }
 
-  let renderedCardView: JSX.Element;
+  let renderedCardView: React.JSX.Element;
   if (eventWithSingleInstance) {
     renderedCardView = <EventCard
       event={eventWithSingleInstance}

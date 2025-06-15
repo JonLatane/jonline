@@ -17,7 +17,7 @@ export { Empty } from './generated/google/protobuf/empty'
 export { Timestamp } from './generated/google/protobuf/timestamp'
 // export { Jonline, JonlineClientImpl } from './generated/jonline'
 
-export type { Exact } from './generated/server_configuration'
+export type { Exact, MessageFns } from './generated/server_configuration'
 export { protobufPackage, JonlineDefinition } from './generated/jonline'
 // export { JonlineClient } from './generated/jonline'
 export type { JonlineClient, JonlineDefinition as JonlineDefinitionType, DeepPartial } from './generated/jonline'

@@ -19,7 +19,7 @@ export type GroupButtonProps = {
   onGroupSelected?: (group: Group) => void;
   disabled?: boolean;
   hideInfoButton?: boolean;
-  extraListItemChrome?: (group: Group) => JSX.Element | undefined;
+  extraListItemChrome?: (group: Group) => React.JSX.Element | undefined;
 
   hideLeaveButton?: boolean;
 }

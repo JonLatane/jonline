@@ -4,7 +4,7 @@ import { FederatedGroup, federateId, loadGroupByShortname, parseFederatedId, sel
 import React, { useEffect, useState } from 'react'
 import { createParam } from 'solito'
 import { BaseHomeScreen } from '../home/home_screen'
-import { set } from 'immer/dist/internal'
+// import { set } from 'immer/dist/internal'
 import { useJonlineServerInfo } from '../accounts/recommended_server'
 import { ServerNameAndLogo } from '../navigation/server_name_and_logo'
 
