@@ -185,6 +185,7 @@ export function StarredPosts({ }: StarredPostsProps) {
             </Popover.Trigger>
 
             <Popover.Content
+              zi={100000}
               borderWidth={1}
               p='$2'
               // color={primaryTextColor}
@@ -280,7 +281,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                                   : undefined}
                             </AutoAnimatedList>
                           </Tooltip.Trigger>
-                          <Tooltip.Content>
+                          <Tooltip.Content zi={100001}>
                             <Paragraph size='$1' >
                               Starred Posts/Events are completely anonymous and not tracked outside this {browser} session at {location.hostname}.
                             </Paragraph>
