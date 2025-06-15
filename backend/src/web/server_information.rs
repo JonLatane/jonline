@@ -5,6 +5,7 @@ use crate::{
     protos::{ServerInfo, ServerLogo},
     rpcs::{get_server_configuration_proto, get_service_version},
 };
+use base64::{prelude::BASE64_STANDARD, Engine};
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use rocket::{
     fs::NamedFile,
@@ -13,7 +14,6 @@ use rocket::{
     routes, uri, Route, State,
 };
 use rocket_cache_response::CacheResponse;
-use base64::{Engine, prelude::BASE64_STANDARD};
 
 lazy_static! {
     pub static ref INFORMATIONAL_PAGES: Vec<Route> =
@@ -88,13 +88,20 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
 
     match encoded_logo {
         Some(encoded_logo) => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
-                "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}&logo={}",
-                encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color, encoded_logo
-            )))),
-        None =>  Ok(CacheResponse::NoStore(Redirect::temporary(format!(
-            "https://img.shields.io/badge/{}-v{}-information?style=for-the-badge&labelColor={}&color={}",
-            encoded_server_name.replace("-", "--"), service_version.replace("-", "--"), primary_color, nav_color
-        ))))
+            "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}&logo={}",
+            encoded_server_name.replace("-", "--"),
+            service_version.replace("-", "--"),
+            primary_color,
+            nav_color,
+            encoded_logo
+        )))),
+        None => Ok(CacheResponse::NoStore(Redirect::temporary(format!(
+            "https://img.shields.io/badge/{}-v{}-information?labelColor={}&color={}",
+            encoded_server_name.replace("-", "--"),
+            service_version.replace("-", "--"),
+            primary_color,
+            nav_color
+        )))),
     }
 }
 

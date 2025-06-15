@@ -1,4 +1,9 @@
-# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)
+# Jonline [![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml) [![gRPC Docs!](https://img.shields.io/badge/gRPC-protocol%20docs-information?labelColor={}&color=blue)](https://jonline.io/docs)
+
+[![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)
+[![BullCity.social](https://bullcity.social/info_shield?56fdas586)](https://bullcity.social)
+[![OakCity.social](https://oakcity.social/info_shield?56fdas586)](https://oakcity.social)
+
 
 Jonline is an open-source, community-scale social network designed to be capable of "[dumfederating](#dumfederation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
 
@@ -6,14 +11,14 @@ Meanwhile, in support of media creators/providers who might want to self-host Jo
 
 The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind Cloudflare's free CDN.)
 
-[![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
-[![Buy me a beer!](https://img.shields.io/badge/🙏%20buy%20me%20a%20beer%20🍺-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
+[![Buy me a coffee!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20coffee%20☕️-venmo-information?labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
+[![Buy me a beer!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20beer%20🍺-paypal-information?labelColor={}&color={})](https://paypal.me/JLatane)
 
 ## Images & Deployments
 
-[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
-JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing: [![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl&style=for-the-badge)](https://hub.docker.com/r/jonlatane/jbl/tags)
+JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing: [![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl)](https://hub.docker.com/r/jonlatane/jbl/tags)
 
 | Deployment                                                                                                    | Purpose                          | Federation Settings                                                                              | Links                                                                                                                                           | Deployment Version |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
@@ -21,7 +26,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
 | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
 | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
 
-- [Jonline ](#jonline-)
+- [Jonline  ](#jonline--)
   - [Images \& Deployments](#images--deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
