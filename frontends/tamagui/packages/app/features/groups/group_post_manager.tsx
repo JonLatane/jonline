@@ -221,17 +221,21 @@ export const GroupPostChrome: React.FC<GroupPostChromeProps> = ({ group, groupPo
 
   // const [loadingGroups, setLoadingGroups] = useState([] as string[]);
   const shareToGroup = useCallback((groupId: string) => {
-    dispatch(createGroupPost({ ...accountOrServer, postId: post.id, groupId }))
-      .then(() => {
-        setLoadingGroup(false);
-        if (server) dispatch(markGroupVisit({ group }));
-      });
-    setLoadingGroup(true);
+    requestAnimationFrame(() => {
+      dispatch(createGroupPost({ ...accountOrServer, postId: post.id, groupId }))
+        .then(() => {
+          setLoadingGroup(false);
+          if (server) dispatch(markGroupVisit({ group }));
+        });
+      setLoadingGroup(true);
+    });
   }, [server, federatedId(post)]);
   const unshareToGroup = useCallback((groupId: string) => {
-    dispatch(deleteGroupPost({ ...accountOrServer, postId: post.id, groupId }))
-      .then(() => setLoadingGroup(false));
-    setLoadingGroup(true);
+    requestAnimationFrame(() => {
+      dispatch(deleteGroupPost({ ...accountOrServer, postId: post.id, groupId }))
+        .then(() => setLoadingGroup(false));
+      setLoadingGroup(true);
+    });
   }, [server, federatedId(post)]);
 
   const { selectedGroup } = useGroupContext();

@@ -234,9 +234,11 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
   const isLocked = useRootSelector((state: RootState) => isGroupLocked(state.groups, federatedId(group)));
 
   const onJoinPressed = () => {
-    // e.stopPropagation();
-    const join = !(joined || membershipRequested || invited);
-    dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
+    requestAnimationFrame(() => {
+      // e.stopPropagation();
+      const join = !(joined || membershipRequested || invited);
+      dispatch(joinLeaveGroup({ groupId: group.id, join, ...accountOrServer }));
+    });
   };
 
   return account && (!hideLeaveButton || !joined)
