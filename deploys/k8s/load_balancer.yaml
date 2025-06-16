@@ -47,7 +47,7 @@ spec:
     spec:
       serviceAccountName: jonline-lb
       containers:
-        - image: docker.io/jonlatane/jbl:0.2.533
+        - image: docker.io/jonlatane/jbl:0.3.534
           name: jonline-lb
           env:
             - name: SERVERS
