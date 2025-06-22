@@ -61,8 +61,10 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     givenSetNewRsvpMode ?? setSelfNewRsvpMode
   ];
 
+  const canRsvpNonAnonymously = hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS);
+  const canRsvpAnonymously = event?.info?.allowsAnonymousRsvps;
   const showRsvpSection = event?.info?.allowsRsvps;// &&
-  //(event?.info?.allowsAnonymousRsvps || hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS));
+  //(canRsvpAnonymously || canRsvpNonAnonymously);
 
   // const [newRsvpMode, setNewRsvpMode] = useState(undefined as RsvpMode);
   const [attendances, setAttendances] = useState([] as EventAttendance[]);
@@ -133,11 +135,29 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     }
   }, [anonymousAuthToken]);
 
+  // useEffect(() => {
+  //   if (newRsvpMode !== undefined && !isPreview) {
+  //     scrollToRsvpForm();
+  //   }
+  // }, [newRsvpMode]);
+
   useEffect(() => {
-    if (newRsvpMode !== undefined && !isPreview) {
-      scrollToRsvpForm();
+    if (!isPreview) {
+      if (canRsvpNonAnonymously && newRsvpMode === undefined) {
+        setNewRsvpMode?.('user');
+      } else if (canRsvpAnonymously && newRsvpMode === undefined) {
+        setNewRsvpMode?.('anonymous');
+      }
     }
-  }, [newRsvpMode]);
+  }, [isPreview]);
+
+  useEffect(() => {
+    if (newRsvpMode === 'anonymous' && !canRsvpAnonymously) {
+      setNewRsvpMode?.(undefined);
+    } else if (newRsvpMode === 'user' && !canRsvpNonAnonymously) {
+      setNewRsvpMode?.(undefined);
+    }
+  }, [newRsvpMode, canRsvpNonAnonymously, canRsvpAnonymously]);
 
   const rsvpData = useSelector(selectRsvpData(federateId(instance.id, event.serverHost)));
   useEffect(() => {
@@ -392,7 +412,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         borderTopLeftRadius='$5' borderTopRightRadius='$5' backgroundColor='$backgroundHover'
         mx='$1'
       >
-        {hasPermission(accountOrServer?.account?.user, Permission.RSVP_TO_EVENTS)
+        {canRsvpNonAnonymously
           ? <Button disabled={busy} opacity={busy ? 0.5 : 1}
             transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
             <XStack ai='center' gap='$2'>
@@ -418,7 +438,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
             </XStack>
           </Button>
           : undefined}
-        {event?.info?.allowsAnonymousRsvps
+        {canRsvpAnonymously
           ? <>
             <Button mb='$2' disabled={busy} opacity={busy ? 0.5 : 1}
               transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>

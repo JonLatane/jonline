@@ -340,20 +340,15 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <p><a name="jonline-Jonline"></a></p>
     <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
     <p>
-      The internet-facing service implementing the Jonline protocol,
-      generally exposed on port 27707 or 443 (and, when using
-      <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a>, ports 80 and/or 443).
-      A Jonline server is generally also expected to serve up web apps on ports 80/443, where
-      select APIs are exposed with HTTP interfaces instead of gRPC.
-      (Specifically, that <a href="#http-based-client-host-negotiation-for-external-cdns">HTTP-based client host negotiation</a> again
-      and <a href="#jonline-Media"><code>Media</code>, for interoperability purposes</a>.)
+      A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
+      The bulk of these docs involve the gRPC APIs (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
+      <a href="#jonline-Media">media files</a>, and a <a href="#http-based-client-host-negotiation-for-external-cdns"><code>backend_host</code> resource for client/host negotiation</a>.
     </p>
     <h5 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h5>
     <p>
-      Jonline uses a standard OAuth2 flow for authentication, with rotating <code>access_token</code>s
-      and <code>refresh_token</code>s.
-      Authenticated calls require an <code>access_token</code> in request metadata to be included
-      directly as the value of the <code>authorization</code> header (no <code>Bearer </code>prefix).
+      Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s.
+      Authenticated calls require an <code>access_token</code> in request metadata to be included / directly as the value of the
+      <code>authorization</code> header (no <code>Bearer </code>prefix).
     </p>
     <p>
       First, use the <code>CreateAccount</code> or <code>Login</code> RPCs to fetch (and store) an initial
@@ -373,6 +368,10 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       (Eventually, this will affect CORS policies for added security.)
       The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
     </p>
+    <p>
+      Notably, Jonline's design certainly <em>does</em> facilitate server-to-server communication (for instance, it could be used to serve
+      Post titles for posts from other servers in HTTP <code>meta</code> tags), but it does not require it for core user functionality.
+    </p>
     <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
     <p>
       When first negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
@@ -386,8 +385,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     </p>
     <p>
       This negotiation enables support for external CDNs as frontends. See <a href="https://jonline.io/about?section=cdn">https://jonline.io/about?section=cdn</a> for
-      more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts">React/Tamagui</a>
-      and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart">Flutter</a>
+      more information about external CDN setup. Developers may wish to review the <a href="https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116">React/Tamagui</a>
+      and <a href="https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26">Flutter</a>
       client implementations of this negotiation.
     </p>
     <p>

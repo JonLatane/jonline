@@ -13,19 +13,14 @@ import "groups.proto";
 import "federation.proto";
 import "server_configuration.proto";
 
-// The internet-facing service implementing the Jonline protocol,
-// generally exposed on port 27707 or 443 (and, when using
-// [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns), ports 80 and/or 443).
-// A Jonline server is generally also expected to serve up web apps on ports 80/443, where
-// select APIs are exposed with HTTP interfaces instead of gRPC.
-// (Specifically, that [HTTP-based client host negotiation](#http-based-client-host-negotiation-for-external-cdns) again
-// and [`Media`, for interoperability purposes](#jonline-Media).)
+// A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
+// The bulk of these docs involve the gRPC APIs (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
+// [media files](#jonline-Media), and a [`backend_host` resource for client/host negotiation](#http-based-client-host-negotiation-for-external-cdns).
 //
 // ##### Authentication
-// Jonline uses a standard OAuth2 flow for authentication, with rotating `access_token`s
-// and `refresh_token`s.
-// Authenticated calls require an `access_token` in request metadata to be included
-// directly as the value of the `authorization` header (no `Bearer ` prefix).
+// Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
+// Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
+// `authorization` header (no `Bearer ` prefix).
 //
 // First, use the `CreateAccount` or `Login` RPCs to fetch (and store) an initial
 // `refresh_token` and `access_token`. Clients should use the `access_token` until it expires,
@@ -42,6 +37,9 @@ import "server_configuration.proto";
 // (Eventually, this will affect CORS policies for added security.)
 // The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
 //
+// Notably, Jonline's design certainly *does* facilitate server-to-server communication (for instance, it could be used to serve
+// Post titles for posts from other servers in HTTP `meta` tags), but it does not require it for core user functionality.
+//
 // ##### HTTP-based client host negotiation (for external CDNs)
 // When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 // to connect to `jonline.io` via gRPC on 27707/443, the client
@@ -53,8 +51,8 @@ import "server_configuration.proto";
 // `jonline.io`.
 //
 // This negotiation enables support for external CDNs as frontends. See https://jonline.io/about?section=cdn for
-// more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts) 
-// and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart) 
+// more information about external CDN setup. Developers may wish to review the [React/Tamagui](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/packages/app/store/clients.ts#L116) 
+// and [Flutter](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/lib/models/jonline_clients.dart#L26) 
 // client implementations of this negotiation.
 //
 // In the works to be released soon, Jonline will also support a "fully behind CDN" mode, where gRPC is served over port 443 and HTTP over port
