@@ -70,11 +70,11 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
   const shouldReloadPost = !basePost && isServerReady && !loadingServer && !loadingPost && !hasFailedToLoadPost && postId && (isVisible ?? true);
   useEffect(() => {
     if (shouldReloadPost) {
-      console.log('StarredPosts: Fetching post', postId);
+      // console.log('StarredPosts: Fetching post', postId);
       setLoadingPost(true);
       dispatch(loadPost({ ...accountOrServer, id: serverPostId! }))
         .then((result) => {
-          console.log('StarredPosts: Fetched post', postId, 'result', result);
+          // console.log('StarredPosts: Fetched post', postId, 'result', result);
           setTimeout(() =>
             setLoadingPost(false),
             1500
@@ -115,12 +115,12 @@ export function useStarredPostDetails(postId: string, isVisible?: boolean) {
     isServerReady && basePost?.context === PostContext.EVENT_INSTANCE && !eventWithSingleInstance && !loadingEvent && !hasFailedToLoadEvent;
   // if (postId) debugger;
   useEffect(() => {
-    console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventInstanceContext: PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+    // console.log('StarredPosts: loader', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventInstanceContext: PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
     // if (postId) debugger;
 
     if (shouldLoadEvent) {
       // console.log('StarredPosts: Fetching event by postId', postId);
-      console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
+      // console.log('StarredPosts: Fetching event by postId', { shouldLoadEvent, postId, serverPostId, serverHost, isEvent: basePost?.context === PostContext.EVENT_INSTANCE, eventWithSingleInstance, loadingEvent, hasFailedToLoadEvent });
       setLoadingEvent(true);
       dispatch(loadEvent({ ...accountOrServer, postId: serverPostId! })).then(() => {
         setTimeout(() =>

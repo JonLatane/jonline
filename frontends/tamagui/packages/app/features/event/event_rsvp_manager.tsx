@@ -16,6 +16,7 @@ import { useLink } from "solito/link";
 import { EventCalendarExporter } from "./event_calendar_exporter";
 import RsvpCard, { attendanceModerationDescription } from "./rsvp_card";
 import { AutoAnimatedList } from "../post";
+import { on } from '../../hooks/use_hash';
 
 export interface EventRsvpManagerProps {
   event: FederatedEvent;
@@ -254,7 +255,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
     setUpserting(true);
     setUpsertSuccess(false);
 
-    console.log('upsert status', (attendance ?? upsertableAttendance)?.status)
+    // console.log('upsert status', (attendance ?? upsertableAttendance)?.status)
     const client = await getCredentialClient(accountOrServer);
     function resetUpserting() {
       setTimeout(() => setUpserting(false), 500);
@@ -400,6 +401,8 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
   const editingRsvpPasses = passes(editingRsvp?.moderation);
   const editingRsvpRejected = rejected(editingRsvp?.moderation);
+
+  const canWrite = canRsvpWhenStatusSet && !upserting && !deleting;
 
   return showRsvpSection
     ?
@@ -590,35 +593,52 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               //   {/* </Paragraph> */}
               : undefined}
 
-            <XStack maw='100%' key='going-maybe-notgoing' mx='auto' ai='center'>
-              <XStack f={1} ai='center'>
-                <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
-                  w='100%'
-                  disabled={!canRsvpWhenStatusSet || busy}
-                  opacity={!canRsvpWhenStatusSet || busy ? 0.5 : 1}
-                  onValueChange={v => {
-                    setRsvpStatus(parseInt(v));
+            <XStack maw='100%' key='going-maybe-notgoing' mx='auto' ai='center' gap='$1'>
+              <Tooltip>
+                <Tooltip.Trigger>
+                  <XStack f={1} ai='center'>
+                    <RadioGroup aria-labelledby="Do you plan to attend?" defaultValue={rsvpStatus.toString()}
+                      w='100%'
+                      disabled={!canRsvpWhenStatusSet || busy}
+                      opacity={!canRsvpWhenStatusSet || busy ? 0.5 : 1}
+                      onValueChange={v => {
+                        setRsvpStatus(parseInt(v));
 
-                    if (canRsvpWhenStatusSet && !upserting && !deleting) {
-                      upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
-                        .then(() => !currentRsvp && !currentAnonRsvp
-                          ? setShowRsvpCards(true)
-                          : undefined)
-                      // setTimeout(upsertRsvp, 200);
-                    }
-                  }}
-                  // mb='$1'
-                  value={rsvpStatus.toString()} name="form" >
-                  <XStack ai="center" jc='space-evenly' w='100%' gap="$2" flexWrap="wrap">
-                    <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
-                      {...valueAndLabel(AttendanceStatus.GOING)} />
-                    <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
-                      {...valueAndLabel(AttendanceStatus.INTERESTED)} />
-                    <RadioGroupItemWithLabel size="$3"
-                      {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
+                        if (canWrite) {
+                          upsertRsvp({ ...upsertableAttendance as EventAttendance, status: parseInt(v) })
+                            .then(() => !currentRsvp && !currentAnonRsvp
+                              ? setShowRsvpCards(true)
+                              : undefined)
+                          // setTimeout(upsertRsvp, 200);
+                        }
+                      }}
+                      // mb='$1'
+                      value={rsvpStatus.toString()} name="form" >
+                      <XStack ai="center" jc='space-evenly' w='100%' gap="$2" flexWrap="wrap">
+                        <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3"
+                          onClick={hasModifiedRsvp && rsvpStatus == AttendanceStatus.GOING && canWrite ? () => upsertRsvp(EventAttendance.create(upsertableAttendance)) : undefined}
+                          {...valueAndLabel(AttendanceStatus.GOING)} />
+                        <RadioGroupItemWithLabel color={navAnchorColor} size="$3"
+                          onClick={hasModifiedRsvp && rsvpStatus == AttendanceStatus.INTERESTED && canWrite ? () => upsertRsvp(EventAttendance.create(upsertableAttendance)) : undefined}
+                          {...valueAndLabel(AttendanceStatus.INTERESTED)} />
+                        <RadioGroupItemWithLabel size="$3"
+                          onClick={hasModifiedRsvp && rsvpStatus == AttendanceStatus.NOT_GOING && canWrite ? () => upsertRsvp(EventAttendance.create(upsertableAttendance)) : undefined}
+                          {...valueAndLabel(AttendanceStatus.NOT_GOING)} />
+                      </XStack>
+                    </RadioGroup>
                   </XStack>
-                </RadioGroup>
-              </XStack>
+                </Tooltip.Trigger>
+                {canRsvpWhenStatusSet
+                  ? undefined
+                  : <Tooltip.Content>
+                    <Paragraph>
+                      {newRsvpMode === 'anonymous'
+                        ? 'Enter a name to RSVP anonymously.'
+                        : 'Log in to RSVP.'}
+                    </Paragraph>
+                  </Tooltip.Content>
+                }
+              </Tooltip>
               <Tooltip>
                 <Tooltip.Trigger>
                   <ZStack w='$2' h='$2' my='auto' mx='auto'
@@ -956,11 +976,12 @@ export function RadioGroupItemWithLabel(props: {
   value: string
   label: string
   color?: string
+  onClick?: () => void
 }) {
   const id = useComponentKey('radio-group-item');
   return (
     <XStack f={1} alignItems="center" gap="$2">
-      <RadioGroup.Item value={props.value} id={id} size={props.size}>
+      <RadioGroup.Item value={props.value} id={id} size={props.size} onClick={props.onClick}>
         <RadioGroup.Indicator />
       </RadioGroup.Item>
 
@@ -970,10 +991,6 @@ export function RadioGroupItemWithLabel(props: {
     </XStack>
   )
 }
-
-/* <RadioGroupItemWithLabel color={primaryAnchorColor} size="$3" value={AttendanceStatus.GOING.toString()} label="Going" />
-<RadioGroupItemWithLabel color={navAnchorColor} size="$3" value={AttendanceStatus.INTERESTED.toString()} label="Interested" />
-<RadioGroupItemWithLabel size="$3" value={AttendanceStatus.NOT_GOING.toString()} label="Not Going" /> */
 
 function valueAndLabel(value: AttendanceStatus, isPast: boolean = false) {
   return { value: value.toString(), label: attendanceName(value, isPast) as string };

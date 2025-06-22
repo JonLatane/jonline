@@ -97,13 +97,13 @@ export function EventDetailsScreen() {
   }
   const debouncedAccountOrServer = useDebouncedAccountOrServer(accountOrServer);
 
-  console.log("EventDetailsScreen", {
-    // serverHost,
-    debouncedAccountOrServer,
-    // eventId,
-    subjectEvent: subjectEvent?.id,
-    instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver, failedToLoadEvent
-  })
+  // console.log("EventDetailsScreen", {
+  //   // serverHost,
+  //   debouncedAccountOrServer,
+  //   // eventId,
+  //   subjectEvent: subjectEvent?.id,
+  //   instanceId, subjectPost, postsState, loadingEvent, loadedEvent, replyPostIdPath, showScrollPreserver, failedToLoadEvent
+  // })
   useEffect(() => {
     if (instanceId && serverInstanceId && server) {
       if ((!subjectEvent || !loadedEvent) && !loadingEvent && !failedToLoadEvent) {
