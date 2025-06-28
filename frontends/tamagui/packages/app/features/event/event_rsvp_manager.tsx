@@ -24,6 +24,7 @@ export interface EventRsvpManagerProps {
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   isPreview?: boolean;
+  isModalPreview?: boolean;
   isVisible?: boolean;
 }
 
@@ -42,6 +43,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   newRsvpMode: givenNewRsvpMode,
   setNewRsvpMode: givenSetNewRsvpMode,
   isPreview,
+  isModalPreview,
   isVisible,
 }) => {
   const mediaQuery = useMedia();
@@ -144,14 +146,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
   // }, [newRsvpMode]);
 
   useEffect(() => {
-    if (!isPreview) {
-      if (canRsvpNonAnonymously && newRsvpMode === undefined) {
+    if (!isPreview || isModalPreview) {
+      if (canRsvpNonAnonymously && newRsvpMode === undefined && anonymousAuthToken !== '') {
         setNewRsvpMode?.('user');
       } else if (canRsvpAnonymously && newRsvpMode === undefined) {
         setNewRsvpMode?.('anonymous');
       }
     }
-  }, [isPreview]);
+  }, [isPreview, isModalPreview, canRsvpAnonymously, canRsvpNonAnonymously]);
 
   useEffect(() => {
     if (newRsvpMode === 'anonymous' && !canRsvpAnonymously) {

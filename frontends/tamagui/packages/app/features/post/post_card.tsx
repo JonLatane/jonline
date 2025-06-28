@@ -452,13 +452,12 @@ export const PostCard: React.FC<PostCardProps> = ({
             {deleted
               ? <Paragraph size='$1'>This {post.replyToPostId ? 'comment' : 'post'} has been deleted.</Paragraph>
               : <YStack zi={1000} w='100%'>
-                <XStack ai='flex-start' w='100%' pr='$3' pl={isReply ? '$2' : '$3'}>
-                  {isReply ? <XStack mt='$3'><AuthorInfo {...{ post }} avatarOnly /></XStack> : undefined}
+                <XStack ai='flex-start' w='100%' {...isReply ? { pl: '$2', pr: '$3' } : {}}>
                   <YStack f={1}>
                     {isReply ? <XStack mt='$1' pt='$1'><AuthorInfo {...{ post }} nameOnly /></XStack> : undefined}
                     <AnimatePresence>
                       {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
-                        <YStack mah={isPreview ? 550 : undefined} overflow='hidden'>
+                        <YStack mah={isPreview ? window.innerHeight - 50 : undefined} overflow='hidden'>
                           {editing && !previewingEdits
                             ? <PostMediaManager
                               link={post.link}
@@ -474,11 +473,13 @@ export const PostCard: React.FC<PostCardProps> = ({
                               post={{ ...post, media, embedLink }}
                               {...{ isPreview }} />}
                         </YStack>
-                        {linkToDetails
-                          ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
-                            {contentArea}
-                          </Anchor>
-                          : contentArea}
+                        <YStack {...isReply ? {} : { pl: '$3', pr: '$3' }}>
+                          {linkToDetails
+                            ? <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
+                              {contentArea}
+                            </Anchor>
+                            : contentArea}
+                        </YStack>
                       </YStack>}
                     </AnimatePresence>
                   </YStack>

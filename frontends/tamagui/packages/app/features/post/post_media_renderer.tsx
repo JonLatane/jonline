@@ -103,11 +103,11 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
   const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
-  const isReply = post.replyToPostId != null;
-  const backgroundSize = postBackgroundSize(mediaQuery);
-  const foregroundSize = backgroundSize * 0.7;
+  // const isReply = post.replyToPostId != null;
+  // const backgroundSize = postBackgroundSize(mediaQuery);
+  // const foregroundSize = backgroundSize * 0.7;
 
-  const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
+  // const singlePreviewSize = xsPreview ? 150 : smallPreview ? 300 : foregroundSize;
   // console.log('PostMediaRenderer', { singleMediaPreview, showScrollableMediaPreviews, media: post.media })
 
   const [hasBeenVisible, setHasBeenVisible] = useState(isVisible);
@@ -140,7 +140,7 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       <YStack w='100%'>
         {singleMediaPreview
           ?
-          <YStack key={singleMediaPreview.id} w={singlePreviewSize} maw='100%' mah='100%' h={isPreview ? singlePreviewSize : undefined} mx='auto'>
+          <YStack key={singleMediaPreview.id} w='100%' /*maw='100%' mah='100%' h={isPreview ? singlePreviewSize : undefined}*/ mx='auto'>
             <MediaRenderer media={singleMediaPreview} />
           </YStack>
           : undefined}

@@ -502,7 +502,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
             <ScrollView f={1}>
               {modalInstance
                 ? <XStack mt={-9}>
-                  <EventCard key={modalInstance?.id} event={modalInstance!} isPreview ignoreShrinkPreview disableSharingButton />
+                  <EventCard key={modalInstance?.id} event={modalInstance!} isModalPreview />
                 </XStack>
                 : undefined}
             </ScrollView>

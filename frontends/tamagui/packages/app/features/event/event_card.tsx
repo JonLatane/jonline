@@ -31,6 +31,7 @@ import { LocationControl } from "./location_control";
 interface Props {
   event: FederatedEvent;
   selectedInstance?: EventInstance;
+  isModalPreview?: boolean;
   isPreview?: boolean;
   // groupContext?: FederatedGroup;
   horizontal?: boolean;
@@ -40,9 +41,9 @@ interface Props {
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   onInstancesUpdated?: (instances: EventInstance[]) => void;
-  ignoreShrinkPreview?: boolean;
+  // ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
-  disableSharingButton?: boolean;
+  // disableSharingButton?: boolean;
   onPress?: () => void;
   showPermalink?: boolean;
 }
@@ -52,7 +53,8 @@ let newEventId = 0;
 export const EventCard: React.FC<Props> = ({
   event,
   selectedInstance = event.instances.find(isNotPastInstance) ?? event.instances[0],
-  isPreview,
+  isModalPreview,
+  isPreview = isModalPreview,
   // groupContext,
   horizontal,
   xs,
@@ -61,9 +63,9 @@ export const EventCard: React.FC<Props> = ({
   newRsvpMode,
   setNewRsvpMode,
   onInstancesUpdated,
-  ignoreShrinkPreview,
+  // ignoreShrinkPreview,
   forceShrinkPreview,
-  disableSharingButton,
+  // disableSharingButton,
   onPress,
   showPermalink
 }) => {
@@ -79,6 +81,8 @@ export const EventCard: React.FC<Props> = ({
   const mediaQuery = useMedia();
   const eventPost = federatedEntity(event.post!, server);
 
+  const ignoreShrinkPreview = isModalPreview;
+  const disableSharingButton = isModalPreview;
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = useServerTheme(server);
   const [editing, _setEditing] = useState(false);
   const setEditing = useCallback((value: boolean) => {
@@ -857,25 +861,28 @@ export const EventCard: React.FC<Props> = ({
                   <AnimatePresence>
                     {shrinkContent ? undefined
                       : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
-                        px='$3' pt={0} w='100%' maw={800} mx='auto' pl='$3'>
-                        {primaryInstance// && (!isPreview || isVisible)
-                          ? event.info?.hideLocationUntilRsvpApproved && !rsvpData?.hiddenLocation
-                            ? <Paragraph size='$1' my='$1' fontStyle='italic'>Location will be revealed to attendees after RSVP approval.</Paragraph>
-                            : <XStack mx='$3' mt='$1'>
-                              <LocationControl key='location-control'
-                                location={currentInstanceLocation}
-                                readOnly={!editing || previewingEdits}
-                                preview={isPreview}
-                                link={isPreview ? eventLink : undefined}
-                                setLocation={setCurrentInstanceLocation}
-                              // setLocation={(location: Location) => {
-                              //   if (editingInstance) {
-                              //     updateEditingInstance({ ...editingInstance, location });
-                              //   }
-                              // }}
-                              />
-                            </XStack>
-                          : undefined}
+                        pt={0} w='100%' maw={800} mx='auto'>
+                        <YStack key='location' px='$3' >
+                          {primaryInstance// && (!isPreview || isVisible)
+                            ? event.info?.hideLocationUntilRsvpApproved && !rsvpData?.hiddenLocation
+                              ? <Paragraph size='$1' my='$1' fontStyle='italic'>Location will be revealed to attendees after RSVP approval.</Paragraph>
+                              : <XStack mx='$3' mt='$1'>
+                                <LocationControl key='location-control'
+                                  location={currentInstanceLocation}
+                                  readOnly={!editing || previewingEdits}
+                                  preview={isPreview}
+                                  link={isPreview ? eventLink : undefined}
+                                  setLocation={setCurrentInstanceLocation}
+                                // setLocation={(location: Location) => {
+                                //   if (editingInstance) {
+                                //     updateEditingInstance({ ...editingInstance, location });
+                                //   }
+                                // }}
+                                />
+                              </XStack>
+                            : undefined}
+
+                        </YStack>
                         <YStack key='media-manager' mah={maxContentSectionHeight} overflow='hidden'>
                           {editing && !previewingEdits
                             ? <PostMediaManager
@@ -899,11 +906,11 @@ export const EventCard: React.FC<Props> = ({
                                 embedLink
                               }} />}
                         </YStack>
-                        <YStack key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
+                        <YStack px='$3' key='content' maxHeight={maxContentSectionHeight} overflow='hidden'>
                           {contentView}
                         </YStack>
                         {editing && !previewingEdits
-                          ? <>
+                          ? <YStack px='$3' key='content-editor-toggles'>
                             <ToggleRow key='rsvp-toggle' name='Allow RSVPs'
                               value={editedAllowRsvps} setter={setEditedAllowRsvps} />
                             <ToggleRow key='anonymous-rsvp-toggle' name='Allow Anonymous RSVPs'
@@ -914,7 +921,7 @@ export const EventCard: React.FC<Props> = ({
                             <ToggleRow key='hide-location-toggle' name='Hide Location from Non-Attendees'
                               value={editedHideLocation} setter={setEditedHideLocation}
                               disabled={!editedAllowRsvps} />
-                          </>
+                          </YStack >
                           : undefined}
 
                       </YStack>
@@ -927,7 +934,7 @@ export const EventCard: React.FC<Props> = ({
                         event={event!}
                         isVisible={!isPreview || isVisible}
                         instance={editingInstance ?? primaryInstance}
-                        {...{ isPreview, newRsvpMode, setNewRsvpMode }} />
+                        {...{ isPreview, isModalPreview, newRsvpMode, setNewRsvpMode }} />
                     </YStack>
                     : undefined}
                   <AnimatePresence>
