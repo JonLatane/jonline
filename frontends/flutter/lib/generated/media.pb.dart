@@ -1,7 +1,7 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: media.proto
-//
+// Generated from media.proto.
+
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
@@ -14,8 +14,8 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'google/protobuf/timestamp.pb.dart' as $0;
+import 'visibility_moderation.pbenum.dart' as $1;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -47,12 +47,12 @@ class Media extends $pb.GeneratedMessage {
     $core.String? contentType,
     $core.String? name,
     $core.String? description,
-    $11.Visibility? visibility,
-    $11.Moderation? moderation,
+    $1.Visibility? visibility,
+    $1.Moderation? moderation,
     $core.bool? generated,
     $core.bool? processed,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
+    $0.Timestamp? createdAt,
+    $0.Timestamp? updatedAt,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -80,12 +80,12 @@ class Media extends $pb.GeneratedMessage {
     ..aOS(3, _omitFieldNames ? '' : 'contentType')
     ..aOS(4, _omitFieldNames ? '' : 'name')
     ..aOS(5, _omitFieldNames ? '' : 'description')
-    ..e<$11.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
-    ..e<$11.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$1.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $1.Visibility.VISIBILITY_UNKNOWN, valueOf: $1.Visibility.valueOf, enumValues: $1.Visibility.values)
+    ..e<$1.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $1.Moderation.MODERATION_UNKNOWN, valueOf: $1.Moderation.valueOf, enumValues: $1.Moderation.values)
     ..aOB(8, _omitFieldNames ? '' : 'generated')
     ..aOB(9, _omitFieldNames ? '' : 'processed')
-    ..aOM<$9.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $0.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -158,9 +158,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Visibility of the media item.
   @$pb.TagNumber(6)
-  $11.Visibility get visibility => $_getN(5);
+  $1.Visibility get visibility => $_getN(5);
   @$pb.TagNumber(6)
-  set visibility($11.Visibility value) => $_setField(6, value);
+  set visibility($1.Visibility value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasVisibility() => $_has(5);
   @$pb.TagNumber(6)
@@ -168,9 +168,9 @@ class Media extends $pb.GeneratedMessage {
 
   /// Moderation of the media item.
   @$pb.TagNumber(7)
-  $11.Moderation get moderation => $_getN(6);
+  $1.Moderation get moderation => $_getN(6);
   @$pb.TagNumber(7)
-  set moderation($11.Moderation value) => $_setField(7, value);
+  set moderation($1.Moderation value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -198,26 +198,26 @@ class Media extends $pb.GeneratedMessage {
   void clearProcessed() => $_clearField(9);
 
   @$pb.TagNumber(15)
-  $9.Timestamp get createdAt => $_getN(9);
+  $0.Timestamp get createdAt => $_getN(9);
   @$pb.TagNumber(15)
-  set createdAt($9.Timestamp value) => $_setField(15, value);
+  set createdAt($0.Timestamp value) => $_setField(15, value);
   @$pb.TagNumber(15)
   $core.bool hasCreatedAt() => $_has(9);
   @$pb.TagNumber(15)
   void clearCreatedAt() => $_clearField(15);
   @$pb.TagNumber(15)
-  $9.Timestamp ensureCreatedAt() => $_ensure(9);
+  $0.Timestamp ensureCreatedAt() => $_ensure(9);
 
   @$pb.TagNumber(16)
-  $9.Timestamp get updatedAt => $_getN(10);
+  $0.Timestamp get updatedAt => $_getN(10);
   @$pb.TagNumber(16)
-  set updatedAt($9.Timestamp value) => $_setField(16, value);
+  set updatedAt($0.Timestamp value) => $_setField(16, value);
   @$pb.TagNumber(16)
   $core.bool hasUpdatedAt() => $_has(10);
   @$pb.TagNumber(16)
   void clearUpdatedAt() => $_clearField(16);
   @$pb.TagNumber(16)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(10);
+  $0.Timestamp ensureUpdatedAt() => $_ensure(10);
 }
 
 /// A reference to a media item, designed to be included in other messages as a reference.

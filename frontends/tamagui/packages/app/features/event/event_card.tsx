@@ -41,7 +41,7 @@ interface Props {
   newRsvpMode?: RsvpMode;
   setNewRsvpMode?: (mode: RsvpMode) => void;
   onInstancesUpdated?: (instances: EventInstance[]) => void;
-  // ignoreShrinkPreview?: boolean;
+  ignoreShrinkPreview?: boolean;
   forceShrinkPreview?: boolean;
   // disableSharingButton?: boolean;
   onPress?: () => void;
@@ -63,7 +63,7 @@ export const EventCard: React.FC<Props> = ({
   newRsvpMode,
   setNewRsvpMode,
   onInstancesUpdated,
-  // ignoreShrinkPreview,
+  ignoreShrinkPreview: ignoreShrinkPreviewProp,
   forceShrinkPreview,
   // disableSharingButton,
   onPress,
@@ -81,7 +81,7 @@ export const EventCard: React.FC<Props> = ({
   const mediaQuery = useMedia();
   const eventPost = federatedEntity(event.post!, server);
 
-  const ignoreShrinkPreview = isModalPreview;
+  const ignoreShrinkPreview = isModalPreview || ignoreShrinkPreviewProp;
   const disableSharingButton = isModalPreview;
   const { textColor, primaryColor, primaryTextColor, navColor, navAnchorColor, navTextColor, backgroundColor: themeBgColor, primaryAnchorColor, darkMode } = useServerTheme(server);
   const [editing, _setEditing] = useState(false);

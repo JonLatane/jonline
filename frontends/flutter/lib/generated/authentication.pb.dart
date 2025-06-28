@@ -1,7 +1,7 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: authentication.proto
-//
+// Generated from authentication.proto.
+
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
@@ -15,8 +15,8 @@ import 'dart:core' as $core;
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'users.pb.dart' as $4;
+import 'google/protobuf/timestamp.pb.dart' as $1;
+import 'users.pb.dart' as $0;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -25,9 +25,9 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   factory CreateAccountRequest({
     $core.String? username,
     $core.String? password,
-    $4.ContactMethod? email,
-    $4.ContactMethod? phone,
-    $9.Timestamp? expiresAt,
+    $0.ContactMethod? email,
+    $0.ContactMethod? phone,
+    $1.Timestamp? expiresAt,
     $core.String? deviceName,
   }) {
     final result = create();
@@ -48,9 +48,9 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateAccountRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'password')
-    ..aOM<$4.ContactMethod>(3, _omitFieldNames ? '' : 'email', subBuilder: $4.ContactMethod.create)
-    ..aOM<$4.ContactMethod>(4, _omitFieldNames ? '' : 'phone', subBuilder: $4.ContactMethod.create)
-    ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$0.ContactMethod>(3, _omitFieldNames ? '' : 'email', subBuilder: $0.ContactMethod.create)
+    ..aOM<$0.ContactMethod>(4, _omitFieldNames ? '' : 'phone', subBuilder: $0.ContactMethod.create)
+    ..aOM<$1.Timestamp>(5, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..aOS(6, _omitFieldNames ? '' : 'deviceName')
     ..hasRequiredFields = false
   ;
@@ -94,39 +94,39 @@ class CreateAccountRequest extends $pb.GeneratedMessage {
 
   /// Email to be used as a contact method.
   @$pb.TagNumber(3)
-  $4.ContactMethod get email => $_getN(2);
+  $0.ContactMethod get email => $_getN(2);
   @$pb.TagNumber(3)
-  set email($4.ContactMethod value) => $_setField(3, value);
+  set email($0.ContactMethod value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasEmail() => $_has(2);
   @$pb.TagNumber(3)
   void clearEmail() => $_clearField(3);
   @$pb.TagNumber(3)
-  $4.ContactMethod ensureEmail() => $_ensure(2);
+  $0.ContactMethod ensureEmail() => $_ensure(2);
 
   /// Phone number to be used as a contact method.
   @$pb.TagNumber(4)
-  $4.ContactMethod get phone => $_getN(3);
+  $0.ContactMethod get phone => $_getN(3);
   @$pb.TagNumber(4)
-  set phone($4.ContactMethod value) => $_setField(4, value);
+  set phone($0.ContactMethod value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasPhone() => $_has(3);
   @$pb.TagNumber(4)
   void clearPhone() => $_clearField(4);
   @$pb.TagNumber(4)
-  $4.ContactMethod ensurePhone() => $_ensure(3);
+  $0.ContactMethod ensurePhone() => $_ensure(3);
 
   /// Request an expiration time for the Auth Token returned. By default it will not expire.
   @$pb.TagNumber(5)
-  $9.Timestamp get expiresAt => $_getN(4);
+  $1.Timestamp get expiresAt => $_getN(4);
   @$pb.TagNumber(5)
-  set expiresAt($9.Timestamp value) => $_setField(5, value);
+  set expiresAt($1.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasExpiresAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearExpiresAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $9.Timestamp ensureExpiresAt() => $_ensure(4);
+  $1.Timestamp ensureExpiresAt() => $_ensure(4);
 
   /// (Not yet implemented.) The name of the device being used to create the account.
   @$pb.TagNumber(6)
@@ -144,7 +144,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   factory LoginRequest({
     $core.String? username,
     $core.String? password,
-    $9.Timestamp? expiresAt,
+    $1.Timestamp? expiresAt,
     $core.String? deviceName,
     $core.String? userId,
   }) {
@@ -165,7 +165,7 @@ class LoginRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'LoginRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'password')
-    ..aOM<$9.Timestamp>(3, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$1.Timestamp>(3, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..aOS(4, _omitFieldNames ? '' : 'deviceName')
     ..aOS(5, _omitFieldNames ? '' : 'userId')
     ..hasRequiredFields = false
@@ -210,15 +210,15 @@ class LoginRequest extends $pb.GeneratedMessage {
 
   /// Request an expiration time for the Auth Token returned. By default it will not expire.
   @$pb.TagNumber(3)
-  $9.Timestamp get expiresAt => $_getN(2);
+  $1.Timestamp get expiresAt => $_getN(2);
   @$pb.TagNumber(3)
-  set expiresAt($9.Timestamp value) => $_setField(3, value);
+  set expiresAt($1.Timestamp value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasExpiresAt() => $_has(2);
   @$pb.TagNumber(3)
   void clearExpiresAt() => $_clearField(3);
   @$pb.TagNumber(3)
-  $9.Timestamp ensureExpiresAt() => $_ensure(2);
+  $1.Timestamp ensureExpiresAt() => $_ensure(2);
 
   /// (Not yet implemented.) The name of the device being used to login.
   @$pb.TagNumber(4)
@@ -259,7 +259,7 @@ class LoginRequest extends $pb.GeneratedMessage {
 /// Note that refresh tokens
 class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   factory CreateThirdPartyRefreshTokenRequest({
-    $9.Timestamp? expiresAt,
+    $1.Timestamp? expiresAt,
     $core.String? userId,
     $core.String? deviceName,
   }) {
@@ -276,7 +276,7 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
   factory CreateThirdPartyRefreshTokenRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'CreateThirdPartyRefreshTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$1.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..aOS(3, _omitFieldNames ? '' : 'userId')
     ..aOS(4, _omitFieldNames ? '' : 'deviceName')
     ..hasRequiredFields = false
@@ -301,15 +301,15 @@ class CreateThirdPartyRefreshTokenRequest extends $pb.GeneratedMessage {
 
   /// The third-party refresh token's expiration time.
   @$pb.TagNumber(2)
-  $9.Timestamp get expiresAt => $_getN(0);
+  $1.Timestamp get expiresAt => $_getN(0);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp value) => $_setField(2, value);
+  set expiresAt($1.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(0);
   @$pb.TagNumber(2)
   void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
-  $9.Timestamp ensureExpiresAt() => $_ensure(0);
+  $1.Timestamp ensureExpiresAt() => $_ensure(0);
 
   /// The third-party refresh token's user ID.
   @$pb.TagNumber(3)
@@ -337,7 +337,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   factory RefreshTokenResponse({
     ExpirableToken? refreshToken,
     ExpirableToken? accessToken,
-    $4.User? user,
+    $0.User? user,
   }) {
     final result = create();
     if (refreshToken != null) result.refreshToken = refreshToken;
@@ -354,7 +354,7 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOM<ExpirableToken>(1, _omitFieldNames ? '' : 'refreshToken', subBuilder: ExpirableToken.create)
     ..aOM<ExpirableToken>(2, _omitFieldNames ? '' : 'accessToken', subBuilder: ExpirableToken.create)
-    ..aOM<$4.User>(3, _omitFieldNames ? '' : 'user', subBuilder: $4.User.create)
+    ..aOM<$0.User>(3, _omitFieldNames ? '' : 'user', subBuilder: $0.User.create)
     ..hasRequiredFields = false
   ;
 
@@ -402,22 +402,22 @@ class RefreshTokenResponse extends $pb.GeneratedMessage {
 
   /// The user associated with the account that was created/logged into.
   @$pb.TagNumber(3)
-  $4.User get user => $_getN(2);
+  $0.User get user => $_getN(2);
   @$pb.TagNumber(3)
-  set user($4.User value) => $_setField(3, value);
+  set user($0.User value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasUser() => $_has(2);
   @$pb.TagNumber(3)
   void clearUser() => $_clearField(3);
   @$pb.TagNumber(3)
-  $4.User ensureUser() => $_ensure(2);
+  $0.User ensureUser() => $_ensure(2);
 }
 
 /// Generic type for refresh and access tokens.
 class ExpirableToken extends $pb.GeneratedMessage {
   factory ExpirableToken({
     $core.String? token,
-    $9.Timestamp? expiresAt,
+    $1.Timestamp? expiresAt,
   }) {
     final result = create();
     if (token != null) result.token = token;
@@ -432,7 +432,7 @@ class ExpirableToken extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExpirableToken', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'token')
-    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$1.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -465,22 +465,22 @@ class ExpirableToken extends $pb.GeneratedMessage {
 
   /// Optional expiration time for the token. If not set, the token will not expire.
   @$pb.TagNumber(2)
-  $9.Timestamp get expiresAt => $_getN(1);
+  $1.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp value) => $_setField(2, value);
+  set expiresAt($1.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
   void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
-  $9.Timestamp ensureExpiresAt() => $_ensure(1);
+  $1.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
 /// Request for a new access token using a refresh token.
 class AccessTokenRequest extends $pb.GeneratedMessage {
   factory AccessTokenRequest({
     $core.String? refreshToken,
-    $9.Timestamp? expiresAt,
+    $1.Timestamp? expiresAt,
   }) {
     final result = create();
     if (refreshToken != null) result.refreshToken = refreshToken;
@@ -495,7 +495,7 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AccessTokenRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'refreshToken')
-    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$1.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -528,15 +528,15 @@ class AccessTokenRequest extends $pb.GeneratedMessage {
 
   /// Optional *requested* expiration time for the token. Server may ignore this.
   @$pb.TagNumber(2)
-  $9.Timestamp get expiresAt => $_getN(1);
+  $1.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp value) => $_setField(2, value);
+  set expiresAt($1.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
   void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
-  $9.Timestamp ensureExpiresAt() => $_ensure(1);
+  $1.Timestamp ensureExpiresAt() => $_ensure(1);
 }
 
 /// Returned when requesting access tokens.
@@ -714,7 +714,7 @@ class UserRefreshTokensResponse extends $pb.GeneratedMessage {
 class RefreshTokenMetadata extends $pb.GeneratedMessage {
   factory RefreshTokenMetadata({
     $fixnum.Int64? id,
-    $9.Timestamp? expiresAt,
+    $1.Timestamp? expiresAt,
     $core.String? deviceName,
     $core.bool? isThisDevice,
     $core.bool? thirdParty,
@@ -735,7 +735,7 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'RefreshTokenMetadata', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..a<$fixnum.Int64>(1, _omitFieldNames ? '' : 'id', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
-    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $9.Timestamp.create)
+    ..aOM<$1.Timestamp>(2, _omitFieldNames ? '' : 'expiresAt', subBuilder: $1.Timestamp.create)
     ..aOS(3, _omitFieldNames ? '' : 'deviceName')
     ..aOB(4, _omitFieldNames ? '' : 'isThisDevice')
     ..aOB(5, _omitFieldNames ? '' : 'thirdParty')
@@ -771,15 +771,15 @@ class RefreshTokenMetadata extends $pb.GeneratedMessage {
 
   /// Expiration date of the refresh token.
   @$pb.TagNumber(2)
-  $9.Timestamp get expiresAt => $_getN(1);
+  $1.Timestamp get expiresAt => $_getN(1);
   @$pb.TagNumber(2)
-  set expiresAt($9.Timestamp value) => $_setField(2, value);
+  set expiresAt($1.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasExpiresAt() => $_has(1);
   @$pb.TagNumber(2)
   void clearExpiresAt() => $_clearField(2);
   @$pb.TagNumber(2)
-  $9.Timestamp ensureExpiresAt() => $_ensure(1);
+  $1.Timestamp ensureExpiresAt() => $_ensure(1);
 
   /// The device name the refresh token is on. User-updateable.
   @$pb.TagNumber(3)

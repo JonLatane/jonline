@@ -1,7 +1,7 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: events.proto
-//
+// Generated from events.proto.
+
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
@@ -15,13 +15,13 @@ import 'dart:core' as $core;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 import 'events.pbenum.dart';
-import 'google/protobuf/timestamp.pb.dart' as $9;
-import 'location.pb.dart' as $10;
-import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $12;
-import 'posts.pb.dart' as $7;
-import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'google/protobuf/timestamp.pb.dart' as $0;
+import 'location.pb.dart' as $2;
+import 'media.pb.dart' as $4;
+import 'permissions.pbenum.dart' as $6;
+import 'posts.pb.dart' as $1;
+import 'users.pb.dart' as $3;
+import 'visibility_moderation.pbenum.dart' as $5;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -193,10 +193,10 @@ class GetEventsRequest extends $pb.GeneratedMessage {
 /// API currently only supports `ends_after`.
 class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter({
-    $9.Timestamp? startsAfter,
-    $9.Timestamp? endsAfter,
-    $9.Timestamp? startsBefore,
-    $9.Timestamp? endsBefore,
+    $0.Timestamp? startsAfter,
+    $0.Timestamp? endsAfter,
+    $0.Timestamp? startsBefore,
+    $0.Timestamp? endsBefore,
   }) {
     final result = create();
     if (startsAfter != null) result.startsAfter = startsAfter;
@@ -212,10 +212,10 @@ class TimeFilter extends $pb.GeneratedMessage {
   factory TimeFilter.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<$9.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $9.Timestamp.create)
+    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $0.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -238,51 +238,51 @@ class TimeFilter extends $pb.GeneratedMessage {
 
   /// Filter to events that start after the given time.
   @$pb.TagNumber(1)
-  $9.Timestamp get startsAfter => $_getN(0);
+  $0.Timestamp get startsAfter => $_getN(0);
   @$pb.TagNumber(1)
-  set startsAfter($9.Timestamp value) => $_setField(1, value);
+  set startsAfter($0.Timestamp value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasStartsAfter() => $_has(0);
   @$pb.TagNumber(1)
   void clearStartsAfter() => $_clearField(1);
   @$pb.TagNumber(1)
-  $9.Timestamp ensureStartsAfter() => $_ensure(0);
+  $0.Timestamp ensureStartsAfter() => $_ensure(0);
 
   /// Filter to events that end after the given time.
   @$pb.TagNumber(2)
-  $9.Timestamp get endsAfter => $_getN(1);
+  $0.Timestamp get endsAfter => $_getN(1);
   @$pb.TagNumber(2)
-  set endsAfter($9.Timestamp value) => $_setField(2, value);
+  set endsAfter($0.Timestamp value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasEndsAfter() => $_has(1);
   @$pb.TagNumber(2)
   void clearEndsAfter() => $_clearField(2);
   @$pb.TagNumber(2)
-  $9.Timestamp ensureEndsAfter() => $_ensure(1);
+  $0.Timestamp ensureEndsAfter() => $_ensure(1);
 
   /// Filter to events that start before the given time.
   @$pb.TagNumber(3)
-  $9.Timestamp get startsBefore => $_getN(2);
+  $0.Timestamp get startsBefore => $_getN(2);
   @$pb.TagNumber(3)
-  set startsBefore($9.Timestamp value) => $_setField(3, value);
+  set startsBefore($0.Timestamp value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasStartsBefore() => $_has(2);
   @$pb.TagNumber(3)
   void clearStartsBefore() => $_clearField(3);
   @$pb.TagNumber(3)
-  $9.Timestamp ensureStartsBefore() => $_ensure(2);
+  $0.Timestamp ensureStartsBefore() => $_ensure(2);
 
   /// Filter to events that end before the given time.
   @$pb.TagNumber(4)
-  $9.Timestamp get endsBefore => $_getN(3);
+  $0.Timestamp get endsBefore => $_getN(3);
   @$pb.TagNumber(4)
-  set endsBefore($9.Timestamp value) => $_setField(4, value);
+  set endsBefore($0.Timestamp value) => $_setField(4, value);
   @$pb.TagNumber(4)
   $core.bool hasEndsBefore() => $_has(3);
   @$pb.TagNumber(4)
   void clearEndsBefore() => $_clearField(4);
   @$pb.TagNumber(4)
-  $9.Timestamp ensureEndsBefore() => $_ensure(3);
+  $0.Timestamp ensureEndsBefore() => $_ensure(3);
 }
 
 /// A list of `Event`s with a maybe-incomplete (see [`GetEventsRequest`](#geteventsrequest)) set of their `EventInstance`s.
@@ -343,7 +343,7 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 class Event extends $pb.GeneratedMessage {
   factory Event({
     $core.String? id,
-    $7.Post? post,
+    $1.Post? post,
     EventInfo? info,
     $core.Iterable<EventInstance>? instances,
   }) {
@@ -362,7 +362,7 @@ class Event extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$7.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $7.Post.create)
+    ..aOM<$1.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
     ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
     ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
     ..hasRequiredFields = false
@@ -397,15 +397,15 @@ class Event extends $pb.GeneratedMessage {
 
   /// The Post containing the underlying data for the event (names). Its `PostContext` should be `EVENT`.
   @$pb.TagNumber(2)
-  $7.Post get post => $_getN(1);
+  $1.Post get post => $_getN(1);
   @$pb.TagNumber(2)
-  set post($7.Post value) => $_setField(2, value);
+  set post($1.Post value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasPost() => $_has(1);
   @$pb.TagNumber(2)
   void clearPost() => $_clearField(2);
   @$pb.TagNumber(2)
-  $7.Post ensurePost() => $_ensure(1);
+  $1.Post ensurePost() => $_ensure(1);
 
   /// Event configuration like whether to allow (anonymous) RSVPs, etc.
   @$pb.TagNumber(3)
@@ -432,7 +432,7 @@ class EventInfo extends $pb.GeneratedMessage {
     $core.bool? allowsAnonymousRsvps,
     $core.int? maxAttendees,
     $core.bool? hideLocationUntilRsvpApproved,
-    $11.Moderation? defaultRsvpModeration,
+    $5.Moderation? defaultRsvpModeration,
   }) {
     final result = create();
     if (allowsRsvps != null) result.allowsRsvps = allowsRsvps;
@@ -453,7 +453,7 @@ class EventInfo extends $pb.GeneratedMessage {
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
     ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
-    ..e<$11.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$5.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $5.Moderation.MODERATION_UNKNOWN, valueOf: $5.Moderation.valueOf, enumValues: $5.Moderation.values)
     ..hasRequiredFields = false
   ;
 
@@ -520,9 +520,9 @@ class EventInfo extends $pb.GeneratedMessage {
   /// Default moderation for RSVPs from logged-in users (either `PENDING` or `APPROVED`).
   /// Anonymous RSVPs are always moderated (default to `PENDING`).
   @$pb.TagNumber(5)
-  $11.Moderation get defaultRsvpModeration => $_getN(4);
+  $5.Moderation get defaultRsvpModeration => $_getN(4);
   @$pb.TagNumber(5)
-  set defaultRsvpModeration($11.Moderation value) => $_setField(5, value);
+  set defaultRsvpModeration($5.Moderation value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasDefaultRsvpModeration() => $_has(4);
   @$pb.TagNumber(5)
@@ -536,11 +536,11 @@ class EventInstance extends $pb.GeneratedMessage {
   factory EventInstance({
     $core.String? id,
     $core.String? eventId,
-    $7.Post? post,
+    $1.Post? post,
     EventInstanceInfo? info,
-    $9.Timestamp? startsAt,
-    $9.Timestamp? endsAt,
-    $10.Location? location,
+    $0.Timestamp? startsAt,
+    $0.Timestamp? endsAt,
+    $2.Location? location,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -561,11 +561,11 @@ class EventInstance extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
-    ..aOM<$7.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $7.Post.create)
+    ..aOM<$1.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
     ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
-    ..aOM<$9.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$10.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $10.Location.create)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $0.Timestamp.create)
+    ..aOM<$2.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $2.Location.create)
     ..hasRequiredFields = false
   ;
 
@@ -608,15 +608,15 @@ class EventInstance extends $pb.GeneratedMessage {
 
   /// Optional `Post` containing alternate name/link/description for this particular instance. Its `PostContext` should be `EVENT_INSTANCE`.
   @$pb.TagNumber(3)
-  $7.Post get post => $_getN(2);
+  $1.Post get post => $_getN(2);
   @$pb.TagNumber(3)
-  set post($7.Post value) => $_setField(3, value);
+  set post($1.Post value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasPost() => $_has(2);
   @$pb.TagNumber(3)
   void clearPost() => $_clearField(3);
   @$pb.TagNumber(3)
-  $7.Post ensurePost() => $_ensure(2);
+  $1.Post ensurePost() => $_ensure(2);
 
   /// Additional configuration for this instance of this `EventInstance` beyond the `EventInfo` in its parent `Event`.
   @$pb.TagNumber(4)
@@ -632,39 +632,39 @@ class EventInstance extends $pb.GeneratedMessage {
 
   /// The time the event starts (UTC/Timestamp format).
   @$pb.TagNumber(5)
-  $9.Timestamp get startsAt => $_getN(4);
+  $0.Timestamp get startsAt => $_getN(4);
   @$pb.TagNumber(5)
-  set startsAt($9.Timestamp value) => $_setField(5, value);
+  set startsAt($0.Timestamp value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasStartsAt() => $_has(4);
   @$pb.TagNumber(5)
   void clearStartsAt() => $_clearField(5);
   @$pb.TagNumber(5)
-  $9.Timestamp ensureStartsAt() => $_ensure(4);
+  $0.Timestamp ensureStartsAt() => $_ensure(4);
 
   /// The time the event ends (UTC/Timestamp format).
   @$pb.TagNumber(6)
-  $9.Timestamp get endsAt => $_getN(5);
+  $0.Timestamp get endsAt => $_getN(5);
   @$pb.TagNumber(6)
-  set endsAt($9.Timestamp value) => $_setField(6, value);
+  set endsAt($0.Timestamp value) => $_setField(6, value);
   @$pb.TagNumber(6)
   $core.bool hasEndsAt() => $_has(5);
   @$pb.TagNumber(6)
   void clearEndsAt() => $_clearField(6);
   @$pb.TagNumber(6)
-  $9.Timestamp ensureEndsAt() => $_ensure(5);
+  $0.Timestamp ensureEndsAt() => $_ensure(5);
 
   /// The location of the event.
   @$pb.TagNumber(7)
-  $10.Location get location => $_getN(6);
+  $2.Location get location => $_getN(6);
   @$pb.TagNumber(7)
-  set location($10.Location value) => $_setField(7, value);
+  set location($2.Location value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasLocation() => $_has(6);
   @$pb.TagNumber(7)
   void clearLocation() => $_clearField(7);
   @$pb.TagNumber(7)
-  $10.Location ensureLocation() => $_ensure(6);
+  $2.Location ensureLocation() => $_ensure(6);
 }
 
 /// To be used for ticketing, RSVPs, etc.
@@ -938,7 +938,7 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
 class EventAttendances extends $pb.GeneratedMessage {
   factory EventAttendances({
     $core.Iterable<EventAttendance>? attendances,
-    $10.Location? hiddenLocation,
+    $2.Location? hiddenLocation,
   }) {
     final result = create();
     if (attendances != null) result.attendances.addAll(attendances);
@@ -953,7 +953,7 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
-    ..aOM<$10.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $10.Location.create)
+    ..aOM<$2.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $2.Location.create)
     ..hasRequiredFields = false
   ;
 
@@ -980,15 +980,15 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   /// When `hide_location_until_rsvp_approved` is set, the location of the event.
   @$pb.TagNumber(2)
-  $10.Location get hiddenLocation => $_getN(1);
+  $2.Location get hiddenLocation => $_getN(1);
   @$pb.TagNumber(2)
-  set hiddenLocation($10.Location value) => $_setField(2, value);
+  set hiddenLocation($2.Location value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasHiddenLocation() => $_has(1);
   @$pb.TagNumber(2)
   void clearHiddenLocation() => $_clearField(2);
   @$pb.TagNumber(2)
-  $10.Location ensureHiddenLocation() => $_ensure(1);
+  $2.Location ensureHiddenLocation() => $_ensure(1);
 }
 
 enum EventAttendance_Attendee {
@@ -1012,9 +1012,9 @@ class EventAttendance extends $pb.GeneratedMessage {
     $core.String? invitingUserId,
     $core.String? privateNote,
     $core.String? publicNote,
-    $11.Moderation? moderation,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
+    $5.Moderation? moderation,
+    $0.Timestamp? createdAt,
+    $0.Timestamp? updatedAt,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -1053,9 +1053,9 @@ class EventAttendance extends $pb.GeneratedMessage {
     ..aOS(7, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(8, _omitFieldNames ? '' : 'privateNote')
     ..aOS(9, _omitFieldNames ? '' : 'publicNote')
-    ..e<$11.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..aOM<$9.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+    ..e<$5.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $5.Moderation.MODERATION_UNKNOWN, valueOf: $5.Moderation.valueOf, enumValues: $5.Moderation.values)
+    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $0.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -1175,9 +1175,9 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   /// Moderation status for the attendance. Moderated by the `Event` owner (or `EventInstance` owner if applicable).
   @$pb.TagNumber(10)
-  $11.Moderation get moderation => $_getN(9);
+  $5.Moderation get moderation => $_getN(9);
   @$pb.TagNumber(10)
-  set moderation($11.Moderation value) => $_setField(10, value);
+  set moderation($5.Moderation value) => $_setField(10, value);
   @$pb.TagNumber(10)
   $core.bool hasModeration() => $_has(9);
   @$pb.TagNumber(10)
@@ -1185,27 +1185,27 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   /// The time the attendance was created.
   @$pb.TagNumber(11)
-  $9.Timestamp get createdAt => $_getN(10);
+  $0.Timestamp get createdAt => $_getN(10);
   @$pb.TagNumber(11)
-  set createdAt($9.Timestamp value) => $_setField(11, value);
+  set createdAt($0.Timestamp value) => $_setField(11, value);
   @$pb.TagNumber(11)
   $core.bool hasCreatedAt() => $_has(10);
   @$pb.TagNumber(11)
   void clearCreatedAt() => $_clearField(11);
   @$pb.TagNumber(11)
-  $9.Timestamp ensureCreatedAt() => $_ensure(10);
+  $0.Timestamp ensureCreatedAt() => $_ensure(10);
 
   /// The time the attendance was last updated.
   @$pb.TagNumber(12)
-  $9.Timestamp get updatedAt => $_getN(11);
+  $0.Timestamp get updatedAt => $_getN(11);
   @$pb.TagNumber(12)
-  set updatedAt($9.Timestamp value) => $_setField(12, value);
+  set updatedAt($0.Timestamp value) => $_setField(12, value);
   @$pb.TagNumber(12)
   $core.bool hasUpdatedAt() => $_has(11);
   @$pb.TagNumber(12)
   void clearUpdatedAt() => $_clearField(12);
   @$pb.TagNumber(12)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(11);
+  $0.Timestamp ensureUpdatedAt() => $_ensure(11);
 }
 
 /// An anonymous internet user who has RSVP'd to an `EventInstance`.
@@ -1215,7 +1215,7 @@ class EventAttendance extends $pb.GeneratedMessage {
 class AnonymousAttendee extends $pb.GeneratedMessage {
   factory AnonymousAttendee({
     $core.String? name,
-    $core.Iterable<$4.ContactMethod>? contactMethods,
+    $core.Iterable<$3.ContactMethod>? contactMethods,
     $core.String? authToken,
   }) {
     final result = create();
@@ -1232,7 +1232,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
-    ..pc<$4.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $4.ContactMethod.create)
+    ..pc<$3.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $3.ContactMethod.create)
     ..aOS(3, _omitFieldNames ? '' : 'authToken')
     ..hasRequiredFields = false
   ;
@@ -1266,7 +1266,7 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
 
   /// Contact methods for anonymous attendees. Currently not linked to Contact methods for users.
   @$pb.TagNumber(2)
-  $pb.PbList<$4.ContactMethod> get contactMethods => $_getList(1);
+  $pb.PbList<$3.ContactMethod> get contactMethods => $_getList(1);
 
   /// Used to allow anonymous users to RSVP to an event. Generated by the server
   /// when an event attendance is upserted for the first time. Subsequent attendance
@@ -1287,9 +1287,9 @@ class UserAttendee extends $pb.GeneratedMessage {
   factory UserAttendee({
     $core.String? userId,
     $core.String? username,
-    $5.MediaReference? avatar,
+    $4.MediaReference? avatar,
     $core.String? realName,
-    $core.Iterable<$12.Permission>? permissions,
+    $core.Iterable<$6.Permission>? permissions,
   }) {
     final result = create();
     if (userId != null) result.userId = userId;
@@ -1308,9 +1308,9 @@ class UserAttendee extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..aOM<$5.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
+    ..aOM<$4.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $4.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$12.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
+    ..pc<$6.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $6.Permission.valueOf, enumValues: $6.Permission.values, defaultEnumValue: $6.Permission.PERMISSION_UNKNOWN)
     ..hasRequiredFields = false
   ;
 
@@ -1353,15 +1353,15 @@ class UserAttendee extends $pb.GeneratedMessage {
 
   /// The attendee's user avatar.
   @$pb.TagNumber(3)
-  $5.MediaReference get avatar => $_getN(2);
+  $4.MediaReference get avatar => $_getN(2);
   @$pb.TagNumber(3)
-  set avatar($5.MediaReference value) => $_setField(3, value);
+  set avatar($4.MediaReference value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasAvatar() => $_has(2);
   @$pb.TagNumber(3)
   void clearAvatar() => $_clearField(3);
   @$pb.TagNumber(3)
-  $5.MediaReference ensureAvatar() => $_ensure(2);
+  $4.MediaReference ensureAvatar() => $_ensure(2);
 
   @$pb.TagNumber(4)
   $core.String get realName => $_getSZ(3);
@@ -1373,7 +1373,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   void clearRealName() => $_clearField(4);
 
   @$pb.TagNumber(5)
-  $pb.PbList<$12.Permission> get permissions => $_getList(4);
+  $pb.PbList<$6.Permission> get permissions => $_getList(4);
 }
 
 

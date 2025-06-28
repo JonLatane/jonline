@@ -1,7 +1,7 @@
+// This is a generated file - do not edit.
 //
-//  Generated code. Do not modify.
-//  source: groups.proto
-//
+// Generated from groups.proto.
+
 // @dart = 3.3
 
 // ignore_for_file: annotate_overrides, camel_case_types, comment_references
@@ -14,12 +14,12 @@ import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
 
-import 'google/protobuf/timestamp.pb.dart' as $9;
+import 'google/protobuf/timestamp.pb.dart' as $2;
 import 'groups.pbenum.dart';
-import 'media.pb.dart' as $5;
-import 'permissions.pbenum.dart' as $12;
-import 'users.pb.dart' as $4;
-import 'visibility_moderation.pbenum.dart' as $11;
+import 'media.pb.dart' as $0;
+import 'permissions.pbenum.dart' as $3;
+import 'users.pb.dart' as $1;
+import 'visibility_moderation.pbenum.dart' as $4;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
 
@@ -32,19 +32,19 @@ class Group extends $pb.GeneratedMessage {
     $core.String? name,
     $core.String? shortname,
     $core.String? description,
-    $5.MediaReference? avatar,
-    $core.Iterable<$12.Permission>? defaultMembershipPermissions,
-    $11.Moderation? defaultMembershipModeration,
-    $11.Moderation? defaultPostModeration,
-    $11.Moderation? defaultEventModeration,
-    $11.Visibility? visibility,
+    $0.MediaReference? avatar,
+    $core.Iterable<$3.Permission>? defaultMembershipPermissions,
+    $4.Moderation? defaultMembershipModeration,
+    $4.Moderation? defaultPostModeration,
+    $4.Moderation? defaultEventModeration,
+    $4.Visibility? visibility,
     $core.int? memberCount,
     $core.int? postCount,
     $core.int? eventCount,
-    $core.Iterable<$12.Permission>? nonMemberPermissions,
-    $4.Membership? currentUserMembership,
-    $9.Timestamp? createdAt,
-    $9.Timestamp? updatedAt,
+    $core.Iterable<$3.Permission>? nonMemberPermissions,
+    $1.Membership? currentUserMembership,
+    $2.Timestamp? createdAt,
+    $2.Timestamp? updatedAt,
   }) {
     final result = create();
     if (id != null) result.id = id;
@@ -77,19 +77,19 @@ class Group extends $pb.GeneratedMessage {
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'shortname')
     ..aOS(4, _omitFieldNames ? '' : 'description')
-    ..aOM<$5.MediaReference>(5, _omitFieldNames ? '' : 'avatar', subBuilder: $5.MediaReference.create)
-    ..pc<$12.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
-    ..e<$11.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
-    ..e<$11.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $11.Visibility.VISIBILITY_UNKNOWN, valueOf: $11.Visibility.valueOf, enumValues: $11.Visibility.values)
+    ..aOM<$0.MediaReference>(5, _omitFieldNames ? '' : 'avatar', subBuilder: $0.MediaReference.create)
+    ..pc<$3.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $3.Permission.valueOf, enumValues: $3.Permission.values, defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
+    ..e<$4.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
+    ..e<$4.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
+    ..e<$4.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
+    ..e<$4.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $4.Visibility.VISIBILITY_UNKNOWN, valueOf: $4.Visibility.valueOf, enumValues: $4.Visibility.values)
     ..a<$core.int>(11, _omitFieldNames ? '' : 'memberCount', $pb.PbFieldType.OU3)
     ..a<$core.int>(12, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU3)
     ..a<$core.int>(13, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU3)
-    ..pc<$12.Permission>(18, _omitFieldNames ? '' : 'nonMemberPermissions', $pb.PbFieldType.KE, valueOf: $12.Permission.valueOf, enumValues: $12.Permission.values, defaultEnumValue: $12.Permission.PERMISSION_UNKNOWN)
-    ..aOM<$4.Membership>(19, _omitFieldNames ? '' : 'currentUserMembership', subBuilder: $4.Membership.create)
-    ..aOM<$9.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $9.Timestamp.create)
-    ..aOM<$9.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $9.Timestamp.create)
+    ..pc<$3.Permission>(18, _omitFieldNames ? '' : 'nonMemberPermissions', $pb.PbFieldType.KE, valueOf: $3.Permission.valueOf, enumValues: $3.Permission.values, defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
+    ..aOM<$1.Membership>(19, _omitFieldNames ? '' : 'currentUserMembership', subBuilder: $1.Membership.create)
+    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $2.Timestamp.create)
     ..hasRequiredFields = false
   ;
 
@@ -152,26 +152,26 @@ class Group extends $pb.GeneratedMessage {
 
   /// An avatar for the group.
   @$pb.TagNumber(5)
-  $5.MediaReference get avatar => $_getN(4);
+  $0.MediaReference get avatar => $_getN(4);
   @$pb.TagNumber(5)
-  set avatar($5.MediaReference value) => $_setField(5, value);
+  set avatar($0.MediaReference value) => $_setField(5, value);
   @$pb.TagNumber(5)
   $core.bool hasAvatar() => $_has(4);
   @$pb.TagNumber(5)
   void clearAvatar() => $_clearField(5);
   @$pb.TagNumber(5)
-  $5.MediaReference ensureAvatar() => $_ensure(4);
+  $0.MediaReference ensureAvatar() => $_ensure(4);
 
   /// The default permissions for new members of the group.
   @$pb.TagNumber(6)
-  $pb.PbList<$12.Permission> get defaultMembershipPermissions => $_getList(5);
+  $pb.PbList<$3.Permission> get defaultMembershipPermissions => $_getList(5);
 
   /// The default moderation for new members of the group.
   /// Valid values are PENDING (requires a moderator to let you join) and UNMODERATED.
   @$pb.TagNumber(7)
-  $11.Moderation get defaultMembershipModeration => $_getN(6);
+  $4.Moderation get defaultMembershipModeration => $_getN(6);
   @$pb.TagNumber(7)
-  set defaultMembershipModeration($11.Moderation value) => $_setField(7, value);
+  set defaultMembershipModeration($4.Moderation value) => $_setField(7, value);
   @$pb.TagNumber(7)
   $core.bool hasDefaultMembershipModeration() => $_has(6);
   @$pb.TagNumber(7)
@@ -179,9 +179,9 @@ class Group extends $pb.GeneratedMessage {
 
   /// The default moderation for new posts in the group.
   @$pb.TagNumber(8)
-  $11.Moderation get defaultPostModeration => $_getN(7);
+  $4.Moderation get defaultPostModeration => $_getN(7);
   @$pb.TagNumber(8)
-  set defaultPostModeration($11.Moderation value) => $_setField(8, value);
+  set defaultPostModeration($4.Moderation value) => $_setField(8, value);
   @$pb.TagNumber(8)
   $core.bool hasDefaultPostModeration() => $_has(7);
   @$pb.TagNumber(8)
@@ -189,9 +189,9 @@ class Group extends $pb.GeneratedMessage {
 
   /// The default moderation for new events in the group.
   @$pb.TagNumber(9)
-  $11.Moderation get defaultEventModeration => $_getN(8);
+  $4.Moderation get defaultEventModeration => $_getN(8);
   @$pb.TagNumber(9)
-  set defaultEventModeration($11.Moderation value) => $_setField(9, value);
+  set defaultEventModeration($4.Moderation value) => $_setField(9, value);
   @$pb.TagNumber(9)
   $core.bool hasDefaultEventModeration() => $_has(8);
   @$pb.TagNumber(9)
@@ -200,9 +200,9 @@ class Group extends $pb.GeneratedMessage {
   /// LIMITED visibility groups are only visible to members. PRIVATE groups are only
   /// visibile to users with the ADMIN group permission.
   @$pb.TagNumber(10)
-  $11.Visibility get visibility => $_getN(9);
+  $4.Visibility get visibility => $_getN(9);
   @$pb.TagNumber(10)
-  set visibility($11.Visibility value) => $_setField(10, value);
+  set visibility($4.Visibility value) => $_setField(10, value);
   @$pb.TagNumber(10)
   $core.bool hasVisibility() => $_has(9);
   @$pb.TagNumber(10)
@@ -240,43 +240,43 @@ class Group extends $pb.GeneratedMessage {
 
   /// The permissions given to non-members of the group.
   @$pb.TagNumber(18)
-  $pb.PbList<$12.Permission> get nonMemberPermissions => $_getList(13);
+  $pb.PbList<$3.Permission> get nonMemberPermissions => $_getList(13);
 
   /// The membership for the current user, if any.
   @$pb.TagNumber(19)
-  $4.Membership get currentUserMembership => $_getN(14);
+  $1.Membership get currentUserMembership => $_getN(14);
   @$pb.TagNumber(19)
-  set currentUserMembership($4.Membership value) => $_setField(19, value);
+  set currentUserMembership($1.Membership value) => $_setField(19, value);
   @$pb.TagNumber(19)
   $core.bool hasCurrentUserMembership() => $_has(14);
   @$pb.TagNumber(19)
   void clearCurrentUserMembership() => $_clearField(19);
   @$pb.TagNumber(19)
-  $4.Membership ensureCurrentUserMembership() => $_ensure(14);
+  $1.Membership ensureCurrentUserMembership() => $_ensure(14);
 
   /// The time the group was created.
   @$pb.TagNumber(20)
-  $9.Timestamp get createdAt => $_getN(15);
+  $2.Timestamp get createdAt => $_getN(15);
   @$pb.TagNumber(20)
-  set createdAt($9.Timestamp value) => $_setField(20, value);
+  set createdAt($2.Timestamp value) => $_setField(20, value);
   @$pb.TagNumber(20)
   $core.bool hasCreatedAt() => $_has(15);
   @$pb.TagNumber(20)
   void clearCreatedAt() => $_clearField(20);
   @$pb.TagNumber(20)
-  $9.Timestamp ensureCreatedAt() => $_ensure(15);
+  $2.Timestamp ensureCreatedAt() => $_ensure(15);
 
   /// The time the group was last updated.
   @$pb.TagNumber(21)
-  $9.Timestamp get updatedAt => $_getN(16);
+  $2.Timestamp get updatedAt => $_getN(16);
   @$pb.TagNumber(21)
-  set updatedAt($9.Timestamp value) => $_setField(21, value);
+  set updatedAt($2.Timestamp value) => $_setField(21, value);
   @$pb.TagNumber(21)
   $core.bool hasUpdatedAt() => $_has(16);
   @$pb.TagNumber(21)
   void clearUpdatedAt() => $_clearField(21);
   @$pb.TagNumber(21)
-  $9.Timestamp ensureUpdatedAt() => $_ensure(16);
+  $2.Timestamp ensureUpdatedAt() => $_ensure(16);
 }
 
 /// Request to get a group or groups by name or ID.
@@ -438,8 +438,8 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
 /// Used when fetching group members using the `GetMembers` RPC.
 class Member extends $pb.GeneratedMessage {
   factory Member({
-    $4.User? user,
-    $4.Membership? membership,
+    $1.User? user,
+    $1.Membership? membership,
   }) {
     final result = create();
     if (user != null) result.user = user;
@@ -453,8 +453,8 @@ class Member extends $pb.GeneratedMessage {
   factory Member.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
 
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Member', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<$4.User>(1, _omitFieldNames ? '' : 'user', subBuilder: $4.User.create)
-    ..aOM<$4.Membership>(2, _omitFieldNames ? '' : 'membership', subBuilder: $4.Membership.create)
+    ..aOM<$1.User>(1, _omitFieldNames ? '' : 'user', subBuilder: $1.User.create)
+    ..aOM<$1.Membership>(2, _omitFieldNames ? '' : 'membership', subBuilder: $1.Membership.create)
     ..hasRequiredFields = false
   ;
 
@@ -477,27 +477,27 @@ class Member extends $pb.GeneratedMessage {
 
   /// The user.
   @$pb.TagNumber(1)
-  $4.User get user => $_getN(0);
+  $1.User get user => $_getN(0);
   @$pb.TagNumber(1)
-  set user($4.User value) => $_setField(1, value);
+  set user($1.User value) => $_setField(1, value);
   @$pb.TagNumber(1)
   $core.bool hasUser() => $_has(0);
   @$pb.TagNumber(1)
   void clearUser() => $_clearField(1);
   @$pb.TagNumber(1)
-  $4.User ensureUser() => $_ensure(0);
+  $1.User ensureUser() => $_ensure(0);
 
   /// The user's membership (or join request, or invitation, or both) in the group.
   @$pb.TagNumber(2)
-  $4.Membership get membership => $_getN(1);
+  $1.Membership get membership => $_getN(1);
   @$pb.TagNumber(2)
-  set membership($4.Membership value) => $_setField(2, value);
+  set membership($1.Membership value) => $_setField(2, value);
   @$pb.TagNumber(2)
   $core.bool hasMembership() => $_has(1);
   @$pb.TagNumber(2)
   void clearMembership() => $_clearField(2);
   @$pb.TagNumber(2)
-  $4.Membership ensureMembership() => $_ensure(1);
+  $1.Membership ensureMembership() => $_ensure(1);
 }
 
 /// Request to get members of a group.
@@ -505,7 +505,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   factory GetMembersRequest({
     $core.String? groupId,
     $core.String? username,
-    $11.Moderation? groupModeration,
+    $4.Moderation? groupModeration,
     $core.int? page,
   }) {
     final result = create();
@@ -524,7 +524,7 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..e<$11.Moderation>(3, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $11.Moderation.MODERATION_UNKNOWN, valueOf: $11.Moderation.valueOf, enumValues: $11.Moderation.values)
+    ..e<$4.Moderation>(3, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
     ..a<$core.int>(10, _omitFieldNames ? '' : 'page', $pb.PbFieldType.O3)
     ..hasRequiredFields = false
   ;
@@ -569,9 +569,9 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   /// The membership status to filter members by.
   /// If not specified, all members are returned.
   @$pb.TagNumber(3)
-  $11.Moderation get groupModeration => $_getN(2);
+  $4.Moderation get groupModeration => $_getN(2);
   @$pb.TagNumber(3)
-  set groupModeration($11.Moderation value) => $_setField(3, value);
+  set groupModeration($4.Moderation value) => $_setField(3, value);
   @$pb.TagNumber(3)
   $core.bool hasGroupModeration() => $_has(2);
   @$pb.TagNumber(3)
