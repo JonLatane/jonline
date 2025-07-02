@@ -152,10 +152,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   const isVisible = useIsVisible(ref);
 
   const postHasWebLink = useMemo(() => !!post.link && post.link.startsWith('http'), [post.link]);
-  
-  const postLink = useMemo(() => postHasWebLink ? useLink({
-    href: post.link!,
-  }) : undefined, [postHasWebLink, post.link, useLink]);
+
+  const webLink = useLink({
+    href: post.link ?? '',
+  });
+  const postLink = postHasWebLink ? webLink : undefined;
 
   const postLinkView = useMemo(() => postHasWebLink
     ? <Anchor key='post-link' textDecorationLine='none' {...postLink} target="_blank">
@@ -175,25 +176,25 @@ export const PostCard: React.FC<PostCardProps> = ({
   const detailsLinkId = useMemo(() => !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
     : post.id, [isPrimaryServer, post.id, accountOrServer.server]);
-  
+
   const detailsGroupId = useMemo(() => selectedGroup
     ? (!isGroupPrimaryServer
       ? federateId(selectedGroup.shortname, accountOrServer.server)
       : selectedGroup.shortname)
     : undefined, [selectedGroup, isGroupPrimaryServer, accountOrServer.server]);
-  
+
   const onPressDetails = useMemo(() => onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
     : undefined, [onPress]);
-  
-  const detailsPostLink = useMemo(() => useLink?.({
+
+  const detailsPostLink = useLink({
     href: selectedGroup
       ? `/g/${detailsGroupId || 'missing-id'}/p/${detailsLinkId || 'missing-id'}`
       : `/post/${detailsLinkId || 'missing-id'}`,
-  }) ?? {}, [useLink, selectedGroup, detailsGroupId, detailsLinkId]);
-  
+  }) ?? {};
+
   const detailsLink = useMemo(() => onPressDetails ?? detailsPostLink, [onPressDetails, detailsPostLink]);
-  const showDetailsShadow = useMemo(() => isPreview && post.content && post.content.length > 700, [isPreview, post.content]);
+  const showDetailsShadow = useMemo(() => !!isPreview && !!post.content && post.content.length > 700, [isPreview, post.content]);
 
   const detailsShadowProps = useMemo(() => showDetailsShadow ? {
     shadowOpacity: 0.3,
@@ -229,7 +230,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   }, [accountOrServer, loadingReplies, replyPostIdPath, post.replies.length, onLoadReplies, toggleCollapseReplies, dispatch]);
   const cannotToggleReplies = useMemo(() => !replyPostIdPath || post.replyCount == 0
     || (post.replies.length > 0 && !toggleCollapseReplies), [replyPostIdPath, post.replyCount, post.replies.length, toggleCollapseReplies]);
-  
+
   const collapsed = useMemo(() => collapseReplies || post.replies?.length == 0, [collapseReplies, post.replies?.length]);
 
   // const embedSupported = post.embedLink && post.link && post.link.length;

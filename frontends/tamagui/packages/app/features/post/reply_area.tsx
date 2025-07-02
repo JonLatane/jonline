@@ -77,9 +77,9 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
     });
   }, [accountOrServer, replyingToPath, replyText, media, chatUI, dispatch, toast]);
 
+  const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[0]!));
   const replyingToPost = useMemo(() => {
-    let pathIndex = 0;
-    const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
+    let pathIndex = 1;
     const targetPostId = replyingToPath[replyingToPath.length - 1];
     let targetPost = rootPost as Post | undefined;
     while (targetPost != null && targetPost?.id != targetPostId) {

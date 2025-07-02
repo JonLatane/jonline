@@ -56,11 +56,11 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
       ? federateId(groupContext.shortname, accountOrServer.server)
       : groupContext.shortname)
     : undefined, [groupContext, isGroupPrimaryServer, accountOrServer.server]);
-  const postDetailsLink = useMemo(() => useLink({
+  const postDetailsLink = useLink({
     href: groupContext
       ? `/g/${detailsGroupShortname}/p/${detailsLinkId}`
       : `/post/${detailsLinkId}`,
-  }), [groupContext, detailsGroupShortname, detailsLinkId, useLink]);
+  });
   const detailsLink: LinkProps = useMemo(() => parentDetailsLink ?? postDetailsLink, [parentDetailsLink, postDetailsLink]);
 
   const embedSupported = useMemo(() => post.embedLink && post.link && post.link.length, [post.embedLink, post.link]);
@@ -100,8 +100,8 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const singleMediaPreview = useMemo(() => showScrollableMediaPreviews
     ? undefined
     : post?.media?.find(m => !m.generated || renderGeneratedMedia), [showScrollableMediaPreviews, post?.media, renderGeneratedMedia]);
-  const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
-  const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
+  // const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
+  // const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
   // const isReply = post.replyToPostId != null;
   // const backgroundSize = postBackgroundSize(mediaQuery);
