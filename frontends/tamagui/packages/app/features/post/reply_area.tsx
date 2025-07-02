@@ -51,6 +51,8 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
     }
   }, [hasReplyTextFocused, showMedia]);
 
+  const toast = useToastController();
+
   const sendReply = useCallback(() => {
     setIsSendingReply(true);
 
