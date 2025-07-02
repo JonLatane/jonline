@@ -1,5 +1,5 @@
 import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById, updatePost, useServerTheme } from "app/store";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
@@ -136,7 +136,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         }));
 
     })
-  }, [savingEdits, accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable]);
+  }, [savingEdits, accountOrServer, post, editedContent, editedMedia, editedEmbedLink, editedVisibility, editedShareable, replyPostIdPath, dispatch]);
 
   const [deleted, setDeleted] = useState(post.author === undefined);
   const [deleting, setDeleting] = useState(false);
@@ -146,17 +146,19 @@ export const PostCard: React.FC<PostCardProps> = ({
       setDeleted(true);
       setDeleting(false);
     });
-  }, [accountOrServer, post]);
+  }, [accountOrServer, post, dispatch]);
 
   const ref = React.useRef(undefined as never) as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
 
-  const postHasWebLink = !!post.link && post.link.startsWith('http');
-  const postLink = postHasWebLink ? useLink({
-    href: post.link!,
-  }) : undefined;
+  const postHasWebLink = useMemo(() => !!post.link && post.link.startsWith('http'), [post.link]);
 
-  const postLinkView = postHasWebLink
+  const webLink = useLink({
+    href: post.link ?? '',
+  });
+  const postLink = postHasWebLink ? webLink : undefined;
+
+  const postLinkView = useMemo(() => postHasWebLink
     ? <Anchor key='post-link' textDecorationLine='none' {...postLink} target="_blank">
       <XStack>
         <YStack my='auto' mr='$1'>
@@ -169,32 +171,36 @@ export const PostCard: React.FC<PostCardProps> = ({
         </YStack>
       </XStack>
     </Anchor>
-    : undefined;
+    : undefined, [postHasWebLink, postLink, navAnchorColor, post.link]);
 
-  const detailsLinkId = !isPrimaryServer
+  const detailsLinkId = useMemo(() => !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
-    : post.id;
-  const detailsGroupId = selectedGroup
+    : post.id, [isPrimaryServer, post.id, accountOrServer.server]);
+
+  const detailsGroupId = useMemo(() => selectedGroup
     ? (!isGroupPrimaryServer
       ? federateId(selectedGroup.shortname, accountOrServer.server)
       : selectedGroup.shortname)
-    : undefined;
-  const onPressDetails = onPress
+    : undefined, [selectedGroup, isGroupPrimaryServer, accountOrServer.server]);
+
+  const onPressDetails = useMemo(() => onPress
     ? { onPress, accessibilityRole: "link" } as LinkProps
-    : undefined;
-  const detailsPostLink = useLink?.({
+    : undefined, [onPress]);
+
+  const detailsPostLink = useLink({
     href: selectedGroup
       ? `/g/${detailsGroupId || 'missing-id'}/p/${detailsLinkId || 'missing-id'}`
       : `/post/${detailsLinkId || 'missing-id'}`,
   }) ?? {};
-  const detailsLink = onPressDetails ?? detailsPostLink;
-  const showDetailsShadow = isPreview && post.content && post.content.length > 700;
 
-  const detailsShadowProps = showDetailsShadow ? {
+  const detailsLink = useMemo(() => onPressDetails ?? detailsPostLink, [onPressDetails, detailsPostLink]);
+  const showDetailsShadow = useMemo(() => !!isPreview && !!post.content && post.content.length > 700, [isPreview, post.content]);
+
+  const detailsShadowProps = useMemo(() => showDetailsShadow ? {
     shadowOpacity: 0.3,
     shadowOffset: { width: -5, height: -5 },
     shadowRadius: 10
-  } : {};
+  } : {}, [showDetailsShadow]);
 
   const author = post.author;
   const isAuthor = author && author.userId === currentUser?.id;
@@ -221,10 +227,11 @@ export const PostCard: React.FC<PostCardProps> = ({
       }
     });
     // }, 1);
-  }, [accountOrServer, loadingReplies, replyPostIdPath]);
-  const cannotToggleReplies = !replyPostIdPath || post.replyCount == 0
-    || (post.replies.length > 0 && !toggleCollapseReplies);
-  const collapsed = collapseReplies || post.replies?.length == 0;
+  }, [accountOrServer, loadingReplies, replyPostIdPath, post.replies.length, onLoadReplies, toggleCollapseReplies, dispatch]);
+  const cannotToggleReplies = useMemo(() => !replyPostIdPath || post.replyCount == 0
+    || (post.replies.length > 0 && !toggleCollapseReplies), [replyPostIdPath, post.replyCount, post.replies.length, toggleCollapseReplies]);
+
+  const collapsed = useMemo(() => collapseReplies || post.replies?.length == 0, [collapseReplies, post.replies?.length]);
 
   // const embedSupported = post.embedLink && post.link && post.link.length;
   // let embedComponent: React.ReactNode | undefined = undefined;

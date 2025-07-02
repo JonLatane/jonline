@@ -459,9 +459,9 @@ export function UsernameDetailsScreen() {
                 showEvents
                   ? bigCalendar && allEvents.length > 0
                     ? [
-                      <div key='full-calendar'>
-                        <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
-                      </div>
+                      // <div key='full-calendar'>
+                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
+                      // </div>
                     ]
                     : [
                       <div key='upcoming-events-pagination'

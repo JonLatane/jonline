@@ -6,7 +6,7 @@ import { MediaRef, useAccountOrServerContext } from 'app/contexts'
 import { useAppDispatch, useCurrentAccountOrServer } from 'app/hooks'
 import { RootState, actionFailed, replyToPost, selectPostById, useRootSelector, useServerTheme } from 'app/store'
 import { themedButtonBackground } from 'app/utils'
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { TextInput } from 'react-native'
 import { AuthSheetButton } from '../accounts/auth_sheet_button'
 import { useHideNavigation } from '../navigation/use_hide_navigation'
@@ -38,19 +38,22 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
 
   const [replyTextFocused, _setReplyTextFocused] = useState(false);
   const [hasReplyTextFocused, setHasReplyTextFocused] = useState(false);
-  function setReplyTextFocused(focused: boolean) {
+  const setReplyTextFocused = useCallback((focused: boolean) => {
     _setReplyTextFocused(focused);
     if (focused && !hasReplyTextFocused) {
       setHasReplyTextFocused(true);
     }
-  }
+  }, [hasReplyTextFocused]);
+
   useEffect(() => {
     if (!hasReplyTextFocused && showMedia) {
       setShowMedia(false);
     }
-  }, [hasReplyTextFocused]);
+  }, [hasReplyTextFocused, showMedia]);
+
   const toast = useToastController();
-  function sendReply() {
+
+  const sendReply = useCallback(() => {
     setIsSendingReply(true);
 
     dispatch(replyToPost({
@@ -72,27 +75,26 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         // window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       }
     });
-  }
-  let pathIndex = 0;
-  const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[pathIndex++]!));
-  const targetPostId = replyingToPath[replyingToPath.length - 1];
-  let targetPost = rootPost as Post | undefined;
-  while (targetPost != null && targetPost?.id != targetPostId) {
-    const replyId = replyingToPath[pathIndex++];
-    targetPost = targetPost?.replies?.find(reply => reply.id == replyId);
-  }
-  const replyingToPost = targetPost;
-  // useEffect(() => {
-  //   if (previewReply && replyText == '') {
-  //     setPreviewReply(false);
-  //   }
-  // }, [previewReply, replyText]);
-  const canSend = replyText.length > 0 || media.length > 0;
-  const canComment = (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
-    || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS));
+  }, [accountOrServer, replyingToPath, replyText, media, chatUI, dispatch, toast]);
+
+  const rootPost = useRootSelector((state: RootState) => selectPostById(state.posts, replyingToPath[0]!));
+  const replyingToPost = useMemo(() => {
+    let pathIndex = 1;
+    const targetPostId = replyingToPath[replyingToPath.length - 1];
+    let targetPost = rootPost as Post | undefined;
+    while (targetPost != null && targetPost?.id != targetPostId) {
+      const replyId = replyingToPath[pathIndex++];
+      targetPost = targetPost?.replies?.find(reply => reply.id == replyId);
+    }
+    return targetPost;
+  }, [replyingToPath]);
+
+  const canSend = useMemo(() => replyText.length > 0 || media.length > 0, [replyText.length, media.length]);
+  const canComment = useMemo(() => (accountOrServer.account?.user?.permissions?.includes(Permission.REPLY_TO_POSTS)
+    || accountOrServer.account?.user?.permissions?.includes(Permission.CREATE_POSTS)), [accountOrServer.account?.user?.permissions]);
 
   const hideNavigation = useHideNavigation();
-  const hide = hidden || hideNavigation;
+  const hide = useMemo(() => hidden || hideNavigation, [hidden, hideNavigation]);
   return hide ? <></> : isWeb ? canComment
     ? <YStack w='100%' px='$2' paddingVertical='$2' alignContent='center'>
       {hasReplyTextFocused || media.length > 0
