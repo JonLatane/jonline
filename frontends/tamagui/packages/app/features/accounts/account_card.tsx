@@ -5,7 +5,7 @@ import { Selector, colorMeta, useAppSelector, useCredentialDispatch, useCurrentA
 import { useRequestResult } from "app/hooks/use_request_result";
 import { JonlineAccount, RootState, accountID, actionSucceeded, getCredentialClient, login, moveAccountDown, moveAccountUp, pinAccount, removeAccount, selectAccount, selectServer, serverID, store, unpinAccount, useRootSelector, useServerTheme } from "app/store";
 import { hasAdminPermission, hasPermission } from 'app/utils';
-import React, { useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { TextInput } from "react-native";
 import { useLink } from "solito/link";
 import { ServerNameAndLogo } from "../navigation/server_name_and_logo";
@@ -127,7 +127,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
 
   const { allowServerSelection } = useLocalConfiguration();
 
-  function doSelectAccount() {
+  const doSelectAccount = useCallback(() => {
     requestAnimationFrame(() => {
       if (account.needsReauthentication) {
         // onReauthenticate(account);
@@ -152,17 +152,19 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         dispatch(selectAccount(account));
       }
     });
-  }
+  }, [account, isCurrentServer, pinned, allowServerSelection, currentServer?.host, dispatch]);
 
-  function doLogout() {
+  const doLogout = useCallback(() => {
     requestAnimationFrame(() => dispatch(selectAccount(undefined)));
-  }
-  function moveUp() {
+  }, [dispatch]);
+
+  const moveUp = useCallback(() => {
     requestAnimationFrame(() => dispatch(moveAccountUp(accountID(account)!)));
-  }
-  function moveDown() {
+  }, [account, dispatch]);
+
+  const moveDown = useCallback(() => {
     requestAnimationFrame(() => dispatch(moveAccountDown(accountID(account)!)));
-  }
+  }, [account, dispatch]);
   const accountIds = useAppSelector(selectAccountIds());
   const canMoveUp = accountIds.indexOf(accountID(account)!) > 0;
   const canMoveDown = accountIds.indexOf(accountID(account)!) < accountIds.length - 1;
@@ -180,9 +182,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
       </YStack>
       <Heading mx='$2' size='$7' color={selected ? navTextColor : undefined}>/</Heading>
     </>
-  function reauth() {
+  const reauth = useCallback(() => {
     getCredentialClient({ account, server: account.server });
-  }
+  }, [account]);
   const [deleting, setDeleting] = useState(false);
   return <>
     <Card theme="dark" size="$4" bordered

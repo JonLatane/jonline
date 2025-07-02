@@ -38,6 +38,23 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   const [interactionType] = usePostInteractionType();
   const conversationContext = useConversationContext()!;
   const commentList = useConversationCommentList({ post, disableScrollPreserver, forStarredPost, conversationContext });
+  
+  const handleDiscussionUIPress = useCallback(() => {
+    dispatch(setDiscussionChatUI(false));
+  }, [dispatch]);
+  
+  const handleChatUIPress = useCallback(() => {
+    dispatch(setDiscussionChatUI(true));
+  }, [dispatch]);
+  
+  const handleScrollToBottomPress = useCallback(() => {
+    if (chatUI) {
+      scrollToCommentsBottom(post ? federatedId(post) : undefined);
+    } else {
+      dispatch(setDiscussionChatUI(true))
+    }
+  }, [chatUI, post, dispatch]);
+  
   return <YStack w='100%' key='comments'>
     <AutoAnimatedList>
       {interactionType === 'post'
@@ -48,7 +65,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
               <Button backgroundColor={chatUI ? undefined : navColor}
                 hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
                 transparent={chatUI}
-                onPress={() => dispatch(setDiscussionChatUI(false))} mr='$2'>
+                onPress={handleDiscussionUIPress} mr='$2'>
                 <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
               </Button>
             </Tooltip.Trigger>
@@ -64,7 +81,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
                 hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
                 transparent={!chatUI}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
-                onPress={() => dispatch(setDiscussionChatUI(true))}>
+                onPress={handleChatUIPress}>
                 <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
               </Button>
             </Tooltip.Trigger>
@@ -78,13 +95,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
               <Button transparent={!chatUI} icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
-                onPress={() => {
-                  if (chatUI) {
-                    scrollToCommentsBottom(post ? federatedId(post) : undefined);
-                  } else {
-                    dispatch(setDiscussionChatUI(true))
-                  }
-                }} />
+                onPress={handleScrollToBottomPress} />
             </Tooltip.Trigger>
             <Tooltip.Content>
               <Heading size='$2'>Go to newest.</Heading>

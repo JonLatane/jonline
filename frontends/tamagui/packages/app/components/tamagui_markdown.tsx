@@ -26,6 +26,8 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false,
     }
   ) : text, [cleanContent, text]);
 
+  const remarkPlugins = useMemo(() => [remarkGfm], []);
+
   const components: Components = useMemo(() => ({
     // li: ({ node, ordered, ...props }) => <li }} {...props} />,
     h1: ({ children, id }) => <Heading size={shrink ? '$6' : '$9'} {...{ children, id }} />,
@@ -89,8 +91,7 @@ export const TamaguiMarkdown = ({ text = '', disableLinks, cleanContent = false,
 
   return <YStack gap={shrink ? '$1' : '$2'} className={disableLinks ? 'tamagui-markdown disable-links' : 'tamagui-markdown'}>
     <ReactMarkdown
-
-      remarkPlugins={[remarkGfm]}
+      remarkPlugins={remarkPlugins}
       components={components}>
       {cleanedText}
     </ReactMarkdown>

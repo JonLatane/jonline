@@ -301,63 +301,62 @@ export const EventCard: React.FC<Props> = ({
     shadowRadius: 10
   } : {};
   const embedSupported = eventPost.embedLink && eventPost.link && eventPost.link.length;
-  let embedComponent: React.ReactNode | undefined = undefined;
-  if (embedSupported) {
-    const url = new URL(eventPost.link!);
-    const hostname = url.hostname.split(':')[0]!;
-    if (hostname.endsWith('twitter.com')) {
-      embedComponent = <TwitterEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('instagram.com')) {
-      embedComponent = <InstagramEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('facebook.com')) {
-      embedComponent = <FacebookEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('youtube.com')) {
-      embedComponent = <YouTubeEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('tiktok.com')) {
-      embedComponent = <TikTokEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('pinterest.com')) {
-      embedComponent = <PinterestEmbed url={eventPost.link!} />;
-    } else if (hostname.endsWith('linkedin.com')) {
-      embedComponent = <LinkedInEmbed url={eventPost.link!} />;
+  const embedComponent = useMemo(() => {
+    if (embedSupported) {
+      const url = new URL(eventPost.link!);
+      const hostname = url.hostname.split(':')[0]!;
+      if (hostname.endsWith('twitter.com')) {
+        return <TwitterEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('instagram.com')) {
+        return <InstagramEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('facebook.com')) {
+        return <FacebookEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('youtube.com')) {
+        return <YouTubeEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('tiktok.com')) {
+        return <TikTokEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('pinterest.com')) {
+        return <PinterestEmbed url={eventPost.link!} />;
+      } else if (hostname.endsWith('linkedin.com')) {
+        return <LinkedInEmbed url={eventPost.link!} />;
+      }
     }
-  }
+    return undefined;
+  }, [embedSupported, eventPost.link]);
 
-  const imagePreview = media?.find(m => m.contentType.startsWith('image'));
-  // const scrollableMediaMinCount = isPreview && hasSingleImagePreview ? 3 : 2;
-  const showScrollableMediaPreviews = (media?.filter(m => !m.generated).length ?? 0) >= 2;
+  const imagePreview = useMemo(() => media?.find(m => m.contentType.startsWith('image')), [media]);
+  const showScrollableMediaPreviews = useMemo(() => (media?.filter(m => !m.generated).length ?? 0) >= 2, [media]);
   const previewUrl = useMediaUrl(imagePreview?.id, accountOrServer);
 
-  const showBackgroundPreview = !!imagePreview;;// && hasBeenVisible;
-  //  && isPreview
-  ;// hasBeenVisible && isPreview && hasPrimaryImage && previewUrl;
+  const showBackgroundPreview = useMemo(() => !!imagePreview, [imagePreview]);
 
   const componentKey = useComponentKey('event-card');
-  const recommendedHorizontalSize = (mediaQuery.gtSm ? 400 : 310);
-  const backgroundSize = document.getElementById(componentKey)?.clientWidth ?? (
+  const recommendedHorizontalSize = useMemo(() => (mediaQuery.gtSm ? 400 : 310), [mediaQuery.gtSm]);
+  const backgroundSize = useMemo(() => document.getElementById(componentKey)?.clientWidth ?? (
     isPreview && horizontal
       ? recommendedHorizontalSize
       : postBackgroundSize(mediaQuery)
-  );
-  const foregroundSize = backgroundSize * 0.7;
+  ), [componentKey, isPreview, horizontal, recommendedHorizontalSize, mediaQuery]);
+  const foregroundSize = useMemo(() => backgroundSize * 0.7, [backgroundSize]);
 
-  const author = eventPost.author;
-  const isAuthor = author && author.userId === currentUser?.id;
-  const showEdit = !!isAuthor && !isPreview && !hideEditControls;
+  const author = useMemo(() => eventPost.author, [eventPost.author]);
+  const isAuthor = useMemo(() => author && author.userId === currentUser?.id, [author, currentUser?.id]);
+  const showEdit = useMemo(() => !!isAuthor && !isPreview && !hideEditControls, [isAuthor, isPreview, hideEditControls]);
 
   const [scrollInstancesVertically, setScrollInstancesVertically] = useState(false);
   const [showPastInstances, setShowPastInstances] = useState(false);
-  const selectedInstanceIsPast = selectedInstance && moment(selectedInstance.startsAt).isBefore(moment());
+  const selectedInstanceIsPast = useMemo(() => selectedInstance && moment(selectedInstance.startsAt).isBefore(moment()), [selectedInstance]);
   useEffect(() => {
     if (!showPastInstances && selectedInstanceIsPast) {
       setShowPastInstances(true);
     }
-  }, [selectedInstance])
+  }, [selectedInstanceIsPast, showPastInstances])
 
-  const canEasilySeeInstances = (instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2;
-  const canEasilySeeAllPastInstances = canEasilySeeInstances(instances);
-  const filteredInstances = showPastInstances
+  const canEasilySeeInstances = useCallback((instances: EventInstance[]) => mediaQuery.gtXxs ? instances.length <= 3 : instances.length <= 2, [mediaQuery.gtXxs]);
+  const canEasilySeeAllPastInstances = useMemo(() => canEasilySeeInstances(instances), [canEasilySeeInstances, instances]);
+  const filteredInstances = useMemo(() => showPastInstances
     ? instances
-    : instances.filter(isNotPastInstance);
+    : instances.filter(isNotPastInstance), [showPastInstances, instances]);
   const sortedFilteredInstances = [...filteredInstances].sort(instanceTimeSort);
   const canEasilySeeAllInstances = canEasilySeeInstances(sortedFilteredInstances);
   const displayedInstances = canEasilySeeAllPastInstances

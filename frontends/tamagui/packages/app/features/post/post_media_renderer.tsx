@@ -43,27 +43,27 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
   const { primaryColor, navColor } = useServerTheme(accountOrServer.server);
 
   const currentServer = useCurrentServer();
-  const isPrimaryServer = !!currentServer &&
-    currentServer?.host === accountOrServer.server?.host;
-  const isGroupPrimaryServer = !!currentServer &&
-    currentServer?.host === groupContext?.serverHost;
+  const isPrimaryServer = useMemo(() => !!currentServer &&
+    currentServer?.host === accountOrServer.server?.host, [currentServer, accountOrServer.server?.host]);
+  const isGroupPrimaryServer = useMemo(() => !!currentServer &&
+    currentServer?.host === groupContext?.serverHost, [currentServer, groupContext?.serverHost]);
 
-  const detailsLinkId = !isPrimaryServer
+  const detailsLinkId = useMemo(() => !isPrimaryServer
     ? federateId(post.id, accountOrServer.server)
-    : post.id;
-  const detailsGroupShortname = groupContext
+    : post.id, [isPrimaryServer, post.id, accountOrServer.server]);
+  const detailsGroupShortname = useMemo(() => groupContext
     ? (!isGroupPrimaryServer
       ? federateId(groupContext.shortname, accountOrServer.server)
       : groupContext.shortname)
-    : undefined;
-  const postDetailsLink = useLink({
+    : undefined, [groupContext, isGroupPrimaryServer, accountOrServer.server]);
+  const postDetailsLink = useMemo(() => useLink({
     href: groupContext
       ? `/g/${detailsGroupShortname}/p/${detailsLinkId}`
       : `/post/${detailsLinkId}`,
-  });
-  const detailsLink: LinkProps = parentDetailsLink ?? postDetailsLink;
+  }), [groupContext, detailsGroupShortname, detailsLinkId, useLink]);
+  const detailsLink: LinkProps = useMemo(() => parentDetailsLink ?? postDetailsLink, [parentDetailsLink, postDetailsLink]);
 
-  const embedSupported = post.embedLink && post.link && post.link.length;
+  const embedSupported = useMemo(() => post.embedLink && post.link && post.link.length, [post.embedLink, post.link]);
   const embedComponent = useMemo(() => {
     let embed: React.ReactNode | undefined = undefined;
     if (embedSupported) {
@@ -92,14 +92,14 @@ export const PostMediaRenderer: React.FC<PostMediaRendererProps> = ({
     return embed;
   }, [embedSupported, post.link]);
 
-  const generatedPreview = post?.media?.find(m => m.contentType.startsWith('image') && m.generated);
-  const hasGeneratedPreview = generatedPreview && post?.media?.length == 1 && !embedComponent;
+  const generatedPreview = useMemo(() => post?.media?.find(m => m.contentType.startsWith('image') && m.generated), [post?.media]);
+  const hasGeneratedPreview = useMemo(() => generatedPreview && post?.media?.length == 1 && !embedComponent, [generatedPreview, post?.media?.length, embedComponent]);
 
-  const scrollableMediaMinCount = isPreview && hasGeneratedPreview ? 3 : 2;
-  const showScrollableMediaPreviews = (post?.media?.length ?? 0) >= scrollableMediaMinCount;
-  const singleMediaPreview = showScrollableMediaPreviews
+  const scrollableMediaMinCount = useMemo(() => isPreview && hasGeneratedPreview ? 3 : 2, [isPreview, hasGeneratedPreview]);
+  const showScrollableMediaPreviews = useMemo(() => (post?.media?.length ?? 0) >= scrollableMediaMinCount, [post?.media?.length, scrollableMediaMinCount]);
+  const singleMediaPreview = useMemo(() => showScrollableMediaPreviews
     ? undefined
-    : post?.media?.find(m => !m.generated || renderGeneratedMedia);//m.contentType.startsWith('image') /*&& (!m.generated || !isPreview)*/);
+    : post?.media?.find(m => !m.generated || renderGeneratedMedia), [showScrollableMediaPreviews, post?.media, renderGeneratedMedia]);
   const singleMediaPreviewUrl = useMediaUrl(singleMediaPreview?.id);
   const backgroundImageUrl = useMediaUrl(hasGeneratedPreview ? generatedPreview?.id : undefined);
 
