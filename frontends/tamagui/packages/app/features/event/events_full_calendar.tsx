@@ -297,7 +297,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         <Text fontFamily='$body' color='black' width='100%'
           pointerEvents={isEmpty ? 'none' : undefined}
           opacity={isEmpty ? 0.4 : 1}>
-          <div
+          <YStack
             style={{
               display: 'block',
               // width: width ?? bigCalWidth,//- 10,
@@ -436,7 +436,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 />
               </YStack>}
 
-          </div>
+          </YStack>
         </Text>
       </YStack>
     </YStack>
