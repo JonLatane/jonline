@@ -10,6 +10,9 @@ use crate::protos::*;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
 
+pub const LIFETIME_DAYS: u64 = 14;
+pub const RENEWAL_PERIOD_DAYS: u64 = 13;
+
 /// Generate a secure random token of the given length.
 #[macro_export]
 macro_rules! generate_token {
@@ -34,8 +37,8 @@ pub fn generate_refresh_and_access_token(
     let refresh_token = generate_token!(512);
 
     let requested_expiration: Option<SystemTime> = expires_at
-        .as_ref()
-        .map(|x| x.clone())
+        // .as_ref()
+        // .map(|x| x.clone())
         .map(SystemTime::try_from)
         .map(|x| x.ok())
         .flatten();

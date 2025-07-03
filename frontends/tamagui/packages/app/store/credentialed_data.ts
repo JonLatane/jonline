@@ -35,7 +35,7 @@ export async function getCredentialClient(accountOrServer: AccountOrServer, args
         while (!accessTokenResult && retries < maxAttempts) {
           retries++;
           accessTokenResult = await client
-            .accessToken({ refreshToken: account.refreshToken!.token })
+            .accessToken({ refreshToken: account.refreshToken.token })
             .then((result) => {
               updatedAccount = {
                 ...account,
