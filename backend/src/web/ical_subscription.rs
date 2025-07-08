@@ -98,3 +98,70 @@ async fn ical_subscription(user_id: Option<String>, state: &State<RocketState>, 
     
     CacheResponse::NoStore(ICalResponse(ical_content))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::protos::{EventInstance, Post};
+    use prost_wkt_types::Timestamp;
+    
+    #[test]
+    fn test_ical_calendar_generation() {
+        // Test that the iCal generation logic works with sample data
+        let mut calendar = Calendar::new();
+        calendar.name("Test Events Calendar");
+        calendar.description("Test Events from Jonline");
+
+        // Create a test event instance
+        let starts_at = Timestamp { seconds: 1700000000, nanos: 0 };
+        let ends_at = Timestamp { seconds: 1700003600, nanos: 0 }; // 1 hour later
+        
+        let event_post = Post {
+            title: Some("Test Event".to_string()),
+            content: Some("This is a test event description".to_string()),
+            ..Default::default()
+        };
+        
+        let instance = EventInstance {
+            id: "test_instance_id".to_string(),
+            starts_at: Some(starts_at.clone()),
+            ends_at: Some(ends_at.clone()),
+            ..Default::default()
+        };
+        
+        // Convert timestamps
+        let starts_at_utc = DateTime::<Utc>::from(starts_at.to_db());
+        let ends_at_utc = DateTime::<Utc>::from(ends_at.to_db());
+        
+        // Create event link
+        let event_link = format!("https://example.com/event/{}", instance.id);
+        let description = format!("{}\n\nvia: {}", 
+            event_post.content.as_deref().unwrap_or(""),
+            event_link
+        );
+        
+        // Create iCal event
+        let mut ical_event = Event::new();
+        ical_event
+            .summary(event_post.title.as_deref().unwrap_or("Untitled Event"))
+            .description(&description)
+            .url(&event_link)
+            .starts(starts_at_utc)
+            .ends(ends_at_utc);
+        
+        calendar.push(ical_event);
+        
+        // Generate iCal content
+        let ical_content = calendar.to_string();
+        
+        // Basic assertions
+        assert!(ical_content.contains("BEGIN:VCALENDAR"));
+        assert!(ical_content.contains("END:VCALENDAR"));
+        assert!(ical_content.contains("BEGIN:VEVENT"));
+        assert!(ical_content.contains("END:VEVENT"));
+        assert!(ical_content.contains("SUMMARY:Test Event"));
+        assert!(ical_content.contains("via: https://example.com/event/test_instance_id"));
+        
+        println!("Generated iCal content:\n{}", ical_content);
+    }
+}
