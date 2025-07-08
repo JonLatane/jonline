@@ -2,11 +2,11 @@ use super::RocketState;
 use crate::rpcs::{get_server_configuration_proto, get_events};
 use crate::protos::GetEventsRequest;
 use crate::web::external_cdn::configured_frontend_domain;
-use crate::marshaling::time_marshaling::ToDbTime;
+use crate::marshaling::ToDbTime;
 use rocket::{routes, Route, State};
 use rocket::http::uri::Host;
 use rocket_cache_response::CacheResponse;
-use icalendar::{Calendar, Component, Event};
+use icalendar::{Calendar, Component, Event, EventLike};
 use chrono::{DateTime, Utc};
 
 lazy_static! {
@@ -86,9 +86,7 @@ async fn ical_subscription(user_id: Option<String>, state: &State<RocketState>, 
 
             // Add location if available
             if let Some(location) = &instance.location {
-                if let Some(address) = &location.uniformly_formatted_address {
-                    ical_event.location(address);
-                }
+                ical_event.location(&location.uniformly_formatted_address);
             }
 
             calendar.push(ical_event);
