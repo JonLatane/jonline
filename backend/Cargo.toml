@@ -86,6 +86,7 @@ rand = "0.8.5"
 http = "1.1.0"
 base64 = "0.22.1"
 web-push = "0.10.2"
+icalendar = "0.16.7"
 
 [build-dependencies]
 tonic-build = "0.12.2"
