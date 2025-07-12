@@ -174,7 +174,7 @@ export function UsernameDetailsScreen() {
   // console.log("UsernameDetailsScreen userEventIds.length", userEventIds?.length, "userEventData.length", userEventData?.length);
 
   const [pageLoadTime] = useState<string>(moment(Date.now()).toISOString(true));
-  const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+  const endsAfter = moment(pageLoadTime).subtract(3, "month").toISOString(true);
   const timeFilter: TimeFilter = { endsAfter: endsAfter ? toProtoISOString(endsAfter) : undefined };
 
   useEffect(() => {
@@ -189,9 +189,11 @@ export function UsernameDetailsScreen() {
   const allEvents = bigCalendar
     ? eventResults
     : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
-  const bigCalendarScrollToTime = useMemo(() =>
-    allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
-    , [allEvents])
+
+  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${userId}` });
+  // const bigCalendarScrollToTime = useMemo(() =>
+  //   allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
+  //   , [allEvents])
   const eventPagination = usePaginatedRendering(allEvents, 7, {
     pageParamHook: useEventPageParam,
   });
@@ -250,7 +252,7 @@ export function UsernameDetailsScreen() {
     if (user && userPostData && showScrollPreserver) {
       dismissScrollPreserver(setShowScrollPreserver);
     }
-  }, [user, userPostData, showScrollPreserver])
+  }, [user, userPostData, showScrollPreserver]);
   const windowHeight = useWindowDimensions().height;
   const [saving, setSaving] = useState(false);
   const toast = useToastController()
@@ -446,11 +448,11 @@ export function UsernameDetailsScreen() {
                       // ? 0 : 1}
                       />
                     </XStack>
+                    <XStack f={1} mr='auto' />
+
+                    <Button {...calendarSubcriptionLink}>Subscribe</Button>
                     {isCurrentUser
-                      ? <>
-                        <XStack f={1} mr='auto' />
-                        <DynamicCreateButton showPosts showEvents hideIfUnusable />
-                      </>
+                      ? <DynamicCreateButton showPosts showEvents hideIfUnusable />
                       : undefined}
 
                     {/* <Heading size='$4' ta='center' >Upcoming Events</Heading> */}
@@ -460,7 +462,7 @@ export function UsernameDetailsScreen() {
                   ? bigCalendar && allEvents.length > 0
                     ? [
                       // <div key='full-calendar'>
-                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
+                      <EventsFullCalendar key='full-calendar' events={allEvents} weeklyOnly />//scrollToTime={allEvents[0]?.instances[0]?.startsAt} />
                       // </div>
                     ]
                     : [
