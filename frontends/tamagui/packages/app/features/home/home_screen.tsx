@@ -1,6 +1,6 @@
 import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
 import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
-import { Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
+import { CalendarArrowDown, Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
 import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePostPageParam, usePostPages } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
@@ -130,6 +130,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
   const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
+  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics` });
   return (
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
@@ -151,15 +152,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
       // typeName={null}
       >
         {/* <div key='latest-events-header' style={{ width: '100%' }}> */}
-        <XStack key='latest-events-header' w='100%' pt={0}
+        <XStack key='latest-events-header' w='100%' pt={0} gap='$2'
           // px={mediaQuery.gtXxs ? '$3' : 0}
           px='$2'
           ai='center'
         // flexDirection='row-reverse'
         >
 
-          <Button mr='auto' onPress={() => requestAnimationFrame(() => setShowEvents(!showEvents))}
-          >
+          <Button key='upcoming-events-button' onPress={() => requestAnimationFrame(() => setShowEvents(!showEvents))}>
             <YStack ai='center'>
               <Heading size='$1' lh='$1'>Upcoming</Heading>
               <Heading size='$3' lh='$1'>Events</Heading>
@@ -168,8 +168,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               <ChevronRight />
             </XStack>
           </Button>
-          <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
-            <Button onPress={() => requestAnimationFrame(() => setBigCalendar(!bigCalendar))} ml='$2'
+          <XStack key='big-calendar-toggle' f={1} gap='$2'
+            animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+            <Button onPress={() => requestAnimationFrame(() => setBigCalendar(!bigCalendar))}
               icon={CalendarIcon}
               transparent
               {...themedButtonBackground(
@@ -178,12 +179,14 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               disabled={!showEvents || !allEvents.length}
 
             />
+            <XStack f={1} />
+            <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} />
           </XStack>
 
-          <div style={{ flex: 1 }} />
-          <div key='create' style={{ marginTop: 5, marginBottom: 5, marginLeft: 'auto' }}>
+          {/* <XStack key='spacer' f={1} /> */}
+          <XStack key='create' my={5} ml='auto'>
             <DynamicCreateButton showPosts showEvents />
-          </div>
+          </XStack>
         </XStack>
         {/* </div> */}
         {showEvents

@@ -1,6 +1,6 @@
 import { Moderation, Permission, PostContext, TimeFilter, Visibility } from '@jonline/api';
 import { AnimatePresence, Button, Dialog, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, Theme, Tooltip, XStack, YStack, ZStack, dismissScrollPreserver, isClient, needsScrollPreservers, reverseHorizontalAnimation, standardHorizontalAnimation, toProtoISOString, useMedia, useToastController, useWindowDimensions } from '@jonline/ui';
-import { AlertTriangle, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
+import { AlertTriangle, CalendarArrowDown, Calendar as CalendarIcon, CheckCircle, ChevronRight, Edit3 as Edit, Eye, SquareAsterisk, Trash, XCircle } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, TamaguiMarkdown, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCurrentServer, useEventPageParam, useFederatedDispatch, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
@@ -450,7 +450,7 @@ export function UsernameDetailsScreen() {
                     </XStack>
                     <XStack f={1} mr='auto' />
 
-                    <Button {...calendarSubcriptionLink}>Subscribe</Button>
+                    <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} />
                     {isCurrentUser
                       ? <DynamicCreateButton showPosts showEvents hideIfUnusable />
                       : undefined}
