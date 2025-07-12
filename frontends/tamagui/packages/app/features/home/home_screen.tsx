@@ -180,7 +180,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
             />
             <XStack f={1} />
-            <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} />
+            <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} />
           </XStack>
 
           {/* <XStack key='spacer' f={1} /> */}

@@ -243,7 +243,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       {displayModeButton('upcoming', 'Upcoming')}
       {displayModeButton('all', 'All')}
       {displayModeButton('filtered', 'Filtered')}
-      <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} />
+      <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} />
 
       <DynamicCreateButton showEvents
         button={(onPress) =>

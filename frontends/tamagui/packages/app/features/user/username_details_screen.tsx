@@ -450,7 +450,7 @@ export function UsernameDetailsScreen() {
                     </XStack>
                     <XStack f={1} mr='auto' />
 
-                    <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} />
+                    <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} />
                     {isCurrentUser
                       ? <DynamicCreateButton showPosts showEvents hideIfUnusable />
                       : undefined}
