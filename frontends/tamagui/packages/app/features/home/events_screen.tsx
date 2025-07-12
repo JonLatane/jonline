@@ -7,7 +7,7 @@ import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStac
 import { federateId, federatedId, useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
-import { Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
+import { CalendarArrowDown, Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
 import { useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
@@ -25,6 +25,7 @@ import { HomeScreenProps } from './home_screen';
 import { PageChooser } from "./page_chooser";
 import { EventListingLarge } from '../event/event_listing_large';
 import { AutoAnimatedList } from '../post';
+import { useLink } from 'solito/link';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -229,9 +230,11 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       {filterBar}
     </XStack>
     : filterBar;
-  const topChrome = <YStack w='100%' px='$2' key='filter-toolbar'>
+  const calendarSubcriptionLink = useLink({ href: `https://${currentServer?.host}/calendar.ics` });
+  const topChromePadding = mediaQuery.gtXs ? '$3' : '$2';
+  const topChrome = <YStack w='100%' px={mediaQuery.gtXs ? '$2' : '$1'} key='filter-toolbar'>
     <XStack w='100%' ai='center'>
-      <Button onPress={() => setBigCalendar(!bigCalendar)}
+      <Button onPress={() => setBigCalendar(!bigCalendar)} px={topChromePadding}
         icon={CalendarIcon}
         transparent
         {...themedButtonBackground(
@@ -240,10 +243,12 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       {displayModeButton('upcoming', 'Upcoming')}
       {displayModeButton('all', 'All')}
       {displayModeButton('filtered', 'Filtered')}
+      <Button {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} />
 
       <DynamicCreateButton showEvents
         button={(onPress) =>
           <Button onPress={onPress}
+            px={topChromePadding}
             icon={CalendarPlus}
             transparent
             {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
@@ -256,6 +261,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
   </YStack>;
 
   const eventListing = <EventListingLarge events={allEvents} />;
+
   return (
     <TabsNavigation
       appSection={AppSection.EVENTS}
