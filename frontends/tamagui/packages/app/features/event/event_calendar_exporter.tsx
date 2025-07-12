@@ -57,12 +57,15 @@ export const EventCalendarExporter: React.FC<Props> = ({
 
   const rsvpData = useSelector(selectRsvpData(federateId(instance.id, accountOrServer.server)));
   const location = rsvpData?.hiddenLocation ?? instance.location;
+  const eventDescription = event.post?.content ?? '';
   const calendarEvent: CalendarEvent = {
     title: event.post?.title ?? 'Title Data Missing',
     description: hasRsvpAssociated
-      ? `${event.post?.content ?? ''}\n\nmanage your RSVP at:\n${eventLink}`
-      : `${event.post?.content ?? ''}\n\nvia: ${eventLink}`,
-    url: eventLink,
+      ? `${eventDescription}\n\nmanage your RSVP at:\n${eventLink}`
+      : event.post?.link
+        ? `${eventDescription}\n\nvia: ${eventLink}`
+        : eventDescription,
+    url: event.post?.link ?? eventLink,
     location: location?.uniformlyFormattedAddress,
     start: moment(instance.startsAt).toISOString(),
     end: moment(instance.endsAt).toISOString(),

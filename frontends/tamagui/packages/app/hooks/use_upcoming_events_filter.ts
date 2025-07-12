@@ -9,7 +9,7 @@ export function useUpcomingEventsFilter(): TimeFilter {
   const filter = useAppSelector(state => state.events.upcomingEventsTimeFilter);
   const createFilter = () => {
     const pageLoadTime = moment(Date.now()).toISOString(true);
-    const endsAfter = moment(pageLoadTime).subtract(1, "week").toISOString(true);
+    const endsAfter = moment(pageLoadTime).subtract(1, "month").toISOString(true);
     const timeFilter: TimeFilter = { endsAfter: toProtoISOString(endsAfter) };
     dispatch(setUpcomingEventsTimeFilter({ timeFilter }));
     return timeFilter;
