@@ -2,9 +2,9 @@ import { FederatedEvent, FederatedUser, JonlineServer, federateId, selectServer,
 import React, { useEffect, useState } from "react";
 
 import { Author, EventInstance, Visibility } from "@jonline/api";
-import { Anchor, Button, Heading, Paragraph, Popover, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
+import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
 import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink, Link } from "@tamagui/lucide-icons";
-import { useAnonymousAuthToken, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
+import { useAnonymousAuthToken, useComponentKey, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
 import { useLink } from "solito/link";
@@ -169,11 +169,13 @@ export const EventCalendarExporter: React.FC<Props> = ({
     </XStack>
 
   </>;
+  const componentKey = useComponentKey('EventCalendarExporter')
+  const buttonTop = document.getElementById(componentKey)?.getBoundingClientRect().top ?? 100;
   return <Tooltip>
     <Tooltip.Trigger zi={100000}>
       <Popover size="$5" stayInFrame onOpenChange={setOpen} placement='bottom-end'>
         <Popover.Trigger asChild>
-          <Button my='auto'
+          <Button my='auto' id={componentKey}
             h={tiny
               ? !!event
                 ? '$3'
@@ -206,8 +208,12 @@ export const EventCalendarExporter: React.FC<Props> = ({
           ?
           <Popover.Content
             borderWidth={1}
-            mx='$3'
+            mx='$2'
+            px={0}
+            py='$1'
             maw='400px'
+            mah={window.innerHeight - buttonTop - 100}
+
             zi={100001}
             borderColor="$borderColor"
             enterStyle={{ y: -10, opacity: 0 }}
@@ -224,17 +230,19 @@ export const EventCalendarExporter: React.FC<Props> = ({
           >
             <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
-            <YStack h='100%'>
-              {hasRsvpAssociated
-                ? <>
-                  {event ? singleEventExportSection : undefined}
-                  {showSubscriptionsSection ? subscriptionsSection : undefined}
-                </>
-                : <>
-                  {showSubscriptionsSection ? subscriptionsSection : undefined}
-                  {event ? singleEventExportSection : undefined}
-                </>}
-            </YStack>
+            <ScrollView>
+              <YStack h='100%' px='$2'>
+                {hasRsvpAssociated
+                  ? <>
+                    {event ? singleEventExportSection : undefined}
+                    {showSubscriptionsSection ? subscriptionsSection : undefined}
+                  </>
+                  : <>
+                    {showSubscriptionsSection ? subscriptionsSection : undefined}
+                    {event ? singleEventExportSection : undefined}
+                  </>}
+              </YStack>
+            </ScrollView>
           </Popover.Content>
           : undefined}
       </Popover >
