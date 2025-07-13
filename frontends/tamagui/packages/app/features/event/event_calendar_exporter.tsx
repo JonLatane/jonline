@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 
 import { Author, EventInstance, Visibility } from "@jonline/api";
 import { Anchor, Button, Heading, Paragraph, Popover, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
-import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink } from "@tamagui/lucide-icons";
+import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink, Link } from "@tamagui/lucide-icons";
 import { useAnonymousAuthToken, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
@@ -34,7 +34,8 @@ export const EventCalendarExporter: React.FC<Props> = ({
   const mediaQuery = useMedia();
   const tiny = inputTiny === true || (inputTiny === undefined && !mediaQuery.gtXs);
   const eventAccountOrServer = useFederatedAccountOrServer(event);
-  const userSubscriptionAccountOrServer = useFederatedAccountOrServer(showSubscriptions?.user);
+  const userSubscriptionAccountOrServerOrDefault = useFederatedAccountOrServer(showSubscriptions?.user);
+  const userSubscriptionAccountOrServer = showSubscriptions?.user ? userSubscriptionAccountOrServerOrDefault : eventAccountOrServer;
   const accountOrServer = eventAccountOrServer ?? userSubscriptionAccountOrServer;
   // const server = accountOrServer.server;
   const isPrimaryServer = useCurrentAccountOrServer().server?.host === accountOrServer.server?.host;
@@ -113,6 +114,61 @@ export const EventCalendarExporter: React.FC<Props> = ({
   }, [open, hasOpened]);
   const showSubscriptionsSection = (userSubscriptionAuthor && userSubscriptionHost) || subscriptionServers.length > 0;
 
+  const subscriptionsSection = <>
+    <Heading size='$4' lineHeight='$1'>Subscribe to Calendar</Heading>
+    <Paragraph lineHeight='$1' size='$1'>(iCalendar/RFC 5545)</Paragraph>
+
+    {userSubscriptionAuthor && userSubscriptionHost ?
+      <>
+        <Paragraph lineHeight='$1' size='$2'>Use this link to subscribe to all of {userSubscriptionName}'s calendar events (you may need to copy/paste the URL):</Paragraph>
+        <Anchor href={userSubscriptionUrl} mx='auto'>
+          <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none">
+            <YStack ai='center'>
+              <XStack ai='center'>
+                <AuthorInfo larger author={userSubscriptionAuthor} disableLink />
+                <Heading size='$7' ml='$1'>@</Heading>
+              </XStack>
+              <ServerNameAndLogo server={userSubscriptionAccountOrServer.server} />
+              <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
+            </YStack>
+          </Button>
+        </Anchor>
+      </>
+      : undefined}
+    {subscriptionServers.length > 0 ?
+      <>
+        <Paragraph lineHeight='$1' size='$3'>
+          {subscriptionServers.length === 1
+            ? `Use this link to subscribe to public events from ${shortenServerName(subscriptionServers[0])} (you may need to copy/paste the URL):`
+            : 'Use these links to subscribe to public events in that community (you may need to copy/paste the URL):'}</Paragraph>
+        <XStack flexWrap='wrap' gap='$2' ai='center' jc='space-around' my='$2'>
+          {subscriptionServers.map((server, index) => (
+            <Anchor key={index} href={serverSubscriptionUrls[index]}>
+              <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none">
+                <YStack ai='center'>
+                  <ServerNameAndLogo server={server} />
+                  <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
+                </YStack>
+                {/* <YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>{server.serverConfiguration?.serverInfo?.name}</Paragraph><Paragraph lineHeight='$1' size='$2'>ICS Link</Paragraph></YStack> */}
+              </Button>
+            </Anchor>
+          ))}
+        </XStack>
+      </>
+      : undefined}
+  </>;
+  const singleEventExportSection = <>
+    <Heading size='$4'>{hasRsvpAssociated ? 'Export Event with Private RSVP Link' : showSubscriptionsSection ? 'Export Single Event ' : 'Export Event'}</Heading>
+    <XStack flexWrap='wrap' gap='$2' ai='center' jc='space-around' my='$2'>
+
+      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...icsLink}><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>ICS (iCal/Apple)</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
+      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
+      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...office365Link} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Office 365</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
+      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...outlookLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Outlook</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
+      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...yahooLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Yahoo</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
+    </XStack>
+
+  </>;
   return <Tooltip>
     <Tooltip.Trigger zi={100000}>
       <Popover size="$5" stayInFrame onOpenChange={setOpen} placement='bottom-end'>
@@ -169,63 +225,15 @@ export const EventCalendarExporter: React.FC<Props> = ({
             <Popover.Arrow borderWidth={1} borderColor="$borderColor" />
 
             <YStack h='100%'>
-              {showSubscriptionsSection ? <>
-                <Heading size='$4' lineHeight='$1' >Subscribe to Calendar</Heading>
-                <Paragraph lineHeight='$1' size='$1'>(iCalendar/RFC 5545)</Paragraph>
-
-                {userSubscriptionAuthor && userSubscriptionHost ?
-                  <>
-                    <Paragraph lineHeight='$1' size='$2'>Use this link to subscribe to all of {userSubscriptionName}'s calendar events:</Paragraph>
-                    <Anchor href={userSubscriptionUrl} mx='auto'>
-                      <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2'>
-                        <YStack ai='center'>
-                          <XStack ai='center'>
-                            <AuthorInfo larger author={userSubscriptionAuthor} disableLink />
-                            <Heading size='$7' ml='$1'>@</Heading>
-                          </XStack>
-                          <ServerNameAndLogo server={userSubscriptionAccountOrServer.server} />
-                          <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
-                        </YStack>
-                      </Button>
-                    </Anchor>
-                  </>
-                  : undefined}
-                {subscriptionServers.length > 0 ?
-                  <>
-                    <Paragraph lineHeight='$1' size='$3'>
-                      {subscriptionServers.length === 1
-                        ? `Use this link to subscribe to public events from ${shortenServerName(subscriptionServers[0])} in your favorite calendar app (you may need to copy/paste the URL):`
-                        : 'Use these links to subscribe to public events in that community in your favorite calendar app (you may need to copy/paste the URL):'}</Paragraph>
-                    <XStack flexWrap='wrap' gap='$2' ai='center' jc='space-around' my='$2'>
-                      {subscriptionServers.map((server, index) => (
-                        <Anchor key={index} href={serverSubscriptionUrls[index]}>
-                          <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2'>
-                            <YStack ai='center'>
-                              <ServerNameAndLogo server={server} />
-                              <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
-                            </YStack>
-                            {/* <YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>{server.serverConfiguration?.serverInfo?.name}</Paragraph><Paragraph lineHeight='$1' size='$2'>ICS Link</Paragraph></YStack> */}
-                          </Button>
-                        </Anchor>
-                      ))}
-                    </XStack>
-                  </>
-                  : undefined
-                }
-              </> : undefined}
-              {event ? <>
-                <Heading size='$4'>{hasRsvpAssociated ? 'Export Event with Private RSVP Link' : showSubscriptionsSection ? 'Export Single Event ' : 'Export Event'}</Heading>
-                <XStack flexWrap='wrap' gap='$2' ai='center' jc='space-around' my='$2'>
-
-                  <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...icsLink}><YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>ICS (iCal/Apple)</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
-                  <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...googleLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Google</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
-                  <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...office365Link} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Office 365</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
-                  <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...outlookLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Outlook</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
-                  <Button iconAfter={ExternalLink} my='auto' h='auto' px='$2' {...yahooLink} target='_blank'><YStack mr='auto'><Paragraph lineHeight='$1' size='$4'>Yahoo</Paragraph><Paragraph lineHeight='$1' size='$2'>Calendar</Paragraph></YStack></Button>
-                </XStack>
-
-              </>
-                : undefined}
+              {hasRsvpAssociated
+                ? <>
+                  {event ? singleEventExportSection : undefined}
+                  {showSubscriptionsSection ? subscriptionsSection : undefined}
+                </>
+                : <>
+                  {showSubscriptionsSection ? subscriptionsSection : undefined}
+                  {event ? singleEventExportSection : undefined}
+                </>}
             </YStack>
           </Popover.Content>
           : undefined}
