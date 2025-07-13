@@ -212,7 +212,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
             px={0}
             py='$1'
             maw='400px'
-            mah={window.innerHeight - buttonTop - 100}
+            mah={Math.max(window.innerHeight - buttonTop - 100, 200)}
 
             zi={100001}
             borderColor="$borderColor"
