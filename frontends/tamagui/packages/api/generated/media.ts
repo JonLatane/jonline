@@ -20,7 +20,7 @@ export const protobufPackage = "jonline";
 
 /**
  * A Jonline `Media` message represents a single media item, such as a photo or video.
- * Media data is deliberately *not returnable from the gRPC API*. Instead, the client
+ * Media data is deliberately *not accessible from the gRPC API*. Instead, the client
  * should fetch media from `http[s]://my.jonline.instance/media/{id}`.
  *
  * Media items may be created with a HTTP POST to `http[s]://my.jonline.instance/media`
@@ -33,7 +33,7 @@ export const protobufPackage = "jonline";
  * - `Authorization` - Jonline Access Token for the user. Required, but may be supplied in `Cookies`.
  * - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.
  *
- * `GET /media` supports the following:
+ * `GET /media/{id}` supports the following:
  * - **Headers**:
  *     - `Authorization` - Jonline Access Token for the user. May also be supplied in `Cookies` or via query parameter.
  *     - `Cookies` - Standard web cookies. The `jonline_access_token` cookie may be used for authentication.

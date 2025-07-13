@@ -14,10 +14,12 @@ import "federation.proto";
 import "server_configuration.proto";
 
 // A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
-// The bulk of these docs involve the gRPC APIs (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
+// The bulk of these docs involve the [gRPC API](#grpc-api) (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
 // [media files](#jonline-Media), and a [`backend_host` resource for client/host negotiation](#http-based-client-host-negotiation-for-external-cdns).
+// Jonline serves up a few other [HTTP endpoints](#http-endpoints), providing a `/sitemap.xml`, `/robots.txt`, iCal/RFC5545 subscription endpoints, and more,
+// but these are essentially accessories to the core APIs.
 //
-// ##### Authentication
+// #### Authentication
 // Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating `access_token`s and `refresh_token`s.
 // Authenticated calls require an `access_token` in request metadata to be included / directly as the value of the
 // `authorization` header (no `Bearer ` prefix).
@@ -28,19 +30,48 @@ import "server_configuration.proto";
 // may, at random, also return a new `refresh_token`. If so, it should immediately replace the old
 // one in client storage.)
 //
-// ##### Dumfederation
+// #### Dumfederation
 // Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
-// Jonline only has client-server APIs. The idea is that *all* of the federation data for a given Jonline server is simply the value of
-// [`federation_info` in `ServerConfiguration`](#jonline-ServerConfiguration).
+// Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
+// "nice to have" features require it, so it is not used.
 //
-// That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
-// (Eventually, this will affect CORS policies for added security.)
-// The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
+// ##### Federated Servers
+// Jonline servers can recommend other servers to clients with the `federation_info` field (a [`FederationInfo` message](http://localhost/docs/protocol#federationinfo)) in [`ServerConfiguration`](#jonline-ServerConfiguration).
+// Clients can use this information to discover other servers, or users can add new servers manually.
+// Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
+// allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
+// unless you explicitly allow it.
 //
-// Notably, Jonline's design certainly *does* facilitate server-to-server communication (for instance, it could be used to serve
-// Post titles for posts from other servers in HTTP `meta` tags), but it does not require it for core user functionality.
+// #### Federated Profiles
+// Jonline users can federate with users on any other Jonline server. This works by two-way verification:
+// For example, Jon has the user [`jonline.io/jon`](https://jonline.io/jon), [`oakcity.social/jon`](https://oakcity.social/jon),
+// and [`bullcity.social/jon`](https://bullcity.social/jon) associated with one another. 
+// The UI will only show federated profiles if *both use profiles* have federated with one another.
 //
-// ##### HTTP-based client host negotiation (for external CDNs)
+// This mechanism also allows users to link multiple profiles on the same server together. For instance, [`bullcity.social/jon`](https://bullcity.social/jon)
+// and [`bullcity.social/openmic`](https://bullcity.social/openmic) are linked together, but [`bullcity.social/openmic`](https://bullcity.social/openmic)
+// isn't linked to [`jonline.io/jon`](https://jonline.io/jon) or [`oakcity.social/jon`](https://oakcity.social/jon).
+//
+// Federated profiles are managed via the `federated_profiles` field (a `repeated` [`FederatedAccount`](http://localhost/docs/protocol#jonline-FederatedAccount)) in the [`User`](#jonline-User) message.
+//
+// #### HTTP Endpoints
+//
+// ##### iCalendar/RFC5545 (`GET /calendar.ics`, `GET /calendar.ics?user_id={id}`)
+// Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
+// Users can "subscribe" to a Jonline server at, for instance, `https://jonline.io/calendar.ics` 
+// to get a calendar of all public events on the server.
+// Users can also subscribe to a user's calendar at, for instance, `https://jonline.io/calendar.ics?user_id=CruFm`
+// to get a calendar of all public events for that user.
+// In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
+// the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
+//
+// ##### Robots & Sitemap (`GET /robots.txt` and `GET /sitemap.xml`)
+// Jonline servers are expected to serve a `robots.txt` file at `/robots.txt` and a `sitemap.xml` file at `/sitemap.xml`.
+//
+// ##### Media (`GET /media/{id}` and `POST /media`)
+// See the [Media](#jonline-Media) section for details on how to upload/download media files.
+//
+// ##### HTTP-based client host negotiation (for external CDNs) (`GET /backend_host`)
 // When first negotiating the gRPC connection to a host, say, `jonline.io`, before attempting
 // to connect to `jonline.io` via gRPC on 27707/443, the client
 // is expected to first attempt to `GET jonline.io/backend_host` over HTTP (port 80) or HTTPS (port 443)
@@ -59,20 +90,20 @@ import "server_configuration.proto";
 // 80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
 // proxy support. With this, both web and gRPC resources can live behind a CDN.
 //
-// ##### API Design Notes
-// ###### Moderation and Visibility
+// #### API Design Notes
+// ##### Moderation and Visibility
 // Jonline APIs are designed to support `Moderation` and `Visibility` controls at the level of individual entities. However, to keep things
 // DRY, moderation and visibility controls are only implemented for `User`s, `Media`, `Group`s, and `Post`s.
 //
 // `Event`s and future `Post`-like types simply use the same implementation as their contained `Post`s. The intent here is to maximize
 // both shared code and implementation robustness.
 //
-// ###### Composition Over Inheritance
+// ##### Composition Over Inheritance
 // Jonline's APIs are designed using composition over inheritance. For instance, an `Event` contains
 // a `Post` rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized), 
 // through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
 //
-// ###### Predictable Atomicity
+// ##### Predictable Atomicity
 // The use of composition over inheritance also means that Jonline APIs can be *predictably* non-atomic based on their compositional structure.
 // For instance, `UpdatePost` is fully atomic.
 //
@@ -86,7 +117,7 @@ import "server_configuration.proto";
 // moderation controls (for instance, `Sheet`, `SharedExpenseReport`, `SharedCalendar`, etc.). The entire architecture should promote this
 // approach to predictable atomicity.
 //
-// #### gRPC API
+// ### gRPC API
 service Jonline {
   // Get the version (from Cargo) of the Jonline service. *Publicly accessible.*
   rpc GetServiceVersion(google.protobuf.Empty) returns (GetServiceVersionResponse) {}

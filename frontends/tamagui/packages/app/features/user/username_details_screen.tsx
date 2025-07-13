@@ -190,7 +190,7 @@ export function UsernameDetailsScreen() {
     ? eventResults
     : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
 
-  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${userId}` });
+  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${user?.id}` });
   // const bigCalendarScrollToTime = useMemo(() =>
   //   allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
   //   , [allEvents])

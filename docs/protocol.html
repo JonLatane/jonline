@@ -341,10 +341,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h3 id="jonline"><a class="anchor" aria-hidden="true" tabindex="-1" href="#jonline"><span class="octicon octicon-link"></span></a>Jonline</h3>
     <p>
       A Jonline server is generally expected to run a gRPC server on port 27707 and/or 443, and an HTTP server on port 80 and/or 443.
-      The bulk of these docs involve the gRPC APIs (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
+      The bulk of these docs involve the <a href="#grpc-api">gRPC API</a> (the "protocol"), while the HTTP server is expected to serve up web apps (React and, previously, Flutter),
       <a href="#jonline-Media">media files</a>, and a <a href="#http-based-client-host-negotiation-for-external-cdns"><code>backend_host</code> resource for client/host negotiation</a>.
+      Jonline serves up a few other <a href="#http-endpoints">HTTP endpoints</a>, providing a <code>/sitemap.xml</code>, <code>/robots.txt</code>, iCal/RFC5545 subscription endpoints, and more,
+      but these are essentially accessories to the core APIs.
     </p>
-    <h5 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h5>
+    <h4 id="authentication"><a class="anchor" aria-hidden="true" tabindex="-1" href="#authentication"><span class="octicon octicon-link"></span></a>Authentication</h4>
     <p>
       Jonline uses a standard OAuth2 flow (over gRPC) for authentication, with rotating <code>access_token</code>s and <code>refresh_token</code>s.
       Authenticated calls require an <code>access_token</code> in request metadata to be included / directly as the value of the
@@ -357,22 +359,49 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       may, at random, also return a new <code>refresh_token</code>. If so, it should immediately replace the old
       one in client storage.)
     </p>
-    <h5 id="dumfederation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#dumfederation"><span class="octicon octicon-link"></span></a>Dumfederation</h5>
+    <h4 id="dumfederation"><a class="anchor" aria-hidden="true" tabindex="-1" href="#dumfederation"><span class="octicon octicon-link"></span></a>Dumfederation</h4>
     <p>
       Whereas other federated social networks (e.g. ActivityPub) have both client-server and server-server APIs,
-      Jonline only has client-server APIs. The idea is that <em>all</em> of the federation data for a given Jonline server is simply the value of
-      <a href="#jonline-ServerConfiguration"><code>federation_info</code> in <code>ServerConfiguration</code></a>.
+      Jonline only has client-server APIs. While server-to-server communication is possible, nothing but some
+      "nice to have" features require it, so it is not used.
+    </p>
+    <h5 id="federated-servers"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-servers"><span class="octicon octicon-link"></span></a>Federated Servers</h5>
+    <p>
+      Jonline servers can recommend other servers to clients with the <code>federation_info</code> field (a <a href="http://localhost/docs/protocol#federationinfo"><code>FederationInfo</code> message</a>) in <a href="#jonline-ServerConfiguration"><code>ServerConfiguration</code></a>.
+      Clients can use this information to discover other servers, or users can add new servers manually.
+      Note that, at least for web clients, this means everything is subject to CORS. In the future, Jonline will
+      allow CORS to be configured in a "strict" mode, so someone else's Jonline server cannot be used to access your server's data
+      unless you explicitly allow it.
+    </p>
+    <h4 id="federated-profiles"><a class="anchor" aria-hidden="true" tabindex="-1" href="#federated-profiles"><span class="octicon octicon-link"></span></a>Federated Profiles</h4>
+    <p>
+      Jonline users can federate with users on any other Jonline server. This works by two-way verification:
+      For example, Jon has the user <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a>, <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>,
+      and <a href="https://bullcity.social/jon"><code>bullcity.social/jon</code></a> associated with one another.
+      The UI will only show federated profiles if <em>both use profiles</em> have federated with one another.
     </p>
     <p>
-      That is to say: Servers can recommend other hosts. Clients can do what they will with that information.
-      (Eventually, this will affect CORS policies for added security.)
-      The aim here is to optimize for ease of server administration, and ease of understanding how the system works for users.
+      This mechanism also allows users to link multiple profiles on the same server together. For instance, <a href="https://bullcity.social/jon"><code>bullcity.social/jon</code></a>
+      and <a href="https://bullcity.social/openmic"><code>bullcity.social/openmic</code></a> are linked together, but <a href="https://bullcity.social/openmic"><code>bullcity.social/openmic</code></a>
+      isn't linked to <a href="https://jonline.io/jon"><code>jonline.io/jon</code></a> or <a href="https://oakcity.social/jon"><code>oakcity.social/jon</code></a>.
     </p>
+    <p>Federated profiles are managed via the <code>federated_profiles</code> field (a <code>repeated</code> <a href="http://localhost/docs/protocol#jonline-FederatedAccount"><code>FederatedAccount</code></a>) in the <a href="#jonline-User"><code>User</code></a> message.</p>
+    <h4 id="http-endpoints"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-endpoints"><span class="octicon octicon-link"></span></a>HTTP Endpoints</h4>
+    <h5 id="icalendarrfc5545-get-calendarics-get-calendaricsuser_idid"><a class="anchor" aria-hidden="true" tabindex="-1" href="#icalendarrfc5545-get-calendarics-get-calendaricsuser_idid"><span class="octicon octicon-link"></span></a>iCalendar/RFC5545 (<code>GET /calendar.ics</code>, <code>GET /calendar.ics?user_id={id}</code>)</h5>
     <p>
-      Notably, Jonline's design certainly <em>does</em> facilitate server-to-server communication (for instance, it could be used to serve
-      Post titles for posts from other servers in HTTP <code>meta</code> tags), but it does not require it for core user functionality.
+      Jonline events support iCalendar/RFC5545. Only public events are included in the calendar.
+      Users can "subscribe" to a Jonline server at, for instance, <code>https://jonline.io/calendar.ics</code>
+      to get a calendar of all public events on the server.
+      Users can also subscribe to a user's calendar at, for instance, <code>https://jonline.io/calendar.ics?user_id=CruFm</code>
+      to get a calendar of all public events for that user.
+      In the Tamagui/React frontend, links to the ICS endpoints are provided in the Upcoming Events section of the home page,
+      the Events page, and the user profile pages for all users with events in the last 3 months (or in the future).
     </p>
-    <h5 id="http-based-client-host-negotiation-for-external-cdns"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs)</h5>
+    <h5 id="robots--sitemap-get-robotstxt-and-get-sitemapxml"><a class="anchor" aria-hidden="true" tabindex="-1" href="#robots--sitemap-get-robotstxt-and-get-sitemapxml"><span class="octicon octicon-link"></span></a>Robots &#x26; Sitemap (<code>GET /robots.txt</code> and <code>GET /sitemap.xml</code>)</h5>
+    <p>Jonline servers are expected to serve a <code>robots.txt</code> file at <code>/robots.txt</code> and a <code>sitemap.xml</code> file at <code>/sitemap.xml</code>.</p>
+    <h5 id="media-get-mediaid-and-post-media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media-get-mediaid-and-post-media"><span class="octicon octicon-link"></span></a>Media (<code>GET /media/{id}</code> and <code>POST /media</code>)</h5>
+    <p>See the <a href="#jonline-Media">Media</a> section for details on how to upload/download media files.</p>
+    <h5 id="http-based-client-host-negotiation-for-external-cdns-get-backend_host"><a class="anchor" aria-hidden="true" tabindex="-1" href="#http-based-client-host-negotiation-for-external-cdns-get-backend_host"><span class="octicon octicon-link"></span></a>HTTP-based client host negotiation (for external CDNs) (<code>GET /backend_host</code>)</h5>
     <p>
       When first negotiating the gRPC connection to a host, say, <code>jonline.io</code>, before attempting
       to connect to <code>jonline.io</code> via gRPC on 27707/443, the client
@@ -394,8 +423,8 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       80, with no HTTPS web page/media serving (other than the HTTPS that naturally underpins gRPC-Web). This is designed to use Cloudflare's gRPC
       proxy support. With this, both web and gRPC resources can live behind a CDN.
     </p>
-    <h5 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h5>
-    <h6 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h6>
+    <h4 id="api-design-notes"><a class="anchor" aria-hidden="true" tabindex="-1" href="#api-design-notes"><span class="octicon octicon-link"></span></a>API Design Notes</h4>
+    <h5 id="moderation-and-visibility"><a class="anchor" aria-hidden="true" tabindex="-1" href="#moderation-and-visibility"><span class="octicon octicon-link"></span></a>Moderation and Visibility</h5>
     <p>
       Jonline APIs are designed to support <code>Moderation</code> and <code>Visibility</code> controls at the level of individual entities. However, to keep things
       DRY, moderation and visibility controls are only implemented for <code>User</code>s, <code>Media</code>, <code>Group</code>s, and <code>Post</code>s.
@@ -404,13 +433,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <code>Event</code>s and future <code>Post</code>-like types simply use the same implementation as their contained <code>Post</code>s. The intent here is to maximize
       both shared code and implementation robustness.
     </p>
-    <h6 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h6>
+    <h5 id="composition-over-inheritance"><a class="anchor" aria-hidden="true" tabindex="-1" href="#composition-over-inheritance"><span class="octicon octicon-link"></span></a>Composition Over Inheritance</h5>
     <p>
       Jonline's APIs are designed using composition over inheritance. For instance, an <code>Event</code> contains
       a <code>Post</code> rather than extending it. This pattern fits well all the way from the data model (very boring, safe, and normalized),
       through Rust code implementing APIs, to both functional React code and more-OOP Flutter code equally well.
     </p>
-    <h6 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h6>
+    <h5 id="predictable-atomicity"><a class="anchor" aria-hidden="true" tabindex="-1" href="#predictable-atomicity"><span class="octicon octicon-link"></span></a>Predictable Atomicity</h5>
     <p>
       The use of composition over inheritance also means that Jonline APIs can be <em>predictably</em> non-atomic based on their compositional structure.
       For instance, <code>UpdatePost</code> is fully atomic.
@@ -427,7 +456,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       moderation controls (for instance, <code>Sheet</code>, <code>SharedExpenseReport</code>, <code>SharedCalendar</code>, etc.). The entire architecture should promote this
       approach to predictable atomicity.
     </p>
-    <h4 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h4>
+    <h3 id="grpc-api"><a class="anchor" aria-hidden="true" tabindex="-1" href="#grpc-api"><span class="octicon octicon-link"></span></a>gRPC API</h3>
     <table>
       <thead>
         <tr>
@@ -1983,7 +2012,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
     <h3 id="media"><a class="anchor" aria-hidden="true" tabindex="-1" href="#media"><span class="octicon octicon-link"></span></a>Media</h3>
     <p>
       A Jonline <code>Media</code> message represents a single media item, such as a photo or video.
-      Media data is deliberately <em>not returnable from the gRPC API</em>. Instead, the client
+      Media data is deliberately <em>not accessible from the gRPC API</em>. Instead, the client
       should fetch media from <code>http[s]://my.jonline.instance/media/{id}</code>.
     </p>
     <p>
@@ -1998,7 +2027,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       <li><code>Authorization</code> - Jonline Access Token for the user. Required, but may be supplied in <code>Cookies</code>.</li>
       <li><code>Cookies</code> - Standard web cookies. The <code>jonline_access_token</code> cookie may be used for authentication.</li>
     </ul>
-    <p><code>GET /media</code> supports the following:</p>
+    <p><code>GET /media/{id}</code> supports the following:</p>
     <ul>
       <li><strong>Headers</strong>:
         <ul>
