@@ -4,28 +4,26 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 
 
 import { AnimatePresence, Button, DateTimePicker, Heading, Input, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, standardAnimation, toProtoISOString, useDebounceValue, useMedia } from '@jonline/ui';
-import { federateId, federatedId, useServerTheme } from 'app/store';
+import { useServerTheme } from 'app/store';
 import React, { useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
 import { CalendarArrowDown, Calendar as CalendarIcon, CalendarPlus, X as XIcon } from '@tamagui/lucide-icons';
 import { SubnavButton } from 'app/components/subnav_button';
-import { useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering } from 'app/hooks';
+import { useAppSelector, useEventPages, useLocalConfiguration, usePaginatedRendering, usePinnedAccountsAndServers } from 'app/hooks';
 import { useBigCalendar } from "app/hooks/configuration_hooks";
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { setDocumentTitle, themedButtonBackground } from 'app/utils';
 import moment from 'moment';
 import { createParam } from 'solito';
-import EventCard from '../event/event_card';
-import { EventsFullCalendar } from "../event/events_full_calendar";
+import { useLink } from 'solito/link';
+import { EventListingLarge } from '../event/event_listing_large';
 import { AppSection } from '../navigation/features_navigation';
 import { TabsNavigation } from '../navigation/tabs_navigation';
 import { useParamState } from '../people/people_screen';
+import { AutoAnimatedList } from '../post';
 import { DynamicCreateButton } from './dynamic_create_button';
 import { HomeScreenProps } from './home_screen';
-import { PageChooser } from "./page_chooser";
-import { EventListingLarge } from '../event/event_listing_large';
-import { AutoAnimatedList } from '../post';
-import { useLink } from 'solito/link';
+import { EventCalendarExporter } from '../event/event_calendar_exporter';
 
 const { useParam, useUpdateParams } = createParam<{ endsAfter: string, search: string }>()
 export function EventsScreen() {
@@ -144,6 +142,9 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       debouncedSearchText,
     ]
   );
+  const pinnedAccountsAndServers = usePinnedAccountsAndServers()
+  const selectedServers = useMemo(() => pinnedAccountsAndServers.map(s => s.server).filter(s => !!s), [pinnedAccountsAndServers]);
+
 
   const numberOfColumns = mediaQuery.gtXxxxl ? 6
     : mediaQuery.gtXxl ? 5
@@ -230,7 +231,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       {filterBar}
     </XStack>
     : filterBar;
-  const calendarSubcriptionLink = useLink({ href: `https://${currentServer?.host}/calendar.ics` });
+  // const calendarSubcriptionLink = useLink({ href: `https://${currentServer?.host}/calendar.ics` });
   const topChromePadding = mediaQuery.gtXs ? '$3' : '$2';
   const topChrome = <YStack w='100%' px={mediaQuery.gtXs ? '$2' : '$1'} key='filter-toolbar'>
     <XStack w='100%' ai='center'>
@@ -243,7 +244,8 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
       {displayModeButton('upcoming', 'Upcoming')}
       {displayModeButton('all', 'All')}
       {displayModeButton('filtered', 'Filtered')}
-      <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} />
+      {/* <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} /> */}
+      <EventCalendarExporter tiny showSubscriptions={{ servers: selectedServers }} />
 
       <DynamicCreateButton showEvents
         button={(onPress) =>

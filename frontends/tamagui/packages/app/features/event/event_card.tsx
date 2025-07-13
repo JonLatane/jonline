@@ -2,7 +2,7 @@ import useIsVisibleHorizontal from 'app/hooks/use_is_visible';
 import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntity, updateEvent, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Event, EventInstance, Location, Post } from "@jonline/api";
+import { Event, EventInstance, Location, Post, Visibility } from "@jonline/api";
 import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
@@ -449,6 +449,7 @@ export const EventCard: React.FC<Props> = ({
       <ServerNameAndLogo server={server} shrinkToSquare={shrinkServerInfo} disableTooltip />
     </XStack>
     : undefined;
+  const isGlobalPublicEvent = eventPost.visibility === Visibility.GLOBAL_PUBLIC && instancePost?.visibility === Visibility.GLOBAL_PUBLIC;
   const headerLinksView = <YStack f={1} key='header-links-view'>
     {isPreview
       ? <>
@@ -468,7 +469,13 @@ export const EventCard: React.FC<Props> = ({
           {primaryInstance //&& (!isPreview || isVisible)
             ? <XStack my='$1'>
               <EventCalendarExporter tiny event={event}
-                instance={primaryInstance} />
+                instance={primaryInstance}
+                showSubscriptions={isGlobalPublicEvent
+                  ? {
+                    servers: server ? [server] : undefined
+                  }
+                  : undefined}
+              />
             </XStack>
             : undefined}
         </XStack>

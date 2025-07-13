@@ -1,7 +1,7 @@
 import { EventListingType, PostListingType, TimeFilter } from '@jonline/api';
 import { Button, Heading, ScrollView, Spinner, XStack, YStack, dismissScrollPreserver, needsScrollPreservers, useMedia, useWindowDimensions } from '@jonline/ui';
 import { CalendarArrowDown, Calendar as CalendarIcon, ChevronRight } from '@tamagui/lucide-icons';
-import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePostPageParam, usePostPages } from 'app/hooks';
+import { useAppDispatch, useCurrentServer, useEventPageParam, useEventPages, useLocalConfiguration, usePaginatedRendering, usePinnedAccountsAndServers, usePostPageParam, usePostPages } from 'app/hooks';
 import { useBigCalendar, useShowEvents } from 'app/hooks/configuration_hooks';
 import { useUpcomingEventsFilter } from 'app/hooks/use_upcoming_events_filter';
 import { FederatedGroup, RootState, federateId, federatedId, useRootSelector, useServerTheme } from 'app/store';
@@ -16,9 +16,11 @@ import { DynamicCreateButton } from './dynamic_create_button';
 import { EventsFullCalendar } from '../event/events_full_calendar';
 import { PageChooser } from './page_chooser';
 import { AutoAnimatedList } from '../post';
+import { EventCalendarExporter } from '../event/event_calendar_exporter';
 // import { useSwipeable } from 'react-swipeable';
 
 // import Swipeable from '@jonline/ui/src/swipeable';
+import { subscribe } from '../web_push/web_push';
 
 export function HomeScreen() {
   return <BaseHomeScreen />;
@@ -130,7 +132,9 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
   const eventCardWidth = mediaQuery.gtSm ? 400 : 323;
   const noEventsWidth = Math.max(300, Math.min(1400, window.innerWidth) - 180);
-  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics` });
+  // const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics` });
+  const pinnedAccountsAndServers = usePinnedAccountsAndServers()
+  const selectedServers = useMemo(() => pinnedAccountsAndServers.map(s => s.server).filter(s => !!s), [pinnedAccountsAndServers]);
   return (
     <TabsNavigation
       customHomeAction={selectedGroup ? undefined : onHomePressed}
@@ -168,7 +172,7 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               <ChevronRight />
             </XStack>
           </Button>
-          <XStack key='big-calendar-toggle' f={1} gap='$2'
+          <XStack key='big-calendar-toggle' f={1} gap='$2' ai='center'
             animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
             <Button onPress={() => requestAnimationFrame(() => setBigCalendar(!bigCalendar))}
               icon={CalendarIcon}
@@ -180,7 +184,8 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
 
             />
             <XStack f={1} />
-            <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} />
+            <EventCalendarExporter tiny showSubscriptions={{ servers: selectedServers }} />
+            {/* <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} /> */}
           </XStack>
 
           {/* <XStack key='spacer' f={1} /> */}

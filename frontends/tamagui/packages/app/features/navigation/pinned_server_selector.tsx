@@ -6,7 +6,7 @@ import { FederatedPagesStatus, JonlineAccount, JonlineServer, PinnedServer, Root
 import { themedButtonBackground } from "app/utils/themed_button_background";
 import { AuthSheetButton } from "../accounts/auth_sheet_button";
 import RecommendedServer, { useJonlineServerInfo } from "../accounts/recommended_server";
-import { ServerNameAndLogo, splitOnFirstEmoji } from "./server_name_and_logo";
+import { ServerNameAndLogo, shortenServerName, splitOnFirstEmoji } from "./server_name_and_logo";
 import { User } from "@jonline/api";
 import { createSelector } from "@reduxjs/toolkit";
 import { AutoAnimatedList } from "../post";
@@ -74,12 +74,7 @@ export function PinnedServerSelector({
   const recommendedServerHosts = recommendedServerHostsUnfiltered
     .filter(host => !currentServerHosts.includes(host));
 
-  const shortServerName = currentServer?.serverConfiguration?.serverInfo?.shortName
-    ||
-    // Note the split *without* support for pipes (so | will be included)
-    splitOnFirstEmoji(
-      currentServer?.serverConfiguration?.serverInfo?.name ?? '...'
-    )[0].replace(/\s*\|\s*/, ' ');
+  const shortServerName = shortenServerName(currentServer);
 
   const disabled = false;//useHideNavigation();
   const excludeCurrentServer = useAppSelector(state => state.accounts.excludeCurrentServer);

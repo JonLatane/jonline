@@ -23,6 +23,7 @@ import { FederatedProfiles } from './federated_profiles';
 import { EditableUserDetails, UserCard, useFullAvatarHeight } from './user_card';
 import { AccountOrServerContextProvider } from 'app/contexts';
 import { useParamState } from '../people/people_screen';
+import { EventCalendarExporter } from '../event/event_calendar_exporter';
 
 const { useParam, useUpdateParams } = createParam<{ username: string, serverHost?: string, shortname: string | undefined }>()
 
@@ -190,7 +191,7 @@ export function UsernameDetailsScreen() {
     ? eventResults
     : eventResults.filter(e => moment(e.instances[0]!.endsAt).isAfter(pageLoadTime));
 
-  const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${user?.id}` });
+  // const calendarSubcriptionLink = useLink({ href: `https://${server?.host}/calendar.ics?user_id=${user?.id}` });
   // const bigCalendarScrollToTime = useMemo(() =>
   //   allEvents.length == 0 ? undefined : moment(allEvents[0]!.instances[0]!.startsAt).toDate()
   //   , [allEvents])
@@ -450,7 +451,8 @@ export function UsernameDetailsScreen() {
                     </XStack>
                     <XStack f={1} mr='auto' />
 
-                    <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} />
+                    {/* <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} /> */}
+                    <EventCalendarExporter tiny showSubscriptions={{ user }} />
                     {isCurrentUser
                       ? <DynamicCreateButton showPosts showEvents hideIfUnusable />
                       : undefined}

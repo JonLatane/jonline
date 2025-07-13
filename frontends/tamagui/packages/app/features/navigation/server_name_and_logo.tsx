@@ -56,6 +56,15 @@ export function splitOnFirstEmoji(
   return result;
 }
 
+export function shortenServerName(server?: JonlineServer): string {
+  return server?.serverConfiguration?.serverInfo?.shortName
+    ||
+    // Note the split *without* support for pipes (so | will be included)
+    splitOnFirstEmoji(
+      server?.serverConfiguration?.serverInfo?.name ?? '...'
+    )[0].replace(/\s*\|\s*/, ' ');
+}
+
 export function ServerNameAndLogo({
   shrinkToSquare,
   server: selectedServer,

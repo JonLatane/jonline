@@ -34,6 +34,7 @@ export function frontendServerUrl(server: JonlineServer): string {
   return `http${server.secure ? "s" : ""}://${host}`;
 }
 
+
 // export function backendServerUrl(server: JonlineServer): string {
 //   const host = server.serverConfiguration?.externalCdnConfig?.backendHost ?? server.host;
 //   return `http${server.secure ? "s" : ""}://${host}`;

@@ -96,10 +96,8 @@ export const AuthorInfo = ({
     {(!nameOnly && !dateOnly && avatarUrl && avatarUrl != '')
       ? <YStack marginVertical='auto'>
         {disableLink
-          ?
-          { avatarImage }
-          :
-          <Anchor {...authorLinkProps}
+          ? avatarImage
+          : <Anchor {...authorLinkProps}
             mr={mediaQuery.gtXs ? '$3' : '$2'}>
             {avatarImage}
           </Anchor>
@@ -114,7 +112,9 @@ export const AuthorInfo = ({
           : <XStack ai='center'>
             {author ?? authorName
               ? disableLink
-                ? username
+                ? <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
+                  {username}
+                </Paragraph>
                 // ? <>
                 //   <Paragraph size={larger ? '$7' : '$1'} color={textColor}>
                 //     {username}
