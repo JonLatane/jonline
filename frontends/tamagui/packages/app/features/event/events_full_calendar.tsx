@@ -269,6 +269,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   //   };
 
   // }, [nextEventId, prevEventId]);
+  const modalInstanceDebounced = useDebounceValue(modalInstance, 400);
   return (<>
 
     <YStack w='100%' px='$1'>
@@ -500,9 +501,9 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
             </XStack>
             {/* <YStack w='100%' my='auto' f={1}> */}
             <ScrollView f={1}>
-              {modalInstance
+              {modalInstanceDebounced
                 ? <XStack mt={-9}>
-                  <EventCard key={modalInstance?.id} event={modalInstance!} isModalPreview />
+                  <EventCard key={modalInstanceDebounced?.id} event={modalInstanceDebounced!} isModalPreview />
                 </XStack>
                 : undefined}
             </ScrollView>
