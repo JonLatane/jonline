@@ -15,6 +15,10 @@ clean:
 clean_protos:
 	cargo clean -p prost-build
 
+rebuild_fe_and_run:
+	cd ../frontends/tamagui && $(MAKE) rebuild_fe
+	$(MAKE) run
+
 rebuild_protos: clean_protos build
 
 local_db_create:

@@ -10,7 +10,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 // import { DayPilotCalendar } from "@daypilot/daypilot-lite-react";
 
 
-import { AnimatePresence, Button, Dialog, Heading, ScrollView, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
+import { AnimatePresence, Button, Dialog, Heading, ScrollView, Spinner, Text, XStack, YStack, needsScrollPreservers, reverseStandardAnimation, standardAnimation, useDebounceValue, useMedia, useWindowDimensions } from '@jonline/ui';
 import { ColorMeta, FederatedEvent, JonlineServer, RootState, colorIntMeta, colorMeta, federateId, federatedId, parseFederatedId, selectAllServers, setShowBigCalendar, useServerTheme } from 'app/store';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 // import { DynamicCreateButton } from '../evepont/create_event_sheet';
@@ -269,7 +269,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
   //   };
 
   // }, [nextEventId, prevEventId]);
-  const modalInstanceDebounced = useDebounceValue(modalInstance, 400);
+  const modalInstanceDebounced = useDebounceValue(modalInstance, 300);
   return (<>
 
     <YStack w='100%' px='$1'>
@@ -505,7 +505,14 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 ? <XStack mt={-9}>
                   <EventCard key={modalInstanceDebounced?.id} event={modalInstanceDebounced!} isModalPreview />
                 </XStack>
-                : undefined}
+                : <XStack h={window.innerHeight / 2} ai='center' jc='center' w='100%'>
+                  <Spinner
+                    size='large'
+                    animation='standard'
+                    color={primaryColor}
+                    style={{ margin: 'auto' }}
+                  />
+                </XStack>}
             </ScrollView>
             {/* </YStack> */}
           </YStack>
