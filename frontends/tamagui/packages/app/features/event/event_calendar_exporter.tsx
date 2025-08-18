@@ -2,8 +2,8 @@ import { FederatedEvent, FederatedUser, JonlineServer, federateId, selectServer,
 import React, { useEffect, useState } from "react";
 
 import { Author, EventInstance, Visibility } from "@jonline/api";
-import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, useMedia } from "@jonline/ui";
-import { ArrowRightFromLine, Calendar, CalendarArrowDown, ExternalLink, Link } from "@tamagui/lucide-icons";
+import { Anchor, Button, Heading, Paragraph, Popover, ScrollView, Tooltip, XStack, YStack, ZStack, useMedia, useToastController } from "@jonline/ui";
+import { ArrowRightFromLine, Calendar, CalendarArrowDown, Copy, CopyCheck, ExternalLink, Link } from "@tamagui/lucide-icons";
 import { useAnonymousAuthToken, useComponentKey, useCurrentAccountOrServer, useFederatedAccountOrServer } from "app/hooks";
 import { CalendarEvent, google, ics, office365, outlook, yahoo } from "calendar-link";
 import moment from "moment";
@@ -107,11 +107,71 @@ export const EventCalendarExporter: React.FC<Props> = ({
   const icsLink = useLink({ href: ics(calendarEvent) });
   const [open, setOpen] = useState(false);
   const [hasOpened, setHasOpened] = useState(false);
+  const [copiedUrls, setCopiedUrls] = useState<Set<string>>(new Set());
+  const toast = useToastController();
   useEffect(() => {
     if (open && !hasOpened) {
       setHasOpened(true);
     }
   }, [open, hasOpened]);
+
+  const copyToClipboard = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedUrls(prev => new Set(prev).add(url));
+      toast.show('Copied!');
+      
+      // Remove the copied state after 5 seconds
+      setTimeout(() => {
+        setCopiedUrls(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(url);
+          return newSet;
+        });
+      }, 5000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      toast.show('Copy failed');
+    }
+  };
+
+  const CopyButton = ({ url, isRightButton = false }: { url: string; isRightButton?: boolean }) => {
+    const isCopied = copiedUrls.has(url);
+    return (
+      <Button 
+        my='auto' 
+        h='auto' 
+        px='$2' 
+        onPress={() => copyToClipboard(url)}
+        borderTopLeftRadius={isRightButton ? 0 : undefined}
+        borderBottomLeftRadius={isRightButton ? 0 : undefined}
+        ml={isRightButton ? -1 : undefined} // Overlap border for connected look
+      >
+        <YStack ai='center' pos='relative'>
+          <ZStack w='$2' h='$2'>
+            <ZStack animation='standard' o={isCopied ? 0 : 1}>
+              <Copy size='$1' />
+            </ZStack>
+            <ZStack animation='standard' o={isCopied ? 1 : 0}>
+              <CopyCheck size='$1' />
+            </ZStack>
+          </ZStack>
+          {isCopied && (
+            <Paragraph 
+              size='$1' 
+              color='$color' 
+              pos='absolute' 
+              top={-15} 
+              whiteSpace='nowrap'
+              zi={1000}
+            >
+              Copied!
+            </Paragraph>
+          )}
+        </YStack>
+      </Button>
+    );
+  };
   const showSubscriptionsSection = (userSubscriptionAuthor && userSubscriptionHost) || subscriptionServers.length > 0;
 
   const subscriptionsSection = <>
@@ -121,18 +181,23 @@ export const EventCalendarExporter: React.FC<Props> = ({
     {userSubscriptionAuthor && userSubscriptionHost ?
       <>
         <Paragraph lineHeight='$1' size='$2'>Use this link to subscribe to all of {userSubscriptionName}'s calendar events (you may need to copy/paste the URL):</Paragraph>
-        <Anchor href={userSubscriptionUrl} mx='auto'>
-          <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none">
-            <YStack ai='center'>
-              <XStack ai='center'>
-                <AuthorInfo larger author={userSubscriptionAuthor} disableLink />
-                <Heading size='$7' ml='$1'>@</Heading>
-              </XStack>
-              <ServerNameAndLogo server={userSubscriptionAccountOrServer.server} />
-              <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
-            </YStack>
-          </Button>
-        </Anchor>
+        <XStack mx='auto'>
+          <Anchor href={userSubscriptionUrl}>
+            <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none"
+              borderTopRightRadius={0}
+              borderBottomRightRadius={0}>
+              <YStack ai='center'>
+                <XStack ai='center'>
+                  <AuthorInfo larger author={userSubscriptionAuthor} disableLink />
+                  <Heading size='$7' ml='$1'>@</Heading>
+                </XStack>
+                <ServerNameAndLogo server={userSubscriptionAccountOrServer.server} />
+                <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
+              </YStack>
+            </Button>
+          </Anchor>
+          <CopyButton url={userSubscriptionUrl!} isRightButton />
+        </XStack>
       </>
       : undefined}
     {subscriptionServers.length > 0 ?
@@ -142,17 +207,25 @@ export const EventCalendarExporter: React.FC<Props> = ({
             ? `Use this link to subscribe to public events from ${shortenServerName(subscriptionServers[0])} (you may need to copy/paste the URL):`
             : 'Use these links to subscribe to public events in that community (you may need to copy/paste the URL):'}</Paragraph>
         <XStack flexWrap='wrap' gap='$2' ai='center' jc='space-around' my='$2'>
-          {subscriptionServers.map((server, index) => (
-            <Anchor key={index} href={serverSubscriptionUrls[index]}>
-              <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none">
-                <YStack ai='center'>
-                  <ServerNameAndLogo server={server} />
-                  <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
-                </YStack>
-                {/* <YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>{server.serverConfiguration?.serverInfo?.name}</Paragraph><Paragraph lineHeight='$1' size='$2'>ICS Link</Paragraph></YStack> */}
-              </Button>
-            </Anchor>
-          ))}
+          {subscriptionServers.map((server, index) => {
+            const url = `https://${server.host}/calendar.ics`;
+            return (
+              <XStack key={index}>
+                <Anchor href={url}>
+                  <Button iconAfter={Link} my='auto' h='auto' px='$2' pointerEvents="none"
+                    borderTopRightRadius={0}
+                    borderBottomRightRadius={0}>
+                    <YStack ai='center'>
+                      <ServerNameAndLogo server={server} />
+                      <Paragraph lineHeight='$1' size='$1'>Calendar Subscription</Paragraph>
+                    </YStack>
+                    {/* <YStack mr='auto'><Paragraph lineHeight='$1' size='$3'>{server.serverConfiguration?.serverInfo?.name}</Paragraph><Paragraph lineHeight='$1' size='$2'>ICS Link</Paragraph></YStack> */}
+                  </Button>
+                </Anchor>
+                <CopyButton url={url} isRightButton />
+              </XStack>
+            );
+          })}
         </XStack>
       </>
       : undefined}
