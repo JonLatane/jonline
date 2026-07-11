@@ -50,8 +50,8 @@ export function AuthSheet({ }: AuthSheetProps) {
   const specifiedServer = creationServer;
 
 
-  const usernameRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
-  const passwordRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
+  const usernameRef = React.useRef<HTMLInputElement>(undefined as never);// as React.RefObject<HTMLInputElement>;
+  const passwordRef = React.useRef<HTMLInputElement>(undefined as never);// as React.RefObject<HTMLInputElement>;
 
   const currentServer = useCurrentServer();
   const server = specifiedServer ?? currentServer;
@@ -293,7 +293,7 @@ export function AuthSheet({ }: AuthSheetProps) {
               {addingAccount
                 ? <YStack key='add-account-panel' gap="$2" w='100%' pb='$3'>
                   <Heading size="$6">{server?.host}/</Heading>
-                  <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                  <Input textContentType="username" /*autoCorrect={false}*/ placeholder="Username" keyboardType='twitter'
                     editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                     autoCapitalize='none'
                     value={newAccountUser}

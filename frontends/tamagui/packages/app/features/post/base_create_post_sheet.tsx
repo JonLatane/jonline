@@ -178,7 +178,7 @@ export function BaseCreatePostSheet({
     title, link, content, shareable, embedLink, media, visibility,
     author: { userId: account?.user.id, username: account?.user.username }
   })
-  const textAreaRef = React.createRef<TextInput>();
+  const textAreaRef = React.createRef<HTMLInputElement>();
 
   const [posting, setPosting] = useState(false);
   const [postingError, setPostingError] = useState(undefined as string | undefined);
@@ -408,7 +408,7 @@ export function BaseCreatePostSheet({
                             <XStack gap='$2'>
                               <Input f={1} textContentType="name"
                                 placeholder={`${entityName} Title (required)`}
-                                placeholderTextColor={navAnchorColor}
+                                // placeholderTextColor={navAnchorColor}
                                 disabled={disableInputs} opacity={disableInputs || title == '' ? 0.5 : 1}
                                 borderColor={title == '' ? navAnchorColor : undefined}
                                 // color={title == '' ? primaryAnchorColor : undefined}
@@ -425,7 +425,7 @@ export function BaseCreatePostSheet({
                             </XStack>
                             {additionalFields?.(previewPost, group)}
                             <XStack gap='$2'>
-                              <Input f={1} textContentType="URL" autoCorrect={false} placeholder="Link (optional)"
+                              <Input f={1} textContentType="URL" /*autoCorrect={false}*/ placeholder="Link (optional)"
                                 disabled={disableInputs} opacity={disableInputs || link == '' ? 0.5 : 1}
                                 onFocus={() => setShowSettings(false)}
                                 // autoCapitalize='words'
@@ -495,7 +495,7 @@ export function BaseCreatePostSheet({
                           <TextArea key='content' w='100%' pt='$1' mt='$2' value={content} ref={textAreaRef}
                             onFocus={() => setShowSettings(false)}
                             disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
-                            onChangeText={t => setContent(t)}
+                            onChangeText={t => setContent(t.nativeEvent.text)}
                             // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
                             // onBlur={() => _replyTextFocused = false}
                             placeholder={`Text content (optional). Markdown is supported.`} />

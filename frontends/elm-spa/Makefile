@@ -1,0 +1,12 @@
+.NOTPARALLEL:
+# .DEFAULT_GOAL := default
+# default: protos docs graphs
+
+server:
+	npx elm-spa server
+
+setup_proto_build:
+	yarn global add protoc-gen-elm
+
+protos:
+	protoc --elm_out=./src -I../../protos ../../protos/*.proto

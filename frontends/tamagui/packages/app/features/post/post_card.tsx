@@ -281,7 +281,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         ? <TextArea f={1} pt='$2' value={editedContent}
           disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
           h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-          onChangeText={setEditedContent}
+          onChangeText={t => setEditedContent(t.nativeEvent.text)}
           placeholder={`Text content (optional). Markdown is supported.`} />
         : content && content != ''
           ? <TamaguiMarkdown text={content} disableLinks={isPreview} />

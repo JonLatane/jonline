@@ -311,7 +311,7 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
               <XStack key='add-server' gap="$2" mt='$2' w='100%' maxWidth={600} width='100%' ai='center' alignSelf='center'>
                 {/* <Heading size="$10" f={1}>Add Server</Heading> */}
                 {/* <YStack> */}
-                <Input f={1} textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                <Input f={1} textContentType="URL" keyboardType='url' /*autoCorrect={false}*/ autoCapitalize='none' placeholder="Server Hostname"
                   editable={!serversLoading}
                   opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
                   value={newServerHost}

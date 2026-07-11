@@ -172,7 +172,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const mediaQuery = useMedia();
 
   const textColor = selected ? navTextColor : undefined;
-  const passwordRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
+  const passwordRef = React.useRef(undefined as never) as React.RefObject<HTMLInputElement>;
 
   const primaryBackgroundRight = pinned && !selected;
   const serverLogo = isCurrentServer ? undefined

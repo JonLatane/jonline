@@ -410,7 +410,7 @@ export function UsernameDetailsScreen() {
                 <YStack als='center' w='100%' paddingHorizontal='$2' gap='$2'>
                   {editMode ?
                     <TextArea key='bio-edit' animation='standard' {...standardHorizontalAnimation}
-                      value={bio} onChangeText={t => setBio(t)}
+                      value={bio} onChangeText={t => setBio(t.nativeEvent.text)}
                       // size='$5'
                       h='$14'
                       placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}

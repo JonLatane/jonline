@@ -31,7 +31,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
-  const textAreaRef = React.createRef<TextInput>();
+  const textAreaRef = React.createRef<HTMLInputElement>();
   const chatUI = useRootSelector((state: RootState) => state.config.discussionChatUI);
   const [showMedia, setShowMedia] = useState(true);
   const maxPreviewHeight = (useWindowDimensions().height - 80 - (showMedia && media.length > 0 ? 100 : 0)) * 0.5;
@@ -136,7 +136,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         <YStack f={1} mt='$1'>
           <TextArea f={1} value={replyText} ref={textAreaRef}
             disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
-            onChangeText={t => setReplyText(t)}
+            onChangeText={t => setReplyText(t.nativeEvent.text)}
             onFocus={() => setReplyTextFocused(true)}
             onBlur={() => setReplyTextFocused(false)}
             placeholder={`Reply to this post. Markdown is supported.`} />
