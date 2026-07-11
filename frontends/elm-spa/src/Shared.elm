@@ -7,7 +7,9 @@ module Shared exposing
     , Msg(..)
     , Server
     , accountId
+    , accountsMenuLabel
     , init
+    , serverHasAccounts
     , subscriptions
     , update
     )
@@ -68,6 +70,8 @@ type alias Model =
     { accounts : List Account
     , servers : List Server
     , accountForm : AccountForm
+    , serverHostInput : String
+    , showAccountsPanel : Bool
     }
 
 
@@ -81,6 +85,10 @@ type Msg
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
+    | ServerHostInputChanged String
+    | AddServerClicked
+    | RemoveServerClicked String
+    | ToggleAccountsPanel
 
 
 {-| A stable identifier for an account: a user's id is only unique per-server.
@@ -88,6 +96,28 @@ type Msg
 accountId : Account -> String
 accountId account =
     account.server ++ "|" ++ account.userId
+
+
+{-| What the accounts-menu toggle button should say: "Log In" with nobody signed
+in, just the username if there's exactly one signed-in account on the server
+currently in the login form, that account's "username@server" if it's on some
+other server, or an account count if several are signed in at once.
+-}
+accountsMenuLabel : Model -> String
+accountsMenuLabel model =
+    case List.filter .enabled model.accounts of
+        [] ->
+            "Log In"
+
+        [ only ] ->
+            if only.server == model.accountForm.server then
+                only.username
+
+            else
+                only.username ++ "@" ++ only.server
+
+        many ->
+            String.fromInt (List.length many) ++ " Accounts"
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
@@ -100,6 +130,8 @@ init _ flags =
     ( { accounts = persisted.accounts
       , servers = persisted.servers
       , accountForm = emptyForm
+      , serverHostInput = ""
+      , showAccountsPanel = False
       }
     , Cmd.none
     )
@@ -244,10 +276,53 @@ update _ msg model =
             in
             ( newModel, persist newModel )
 
+        ServerHostInputChanged host ->
+            ( { model | serverHostInput = host }, Cmd.none )
+
+        AddServerClicked ->
+            let
+                host =
+                    String.trim model.serverHostInput
+            in
+            if String.isEmpty host then
+                ( model, Cmd.none )
+
+            else
+                let
+                    newModel =
+                        { model
+                            | servers = upsertServer host model.servers
+                            , serverHostInput = ""
+                        }
+                in
+                ( newModel, persist newModel )
+
+        RemoveServerClicked host ->
+            if serverHasAccounts model.accounts host then
+                ( model, Cmd.none )
+
+            else
+                let
+                    newModel =
+                        { model | servers = List.filter (\s -> s.host /= host) model.servers }
+                in
+                ( newModel, persist newModel )
+
+        ToggleAccountsPanel ->
+            ( { model | showAccountsPanel = not model.showAccountsPanel }, Cmd.none )
+
 
 subscriptions : Request -> Model -> Sub Msg
 subscriptions _ _ =
     Sub.none
+
+
+{-| A server that has any associated accounts can't be removed (only disabled),
+since removing it would orphan those accounts' stored credentials.
+-}
+serverHasAccounts : List Account -> String -> Bool
+serverHasAccounts accounts host =
+    List.any (\a -> a.server == host) accounts
 
 
 updateForm : (AccountForm -> AccountForm) -> Model -> Model
