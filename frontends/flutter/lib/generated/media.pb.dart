@@ -8,13 +8,14 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $0;
 
-import 'google/protobuf/timestamp.pb.dart' as $0;
 import 'visibility_moderation.pbenum.dart' as $1;
 
 export 'package:protobuf/protobuf.dart' show GeneratedMessageGenericExtensions;
@@ -71,28 +72,39 @@ class Media extends $pb.GeneratedMessage {
 
   Media._();
 
-  factory Media.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Media.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Media.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Media.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Media', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Media',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
     ..aOS(3, _omitFieldNames ? '' : 'contentType')
     ..aOS(4, _omitFieldNames ? '' : 'name')
     ..aOS(5, _omitFieldNames ? '' : 'description')
-    ..e<$1.Visibility>(6, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $1.Visibility.VISIBILITY_UNKNOWN, valueOf: $1.Visibility.valueOf, enumValues: $1.Visibility.values)
-    ..e<$1.Moderation>(7, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $1.Moderation.MODERATION_UNKNOWN, valueOf: $1.Moderation.valueOf, enumValues: $1.Moderation.values)
+    ..aE<$1.Visibility>(6, _omitFieldNames ? '' : 'visibility',
+        enumValues: $1.Visibility.values)
+    ..aE<$1.Moderation>(7, _omitFieldNames ? '' : 'moderation',
+        enumValues: $1.Moderation.values)
     ..aOB(8, _omitFieldNames ? '' : 'generated')
     ..aOB(9, _omitFieldNames ? '' : 'processed')
-    ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'createdAt', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt', subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.Timestamp>(15, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(16, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Media clone() => Media()..mergeFromMessage(this);
+  Media clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Media copyWith(void Function(Media) updates) => super.copyWith((message) => updates(message as Media)) as Media;
+  Media copyWith(void Function(Media) updates) =>
+      super.copyWith((message) => updates(message as Media)) as Media;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -101,9 +113,9 @@ class Media extends $pb.GeneratedMessage {
   static Media create() => Media._();
   @$core.override
   Media createEmptyInstance() => create();
-  static $pb.PbList<Media> createRepeated() => $pb.PbList<Media>();
   @$core.pragma('dart2js:noInline')
-  static Media getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Media>(create);
+  static Media getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Media>(create);
   static Media? _defaultInstance;
 
   /// The ID of the media item.
@@ -240,21 +252,29 @@ class MediaReference extends $pb.GeneratedMessage {
 
   MediaReference._();
 
-  factory MediaReference.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory MediaReference.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory MediaReference.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory MediaReference.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'MediaReference', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'MediaReference',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'contentType')
     ..aOS(2, _omitFieldNames ? '' : 'id')
     ..aOS(3, _omitFieldNames ? '' : 'name')
     ..aOB(4, _omitFieldNames ? '' : 'generated')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  MediaReference clone() => MediaReference()..mergeFromMessage(this);
+  MediaReference clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  MediaReference copyWith(void Function(MediaReference) updates) => super.copyWith((message) => updates(message as MediaReference)) as MediaReference;
+  MediaReference copyWith(void Function(MediaReference) updates) =>
+      super.copyWith((message) => updates(message as MediaReference))
+          as MediaReference;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -263,9 +283,9 @@ class MediaReference extends $pb.GeneratedMessage {
   static MediaReference create() => MediaReference._();
   @$core.override
   MediaReference createEmptyInstance() => create();
-  static $pb.PbList<MediaReference> createRepeated() => $pb.PbList<MediaReference>();
   @$core.pragma('dart2js:noInline')
-  static MediaReference getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<MediaReference>(create);
+  static MediaReference getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<MediaReference>(create);
   static MediaReference? _defaultInstance;
 
   /// The MIME content type of the media item.
@@ -331,20 +351,28 @@ class GetMediaRequest extends $pb.GeneratedMessage {
 
   GetMediaRequest._();
 
-  factory GetMediaRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetMediaRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetMediaRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetMediaRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetMediaRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'mediaId')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
-    ..a<$core.int>(11, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
-    ..hasRequiredFields = false
-  ;
+    ..aI(11, _omitFieldNames ? '' : 'page', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMediaRequest clone() => GetMediaRequest()..mergeFromMessage(this);
+  GetMediaRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMediaRequest copyWith(void Function(GetMediaRequest) updates) => super.copyWith((message) => updates(message as GetMediaRequest)) as GetMediaRequest;
+  GetMediaRequest copyWith(void Function(GetMediaRequest) updates) =>
+      super.copyWith((message) => updates(message as GetMediaRequest))
+          as GetMediaRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -353,9 +381,9 @@ class GetMediaRequest extends $pb.GeneratedMessage {
   static GetMediaRequest create() => GetMediaRequest._();
   @$core.override
   GetMediaRequest createEmptyInstance() => create();
-  static $pb.PbList<GetMediaRequest> createRepeated() => $pb.PbList<GetMediaRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetMediaRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetMediaRequest>(create);
+  static GetMediaRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetMediaRequest>(create);
   static GetMediaRequest? _defaultInstance;
 
   /// Returns the single media item with the given ID.
@@ -401,19 +429,27 @@ class GetMediaResponse extends $pb.GeneratedMessage {
 
   GetMediaResponse._();
 
-  factory GetMediaResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetMediaResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetMediaResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetMediaResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMediaResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Media>(1, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: Media.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetMediaResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<Media>(1, _omitFieldNames ? '' : 'media', subBuilder: Media.create)
     ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMediaResponse clone() => GetMediaResponse()..mergeFromMessage(this);
+  GetMediaResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMediaResponse copyWith(void Function(GetMediaResponse) updates) => super.copyWith((message) => updates(message as GetMediaResponse)) as GetMediaResponse;
+  GetMediaResponse copyWith(void Function(GetMediaResponse) updates) =>
+      super.copyWith((message) => updates(message as GetMediaResponse))
+          as GetMediaResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -422,9 +458,9 @@ class GetMediaResponse extends $pb.GeneratedMessage {
   static GetMediaResponse create() => GetMediaResponse._();
   @$core.override
   GetMediaResponse createEmptyInstance() => create();
-  static $pb.PbList<GetMediaResponse> createRepeated() => $pb.PbList<GetMediaResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetMediaResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetMediaResponse>(create);
+  static GetMediaResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetMediaResponse>(create);
   static GetMediaResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
@@ -440,6 +476,7 @@ class GetMediaResponse extends $pb.GeneratedMessage {
   void clearHasNextPage() => $_clearField(2);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

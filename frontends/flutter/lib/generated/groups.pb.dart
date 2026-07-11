@@ -8,13 +8,14 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $2;
 
-import 'google/protobuf/timestamp.pb.dart' as $2;
 import 'groups.pbenum.dart';
 import 'media.pb.dart' as $0;
 import 'permissions.pbenum.dart' as $3;
@@ -52,16 +53,22 @@ class Group extends $pb.GeneratedMessage {
     if (shortname != null) result.shortname = shortname;
     if (description != null) result.description = description;
     if (avatar != null) result.avatar = avatar;
-    if (defaultMembershipPermissions != null) result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
-    if (defaultMembershipModeration != null) result.defaultMembershipModeration = defaultMembershipModeration;
-    if (defaultPostModeration != null) result.defaultPostModeration = defaultPostModeration;
-    if (defaultEventModeration != null) result.defaultEventModeration = defaultEventModeration;
+    if (defaultMembershipPermissions != null)
+      result.defaultMembershipPermissions.addAll(defaultMembershipPermissions);
+    if (defaultMembershipModeration != null)
+      result.defaultMembershipModeration = defaultMembershipModeration;
+    if (defaultPostModeration != null)
+      result.defaultPostModeration = defaultPostModeration;
+    if (defaultEventModeration != null)
+      result.defaultEventModeration = defaultEventModeration;
     if (visibility != null) result.visibility = visibility;
     if (memberCount != null) result.memberCount = memberCount;
     if (postCount != null) result.postCount = postCount;
     if (eventCount != null) result.eventCount = eventCount;
-    if (nonMemberPermissions != null) result.nonMemberPermissions.addAll(nonMemberPermissions);
-    if (currentUserMembership != null) result.currentUserMembership = currentUserMembership;
+    if (nonMemberPermissions != null)
+      result.nonMemberPermissions.addAll(nonMemberPermissions);
+    if (currentUserMembership != null)
+      result.currentUserMembership = currentUserMembership;
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     return result;
@@ -69,34 +76,61 @@ class Group extends $pb.GeneratedMessage {
 
   Group._();
 
-  factory Group.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Group.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Group.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Group.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Group', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Group',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'name')
     ..aOS(3, _omitFieldNames ? '' : 'shortname')
     ..aOS(4, _omitFieldNames ? '' : 'description')
-    ..aOM<$0.MediaReference>(5, _omitFieldNames ? '' : 'avatar', subBuilder: $0.MediaReference.create)
-    ..pc<$3.Permission>(6, _omitFieldNames ? '' : 'defaultMembershipPermissions', $pb.PbFieldType.KE, valueOf: $3.Permission.valueOf, enumValues: $3.Permission.values, defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
-    ..e<$4.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
-    ..e<$4.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
-    ..e<$4.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
-    ..e<$4.Visibility>(10, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $4.Visibility.VISIBILITY_UNKNOWN, valueOf: $4.Visibility.valueOf, enumValues: $4.Visibility.values)
-    ..a<$core.int>(11, _omitFieldNames ? '' : 'memberCount', $pb.PbFieldType.OU3)
-    ..a<$core.int>(12, _omitFieldNames ? '' : 'postCount', $pb.PbFieldType.OU3)
-    ..a<$core.int>(13, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU3)
-    ..pc<$3.Permission>(18, _omitFieldNames ? '' : 'nonMemberPermissions', $pb.PbFieldType.KE, valueOf: $3.Permission.valueOf, enumValues: $3.Permission.values, defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
-    ..aOM<$1.Membership>(19, _omitFieldNames ? '' : 'currentUserMembership', subBuilder: $1.Membership.create)
-    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $2.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$0.MediaReference>(5, _omitFieldNames ? '' : 'avatar',
+        subBuilder: $0.MediaReference.create)
+    ..pc<$3.Permission>(
+        6,
+        _omitFieldNames ? '' : 'defaultMembershipPermissions',
+        $pb.PbFieldType.KE,
+        valueOf: $3.Permission.valueOf,
+        enumValues: $3.Permission.values,
+        defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
+    ..aE<$4.Moderation>(7, _omitFieldNames ? '' : 'defaultMembershipModeration',
+        enumValues: $4.Moderation.values)
+    ..aE<$4.Moderation>(8, _omitFieldNames ? '' : 'defaultPostModeration',
+        enumValues: $4.Moderation.values)
+    ..aE<$4.Moderation>(9, _omitFieldNames ? '' : 'defaultEventModeration',
+        enumValues: $4.Moderation.values)
+    ..aE<$4.Visibility>(10, _omitFieldNames ? '' : 'visibility',
+        enumValues: $4.Visibility.values)
+    ..aI(11, _omitFieldNames ? '' : 'memberCount',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(12, _omitFieldNames ? '' : 'postCount', fieldType: $pb.PbFieldType.OU3)
+    ..aI(13, _omitFieldNames ? '' : 'eventCount',
+        fieldType: $pb.PbFieldType.OU3)
+    ..pc<$3.Permission>(
+        18, _omitFieldNames ? '' : 'nonMemberPermissions', $pb.PbFieldType.KE,
+        valueOf: $3.Permission.valueOf,
+        enumValues: $3.Permission.values,
+        defaultEnumValue: $3.Permission.PERMISSION_UNKNOWN)
+    ..aOM<$1.Membership>(19, _omitFieldNames ? '' : 'currentUserMembership',
+        subBuilder: $1.Membership.create)
+    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $2.Timestamp.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Group clone() => Group()..mergeFromMessage(this);
+  Group clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Group copyWith(void Function(Group) updates) => super.copyWith((message) => updates(message as Group)) as Group;
+  Group copyWith(void Function(Group) updates) =>
+      super.copyWith((message) => updates(message as Group)) as Group;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -105,9 +139,9 @@ class Group extends $pb.GeneratedMessage {
   static Group create() => Group._();
   @$core.override
   Group createEmptyInstance() => create();
-  static $pb.PbList<Group> createRepeated() => $pb.PbList<Group>();
   @$core.pragma('dart2js:noInline')
-  static Group getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Group>(create);
+  static Group getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Group>(create);
   static Group? _defaultInstance;
 
   /// The group's unique ID.
@@ -299,22 +333,31 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
 
   GetGroupsRequest._();
 
-  factory GetGroupsRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetGroupsRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetGroupsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetGroupsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetGroupsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'groupName')
     ..aOS(3, _omitFieldNames ? '' : 'groupShortname')
-    ..e<GroupListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: GroupListingType.ALL_GROUPS, valueOf: GroupListingType.valueOf, enumValues: GroupListingType.values)
-    ..a<$core.int>(11, _omitFieldNames ? '' : 'page', $pb.PbFieldType.O3)
-    ..hasRequiredFields = false
-  ;
+    ..aE<GroupListingType>(10, _omitFieldNames ? '' : 'listingType',
+        enumValues: GroupListingType.values)
+    ..aI(11, _omitFieldNames ? '' : 'page')
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupsRequest clone() => GetGroupsRequest()..mergeFromMessage(this);
+  GetGroupsRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupsRequest copyWith(void Function(GetGroupsRequest) updates) => super.copyWith((message) => updates(message as GetGroupsRequest)) as GetGroupsRequest;
+  GetGroupsRequest copyWith(void Function(GetGroupsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetGroupsRequest))
+          as GetGroupsRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -323,9 +366,9 @@ class GetGroupsRequest extends $pb.GeneratedMessage {
   static GetGroupsRequest create() => GetGroupsRequest._();
   @$core.override
   GetGroupsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetGroupsRequest> createRepeated() => $pb.PbList<GetGroupsRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetGroupsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupsRequest>(create);
+  static GetGroupsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetGroupsRequest>(create);
   static GetGroupsRequest? _defaultInstance;
 
   /// The ID of the group to get.
@@ -394,19 +437,27 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
 
   GetGroupsResponse._();
 
-  factory GetGroupsResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetGroupsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetGroupsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetGroupsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Group>(1, _omitFieldNames ? '' : 'groups', $pb.PbFieldType.PM, subBuilder: Group.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetGroupsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<Group>(1, _omitFieldNames ? '' : 'groups', subBuilder: Group.create)
     ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupsResponse clone() => GetGroupsResponse()..mergeFromMessage(this);
+  GetGroupsResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupsResponse copyWith(void Function(GetGroupsResponse) updates) => super.copyWith((message) => updates(message as GetGroupsResponse)) as GetGroupsResponse;
+  GetGroupsResponse copyWith(void Function(GetGroupsResponse) updates) =>
+      super.copyWith((message) => updates(message as GetGroupsResponse))
+          as GetGroupsResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -415,9 +466,9 @@ class GetGroupsResponse extends $pb.GeneratedMessage {
   static GetGroupsResponse create() => GetGroupsResponse._();
   @$core.override
   GetGroupsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetGroupsResponse> createRepeated() => $pb.PbList<GetGroupsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetGroupsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupsResponse>(create);
+  static GetGroupsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetGroupsResponse>(create);
   static GetGroupsResponse? _defaultInstance;
 
   /// The groups that matched the request.
@@ -449,19 +500,27 @@ class Member extends $pb.GeneratedMessage {
 
   Member._();
 
-  factory Member.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Member.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Member.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Member.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Member', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Member',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOM<$1.User>(1, _omitFieldNames ? '' : 'user', subBuilder: $1.User.create)
-    ..aOM<$1.Membership>(2, _omitFieldNames ? '' : 'membership', subBuilder: $1.Membership.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$1.Membership>(2, _omitFieldNames ? '' : 'membership',
+        subBuilder: $1.Membership.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Member clone() => Member()..mergeFromMessage(this);
+  Member clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Member copyWith(void Function(Member) updates) => super.copyWith((message) => updates(message as Member)) as Member;
+  Member copyWith(void Function(Member) updates) =>
+      super.copyWith((message) => updates(message as Member)) as Member;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -470,9 +529,9 @@ class Member extends $pb.GeneratedMessage {
   static Member create() => Member._();
   @$core.override
   Member createEmptyInstance() => create();
-  static $pb.PbList<Member> createRepeated() => $pb.PbList<Member>();
   @$core.pragma('dart2js:noInline')
-  static Member getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Member>(create);
+  static Member getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Member>(create);
   static Member? _defaultInstance;
 
   /// The user.
@@ -518,21 +577,30 @@ class GetMembersRequest extends $pb.GeneratedMessage {
 
   GetMembersRequest._();
 
-  factory GetMembersRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetMembersRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetMembersRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetMembersRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetMembersRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..e<$4.Moderation>(3, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $4.Moderation.MODERATION_UNKNOWN, valueOf: $4.Moderation.valueOf, enumValues: $4.Moderation.values)
-    ..a<$core.int>(10, _omitFieldNames ? '' : 'page', $pb.PbFieldType.O3)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$4.Moderation>(3, _omitFieldNames ? '' : 'groupModeration',
+        enumValues: $4.Moderation.values)
+    ..aI(10, _omitFieldNames ? '' : 'page')
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMembersRequest clone() => GetMembersRequest()..mergeFromMessage(this);
+  GetMembersRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMembersRequest copyWith(void Function(GetMembersRequest) updates) => super.copyWith((message) => updates(message as GetMembersRequest)) as GetMembersRequest;
+  GetMembersRequest copyWith(void Function(GetMembersRequest) updates) =>
+      super.copyWith((message) => updates(message as GetMembersRequest))
+          as GetMembersRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -541,9 +609,9 @@ class GetMembersRequest extends $pb.GeneratedMessage {
   static GetMembersRequest create() => GetMembersRequest._();
   @$core.override
   GetMembersRequest createEmptyInstance() => create();
-  static $pb.PbList<GetMembersRequest> createRepeated() => $pb.PbList<GetMembersRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetMembersRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetMembersRequest>(create);
+  static GetMembersRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetMembersRequest>(create);
   static GetMembersRequest? _defaultInstance;
 
   /// The ID of the group to get members of.
@@ -602,19 +670,28 @@ class GetMembersResponse extends $pb.GeneratedMessage {
 
   GetMembersResponse._();
 
-  factory GetMembersResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetMembersResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetMembersResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetMembersResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetMembersResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Member>(1, _omitFieldNames ? '' : 'members', $pb.PbFieldType.PM, subBuilder: Member.create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetMembersResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<Member>(1, _omitFieldNames ? '' : 'members',
+        subBuilder: Member.create)
     ..aOB(2, _omitFieldNames ? '' : 'hasNextPage')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMembersResponse clone() => GetMembersResponse()..mergeFromMessage(this);
+  GetMembersResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetMembersResponse copyWith(void Function(GetMembersResponse) updates) => super.copyWith((message) => updates(message as GetMembersResponse)) as GetMembersResponse;
+  GetMembersResponse copyWith(void Function(GetMembersResponse) updates) =>
+      super.copyWith((message) => updates(message as GetMembersResponse))
+          as GetMembersResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -623,9 +700,9 @@ class GetMembersResponse extends $pb.GeneratedMessage {
   static GetMembersResponse create() => GetMembersResponse._();
   @$core.override
   GetMembersResponse createEmptyInstance() => create();
-  static $pb.PbList<GetMembersResponse> createRepeated() => $pb.PbList<GetMembersResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetMembersResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetMembersResponse>(create);
+  static GetMembersResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetMembersResponse>(create);
   static GetMembersResponse? _defaultInstance;
 
   /// The members that matched the request.
@@ -643,6 +720,7 @@ class GetMembersResponse extends $pb.GeneratedMessage {
   void clearHasNextPage() => $_clearField(2);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

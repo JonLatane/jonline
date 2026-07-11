@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -28,18 +28,27 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
 
   GetServiceVersionResponse._();
 
-  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetServiceVersionResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetServiceVersionResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetServiceVersionResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetServiceVersionResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetServiceVersionResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'version')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetServiceVersionResponse clone() => GetServiceVersionResponse()..mergeFromMessage(this);
+  GetServiceVersionResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetServiceVersionResponse copyWith(void Function(GetServiceVersionResponse) updates) => super.copyWith((message) => updates(message as GetServiceVersionResponse)) as GetServiceVersionResponse;
+  GetServiceVersionResponse copyWith(
+          void Function(GetServiceVersionResponse) updates) =>
+      super.copyWith((message) => updates(message as GetServiceVersionResponse))
+          as GetServiceVersionResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -48,9 +57,9 @@ class GetServiceVersionResponse extends $pb.GeneratedMessage {
   static GetServiceVersionResponse create() => GetServiceVersionResponse._();
   @$core.override
   GetServiceVersionResponse createEmptyInstance() => create();
-  static $pb.PbList<GetServiceVersionResponse> createRepeated() => $pb.PbList<GetServiceVersionResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetServiceVersionResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetServiceVersionResponse>(create);
+  static GetServiceVersionResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetServiceVersionResponse>(create);
   static GetServiceVersionResponse? _defaultInstance;
 
   /// The version of the Jonline server. May be suffixed with the GitHub SHA of the commit
@@ -77,18 +86,27 @@ class FederationInfo extends $pb.GeneratedMessage {
 
   FederationInfo._();
 
-  factory FederationInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory FederationInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory FederationInfo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FederationInfo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederationInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<FederatedServer>(1, _omitFieldNames ? '' : 'servers', $pb.PbFieldType.PM, subBuilder: FederatedServer.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FederationInfo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<FederatedServer>(1, _omitFieldNames ? '' : 'servers',
+        subBuilder: FederatedServer.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederationInfo clone() => FederationInfo()..mergeFromMessage(this);
+  FederationInfo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederationInfo copyWith(void Function(FederationInfo) updates) => super.copyWith((message) => updates(message as FederationInfo)) as FederationInfo;
+  FederationInfo copyWith(void Function(FederationInfo) updates) =>
+      super.copyWith((message) => updates(message as FederationInfo))
+          as FederationInfo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -97,9 +115,9 @@ class FederationInfo extends $pb.GeneratedMessage {
   static FederationInfo create() => FederationInfo._();
   @$core.override
   FederationInfo createEmptyInstance() => create();
-  static $pb.PbList<FederationInfo> createRepeated() => $pb.PbList<FederationInfo>();
   @$core.pragma('dart2js:noInline')
-  static FederationInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
+  static FederationInfo getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FederationInfo>(create);
   static FederationInfo? _defaultInstance;
 
   /// A list of servers that this server will federate with.
@@ -116,27 +134,36 @@ class FederatedServer extends $pb.GeneratedMessage {
   }) {
     final result = create();
     if (host != null) result.host = host;
-    if (configuredByDefault != null) result.configuredByDefault = configuredByDefault;
+    if (configuredByDefault != null)
+      result.configuredByDefault = configuredByDefault;
     if (pinnedByDefault != null) result.pinnedByDefault = pinnedByDefault;
     return result;
   }
 
   FederatedServer._();
 
-  factory FederatedServer.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory FederatedServer.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory FederatedServer.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FederatedServer.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedServer', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FederatedServer',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
     ..aOB(2, _omitFieldNames ? '' : 'configuredByDefault')
     ..aOB(3, _omitFieldNames ? '' : 'pinnedByDefault')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederatedServer clone() => FederatedServer()..mergeFromMessage(this);
+  FederatedServer clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederatedServer copyWith(void Function(FederatedServer) updates) => super.copyWith((message) => updates(message as FederatedServer)) as FederatedServer;
+  FederatedServer copyWith(void Function(FederatedServer) updates) =>
+      super.copyWith((message) => updates(message as FederatedServer))
+          as FederatedServer;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -145,9 +172,9 @@ class FederatedServer extends $pb.GeneratedMessage {
   static FederatedServer create() => FederatedServer._();
   @$core.override
   FederatedServer createEmptyInstance() => create();
-  static $pb.PbList<FederatedServer> createRepeated() => $pb.PbList<FederatedServer>();
   @$core.pragma('dart2js:noInline')
-  static FederatedServer getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
+  static FederatedServer getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FederatedServer>(create);
   static FederatedServer? _defaultInstance;
 
   /// The DNS hostname of the server to federate with.
@@ -198,19 +225,27 @@ class FederatedAccount extends $pb.GeneratedMessage {
 
   FederatedAccount._();
 
-  factory FederatedAccount.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory FederatedAccount.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory FederatedAccount.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FederatedAccount.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FederatedAccount', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FederatedAccount',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'host')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederatedAccount clone() => FederatedAccount()..mergeFromMessage(this);
+  FederatedAccount clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FederatedAccount copyWith(void Function(FederatedAccount) updates) => super.copyWith((message) => updates(message as FederatedAccount)) as FederatedAccount;
+  FederatedAccount copyWith(void Function(FederatedAccount) updates) =>
+      super.copyWith((message) => updates(message as FederatedAccount))
+          as FederatedAccount;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -219,9 +254,9 @@ class FederatedAccount extends $pb.GeneratedMessage {
   static FederatedAccount create() => FederatedAccount._();
   @$core.override
   FederatedAccount createEmptyInstance() => create();
-  static $pb.PbList<FederatedAccount> createRepeated() => $pb.PbList<FederatedAccount>();
   @$core.pragma('dart2js:noInline')
-  static FederatedAccount getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FederatedAccount>(create);
+  static FederatedAccount getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FederatedAccount>(create);
   static FederatedAccount? _defaultInstance;
 
   /// The DNS hostname of the server that this user is on.
@@ -245,6 +280,7 @@ class FederatedAccount extends $pb.GeneratedMessage {
   void clearUserId() => $_clearField(2);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

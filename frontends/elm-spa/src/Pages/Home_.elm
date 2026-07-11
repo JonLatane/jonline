@@ -1,20 +1,25 @@
-module Pages.Home_ exposing (view)
+module Pages.Home_ exposing (Model, Msg, page)
 
+import Gen.Params.Home_ exposing (Params)
 import Html
+import Page
+import Request
+import Shared
 import UI
-import View exposing (View)
 
 
+page : Shared.Model -> Request.With Params -> Page.With Model Msg
+page shared req =
+    UI.page shared
+        req
+        { title = "Homepage"
+        , body = [ Html.text "This is the Jonline home page. Probably still need to do more stuff here!" ]
+        }
 
--- view : View msg
--- view =
---     { title = "Homepage"
---     , body = [ Html.text "Hello, world!" ]
---     }
+
+type alias Model =
+    ()
 
 
-view : View msg
-view =
-    { title = "Homepage"
-    , body = UI.layout [ Html.text "This is the Jonline home page. Probabl still need to do more stuff here!" ]
-    }
+type alias Msg =
+    Shared.Msg

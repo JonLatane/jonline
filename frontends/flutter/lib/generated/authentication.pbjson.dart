@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -20,10 +21,45 @@ const CreateAccountRequest$json = {
   '2': [
     {'1': 'username', '3': 1, '4': 1, '5': 9, '10': 'username'},
     {'1': 'password', '3': 2, '4': 1, '5': 9, '10': 'password'},
-    {'1': 'email', '3': 3, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 0, '10': 'email', '17': true},
-    {'1': 'phone', '3': 4, '4': 1, '5': 11, '6': '.jonline.ContactMethod', '9': 1, '10': 'phone', '17': true},
-    {'1': 'expires_at', '3': 5, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'expiresAt', '17': true},
-    {'1': 'device_name', '3': 6, '4': 1, '5': 9, '9': 3, '10': 'deviceName', '17': true},
+    {
+      '1': 'email',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ContactMethod',
+      '9': 0,
+      '10': 'email',
+      '17': true
+    },
+    {
+      '1': 'phone',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ContactMethod',
+      '9': 1,
+      '10': 'phone',
+      '17': true
+    },
+    {
+      '1': 'expires_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 2,
+      '10': 'expiresAt',
+      '17': true
+    },
+    {
+      '1': 'device_name',
+      '3': 6,
+      '4': 1,
+      '5': 9,
+      '9': 3,
+      '10': 'deviceName',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_email'},
@@ -48,9 +84,34 @@ const LoginRequest$json = {
   '2': [
     {'1': 'username', '3': 1, '4': 1, '5': 9, '10': 'username'},
     {'1': 'password', '3': 2, '4': 1, '5': 9, '10': 'password'},
-    {'1': 'expires_at', '3': 3, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
-    {'1': 'device_name', '3': 4, '4': 1, '5': 9, '9': 1, '10': 'deviceName', '17': true},
-    {'1': 'user_id', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'userId', '17': true},
+    {
+      '1': 'expires_at',
+      '3': 3,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'expiresAt',
+      '17': true
+    },
+    {
+      '1': 'device_name',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'deviceName',
+      '17': true
+    },
+    {
+      '1': 'user_id',
+      '3': 5,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'userId',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_expires_at'},
@@ -71,7 +132,16 @@ final $typed_data.Uint8List loginRequestDescriptor = $convert.base64Decode(
 const CreateThirdPartyRefreshTokenRequest$json = {
   '1': 'CreateThirdPartyRefreshTokenRequest',
   '2': [
-    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
+    {
+      '1': 'expires_at',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'expiresAt',
+      '17': true
+    },
     {'1': 'user_id', '3': 3, '4': 1, '5': 9, '10': 'userId'},
     {'1': 'device_name', '3': 4, '4': 1, '5': 9, '10': 'deviceName'},
   ],
@@ -81,18 +151,33 @@ const CreateThirdPartyRefreshTokenRequest$json = {
 };
 
 /// Descriptor for `CreateThirdPartyRefreshTokenRequest`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List createThirdPartyRefreshTokenRequestDescriptor = $convert.base64Decode(
-    'CiNDcmVhdGVUaGlyZFBhcnR5UmVmcmVzaFRva2VuUmVxdWVzdBI+CgpleHBpcmVzX2F0GAIgAS'
-    'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAUglleHBpcmVzQXSIAQESFwoHdXNlcl9p'
-    'ZBgDIAEoCVIGdXNlcklkEh8KC2RldmljZV9uYW1lGAQgASgJUgpkZXZpY2VOYW1lQg0KC19leH'
-    'BpcmVzX2F0');
+final $typed_data.Uint8List createThirdPartyRefreshTokenRequestDescriptor =
+    $convert.base64Decode(
+        'CiNDcmVhdGVUaGlyZFBhcnR5UmVmcmVzaFRva2VuUmVxdWVzdBI+CgpleHBpcmVzX2F0GAIgAS'
+        'gLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEgAUglleHBpcmVzQXSIAQESFwoHdXNlcl9p'
+        'ZBgDIAEoCVIGdXNlcklkEh8KC2RldmljZV9uYW1lGAQgASgJUgpkZXZpY2VOYW1lQg0KC19leH'
+        'BpcmVzX2F0');
 
 @$core.Deprecated('Use refreshTokenResponseDescriptor instead')
 const RefreshTokenResponse$json = {
   '1': 'RefreshTokenResponse',
   '2': [
-    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'refreshToken'},
-    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'accessToken'},
+    {
+      '1': 'refresh_token',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ExpirableToken',
+      '10': 'refreshToken'
+    },
+    {
+      '1': 'access_token',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ExpirableToken',
+      '10': 'accessToken'
+    },
     {'1': 'user', '3': 3, '4': 1, '5': 11, '6': '.jonline.User', '10': 'user'},
   ],
 };
@@ -109,7 +194,16 @@ const ExpirableToken$json = {
   '1': 'ExpirableToken',
   '2': [
     {'1': 'token', '3': 1, '4': 1, '5': 9, '10': 'token'},
-    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
+    {
+      '1': 'expires_at',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'expiresAt',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_expires_at'},
@@ -127,7 +221,16 @@ const AccessTokenRequest$json = {
   '1': 'AccessTokenRequest',
   '2': [
     {'1': 'refresh_token', '3': 1, '4': 1, '5': 9, '10': 'refreshToken'},
-    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
+    {
+      '1': 'expires_at',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'expiresAt',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_expires_at'},
@@ -144,8 +247,24 @@ final $typed_data.Uint8List accessTokenRequestDescriptor = $convert.base64Decode
 const AccessTokenResponse$json = {
   '1': 'AccessTokenResponse',
   '2': [
-    {'1': 'refresh_token', '3': 1, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '9': 0, '10': 'refreshToken', '17': true},
-    {'1': 'access_token', '3': 2, '4': 1, '5': 11, '6': '.jonline.ExpirableToken', '10': 'accessToken'},
+    {
+      '1': 'refresh_token',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ExpirableToken',
+      '9': 0,
+      '10': 'refreshToken',
+      '17': true
+    },
+    {
+      '1': 'access_token',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ExpirableToken',
+      '10': 'accessToken'
+    },
   ],
   '8': [
     {'1': '_refresh_token'},
@@ -163,7 +282,15 @@ final $typed_data.Uint8List accessTokenResponseDescriptor = $convert.base64Decod
 const ResetPasswordRequest$json = {
   '1': 'ResetPasswordRequest',
   '2': [
-    {'1': 'user_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'userId', '17': true},
+    {
+      '1': 'user_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'userId',
+      '17': true
+    },
     {'1': 'password', '3': 3, '4': 1, '5': 9, '10': 'password'},
   ],
   '8': [
@@ -180,22 +307,47 @@ final $typed_data.Uint8List resetPasswordRequestDescriptor = $convert.base64Deco
 const UserRefreshTokensResponse$json = {
   '1': 'UserRefreshTokensResponse',
   '2': [
-    {'1': 'refresh_tokens', '3': 1, '4': 3, '5': 11, '6': '.jonline.RefreshTokenMetadata', '10': 'refreshTokens'},
+    {
+      '1': 'refresh_tokens',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.RefreshTokenMetadata',
+      '10': 'refreshTokens'
+    },
   ],
 };
 
 /// Descriptor for `UserRefreshTokensResponse`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List userRefreshTokensResponseDescriptor = $convert.base64Decode(
-    'ChlVc2VyUmVmcmVzaFRva2Vuc1Jlc3BvbnNlEkQKDnJlZnJlc2hfdG9rZW5zGAEgAygLMh0uam'
-    '9ubGluZS5SZWZyZXNoVG9rZW5NZXRhZGF0YVINcmVmcmVzaFRva2Vucw==');
+final $typed_data.Uint8List userRefreshTokensResponseDescriptor =
+    $convert.base64Decode(
+        'ChlVc2VyUmVmcmVzaFRva2Vuc1Jlc3BvbnNlEkQKDnJlZnJlc2hfdG9rZW5zGAEgAygLMh0uam'
+        '9ubGluZS5SZWZyZXNoVG9rZW5NZXRhZGF0YVINcmVmcmVzaFRva2Vucw==');
 
 @$core.Deprecated('Use refreshTokenMetadataDescriptor instead')
 const RefreshTokenMetadata$json = {
   '1': 'RefreshTokenMetadata',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 4, '10': 'id'},
-    {'1': 'expires_at', '3': 2, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 0, '10': 'expiresAt', '17': true},
-    {'1': 'device_name', '3': 3, '4': 1, '5': 9, '9': 1, '10': 'deviceName', '17': true},
+    {
+      '1': 'expires_at',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 0,
+      '10': 'expiresAt',
+      '17': true
+    },
+    {
+      '1': 'device_name',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'deviceName',
+      '17': true
+    },
     {'1': 'is_this_device', '3': 4, '4': 1, '5': 8, '10': 'isThisDevice'},
     {'1': 'third_party', '3': 5, '4': 1, '5': 8, '10': 'thirdParty'},
   ],
@@ -212,4 +364,3 @@ final $typed_data.Uint8List refreshTokenMetadataDescriptor = $convert.base64Deco
     'ZV9uYW1lGAMgASgJSAFSCmRldmljZU5hbWWIAQESJAoOaXNfdGhpc19kZXZpY2UYBCABKAhSDG'
     'lzVGhpc0RldmljZRIfCgt0aGlyZF9wYXJ0eRgFIAEoCFIKdGhpcmRQYXJ0eUINCgtfZXhwaXJl'
     'c19hdEIOCgxfZGV2aWNlX25hbWU=');
-

@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -19,16 +20,60 @@ const Media$json = {
   '1': 'Media',
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
-    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'userId', '17': true},
+    {
+      '1': 'user_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'userId',
+      '17': true
+    },
     {'1': 'content_type', '3': 3, '4': 1, '5': 9, '10': 'contentType'},
     {'1': 'name', '3': 4, '4': 1, '5': 9, '9': 1, '10': 'name', '17': true},
-    {'1': 'description', '3': 5, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
-    {'1': 'visibility', '3': 6, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
-    {'1': 'moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'moderation'},
+    {
+      '1': 'description',
+      '3': 5,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'description',
+      '17': true
+    },
+    {
+      '1': 'visibility',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Visibility',
+      '10': 'visibility'
+    },
+    {
+      '1': 'moderation',
+      '3': 7,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'moderation'
+    },
     {'1': 'generated', '3': 8, '4': 1, '5': 8, '10': 'generated'},
     {'1': 'processed', '3': 9, '4': 1, '5': 8, '10': 'processed'},
-    {'1': 'created_at', '3': 15, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 16, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'updatedAt'},
+    {
+      '1': 'created_at',
+      '3': 15,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 16,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'updatedAt'
+    },
   ],
   '8': [
     {'1': '_user_id'},
@@ -73,8 +118,24 @@ final $typed_data.Uint8List mediaReferenceDescriptor = $convert.base64Decode(
 const GetMediaRequest$json = {
   '1': 'GetMediaRequest',
   '2': [
-    {'1': 'media_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'mediaId', '17': true},
-    {'1': 'user_id', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'userId', '17': true},
+    {
+      '1': 'media_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'mediaId',
+      '17': true
+    },
+    {
+      '1': 'user_id',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'userId',
+      '17': true
+    },
     {'1': 'page', '3': 11, '4': 1, '5': 13, '10': 'page'},
   ],
   '8': [
@@ -93,7 +154,14 @@ final $typed_data.Uint8List getMediaRequestDescriptor = $convert.base64Decode(
 const GetMediaResponse$json = {
   '1': 'GetMediaResponse',
   '2': [
-    {'1': 'media', '3': 1, '4': 3, '5': 11, '6': '.jonline.Media', '10': 'media'},
+    {
+      '1': 'media',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.Media',
+      '10': 'media'
+    },
     {'1': 'has_next_page', '3': 2, '4': 1, '5': 8, '10': 'hasNextPage'},
   ],
 };
@@ -102,4 +170,3 @@ const GetMediaResponse$json = {
 final $typed_data.Uint8List getMediaResponseDescriptor = $convert.base64Decode(
     'ChBHZXRNZWRpYVJlc3BvbnNlEiQKBW1lZGlhGAEgAygLMg4uam9ubGluZS5NZWRpYVIFbWVkaW'
     'ESIgoNaGFzX25leHRfcGFnZRgCIAEoCFILaGFzTmV4dFBhZ2U=');
-
