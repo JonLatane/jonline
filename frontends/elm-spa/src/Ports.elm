@@ -1,13 +1,8 @@
-port module Ports exposing (clearAccount, saveAccount)
+port module Ports exposing (persist)
 
 import Json.Encode as Encode
 
 
-{-| Persists the signed-in account (server, userId, username, refreshToken, accessToken) to localStorage.
+{-| Persists the full account/server list (with their enabled flags) to localStorage.
 -}
-port saveAccount : Encode.Value -> Cmd msg
-
-
-{-| Removes any persisted account from localStorage.
--}
-port clearAccount : () -> Cmd msg
+port persist : Encode.Value -> Cmd msg

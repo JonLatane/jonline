@@ -1,9 +1,12 @@
 module Shared exposing
     ( Account
-    , Auth(..)
+    , AccountForm
     , Flags
+    , FormStatus(..)
     , Model
     , Msg(..)
+    , Server
+    , accountId
     , init
     , subscriptions
     , update
@@ -22,27 +25,49 @@ type alias Flags =
     Decode.Value
 
 
+{-| A signed-into account on a server. `enabled` is a lightweight, non-destructive
+"signed in/out" toggle: disabling an account keeps its tokens around so it can be
+re-enabled without logging in again. Fully forgetting an account (`RemoveAccountClicked`)
+is the "traditional" sign out.
+-}
 type alias Account =
     { server : String
     , userId : String
     , username : String
     , refreshToken : ExpirableToken
     , accessToken : ExpirableToken
+    , enabled : Bool
     }
 
 
-type Auth
-    = SignedOut
-    | SigningIn
-    | SignedIn Account
+{-| A server the app knows about (because an account was created/logged into there).
+`enabled` controls whether the server's (eventually public) data is included when
+aggregating data across servers.
+-}
+type alias Server =
+    { host : String
+    , enabled : Bool
+    }
 
 
-type alias Model =
+type FormStatus
+    = Idle
+    | Submitting
+    | Errored String
+
+
+type alias AccountForm =
     { server : String
     , username : String
     , password : String
-    , auth : Auth
-    , authError : Maybe String
+    , status : FormStatus
+    }
+
+
+type alias Model =
+    { accounts : List Account
+    , servers : List Server
+    , accountForm : AccountForm
     }
 
 
@@ -52,102 +77,208 @@ type Msg
     | PasswordChanged String
     | LoginClicked
     | CreateAccountClicked
-    | LogOutClicked
     | GotAuthResult (Result Grpc.Error RefreshTokenResponse)
+    | ToggleAccountEnabled String
+    | RemoveAccountClicked String
+    | ToggleServerEnabled String
+
+
+{-| A stable identifier for an account: a user's id is only unique per-server.
+-}
+accountId : Account -> String
+accountId account =
+    account.server ++ "|" ++ account.userId
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
 init _ flags =
     let
-        auth =
-            Decode.decodeValue accountDecoder flags
-                |> Result.map SignedIn
-                |> Result.withDefault SignedOut
+        persisted =
+            Decode.decodeValue persistedStateDecoder flags
+                |> Result.withDefault { accounts = [], servers = [] }
     in
-    ( { server = "localhost:27707"
-      , username = ""
-      , password = ""
-      , auth = auth
-      , authError = Nothing
+    ( { accounts = persisted.accounts
+      , servers = persisted.servers
+      , accountForm = emptyForm
       }
     , Cmd.none
     )
+
+
+emptyForm : AccountForm
+emptyForm =
+    { server = "localhost:27707"
+    , username = ""
+    , password = ""
+    , status = Idle
+    }
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update _ msg model =
     case msg of
         ServerChanged server ->
-            ( { model | server = server }, Cmd.none )
+            ( updateForm (\form -> { form | server = server }) model, Cmd.none )
 
         UsernameChanged username ->
-            ( { model | username = username }, Cmd.none )
+            ( updateForm (\form -> { form | username = username }) model, Cmd.none )
 
         PasswordChanged password ->
-            ( { model | password = password }, Cmd.none )
+            ( updateForm (\form -> { form | password = password }) model, Cmd.none )
 
         LoginClicked ->
-            ( { model | auth = SigningIn, authError = Nothing }
+            let
+                form =
+                    model.accountForm
+            in
+            ( updateForm (\f -> { f | status = Submitting }) model
             , Grpc.new Jonline.login
-                { username = model.username
-                , password = model.password
+                { username = form.username
+                , password = form.password
                 , expiresAt = Nothing
                 , deviceName = Nothing
                 , userId = Nothing
                 }
-                |> Grpc.setHost (grpcHost model.server)
+                |> Grpc.setHost (grpcHost form.server)
                 |> Grpc.toCmd GotAuthResult
             )
 
         CreateAccountClicked ->
-            ( { model | auth = SigningIn, authError = Nothing }
+            let
+                form =
+                    model.accountForm
+            in
+            ( updateForm (\f -> { f | status = Submitting }) model
             , Grpc.new Jonline.createAccount
-                { username = model.username
-                , password = model.password
+                { username = form.username
+                , password = form.password
                 , email = Nothing
                 , phone = Nothing
                 , expiresAt = Nothing
                 , deviceName = Nothing
                 }
-                |> Grpc.setHost (grpcHost model.server)
+                |> Grpc.setHost (grpcHost form.server)
                 |> Grpc.toCmd GotAuthResult
-            )
-
-        LogOutClicked ->
-            ( { model | auth = SignedOut, password = "" }
-            , Ports.clearAccount ()
             )
 
         GotAuthResult (Ok resp) ->
             case ( resp.user, resp.refreshToken, resp.accessToken ) of
                 ( Just user, Just refreshToken, Just accessToken ) ->
                     let
+                        host =
+                            model.accountForm.server
+
                         account =
-                            { server = model.server
+                            { server = host
                             , userId = user.id
                             , username = user.username
                             , refreshToken = refreshToken
                             , accessToken = accessToken
+                            , enabled = True
+                            }
+
+                        newModel =
+                            { model
+                                | accounts = upsertAccount account model.accounts
+                                , servers = upsertServer host model.servers
+                                , accountForm =
+                                    let
+                                        form =
+                                            model.accountForm
+                                    in
+                                    { form | password = "", status = Idle }
                             }
                     in
-                    ( { model | auth = SignedIn account, password = "" }
-                    , Ports.saveAccount (encodeAccount account)
-                    )
+                    ( newModel, persist newModel )
 
                 _ ->
-                    ( { model | auth = SignedOut, authError = Just "Server response was missing user/token data." }
+                    ( updateForm (\f -> { f | status = Errored "Server response was missing user/token data." }) model
                     , Cmd.none
                     )
 
         GotAuthResult (Err err) ->
-            ( { model | auth = SignedOut, authError = Just (grpcErrorToString err) }
+            ( updateForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
             , Cmd.none
             )
+
+        ToggleAccountEnabled id ->
+            let
+                newModel =
+                    { model
+                        | accounts =
+                            List.map
+                                (\account ->
+                                    if accountId account == id then
+                                        { account | enabled = not account.enabled }
+
+                                    else
+                                        account
+                                )
+                                model.accounts
+                    }
+            in
+            ( newModel, persist newModel )
+
+        RemoveAccountClicked id ->
+            let
+                newModel =
+                    { model | accounts = List.filter (\account -> accountId account /= id) model.accounts }
+            in
+            ( newModel, persist newModel )
+
+        ToggleServerEnabled host ->
+            let
+                newModel =
+                    { model
+                        | servers =
+                            List.map
+                                (\server ->
+                                    if server.host == host then
+                                        { server | enabled = not server.enabled }
+
+                                    else
+                                        server
+                                )
+                                model.servers
+                    }
+            in
+            ( newModel, persist newModel )
 
 
 subscriptions : Request -> Model -> Sub Msg
 subscriptions _ _ =
     Sub.none
+
+
+updateForm : (AccountForm -> AccountForm) -> Model -> Model
+updateForm fn model =
+    { model | accountForm = fn model.accountForm }
+
+
+upsertAccount : Account -> List Account -> List Account
+upsertAccount account accounts =
+    if List.any (\a -> accountId a == accountId account) accounts then
+        List.map
+            (\a ->
+                if accountId a == accountId account then
+                    account
+
+                else
+                    a
+            )
+            accounts
+
+    else
+        accounts ++ [ account ]
+
+
+upsertServer : String -> List Server -> List Server
+upsertServer host servers =
+    if List.any (\s -> s.host == host) servers then
+        servers
+
+    else
+        servers ++ [ { host = host, enabled = True } ]
 
 
 grpcHost : String -> String
@@ -191,6 +322,19 @@ grpcErrorToString err =
 -- are non-expiring by default and expiry-aware refresh isn't implemented yet.
 
 
+persist : Model -> Cmd Msg
+persist model =
+    Ports.persist (encodeState model)
+
+
+encodeState : Model -> Encode.Value
+encodeState model =
+    Encode.object
+        [ ( "accounts", Encode.list encodeAccount model.accounts )
+        , ( "servers", Encode.list encodeServer model.servers )
+        ]
+
+
 encodeAccount : Account -> Encode.Value
 encodeAccount account =
     Encode.object
@@ -199,17 +343,47 @@ encodeAccount account =
         , ( "username", Encode.string account.username )
         , ( "refreshToken", Encode.string account.refreshToken.token )
         , ( "accessToken", Encode.string account.accessToken.token )
+        , ( "enabled", Encode.bool account.enabled )
         ]
+
+
+encodeServer : Server -> Encode.Value
+encodeServer server =
+    Encode.object
+        [ ( "host", Encode.string server.host )
+        , ( "enabled", Encode.bool server.enabled )
+        ]
+
+
+type alias PersistedState =
+    { accounts : List Account
+    , servers : List Server
+    }
+
+
+persistedStateDecoder : Decoder PersistedState
+persistedStateDecoder =
+    Decode.map2 PersistedState
+        (Decode.field "accounts" (Decode.list accountDecoder))
+        (Decode.field "servers" (Decode.list serverDecoder))
 
 
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map5 Account
+    Decode.map6 Account
         (Decode.field "server" Decode.string)
         (Decode.field "userId" Decode.string)
         (Decode.field "username" Decode.string)
         (Decode.field "refreshToken" tokenDecoder)
         (Decode.field "accessToken" tokenDecoder)
+        (Decode.field "enabled" Decode.bool)
+
+
+serverDecoder : Decoder Server
+serverDecoder =
+    Decode.map2 Server
+        (Decode.field "host" Decode.string)
+        (Decode.field "enabled" Decode.bool)
 
 
 tokenDecoder : Decoder ExpirableToken

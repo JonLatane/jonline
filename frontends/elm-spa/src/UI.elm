@@ -44,48 +44,102 @@ viewLink label url =
 
 authView : Shared.Model -> Html Shared.Msg
 authView shared =
-    case shared.auth of
-        Shared.SignedIn account ->
-            Html.div [ Attr.class "auth" ]
-                [ Html.text ("Signed in as " ++ account.username ++ " @ " ++ account.server)
-                , Html.button [ Events.onClick Shared.LogOutClicked ] [ Html.text "Log Out" ]
-                ]
+    Html.div [ Attr.class "auth" ]
+        [ accountsView shared.accounts
+        , serversView shared.servers
+        , formView shared.accountForm
+        ]
 
-        _ ->
-            let
-                signingIn =
-                    shared.auth == Shared.SigningIn
-            in
-            Html.div [ Attr.class "auth" ]
-                [ Html.input
-                    [ Attr.placeholder "Server"
-                    , Attr.value shared.server
-                    , Events.onInput Shared.ServerChanged
-                    ]
-                    []
-                , Html.input
-                    [ Attr.placeholder "Username"
-                    , Attr.value shared.username
-                    , Events.onInput Shared.UsernameChanged
-                    ]
-                    []
-                , Html.input
-                    [ Attr.type_ "password"
-                    , Attr.placeholder "Password"
-                    , Attr.value shared.password
-                    , Events.onInput Shared.PasswordChanged
-                    ]
-                    []
-                , Html.button
-                    [ Events.onClick Shared.LoginClicked, Attr.disabled signingIn ]
-                    [ Html.text "Log In" ]
-                , Html.button
-                    [ Events.onClick Shared.CreateAccountClicked, Attr.disabled signingIn ]
-                    [ Html.text "Create Account" ]
-                , case shared.authError of
-                    Just err ->
-                        Html.div [ Attr.class "auth-error" ] [ Html.text err ]
 
-                    Nothing ->
-                        Html.text ""
+accountsView : List Shared.Account -> Html Shared.Msg
+accountsView accounts =
+    if List.isEmpty accounts then
+        Html.text ""
+
+    else
+        Html.ul [ Attr.class "accounts" ] (List.map accountItem accounts)
+
+
+accountItem : Shared.Account -> Html Shared.Msg
+accountItem account =
+    let
+        id =
+            Shared.accountId account
+    in
+    Html.li []
+        [ Html.label []
+            [ Html.input
+                [ Attr.type_ "checkbox"
+                , Attr.checked account.enabled
+                , Events.onClick (Shared.ToggleAccountEnabled id)
                 ]
+                []
+            , Html.text (" " ++ account.username ++ " @ " ++ account.server)
+            ]
+        , Html.button [ Events.onClick (Shared.RemoveAccountClicked id) ] [ Html.text "Remove" ]
+        ]
+
+
+serversView : List Shared.Server -> Html Shared.Msg
+serversView servers =
+    if List.isEmpty servers then
+        Html.text ""
+
+    else
+        Html.ul [ Attr.class "servers" ] (List.map serverItem servers)
+
+
+serverItem : Shared.Server -> Html Shared.Msg
+serverItem server =
+    Html.li []
+        [ Html.label []
+            [ Html.input
+                [ Attr.type_ "checkbox"
+                , Attr.checked server.enabled
+                , Events.onClick (Shared.ToggleServerEnabled server.host)
+                ]
+                []
+            , Html.text (" " ++ server.host)
+            ]
+        ]
+
+
+formView : Shared.AccountForm -> Html Shared.Msg
+formView form =
+    let
+        submitting =
+            form.status == Shared.Submitting
+    in
+    Html.div [ Attr.class "account-form" ]
+        [ Html.input
+            [ Attr.placeholder "Server"
+            , Attr.value form.server
+            , Events.onInput Shared.ServerChanged
+            ]
+            []
+        , Html.input
+            [ Attr.placeholder "Username"
+            , Attr.value form.username
+            , Events.onInput Shared.UsernameChanged
+            ]
+            []
+        , Html.input
+            [ Attr.type_ "password"
+            , Attr.placeholder "Password"
+            , Attr.value form.password
+            , Events.onInput Shared.PasswordChanged
+            ]
+            []
+        , Html.button
+            [ Events.onClick Shared.LoginClicked, Attr.disabled submitting ]
+            [ Html.text "Log In" ]
+        , Html.button
+            [ Events.onClick Shared.CreateAccountClicked, Attr.disabled submitting ]
+            [ Html.text "Create Account" ]
+        , case form.status of
+            Shared.Errored err ->
+                Html.div [ Attr.class "auth-error" ] [ Html.text err ]
+
+            _ ->
+                Html.text ""
+        ]

@@ -7,22 +7,18 @@
 <body>
   <script src="/dist/elm.js"></script>
   <script>
-    var storedAccount = null;
+    var storedState = null;
     try {
-      var raw = localStorage.getItem("jonlineAccount");
-      storedAccount = raw ? JSON.parse(raw) : null;
+      var raw = localStorage.getItem("jonlineState");
+      storedState = raw ? JSON.parse(raw) : null;
     } catch (e) {
-      console.error("Failed to read stored Jonline account", e);
+      console.error("Failed to read stored Jonline state", e);
     }
 
-    var app = Elm.Main.init({ flags: storedAccount });
+    var app = Elm.Main.init({ flags: storedState });
 
-    app.ports.saveAccount.subscribe(function (account) {
-      localStorage.setItem("jonlineAccount", JSON.stringify(account));
-    });
-
-    app.ports.clearAccount.subscribe(function () {
-      localStorage.removeItem("jonlineAccount");
+    app.ports.persist.subscribe(function (state) {
+      localStorage.setItem("jonlineState", JSON.stringify(state));
     });
   </script>
 </body>

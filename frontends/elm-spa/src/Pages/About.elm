@@ -13,7 +13,7 @@ page shared req =
     UI.page shared
         req
         { title = "About"
-        , body = [ Html.text "This is the Jonline home page. Probably still need to do more stuff here!" ]
+        , body = [ Html.text "This is the Jonline about page. Probably still need to do more stuff here!" ]
         }
 
 
