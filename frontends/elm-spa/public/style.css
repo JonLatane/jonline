@@ -93,12 +93,24 @@ input[type="password"] {
   position: relative;
 }
 
+.accounts-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .accounts-menu-toggle {
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);
+}
+
+.host-mismatch-warning {
+  cursor: help;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .accounts-panel {

@@ -52,17 +52,46 @@ viewLink label url =
 accountsMenu : Shared.Model -> Html Shared.Msg
 accountsMenu shared =
     Html.div [ Attr.class "accounts-menu" ]
-        [ Html.button
-            [ Attr.class "accounts-menu-toggle"
-            , Events.onClick Shared.ToggleAccountsPanel
+        [ Html.div [ Attr.class "accounts-menu-row" ]
+            [ Html.button
+                [ Attr.class "accounts-menu-toggle"
+                , Events.onClick Shared.ToggleAccountsPanel
+                ]
+                [ Html.text (Shared.accountsMenuLabel shared) ]
+            , hostMismatchWarning shared
             ]
-            [ Html.text (Shared.accountsMenuLabel shared) ]
         , if shared.showAccountsPanel then
             accountsPanel shared
 
           else
             Html.text ""
         ]
+
+
+{-| `browsingHost` and `mainFrontendHost` differ when the host we're actually
+being viewed from turns out to be a backend-only host with a different public
+identity (see `Shared.resolvedFrontendHost`) -- worth flagging, since the user
+probably has the "wrong" (if working) URL open.
+-}
+hostMismatchWarning : Shared.Model -> Html msg
+hostMismatchWarning shared =
+    if shared.browsingHost /= shared.mainFrontendHost then
+        Html.span
+            [ Attr.class "host-mismatch-warning"
+            , Attr.title
+                ("You're browsing from "
+                    ++ shared.browsingHost
+                    ++ ", but it's configured to look like "
+                    ++ shared.mainFrontendHost
+                    ++ ". You should probably just browse from "
+                    ++ shared.mainFrontendHost
+                    ++ "."
+                )
+            ]
+            [ Html.text "⚠️" ]
+
+    else
+        Html.text ""
 
 
 {-| Servers scroll horizontally in a short strip (there are usually few, and it
@@ -73,7 +102,7 @@ you'll accumulate the most of.
 accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
     Html.div [ Attr.class "accounts-panel" ]
-        [ serversStrip shared.accounts shared.servers
+        [ serversStrip shared.mainFrontendHost shared.accounts shared.servers
         , addServerRow shared.addServerForm
         , Html.div [ Attr.class "panel-divider" ] []
         , accountsList shared.servers shared.accounts
@@ -86,24 +115,30 @@ accountsPanel shared =
 -- SERVERS
 
 
-serversStrip : List Shared.Account -> List Shared.Server -> Html Shared.Msg
-serversStrip accounts servers =
+serversStrip : String -> List Shared.Account -> List Shared.Server -> Html Shared.Msg
+serversStrip mainFrontendHost accounts servers =
     Html.div [ Attr.class "servers-strip" ]
-        (List.map (serverChip accounts) servers)
+        (List.map (serverChip mainFrontendHost accounts) servers)
 
 
 {-| Top portion (logo/name/host) is tinted with the server's primary color;
 the enable switch and delete button sit in a bottom portion tinted with its
 secondary color -- both use that color's precomputed, readable text color.
 -}
-serverChip : List Shared.Account -> Shared.Server -> Html Shared.Msg
-serverChip accounts server =
+serverChip : String -> List Shared.Account -> Shared.Server -> Html Shared.Msg
+serverChip mainFrontendHost accounts server =
     let
+        isMainServer =
+            server.frontendHost == mainFrontendHost
+
+        hasAccounts =
+            Shared.serverHasAccounts accounts server.frontendHost
+
         removable =
-            not (Shared.serverHasAccounts accounts server.host)
+            not hasAccounts && not isMainServer
 
         branding =
-            Shared.brandingOf server
+            server.branding
     in
     Html.div [ Attr.class "server-chip" ]
         [ Html.div
@@ -113,24 +148,27 @@ serverChip accounts server =
             ]
             [ logoOrPlaceholder branding
             , Html.div [ Attr.class "server-chip-name" ] [ Html.text branding.name ]
-            , Html.div [ Attr.class "server-chip-host" ] [ Html.text server.host ]
+            , Html.div [ Attr.class "server-chip-host" ] [ Html.text server.frontendHost ]
             ]
         , Html.div
             [ Attr.class "server-chip-bottom"
             , Attr.style "background" branding.secondary.hex
             , Attr.style "color" branding.secondary.contrastText
             ]
-            [ switchInput server.enabled (Shared.ToggleServerEnabled server.host)
+            [ switchInput server.enabled (Shared.ToggleServerEnabled server.frontendHost)
             , Html.button
                 [ Attr.class "remove-btn"
-                , Events.onClick (Shared.RemoveServerClicked server.host)
+                , Events.onClick (Shared.RemoveServerClicked server.frontendHost)
                 , Attr.disabled (not removable)
                 , Attr.title
-                    (if removable then
-                        "Remove server"
+                    (if isMainServer then
+                        "Can't remove the server you're currently browsing from"
+
+                     else if hasAccounts then
+                        "Can't remove a server with accounts on it"
 
                      else
-                        "Can't remove a server with accounts on it"
+                        "Remove server"
                     )
                 ]
                 [ Html.text "×" ]
@@ -222,7 +260,7 @@ accountRow servers account =
             ]
         , Html.div [ Attr.class "account-row-fg" ]
             [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
-            , avatarOrPlaceholder account
+            , avatarOrPlaceholder servers account
             , Html.div [ Attr.class "account-row-label" ]
                 [ Html.div
                     [ Attr.class "account-row-username"
@@ -240,9 +278,9 @@ accountRow servers account =
         ]
 
 
-avatarOrPlaceholder : Shared.Account -> Html msg
-avatarOrPlaceholder account =
-    case Shared.accountAvatarUrl account of
+avatarOrPlaceholder : List Shared.Server -> Shared.Account -> Html msg
+avatarOrPlaceholder servers account =
+    case Shared.accountAvatarUrl servers account of
         Just url ->
             Html.img [ Attr.class "account-avatar", Attr.src url, Attr.alt account.username ] []
 
