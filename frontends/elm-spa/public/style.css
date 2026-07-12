@@ -72,7 +72,32 @@ body {
   justify-content: space-between;
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  /* Its own stacking context, above .accounts-backdrop, so the nav (and its
+     descendant .accounts-panel) is never blurred/covered/click-intercepted
+     by the backdrop. */
   position: relative;
+  z-index: 25;
+}
+
+/* Covers everything below/behind the nav while the Accounts Panel is open;
+   see UI.elm's `accountsBackdrop`. */
+.accounts-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.accounts-backdrop.is-open {
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
 }
 
 .nav-links {
@@ -98,6 +123,7 @@ main {
 button {
   font: inherit;
   cursor: pointer;
+  border-radius: 6px;
 }
 
 button:disabled {
@@ -172,6 +198,15 @@ input[type="password"] {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.accounts-panel.is-closed {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
 }
 
 .panel-divider {
@@ -336,7 +371,6 @@ input[type="password"] {
   height: 1.6rem;
   line-height: 1;
   border: 1px solid var(--border);
-  border-radius: 6px;
   background: var(--bg);
   color: var(--danger);
 }
@@ -363,7 +397,6 @@ input[type="password"] {
 .account-form-buttons button {
   flex: 1;
   padding: 0.4rem 0.5rem;
-  border-radius: 6px;
   border: 1px solid var(--border);
 }
 

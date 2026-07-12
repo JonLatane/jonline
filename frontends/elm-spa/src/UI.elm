@@ -29,6 +29,7 @@ page shared _ body =
 layout : Shared.Model -> List (Html Shared.Msg) -> List (Html Shared.Msg)
 layout shared children =
     [ UI.EmittedStylesheet.view shared
+    , accountsBackdrop shared
     , div [ class "container" ]
         [ header [ class "navbar" ]
             [ nav [ class "nav-links" ]
@@ -43,6 +44,29 @@ layout shared children =
         , main_ [] children
         ]
     ]
+
+
+{-| Covers everything except the top nav (which sits in its own, higher
+stacking context -- see `.navbar` in style.css) with a transitioned blur while
+the Accounts Panel is open; clicking it closes the panel. Always rendered,
+like `accountsPanel`, so the blur fades rather than snapping in/out, and only
+receives clicks (`pointer-events`) while open.
+-}
+accountsBackdrop : Shared.Model -> Html Shared.Msg
+accountsBackdrop shared =
+    let
+        stateClass =
+            if shared.showAccountsPanel then
+                "is-open"
+
+            else
+                "is-closed"
+    in
+    div
+        [ classes [ "accounts-backdrop", stateClass ]
+        , onClick Shared.ToggleAccountsPanel
+        ]
+        []
 
 
 {-| Combines several class names into one `class` attribute -- `Html`
@@ -99,11 +123,7 @@ accountsMenu shared =
                 [ text (Shared.accountsMenuLabel shared) ]
             , hostMismatchWarning shared
             ]
-        , if shared.showAccountsPanel then
-            accountsPanel shared
-
-          else
-            text ""
+        , accountsPanel shared
         ]
 
 
@@ -137,10 +157,22 @@ hostMismatchWarning shared =
 keeps them visually distinct from the taller, vertically-scrolling account
 list below), which itself scrolls vertically since accounts are the thing
 you'll accumulate the most of.
+
+Always rendered (even "closed"), so opening/closing can be a plain CSS
+transition (fade + slide) rather than the panel just appearing/disappearing
+outright -- see `.accounts-panel`/`.accounts-panel.is-closed` in style.css.
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
-    div [ class "accounts-panel" ]
+    let
+        stateClass =
+            if shared.showAccountsPanel then
+                "is-open"
+
+            else
+                "is-closed"
+    in
+    div [ classes [ "accounts-panel", stateClass ] ]
         [ serversStrip shared
         , addServerRow shared.mainFrontendHost shared.addServerForm
         , div [ class "panel-divider" ] []
