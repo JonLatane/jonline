@@ -2,6 +2,7 @@ module UI exposing (layout, page)
 
 import Char
 import Effect exposing (Effect)
+import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
 import Html.Attributes exposing (alt, checked, class, disabled, href, placeholder, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
@@ -19,24 +20,30 @@ state, rendered inside the common `layout`. Every page that only needs the nav
 and login form (i.e. doesn't need its own Model/Msg) should be built with this.
 -}
 page : Shared.Model -> Request.With params -> View Shared.Msg -> Page.With () Shared.Msg
-page shared _ body =
+page shared req body =
     Page.advanced
         { init = ( (), Effect.none )
         , update = \msg () -> ( (), Effect.fromShared msg )
-        , view = \() -> { title = body.title, body = layout shared body.body }
+        , view = \() -> { title = body.title, body = layout shared req.route body.body }
         , subscriptions = \() -> Sub.none
         }
 
 
-layout : Shared.Model -> List (Html Shared.Msg) -> List (Html Shared.Msg)
-layout shared children =
+{-| The nav (`header`) is a full-width, sticky band tinted with
+`mainFrontendHost`'s `primaryColor` (see `UI.EmittedStylesheet`'s
+`background-color-primary` utility class) -- its own `.navbar-inner` wrapper
+keeps its content lined up with the (narrower) page content below. `main` gets
+its own `.container` so it's centered independently of the nav.
+-}
+layout : Shared.Model -> Route -> List (Html Shared.Msg) -> List (Html Shared.Msg)
+layout shared currentRoute children =
     [ UI.EmittedStylesheet.view shared
     , accountsBackdrop shared
-    , div [ class "container" ]
-        [ header [ class "navbar" ]
+    , header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
+        [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
-                [ viewLink "Home" "/"
-                , viewLink "About" "/about"
+                [ navLink shared currentRoute "Home" Route.Home_
+                , navLink shared currentRoute "About" Route.About
                 ]
             , div [ class "nav-right" ]
                 [ themeToggle shared
@@ -48,8 +55,8 @@ layout shared children =
                     text ""
                 ]
             ]
-        , main_ [] children
         ]
+    , div [ class "container" ] [ main_ [] children ]
     ]
 
 
@@ -85,9 +92,29 @@ classes names =
     class (String.join " " names)
 
 
-viewLink : String -> String -> Html msg
-viewLink linkLabel url =
-    a [ href url ] [ text linkLabel ]
+{-| A nav link styled as a button: the current page's link additionally gets
+`mainFrontendHost`'s `background-color-nav` utility class, tinting it with
+`navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
+navbar around it; other links just inherit that surrounding primary color/text
+color by not overriding them.
+-}
+navLink : Shared.Model -> Route -> String -> Route -> Html msg
+navLink shared currentRoute linkLabel linkRoute =
+    let
+        isCurrent =
+            linkRoute == currentRoute
+    in
+    a
+        [ href (Route.toHref linkRoute)
+        , classes
+            (if isCurrent then
+                [ "nav-link", shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+             else
+                [ "nav-link" ]
+            )
+        ]
+        [ text linkLabel ]
 
 
 {-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
@@ -372,7 +399,14 @@ accountRow shared account =
         [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
         , avatarOrPlaceholder shared.accountsPanel.servers account
         , div [ class "account-row-label" ]
-            [ div [ class "account-row-username" ] [ text account.username ]
+            [ div [ class "account-row-username" ]
+                [ text account.username
+                , if AccountsPanel.isAdmin account then
+                    span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
+
+                  else
+                    text ""
+                ]
             , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                 [ text (account.server ++ " | " ++ branding.name) ]
             ]
@@ -487,8 +521,9 @@ adminMenu shared =
         [ button
             [ class "accounts-menu-toggle"
             , onClick (Shared.AdminPanelMsg AdminPanel.ToggleAdminPanel)
+            , title "Server Admin Panel"
             ]
-            [ text "Admin" ]
+            [ text "🛡️" ]
         , adminPanel shared
         ]
 

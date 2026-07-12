@@ -46,6 +46,27 @@ pub async fn main_index(
             }
             // flutter_index().await
         }
+        WebUserInterface::ElmSpa => {
+            let result = match fs::read_to_string("opt/elm_web/index.html") {
+                Ok(file) => Ok(file),
+                Err(_) => match fs::read_to_string("../frontends/elm-spa/public/index.html") {
+                    Ok(file) => Ok(file),
+                    Err(e) => Err(e),
+                },
+            };
+            let result_data = result.map(|data| JonlineResponder {
+                inner: data,
+                content_type: ContentType(MediaType::from_str("text/html").unwrap()),
+            });
+            CacheResponse::Public {
+                responder: result_data.map_err(|e| {
+                    log::info!("elm: {:?}", e);
+                    Status::NotFound
+                }),
+                max_age: 60,
+                must_revalidate: false,
+            }
+        }
         _ => index(state, origin).await,
     }
 }

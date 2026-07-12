@@ -166,6 +166,44 @@ jobs:
         path: frontends/tamagui/apps/next/out
         key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
+  build_elm_ui:
+    name: Build Elm SPA Web UI
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Extract Versioning Data
+      id: vars
+      run: |-
+        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 18.x
+
+    - name: Cache Elm packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.elm
+        key: jonline-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
+        restore-keys: |
+          jonline-elm-build-${{ runner.os }}-
+
+    - run: npm install --global elm elm-spa
+
+    - working-directory: frontends/elm-spa
+      run: make build
+
+    - uses: actions/cache/save@v4
+      id: elm-app-cache
+      with:
+        path: frontends/elm-spa/public
+        key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
   build_rust_binaries:
     name: Build Rust Binaries
     runs-on: ubuntu-latest
@@ -278,6 +316,7 @@ jobs:
     needs:
       # - build_flutter_ui
       - build_tamagui_ui
+      - build_elm_ui
       - build_rust_binaries
       - test_consistency
 
@@ -305,6 +344,11 @@ jobs:
       with:
         path: frontends/tamagui/apps/next/out
         key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+    - uses: actions/cache/restore@v4
+      id: elm-app-cache
+      with:
+        path: frontends/elm-spa/public
+        key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
     - uses: actions/cache/restore@v4
       id: rust-app-cache
       with:

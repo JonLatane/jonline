@@ -27,6 +27,9 @@ COPY frontends/flutter/build/web/ /opt/flutter_web
 # Tamagui web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/tamagui/apps/next/out/ /opt/tamagui_web
 
+# Elm SPA web app release (served from the filesystem by Rocket within Jonline)
+COPY frontends/elm-spa/public/ /opt/elm_web
+
 # Generated protocol docs
 COPY docs/protocol.html /opt/docs/protocol.html
 
