@@ -1,4 +1,4 @@
-port module Ports exposing (persist, setTheme, systemPrefersDarkChanged)
+port module Ports exposing (persist, persistThemePreference, setTheme, systemPrefersDarkChanged)
 
 import Json.Encode as Encode
 
@@ -6,6 +6,13 @@ import Json.Encode as Encode
 {-| Persists the full account/server list (with their enabled flags) to localStorage.
 -}
 port persist : Encode.Value -> Cmd msg
+
+
+{-| Persists the appearance ("auto"/"light"/"dark") preference to its own
+localStorage key -- kept independent of `persist` so `Shared` and
+`Shared.AccountsPanel` don't need to know about each other's persisted shape.
+-}
+port persistThemePreference : String -> Cmd msg
 
 
 {-| Applies the effective dark/light mode to the page: "dark" or "light" sets

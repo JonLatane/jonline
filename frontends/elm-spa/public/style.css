@@ -159,7 +159,8 @@ input[type="password"] {
   line-height: 1;
 }
 
-.accounts-menu {
+.accounts-menu,
+.admin-menu {
   position: relative;
 }
 
@@ -175,6 +176,17 @@ input[type="password"] {
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);
+}
+
+.admin-panel {
+  width: 220px;
+}
+
+.admin-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
 }
 
 .host-mismatch-warning {
@@ -242,6 +254,23 @@ input[type="password"] {
   align-items: center;
   gap: 0.2rem;
   padding: 0.5rem 0.4rem;
+}
+
+/* Only present while the Server Admin Panel's "switch main server" toggle is
+   on -- see UI.elm's `serverChip`. */
+.server-chip-top.selectable {
+  cursor: pointer;
+}
+
+.server-chip-top.selectable:hover {
+  outline: 2px solid rgba(0, 0, 0, 0.3);
+  outline-offset: -2px;
+}
+
+.server-chip-main-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.85;
 }
 
 .server-chip-logo {

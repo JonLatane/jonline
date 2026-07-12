@@ -20,6 +20,7 @@ color math is already cached in `Shared.Branding`.
 import Char
 import Html exposing (Html, node, text)
 import Shared
+import Shared.AccountsPanel as AccountsPanel
 
 
 view : Shared.Model -> Html msg
@@ -29,8 +30,12 @@ view shared =
 
 css : Shared.Model -> String
 css shared =
-    linkRule (Shared.mainServerTheme shared).primaryAnchorColor
-        ++ String.concat (List.map (serverRules shared) shared.servers)
+    let
+        darkMode =
+            Shared.effectiveDarkMode shared
+    in
+    linkRule (AccountsPanel.mainServerTheme darkMode shared.accountsPanel).primaryAnchorColor
+        ++ String.concat (List.map (serverRules darkMode) shared.accountsPanel.servers)
 
 
 linkRule : String -> String
@@ -38,11 +43,11 @@ linkRule anchorColor =
     "a { color: " ++ anchorColor ++ "; }\n"
 
 
-serverRules : Shared.Model -> Shared.Server -> String
-serverRules shared server =
+serverRules : Bool -> AccountsPanel.Server -> String
+serverRules darkMode server =
     let
         theme =
-            Shared.serverThemeOf shared server
+            AccountsPanel.serverThemeOf darkMode server
 
         selector =
             "." ++ escapeClass server.frontendHost

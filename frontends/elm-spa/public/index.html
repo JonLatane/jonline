@@ -16,17 +16,23 @@
       console.error("Failed to read stored Jonline state", e);
     }
 
+    var storedThemePreference = localStorage.getItem("jonlineThemePreference") || "auto";
     var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     var app = Elm.Main.init({
       flags: {
         state: storedState,
-        systemPrefersDark: darkMediaQuery.matches
+        systemPrefersDark: darkMediaQuery.matches,
+        themePreference: storedThemePreference
       }
     });
 
     app.ports.persist.subscribe(function (state) {
       localStorage.setItem("jonlineState", JSON.stringify(state));
+    });
+
+    app.ports.persistThemePreference.subscribe(function (preference) {
+      localStorage.setItem("jonlineThemePreference", preference);
     });
 
     app.ports.setTheme.subscribe(function (theme) {

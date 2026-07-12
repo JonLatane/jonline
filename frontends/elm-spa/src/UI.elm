@@ -8,6 +8,8 @@ import Html.Events exposing (onClick, onInput)
 import Page
 import Request
 import Shared
+import Shared.AccountsPanel as AccountsPanel
+import Shared.AdminPanel as AdminPanel
 import UI.EmittedStylesheet
 import View exposing (View)
 
@@ -39,6 +41,11 @@ layout shared children =
             , div [ class "nav-right" ]
                 [ themeToggle shared
                 , accountsMenu shared
+                , if AccountsPanel.hasAdminAccount shared.accountsPanel then
+                    adminMenu shared
+
+                  else
+                    text ""
                 ]
             ]
         , main_ [] children
@@ -56,7 +63,7 @@ accountsBackdrop : Shared.Model -> Html Shared.Msg
 accountsBackdrop shared =
     let
         stateClass =
-            if shared.showAccountsPanel then
+            if shared.accountsPanel.showAccountsPanel then
                 "is-open"
 
             else
@@ -64,7 +71,7 @@ accountsBackdrop shared =
     in
     div
         [ classes [ "accounts-backdrop", stateClass ]
-        , onClick Shared.ToggleAccountsPanel
+        , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
         ]
         []
 
@@ -118,9 +125,9 @@ accountsMenu shared =
         [ div [ class "accounts-menu-row" ]
             [ button
                 [ class "accounts-menu-toggle"
-                , onClick Shared.ToggleAccountsPanel
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
                 ]
-                [ text (Shared.accountsMenuLabel shared) ]
+                [ text (AccountsPanel.accountsMenuLabel shared.accountsPanel) ]
             , hostMismatchWarning shared
             ]
         , accountsPanel shared
@@ -129,21 +136,25 @@ accountsMenu shared =
 
 {-| `browsingHost` and `mainFrontendHost` differ when the host we're actually
 being viewed from turns out to be a backend-only host with a different public
-identity (see `Shared.resolvedFrontendHost`) -- worth flagging, since the user
-probably has the "wrong" (if working) URL open.
+identity (see `Shared.AccountsPanel`'s `resolvedFrontendHost`) -- worth
+flagging, since the user probably has the "wrong" (if working) URL open.
 -}
 hostMismatchWarning : Shared.Model -> Html msg
 hostMismatchWarning shared =
-    if shared.browsingHost /= shared.mainFrontendHost then
+    let
+        accountsPanelModel =
+            shared.accountsPanel
+    in
+    if accountsPanelModel.browsingHost /= accountsPanelModel.mainFrontendHost then
         span
             [ class "host-mismatch-warning"
             , title
                 ("You're browsing from "
-                    ++ shared.browsingHost
+                    ++ accountsPanelModel.browsingHost
                     ++ ", but it's configured to look like "
-                    ++ shared.mainFrontendHost
+                    ++ accountsPanelModel.mainFrontendHost
                     ++ ". You should probably just browse from "
-                    ++ shared.mainFrontendHost
+                    ++ accountsPanelModel.mainFrontendHost
                     ++ "."
                 )
             ]
@@ -165,8 +176,11 @@ outright -- see `.accounts-panel`/`.accounts-panel.is-closed` in style.css.
 accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
     let
+        accountsPanelModel =
+            shared.accountsPanel
+
         stateClass =
-            if shared.showAccountsPanel then
+            if accountsPanelModel.showAccountsPanel then
                 "is-open"
 
             else
@@ -174,11 +188,11 @@ accountsPanel shared =
     in
     div [ classes [ "accounts-panel", stateClass ] ]
         [ serversStrip shared
-        , addServerRow shared.mainFrontendHost shared.addServerForm
+        , addServerRow accountsPanelModel.mainFrontendHost accountsPanelModel.addServerForm
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
-        , formView shared.mainFrontendHost shared.accountForm
+        , formView accountsPanelModel.mainFrontendHost accountsPanelModel.accountForm
         ]
 
 
@@ -189,39 +203,74 @@ accountsPanel shared =
 serversStrip : Shared.Model -> Html Shared.Msg
 serversStrip shared =
     div [ class "servers-strip" ]
-        (List.map (serverChip shared) shared.servers)
+        (List.map (serverChip shared) shared.accountsPanel.servers)
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
 utility classes (see `UI.EmittedStylesheet`); the enable switch and delete
 button sit in a bottom portion using `background-color-nav` instead.
+
+When the Server Admin Panel's "switch main server" toggle is on (see
+`Shared.AdminPanel`), the top portion also becomes clickable, setting that
+server as `mainFrontendHost` instead of doing nothing.
 -}
-serverChip : Shared.Model -> Shared.Server -> Html Shared.Msg
+serverChip : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
 serverChip shared server =
     let
+        accountsPanelModel =
+            shared.accountsPanel
+
         isMainServer =
-            server.frontendHost == shared.mainFrontendHost
+            server.frontendHost == accountsPanelModel.mainFrontendHost
 
         hasAccounts =
-            Shared.serverHasAccounts shared.accounts server.frontendHost
+            AccountsPanel.serverHasAccounts accountsPanelModel.accounts server.frontendHost
 
         removable =
             not hasAccounts && not isMainServer
 
         branding =
             server.branding
+
+        canSelectMain =
+            shared.adminPanel.allowMainServerSwitch
+
+        topClasses =
+            [ "server-chip-top", server.frontendHost, "background-color-primary" ]
+                ++ (if canSelectMain then
+                        [ "selectable" ]
+
+                    else
+                        []
+                   )
+
+        topAttrs =
+            classes topClasses
+                :: (if canSelectMain then
+                        [ onClick (Shared.AccountsPanelMsg (AccountsPanel.MainServerSelected server.frontendHost))
+                        , title "Set as main server"
+                        ]
+
+                    else
+                        []
+                   )
     in
     div [ class "server-chip" ]
-        [ div [ classes [ "server-chip-top", server.frontendHost, "background-color-primary" ] ]
+        [ div topAttrs
             [ logoOrPlaceholder branding
             , div [ class "server-chip-name" ] [ text branding.name ]
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
+            , if isMainServer then
+                div [ class "server-chip-main-badge" ] [ text "★ Main" ]
+
+              else
+                text ""
             ]
         , div [ classes [ "server-chip-bottom", server.frontendHost, "background-color-nav" ] ]
-            [ switchInput server.enabled (Shared.ToggleServerEnabled server.frontendHost)
+            [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
-                , onClick (Shared.RemoveServerClicked server.frontendHost)
+                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveServerClicked server.frontendHost))
                 , disabled (not removable)
                 , title
                     (if isMainServer then
@@ -239,7 +288,7 @@ serverChip shared server =
         ]
 
 
-logoOrPlaceholder : Shared.Branding -> Html msg
+logoOrPlaceholder : AccountsPanel.Branding -> Html msg
 logoOrPlaceholder branding =
     case branding.logoUrl of
         Just url ->
@@ -253,23 +302,23 @@ logoOrPlaceholder branding =
 added to the list -- so a typo'd or unreachable host shows an error instead of
 silently appearing as a dead chip.
 -}
-addServerRow : String -> Shared.AddServerForm -> Html Shared.Msg
+addServerRow : String -> AccountsPanel.AddServerForm -> Html Shared.Msg
 addServerRow mainFrontendHost form =
     let
         checking =
-            form.status == Shared.Submitting
+            form.status == AccountsPanel.Submitting
     in
     div [ class "add-server" ]
         [ div [ class "add-server-row" ]
             [ input
                 [ placeholder "Add a server host"
                 , value form.host
-                , onInput Shared.ServerHostInputChanged
+                , onInput (AccountsPanel.ServerHostInputChanged >> Shared.AccountsPanelMsg)
                 , disabled checking
                 ]
                 []
             , button
-                [ onClick Shared.AddServerClicked
+                [ onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
                 , disabled checking
                 , classes [ mainFrontendHost, "background-color-nav" ]
                 ]
@@ -283,7 +332,7 @@ addServerRow mainFrontendHost form =
                 ]
             ]
         , case form.status of
-            Shared.Errored err ->
+            AccountsPanel.Errored err ->
                 div [ class "auth-error" ] [ text err ]
 
             _ ->
@@ -297,11 +346,11 @@ addServerRow mainFrontendHost form =
 
 accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
-    if List.isEmpty shared.accounts then
+    if List.isEmpty shared.accountsPanel.accounts then
         div [ class "accounts-empty" ] [ text "No accounts yet." ]
 
     else
-        div [ class "accounts-list" ] (List.map (accountRow shared) shared.accounts)
+        div [ class "accounts-list" ] (List.map (accountRow shared) shared.accountsPanel.accounts)
 
 
 {-| The whole row is tinted with the account's server's `background-color-primary`
@@ -310,30 +359,34 @@ username); the "host | server name" badge underneath it uses
 `background-color-nav` instead, layered on top as a normal (not
 absolutely-positioned) element now that the row isn't split into bands.
 -}
-accountRow : Shared.Model -> Shared.Account -> Html Shared.Msg
+accountRow : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 accountRow shared account =
     let
         id =
-            Shared.accountId account
+            AccountsPanel.accountId account
 
         branding =
-            Shared.brandingFor shared.servers account.server
+            AccountsPanel.brandingFor shared.accountsPanel.servers account.server
     in
     div [ classes [ "account-row", account.server, "background-color-primary" ] ]
-        [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
-        , avatarOrPlaceholder shared.servers account
+        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
+        , avatarOrPlaceholder shared.accountsPanel.servers account
         , div [ class "account-row-label" ]
             [ div [ class "account-row-username" ] [ text account.username ]
             , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                 [ text (account.server ++ " | " ++ branding.name) ]
             ]
-        , button [ class "remove-btn", onClick (Shared.RemoveAccountClicked id) ] [ text "×" ]
+        , button
+            [ class "remove-btn"
+            , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveAccountClicked id))
+            ]
+            [ text "×" ]
         ]
 
 
-avatarOrPlaceholder : List Shared.Server -> Shared.Account -> Html msg
+avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
 avatarOrPlaceholder servers account =
-    case Shared.accountAvatarUrl servers account of
+    case AccountsPanel.accountAvatarUrl servers account of
         Just url ->
             img [ class "account-avatar", src url, alt account.username ] []
 
@@ -371,50 +424,88 @@ switchInput isChecked toggleMsg =
 -- LOGIN FORM
 
 
-formView : String -> Shared.AccountForm -> Html Shared.Msg
+formView : String -> AccountsPanel.AccountForm -> Html Shared.Msg
 formView mainFrontendHost form =
     let
         submitting =
-            form.status == Shared.Submitting
+            form.status == AccountsPanel.Submitting
     in
     div [ class "account-form" ]
         [ input
             [ placeholder "Server"
             , value form.server
-            , onInput Shared.ServerChanged
+            , onInput (AccountsPanel.ServerChanged >> Shared.AccountsPanelMsg)
             ]
             []
         , input
             [ placeholder "Username"
             , value form.username
-            , onInput Shared.UsernameChanged
+            , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
             ]
             []
         , input
             [ type_ "password"
             , placeholder "Password"
             , value form.password
-            , onInput Shared.PasswordChanged
+            , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
             ]
             []
         , div [ class "account-form-buttons" ]
             [ button
-                [ onClick Shared.LoginClicked
+                [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                 , disabled submitting
                 , classes [ mainFrontendHost, "background-color-primary" ]
                 ]
                 [ text "Log In" ]
             , button
-                [ onClick Shared.CreateAccountClicked
+                [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
                 , disabled submitting
                 , classes [ mainFrontendHost, "background-color-primary" ]
                 ]
                 [ text "Create Account" ]
             ]
         , case form.status of
-            Shared.Errored err ->
+            AccountsPanel.Errored err ->
                 div [ class "auth-error" ] [ text err ]
 
             _ ->
                 text ""
+        ]
+
+
+
+-- ADMIN MENU
+
+
+{-| Only shown at all when `AccountsPanel.hasAdminAccount` -- see `layout`.
+For now just holds the "switch main server" toggle (see `serverChip`); future
+admin features land here too.
+-}
+adminMenu : Shared.Model -> Html Shared.Msg
+adminMenu shared =
+    div [ class "admin-menu" ]
+        [ button
+            [ class "accounts-menu-toggle"
+            , onClick (Shared.AdminPanelMsg AdminPanel.ToggleAdminPanel)
+            ]
+            [ text "Admin" ]
+        , adminPanel shared
+        ]
+
+
+adminPanel : Shared.Model -> Html Shared.Msg
+adminPanel shared =
+    let
+        stateClass =
+            if shared.adminPanel.showAdminPanel then
+                "is-open"
+
+            else
+                "is-closed"
+    in
+    div [ classes [ "accounts-panel", "admin-panel", stateClass ] ]
+        [ label [ class "admin-switch-row" ]
+            [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            , span [] [ text "Switch main server by tapping servers" ]
+            ]
         ]
