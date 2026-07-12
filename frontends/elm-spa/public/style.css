@@ -140,29 +140,68 @@ input[type="password"] {
 .server-chip {
   flex: 0 0 auto;
   width: 128px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.server-chip-top {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--chip-bg);
+  gap: 0.2rem;
+  padding: 0.5rem 0.4rem;
+}
+
+.server-chip-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.server-chip-logo.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.25);
+  font-weight: 700;
+}
+
+.server-chip-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+  overflow-wrap: anywhere;
 }
 
 .server-chip-host {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-align: center;
   overflow-wrap: anywhere;
-  color: var(--muted);
+  opacity: 0.85;
+}
+
+.server-chip-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
 }
 
 .add-server {
   display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.add-server-row {
+  display: flex;
   gap: 0.5rem;
 }
 
-.add-server input {
+.add-server-row input {
   flex: 1;
   min-width: 0;
 }
@@ -184,12 +223,53 @@ input[type="password"] {
 }
 
 .account-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 0.4rem;
+  position: relative;
   border: 1px solid var(--border);
   border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Two stacked color bands (primary behind the username, secondary behind the
+   host) sit behind the row's content; the switch/avatar/username/host/remove
+   button all live in the foreground layer on top, unaffected by the bands. */
+
+.account-row-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 0;
+}
+
+.account-row-bg-primary,
+.account-row-bg-secondary {
+  flex: 1;
+}
+
+.account-row-fg {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem;
+}
+
+.account-avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
 }
 
 .account-row-label {
@@ -206,10 +286,10 @@ input[type="password"] {
 
 .account-row-server {
   font-size: 0.8rem;
-  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  opacity: 0.9;
 }
 
 .remove-btn {

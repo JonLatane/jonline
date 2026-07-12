@@ -1,5 +1,6 @@
 module UI exposing (layout, page)
 
+import Char
 import Effect exposing (Effect)
 import Html exposing (Html)
 import Html.Attributes as Attr
@@ -73,12 +74,16 @@ accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
     Html.div [ Attr.class "accounts-panel" ]
         [ serversStrip shared.accounts shared.servers
-        , addServerRow shared.serverHostInput
+        , addServerRow shared.addServerForm
         , Html.div [ Attr.class "panel-divider" ] []
-        , accountsList shared.accounts
+        , accountsList shared.servers shared.accounts
         , Html.div [ Attr.class "panel-divider" ] []
         , formView shared.accountForm
         ]
+
+
+
+-- SERVERS
 
 
 serversStrip : List Shared.Account -> List Shared.Server -> Html Shared.Msg
@@ -87,67 +92,173 @@ serversStrip accounts servers =
         (List.map (serverChip accounts) servers)
 
 
+{-| Top portion (logo/name/host) is tinted with the server's primary color;
+the enable switch and delete button sit in a bottom portion tinted with its
+secondary color -- both use that color's precomputed, readable text color.
+-}
 serverChip : List Shared.Account -> Shared.Server -> Html Shared.Msg
 serverChip accounts server =
     let
         removable =
             not (Shared.serverHasAccounts accounts server.host)
+
+        branding =
+            Shared.brandingOf server
     in
     Html.div [ Attr.class "server-chip" ]
-        [ switchInput server.enabled (Shared.ToggleServerEnabled server.host)
-        , Html.div [ Attr.class "server-chip-host" ] [ Html.text server.host ]
-        , Html.button
-            [ Attr.class "remove-btn"
-            , Events.onClick (Shared.RemoveServerClicked server.host)
-            , Attr.disabled (not removable)
-            , Attr.title
-                (if removable then
-                    "Remove server"
-
-                 else
-                    "Can't remove a server with accounts on it"
-                )
+        [ Html.div
+            [ Attr.class "server-chip-top"
+            , Attr.style "background" branding.primary.hex
+            , Attr.style "color" branding.primary.contrastText
             ]
-            [ Html.text "×" ]
+            [ logoOrPlaceholder branding
+            , Html.div [ Attr.class "server-chip-name" ] [ Html.text branding.name ]
+            , Html.div [ Attr.class "server-chip-host" ] [ Html.text server.host ]
+            ]
+        , Html.div
+            [ Attr.class "server-chip-bottom"
+            , Attr.style "background" branding.secondary.hex
+            , Attr.style "color" branding.secondary.contrastText
+            ]
+            [ switchInput server.enabled (Shared.ToggleServerEnabled server.host)
+            , Html.button
+                [ Attr.class "remove-btn"
+                , Events.onClick (Shared.RemoveServerClicked server.host)
+                , Attr.disabled (not removable)
+                , Attr.title
+                    (if removable then
+                        "Remove server"
+
+                     else
+                        "Can't remove a server with accounts on it"
+                    )
+                ]
+                [ Html.text "×" ]
+            ]
         ]
 
 
-addServerRow : String -> Html Shared.Msg
-addServerRow hostInput =
+logoOrPlaceholder : Shared.Branding -> Html msg
+logoOrPlaceholder branding =
+    case branding.logoUrl of
+        Just url ->
+            Html.img [ Attr.class "server-chip-logo", Attr.src url, Attr.alt branding.name ] []
+
+        Nothing ->
+            Html.div [ Attr.class "server-chip-logo placeholder" ] [ Html.text (initial branding.name) ]
+
+
+{-| Adding a server first validates it (fetching its configuration) before it's
+added to the list -- so a typo'd or unreachable host shows an error instead of
+silently appearing as a dead chip.
+-}
+addServerRow : Shared.AddServerForm -> Html Shared.Msg
+addServerRow form =
+    let
+        checking =
+            form.status == Shared.Submitting
+    in
     Html.div [ Attr.class "add-server" ]
-        [ Html.input
-            [ Attr.placeholder "Add a server host"
-            , Attr.value hostInput
-            , Events.onInput Shared.ServerHostInputChanged
+        [ Html.div [ Attr.class "add-server-row" ]
+            [ Html.input
+                [ Attr.placeholder "Add a server host"
+                , Attr.value form.host
+                , Events.onInput Shared.ServerHostInputChanged
+                , Attr.disabled checking
+                ]
+                []
+            , Html.button
+                [ Events.onClick Shared.AddServerClicked, Attr.disabled checking ]
+                [ Html.text
+                    (if checking then
+                        "Checking…"
+
+                     else
+                        "Add Server"
+                    )
+                ]
             ]
-            []
-        , Html.button [ Events.onClick Shared.AddServerClicked ] [ Html.text "Add Server" ]
+        , case form.status of
+            Shared.Errored err ->
+                Html.div [ Attr.class "auth-error" ] [ Html.text err ]
+
+            _ ->
+                Html.text ""
         ]
 
 
-accountsList : List Shared.Account -> Html Shared.Msg
-accountsList accounts =
+
+-- ACCOUNTS
+
+
+accountsList : List Shared.Server -> List Shared.Account -> Html Shared.Msg
+accountsList servers accounts =
     if List.isEmpty accounts then
         Html.div [ Attr.class "accounts-empty" ] [ Html.text "No accounts yet." ]
 
     else
-        Html.div [ Attr.class "accounts-list" ] (List.map accountRow accounts)
+        Html.div [ Attr.class "accounts-list" ] (List.map (accountRow servers) accounts)
 
 
-accountRow : Shared.Account -> Html Shared.Msg
-accountRow account =
+{-| The row's background is split into two bands (behind the username/host
+text, tinted with the account's server's primary/secondary colors); the
+switch, avatar and remove button float in a foreground layer on top of both
+bands, each opaque, so they stay put and legible regardless of the bands'
+colors underneath.
+-}
+accountRow : List Shared.Server -> Shared.Account -> Html Shared.Msg
+accountRow servers account =
     let
         id =
             Shared.accountId account
+
+        branding =
+            Shared.brandingFor servers account.server
     in
     Html.div [ Attr.class "account-row" ]
-        [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
-        , Html.div [ Attr.class "account-row-label" ]
-            [ Html.div [ Attr.class "account-row-username" ] [ Html.text account.username ]
-            , Html.div [ Attr.class "account-row-server" ] [ Html.text account.server ]
+        [ Html.div [ Attr.class "account-row-bg" ]
+            [ Html.div [ Attr.class "account-row-bg-primary", Attr.style "background" branding.primary.hex ] []
+            , Html.div [ Attr.class "account-row-bg-secondary", Attr.style "background" branding.secondary.hex ] []
             ]
-        , Html.button [ Attr.class "remove-btn", Events.onClick (Shared.RemoveAccountClicked id) ] [ Html.text "×" ]
+        , Html.div [ Attr.class "account-row-fg" ]
+            [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
+            , avatarOrPlaceholder account
+            , Html.div [ Attr.class "account-row-label" ]
+                [ Html.div
+                    [ Attr.class "account-row-username"
+                    , Attr.style "color" branding.primary.contrastText
+                    ]
+                    [ Html.text account.username ]
+                , Html.div
+                    [ Attr.class "account-row-server"
+                    , Attr.style "color" branding.secondary.contrastText
+                    ]
+                    [ Html.text account.server ]
+                ]
+            , Html.button [ Attr.class "remove-btn", Events.onClick (Shared.RemoveAccountClicked id) ] [ Html.text "×" ]
+            ]
         ]
+
+
+avatarOrPlaceholder : Shared.Account -> Html msg
+avatarOrPlaceholder account =
+    case Shared.accountAvatarUrl account of
+        Just url ->
+            Html.img [ Attr.class "account-avatar", Attr.src url, Attr.alt account.username ] []
+
+        Nothing ->
+            Html.div [ Attr.class "account-avatar placeholder" ] [ Html.text (initial account.username) ]
+
+
+{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder.
+-}
+initial : String -> String
+initial name =
+    name
+        |> String.trim
+        |> String.uncons
+        |> Maybe.map (Tuple.first >> Char.toUpper >> String.fromChar)
+        |> Maybe.withDefault "?"
 
 
 {-| A checkbox styled as a toggle switch.
@@ -163,6 +274,10 @@ switchInput isChecked toggleMsg =
             []
         , Html.span [ Attr.class "slider" ] []
         ]
+
+
+
+-- LOGIN FORM
 
 
 formView : Shared.AccountForm -> Html Shared.Msg

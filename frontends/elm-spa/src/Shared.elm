@@ -1,24 +1,32 @@
 module Shared exposing
     ( Account
     , AccountForm
+    , AddServerForm
+    , Branding
+    , BrandingStatus(..)
     , Flags
     , FormStatus(..)
     , Model
     , Msg(..)
     , Server
+    , Swatch
+    , accountAvatarUrl
     , accountId
     , accountsMenuLabel
+    , brandingFor
+    , brandingOf
     , init
     , serverHasAccounts
     , subscriptions
     , update
     )
 
+import Bitwise
 import Grpc
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse)
+import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse, ServerConfiguration)
 import Proto.Jonline.Jonline as Jonline
 import Request exposing (Request)
 
@@ -39,16 +47,46 @@ type alias Account =
     , refreshToken : ExpirableToken
     , accessToken : ExpirableToken
     , enabled : Bool
+    , avatarMediaId : Maybe String
     }
 
 
-{-| A server the app knows about (because an account was created/logged into there).
-`enabled` controls whether the server's (eventually public) data is included when
-aggregating data across servers.
+{-| A server the app knows about (because an account was created/logged into there,
+or it was explicitly added). `enabled` controls whether the server's (eventually
+public) data is included when aggregating data across servers. `branding` is
+fetched (and cached) separately, since it takes a network round-trip.
 -}
 type alias Server =
     { host : String
     , enabled : Bool
+    , branding : BrandingStatus
+    }
+
+
+type BrandingStatus
+    = BrandingUnknown
+    | BrandingLoading
+    | BrandingLoaded Branding
+    | BrandingFailed
+
+
+{-| A server's user-facing identity: its name, square logo (if any), and its
+primary/secondary brand colors, each paired with a precomputed, readable
+(black or white) text color to use on top of them.
+-}
+type alias Branding =
+    { name : String
+    , logoUrl : Maybe String
+    , primary : Swatch
+    , secondary : Swatch
+    }
+
+
+{-| A background color plus the text color that reads best on top of it.
+-}
+type alias Swatch =
+    { hex : String
+    , contrastText : String
     }
 
 
@@ -66,11 +104,21 @@ type alias AccountForm =
     }
 
 
+{-| The "Add Server" control's own form state -- separate from `AccountForm`
+since adding a server (an unauthenticated `GetServerConfiguration` probe) and
+logging in are independent flows that can be in-flight/erroring independently.
+-}
+type alias AddServerForm =
+    { host : String
+    , status : FormStatus
+    }
+
+
 type alias Model =
     { accounts : List Account
     , servers : List Server
     , accountForm : AccountForm
-    , serverHostInput : String
+    , addServerForm : AddServerForm
     , showAccountsPanel : Bool
     }
 
@@ -82,11 +130,13 @@ type Msg
     | LoginClicked
     | CreateAccountClicked
     | GotAuthResult (Result Grpc.Error RefreshTokenResponse)
+    | GotServerConfiguration String (Result Grpc.Error ServerConfiguration)
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
     | ServerHostInputChanged String
     | AddServerClicked
+    | GotNewServerResult String (Result Grpc.Error ServerConfiguration)
     | RemoveServerClicked String
     | ToggleAccountsPanel
 
@@ -120,20 +170,67 @@ accountsMenuLabel model =
             String.fromInt (List.length many) ++ " Accounts"
 
 
+{-| The URL for an account's avatar, authorized with its own access token
+(avatars can be visibility-restricted, but an account can always see its own).
+-}
+accountAvatarUrl : Account -> Maybe String
+accountAvatarUrl account =
+    account.avatarMediaId
+        |> Maybe.map (\id -> grpcHost account.server ++ "/media/" ++ id ++ "?authorization=" ++ account.accessToken.token)
+
+
+{-| A server's branding, falling back to its bare hostname and neutral colors
+until (or unless) it's loaded.
+-}
+brandingOf : Server -> Branding
+brandingOf server =
+    case server.branding of
+        BrandingLoaded branding ->
+            branding
+
+        _ ->
+            defaultBranding server.host
+
+
+{-| Like `brandingOf`, but looks a server up by host (for e.g. an account's
+`server` field, cross-referenced against the server list).
+-}
+brandingFor : List Server -> String -> Branding
+brandingFor servers host =
+    servers
+        |> List.filter (\s -> s.host == host)
+        |> List.head
+        |> Maybe.map brandingOf
+        |> Maybe.withDefault (defaultBranding host)
+
+
+defaultBranding : String -> Branding
+defaultBranding host =
+    { name = host, logoUrl = Nothing, primary = fallbackSwatch, secondary = fallbackSwatch }
+
+
+fallbackSwatch : Swatch
+fallbackSwatch =
+    { hex = "var(--chip-bg)", contrastText = "var(--fg)" }
+
+
 init : Request -> Flags -> ( Model, Cmd Msg )
 init _ flags =
     let
         persisted =
             Decode.decodeValue persistedStateDecoder flags
                 |> Result.withDefault { accounts = [], servers = [] }
+
+        servers =
+            List.map (\s -> { s | branding = BrandingLoading }) persisted.servers
     in
     ( { accounts = persisted.accounts
-      , servers = persisted.servers
+      , servers = servers
       , accountForm = emptyForm
-      , serverHostInput = ""
+      , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
       }
-    , Cmd.none
+    , Cmd.batch (List.map (\s -> fetchServerConfig s.host) servers)
     )
 
 
@@ -144,6 +241,11 @@ emptyForm =
     , password = ""
     , status = Idle
     }
+
+
+emptyAddServerForm : AddServerForm
+emptyAddServerForm =
+    { host = "", status = Idle }
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -207,12 +309,16 @@ update _ msg model =
                             , refreshToken = refreshToken
                             , accessToken = accessToken
                             , enabled = True
+                            , avatarMediaId = Maybe.map .id user.avatar
                             }
+
+                        ( updatedServers, isNewServer ) =
+                            upsertServer host model.servers
 
                         newModel =
                             { model
                                 | accounts = upsertAccount account model.accounts
-                                , servers = upsertServer host model.servers
+                                , servers = updatedServers
                                 , accountForm =
                                     let
                                         form =
@@ -221,7 +327,16 @@ update _ msg model =
                                     { form | password = "", status = Idle }
                             }
                     in
-                    ( newModel, persist newModel )
+                    ( newModel
+                    , Cmd.batch
+                        [ persist newModel
+                        , if isNewServer then
+                            fetchServerConfig host
+
+                          else
+                            Cmd.none
+                        ]
+                    )
 
                 _ ->
                     ( updateForm (\f -> { f | status = Errored "Server response was missing user/token data." }) model
@@ -232,6 +347,32 @@ update _ msg model =
             ( updateForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
             , Cmd.none
             )
+
+        GotServerConfiguration host result ->
+            let
+                branding =
+                    case result of
+                        Ok config ->
+                            BrandingLoaded (brandingFromConfig host config)
+
+                        Err _ ->
+                            BrandingFailed
+
+                newModel =
+                    { model
+                        | servers =
+                            List.map
+                                (\s ->
+                                    if s.host == host then
+                                        { s | branding = branding }
+
+                                    else
+                                        s
+                                )
+                                model.servers
+                    }
+            in
+            ( newModel, Cmd.none )
 
         ToggleAccountEnabled id ->
             let
@@ -277,25 +418,44 @@ update _ msg model =
             ( newModel, persist newModel )
 
         ServerHostInputChanged host ->
-            ( { model | serverHostInput = host }, Cmd.none )
+            ( { model | addServerForm = { host = host, status = Idle } }, Cmd.none )
 
         AddServerClicked ->
             let
                 host =
-                    String.trim model.serverHostInput
+                    String.trim model.addServerForm.host
             in
             if String.isEmpty host then
                 ( model, Cmd.none )
 
+            else if List.any (\s -> s.host == host) model.servers then
+                ( updateAddServerForm (\f -> { f | status = Errored "That server is already in your list." }) model
+                , Cmd.none
+                )
+
             else
-                let
-                    newModel =
-                        { model
-                            | servers = upsertServer host model.servers
-                            , serverHostInput = ""
-                        }
-                in
-                ( newModel, persist newModel )
+                ( updateAddServerForm (\f -> { f | status = Submitting }) model
+                , Grpc.new Jonline.getServerConfiguration {}
+                    |> Grpc.setHost (grpcHost host)
+                    |> Grpc.toCmd (GotNewServerResult host)
+                )
+
+        GotNewServerResult host result ->
+            case result of
+                Ok config ->
+                    let
+                        newModel =
+                            { model
+                                | servers = model.servers ++ [ { host = host, enabled = True, branding = BrandingLoaded (brandingFromConfig host config) } ]
+                                , addServerForm = emptyAddServerForm
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err err ->
+                    ( updateAddServerForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
+                    , Cmd.none
+                    )
 
         RemoveServerClicked host ->
             if serverHasAccounts model.accounts host then
@@ -325,6 +485,11 @@ serverHasAccounts accounts host =
     List.any (\a -> a.server == host) accounts
 
 
+updateAddServerForm : (AddServerForm -> AddServerForm) -> Model -> Model
+updateAddServerForm fn model =
+    { model | addServerForm = fn model.addServerForm }
+
+
 updateForm : (AccountForm -> AccountForm) -> Model -> Model
 updateForm fn model =
     { model | accountForm = fn model.accountForm }
@@ -347,13 +512,110 @@ upsertAccount account accounts =
         accounts ++ [ account ]
 
 
-upsertServer : String -> List Server -> List Server
+{-| Adds a server if it's not already known, reporting whether it did so (so
+callers can decide whether to kick off a branding fetch for it).
+-}
+upsertServer : String -> List Server -> ( List Server, Bool )
 upsertServer host servers =
     if List.any (\s -> s.host == host) servers then
-        servers
+        ( servers, False )
 
     else
-        servers ++ [ { host = host, enabled = True } ]
+        ( servers ++ [ { host = host, enabled = True, branding = BrandingLoading } ], True )
+
+
+fetchServerConfig : String -> Cmd Msg
+fetchServerConfig host =
+    Grpc.new Jonline.getServerConfiguration {}
+        |> Grpc.setHost (grpcHost host)
+        |> Grpc.toCmd (GotServerConfiguration host)
+
+
+brandingFromConfig : String -> ServerConfiguration -> Branding
+brandingFromConfig host config =
+    let
+        info =
+            Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
+
+        name =
+            info.name
+                |> Maybe.andThen (\n -> ifNonEmpty n)
+                |> Maybe.withDefault host
+
+        logoUrl =
+            info.logo
+                |> Maybe.andThen .squareMediaId
+                |> Maybe.map (\id -> grpcHost host ++ "/media/" ++ id)
+    in
+    { name = name
+    , logoUrl = logoUrl
+    , primary = info.colors |> Maybe.andThen .primary |> Maybe.map swatchFromArgb |> Maybe.withDefault fallbackSwatch
+    , secondary = info.colors |> Maybe.andThen .navigation |> Maybe.map swatchFromArgb |> Maybe.withDefault fallbackSwatch
+    }
+
+
+ifNonEmpty : String -> Maybe String
+ifNonEmpty s =
+    if String.isEmpty s then
+        Nothing
+
+    else
+        Just s
+
+
+swatchFromArgb : Int -> Swatch
+swatchFromArgb argb =
+    let
+        rgb =
+            { r = Bitwise.and 0xFF (Bitwise.shiftRightBy 16 argb)
+            , g = Bitwise.and 0xFF (Bitwise.shiftRightBy 8 argb)
+            , b = Bitwise.and 0xFF argb
+            }
+    in
+    { hex = toHexColor rgb, contrastText = contrastingTextColor rgb }
+
+
+toHexColor : { r : Int, g : Int, b : Int } -> String
+toHexColor { r, g, b } =
+    "#" ++ toHexByte r ++ toHexByte g ++ toHexByte b
+
+
+toHexByte : Int -> String
+toHexByte n =
+    let
+        hexDigit d =
+            String.slice d (d + 1) "0123456789abcdef"
+    in
+    hexDigit (n // 16) ++ hexDigit (modBy 16 n)
+
+
+{-| Whether black or white text reads better on top of a color, via the WCAG
+relative-luminance formula (a couple of `^2.4`s per channel). Computed once
+here, when a server's colors first arrive over the network, and cached in the
+model from then on rather than recomputed on every render.
+-}
+contrastingTextColor : { r : Int, g : Int, b : Int } -> String
+contrastingTextColor { r, g, b } =
+    let
+        linear c =
+            let
+                s =
+                    toFloat c / 255
+            in
+            if s <= 0.03928 then
+                s / 12.92
+
+            else
+                ((s + 0.055) / 1.055) ^ 2.4
+
+        luminance =
+            0.2126 * linear r + 0.7152 * linear g + 0.0722 * linear b
+    in
+    if luminance > 0.179 then
+        "#000000"
+
+    else
+        "#ffffff"
 
 
 grpcHost : String -> String
@@ -395,6 +657,7 @@ grpcErrorToString err =
 -- PERSISTENCE
 -- Tokens are stored without their (usually absent) expiration, since accounts
 -- are non-expiring by default and expiry-aware refresh isn't implemented yet.
+-- Branding is never persisted -- it's re-fetched each session.
 
 
 persist : Model -> Cmd Msg
@@ -419,6 +682,7 @@ encodeAccount account =
         , ( "refreshToken", Encode.string account.refreshToken.token )
         , ( "accessToken", Encode.string account.accessToken.token )
         , ( "enabled", Encode.bool account.enabled )
+        , ( "avatarMediaId", account.avatarMediaId |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         ]
 
 
@@ -445,18 +709,19 @@ persistedStateDecoder =
 
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map6 Account
+    Decode.map7 Account
         (Decode.field "server" Decode.string)
         (Decode.field "userId" Decode.string)
         (Decode.field "username" Decode.string)
         (Decode.field "refreshToken" tokenDecoder)
         (Decode.field "accessToken" tokenDecoder)
         (Decode.field "enabled" Decode.bool)
+        (optionalString "avatarMediaId")
 
 
 serverDecoder : Decoder Server
 serverDecoder =
-    Decode.map2 Server
+    Decode.map2 (\host enabled -> { host = host, enabled = enabled, branding = BrandingUnknown })
         (Decode.field "host" Decode.string)
         (Decode.field "enabled" Decode.bool)
 
@@ -464,3 +729,9 @@ serverDecoder =
 tokenDecoder : Decoder ExpirableToken
 tokenDecoder =
     Decode.map (\token -> { token = token, expiresAt = Nothing }) Decode.string
+
+
+optionalString : String -> Decoder (Maybe String)
+optionalString field =
+    Decode.maybe (Decode.field field (Decode.nullable Decode.string))
+        |> Decode.map (Maybe.andThen identity)
