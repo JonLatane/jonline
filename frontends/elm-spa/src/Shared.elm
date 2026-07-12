@@ -8,18 +8,22 @@ module Shared exposing
     , Model
     , Msg(..)
     , Server
-    , Swatch
+    , ThemePreference(..)
     , accountAvatarUrl
     , accountId
     , accountsMenuLabel
     , brandingFor
+    , effectiveDarkMode
     , init
+    , mainServerTheme
     , serverHasAccounts
+    , serverThemeFor
+    , serverThemeOf
     , subscriptions
+    , themePreferenceLabel
     , update
     )
 
-import Bitwise
 import Grpc
 import Http
 import Json.Decode as Decode exposing (Decoder)
@@ -29,6 +33,7 @@ import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse, ServerConfi
 import Proto.Jonline.Jonline as Jonline
 import Request exposing (Request)
 import Task exposing (Task)
+import UI.ServerTheme
 import Url
 
 
@@ -79,24 +84,17 @@ type alias Server =
 
 
 {-| A server's user-facing identity: its name, square logo (if any), and its
-primary/secondary brand colors, each paired with a precomputed, readable
-(black or white) text color to use on top of them. Derived from `configuration`
-once (see `brandingFromConfig`) and cached alongside it, rather than
-recomputed on every render.
+primary/nav brand colors -- decomposed into `UI.ServerTheme.ColorMeta` (text
+color, light/dark variants) once, when `configuration` first arrives (see
+`brandingFromConfig`), and cached here rather than recomputed on every
+render. Combine with the app's current dark/light mode via
+`serverThemeOf`/`serverThemeFor` to get the full `UI.ServerTheme.ServerTheme`.
 -}
 type alias Branding =
     { name : String
     , logoUrl : Maybe String
-    , primary : Swatch
-    , secondary : Swatch
-    }
-
-
-{-| A background color plus the text color that reads best on top of it.
--}
-type alias Swatch =
-    { hex : String
-    , contrastText : String
+    , primary : UI.ServerTheme.ColorMeta
+    , nav : UI.ServerTheme.ColorMeta
     }
 
 
@@ -135,6 +133,15 @@ type alias AddServerForm =
     }
 
 
+{-| The user's chosen appearance. `Auto` follows `systemPrefersDark`; `Light`/
+`Dark` force it regardless of the system.
+-}
+type ThemePreference
+    = ThemeAuto
+    | ThemeLight
+    | ThemeDark
+
+
 type alias Model =
     { accounts : List Account
     , servers : List Server
@@ -155,6 +162,9 @@ type alias Model =
     --
     -- (Future home for a "browse as if from another server" override.)
     , mainFrontendHost : String
+
+    , themePreference : ThemePreference
+    , systemPrefersDark : Bool
     }
 
 
@@ -175,6 +185,8 @@ type Msg
     | GotNewServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | RemoveServerClicked String
     | ToggleAccountsPanel
+    | ThemePreferenceClicked
+    | SystemPrefersDarkChanged Bool
 
 
 {-| A stable identifier for an account: a user's id is only unique per-server.
@@ -243,20 +255,108 @@ brandingFor servers frontendHost =
 
 defaultBranding : String -> Branding
 defaultBranding frontendHost =
-    { name = frontendHost, logoUrl = Nothing, primary = fallbackSwatch, secondary = fallbackSwatch }
+    { name = frontendHost
+    , logoUrl = Nothing
+    , primary = UI.ServerTheme.neutralColorMeta
+    , nav = UI.ServerTheme.neutralColorMeta
+    }
 
 
-fallbackSwatch : Swatch
-fallbackSwatch =
-    { hex = "var(--chip-bg)", contrastText = "var(--fg)" }
+{-| The full color theme for a server, combining its cached `branding` with
+the app's current dark/light mode. Cheap -- fine to call on every render.
+-}
+serverThemeOf : Model -> Server -> UI.ServerTheme.ServerTheme
+serverThemeOf model server =
+    UI.ServerTheme.fromColorMetas (effectiveDarkMode model) server.branding.primary server.branding.nav
+
+
+{-| Like `serverThemeOf`, but looks a server up by `frontendHost` (for e.g. an
+account's `server` field).
+-}
+serverThemeFor : Model -> String -> UI.ServerTheme.ServerTheme
+serverThemeFor model frontendHost =
+    let
+        branding =
+            brandingFor model.servers frontendHost
+    in
+    UI.ServerTheme.fromColorMetas (effectiveDarkMode model) branding.primary branding.nav
+
+
+{-| The theme for chrome that isn't scoped to any one server/account row (nav
+links, form buttons, etc.) -- currently always `mainFrontendHost`'s theme.
+(Once host switching lands, this is where "browse as if from another server"
+would swap in a different host instead.)
+-}
+mainServerTheme : Model -> UI.ServerTheme.ServerTheme
+mainServerTheme model =
+    serverThemeFor model model.mainFrontendHost
+
+
+{-| Whether the app should currently render in dark mode, resolving `Auto`
+against the last-known system preference.
+-}
+effectiveDarkMode : Model -> Bool
+effectiveDarkMode model =
+    case model.themePreference of
+        ThemeAuto ->
+            model.systemPrefersDark
+
+        ThemeLight ->
+            False
+
+        ThemeDark ->
+            True
+
+
+themePreferenceLabel : ThemePreference -> String
+themePreferenceLabel pref =
+    case pref of
+        ThemeAuto ->
+            "Auto"
+
+        ThemeLight ->
+            "Light"
+
+        ThemeDark ->
+            "Dark"
+
+
+themePreferenceToString : ThemePreference -> String
+themePreferenceToString pref =
+    case pref of
+        ThemeAuto ->
+            "auto"
+
+        ThemeLight ->
+            "light"
+
+        ThemeDark ->
+            "dark"
+
+
+nextThemePreference : ThemePreference -> ThemePreference
+nextThemePreference pref =
+    case pref of
+        ThemeAuto ->
+            ThemeLight
+
+        ThemeLight ->
+            ThemeDark
+
+        ThemeDark ->
+            ThemeAuto
 
 
 init : Request -> Flags -> ( Model, Cmd Msg )
 init req flags =
     let
         persisted =
-            Decode.decodeValue persistedStateDecoder flags
-                |> Result.withDefault { accounts = [], servers = [] }
+            Decode.decodeValue (Decode.field "state" persistedStateDecoder) flags
+                |> Result.withDefault emptyPersistedState
+
+        systemPrefersDark =
+            Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
+                |> Result.withDefault False
 
         pageIsSecure =
             isSecure req
@@ -295,8 +395,10 @@ init req flags =
       , showAccountsPanel = False
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
+      , themePreference = persisted.themePreference
+      , systemPrefersDark = systemPrefersDark
       }
-    , Cmd.batch (mainServerCmd :: reconnectCmds)
+    , Cmd.batch (Ports.setTheme (themePreferenceToString persisted.themePreference) :: mainServerCmd :: reconnectCmds)
     )
 
 
@@ -576,10 +678,22 @@ update req msg model =
         ToggleAccountsPanel ->
             ( { model | showAccountsPanel = not model.showAccountsPanel }, Cmd.none )
 
+        ThemePreferenceClicked ->
+            let
+                newModel =
+                    { model | themePreference = nextThemePreference model.themePreference }
+            in
+            ( newModel
+            , Cmd.batch [ persist newModel, Ports.setTheme (themePreferenceToString newModel.themePreference) ]
+            )
+
+        SystemPrefersDarkChanged prefersDark ->
+            ( { model | systemPrefersDark = prefersDark }, Cmd.none )
+
 
 subscriptions : Request -> Model -> Sub Msg
 subscriptions _ _ =
-    Sub.none
+    Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
 
 
 {-| A server that has any associated accounts can't be removed (only disabled),
@@ -819,11 +933,17 @@ brandingFromConfig connection config =
             info.logo
                 |> Maybe.andThen .squareMediaId
                 |> Maybe.map (\id -> mediaBaseUrl connection ++ "/media/" ++ id)
+
+        primaryArgb =
+            info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x424242
+
+        navArgb =
+            info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0xFFFFFF
     in
     { name = name
     , logoUrl = logoUrl
-    , primary = info.colors |> Maybe.andThen .primary |> Maybe.map swatchFromArgb |> Maybe.withDefault fallbackSwatch
-    , secondary = info.colors |> Maybe.andThen .navigation |> Maybe.map swatchFromArgb |> Maybe.withDefault fallbackSwatch
+    , primary = UI.ServerTheme.colorMetaFromArgb primaryArgb
+    , nav = UI.ServerTheme.colorMetaFromArgb navArgb
     }
 
 
@@ -834,61 +954,6 @@ ifNonEmpty s =
 
     else
         Just s
-
-
-swatchFromArgb : Int -> Swatch
-swatchFromArgb argb =
-    let
-        rgb =
-            { r = Bitwise.and 0xFF (Bitwise.shiftRightBy 16 argb)
-            , g = Bitwise.and 0xFF (Bitwise.shiftRightBy 8 argb)
-            , b = Bitwise.and 0xFF argb
-            }
-    in
-    { hex = toHexColor rgb, contrastText = contrastingTextColor rgb }
-
-
-toHexColor : { r : Int, g : Int, b : Int } -> String
-toHexColor { r, g, b } =
-    "#" ++ toHexByte r ++ toHexByte g ++ toHexByte b
-
-
-toHexByte : Int -> String
-toHexByte n =
-    let
-        hexDigit d =
-            String.slice d (d + 1) "0123456789abcdef"
-    in
-    hexDigit (n // 16) ++ hexDigit (modBy 16 n)
-
-
-{-| Whether black or white text reads better on top of a color, via the WCAG
-relative-luminance formula (a couple of `^2.4`s per channel). Computed once
-here, when a server's colors first arrive over the network, and cached in the
-model from then on rather than recomputed on every render.
--}
-contrastingTextColor : { r : Int, g : Int, b : Int } -> String
-contrastingTextColor { r, g, b } =
-    let
-        linear c =
-            let
-                s =
-                    toFloat c / 255
-            in
-            if s <= 0.03928 then
-                s / 12.92
-
-            else
-                ((s + 0.055) / 1.055) ^ 2.4
-
-        luminance =
-            0.2126 * linear r + 0.7152 * linear g + 0.0722 * linear b
-    in
-    if luminance > 0.179 then
-        "#000000"
-
-    else
-        "#ffffff"
 
 
 grpcErrorToString : Grpc.Error -> String
@@ -923,7 +988,8 @@ grpcErrorToString err =
 -- are non-expiring by default and expiry-aware refresh isn't implemented yet.
 -- Servers are persisted as just their frontendHost + enabled flag: backendHost/
 -- port/tls/configuration are all rediscovered by reconnecting each session
--- rather than trusted from a (possibly stale) previous one.
+-- rather than trusted from a (possibly stale) previous one. systemPrefersDark
+-- is never persisted -- it's read fresh from the OS every boot.
 
 
 persist : Model -> Cmd Msg
@@ -936,6 +1002,7 @@ encodeState model =
     Encode.object
         [ ( "accounts", Encode.list encodeAccount model.accounts )
         , ( "servers", Encode.list encodePersistedServer model.servers )
+        , ( "themePreference", Encode.string (themePreferenceToString model.themePreference) )
         ]
 
 
@@ -969,14 +1036,21 @@ type alias PersistedServer =
 type alias PersistedState =
     { accounts : List Account
     , servers : List PersistedServer
+    , themePreference : ThemePreference
     }
+
+
+emptyPersistedState : PersistedState
+emptyPersistedState =
+    { accounts = [], servers = [], themePreference = ThemeAuto }
 
 
 persistedStateDecoder : Decoder PersistedState
 persistedStateDecoder =
-    Decode.map2 PersistedState
+    Decode.map3 PersistedState
         (Decode.field "accounts" (Decode.list accountDecoder))
         (Decode.field "servers" (Decode.list persistedServerDecoder))
+        persistedThemePreferenceDecoder
 
 
 accountDecoder : Decoder Account
@@ -996,6 +1070,29 @@ persistedServerDecoder =
     Decode.map2 PersistedServer
         (Decode.field "frontendHost" Decode.string)
         (Decode.field "enabled" Decode.bool)
+
+
+{-| Defaults to `Auto` if the key is missing entirely (older persisted state)
+or unrecognized, without failing the rest of the decode.
+-}
+persistedThemePreferenceDecoder : Decoder ThemePreference
+persistedThemePreferenceDecoder =
+    Decode.oneOf
+        [ Decode.field "themePreference" Decode.string
+            |> Decode.map
+                (\s ->
+                    case s of
+                        "light" ->
+                            ThemeLight
+
+                        "dark" ->
+                            ThemeDark
+
+                        _ ->
+                            ThemeAuto
+                )
+        , Decode.succeed ThemeAuto
+        ]
 
 
 tokenDecoder : Decoder ExpirableToken

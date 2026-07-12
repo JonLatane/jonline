@@ -16,10 +16,29 @@
       console.error("Failed to read stored Jonline state", e);
     }
 
-    var app = Elm.Main.init({ flags: storedState });
+    var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    var app = Elm.Main.init({
+      flags: {
+        state: storedState,
+        systemPrefersDark: darkMediaQuery.matches
+      }
+    });
 
     app.ports.persist.subscribe(function (state) {
       localStorage.setItem("jonlineState", JSON.stringify(state));
+    });
+
+    app.ports.setTheme.subscribe(function (theme) {
+      if (theme === "auto") {
+        document.documentElement.removeAttribute("data-theme");
+      } else {
+        document.documentElement.setAttribute("data-theme", theme);
+      }
+    });
+
+    darkMediaQuery.addEventListener("change", function (e) {
+      app.ports.systemPrefersDarkChanged.send(e.matches);
     });
   </script>
 </body>

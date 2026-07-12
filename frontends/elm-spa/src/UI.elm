@@ -2,12 +2,13 @@ module UI exposing (layout, page)
 
 import Char
 import Effect exposing (Effect)
-import Html exposing (Html)
-import Html.Attributes as Attr
-import Html.Events as Events
+import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
+import Html.Attributes exposing (alt, checked, class, disabled, href, placeholder, src, title, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Page
 import Request
 import Shared
+import UI.EmittedStylesheet
 import View exposing (View)
 
 
@@ -27,22 +28,60 @@ page shared _ body =
 
 layout : Shared.Model -> List (Html Shared.Msg) -> List (Html Shared.Msg)
 layout shared children =
-    [ Html.div [ Attr.class "container" ]
-        [ Html.header [ Attr.class "navbar" ]
-            [ Html.nav [ Attr.class "nav-links" ]
+    [ UI.EmittedStylesheet.view shared
+    , div [ class "container" ]
+        [ header [ class "navbar" ]
+            [ nav [ class "nav-links" ]
                 [ viewLink "Home" "/"
                 , viewLink "About" "/about"
                 ]
-            , accountsMenu shared
+            , div [ class "nav-right" ]
+                [ themeToggle shared
+                , accountsMenu shared
+                ]
             ]
-        , Html.main_ [] children
+        , main_ [] children
         ]
     ]
 
 
+{-| Combines several class names into one `class` attribute -- `Html`
+attributes of the same kind don't merge, so `[ class "a", class "b" ]` would
+just apply "b".
+-}
+classes : List String -> Attribute msg
+classes names =
+    class (String.join " " names)
+
+
 viewLink : String -> String -> Html msg
-viewLink label url =
-    Html.a [ Attr.href url ] [ Html.text label ]
+viewLink linkLabel url =
+    a [ href url ] [ text linkLabel ]
+
+
+{-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
+(and reacts live if it changes); "Light"/"Dark" force it.
+-}
+themeToggle : Shared.Model -> Html Shared.Msg
+themeToggle shared =
+    let
+        icon =
+            case shared.themePreference of
+                Shared.ThemeAuto ->
+                    "🌓"
+
+                Shared.ThemeLight ->
+                    "☀️"
+
+                Shared.ThemeDark ->
+                    "🌙"
+    in
+    button
+        [ class "theme-toggle"
+        , onClick Shared.ThemePreferenceClicked
+        , title ("Appearance: " ++ Shared.themePreferenceLabel shared.themePreference ++ " (click to change)")
+        ]
+        [ text icon ]
 
 
 
@@ -51,20 +90,20 @@ viewLink label url =
 
 accountsMenu : Shared.Model -> Html Shared.Msg
 accountsMenu shared =
-    Html.div [ Attr.class "accounts-menu" ]
-        [ Html.div [ Attr.class "accounts-menu-row" ]
-            [ Html.button
-                [ Attr.class "accounts-menu-toggle"
-                , Events.onClick Shared.ToggleAccountsPanel
+    div [ class "accounts-menu" ]
+        [ div [ class "accounts-menu-row" ]
+            [ button
+                [ class "accounts-menu-toggle"
+                , onClick Shared.ToggleAccountsPanel
                 ]
-                [ Html.text (Shared.accountsMenuLabel shared) ]
+                [ text (Shared.accountsMenuLabel shared) ]
             , hostMismatchWarning shared
             ]
         , if shared.showAccountsPanel then
             accountsPanel shared
 
           else
-            Html.text ""
+            text ""
         ]
 
 
@@ -76,9 +115,9 @@ probably has the "wrong" (if working) URL open.
 hostMismatchWarning : Shared.Model -> Html msg
 hostMismatchWarning shared =
     if shared.browsingHost /= shared.mainFrontendHost then
-        Html.span
-            [ Attr.class "host-mismatch-warning"
-            , Attr.title
+        span
+            [ class "host-mismatch-warning"
+            , title
                 ("You're browsing from "
                     ++ shared.browsingHost
                     ++ ", but it's configured to look like "
@@ -88,10 +127,10 @@ hostMismatchWarning shared =
                     ++ "."
                 )
             ]
-            [ Html.text "⚠️" ]
+            [ text "⚠️" ]
 
     else
-        Html.text ""
+        text ""
 
 
 {-| Servers scroll horizontally in a short strip (there are usually few, and it
@@ -101,13 +140,13 @@ you'll accumulate the most of.
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
-    Html.div [ Attr.class "accounts-panel" ]
-        [ serversStrip shared.mainFrontendHost shared.accounts shared.servers
-        , addServerRow shared.addServerForm
-        , Html.div [ Attr.class "panel-divider" ] []
-        , accountsList shared.servers shared.accounts
-        , Html.div [ Attr.class "panel-divider" ] []
-        , formView shared.accountForm
+    div [ class "accounts-panel" ]
+        [ serversStrip shared
+        , addServerRow shared.mainFrontendHost shared.addServerForm
+        , div [ class "panel-divider" ] []
+        , accountsList shared
+        , div [ class "panel-divider" ] []
+        , formView shared.mainFrontendHost shared.accountForm
         ]
 
 
@@ -115,24 +154,24 @@ accountsPanel shared =
 -- SERVERS
 
 
-serversStrip : String -> List Shared.Account -> List Shared.Server -> Html Shared.Msg
-serversStrip mainFrontendHost accounts servers =
-    Html.div [ Attr.class "servers-strip" ]
-        (List.map (serverChip mainFrontendHost accounts) servers)
+serversStrip : Shared.Model -> Html Shared.Msg
+serversStrip shared =
+    div [ class "servers-strip" ]
+        (List.map (serverChip shared) shared.servers)
 
 
-{-| Top portion (logo/name/host) is tinted with the server's primary color;
-the enable switch and delete button sit in a bottom portion tinted with its
-secondary color -- both use that color's precomputed, readable text color.
+{-| Top portion (logo/name/host) gets that server's `background-color-primary`
+utility classes (see `UI.EmittedStylesheet`); the enable switch and delete
+button sit in a bottom portion using `background-color-nav` instead.
 -}
-serverChip : String -> List Shared.Account -> Shared.Server -> Html Shared.Msg
-serverChip mainFrontendHost accounts server =
+serverChip : Shared.Model -> Shared.Server -> Html Shared.Msg
+serverChip shared server =
     let
         isMainServer =
-            server.frontendHost == mainFrontendHost
+            server.frontendHost == shared.mainFrontendHost
 
         hasAccounts =
-            Shared.serverHasAccounts accounts server.frontendHost
+            Shared.serverHasAccounts shared.accounts server.frontendHost
 
         removable =
             not hasAccounts && not isMainServer
@@ -140,27 +179,19 @@ serverChip mainFrontendHost accounts server =
         branding =
             server.branding
     in
-    Html.div [ Attr.class "server-chip" ]
-        [ Html.div
-            [ Attr.class "server-chip-top"
-            , Attr.style "background" branding.primary.hex
-            , Attr.style "color" branding.primary.contrastText
-            ]
+    div [ class "server-chip" ]
+        [ div [ classes [ "server-chip-top", server.frontendHost, "background-color-primary" ] ]
             [ logoOrPlaceholder branding
-            , Html.div [ Attr.class "server-chip-name" ] [ Html.text branding.name ]
-            , Html.div [ Attr.class "server-chip-host" ] [ Html.text server.frontendHost ]
+            , div [ class "server-chip-name" ] [ text branding.name ]
+            , div [ class "server-chip-host" ] [ text server.frontendHost ]
             ]
-        , Html.div
-            [ Attr.class "server-chip-bottom"
-            , Attr.style "background" branding.secondary.hex
-            , Attr.style "color" branding.secondary.contrastText
-            ]
+        , div [ classes [ "server-chip-bottom", server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.ToggleServerEnabled server.frontendHost)
-            , Html.button
-                [ Attr.class "remove-btn"
-                , Events.onClick (Shared.RemoveServerClicked server.frontendHost)
-                , Attr.disabled (not removable)
-                , Attr.title
+            , button
+                [ class "remove-btn"
+                , onClick (Shared.RemoveServerClicked server.frontendHost)
+                , disabled (not removable)
+                , title
                     (if isMainServer then
                         "Can't remove the server you're currently browsing from"
 
@@ -171,7 +202,7 @@ serverChip mainFrontendHost accounts server =
                         "Remove server"
                     )
                 ]
-                [ Html.text "×" ]
+                [ text "×" ]
             ]
         ]
 
@@ -180,34 +211,37 @@ logoOrPlaceholder : Shared.Branding -> Html msg
 logoOrPlaceholder branding =
     case branding.logoUrl of
         Just url ->
-            Html.img [ Attr.class "server-chip-logo", Attr.src url, Attr.alt branding.name ] []
+            img [ class "server-chip-logo", src url, alt branding.name ] []
 
         Nothing ->
-            Html.div [ Attr.class "server-chip-logo placeholder" ] [ Html.text (initial branding.name) ]
+            div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
 
 
 {-| Adding a server first validates it (fetching its configuration) before it's
 added to the list -- so a typo'd or unreachable host shows an error instead of
 silently appearing as a dead chip.
 -}
-addServerRow : Shared.AddServerForm -> Html Shared.Msg
-addServerRow form =
+addServerRow : String -> Shared.AddServerForm -> Html Shared.Msg
+addServerRow mainFrontendHost form =
     let
         checking =
             form.status == Shared.Submitting
     in
-    Html.div [ Attr.class "add-server" ]
-        [ Html.div [ Attr.class "add-server-row" ]
-            [ Html.input
-                [ Attr.placeholder "Add a server host"
-                , Attr.value form.host
-                , Events.onInput Shared.ServerHostInputChanged
-                , Attr.disabled checking
+    div [ class "add-server" ]
+        [ div [ class "add-server-row" ]
+            [ input
+                [ placeholder "Add a server host"
+                , value form.host
+                , onInput Shared.ServerHostInputChanged
+                , disabled checking
                 ]
                 []
-            , Html.button
-                [ Events.onClick Shared.AddServerClicked, Attr.disabled checking ]
-                [ Html.text
+            , button
+                [ onClick Shared.AddServerClicked
+                , disabled checking
+                , classes [ mainFrontendHost, "background-color-nav" ]
+                ]
+                [ text
                     (if checking then
                         "Checking…"
 
@@ -218,10 +252,10 @@ addServerRow form =
             ]
         , case form.status of
             Shared.Errored err ->
-                Html.div [ Attr.class "auth-error" ] [ Html.text err ]
+                div [ class "auth-error" ] [ text err ]
 
             _ ->
-                Html.text ""
+                text ""
         ]
 
 
@@ -229,52 +263,39 @@ addServerRow form =
 -- ACCOUNTS
 
 
-accountsList : List Shared.Server -> List Shared.Account -> Html Shared.Msg
-accountsList servers accounts =
-    if List.isEmpty accounts then
-        Html.div [ Attr.class "accounts-empty" ] [ Html.text "No accounts yet." ]
+accountsList : Shared.Model -> Html Shared.Msg
+accountsList shared =
+    if List.isEmpty shared.accounts then
+        div [ class "accounts-empty" ] [ text "No accounts yet." ]
 
     else
-        Html.div [ Attr.class "accounts-list" ] (List.map (accountRow servers) accounts)
+        div [ class "accounts-list" ] (List.map (accountRow shared) shared.accounts)
 
 
-{-| The row's background is split into two bands (behind the username/host
-text, tinted with the account's server's primary/secondary colors); the
-switch, avatar and remove button float in a foreground layer on top of both
-bands, each opaque, so they stay put and legible regardless of the bands'
-colors underneath.
+{-| The whole row is tinted with the account's server's `background-color-primary`
+(background = `primaryColor`, text = `primaryTextColor`, inherited by the
+username); the "host | server name" badge underneath it uses
+`background-color-nav` instead, layered on top as a normal (not
+absolutely-positioned) element now that the row isn't split into bands.
 -}
-accountRow : List Shared.Server -> Shared.Account -> Html Shared.Msg
-accountRow servers account =
+accountRow : Shared.Model -> Shared.Account -> Html Shared.Msg
+accountRow shared account =
     let
         id =
             Shared.accountId account
 
         branding =
-            Shared.brandingFor servers account.server
+            Shared.brandingFor shared.servers account.server
     in
-    Html.div [ Attr.class "account-row" ]
-        [ Html.div [ Attr.class "account-row-bg" ]
-            [ Html.div [ Attr.class "account-row-bg-primary", Attr.style "background" branding.primary.hex ] []
-            , Html.div [ Attr.class "account-row-bg-secondary", Attr.style "background" branding.secondary.hex ] []
+    div [ classes [ "account-row", account.server, "background-color-primary" ] ]
+        [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
+        , avatarOrPlaceholder shared.servers account
+        , div [ class "account-row-label" ]
+            [ div [ class "account-row-username" ] [ text account.username ]
+            , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
+                [ text (account.server ++ " | " ++ branding.name) ]
             ]
-        , Html.div [ Attr.class "account-row-fg" ]
-            [ switchInput account.enabled (Shared.ToggleAccountEnabled id)
-            , avatarOrPlaceholder servers account
-            , Html.div [ Attr.class "account-row-label" ]
-                [ Html.div
-                    [ Attr.class "account-row-username"
-                    , Attr.style "color" branding.primary.contrastText
-                    ]
-                    [ Html.text account.username ]
-                , Html.div
-                    [ Attr.class "account-row-server"
-                    , Attr.style "color" branding.secondary.contrastText
-                    ]
-                    [ Html.text account.server ]
-                ]
-            , Html.button [ Attr.class "remove-btn", Events.onClick (Shared.RemoveAccountClicked id) ] [ Html.text "×" ]
-            ]
+        , button [ class "remove-btn", onClick (Shared.RemoveAccountClicked id) ] [ text "×" ]
         ]
 
 
@@ -282,10 +303,10 @@ avatarOrPlaceholder : List Shared.Server -> Shared.Account -> Html msg
 avatarOrPlaceholder servers account =
     case Shared.accountAvatarUrl servers account of
         Just url ->
-            Html.img [ Attr.class "account-avatar", Attr.src url, Attr.alt account.username ] []
+            img [ class "account-avatar", src url, alt account.username ] []
 
         Nothing ->
-            Html.div [ Attr.class "account-avatar placeholder" ] [ Html.text (initial account.username) ]
+            div [ class "account-avatar placeholder" ] [ text (initial account.username) ]
 
 
 {-| First letter of a name, upper-cased, for use as an avatar/logo placeholder.
@@ -303,14 +324,14 @@ initial name =
 -}
 switchInput : Bool -> Shared.Msg -> Html Shared.Msg
 switchInput isChecked toggleMsg =
-    Html.label [ Attr.class "switch" ]
-        [ Html.input
-            [ Attr.type_ "checkbox"
-            , Attr.checked isChecked
-            , Events.onClick toggleMsg
+    label [ class "switch" ]
+        [ input
+            [ type_ "checkbox"
+            , checked isChecked
+            , onClick toggleMsg
             ]
             []
-        , Html.span [ Attr.class "slider" ] []
+        , span [ class "slider" ] []
         ]
 
 
@@ -318,44 +339,50 @@ switchInput isChecked toggleMsg =
 -- LOGIN FORM
 
 
-formView : Shared.AccountForm -> Html Shared.Msg
-formView form =
+formView : String -> Shared.AccountForm -> Html Shared.Msg
+formView mainFrontendHost form =
     let
         submitting =
             form.status == Shared.Submitting
     in
-    Html.div [ Attr.class "account-form" ]
-        [ Html.input
-            [ Attr.placeholder "Server"
-            , Attr.value form.server
-            , Events.onInput Shared.ServerChanged
+    div [ class "account-form" ]
+        [ input
+            [ placeholder "Server"
+            , value form.server
+            , onInput Shared.ServerChanged
             ]
             []
-        , Html.input
-            [ Attr.placeholder "Username"
-            , Attr.value form.username
-            , Events.onInput Shared.UsernameChanged
+        , input
+            [ placeholder "Username"
+            , value form.username
+            , onInput Shared.UsernameChanged
             ]
             []
-        , Html.input
-            [ Attr.type_ "password"
-            , Attr.placeholder "Password"
-            , Attr.value form.password
-            , Events.onInput Shared.PasswordChanged
+        , input
+            [ type_ "password"
+            , placeholder "Password"
+            , value form.password
+            , onInput Shared.PasswordChanged
             ]
             []
-        , Html.div [ Attr.class "account-form-buttons" ]
-            [ Html.button
-                [ Events.onClick Shared.LoginClicked, Attr.disabled submitting ]
-                [ Html.text "Log In" ]
-            , Html.button
-                [ Events.onClick Shared.CreateAccountClicked, Attr.disabled submitting ]
-                [ Html.text "Create Account" ]
+        , div [ class "account-form-buttons" ]
+            [ button
+                [ onClick Shared.LoginClicked
+                , disabled submitting
+                , classes [ mainFrontendHost, "background-color-primary" ]
+                ]
+                [ text "Log In" ]
+            , button
+                [ onClick Shared.CreateAccountClicked
+                , disabled submitting
+                , classes [ mainFrontendHost, "background-color-primary" ]
+                ]
+                [ text "Create Account" ]
             ]
         , case form.status of
             Shared.Errored err ->
-                Html.div [ Attr.class "auth-error" ] [ Html.text err ]
+                div [ class "auth-error" ] [ text err ]
 
             _ ->
-                Html.text ""
+                text ""
         ]

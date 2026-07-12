@@ -22,6 +22,34 @@
   }
 }
 
+/* Explicit Light/Dark selections (see the theme toggle) override the system
+   preference above in both directions -- these win regardless of source
+   order since an attribute selector on :root is more specific than a bare
+   `:root` inside the media query. "Auto" clears the attribute entirely,
+   falling back to the media query. */
+
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d9dce1;
+  --panel-bg: #ffffff;
+  --accent: #3b6fe0;
+  --danger: #c0392b;
+  --chip-bg: #f4f5f7;
+}
+
+:root[data-theme="dark"] {
+  --bg: #16181d;
+  --fg: #eaeaea;
+  --muted: #9aa1ab;
+  --border: #33363d;
+  --panel-bg: #21242b;
+  --accent: #6c93ec;
+  --danger: #e0685a;
+  --chip-bg: #2a2d34;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -53,7 +81,6 @@ body {
 }
 
 .nav-links a {
-  color: var(--accent);
   text-decoration: none;
 }
 
@@ -64,6 +91,9 @@ body {
 main {
   padding: 1rem;
 }
+
+/* Every link's color (nav links, About-page content links, ...) comes from
+   the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
 
 button {
   font: inherit;
@@ -87,7 +117,21 @@ input[type="password"] {
 }
 
 
-/* Accounts menu */
+/* Nav-right: theme toggle + accounts menu */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.theme-toggle {
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  line-height: 1;
+}
 
 .accounts-menu {
   position: relative;
@@ -235,36 +279,12 @@ input[type="password"] {
 }
 
 .account-row {
-  position: relative;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-/* Two stacked color bands (primary behind the username, secondary behind the
-   host) sit behind the row's content; the switch/avatar/username/host/remove
-   button all live in the foreground layer on top, unaffected by the bands. */
-
-.account-row-bg {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  z-index: 0;
-}
-
-.account-row-bg-primary,
-.account-row-bg-secondary {
-  flex: 1;
-}
-
-.account-row-fg {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .account-avatar {
@@ -296,12 +316,18 @@ input[type="password"] {
   white-space: nowrap;
 }
 
-.account-row-server {
-  font-size: 0.8rem;
+/* The "host | server name" badge, tinted with the account's server's nav
+   color -- distinct from the row's own (primary-colored) background. */
+.account-row-server-badge {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  opacity: 0.9;
 }
 
 .remove-btn {
@@ -339,13 +365,6 @@ input[type="password"] {
   padding: 0.4rem 0.5rem;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--accent);
-  color: white;
-}
-
-.account-form-buttons button:disabled {
-  background: var(--chip-bg);
-  color: var(--muted);
 }
 
 .auth-error {

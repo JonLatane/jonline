@@ -1,7 +1,7 @@
 module Pages.Home_ exposing (Model, Msg, page)
 
 import Gen.Params.Home_ exposing (Params)
-import Html
+import Html exposing (text)
 import Page
 import Request
 import Shared
@@ -13,7 +13,7 @@ page shared req =
     UI.page shared
         req
         { title = "Homepage"
-        , body = [ Html.text "This is the Jonline home page. Probably still need to do more stuff here!" ]
+        , body = [ text "This is the Jonline home page. Intially I just wanna get auth right, and displaying a Post for demo purposes." ]
         }
 
 
