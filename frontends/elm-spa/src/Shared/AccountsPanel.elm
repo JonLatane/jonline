@@ -35,6 +35,7 @@ import Ports
 import Proto.Jonline exposing (RefreshTokenResponse, ServerConfiguration, User)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
+import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
 import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
 import Task exposing (Task)
@@ -182,6 +183,8 @@ type Msg
     | ToggleAccountsPanel
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
+    | SetWebUserInterfaceClicked String WebUserInterface
+    | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
 
 
 {-| A stable identifier for an account: a user's id is only unique per-server.
@@ -688,6 +691,48 @@ update req msg model =
             else
                 ( model, Cmd.none )
 
+        SetWebUserInterfaceClicked id ui ->
+            let
+                maybeAccount =
+                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+
+                maybeServer =
+                    maybeAccount
+                        |> Maybe.andThen (\a -> model.servers |> List.filter (\s -> s.frontendHost == a.server) |> List.head)
+            in
+            case ( maybeAccount, maybeServer ) of
+                ( Just account, Just server ) ->
+                    ( model, setWebUserInterface server account ui )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        GotSetWebUserInterfaceResult _ result ->
+            case result of
+                Ok ( refreshedAccount, newConfig ) ->
+                    let
+                        newModel =
+                            { model
+                                | accounts = upsertAccount refreshedAccount model.accounts
+                                , servers =
+                                    List.map
+                                        (\s ->
+                                            if s.frontendHost == refreshedAccount.server then
+                                                { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+
+                                            else
+                                                s
+                                        )
+                                        model.servers
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    -- Server unreachable, refresh token rejected, etc. -- the toggle just
+                    -- doesn't visibly change; the admin can retry.
+                    ( model, Cmd.none )
+
 
 {-| A server that has any associated accounts can't be removed (only disabled),
 since removing it would orphan those accounts' stored credentials.
@@ -768,6 +813,41 @@ refreshPermissionsForServer server accounts =
         |> List.filter (\a -> a.enabled && a.server == server.frontendHost)
         |> List.map (refreshPermissions server)
         |> Cmd.batch
+
+
+{-| Sets which frontend (`/`, `/flutter`, or `/elm`) `server` serves at its
+root, via `ConfigureServer`, authenticated as `account` (refreshing its access
+token first if needed -- see `Shared.MaybeAccountRequest`). Only ever invoked
+for accounts with `ADMIN` on `server` (see `UI.elm`'s admin account panel);
+the server itself also validates that permission.
+
+`ConfigureServer` replaces the whole configuration rather than merging one
+field, so this starts from the server's actual last-known `configuration`
+(not any locally-edited-but-unsaved form state elsewhere) and only changes
+`webUserInterface` within it.
+-}
+setWebUserInterface : Server -> Account -> WebUserInterface -> Cmd Msg
+setWebUserInterface server account ui =
+    let
+        config =
+            server.configuration
+
+        info =
+            Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
+
+        newConfig =
+            { config | serverInfo = Just { info | webUserInterface = Just ui } }
+    in
+    MaybeAccountRequest.perform
+        { host = server.backendHost, port_ = server.port_, tls = server.tls }
+        account
+        (\accessToken ->
+            Grpc.new Jonline.configureServer newConfig
+                |> Grpc.setHost (connectionUrl (connectionOf server))
+                |> Grpc.addHeader "authorization" accessToken
+                |> Grpc.toTask
+        )
+        |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
 
 
 {-| A server's configuration can declare (via `externalCdnConfig`) that it's

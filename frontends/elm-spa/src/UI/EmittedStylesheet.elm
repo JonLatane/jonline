@@ -33,9 +33,18 @@ css shared =
     let
         darkMode =
             Shared.effectiveDarkMode shared
+
+        bodyStyle =
+            "body { background-color: "
+                ++ (AccountsPanel.mainServerTheme darkMode shared.accountsPanel).primaryBgColor
+                ++ "; color: "
+                ++ (AccountsPanel.mainServerTheme darkMode shared.accountsPanel).textColor
+                ++ "; }\n"
     in
     linkRule (AccountsPanel.mainServerTheme darkMode shared.accountsPanel).primaryAnchorColor
         ++ String.concat (List.map (serverRules darkMode) shared.accountsPanel.servers)
+        -- Add a body:
+        ++ bodyStyle
 
 
 linkRule : String -> String

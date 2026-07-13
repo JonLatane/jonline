@@ -3,8 +3,9 @@ import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
-import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineAccount, JonlineServer, RootState, accountID, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectAllAccounts, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
+import { WebUiSwitcher } from './web_ui_switcher';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
 import { createParam } from 'solito';
@@ -296,6 +297,14 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const adminPagination = usePaginatedRendering(adminList, 10);
   const paginatedAdmins = adminPagination.results;
 
+  // Signed-into accounts (there may be several) that are themselves admins of
+  // this server -- each gets its own "which web UI" panel, since ConfigureServer
+  // is authenticated per-account (see WebUiSwitcher).
+  const allAccounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
+  const adminAccounts: JonlineAccount[] = server
+    ? allAccounts.filter(a => serverID(a.server) === serverID(server) && hasAdminPermission(a.user))
+    : [];
+
   return (
     <TabsNavigation appSection={AppSection.INFO}
       //onlyShowServer={server}
@@ -583,6 +592,20 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         {...basicPermissionsEditorProps} />}
                     </YStack>
 
+                    {adminAccounts.length > 0
+                      ? <>
+                        <Heading size='$4' mt='$4'>Web User Interface</Heading>
+                        <Paragraph size='$1' mb='$2'>
+                          Chooses which frontend this server serves at its root URL. Set once per
+                          admin account below, since it's applied using that account's credentials.
+                        </Paragraph>
+                        <YStack gap='$2'>
+                          {adminAccounts.map(adminAccount =>
+                            <WebUiSwitcher key={accountID(adminAccount)}
+                              account={adminAccount} serverConfiguration={serverConfiguration} />)}
+                        </YStack>
+                      </>
+                      : undefined}
                   </>
                     : undefined}
 

@@ -201,7 +201,7 @@ input[type="password"] {
 }
 
 .admin-panel {
-  width: 220px;
+  width: 260px;
 }
 
 .admin-switch-row {
@@ -209,6 +209,79 @@ input[type="password"] {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
+}
+
+/* One collapsible panel per admin-capable signed-in account -- see
+   UI.elm's adminAccountPanel. */
+
+.admin-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-account-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.admin-account-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--fg);
+}
+
+.admin-account-username {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account-server {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account-chevron {
+  transition: transform 0.15s ease;
+}
+
+.admin-account-chevron.open {
+  transform: rotate(180deg);
+}
+
+.web-ui-toggle-row {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.web-ui-button {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+
+.web-ui-button.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
 }
 
 .host-mismatch-warning {

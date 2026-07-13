@@ -33,6 +33,9 @@ fieldNumbersWebUserInterface n_ =
         REACTTAMAGUI ->
             2
 
+        ELMSPA ->
+            3
+
         WebUserInterfaceUnrecognized_ m_ ->
             m_
 
@@ -61,6 +64,9 @@ encodeWebUserInterface value =
             REACTTAMAGUI ->
                 2
 
+            ELMSPA ->
+                3
+
             WebUserInterfaceUnrecognized_ i ->
                 i
 
@@ -83,6 +89,9 @@ decodeWebUserInterface =
                     2 ->
                         REACTTAMAGUI
 
+                    3 ->
+                        ELMSPA
+
                     _ ->
                         WebUserInterfaceUnrecognized_ i
             )
@@ -95,4 +104,5 @@ type WebUserInterface
     = FLUTTERWEB
     | HANDLEBARSTEMPLATES
     | REACTTAMAGUI
+    | ELMSPA
     | WebUserInterfaceUnrecognized_ Int

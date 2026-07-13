@@ -7,6 +7,7 @@ import Html exposing (Attribute, Html, a, button, div, header, img, input, label
 import Html.Attributes exposing (alt, checked, class, disabled, href, placeholder, src, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Page
+import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -537,10 +538,102 @@ adminPanel shared =
 
             else
                 "is-closed"
+
+        adminAccounts =
+            List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
     in
     div [ classes [ "accounts-panel", "admin-panel", stateClass ] ]
         [ label [ class "admin-switch-row" ]
             [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
             ]
+        , if List.isEmpty adminAccounts then
+            text ""
+
+          else
+            div [ class "admin-accounts-list" ] (List.map (adminAccountPanel shared) adminAccounts)
         ]
+
+
+{-| A collapsible panel, one per admin-capable signed-in account, for setting
+which frontend (Flutter/React/Elm) that account's server serves at its root
+(`ServerInfo.webUserInterface`, via `AccountsPanel.SetWebUserInterfaceClicked`).
+Shows that account's username/avatar/server so it's clear which admin
+identity a change would be made as, since the RPC is authenticated per-account
+rather than "whichever account is currently active".
+-}
+adminAccountPanel : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+adminAccountPanel shared account =
+    let
+        id =
+            AccountsPanel.accountId account
+
+        isOpen =
+            AdminPanel.isAccountPanelOpen id shared.adminPanel
+
+        currentUi =
+            shared.accountsPanel.servers
+                |> List.filter (\s -> s.frontendHost == account.server)
+                |> List.head
+                |> Maybe.andThen (\s -> s.configuration.serverInfo)
+                |> Maybe.andThen .webUserInterface
+                |> Maybe.withDefault REACTTAMAGUI
+    in
+    div [ class "admin-account-panel" ]
+        [ button
+            [ class "admin-account-toggle"
+            , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
+            ]
+            [ avatarOrPlaceholder shared.accountsPanel.servers account
+            , span [ class "admin-account-username" ] [ text account.username ]
+            , span [ class "admin-account-server" ] [ text account.server ]
+            , span
+                [ classes
+                    ("admin-account-chevron"
+                        :: (if isOpen then
+                                [ "open" ]
+
+                            else
+                                []
+                           )
+                    )
+                ]
+                [ text "▾" ]
+            ]
+        , if isOpen then
+            webUiToggleRow id currentUi
+
+          else
+            text ""
+        ]
+
+
+{-| Flutter is included for parity with the other two, but permanently
+disabled -- see `WebUserInterface`'s doc comment: it's badly behind React/Elm
+and not meant to be chosen going forward.
+-}
+webUiToggleRow : String -> WebUserInterface -> Html Shared.Msg
+webUiToggleRow id currentUi =
+    div [ class "web-ui-toggle-row" ]
+        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
+        , webUiButton "React" False (currentUi == REACTTAMAGUI) (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
+        , webUiButton "Elm" False (currentUi == ELMSPA) (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
+        ]
+
+
+webUiButton : String -> Bool -> Bool -> AccountsPanel.Msg -> Html Shared.Msg
+webUiButton label_ isDisabled isSelected msg =
+    button
+        [ classes
+            ("web-ui-button"
+                :: (if isSelected then
+                        [ "selected" ]
+
+                    else
+                        []
+                   )
+            )
+        , disabled isDisabled
+        , onClick (Shared.AccountsPanelMsg msg)
+        ]
+        [ text label_ ]
