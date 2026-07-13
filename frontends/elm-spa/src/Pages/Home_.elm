@@ -38,8 +38,18 @@ type ServerPosts
     | Failed
 
 
+{-| `accountId` is the enabled account (if any) the posts were/are being
+fetched with, so a later account enable/disable on the same server can be
+detected as "the acting credential changed" and trigger a re-fetch.
+-}
+type alias ServerFeed =
+    { status : ServerPosts
+    , accountId : Maybe String
+    }
+
+
 type alias Model =
-    { postsByServer : Dict String ServerPosts
+    { postsByServer : Dict String ServerFeed
     }
 
 
@@ -50,17 +60,36 @@ init shared =
 
 {-| Servers connect asynchronously -- on app startup (reconnecting persisted
 servers) or any time later (the user adding/enabling one) -- via `Shared`'s
-own update, not this page's, so there's no direct hook for "a new server just
-became available". Polling (see `subscriptions`/`Poll`) is how this page
-notices and fetches its posts; already-fetched servers are cheap to skip
-(`Dict.member`), so this is safe to call as often as it likes.
+own update, not this page's, so there's no direct hook for "a server or
+account just changed". Polling (see `subscriptions`/`Poll`) is how this page
+notices: it drops posts for servers that are no longer enabled (so disabling
+a server hides its posts entirely), and re-fetches a server whose acting
+account (the first enabled account signed into it, or anonymous) has changed
+since the last fetch -- covering both disabling an account (falls back to
+anonymous) and enabling a different one. Already-fetched-with-the-same-account
+servers are cheap to skip, so this is safe to call as often as it likes.
 -}
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        newServers =
+        enabledServers =
             AccountsPanel.enabledServers shared.accountsPanel
-                |> List.filter (\server -> not (Dict.member server.frontendHost model.postsByServer))
+
+        currentAccountId server =
+            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                |> Maybe.map AccountsPanel.accountId
+
+        serversToFetch =
+            enabledServers
+                |> List.filter
+                    (\server ->
+                        case Dict.get server.frontendHost model.postsByServer of
+                            Nothing ->
+                                True
+
+                            Just feed ->
+                                feed.accountId /= currentAccountId server
+                    )
 
         fetchEffect server =
             Posts.fetchRecentPosts
@@ -68,12 +97,18 @@ fetchNewServers shared model =
                 (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost)
                 |> Task.attempt (GotServerPosts server.frontendHost)
                 |> Effect.fromCmd
+
+        prunedPostsByServer =
+            Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
     in
     ( { model
         | postsByServer =
-            List.foldl (\server -> Dict.insert server.frontendHost Loading) model.postsByServer newServers
+            List.foldl
+                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
+                prunedPostsByServer
+                serversToFetch
       }
-    , Effect.batch (List.map fetchEffect newServers)
+    , Effect.batch (List.map fetchEffect serversToFetch)
     )
 
 
@@ -97,12 +132,22 @@ update shared msg model =
                         |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
             in
-            ( { model | postsByServer = Dict.insert frontendHost (Loaded response.posts) model.postsByServer }
+            ( { model
+                | postsByServer =
+                    Dict.update frontendHost
+                        (Maybe.map (\feed -> { feed | status = Loaded response.posts }))
+                        model.postsByServer
+              }
             , accountEffect
             )
 
         GotServerPosts frontendHost (Err _) ->
-            ( { model | postsByServer = Dict.insert frontendHost Failed model.postsByServer }, Effect.none )
+            ( { model
+                | postsByServer =
+                    Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
+              }
+            , Effect.none
+            )
 
         Poll ->
             fetchNewServers shared model
@@ -140,8 +185,8 @@ recentPostsView shared model =
             model.postsByServer
                 |> Dict.toList
                 |> List.concatMap
-                    (\( host, status ) ->
-                        case status of
+                    (\( host, feed ) ->
+                        case feed.status of
                             Loaded posts ->
                                 List.map (Tuple.pair host) posts
 

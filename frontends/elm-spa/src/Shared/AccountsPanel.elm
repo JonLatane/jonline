@@ -663,9 +663,12 @@ update req msg model =
             let
                 form =
                     model.accountForm
+
+                server =
+                    String.trim form.server
             in
             ( updateForm (\f -> { f | status = Submitting }) model
-            , resolveHost (isSecure req) model.servers form.server
+            , resolveHost (isSecure req) model.servers server
                 |> Task.andThen
                     (\( connection, config ) ->
                         Grpc.new Jonline.login
@@ -688,7 +691,7 @@ update req msg model =
                     model.accountForm
             in
             ( updateForm (\f -> { f | status = Submitting }) model
-            , resolveHost (isSecure req) model.servers form.server
+            , resolveHost (isSecure req) model.servers (String.trim form.server)
                 |> Task.andThen
                     (\( connection, config ) ->
                         Grpc.new Jonline.createAccount
