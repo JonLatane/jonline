@@ -102,6 +102,29 @@ that fell out of that:
 - `Proto/` — generated gRPC/protobuf bindings (`protoc --elm_out=./src -I../../protos
   ../../protos/*.proto`, via `make protos`) — never hand-edited.
 
+## Emitted Styles
+
+Since Elm's `Html.Attributes.style` can't set CSS custom properties, per-server
+theming is done via a `<style>` tag computed fresh from `Shared.Model` on every
+render (see
+[`UI/EmittedStylesheet.elm`](https://github.com/JonLatane/jonline/blob/master/frontends/elm-spa/src/UI/EmittedStylesheet.elm))
+rather than inline styles. For each known server it emits a handful of
+"utility class" pairs — a class for that server's host plus a class for the
+color you want — so any element can be given that server's colors just by
+adding two classes (e.g. `class="jonline.io background-color-primary"`)
+instead of threading a `ServerTheme` through as a view-function argument:
+
+- `<host> background-color-primary` — `primaryColor` / `primaryTextColor`
+- `<host> background-color-nav` — `navColor` / `navTextColor`
+- `<host> background-color-primary-background` — `primaryBgColor` / `textColor`
+- `<host> border-color-primary` — `primaryColor` (border-color only)
+- `<host> border-color-primary-anchor` — `primaryAnchorColor` (border-color only)
+- `<host> border-color-primary-anchor-50` — `primaryAnchorColor` at 50% opacity (border-color only)
+- `<host> hover-border-color-primary-anchor` — `primaryAnchorColor` (border-color only), applied only on `:hover`
+
+This is cheap to regenerate (it's just string-building); the actual expensive
+color math is already cached in `Shared.Branding`/`UI.ServerTheme`.
+
 ## Running locally
 
 This project requires the latest LTS version of [Node.js](https://nodejs.org/).

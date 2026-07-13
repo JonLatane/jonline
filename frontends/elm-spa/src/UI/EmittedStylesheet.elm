@@ -3,15 +3,19 @@ module UI.EmittedStylesheet exposing (view)
 {-| A `<style>` tag, computed fresh from the current `Shared.Model` on every
 render (so it updates automatically any time a server is added/removed, or
 the current server/dark-light mode changes): one text-color rule for every
-link on the page, plus, for each known server, three color "utility class"
-pairs so any element can be given that server's colors just by adding two
-classes -- e.g. `class="jonline.io background-color-primary"` -- rather than
-needing that server's `ServerTheme` threaded in as a view-function argument.
+link on the page, plus, for each known server, a handful of color "utility
+class" pairs so any element can be given that server's colors just by adding
+two classes -- e.g. `class="jonline.io background-color-primary"` -- rather
+than needing that server's `ServerTheme` threaded in as a view-function
+argument.
 
   - `<host> background-color-primary` -- `primaryColor` / `primaryTextColor`
   - `<host> background-color-nav` -- `navColor` / `navTextColor`
   - `<host> background-color-primary-background` -- `primaryBgColor` / `textColor`
   - `<host> border-color-primary` -- `primaryColor` (border-color only)
+  - `<host> border-color-primary-anchor` -- `primaryAnchorColor` (border-color only; unused so far, but establishes the naming convention below)
+  - `<host> border-color-primary-anchor-50` -- `primaryAnchorColor` at 50% opacity (border-color only)
+  - `<host> hover-border-color-primary-anchor` -- `primaryAnchorColor` (border-color only), applied only on `:hover` -- pair with `border-color-primary-anchor-50` (or similar) for a border that "fills in" on hover; add `transition: border-color` yourself if you want that to animate, since this class alone is just the `:hover` color rule.
 
 This is cheap to regenerate (it's just string-building); the actual expensive
 color math is already cached in `Shared.Branding`.
@@ -58,6 +62,9 @@ serverRules darkMode server =
         , colorRule (selector ++ ".background-color-nav") theme.navColor theme.navTextColor
         , colorRule (selector ++ ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (selector ++ ".border-color-primary") theme.primaryColor
+        , borderColorRule (selector ++ ".border-color-primary-anchor") theme.primaryAnchorColor
+        , borderColorRule (selector ++ ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
+        , borderColorRule (selector ++ ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
         ]
 
 

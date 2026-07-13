@@ -218,5 +218,5 @@ bodyView shared model =
                     p [ class "post-error" ] [ text "Couldn't load this post." ]
 
                 PostLoaded post ->
-                    Posts.postDetail post
+                    Posts.postDetail model.targetHost post
         )

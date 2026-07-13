@@ -7,6 +7,7 @@ module Components.Posts exposing
     , postHref
     , postTimestamp
     , postTitleText
+    , postVisibilityText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Post`s -- the compact
@@ -25,10 +26,12 @@ import Html exposing (Html, a, div, h1, text)
 import Html.Attributes exposing (class, href)
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task exposing (Task)
 import Time
+import UI
 
 
 {-| Fetches a single post (including reply/preview data) from `server`,
@@ -161,29 +164,70 @@ postTimestamp post =
             Time.millisToPosix 0
 
 
+{-| Display text for a post's visibility, e.g. for a "Public"/"Private"/etc.
+badge on its preview.
+-}
+postVisibilityText : Post -> String
+postVisibilityText post =
+    case post.visibility of
+        PRIVATE ->
+            "Private"
+
+        LIMITED ->
+            "Limited"
+
+        SERVERPUBLIC ->
+            "Server Public"
+
+        GLOBALPUBLIC ->
+            "Global Public"
+
+        DIRECT ->
+            "Direct"
+
+        VISIBILITYUNKNOWN ->
+            "Unknown"
+
+        VisibilityUnrecognized_ _ ->
+            "Unknown"
+
+
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
-otherwise obvious once posts from several are mixed together by recency.
+otherwise obvious once posts from several are mixed together by recency. Tinted
+with `postServerHost`'s `primaryAnchorColor` border (see `UI.EmittedStylesheet`'s
+`border-color-primary-anchor-50`/`hover-border-color-primary-anchor` utility
+classes) -- faint normally, filling in on hover since the whole card is a link
+-- so that's obvious at a glance too.
 -}
 postCard : String -> String -> String -> Post -> Html msg
 postCard basePath viewingServerHost postServerHost post =
     a
         [ href (postHref basePath viewingServerHost postServerHost post)
-        , class "post-card"
+        , UI.classes
+            [ "post-card"
+            , postServerHost
+            , "border-color-primary-anchor-50"
+            , "hover-border-color-primary-anchor"
+            ]
         ]
         [ div [ class "post-card-title" ] [ text (postTitleText post) ]
-        , div [ class "post-card-meta" ] [ text (postAuthorName post ++ " · " ++ postServerHost) ]
+        , div [ class "post-card-meta" ]
+            [ text (postAuthorName post ++ " · " ++ postServerHost ++ " · " ++ postVisibilityText post) ]
         ]
 
 
 {-| Full rendering for a single post (see the Post page) -- no server badge,
-since that's already the page you're on.
+since that's already the page you're on, but still tinted with `postServerHost`'s
+`primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
+since this one isn't a link).
 -}
-postDetail : Post -> Html msg
-postDetail post =
-    div [ class "post-detail" ]
+postDetail : String -> Post -> Html msg
+postDetail postServerHost post =
+    div [ UI.classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
-        , div [ class "post-detail-meta" ] [ text ("by " ++ postAuthorName post) ]
+        , div [ class "post-detail-meta" ]
+            [ text ("by " ++ postAuthorName post ++ " · " ++ postVisibilityText post) ]
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content

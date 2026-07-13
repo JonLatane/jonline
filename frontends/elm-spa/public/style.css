@@ -749,10 +749,7 @@ input[type="url"] {
   border-radius: 8px;
   color: inherit;
   text-decoration: none;
-}
-
-.post-card:hover {
-  border-color: var(--accent);
+  transition: border-color 0.2s ease;
 }
 
 .post-card-title {
@@ -766,6 +763,9 @@ input[type="url"] {
 
 .post-detail {
   margin: 1rem 0;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
 }
 
 .post-detail-title {

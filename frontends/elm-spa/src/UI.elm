@@ -1,4 +1,4 @@
-module UI exposing (layout, page)
+module UI exposing (classes, layout, page)
 
 import Char
 import Effect exposing (Effect)
