@@ -4,14 +4,27 @@ module Main exposing (main)
 which this was copied from and now overrides -- `.elm-spa/` itself is
 gitignored/regenerated, so this is the only place changes here persist).
 
-The only change from the default: this app can be served from `/` or from
-`/elm` (see `backend/src/web/elm_web.rs`), so every `Url` gotten from the
-browser is normalized (`Shared.normalizeUrl`) before it's handed to
+Two changes from the default:
+
+1. This app can be served from `/` or from `/elm` (see
+`backend/src/web/elm_web.rs`), so every `Url` gotten from the browser is
+normalized (`Shared.normalizeUrl`) before it's handed to
 `Gen.Route.fromUrl`/`Request.create`/`Pages.init`, stripping that mount's
 `basePath` so routing always sees an app-relative path. `basePath` itself is
 detected once, from the very first `Url` (immutable for the session, same as
 `Shared.AccountsPanel`'s `browsingHost`), and threaded into `Shared.init` so
 view code (`UI.navLink`) can prepend it back onto outgoing hrefs.
+
+2. `Page pageMsg` applies any `Shared.Msg`s a page's `update` forwarded (via
+`Effect.fromShared`) to `Shared.update` immediately, in this same call --
+see `Effect.partitionShared`. The default routes them through `Effect.toCmd`
+instead, which defers them to a `Task.perform` on a later `update`/`view`
+cycle; that's invisible for most effects, but the Accounts Panel's login form
+lives in `Shared.Model` (it's shown from every page's header, via
+`UI.layout`), so every keystroke is a `Shared.Msg` forwarded this way. The
+deferred version meant `view` ran once per keystroke with the stale
+pre-keystroke model -- snapping a mid-edit cursor to the end of the old text
+-- and then again with the correct model, snapping it again.
 -}
 
 import Browser
@@ -143,9 +156,22 @@ update msg model =
             let
                 ( page, effect ) =
                     Pages.update pageMsg model.page model.shared model.url model.key
+
+                ( sharedMsgs, remainingEffect ) =
+                    Effect.partitionShared effect
+
+                ( shared, sharedCmd ) =
+                    List.foldl applySharedMsg ( model.shared, Cmd.none ) sharedMsgs
+
+                applySharedMsg sharedMsg ( accShared, accCmd ) =
+                    let
+                        ( newShared, cmd ) =
+                            Shared.update (Request.create () model.url model.key) sharedMsg accShared
+                    in
+                    ( newShared, Cmd.batch [ accCmd, Cmd.map Shared cmd ] )
             in
-            ( { model | page = page }
-            , Effect.toCmd ( Shared, Page ) effect
+            ( { model | page = page, shared = shared }
+            , Cmd.batch [ sharedCmd, Effect.toCmd ( Shared, Page ) remainingEffect ]
             )
 
 
