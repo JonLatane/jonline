@@ -1,0 +1,16 @@
+diff --git a/node_modules/elm-spa/dist/src/cli/server.js b/node_modules/elm-spa/dist/src/cli/server.js
+index c2e4c9f..b913889 100644
+--- a/node_modules/elm-spa/dist/src/cli/server.js
++++ b/node_modules/elm-spa/dist/src/cli/server.js
+@@ -47,9 +47,9 @@ const start = async () => new Promise((resolve, reject) => {
+             res.write('File not found.');
+             res.end();
+         };
+-        if ((url.pathname || '').includes('.')) {
++        const filepath = path_1.default.join(config.base, ...(url.pathname || '').split('/'));
++        if ((url.pathname || '').includes('.') && fs_1.existsSync(filepath)) {
+             try {
+-                const filepath = path_1.default.join(config.base, ...(url.pathname || '').split('/'));
+                 const s = fs_1.createReadStream(filepath);
+                 s.on('open', () => {
+                     const extension = (url.pathname || '').split('.').slice(-1)[0];

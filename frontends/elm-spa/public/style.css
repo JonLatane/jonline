@@ -377,10 +377,20 @@ input[type="url"] {
 .servers-strip {
   display: flex;
   flex-direction: row;
+  /* Otherwise flex's default `stretch` forces every chip to the height of
+     the tallest one in the row, leaving blank space below the shorter ones'
+     content (their border/background still fills the stretched box). */
+  align-items: flex-start;
   gap: 0.5rem;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;
+  /* This strip sets `overflow-x`/`overflow-y`, which makes its automatic
+     minimum size (as a flex item in .accounts-panel's column) 0 instead of
+     content-based -- without flex-shrink: 0, that lets it get squashed
+     whenever .accounts-panel's own max-height/overflow-y (added for short
+     screens) needs the vertical space, instead of the panel scrolling. */
+  flex-shrink: 0;
 }
 
 .server-chip {
@@ -559,6 +569,10 @@ input[type="url"] {
   gap: 0.4rem;
   max-height: 240px;
   overflow-y: auto;
+  /* Same reasoning as .servers-strip's flex-shrink: 0 -- this already has its
+     own scroll for "many accounts"; it shouldn't also get squashed below
+     that by .accounts-panel's outer overflow-y on short screens. */
+  flex-shrink: 0;
 }
 
 .accounts-empty {
