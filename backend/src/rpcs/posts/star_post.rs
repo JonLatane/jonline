@@ -16,12 +16,12 @@ pub fn star_post(
         .filter(post_id.eq(request.id.to_db_id_or_err("invalid_post_id")?))
         .set(unauthenticated_star_count.eq(unauthenticated_star_count + 1))
         .execute(conn)
-        .map_err(|_| Status::new(Code::Aborted, "unstar_failed"))?;
+        .map_err(|_| Status::new(Code::Aborted, "star_failed"))?;
     let updated_star_count = posts
         .select(unauthenticated_star_count)
         .filter(post_id.eq(request.id.to_db_id_or_err("invalid_post_id")?))
         .first::<i64>(conn)
-        .map_err(|_| Status::new(Code::Aborted, "unstar_failed"))?;
+        .map_err(|_| Status::new(Code::Aborted, "star_failed"))?;
     Ok(Post {
         unauthenticated_star_count: updated_star_count,
         ..request

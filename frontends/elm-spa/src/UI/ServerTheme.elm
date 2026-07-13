@@ -17,6 +17,7 @@ shaded color crosses the luma threshold) is the expensive part of this; see
 once and cached rather than redone on every render. `fromColorMetas` is the
 cheap part (picks between already-computed values based on the current
 dark/light mode) and is fine to call per-render.
+
 -}
 
 import Bitwise
@@ -50,20 +51,17 @@ type alias ServerTheme =
     , primaryLightColor : String
     , primaryBgColor : String
     , primaryAnchorColor : String
-
     , navColor : String
     , navTextColor : String
     , navDarkColor : String
     , navLightColor : String
     , navBgColor : String
     , navAnchorColor : String
-
     , textColor : String
     , backgroundColor : String
     , transparentBackgroundColor : String
     , transparentPrimaryColor : String
     , barelyTransparentBackgroundColor : String
-
     , warningAnchorColor : String
     , darkMode : Bool
     }
@@ -141,7 +139,6 @@ fromColorMetas darkMode primary nav =
 
         else
             primary.lightColor
-
     , navColor = nav.color
     , navTextColor = nav.textColor
     , navDarkColor = nav.darkColor
@@ -158,7 +155,6 @@ fromColorMetas darkMode primary nav =
 
         else
             nav.lightColor
-
     , textColor =
         if darkMode then
             "#eaeaea"
@@ -184,7 +180,6 @@ fromColorMetas darkMode primary nav =
 
         else
             "#FFFD"
-
     , warningAnchorColor =
         if not darkMode then
             "#bf6d00"
@@ -254,7 +249,7 @@ lightenHelper color iterations =
 Tamagui app's `shadeColor` channel math (including its "nudge by 1 if
 rounding would otherwise be a no-op" step) exactly.
 
-Deliberately does *not* floor/ceiling-clamp each channel to `[10, 245]`
+Deliberately does _not_ floor/ceiling-clamp each channel to `[10, 245]`
 before scaling it, the way the naive "shade a color" recipe this was
 originally based on does. That clamp forces near-0 channels (e.g. the blue
 in a pure yellow) to hover around 10 forever while the other channels keep
@@ -263,6 +258,7 @@ out -- a dark yellow ends up looking brown/olive instead of a darker yellow.
 Scaling every channel by the same `multiplier` with no floor preserves
 hue and saturation exactly (in HSV terms, only `V` changes), so darkened/
 lightened colors keep reading as the same color.
+
 -}
 shade : String -> Int -> String
 shade colorHex percent =

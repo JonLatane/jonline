@@ -111,6 +111,24 @@ body {
   pointer-events: auto;
 }
 
+/* Covers everything below/behind the nav while the Starred Posts panel is
+   open; see UI.elm's `starredPostsBackdrop`. Unlike `.accounts-backdrop`, it
+   never blurs/tints the page -- clicking a starred post to see it change is
+   part of using this panel, not something to obscure -- it only exists to
+   catch clicks on the page behind the panel and close it. Lower z-index than
+   `.accounts-backdrop` so that backdrop still wins the click (closing only
+   the Accounts Panel) when both panels are open at once. */
+.starred-posts-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.starred-posts-backdrop.is-open {
+  pointer-events: auto;
+}
+
 .nav-links {
   display: flex;
   gap: 0.5rem;
@@ -307,6 +325,19 @@ input[type="url"] {
   margin-bottom: -5px;
 }
 
+/* Used by the Admin Panel and Starred Posts toggles -- both single-emoji
+   buttons with no avatars/summary, so round them into plain circles rather
+   than the wider pill shape `.accounts-menu-toggle` uses for the main
+   Accounts Panel toggle. */
+.accounts-menu-toggle.circular {
+  flex-direction: row;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
 .accounts-menu-server-summary {
   font-size: 0.6rem;
   line-height: 1;
@@ -384,6 +415,21 @@ input[type="url"] {
   font-weight: 700;
   line-height: 16px;
   text-align: center;
+}
+
+/* ⚠️ badge on the Admin Panel toggle's corner, shown in place of the
+   standalone `.host-mismatch-warning` whenever the Admin Panel button is
+   also present (see UI.elm's `adminMenu`/`accountsMenu`) -- so the warning
+   and the Admin Panel toggle never end up sitting side by side in the
+   navbar. Positioned the same way as `.starred-posts-count-badge` (relative
+   to the wrapping `.admin-menu`), but no background -- the emoji itself
+   reads fine on its own. */
+.host-mismatch-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.75rem;
+  line-height: 1;
 }
 
 .starred-posts-header {

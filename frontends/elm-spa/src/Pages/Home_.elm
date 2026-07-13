@@ -210,14 +210,17 @@ recentPostsView shared model =
 postCardView : Shared.Model -> ( String, Post ) -> Html Msg
 postCardView shared ( host, post ) =
     let
+        displayPost =
+            StarredPostsPanel.freshestPost host post shared.starredPostsPanel
+
         starred =
-            StarredPostsPanel.isStarred host post shared.starredPostsPanel
+            StarredPostsPanel.isStarred host displayPost shared.starredPostsPanel
 
         onStarClicked =
             AccountsPanel.serverForHost shared.accountsPanel.servers host
                 |> Maybe.map
                     (\server ->
-                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server post))
+                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server displayPost))
                     )
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host starred onStarClicked post
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host starred onStarClicked displayPost

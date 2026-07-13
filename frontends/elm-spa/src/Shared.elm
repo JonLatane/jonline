@@ -21,12 +21,10 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Process
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
-import Task
 import Time
 import Url exposing (Url)
 
@@ -69,7 +67,6 @@ type Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
-    | CloseAccountsPanelAfterDelay
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -267,12 +264,6 @@ update req msg model =
 
         SystemPrefersDarkChanged prefersDark ->
             ( { model | systemPrefersDark = prefersDark }, Cmd.none )
-
-        CloseAccountsPanelAfterDelay ->
-            ( model
-            , Process.sleep 500
-                |> Task.perform (\_ -> AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
-            )
 
 
 {-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)

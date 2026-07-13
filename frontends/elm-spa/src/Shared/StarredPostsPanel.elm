@@ -1,4 +1,4 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), init, isStarred, starKey, update, view)
+module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, starKey, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -11,8 +11,15 @@ from different servers apart.
 All `StarPost`/`UnstarPost` calls -- from `Pages.Home_`/`Pages.Post.PostId_`,
 via `Shared.StarredPostsPanelMsg` -- route through here so the persisted set
 and the RPC can't drift apart. The starred count itself isn't optimistically
-adjusted anywhere; it's a friendly, imprecise counter, not something worth
-tracking precisely client-side.
+adjusted client-side; instead, `GotStarResult`'s `Post` (the RPC's response,
+which already carries the server's fresh `unauthenticated_star_count`) is
+cached here, and `freshestPost` lets `Pages.Home_`/`Pages.Post.PostId_` read
+it back out for immediate feedback. They can't just pattern-match
+`GotStarResult` out of a `Shared.Msg` they see in their own `update` --
+`Main.elm` fires the gRPC call's `Cmd` from `Shared.update` directly, so its
+eventual reply lands back in `Main.elm`'s top-level `Shared` branch, never
+passing back through a page's own `update` the way the initiating `ToggleStar`
+click did.
 
 This module also owns fetching+rendering the actual starred `Post`s for the
 nav's Starred Posts panel (`view`) -- `posts` is a cache of that fetched data,
@@ -98,6 +105,22 @@ isStarred frontendHost post model =
     Set.member (starKey frontendHost post) model.starredPostIds
 
 
+{-| The freshest known version of `post` -- if it's ever been starred/unstarred
+this session (see `ToggleStar`), `model.posts` holds either the optimistic
+snapshot from that click or (once the RPC replies) the server's actual updated
+`Post`, complete with its current star count. Falls back to `post` itself
+(whatever the caller fetched it as) if it's never been touched.
+-}
+freshestPost : String -> Post -> Model -> Post
+freshestPost frontendHost post model =
+    case Dict.get (starKey frontendHost post) model.posts of
+        Just (PostFetchLoaded _ freshPost) ->
+            freshPost
+
+        _ ->
+            post
+
+
 persistCmd : Set String -> Cmd Msg
 persistCmd starredPostIds =
     Ports.persistStarredPosts (Encode.list Encode.string (Set.toList starredPostIds))
@@ -153,8 +176,17 @@ update accountsPanelModel msg model =
             , Nothing
             )
 
-        GotStarResult _ _ (Ok _) ->
-            ( model, Cmd.none, Nothing )
+        GotStarResult key _ (Ok updatedPost) ->
+            let
+                newPosts =
+                    case parseStarKey key of
+                        Just ( _, host ) ->
+                            Dict.insert key (PostFetchLoaded host updatedPost) model.posts
+
+                        Nothing ->
+                            model.posts
+            in
+            ( { model | posts = newPosts }, Cmd.none, Nothing )
 
         GotStarResult key starring (Err _) ->
             let

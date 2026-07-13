@@ -23,11 +23,17 @@ import View exposing (View)
 {-| Builds a page that has no state of its own beyond the shared auth/account
 state, rendered inside the common `layout`. Every page that only needs the nav
 and login form (i.e. doesn't need its own Model/Msg) should be built with this.
+
+Closes the Accounts Panel on `init` -- relying on the navigating link's own
+`onClick` to close the panel would race against the browser's separate
+click-to-navigation handling, with no guaranteed order. Closing here instead
+is deterministic: it always runs once the destination page actually loads,
+regardless of how the panel got left open.
 -}
 page : Shared.Model -> Request.With params -> View Shared.Msg -> Page.With () Shared.Msg
 page shared req body =
     Page.advanced
-        { init = ( (), Effect.none )
+        { init = ( (), Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel) )
         , update = \msg () -> ( (), Effect.fromShared msg )
         , view = \() -> { title = body.title, body = layout shared req.route identity body.body }
         , subscriptions = \() -> Sub.none
@@ -49,6 +55,7 @@ too, mapping its `Shared.Msg` clicks into their own `Msg` type. See
 layout : Shared.Model -> Route -> (Shared.Msg -> msg) -> List (Html msg) -> List (Html msg)
 layout shared currentRoute toMsg children =
     [ Html.map toMsg (UI.EmittedStylesheet.view shared)
+    , Html.map toMsg (starredPostsBackdrop shared)
     , Html.map toMsg (accountsBackdrop shared)
     , Html.map toMsg (headerNav shared currentRoute)
     , div [ class "container" ] [ main_ [] children ]
@@ -98,6 +105,33 @@ accountsBackdrop shared =
     div
         [ classes [ "accounts-backdrop", stateClass ]
         , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
+        ]
+        []
+
+
+{-| Like `accountsBackdrop`, but for the Starred Posts panel: clicking the page
+behind it closes the panel, but -- unlike the Accounts Panel, which blocks
+interaction with the rest of the page while its login/server-management forms
+are open -- it doesn't blur the background, since starring/unstarring posts
+while the panel is open is an expected, encouraged interaction rather than
+something to block. Lower `z-index` than `accountsBackdrop` (see
+`.starred-posts-backdrop` in style.css) so that backdrop still wins the click
+(and only closes the Accounts Panel) when both panels happen to be open at
+once.
+-}
+starredPostsBackdrop : Shared.Model -> Html Shared.Msg
+starredPostsBackdrop shared =
+    let
+        stateClass =
+            if shared.starredPostsPanel.showStarredPostsPanel then
+                "is-open"
+
+            else
+                "is-closed"
+    in
+    div
+        [ classes [ "starred-posts-backdrop", stateClass ]
+        , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
         ]
         []
 
@@ -209,7 +243,6 @@ infoButton shared =
         [ class "panel-icon-button"
         , href (shared.basePath ++ Route.toHref Route.About)
         , title "About"
-        , onClick Shared.CloseAccountsPanelAfterDelay
         ]
         [ text "ℹ" ]
 
@@ -273,7 +306,11 @@ accountsMenu shared =
                 [ accountsMenuButtonContent shared enabledAccounts
                 , accountsMenuServerSummary shared.accountsPanel
                 ]
-            , hostMismatchWarning shared
+            , if AccountsPanel.hasAdminAccount shared.accountsPanel then
+                text ""
+
+              else
+                hostMismatchWarning shared
             ]
         , accountsPanel shared
         ]
@@ -379,16 +416,36 @@ identity (see `Shared.AccountsPanel`'s `resolvedFrontendHost`) -- worth
 flagging, since the user probably has the "wrong" (if working) URL open.
 Clicking it force-resets `mainFrontendHost` back to `browsingHost`
 (`ResetMainFrontendHost`) rather than navigating anywhere.
+
+Only shown next to the Accounts Panel toggle when the Admin Panel button
+isn't also shown (see `accountsMenu`) -- with both present, the warning is
+folded into the Admin Panel instead (`hostMismatchPanelButton`, plus a badge
+on `adminMenu`'s toggle) so the two never sit side by side in the navbar.
 -}
 hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
+    hostMismatchIcon "host-mismatch-warning" shared
+
+
+{-| Same warning/click behavior as `hostMismatchWarning`, but styled as one of
+the circular `panel-icon-button`s stacked at the Admin Panel's top-right
+corner (see `adminPanel`) -- used there instead whenever the Admin Panel
+button is shown.
+-}
+hostMismatchPanelButton : Shared.Model -> Html Shared.Msg
+hostMismatchPanelButton shared =
+    hostMismatchIcon "panel-icon-button" shared
+
+
+hostMismatchIcon : String -> Shared.Model -> Html Shared.Msg
+hostMismatchIcon buttonClass shared =
     let
         accountsPanelModel =
             shared.accountsPanel
     in
-    if accountsPanelModel.browsingHost /= accountsPanelModel.mainFrontendHost then
+    if hostMismatch shared then
         span
-            [ class "host-mismatch-warning"
+            [ class buttonClass
             , onClick (Shared.AccountsPanelMsg AccountsPanel.ResetMainFrontendHost)
             , title
                 ("You're browsing from "
@@ -404,6 +461,14 @@ hostMismatchWarning shared =
 
     else
         text ""
+
+
+{-| True when `browsingHost` and `mainFrontendHost` differ -- see
+`hostMismatchWarning`.
+-}
+hostMismatch : Shared.Model -> Bool
+hostMismatch shared =
+    shared.accountsPanel.browsingHost /= shared.accountsPanel.mainFrontendHost
 
 
 {-| Servers scroll horizontally in a short strip (there are usually few, and it
@@ -792,16 +857,28 @@ formView shared =
 {-| Only shown at all when `AccountsPanel.hasAdminAccount` -- see `layout`.
 For now just holds the "switch main server" toggle (see `serverChip`); future
 admin features land here too.
+
+Wears a ⚠️ badge when `hostMismatch` is true -- since `hostMismatchWarning`
+itself is suppressed whenever this menu is shown (see `accountsMenu`), this
+badge plus `hostMismatchPanelButton` in `adminPanel` are the only places that
+warning surfaces.
 -}
 adminMenu : Shared.Model -> Html Shared.Msg
 adminMenu shared =
     div [ class "admin-menu" ]
         [ button
-            [ class "accounts-menu-toggle"
+            [ classes [ "accounts-menu-toggle", "circular" ]
             , onClick (Shared.AdminPanelMsg AdminPanel.ToggleAdminPanel)
             , title "Server Admin Panel"
             ]
-            [ text "🛡️" ]
+            (text "🛡️"
+                :: (if hostMismatch shared then
+                        [ span [ class "host-mismatch-badge" ] [ text "⚠️" ] ]
+
+                    else
+                        []
+                   )
+            )
         , adminPanel shared
         ]
 
@@ -819,7 +896,7 @@ starredPostsMenu : Shared.Model -> Html Shared.Msg
 starredPostsMenu shared =
     div [ class "admin-menu" ]
         [ button
-            [ class "accounts-menu-toggle"
+            [ classes [ "accounts-menu-toggle", "circular" ]
             , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
             , title "Starred Posts"
             ]
@@ -852,7 +929,12 @@ adminPanel shared =
             List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
     in
     div [ classes [ "accounts-panel", "admin-panel", stateClass ] ]
-        [ label [ class "admin-switch-row" ]
+        [ if hostMismatch shared then
+            div [ class "panel-icon-stack" ] [ hostMismatchPanelButton shared ]
+
+          else
+            text ""
+        , label [ class "admin-switch-row" ]
             [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
             ]
