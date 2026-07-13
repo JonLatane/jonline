@@ -56,13 +56,14 @@ const WebUserInterface$json = {
       '3': {'1': true},
     },
     {'1': 'REACT_TAMAGUI', '2': 2},
+    {'1': 'ELM_SPA', '2': 3},
   ],
 };
 
 /// Descriptor for `WebUserInterface`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List webUserInterfaceDescriptor = $convert.base64Decode(
     'ChBXZWJVc2VySW50ZXJmYWNlEg8KC0ZMVVRURVJfV0VCEAASHAoUSEFORExFQkFSU19URU1QTE'
-    'FURVMQARoCCAESEQoNUkVBQ1RfVEFNQUdVSRAC');
+    'FURVMQARoCCAESEQoNUkVBQ1RfVEFNQUdVSRACEgsKB0VMTV9TUEEQAw==');
 
 @$core.Deprecated('Use serverConfigurationDescriptor instead')
 const ServerConfiguration$json = {

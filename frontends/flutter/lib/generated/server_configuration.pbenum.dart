@@ -91,14 +91,19 @@ class WebUserInterface extends $pb.ProtobufEnum {
   static const WebUserInterface REACT_TAMAGUI =
       WebUserInterface._(2, _omitEnumNames ? '' : 'REACT_TAMAGUI');
 
+  /// Uses the Elm SPA client. Loaded from /elm.
+  static const WebUserInterface ELM_SPA =
+      WebUserInterface._(3, _omitEnumNames ? '' : 'ELM_SPA');
+
   static const $core.List<WebUserInterface> values = <WebUserInterface>[
     FLUTTER_WEB,
     HANDLEBARS_TEMPLATES,
     REACT_TAMAGUI,
+    ELM_SPA,
   ];
 
   static final $core.List<WebUserInterface?> _byValue =
-      $pb.ProtobufEnum.$_initByValueList(values, 2);
+      $pb.ProtobufEnum.$_initByValueList(values, 3);
   static WebUserInterface? valueOf($core.int value) =>
       value < 0 || value >= _byValue.length ? null : _byValue[value];
 

@@ -1849,6 +1849,7 @@ a century ahead of Flutter Web, so it&#39;s the default.
 | FLUTTER_WEB | 0 | Uses Flutter Web. Loaded from /app. |
 | HANDLEBARS_TEMPLATES | 1 | Uses Handlebars templates. Deprecated; will revert to Tamagui UI if chosen. |
 | REACT_TAMAGUI | 2 | React UI using Tamagui (a React Native UI library). |
+| ELM_SPA | 3 | Uses the Elm SPA client. Loaded from /elm. |
 
 
  
