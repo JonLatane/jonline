@@ -845,30 +845,50 @@ update req msg model =
 
         ToggleAccountEnabled id ->
             let
-                newModel =
-                    { model
-                        | accounts =
-                            List.map
-                                (\account ->
-                                    if accountId account == id then
-                                        { account | enabled = not account.enabled }
+                toggledAccounts =
+                    List.map
+                        (\account ->
+                            if accountId account == id then
+                                { account | enabled = not account.enabled }
 
-                                    else
-                                        account
-                                )
-                                model.accounts
-                    }
+                            else
+                                account
+                        )
+                        model.accounts
 
                 justEnabledAccount =
-                    newModel.accounts
+                    toggledAccounts
                         |> List.filter (\a -> accountId a == id && a.enabled)
                         |> List.head
+
+                -- Re-enabling an account whose server is disabled would leave it
+                -- silently excluded from aggregated data anyway -- bring the
+                -- server along, the mirror of `ToggleServerEnabled` taking its
+                -- accounts along when the server itself is disabled.
+                newServers =
+                    case justEnabledAccount of
+                        Just account ->
+                            List.map
+                                (\server ->
+                                    if server.frontendHost == account.server then
+                                        { server | enabled = True }
+
+                                    else
+                                        server
+                                )
+                                model.servers
+
+                        Nothing ->
+                            model.servers
+
+                newModel =
+                    { model | accounts = toggledAccounts, servers = newServers }
 
                 refreshCmd =
                     justEnabledAccount
                         |> Maybe.andThen
                             (\account ->
-                                model.servers
+                                newModel.servers
                                     |> List.filter (\s -> s.frontendHost == account.server)
                                     |> List.head
                                     |> Maybe.map (\server -> refreshPermissions server account)

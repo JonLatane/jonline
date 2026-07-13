@@ -18,9 +18,10 @@ Post-related page) need: building a `GetPosts` request against a specific
 route's `id` or `id@host` segment.
 -}
 
+import Components.Markdown as Markdown
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, p, text)
+import Html exposing (Html, a, div, h1, text)
 import Html.Attributes exposing (class, href)
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
@@ -185,7 +186,7 @@ postDetail post =
         , div [ class "post-detail-meta" ] [ text ("by " ++ postAuthorName post) ]
         , case post.content of
             Just content ->
-                p [ class "post-detail-content" ] [ text content ]
+                Markdown.view [ class "post-detail-content" ] content
 
             Nothing ->
                 text ""
