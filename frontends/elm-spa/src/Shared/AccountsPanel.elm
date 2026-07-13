@@ -10,24 +10,31 @@ module Shared.AccountsPanel exposing
     , ServerLogoSize(..)
     , accountAvatarUrl
     , accountId
-    , accountsMenuLabel
     , brandingFor
+    , connectToServer
     , displayName
+    , enabledAccountForServer
+    , enabledAccounts
+    , enabledServers
+    , grpcErrorToString
     , hasAdminAccount
     , init
     , isAdmin
     , isKnownServer
+    , isSecure
     , mainServerTheme
+    , serverForHost
     , serverHasAccounts
     , serverNameAndLogo
     , serverThemeFor
     , serverThemeOf
+    , serverUrl
     , update
     )
 
 {-| Everything behind the Accounts Panel: known servers, signed-into accounts,
 the login/add-server forms, and the connectivity logic (host negotiation,
-CDN backend_host discovery) that gets you from a typed-in hostname to a
+CDN backend\_host discovery) that gets you from a typed-in hostname to a
 working connection.
 -}
 
@@ -62,6 +69,7 @@ be re-enabled without logging in again. Fully forgetting an account
 reconnects (app startup/reload, or the account being re-enabled) -- see
 `refreshPermissions` -- so it's usually current, though it can still lag
 between those refreshes if permissions change server-side.
+
 -}
 type alias Account =
     { server : String
@@ -89,6 +97,7 @@ often the same host.
 
 `enabled` controls whether the server's (eventually public) data is included
 when aggregating data across servers.
+
 -}
 type alias Server =
     { frontendHost : String
@@ -196,6 +205,8 @@ type Msg
     | SetWebUserInterfaceClicked String WebUserInterface
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | FocusInput String
+    | ServerConnected Server
+    | AccountRefreshed Account
     | NoOp
 
 
@@ -213,7 +224,7 @@ isAdmin account =
     List.member ADMIN account.permissions
 
 
-{-| Whether any *signed-in* (enabled) account has `ADMIN` on its server --
+{-| Whether any _signed-in_ (enabled) account has `ADMIN` on its server --
 gates showing the Server Admin Panel button at all.
 -}
 hasAdminAccount : Model -> Bool
@@ -221,26 +232,13 @@ hasAdminAccount model =
     List.any (\a -> a.enabled && isAdmin a) model.accounts
 
 
-{-| What the accounts-menu toggle button should say: "Log In" with nobody signed
-in, just the username if there's exactly one signed-in account on the server
-currently in the login form, that account's "username@server" if it's on some
-other server, or an account count if several are signed in at once.
+{-| Signed-in accounts -- what the accounts-menu toggle button renders as a
+row of avatars instead of the "Login" label (see `UI.elm`'s
+`accountsMenuButtonContent`).
 -}
-accountsMenuLabel : Model -> String
-accountsMenuLabel model =
-    case List.filter .enabled model.accounts of
-        [] ->
-            "Log In"
-
-        [ only ] ->
-            if only.server == model.accountForm.server then
-                displayName only
-
-            else
-                displayName only ++ "@" ++ only.server
-
-        many ->
-            String.fromInt (List.length many) ++ " Accounts"
+enabledAccounts : Model -> List Account
+enabledAccounts model =
+    List.filter .enabled model.accounts
 
 
 {-| A username display enriched with the account's Real Name, if it has one --
@@ -542,7 +540,7 @@ isSkinToneModifier c =
         code =
             Char.toCode c
     in
-    code >= 0x1F3FB && code <= 0x1F3FF
+    code >= 0x0001F3FB && code <= 0x0001F3FF
 
 
 isRegionalIndicator : Char -> Bool
@@ -551,7 +549,7 @@ isRegionalIndicator c =
         code =
             Char.toCode c
     in
-    code >= 0x1F1E6 && code <= 0x1F1FF
+    code >= 0x0001F1E6 && code <= 0x0001F1FF
 
 
 {-| Approximates Unicode's `Extended_Pictographic` property (which the React
@@ -564,7 +562,7 @@ isPictographic c =
         code =
             Char.toCode c
     in
-    (code >= 0x1F300 && code <= 0x1FAFF)
+    (code >= 0x0001F300 && code <= 0x0001FAFF)
         || (code >= 0x2600 && code <= 0x27BF)
         || (code >= 0x2300 && code <= 0x23FF)
         || (code >= 0x2B00 && code <= 0x2BFF)
@@ -624,8 +622,13 @@ init req flags =
 TLS candidates for a new host, since a secure page can't make plaintext
 requests (mixed content). Only an insecure (e.g. local dev) page falls back
 to trying plaintext ports too.
+
+Generic over `params` (rather than just this module's own `Request`) so any
+page can pass its own `Request.With Params` straight in -- see
+`connectToServer`.
+
 -}
-isSecure : Request -> Bool
+isSecure : Request.With params -> Bool
 isSecure req =
     req.url.protocol == Url.Https
 
@@ -883,6 +886,13 @@ update req msg model =
 
         ToggleServerEnabled frontendHost ->
             let
+                wasEnabled =
+                    model.servers
+                        |> List.filter (\s -> s.frontendHost == frontendHost)
+                        |> List.head
+                        |> Maybe.map .enabled
+                        |> Maybe.withDefault False
+
                 newModel =
                     { model
                         | servers =
@@ -895,6 +905,27 @@ update req msg model =
                                         server
                                 )
                                 model.servers
+
+                        -- Disabling a server takes its accounts along with it -- an account
+                        -- signed into a server that's no longer included in aggregated data
+                        -- shouldn't itself keep counting as "signed in" (e.g. for
+                        -- `enabledAccounts`, or the Home feed). Re-enabling the server
+                        -- doesn't reverse this automatically -- that's a deliberate,
+                        -- separate choice per account, same as signing in fresh.
+                        , accounts =
+                            if wasEnabled then
+                                List.map
+                                    (\account ->
+                                        if account.server == frontendHost then
+                                            { account | enabled = False }
+
+                                        else
+                                            account
+                                    )
+                                    model.accounts
+
+                            else
+                                model.accounts
                     }
             in
             ( newModel, persist newModel )
@@ -1036,6 +1067,24 @@ update req msg model =
         FocusInput domId ->
             ( model, Task.attempt (\_ -> NoOp) (Dom.focus domId) )
 
+        ServerConnected server ->
+            if List.any (\s -> s.frontendHost == server.frontendHost) model.servers then
+                ( model, Cmd.none )
+
+            else
+                let
+                    newModel =
+                        { model | servers = model.servers ++ [ server ] }
+                in
+                ( newModel, persist newModel )
+
+        AccountRefreshed account ->
+            let
+                newModel =
+                    { model | accounts = upsertAccount account model.accounts }
+            in
+            ( newModel, persist newModel )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -1049,7 +1098,7 @@ serverHasAccounts accounts frontendHost =
 
 
 {-| Whether `frontendHost` (trimmed) is a server we're actually connected to --
-used by the Account form to decide whether Username/Password/Log In/Create
+used by the Account form to decide whether Username/Password/Login/Create
 Account should be enabled, or whether "Add Server" should be offered instead
 (see `AddServerClicked`, which adds whatever's currently typed into the
 (shared) `AccountForm.server` field).
@@ -1057,6 +1106,56 @@ Account should be enabled, or whether "Add Server" should be offered instead
 isKnownServer : Model -> String -> Bool
 isKnownServer model frontendHost =
     List.any (\s -> s.frontendHost == String.trim frontendHost) model.servers
+
+
+{-| Looks up a known server by its `frontendHost` -- e.g. for a route param
+naming a specific server (see `Components.ServerDependentView`), or an
+account's `server` field.
+-}
+serverForHost : List Server -> String -> Maybe Server
+serverForHost servers frontendHost =
+    servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
+
+
+{-| The signed-in account to use for `frontendHost`, if there is one --
+picking the first enabled account on that server. Used wherever content needs
+to be fetched "as whichever account, if any, is currently signed into this
+server" (see `Components.Posts`), rather than any one specific account.
+-}
+enabledAccountForServer : List Account -> String -> Maybe Account
+enabledAccountForServer accounts frontendHost =
+    accounts
+        |> List.filter (\a -> a.server == frontendHost && a.enabled)
+        |> List.head
+
+
+{-| Servers whose data should be included when aggregating across all of
+them -- e.g. the Home page's recent-posts feed.
+-}
+enabledServers : Model -> List Server
+enabledServers model =
+    List.filter .enabled model.servers
+
+
+{-| A server's full base URL, for making requests against it directly (e.g.
+`Components.Posts`' `GetPosts` calls) without needing to build a `Connection`.
+-}
+serverUrl : Server -> String
+serverUrl server =
+    connectionUrl (connectionOf server)
+
+
+{-| Connects to a server given only its hostname, same as adding one via the
+Account form's "Add Server" button (see `AddServerClicked`) -- but as a plain
+`Task`, for callers outside the Accounts Panel that need to connect to a
+specific server themselves (see `Components.ServerDependentView`) and decide
+what to do with the result (typically dispatching `ServerConnected` once it
+resolves, then proceeding with whatever they actually wanted the server for).
+-}
+connectToServer : Bool -> String -> Task Grpc.Error Server
+connectToServer pageIsSecure frontendHost =
+    negotiateServerConfig pageIsSecure frontendHost
+        |> Task.map (\( connection, config ) -> serverFrom connection True config)
 
 
 updateAddServerForm : (AddServerForm -> AddServerForm) -> Model -> Model
@@ -1111,7 +1210,7 @@ granted/revoked elsewhere stay current without the user doing anything.
 -}
 refreshPermissions : Server -> Account -> Cmd Msg
 refreshPermissions server account =
-    MaybeAccountRequest.perform
+    MaybeAccountRequest.performWithAccount
         { host = server.backendHost, port_ = server.port_, tls = server.tls }
         account
         (\accessToken ->
@@ -1123,7 +1222,8 @@ refreshPermissions server account =
         |> Task.attempt (GotPermissionsRefresh (accountId account))
 
 
-{-| `refreshPermissions` for every enabled account on the given server. -}
+{-| `refreshPermissions` for every enabled account on the given server.
+-}
 refreshPermissionsForServer : Server -> List Account -> Cmd Msg
 refreshPermissionsForServer server accounts =
     accounts
@@ -1142,6 +1242,7 @@ the server itself also validates that permission.
 field, so this starts from the server's actual last-known `configuration`
 (not any locally-edited-but-unsaved form state elsewhere) and only changes
 `webUserInterface` within it.
+
 -}
 setWebUserInterface : Server -> Account -> WebUserInterface -> Cmd Msg
 setWebUserInterface server account ui =
@@ -1155,7 +1256,7 @@ setWebUserInterface server account ui =
         newConfig =
             { config | serverInfo = Just { info | webUserInterface = Just ui } }
     in
-    MaybeAccountRequest.perform
+    MaybeAccountRequest.performWithAccount
         { host = server.backendHost, port_ = server.port_, tls = server.tls }
         account
         (\accessToken ->
@@ -1273,7 +1374,15 @@ discoverBackendHost pageIsSecure frontendHost =
                     Http.task
                         { method = "GET"
                         , headers = []
-                        , url = (if tls then "https://" else "http://") ++ frontendHost ++ "/backend_host"
+                        , url =
+                            (if tls then
+                                "https://"
+
+                             else
+                                "http://"
+                            )
+                                ++ frontendHost
+                                ++ "/backend_host"
                         , body = Http.emptyBody
                         , resolver =
                             Http.stringResolver
@@ -1354,10 +1463,10 @@ brandingFromConfig connection config =
                 |> Maybe.map (\id -> mediaBaseUrl connection ++ "/media/" ++ id)
 
         primaryArgb =
-            info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x424242
+            info.colors |> Maybe.andThen .primary |> Maybe.withDefault 0x00424242
 
         navArgb =
-            info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0xFFFFFF
+            info.colors |> Maybe.andThen .navigation |> Maybe.withDefault 0x00FFFFFF
     in
     { name = name
     , logoUrl = logoUrl

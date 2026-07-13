@@ -2,18 +2,30 @@ module Shared.MaybeAccountRequest exposing
     ( Token
     , isExpired
     , perform
+    , performWithAccount
+    , timestampToPosix
     , tokenFromExpirable
     )
 
 {-| Access tokens expire; refresh tokens (usually) don't, but can rotate.
 Rather than scattering "is this token stale?" checks through every
-authenticated call, `perform` wraps a request with: check the access token
-against the current time, refresh it first (via the `AccessToken` RPC, using
-the refresh token) if it's expired or expiring soon, *then* make the actual
-request with whatever access token ends up being current.
+authenticated call, `performWithAccount` wraps a request with: check the
+access token against the current time, refresh it first (via the
+`AccessToken` RPC, using the refresh token) if it's expired or expiring soon,
+*then* make the actual request with whatever access token ends up being
+current.
 
-Works on any record with `accessToken`/`refreshToken` fields (so it's usable
-directly with `Shared.AccountsPanel.Account`, or any smaller/future
+`perform` is the more commonly useful entry point (hence this module's name):
+a request that may or may not have an `Account` behind it at all -- e.g.
+fetching a post, which should work whether or not the viewer happens to be
+signed into that post's server. It performs an authenticated
+(`performWithAccount`) request when given `Just` an account, or an anonymous
+one (`req Nothing`) otherwise, uniformly returning the (possibly-refreshed)
+account back to the caller so it can persist that refresh -- see
+`Shared.AccountsPanel.AccountRefreshed`.
+
+Both work on any record with `accessToken`/`refreshToken` fields (so they're
+usable directly with `Shared.AccountsPanel.Account`, or any smaller/future
 account-shaped record) via an extensible record type, rather than depending
 on `Shared.AccountsPanel` and risking an import cycle (that module depends on
 this one, for `Token`).
@@ -44,6 +56,10 @@ tokenFromExpirable expirable =
     }
 
 
+{-| Converts a protobuf `Timestamp` (seconds + nanos) to `Time.Posix` --
+usable for any protobuf timestamp field (e.g. `ExpirableToken.expiresAt`,
+`Post.publishedAt`/`.createdAt`), not just token expirations.
+-}
 timestampToPosix : { seconds : Int64.Int64, nanos : Int } -> Time.Posix
 timestampToPosix timestamp =
     Time.millisToPosix (int64ToInt timestamp.seconds * 1000 + timestamp.nanos // 1000000)
@@ -87,12 +103,12 @@ as it ended up (with refreshed tokens if a refresh happened, unchanged
 otherwise) alongside `req`'s result, so the caller can persist any refreshed
 tokens.
 -}
-perform :
+performWithAccount :
     { host : String, port_ : Int, tls : Bool }
     -> { a | accessToken : Token, refreshToken : Token }
     -> (String -> Task Grpc.Error b)
     -> Task Grpc.Error ( { a | accessToken : Token, refreshToken : Token }, b )
-perform connection account req =
+performWithAccount connection account req =
     Time.now
         |> Task.andThen (\now -> refreshIfNeeded connection now account)
         |> Task.andThen
@@ -100,6 +116,27 @@ perform connection account req =
                 req refreshedAccount.accessToken.token
                     |> Task.map (Tuple.pair refreshedAccount)
             )
+
+
+{-| Like `performWithAccount`, but the account is optional: with `Just` an
+account, authenticates (refreshing first if needed) exactly like
+`performWithAccount`; with `Nothing`, just performs `req` anonymously (no
+authorization header). Either way, `req` gets the access token string to use,
+if any.
+-}
+perform :
+    { host : String, port_ : Int, tls : Bool }
+    -> Maybe { a | accessToken : Token, refreshToken : Token }
+    -> (Maybe String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe { a | accessToken : Token, refreshToken : Token }, b )
+perform connection maybeAccount req =
+    case maybeAccount of
+        Just account ->
+            performWithAccount connection account (Just >> req)
+                |> Task.map (Tuple.mapFirst Just)
+
+        Nothing ->
+            req Nothing |> Task.map (Tuple.pair Nothing)
 
 
 refreshIfNeeded :

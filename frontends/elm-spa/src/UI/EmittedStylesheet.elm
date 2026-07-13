@@ -11,6 +11,7 @@ needing that server's `ServerTheme` threaded in as a view-function argument.
   - `<host> background-color-primary` -- `primaryColor` / `primaryTextColor`
   - `<host> background-color-nav` -- `navColor` / `navTextColor`
   - `<host> background-color-primary-background` -- `primaryBgColor` / `textColor`
+  - `<host> border-color-primary` -- `primaryColor` (border-color only)
 
 This is cheap to regenerate (it's just string-building); the actual expensive
 color math is already cached in `Shared.Branding`.
@@ -56,12 +57,18 @@ serverRules darkMode server =
         [ colorRule (selector ++ ".background-color-primary") theme.primaryColor theme.primaryTextColor
         , colorRule (selector ++ ".background-color-nav") theme.navColor theme.navTextColor
         , colorRule (selector ++ ".background-color-primary-background") theme.primaryBgColor theme.textColor
+        , borderColorRule (selector ++ ".border-color-primary") theme.primaryColor
         ]
 
 
 colorRule : String -> String -> String -> String
 colorRule selector backgroundColor foregroundColor =
     selector ++ " { background-color: " ++ backgroundColor ++ "; color: " ++ foregroundColor ++ "; }\n"
+
+
+borderColorRule : String -> String -> String
+borderColorRule selector borderColor =
+    selector ++ " { border-color: " ++ borderColor ++ "; }\n"
 
 
 {-| Escapes a hostname for literal use as one segment of a CSS class

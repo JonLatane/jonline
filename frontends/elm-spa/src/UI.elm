@@ -26,7 +26,7 @@ page shared req body =
     Page.advanced
         { init = ( (), Effect.none )
         , update = \msg () -> ( (), Effect.fromShared msg )
-        , view = \() -> { title = body.title, body = layout shared req.route body.body }
+        , view = \() -> { title = body.title, body = layout shared req.route identity body.body }
         , subscriptions = \() -> Sub.none
         }
 
@@ -36,12 +36,25 @@ page shared req body =
 `background-color-primary` utility class) -- its own `.navbar-inner` wrapper
 keeps its content lined up with the (narrower) page content below. `main` gets
 its own `.container` so it's centered independently of the nav.
+
+Generic in `msg` (via `toMsg`) so pages with their own `Model`/`Msg` -- rather
+than just `page`'s no-local-state pages -- can embed this nav/login chrome
+too, mapping its `Shared.Msg` clicks into their own `Msg` type. See
+`Pages.Home_`/`Pages.Post.PostId_`.
+
 -}
-layout : Shared.Model -> Route -> List (Html Shared.Msg) -> List (Html Shared.Msg)
-layout shared currentRoute children =
-    [ UI.EmittedStylesheet.view shared
-    , accountsBackdrop shared
-    , header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
+layout : Shared.Model -> Route -> (Shared.Msg -> msg) -> List (Html msg) -> List (Html msg)
+layout shared currentRoute toMsg children =
+    [ Html.map toMsg (UI.EmittedStylesheet.view shared)
+    , Html.map toMsg (accountsBackdrop shared)
+    , Html.map toMsg (headerNav shared currentRoute)
+    , div [ class "container" ] [ main_ [] children ]
+    ]
+
+
+headerNav : Shared.Model -> Route -> Html Shared.Msg
+headerNav shared currentRoute =
+    header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
@@ -58,8 +71,6 @@ layout shared currentRoute children =
                 ]
             ]
         ]
-    , div [ class "container" ] [ main_ [] children ]
-    ]
 
 
 {-| Covers everything except the top nav (which sits in its own, higher
@@ -96,7 +107,7 @@ classes names =
 
 {-| Fires `msg` (and suppresses the key's default effect, e.g. inserting a
 newline) when Enter is pressed in a text input -- used to chain focus through
-the login form and to trigger "Add Server"/"Log In" the same way clicking
+the login form and to trigger "Add Server"/"Login" the same way clicking
 their buttons would.
 -}
 onEnter : msg -> Attribute msg
@@ -193,17 +204,73 @@ themeToggle shared =
 
 accountsMenu : Shared.Model -> Html Shared.Msg
 accountsMenu shared =
+    let
+        enabledAccounts =
+            AccountsPanel.enabledAccounts shared.accountsPanel
+
+        toggleClasses =
+            "accounts-menu-toggle"
+                :: (if List.isEmpty enabledAccounts then
+                        []
+
+                    else
+                        [ "has-avatars" ]
+                   )
+    in
     div [ class "accounts-menu" ]
         [ div [ class "accounts-menu-row" ]
             [ button
-                [ class "accounts-menu-toggle"
+                [ classes toggleClasses
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
                 ]
-                [ text (AccountsPanel.accountsMenuLabel shared.accountsPanel) ]
+                [ accountsMenuButtonContent shared enabledAccounts ]
             , hostMismatchWarning shared
             ]
         , accountsPanel shared
         ]
+
+
+{-| The accounts-menu toggle button's content: "Login" with nobody signed in,
+otherwise a small avatar/placeholder per signed-in account (see
+`accountsMenuAvatar`) in place of any username/count text.
+-}
+accountsMenuButtonContent : Shared.Model -> List AccountsPanel.Account -> Html Shared.Msg
+accountsMenuButtonContent shared enabledAccounts =
+    case enabledAccounts of
+        [] ->
+            text "Login"
+
+        accounts ->
+            div [ class "accounts-menu-avatars" ] (List.map (accountsMenuAvatar shared) accounts)
+
+
+{-| A small avatar/placeholder for the accounts-menu toggle button, bordered
+with the account's server's `primaryColor` (via `border-color-primary`, see
+`UI.EmittedStylesheet`) -- but only for accounts on a server other than
+`mainFrontendHost`, so the common case (only signed into the main server)
+doesn't show a border at all.
+-}
+accountsMenuAvatar : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
+accountsMenuAvatar shared account =
+    let
+        accountsPanelModel =
+            shared.accountsPanel
+
+        avatarClasses =
+            "accounts-menu-avatar"
+                :: (if account.server /= accountsPanelModel.mainFrontendHost then
+                        [ account.server, "border-color-primary" ]
+
+                    else
+                        []
+                   )
+    in
+    case AccountsPanel.accountAvatarUrl accountsPanelModel.servers account of
+        Just url ->
+            img [ classes avatarClasses, src url, alt account.username ] []
+
+        Nothing ->
+            div [ classes ("placeholder" :: avatarClasses) ] [ text (initial account.username) ]
 
 
 {-| `browsingHost` and `mainFrontendHost` differ when the host we're actually
@@ -244,6 +311,7 @@ you'll accumulate the most of.
 Always rendered (even "closed"), so opening/closing can be a plain CSS
 transition (fade + slide) rather than the panel just appearing/disappearing
 outright -- see `.accounts-panel`/`.accounts-panel.is-closed` in style.css.
+
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
 accountsPanel shared =
@@ -288,6 +356,7 @@ single tap. When the Server Admin Panel's "switch main server" toggle is also
 on (see `Shared.AdminPanel`), that tap additionally sets this server as
 `mainFrontendHost` (`MainServerSelected`, which fills the Server field too --
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
+
 -}
 serverChip : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
 serverChip shared server =
@@ -370,6 +439,7 @@ logoOrPlaceholder branding =
 
         Nothing ->
             div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
+
 
 
 -- ACCOUNTS
@@ -464,10 +534,10 @@ switchInput isChecked toggleMsg =
 
 {-| The Server field is shared between logging in/creating an account and
 adding a new server (see `AccountsPanel.AddServerClicked`): as soon as it names
-a server we're not already connected to, Username/Password/Log In/Create
+a server we're not already connected to, Username/Password/Login/Create
 Account are disabled and a full-width "Add Server" button appears right below
 it instead. Once that succeeds (or the field already named a known server),
-those re-enable, themed with *that* server's colors rather than
+those re-enable, themed with _that_ server's colors rather than
 `mainFrontendHost`'s -- see `AccountsPanel.GotNewServerResult` for the focus
 handoff to Username that completes the "type a host, Enter, type a username,
 Enter, type a password" flow.
@@ -570,7 +640,7 @@ formView shared =
                 , disabled accountFieldsDisabled
                 , classes [ themeHost, "background-color-primary" ]
                 ]
-                [ text "Log In" ]
+                [ text "Login" ]
             , button
                 [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
                 , disabled accountFieldsDisabled
