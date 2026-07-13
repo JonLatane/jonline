@@ -417,7 +417,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                         opacity={1}
                         y={0}
                       >
-                        <YStack space>
+                        <YStack gap='$2'>
                           <Dialog.Title>Reset app data</Dialog.Title>
                           <Dialog.Description>
                             {/* <Paragraph> */}

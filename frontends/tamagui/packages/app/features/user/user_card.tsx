@@ -136,7 +136,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
           // autoCapitalize='words'
           value={username}
-          onChange={(data) => { setUsername(data.nativeEvent.text) }} />
+          onChangeText={(text) => { setUsername(text) }} />
         : inlineUsername
           ? undefined
           : <Heading size='$7'
@@ -153,7 +153,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
           disabled={editingDisabled} opacity={editingDisabled || username == '' ? 0.5 : 1}
           // autoCapitalize='words'
           value={realName}
-          onChange={(data) => { setRealName(data.nativeEvent.text) }} />
+          onChangeText={(text) => { setRealName(text) }} />
         : <Heading size="$7" color={usernameColor} fontSize='$7' lh='$2' marginRight='auto' w='100%' pr='$1'>{displayedRealName}</Heading>}
     </YStack>
     {/* {showServerInfo

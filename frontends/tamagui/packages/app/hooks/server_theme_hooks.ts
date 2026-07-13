@@ -56,10 +56,13 @@ function getServerTheme(
   const inverse = !app.darkModeAuto ? (systemDark != app.darkMode) ? true : false : false;
 
 
-  const theme = useTheme({ inverse });
-  const backgroundColor = theme?.background?.val ?? '#FFFFFF';
-  const { luma: themeBgLuma, textColor } = colorMeta(backgroundColor);
-  const darkMode = themeBgLuma <= 0.5;
+  // In Tamagui 2.x, useTheme() no longer accepts arguments.
+  // Derive darkMode from the inverse flag and the system theme.
+  const darkMode = inverse ? !systemDark : systemDark;
+  const backgroundColor = darkMode === systemDark
+    ? baseBackgroundColor
+    : (darkMode ? '#141414' : '#FFFFFF');
+  const { textColor } = colorMeta(backgroundColor);
 
   const primaryColorInt = server?.serverConfiguration?.serverInfo?.colors?.primary ?? 0x424242;
   const navColorInt = server?.serverConfiguration?.serverInfo?.colors?.navigation ?? 0xFFFFFF;

@@ -410,7 +410,7 @@ export function UsernameDetailsScreen() {
                 <YStack als='center' w='100%' paddingHorizontal='$2' gap='$2'>
                   {editMode ?
                     <TextArea key='bio-edit' animation='standard' {...standardHorizontalAnimation}
-                      value={bio} onChangeText={t => setBio(t.nativeEvent.text)}
+                      value={bio} onChangeText={t => setBio(t)}
                       // size='$5'
                       h='$14'
                       placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
@@ -440,7 +440,7 @@ export function UsernameDetailsScreen() {
                     <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
                       <Button onPress={() => setBigCalendar(!bigCalendar)}
                         icon={CalendarIcon}
-                        transparent
+                        chromeless
                         {...themedButtonBackground(
                           bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
                         // animation='standard'
@@ -559,7 +559,7 @@ export function UsernameDetailsScreen() {
 
 
             <div key='visibility-permissions-toggle' style={{ width: '100%', maxWidth: 800, alignSelf: 'center' }}>
-              <Button mx='auto' onPress={() => setShowUserSettings(!showUserSettings)} transparent>
+              <Button mx='auto' onPress={() => setShowUserSettings(!showUserSettings)} chromeless>
                 <XStack ac='center' jc='center' ai='center' maw='100%'>
                   <Heading size='$4' ta='center' f={1}>
                     {isAdmin || isCurrentUser
@@ -740,7 +740,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               opacity={1}
               y={0}
             >
-              <YStack space>
+              <YStack gap='$2'>
                 <Dialog.Title>Reset Password</Dialog.Title>
                 <Dialog.Description>
                   <YStack gap='$2'>
@@ -748,7 +748,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     <XStack gap='$2'>
                       <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
                         value={resetUserPassword}
-                        onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
+                        onChangeText={(text) => { setResetUserPassword(text) }} />
                       <Button circular icon={showPasswordPlaintext ? SquareAsterisk : Eye}
                         onPress={() => setShowPasswordPlaintext(!showPasswordPlaintext)} />
                       {/* <Text fontFamily='$body'>weeks</Text> */}
@@ -758,7 +758,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     <XStack>
                       <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Confirm password`}
                         value={confirmUserPassword}
-                        onChange={(data) => { setConfirmUserPassword(data.nativeEvent.text) }} />
+                        onChangeText={(text) => { setConfirmUserPassword(text) }} />
 
                       <ZStack w='$2' h='$2' my='auto' ml='$4' mr='$2' pr='$2'>
                         <XStack m='auto' animation='standard' pr='$1'
@@ -828,7 +828,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               opacity={1}
               y={0}
             >
-              <YStack space>
+              <YStack gap='$2'>
                 <Dialog.Title>Delete Account</Dialog.Title>
                 <Dialog.Description>
                   Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
@@ -838,9 +838,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                   <Dialog.Close asChild>
                     <Button>Cancel</Button>
                   </Dialog.Close>
-                  <Theme inverse>
-                    <Button onPress={doDeleteUser}>Delete</Button>
-                  </Theme>
+                  <Button theme="red" onPress={doDeleteUser}>Delete</Button>
                 </XStack>
               </YStack>
             </Dialog.Content>
