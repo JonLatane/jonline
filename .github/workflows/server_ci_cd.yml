@@ -80,6 +80,9 @@ jobs:
       # - name: Build Graphviz diagrams
       #   run: make graphs
 
+      - name: Install protoc-gen-elm
+        run: yarn global add protoc-gen-elm
+
       - name: Build Protos
         run: make protos
 
