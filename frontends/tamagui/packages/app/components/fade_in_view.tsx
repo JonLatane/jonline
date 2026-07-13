@@ -9,7 +9,7 @@ export type FadeInViewProps = PropsWithChildren<{
 }>;
 
 export const FadeInView: React.FC<FadeInViewProps> = props => {
-  return <XStack transition='standard' {...standardFadeAnimation} width={props.w} height={props.h}>
+  return <XStack animation='standard' {...standardFadeAnimation} width={props.w} height={props.h}>
     {props.children}
   </XStack>;
   // return <YStack {...standardFadeAnimation}>

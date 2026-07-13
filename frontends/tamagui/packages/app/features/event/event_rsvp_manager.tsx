@@ -418,19 +418,19 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
         >
           {canRsvpNonAnonymously
             ? <Button disabled={busy} opacity={busy ? 0.5 : 1}
-              chromeless={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
+              transparent={newRsvpMode != 'user'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'user' ? undefined : 'user')}>
               <XStack ai='center' gap='$2'>
                 {/* {isPreview ? undefined : */}
                 <ZStack h='$2' w='$2' my='auto' pt='$5'>
-                  <XStack transition='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
+                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '90deg' : '0deg'}
                     opacity={newRsvpMode === 'user' ? 1 : 0}>
                     <ChevronRight color={primaryAnchorColor} />
                   </XStack>
-                  <XStack transition='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
+                  <XStack animation='standard' rotate={newRsvpMode === 'user' ? '45deg' : '0deg'}
                     opacity={!currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
                     <Plus color={primaryAnchorColor} />
                   </XStack>
-                  <XStack transition='standard'
+                  <XStack animation='standard'
                     opacity={currentRsvp && newRsvpMode !== 'user' ? 1 : 0}>
                     <Edit color={primaryAnchorColor} />
                   </XStack>
@@ -445,19 +445,19 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
           {canRsvpAnonymously
             ? <>
               <Button mb='$2' disabled={busy} opacity={busy ? 0.5 : 1}
-                chromeless={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
+                transparent={newRsvpMode != 'anonymous'} h={mainButtonHeight} f={1} p={0} onPress={() => setNewRsvpMode?.(newRsvpMode === 'anonymous' ? undefined : 'anonymous')}>
                 <XStack ai='center' gap='$2'>
                   {/* {isPreview ? undefined : */}
                   <ZStack h='$2' w='$2'>
-                    <XStack transition='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
+                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '90deg' : '0deg'}
                       opacity={newRsvpMode === 'anonymous' ? 1 : 0}>
                       <ChevronRight color={navAnchorColor} />
                     </XStack>
-                    <XStack transition='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
+                    <XStack animation='standard' rotate={newRsvpMode === 'anonymous' ? '45deg' : '0deg'}
                       opacity={!currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
                       <Plus color={navAnchorColor} />
                     </XStack>
-                    <XStack transition='standard'
+                    <XStack animation='standard'
                       opacity={currentAnonRsvp && newRsvpMode !== 'anonymous' ? 1 : 0}>
                       <Edit color={navAnchorColor} />
                     </XStack>
@@ -492,7 +492,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     /*disabled={busy}*/ o={/*busy ||*/ anonymousRsvpName == '' ? 0.5 : 1}
                     // autoCapitalize='words'
                     value={anonymousRsvpName}
-                    onChangeText={(text) => { setAnonymousRsvpName(text) }} />
+                    onChange={(data) => { setAnonymousRsvpName(data.nativeEvent.text) }} />
                 </XStack>
               </YStack>
               : undefined}
@@ -503,7 +503,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
               mb={showDetails ? '$2' : 0}>
               <XStack ai='center' w='100%'>
                 <Heading size='$2' my='auto'>Attendees & Notes</Heading>
-                <XStack my='auto' mr='auto' transition='standard' rotate={showDetails ? '90deg' : '0deg'}>
+                <XStack my='auto' mr='auto' animation='standard' rotate={showDetails ? '90deg' : '0deg'}>
                   <ChevronRight size='$1' />
                 </XStack>
               </XStack>
@@ -511,12 +511,12 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
 
             {showDetails
               ? <YStack className={formClassName} key='rsvp-details' gap='$2' w='100%' mx='$2'>
-                <Select native zIndex={200000} onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
+                <Select native onValueChange={v => setNumberOfGuests(parseInt(v))} value={numberOfGuests.toString()}>
                   <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                     <Select.Value w='100%' placeholder="Choose Visibility" />
                   </Select.Trigger>
 
-                  <Select.Content>
+                  <Select.Content zIndex={200000}>
                     <Select.Viewport minWidth={200} w='100%'>
                       <XStack w='100%'>
                         <Select.Group gap="$0" w='100%'>
@@ -647,22 +647,22 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                     jc='center' ai='center' ac='center'
                   // borderRadius='$4' backgroundColor='$backgroundStrong'
                   >
-                    <XStack transition='standard' o={hasModifiedRsvp && !busy ? 1 : 0} mx='auto' my='auto'>
+                    <XStack animation='standard' o={hasModifiedRsvp && !busy ? 1 : 0} mx='auto' my='auto'>
                       <AlertCircle />
                     </XStack>
-                    <XStack transition='standard' o={busy ? 1 : 0} mx='auto' my='auto'>
+                    <XStack animation='standard' o={busy ? 1 : 0} mx='auto' my='auto'>
                       <Spinner size='small' />
                     </XStack>
-                    <XStack transition='standard' o={editingRsvp && editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0} mx='auto' my='auto'>
+                    <XStack animation='standard' o={editingRsvp && editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0} mx='auto' my='auto'>
                       <CheckCircle color={primaryAnchorColor} />
                     </XStack>
 
-                    <XStack transition='standard' o={editingRsvp && !editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
+                    <XStack animation='standard' o={editingRsvp && !editingRsvpPasses && !editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
                       mx='auto' my='auto'>
                       <ShieldAlert color={navAnchorColor} />
                     </XStack>
 
-                    <XStack transition='standard' o={editingRsvp && editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
+                    <XStack animation='standard' o={editingRsvp && editingRsvpRejected && !(hasModifiedRsvp || busy) ? 1 : 0}
                       mx='auto' my='auto'>
                       <AlertTriangle color={undefined} />
                     </XStack>
@@ -707,14 +707,14 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 ? <>
                   <Dialog>
                     <Dialog.Trigger asChild>
-                      <Button f={1} chromeless mx='auto' color={navAnchorColor} disabled={busy} opacity={!busy ? 1 : 0.5}>
+                      <Button f={1} transparent mx='auto' color={navAnchorColor} disabled={busy} opacity={!busy ? 1 : 0.5}>
                         New RSVP
                       </Button>
                     </Dialog.Trigger>
                     <Dialog.Portal zi={1000011}>
                       <Dialog.Overlay
                         key="overlay"
-                        transition='standard'
+                        animation='standard'
                         o={0.5}
                         enterStyle={{ o: 0 }}
                         exitStyle={{ o: 0 }}
@@ -723,7 +723,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                         bordered
                         elevate
                         key="content"
-                        transition={[
+                        animation={[
                           'standard',
                           {
                             opacity: {
@@ -739,7 +739,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                         opacity={1}
                         y={0}
                       >
-                        <YStack gap="$true">
+                        <YStack space>
                           <Dialog.Title>New Anonymous RSVP</Dialog.Title>
                           <Dialog.Description>
                             Make sure you've saved <Anchor href={anonymousRsvpPath} color={navAnchorColor} target='_blank'>this private RSVP link</Anchor> to update/delete your current RSVP later!
@@ -774,7 +774,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                   <Dialog.Portal zi={1000011}>
                     <Dialog.Overlay
                       key="overlay"
-                      transition='standard'
+                      animation='standard'
                       o={0.5}
                       enterStyle={{ o: 0 }}
                       exitStyle={{ o: 0 }}
@@ -783,7 +783,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                       bordered
                       elevate
                       key="content"
-                      transition={[
+                      animation={[
                         'standard',
                         {
                           opacity: {
@@ -799,7 +799,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                       opacity={1}
                       y={0}
                     >
-                      <YStack gap="$true">
+                      <YStack space>
                         <Dialog.Title>Delete RSVP</Dialog.Title>
                         <Dialog.Description>
                           Really delete this RSVP?
@@ -877,7 +877,7 @@ export const EventRsvpManager: React.FC<EventRsvpManagerProps> = ({
                 </XStack>
                 : undefined}
             </YStack>
-            <XStack transition='standard' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>
+            <XStack animation='standard' my='auto' ml='$2' rotate={showRsvpCards ? '90deg' : '0deg'}>
               <ChevronRight />
             </XStack>
           </XStack>

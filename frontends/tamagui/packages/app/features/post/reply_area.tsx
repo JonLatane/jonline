@@ -1,5 +1,5 @@
 import { Permission, Post } from '@jonline/api'
-import { Button, Heading, ScrollView, TamaguiElement, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
+import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { MediaRef, useAccountOrServerContext } from 'app/contexts'
@@ -31,7 +31,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
-  const textAreaRef = React.createRef<TamaguiElement>();
+  const textAreaRef = React.createRef<TextInput>();
   const chatUI = useRootSelector((state: RootState) => state.config.discussionChatUI);
   const [showMedia, setShowMedia] = useState(true);
   const maxPreviewHeight = (useWindowDimensions().height - 80 - (showMedia && media.length > 0 ? 100 : 0)) * 0.5;
@@ -100,7 +100,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-            <XStack transition='standard' rotate={showMedia ? '90deg' : '0deg'}>
+            <XStack animation='standard' rotate={showMedia ? '90deg' : '0deg'}>
               <ChevronRight size='$1' />
             </XStack>
             <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
@@ -114,7 +114,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </>
         : undefined}
       {previewReply
-        ? <YStack px='$3' py='$1' f={1} transition='standard' {...reverseStandardAnimation}>
+        ? <YStack px='$3' py='$1' f={1} animation='standard' {...reverseStandardAnimation}>
           <ScrollView maxHeight={maxPreviewHeight}>
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{

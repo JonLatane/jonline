@@ -258,7 +258,7 @@ export function PostDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
-                chromeless={interactionType !== 'post'} mr='$2'
+                transparent={interactionType !== 'post'} mr='$2'
                 px='$2'
                 onPress={() => {
                   scrollToTop();
@@ -269,7 +269,7 @@ export function PostDetailsScreen() {
                   }
                 }}>
                 {mediaQuery.gtSm
-                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' transition='standard' o={0.5} f={1}>
+                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
                     {subjectPostTitle ?? (failedToLoadPost ? 'Post Not Found' : 'Loading...')}
                   </Paragraph>
                   : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>{subjectPost?.context === PostContext.REPLY ? 'Comments' : 'Post'}</Heading>}
@@ -285,7 +285,7 @@ export function PostDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
-                chromeless={interactionType !== 'discussion'}
+                transparent={interactionType !== 'discussion'}
                 px='$2'
                 onPress={() => setInteractionType('discussion')} mr='$2'>
                 <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : !chatUI ? navAnchorColor : undefined}>Discussion</Heading>
@@ -300,7 +300,7 @@ export function PostDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'chat' ? navColor : undefined)}
-                chromeless={interactionType !== 'chat'}
+                transparent={interactionType !== 'chat'}
                 px='$2'
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
@@ -314,7 +314,7 @@ export function PostDetailsScreen() {
           </Tooltip>
           <Tooltip placement="bottom-end">
             <Tooltip.Trigger>
-              <Button chromeless={!chatUI} icon={ListEnd}
+              <Button transparent={!chatUI} icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
@@ -379,19 +379,19 @@ export function PostDetailsScreen() {
                       {federatedAncestorPostIds.length > 0
                         ?
                         <Button key='show-hide-context' onPress={() => setShowContext(!showContext)} mx='auto' px='$2' py='$1'
-                          transition='slow' mt={showContext ? '$3' : undefined}
+                          animation='slow' mt={showContext ? '$3' : undefined}
                           w='100%'
                           icon={<ZStack w='$2' h='$2'>
-                            <XStack m='auto' transition='standard' o={!showContext ? 1 : 0} transform={[{ rotate: !showContext ? '0deg' : '-180deg' }]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
-                            <XStack m='auto' transition='standard' o={showContext ? 1 : 0} transform={[{ rotate: showContext ? '0deg' : '180deg' }]}><ChevronUp /></XStack>
+                            <XStack m='auto' animation='standard' o={!showContext ? 1 : 0} transform={[{ rotate: !showContext ? '0deg' : '-180deg' }]}><CircleEllipsis transform={[{ rotate: '90deg' }]} /></XStack>
+                            <XStack m='auto' animation='standard' o={showContext ? 1 : 0} transform={[{ rotate: showContext ? '0deg' : '180deg' }]}><ChevronUp /></XStack>
                           </ZStack>}
                         // backgroundColor={navColor} color={navTextColor} hoverStyle={{ backgroundColor: navColor }}
                         >
                           <ZStack w='$15' h='$2'>
-                            <XStack m='auto' transition='standard' o={!showContext ? 1 : 0}>
+                            <XStack m='auto' animation='standard' o={!showContext ? 1 : 0}>
                               <Heading size='$4'>Show Context</Heading>
                             </XStack>
-                            <XStack m='auto' transition='standard' o={showContext ? 1 : 0}>
+                            <XStack m='auto' animation='standard' o={showContext ? 1 : 0}>
                               <Heading size='$4'>Hide Context</Heading>
                             </XStack>
                           </ZStack>

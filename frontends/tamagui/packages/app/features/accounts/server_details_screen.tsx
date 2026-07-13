@@ -3,9 +3,8 @@ import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
 import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
-import { JonlineAccount, JonlineServer, RootState, accountID, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectAllAccounts, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
+import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
-import { WebUiSwitcher } from './web_ui_switcher';
 import React, { useEffect, useState } from 'react';
 import { HexColorPicker } from "react-colorful";
 import { createParam } from 'solito';
@@ -297,14 +296,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const adminPagination = usePaginatedRendering(adminList, 10);
   const paginatedAdmins = adminPagination.results;
 
-  // Signed-into accounts (there may be several) that are themselves admins of
-  // this server -- each gets its own "which web UI" panel, since ConfigureServer
-  // is authenticated per-account (see WebUiSwitcher).
-  const allAccounts = useRootSelector((state: RootState) => selectAllAccounts(state.accounts));
-  const adminAccounts: JonlineAccount[] = server
-    ? allAccounts.filter(a => serverID(a.server) === serverID(server) && hasAdminPermission(a.user))
-    : [];
-
   return (
     <TabsNavigation appSection={AppSection.INFO}
       //onlyShowServer={server}
@@ -326,10 +317,10 @@ export function BaseServerDetailsScreen(specificServer?: string) {
           <XStack f={1} />
 
           <ZStack w={48} h={48}>
-            <YStack transition='standard' o={updated ? 1 : 0} p='$3'>
+            <YStack animation='standard' o={updated ? 1 : 0} p='$3'>
               <CheckCircle color='green' />
             </YStack>
-            <YStack transition='standard' o={updating ? 1 : 0} p='$3'>
+            <YStack animation='standard' o={updating ? 1 : 0} p='$3'>
               <Spinner size='small' />
             </YStack>
           </ZStack>
@@ -347,7 +338,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
         : undefined}
     >
       <AccountOrServerContextProvider value={accountOrServer}>
-        <YStack f={1} jc="center" ai="center" gap="$true" w='100%'>
+        <YStack f={1} jc="center" ai="center" space w='100%'>
           {server ?
             <YStack mb='$2' w='100%' jc="center" ai="center" >
               <ScrollView w='100%'>
@@ -408,13 +399,13 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         <Heading my='auto' size='$3' f={1}>Service Version</Heading>
                         <Paragraph my='auto'>{serviceVersion?.version}</Paragraph>
 
-                        <XStack transition='standard' my='auto' ml='$2' rotate={showVersionInfo ? '90deg' : '0deg'}>
+                        <XStack animation='standard' my='auto' ml='$2' rotate={showVersionInfo ? '90deg' : '0deg'}>
                           <ChevronRight />
                         </XStack>
                       </XStack>
                     </Button>
                     <AnimatePresence>
-                      {showVersionInfo ? <XStack key='version-info' ml='auto' flexWrap='wrap' transition='standard' {...standardAnimation}>
+                      {showVersionInfo ? <XStack key='version-info' ml='auto' flexWrap='wrap' animation='standard' {...standardAnimation}>
                         <Button {...protocolDocsLink} target='_blank' size='$2' ml='auto' mb='$2' {...themedButtonBackground(navColor, navTextColor)}
                           iconAfter={<Binary size='$2' />}>
                           <Heading size='$1' color={navTextColor}>Protocol Docs</Heading>
@@ -554,7 +545,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     <XStack mt='$2'>
                       <Heading my='auto' size='$3' f={1}>Primary Color</Heading>
                       {isAdmin
-                        ? <Input mr='$2' my='auto' w={100} value={primaryColorHex} color={primaryColorValid ? undefined : 'red'} onChangeText={(text) => setPrimaryColorHex(text)} />
+                        ? <Input mr='$2' my='auto' w={100} value={primaryColorHex} color={primaryColorValid ? undefined : 'red'} onChange={(e) => setPrimaryColorHex(e.nativeEvent.text)} />
                         : <Paragraph mr='$2' my='auto'>{primaryColorHex}</Paragraph>}
                       <XStack my='auto' w={50} h={30} backgroundColor={primaryColorHex} />
                     </XStack>
@@ -565,7 +556,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                     <XStack mt='$2'>
                       <Heading my='auto' size='$3' f={1}>Navigation Color</Heading>
                       {isAdmin
-                        ? <Input mr='$2' my='auto' w={100} value={navColorHex} color={navColorValid ? undefined : 'red'} onChangeText={(text) => setNavColorHex(text)} />
+                        ? <Input mr='$2' my='auto' w={100} value={navColorHex} color={navColorValid ? undefined : 'red'} onChange={(e) => setNavColorHex(e.nativeEvent.text)} />
                         : <Paragraph mr='$2' my='auto' >{navColorHex}</Paragraph>}
                       <XStack my='auto' w={50} h={30} backgroundColor={navColorHex} />
                     </XStack>
@@ -592,20 +583,6 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         {...basicPermissionsEditorProps} />}
                     </YStack>
 
-                    {adminAccounts.length > 0
-                      ? <>
-                        <Heading size='$4' mt='$4'>Web User Interface</Heading>
-                        <Paragraph size='$1' mb='$2'>
-                          Chooses which frontend this server serves at its root URL. Set once per
-                          admin account below, since it's applied using that account's credentials.
-                        </Paragraph>
-                        <YStack gap='$2'>
-                          {adminAccounts.map(adminAccount =>
-                            <WebUiSwitcher key={accountID(adminAccount)}
-                              account={adminAccount} serverConfiguration={serverConfiguration} />)}
-                        </YStack>
-                      </>
-                      : undefined}
                   </>
                     : undefined}
 
@@ -631,7 +608,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         <div key={`server-${server.host}`}>
                           <XStack ml='$3' mb='$2' w='100%' gap='$2' ai='center'>
                             <Text my='auto' fontFamily='$body' fontSize='$3' mr='$2'>{`${index + 1}.`}</Text>
-                            <Card shadowColor="$shadowColor" shadowRadius={6} shadowOffset={{ height: 3, width: 0 }} borderWidth={1} borderColor="$borderColor" f={1} px='$3'>
+                            <Card elevate bordered f={1} px='$3'>
                               <YStack key={`recommendedServer-${server.host}`} w='100%' my='$2' alignContent='center' ai='center'>
 
                                 <XStack mb='$2' w='100%' gap='$2' ai='center'>
@@ -677,7 +654,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                       checked={server.configuredByDefault} value={server.configuredByDefault?.toString()}
                                       disabled={!isAdmin}
                                       onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, configuredByDefault: checked, pinnedByDefault: checked && s.pinnedByDefault } : s))}>
-                                      <Switch.Thumb transition='standard' backgroundColor='$background' />
+                                      <Switch.Thumb animation='standard' backgroundColor='$background' />
                                     </Switch>
                                     <Label pr="$0" miw={90} jc="flex-end" size='$2'
                                       o={server.configuredByDefault ? 1 : 0.5}
@@ -691,7 +668,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                                       checked={server.pinnedByDefault} value={server.pinnedByDefault?.toString()}
                                       disabled={!isAdmin}
                                       onCheckedChange={(checked) => setFederatedServers(federatedServers.map((s, i) => i === index ? { ...s, pinnedByDefault: checked, configuredByDefault: checked || s.configuredByDefault } : s))}>
-                                      <Switch.Thumb transition='standard' backgroundColor='$background' />
+                                      <Switch.Thumb animation='standard' backgroundColor='$background' />
                                     </Switch>
                                     <Label pr="$0" miw={90} jc="flex-end" size='$2' o={server.pinnedByDefault ? 1 : 0.5}
                                       htmlFor={`${server.host}-pin-by-default`}>
@@ -760,7 +737,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                         onCheckedChange={(checked) => setExternalCdnConfig(
                           checked ? ExternalCDNConfig.fromPartial({ backendHost: '', frontendHost: '' }) : undefined
                         )}>
-                        <Switch.Thumb transition='standard' backgroundColor='$background' />
+                        <Switch.Thumb animation='standard' backgroundColor='$background' />
                       </Switch>
                     </XStack>
                     {isAdmin || externalCdnConfig
@@ -769,7 +746,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                           opacity={externalCdnConfig ? 1 : 0.5}>Frontend Host</Heading>
                         <Paragraph size='$1'></Paragraph>
                         {isAdmin
-                          ? <Input disabled={externalCdnConfig == undefined}
+                          ? <Input editable={externalCdnConfig != undefined}
                             opacity={externalCdnConfig && externalCdnConfig.frontendHost.length > 0 ? 1 : 0.5}
                             value={externalCdnConfig?.frontendHost ?? ''}
                             placeholder='e.g.: jonline.io'
@@ -781,7 +758,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                           opacity={externalCdnConfig ? 1 : 0.5}>Backend Host</Heading>
                         <Paragraph size='$1'></Paragraph>
                         {isAdmin
-                          ? <Input disabled={externalCdnConfig == undefined}
+                          ? <Input editable={externalCdnConfig != undefined}
                             opacity={externalCdnConfig && externalCdnConfig.backendHost.length > 0 ? 1 : 0.5}
                             value={externalCdnConfig?.backendHost ?? ''}
                             placeholder='e.g.: jonline.io.itsj.online'
@@ -809,7 +786,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                             ? { ...externalCdnConfig, cdnGrpc: checked }
                             : undefined
                         )}>
-                        <Switch.Thumb transition='standard' backgroundColor='$background' />
+                        <Switch.Thumb animation='standard' backgroundColor='$background' />
                       </Switch>
                     </XStack>
                   </>

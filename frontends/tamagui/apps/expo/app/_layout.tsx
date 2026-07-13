@@ -15,7 +15,7 @@ export default function HomeLayout() {
     return null
   }
   return (
-    <Provider defaultTheme={scheme === 'dark' ? 'dark' : 'light'}>
+    <Provider>
       <ThemeProvider value={scheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack />
       </ThemeProvider>

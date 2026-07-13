@@ -32,14 +32,11 @@
     "react-dom": "19.0.0",
     "react-refresh": "^0.14.0",
     "react-native-svg": "15.11.2",
-    "react-native-web": "^0.20.0",
-    "@tamagui/core": "^2.4.5",
-    "@tamagui/helpers-icon": "^2.4.5",
-    "@tamagui/web": "patch:@tamagui/web@npm%3A2.4.5#~/.yarn/patches/@tamagui-web-npm-2.4.5-c231c3586c.patch"
+    "react-native-web": "^0.20.0"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",
-    "@tamagui/cli": "^2.4.5",
+    "@tamagui/cli": "^1.132.7",
     "check-dependency-version-consistency": "^4.1.0",
     "eslint": "^9.3.0",
     "husky": "^9.1.6",

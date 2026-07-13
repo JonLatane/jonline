@@ -38,7 +38,7 @@ export function AboutJonlineScreen() {
   return (
     <TabsNavigation appSection={AppSection.INFO}>
       {/* <ZStack f={1} w='100%' jc="center" ai="center" p="$0"> */}
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} gap="$true">
+      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' maw={800} space>
         <YStack gap="$4" maw={600}>
 
           <H2 ta="center">About Jonline</H2>

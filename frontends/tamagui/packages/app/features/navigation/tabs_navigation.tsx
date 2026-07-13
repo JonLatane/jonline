@@ -1,4 +1,4 @@
-import { AnimatePresence, Button, InverseTheme, Paragraph, ScrollView, Spinner, ToastViewport, XStack, YStack, standardHorizontalAnimation, useDebounceValue, useMedia, useWindowDimensions } from "@jonline/ui";
+import { AnimatePresence, Button, Paragraph, ScrollView, Spinner, Theme, ToastViewport, XStack, YStack, standardHorizontalAnimation, useDebounceValue, useMedia, useWindowDimensions } from "@jonline/ui";
 import { ChevronLeft, ChevronRight, Home as HomeIcon, PanelTopClose, PanelTopOpen } from '@tamagui/lucide-icons';
 import { GroupContextProvider, MediaContextProvider, useNewMediaContext } from 'app/contexts';
 import { AccountsSheetContextProvider, useNewAccountsSheetContext } from "app/contexts/accounts_sheet_context";
@@ -190,7 +190,7 @@ export function TabsNavigation({
 
   const showSpinners = loading || configuringFederation;
 
-  return <InverseTheme active={inverse}// key={`tabs-${appSection}-${appSubsection}`}
+  return <Theme inverse={inverse}// key={`tabs-${appSection}-${appSubsection}`}
   >
     <ToastViewport zi={1000000} multipleToasts left={0} right={0} bottom={11} />
     <AccountsSheetContextProvider value={accountsSheetContext}>
@@ -222,13 +222,13 @@ export function TabsNavigation({
                           <YStack my='auto' maw={shrinkHomeButton ? '$6' : undefined} >
                             <AccountsSheetButton size='$4' //onlyShowServer={onlyShowServer}
                               selectedGroup={selectedGroup} primaryEntity={primaryEntity} />
-                            <XStack position='absolute' zi={10000} transition='standard' o={showSpinners ? 1 : 0}
+                            <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
                               pointerEvents="none"
                               ml={(measuredHomeButtonWidth - 30) / 2}
                               mt={(measuredHomeButtonHeight - 10) / 2}>
                               <Spinner size='large' color={primaryColor} scale={1.4} />
                             </XStack>
-                            <XStack position='absolute' zi={10000} transition='standard' o={showSpinners ? 1 : 0}
+                            <XStack position='absolute' zi={10000} animation='standard' o={showSpinners ? 1 : 0}
                               pointerEvents="none"
                               ml={(measuredHomeButtonWidth - 30) / 2}
                               mt={(measuredHomeButtonHeight - 10) / 2}>
@@ -268,7 +268,7 @@ export function TabsNavigation({
                           </YStack>
                           <AnimatePresence>
                             {showAccountSheetGuide
-                              ? <YStack transition='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
+                              ? <YStack animation='standard' {...standardHorizontalAnimation} mr='$2' zi={9998}>
                                 <XStack>
                                   <XStack mt='$1' pt='$1' key='chevron'>
                                     <ChevronLeft color={primaryTextColor} size='$1' />
@@ -317,10 +317,10 @@ export function TabsNavigation({
                             <XStack f={1} />
                             {!withServerPinning &&
                               (alwaysShowHideButton || hideNavigation || (mediaQuery.gtXs && mediaQuery.short))
-                              ? <Button key='hide-nav-button' py='$1' px='$2' h='$3' chromeless
-                                // transition='standard' {...reverseHorizontalAnimation}
+                              ? <Button key='hide-nav-button' py='$1' px='$2' h='$3' transparent
+                                // animation='standard' {...reverseHorizontalAnimation}
                                 onPress={() => dispatch(setHideNavigation(!hideNavigation))}>
-                                <XStack position='absolute' transition='standard'
+                                <XStack position='absolute' animation='standard'
                                   key='open-icon'
                                   o={hideNavigation ? 1 : 0}
                                   transform={[{ translateY: hideNavigation ? 0 : 10 }]}
@@ -328,7 +328,7 @@ export function TabsNavigation({
                                 >
                                   <PanelTopOpen size='$1' color={primaryTextColor} />
                                 </XStack>
-                                <XStack position='absolute' transition='standard'
+                                <XStack position='absolute' animation='standard'
                                   key='close-icon'
                                   o={hideNavigation ? 0 : 1}
                                   transform={[{ translateY: !hideNavigation ? 0 : -50 }]}
@@ -365,7 +365,7 @@ export function TabsNavigation({
                     </div>
 
                     <XStack zi={1000} style={{ pointerEvents: 'none', position: 'fixed' }}
-                      transition='standard' o={showSpinners && hideNavigation ? 1 : 0}
+                      animation='standard' o={showSpinners && hideNavigation ? 1 : 0}
                       top={dimensions.height / 2 - 50}>
                       <XStack position='absolute' key='primary-spinner'
                         transform={[{ translateX: -17 }]}>
@@ -424,6 +424,6 @@ export function TabsNavigation({
         </SettingsSheetContextProvider>
       </AuthSheetContextProvider>
     </AccountsSheetContextProvider>
-  </InverseTheme>
+  </Theme>
     ;
 }

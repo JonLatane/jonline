@@ -133,8 +133,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
 
           <AnimatePresence>
             {uploading || !viewerMedia
-              ? <XStack w='100%' ai='center' px='$3' transition='standard' {...standardAnimation}>
-                <Button chromeless circular icon={Info} disabled
+              ? <XStack w='100%' ai='center' px='$3' animation='standard' {...standardAnimation}>
+                <Button transparent circular icon={Info} disabled
                   // onPress={() => setShowInfo(!showInfo)}
                   {...highlightedButtonBackground(serverTheme, 'nav', showInfo)}
                   o={0}
@@ -156,7 +156,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                   }
                 </XStack>
                 {/* <XStack f={1} /> */}
-                <Button chromeless circular icon={Info}
+                <Button transparent circular icon={Info}
                   onPress={() => setShowInfo(!showInfo)}
                   {...highlightedButtonBackground(serverTheme, 'nav', showInfo)}
                 />
@@ -165,8 +165,8 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
           </AnimatePresence>
 
           {/* </XStack> */}
-          <Sheet.ScrollView p="$4" gap="$true">
-            <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' gap="$true">
+          <Sheet.ScrollView p="$4" space>
+            <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$3' mt='$3' space>
 
               {allMedia && allMedia.length == 0
                 ? loadingMedia
@@ -215,7 +215,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                 mih='160px'
                                 mah={mediaQuery.gtXs ? '300px' : '260px'} mx='$1' my='$1'
                                 borderColor={selected ? primaryColor : navColor} borderWidth={selected ? 2 : 1} borderRadius={5}
-                                transition='standard'
+                                animation='standard'
                                 pressStyle={{ scale: 0.95 }}
                                 backgroundColor={selected ? navColor : undefined}
                                 onPress={onSelect}>
@@ -279,7 +279,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
                                     <Popover.Content
                                       zIndex={10000000000}
                                       // sideOffset={5}
-                                      transition='standard'
+                                      animation='standard'
                                       {...overlayAnimation}
                                     >
                                       <Popover.Arrow />
@@ -308,7 +308,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
       <AlertDialog open={!!deletingMediaId} onOpenChange={(o) => o ? undefined : setDeletingMediaId(undefined)}>
         {/* <AlertDialog.Overlay
           key="overlay"
-          transition='standard'
+          animation='standard'
         // {...overlayAnimatio}
         /> */}
         {/* {!!deletingMediaId ? <AlertDialog.Overlay /> : undefined} */}
@@ -318,7 +318,7 @@ export const MediaSheet: React.FC<MediaSheetProps> = ({ }) => {
             elevate
             key="content"
             maw={window.innerWidth - 20}
-            transition={[
+            animation={[
               'standard',
               {
                 opacity: {

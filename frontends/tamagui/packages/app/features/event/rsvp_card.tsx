@@ -47,8 +47,8 @@ export const RsvpCard: React.FC<Props> = ({
   }
 
   // console.log('attendance.userAttendee', attendance.userAttendee);
-  return <Card shadowColor="$shadowColor" shadowRadius={6} shadowOffset={{ height: 3, width: 0 }} size="$4" borderWidth={1} borderColor="$borderColor"
-    transition='standard'
+  return <Card elevate size="$4" bordered
+    animation='standard'
     {...standardAnimation}
     key={`attendance-card-${attendance.id}`}
     margin='$0'
@@ -83,7 +83,7 @@ export const RsvpCard: React.FC<Props> = ({
           {/* : undefined} */}
         </YStack>
         {onPressEdit
-          ? <Button circular chromeless icon={Edit} onClick={onPressEdit} />
+          ? <Button circular transparent icon={Edit} onClick={onPressEdit} />
           : undefined}
       </XStack>
     </Card.Header>

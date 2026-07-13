@@ -203,10 +203,10 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
         <Input placeholder='Search'
           f={1}
           value={searchText}
-          onChangeText={(text) => setSearchText(text)} />
+          onChange={(e) => setSearchText(e.nativeEvent.text)} />
         <XStack position='absolute' right={55}
           pointerEvents="none"
-          transition='standard'
+          animation='standard'
           o={searchText !== debouncedSearchText ? 1 : 0}
         >
           <Spinner />
@@ -216,7 +216,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     </YStack>;
   const endsAfterFilterBar =
     <XStack key='endsAfterFilter' pb={oneLineFilterBar ? undefined : '$2'}  {...filterBarFlex} flexWrap={oneLineFilterBar ? undefined : 'wrap'} maw={800} px='$2' mx='auto' ai='center'
-      transition='standard' {...standardAnimation}>
+      animation='standard' {...standardAnimation}>
       <Heading size='$3' mb='$3' my='auto'>Ends After</Heading>
       <XStack ml='auto' my='auto'>
         <DateTimePicker value={endsAfter} onChange={(v) => setQueryEndsAfter(v)} />
@@ -237,14 +237,14 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
     <XStack w='100%' ai='center'>
       <Button onPress={() => setBigCalendar(!bigCalendar)} px={topChromePadding}
         icon={CalendarIcon}
-        chromeless
+        transparent
         {...themedButtonBackground(
           bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} />
 
       {displayModeButton('upcoming', 'Upcoming')}
       {displayModeButton('all', 'All')}
       {displayModeButton('filtered', 'Filtered')}
-      {/* <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} chromeless px={topChromePadding} /> */}
+      {/* <Button target='_blank' {...calendarSubcriptionLink} icon={CalendarArrowDown} transparent px={topChromePadding} /> */}
       <EventCalendarExporter tiny showSubscriptions={{ servers: selectedServers }} />
 
       <DynamicCreateButton showEvents
@@ -252,7 +252,7 @@ export const BaseEventsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: H
           <Button onPress={onPress}
             px={topChromePadding}
             icon={CalendarPlus}
-            chromeless
+            transparent
             {...themedButtonBackground(undefined, primaryAnchorColor)} />} />
     </XStack>
     <AnimatePresence>

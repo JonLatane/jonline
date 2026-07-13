@@ -27,13 +27,13 @@ export function DarkModeToggle({ }) {
   return <Button size='$3' circular p={0}
     onPress={toggleDarkMode}>
     <ZStack w='$3' h='$3'>
-      <Paragraph size='$1' mx='auto' my='auto' o={darkModeAuto ? 1 : 0} transition='standard' transform={[{ translateX: 10 }, { translateY: 10 }]}>
+      <Paragraph size='$1' mx='auto' my='auto' o={darkModeAuto ? 1 : 0} animation='standard' transform={[{ translateX: 10 }, { translateY: 10 }]}>
         Auto
       </Paragraph>
-      <XStack mx='auto' my='auto' o={isInDarkMode ? darkModeAuto ? 0.5 : 1 : 0} transition='standard'>
+      <XStack mx='auto' my='auto' o={isInDarkMode ? darkModeAuto ? 0.5 : 1 : 0} animation='standard'>
         <Moon size='$1' />
       </XStack>
-      <XStack mx='auto' my='auto' o={isInDarkMode ? 0 : darkModeAuto ? 0.5 : 1} transition='standard'>
+      <XStack mx='auto' my='auto' o={isInDarkMode ? 0 : darkModeAuto ? 0.5 : 1} animation='standard'>
         <Sun size='$1' />
       </XStack>
     </ZStack>

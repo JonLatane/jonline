@@ -73,12 +73,12 @@ export function VisibilityPicker({
         <Heading size='$1' mr='$2' opacity={0.5}>Visibility:</Heading>
         <Heading size='$2' opacity={0.5}>{visibilityName(visibility)}</Heading>
       </XStack>
-      : <Select id={id ?? name} name={name} zIndex={20000000} onValueChange={onValueSelected}  {...{ disabled }} value={visibility.toString()}>
+      : <Select id={id ?? name} name={name} onValueChange={onValueSelected}  {...{ disabled }} value={visibility.toString()}>
         <Select.Trigger f={1} opacity={disabled ? 0.5 : 1} iconAfter={ChevronDown} {...{ disabled }}>
           <Select.Value placeholder="Choose Visibility" />
         </Select.Trigger>
 
-        <Select.Content>
+        <Select.Content zIndex={20000000}>
 
           <Select.Viewport minWidth={200}>
             <Select.Group gap="$0" w='100%'>

@@ -44,19 +44,19 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
   const showOtherProfilesButton = profiles.length > 0 || isCurrentUser;
   return <YStack w='100%'>
     {showOtherProfilesButton ?
-      <Button h='auto' w='100%' chromeless px='$2' onPress={() => setShowOtherProfiles(!showOtherProfiles)}>
+      <Button h='auto' w='100%' transparent px='$2' onPress={() => setShowOtherProfiles(!showOtherProfiles)}>
         <XStack mr='auto' maw='100%' ai='center'>
           <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
             {user.realName || user.username} has {profiles.length} other {profiles.length === 1 ? 'profile' : 'profiles'}
           </Paragraph>
-          <XStack my='auto' transition='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
+          <XStack my='auto' animation='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
             <ChevronRight size='$1' />
           </XStack>
         </XStack>
       </Button> : undefined}
     <AnimatePresence>
       {showOtherProfiles
-        ? <XStack w='100%' transition='standard' {...standardAnimation}>
+        ? <XStack w='100%' animation='standard' {...standardAnimation}>
           <ScrollView horizontal w='100%'>
             <AutoAnimatedList direction='horizontal'>
               {[

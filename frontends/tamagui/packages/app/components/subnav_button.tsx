@@ -9,7 +9,7 @@ export type SubnavButtonProps = {
 }
 export const SubnavButton: React.FC<SubnavButtonProps> = ({ title, icon, selected, select }) => {
   const { navAnchorColor } = useServerTheme();
-  return <Button f={1} h={56} chromeless
+  return <Button f={1} h={56} transparent
     onPress={select}
   >
     <YStack alignItems='center'>

@@ -168,13 +168,13 @@ export function EventDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'post' ? navColor : undefined)}
-                chromeless={interactionType !== 'post'} mr='$2'
+                transparent={interactionType !== 'post'} mr='$2'
                 onPress={() => {
                   setInteractionType('post');
                   scrollToTop();
                 }}>
                 {mediaQuery.gtSm
-                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' transition='standard' o={0.5} f={1}>
+                  ? <Paragraph size='$1' color={interactionType == 'post' ? navTextColor : undefined} fontWeight='bold' my='auto' animation='standard' o={0.5} f={1}>
                     {subjectPost?.title ?? (failedToLoadEvent ? 'Event Not Found' : 'Loading...')}
                   </Paragraph>
                   : <Heading size='$4' color={interactionType == 'post' ? navTextColor : undefined}>Event</Heading>}
@@ -190,7 +190,7 @@ export function EventDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'discussion' ? navColor : undefined)}
-                chromeless={interactionType !== 'discussion'}
+                transparent={interactionType !== 'discussion'}
                 onPress={() => setInteractionType('discussion')} mr='$2'>
                 <Heading size='$4' color={interactionType == 'discussion' ? navTextColor : !chatUI ? navAnchorColor : undefined}>Discussion</Heading>
               </Button>
@@ -204,7 +204,7 @@ export function EventDetailsScreen() {
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button {...themedButtonBackground(interactionType === 'chat' ? navColor : undefined)}
-                chromeless={interactionType !== 'chat'}
+                transparent={interactionType !== 'chat'}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={() => setInteractionType('chat')}>
                 <Heading size='$4' color={interactionType == 'chat' ? navTextColor : chatUI ? navAnchorColor : undefined}>Chat</Heading>
@@ -217,7 +217,7 @@ export function EventDetailsScreen() {
           </Tooltip>
           <Tooltip placement="bottom-end">
             <Tooltip.Trigger>
-              <Button chromeless={!chatUI} icon={ListEnd}
+              <Button transparent={!chatUI} icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI ? 0.5 : 1}
                 onPress={() => {
@@ -263,7 +263,7 @@ export function EventDetailsScreen() {
                 <AnimatePresence>
                   {interactionType === 'post'
                     ? <XStack w='100%' px={mediaQuery.gtXxs ? '$3' : 0}
-                      transition='standard' {...standardHorizontalAnimation}>
+                      animation='standard' {...standardHorizontalAnimation}>
                       <EventCard key={`event-card-loaded`}
                         event={subjectEvent}
                         onEditingChange={editHandler(subjectPost!.id)}

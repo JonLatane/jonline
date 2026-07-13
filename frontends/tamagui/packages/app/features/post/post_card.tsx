@@ -1,9 +1,9 @@
 import { FederatedPost, deletePost, federateId, loadPostReplies, selectPostById, updatePost, useServerTheme } from "app/store";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { GestureResponderEvent } from "react-native";
+import { GestureResponderEvent, View } from "react-native";
 
 import { Post, PostContext, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, InverseTheme, Paragraph, Text, TamaguiElement, TamaguiMediaState, TextArea, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController, useDebounceValue } from '@jonline/ui';
+import { Anchor, AnimatePresence, Button, Card, Dialog, Heading, Image, Paragraph, Text, TamaguiMediaState, TextArea, Theme, XStack, YStack, reverseStandardAnimation, standardAnimation, useMedia, useToastController, useDebounceValue } from '@jonline/ui';
 import { ChevronRight, Delete, Edit3 as Edit, Eye, Link, Link2, Reply, Save, X as XIcon } from "@tamagui/lucide-icons";
 import { FadeInView, TamaguiMarkdown } from "app/components";
 import { FacebookEmbed, InstagramEmbed, LinkedInEmbed, PinterestEmbed, TikTokEmbed, TwitterEmbed, YouTubeEmbed } from 'react-social-media-embed';
@@ -148,7 +148,7 @@ export const PostCard: React.FC<PostCardProps> = ({
     });
   }, [accountOrServer, post, dispatch]);
 
-  const ref = React.useRef(undefined as never) as React.MutableRefObject<TamaguiElement>;
+  const ref = React.useRef(undefined as never) as React.MutableRefObject<HTMLElement | View>;
   const isVisible = useIsVisible(ref);
 
   const postHasWebLink = useMemo(() => !!post.link && post.link.startsWith('http'), [post.link]);
@@ -281,7 +281,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         ? <TextArea f={1} pt='$2' value={editedContent}
           disabled={savingEdits} opacity={savingEdits || editedContent == '' ? 0.5 : 1}
           h={(editedContent?.length ?? 0) > 300 ? window.innerHeight - 100 : undefined}
-          onChangeText={t => setEditedContent(t)}
+          onChangeText={setEditedContent}
           placeholder={`Text content (optional). Markdown is supported.`} />
         : content && content != ''
           ? <TamaguiMarkdown text={content} disableLinks={isPreview} />
@@ -292,14 +292,14 @@ export const PostCard: React.FC<PostCardProps> = ({
   const title = post.title && post.title != '' ? post.title : `Untitled Post ${post.id}`;
   const deleteDialog = <Dialog>
     <Dialog.Trigger asChild>
-      <Button my='auto' size='$2' icon={Delete} disabled={deleting} chromeless>
+      <Button my='auto' size='$2' icon={Delete} disabled={deleting} transparent>
         Delete
       </Button>
     </Dialog.Trigger>
     <Dialog.Portal zi={100000000011}>
       <Dialog.Overlay
         key="overlay"
-        transition='standard'
+        animation='standard'
         o={0.5}
         enterStyle={{ o: 0 }}
         exitStyle={{ o: 0 }}
@@ -308,7 +308,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         bordered
         elevate
         key="content"
-        transition={[
+        animation={[
           'standard',
           {
             opacity: {
@@ -324,7 +324,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         opacity={1}
         y={0}
       >
-        <YStack gap="$true">
+        <YStack space>
           <Dialog.Title>Delete {post.replyToPostId ? 'Reply' : 'Post'}</Dialog.Title>
           <Dialog.Description>
             Really delete {post.replyToPostId ? 'reply' : 'post'}?
@@ -335,9 +335,9 @@ export const PostCard: React.FC<PostCardProps> = ({
             <Dialog.Close asChild>
               <Button>Cancel</Button>
             </Dialog.Close>
-            <InverseTheme>
+            <Theme inverse>
               <Button onPress={doDeletePost}>Delete</Button>
-            </InverseTheme>
+            </Theme>
           </XStack>
         </YStack>
       </Dialog.Content>
@@ -358,12 +358,12 @@ export const PostCard: React.FC<PostCardProps> = ({
       <YStack w='100%' ref={ref!}>
         <AnimatePresence>
           {previewParent && post.replyToPostId
-            ? <XStack w='100%' transition='standard' {...standardAnimation}>
+            ? <XStack w='100%' animation='standard' {...standardAnimation}>
               {mediaQuery.gtXs ? <Heading size='$5' ml='$3' mr='$0' marginVertical='auto' ta='center'>RE</Heading> : undefined}
               <XStack marginVertical='auto' marginHorizontal='$1'><ChevronRight /></XStack>
 
               <AnimatePresence>
-                <Card f={1} theme="dark" size="$1" id={componentKey}
+                <Card f={1} theme="dark" size="$1" bordered={false} id={componentKey}
                   margin='$0'
                   backgroundColor={selectedPostId == previewParent.id ? '$backgroundFocus' : undefined}
                   // marginBottom={replyPostIdPath ? '$0' : '$3'}
@@ -373,7 +373,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   py='$1'
                   mb='$1'
                   // f={isPreview ? undefined : 1}
-                  transition='standard' {...reverseStandardAnimation}
+                  animation='standard' {...reverseStandardAnimation}
                   scale={0.92}
                   opacity={1}
                   y={0}
@@ -400,17 +400,17 @@ export const PostCard: React.FC<PostCardProps> = ({
         </AnimatePresence>
         {/* <Theme inverse={selectedPostId == post.id}> */}
         <Card size="$4"
-          borderWidth={!post.replyToPostId ? 1 : 0}
+          bordered={!post.replyToPostId}
           // theme="dark"
 
-          borderColor={showServerInfo && !post.replyToPostId ? primaryColor : '$borderColor'}
+          borderColor={showServerInfo && !post.replyToPostId ? primaryColor : undefined}
           margin='$1'
           backgroundColor={selectedPostId == post.id ? '$backgroundFocus' : undefined}
           marginBottom={replyPostIdPath ? '$0' : '$3'}
           marginTop={replyPostIdPath ? '$0' : '$3'}
           // marginRight={-10}
           f={isPreview ? undefined : 1}
-          transition='standard'
+          animation='standard'
           // pressStyle={isPreview ? { scale: 0.990 } : {}}
           scale={1}
           opacity={1}
@@ -463,7 +463,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <YStack f={1}>
                     {isReply ? <XStack mt='$1' pt='$1'><AuthorInfo {...{ post }} nameOnly /></XStack> : undefined}
                     <AnimatePresence>
-                      {shrinkPreviews ? undefined : <YStack key='content' transition='standard' {...reverseStandardAnimation}>
+                      {shrinkPreviews ? undefined : <YStack key='content' animation='standard' {...reverseStandardAnimation}>
                         <YStack mah={isPreview ? window.innerHeight - 50 : undefined} overflow='hidden'>
                           {editing && !previewingEdits
                             ? <PostMediaManager
@@ -493,7 +493,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </XStack>
                 <AnimatePresence>
                   {shrinkPreviews ? undefined
-                    : <YStack transition='standard' {...standardAnimation}>
+                    : <YStack animation='standard' {...standardAnimation}>
                       <XStack key='edit-buttons' px='$3' flexWrap="wrap" ai='center'
                         // py={!showEdit && !isAuthor ? 0 : '$2'}
                         flexDirection="row-reverse"
@@ -528,23 +528,23 @@ export const PostCard: React.FC<PostCardProps> = ({
                           {showEdit
                             ? editing
                               ? <>
-                                <Button my='auto' key='save' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} chromeless>
+                                <Button my='auto' key='save' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} disabled={savingEdits} transparent>
                                   Save
                                 </Button>
-                                <Button my='auto' key='cancel' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} chromeless>
+                                <Button my='auto' key='cancel' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
                                   Cancel
                                 </Button>
                                 {previewingEdits
-                                  ? <Button my='auto' key='preview-edit' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} chromeless>
+                                  ? <Button my='auto' key='preview-edit' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
                                     Edit
                                   </Button>
                                   :
-                                  <Button my='auto' key='preview' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} chromeless>
+                                  <Button my='auto' key='preview' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
                                     Preview
                                   </Button>}
                               </>
                               : <>
-                                <Button my='auto' key='edit' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} chromeless>
+                                <Button my='auto' key='edit' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
                                   Edit
                                 </Button>
 
@@ -572,7 +572,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                     : undefined}
                   <Anchor textDecorationLine='none' {...conditionalDetailsLink}>
                     <YStack h='100%' mr='$1'>
-                      <Button opacity={isPreview ? 1 : 0.9} chromeless={isPreview || !post?.replyToPostId || post.replyCount == 0}
+                      <Button opacity={isPreview ? 1 : 0.9} transparent={isPreview || !post?.replyToPostId || post.replyCount == 0}
                         borderColor={isPreview || cannotToggleReplies ? 'transparent' : undefined}
                         disabled={cannotToggleReplies || loadingReplies}
                         marginVertical='auto'
@@ -592,7 +592,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                             </Paragraph>}
                           </YStack>
                           {!cannotToggleReplies ? <XStack marginVertical='auto'
-                            transition='standard'
+                            animation='standard'
                             rotate={collapsed ? '0deg' : '90deg'}
                           >
                             <ChevronRight opacity={loadingReplies ? 0.5 : 1} />

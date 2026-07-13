@@ -355,17 +355,17 @@ export function UsernameDetailsScreen() {
             </Tooltip>
 
             <XStack f={1} />
-            {/* <YStack transition='standard' o={dirtyData ? 1 : 0} p='$3'>
+            {/* <YStack animation='standard' o={dirtyData ? 1 : 0} p='$3'>
           <AlertTriangle color='yellow' />
         </YStack> */}
             <ZStack w={48} h={48}>
-              <YStack transition='standard' o={successSaving ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={successSaving ? 1 : 0} p='$3'>
                 <CheckCircle color='green' />
               </YStack>
-              <YStack transition='standard' o={dirtyData ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={dirtyData ? 1 : 0} p='$3'>
                 <AlertTriangle color='yellow' />
               </YStack>
-              <YStack transition='standard' o={saving ? 1 : 0} p='$3'>
+              <YStack animation='standard' o={saving ? 1 : 0} p='$3'>
                 <Spinner size='small' />
               </YStack>
             </ZStack>
@@ -409,13 +409,13 @@ export function UsernameDetailsScreen() {
               <AccountOrServerContextProvider value={accountOrServer}>
                 <YStack als='center' w='100%' paddingHorizontal='$2' gap='$2'>
                   {editMode ?
-                    <TextArea key='bio-edit' transition='standard' {...standardHorizontalAnimation}
+                    <TextArea key='bio-edit' animation='standard' {...standardHorizontalAnimation}
                       value={bio} onChangeText={t => setBio(t)}
                       // size='$5'
                       h='$14'
                       placeholder={`Edit ${isCurrentUser ? 'your' : `${username}'s`} user bio. Markdown is supported.`}
                     />
-                    : <YStack key='bio-markdown' transition='standard' {...reverseHorizontalAnimation}>
+                    : <YStack key='bio-markdown' animation='standard' {...reverseHorizontalAnimation}>
                       <TamaguiMarkdown text={bio!} />
                     </YStack>}
                 </YStack>
@@ -432,18 +432,18 @@ export function UsernameDetailsScreen() {
                         <Heading size='$1' lh='$1'>Upcoming</Heading>
                         <Heading size='$3' lh='$1'>Events</Heading>
                       </YStack>
-                      <XStack transition='standard' rotate={showEvents ? '90deg' : '0deg'}>
+                      <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
                         <ChevronRight />
                       </XStack>
                     </Button>
 
-                    <XStack transition='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+                    <XStack animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
                       <Button onPress={() => setBigCalendar(!bigCalendar)}
                         icon={CalendarIcon}
-                        chromeless
+                        transparent
                         {...themedButtonBackground(
                           bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-                        // transition='standard'
+                        // animation='standard'
                         disabled={!showEvents || allEvents.length === 0}
                       // o={!showEvents || allEvents.length === 0
                       // ? 0 : 1}
@@ -559,14 +559,14 @@ export function UsernameDetailsScreen() {
 
 
             <div key='visibility-permissions-toggle' style={{ width: '100%', maxWidth: 800, alignSelf: 'center' }}>
-              <Button mx='auto' onPress={() => setShowUserSettings(!showUserSettings)} chromeless>
+              <Button mx='auto' onPress={() => setShowUserSettings(!showUserSettings)} transparent>
                 <XStack ac='center' jc='center' ai='center' maw='100%'>
                   <Heading size='$4' ta='center' f={1}>
                     {isAdmin || isCurrentUser
                       ? 'Settings, Permissions & Moderation'
                       : 'Permissions & Moderation'}
                   </Heading>
-                  <XStack transition='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
+                  <XStack animation='standard' rotate={showUserSettings ? '90deg' : '0deg'}>
                     <ChevronRight />
                   </XStack>
                 </XStack>
@@ -644,7 +644,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
       });
   }
 
-  return <YStack transition='standard' key='user-visibility-permissions'
+  return <YStack animation='standard' key='user-visibility-permissions'
     p='$3'
     ac='center'
     jc='center'
@@ -698,7 +698,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
         value={pending(defaultFollowModeration).toString()}
         disabled={disableInputs}
         onCheckedChange={(v) => setDefaultFollowModeration(v ? Moderation.PENDING : Moderation.UNMODERATED)}>
-        <Switch.Thumb transition='standard' backgroundColor='$background' />
+        <Switch.Thumb animation='standard' backgroundColor='$background' />
       </Switch>
     </XStack>
     <XStack h='$1' />
@@ -715,7 +715,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
           <Dialog.Portal zi={1000011}>
             <Dialog.Overlay
               key="overlay"
-              transition='standard'
+              animation='standard'
               o={0.5}
               enterStyle={{ o: 0 }}
               exitStyle={{ o: 0 }}
@@ -724,7 +724,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               bordered
               elevate
               key="content"
-              transition={[
+              animation={[
                 'standard',
                 {
                   opacity: {
@@ -740,7 +740,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               opacity={1}
               y={0}
             >
-              <YStack gap='$2'>
+              <YStack space>
                 <Dialog.Title>Reset Password</Dialog.Title>
                 <Dialog.Description>
                   <YStack gap='$2'>
@@ -748,7 +748,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     <XStack gap='$2'>
                       <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Updated password (min 8 characters)`}
                         value={resetUserPassword}
-                        onChangeText={(text) => { setResetUserPassword(text) }} />
+                        onChange={(data) => { setResetUserPassword(data.nativeEvent.text) }} />
                       <Button circular icon={showPasswordPlaintext ? SquareAsterisk : Eye}
                         onPress={() => setShowPasswordPlaintext(!showPasswordPlaintext)} />
                       {/* <Text fontFamily='$body'>weeks</Text> */}
@@ -758,14 +758,14 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                     <XStack>
                       <Input f={1} textContentType='password' secureTextEntry={!showPasswordPlaintext} placeholder={`Confirm password`}
                         value={confirmUserPassword}
-                        onChangeText={(text) => { setConfirmUserPassword(text) }} />
+                        onChange={(data) => { setConfirmUserPassword(data.nativeEvent.text) }} />
 
                       <ZStack w='$2' h='$2' my='auto' ml='$4' mr='$2' pr='$2'>
-                        <XStack m='auto' transition='standard' pr='$1'
+                        <XStack m='auto' animation='standard' pr='$1'
                           o={resetPasswordValid ? 1 : 0}>
                           <CheckCircle color={navColor} />
                         </XStack>
-                        <XStack m='auto' transition='standard' pr='$1'
+                        <XStack m='auto' animation='standard' pr='$1'
                           o={confirmPasswordInvalid ? 1 : 0}>
                           <XCircle />
                         </XStack>
@@ -803,7 +803,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
           <Dialog.Portal zi={1000011}>
             <Dialog.Overlay
               key="overlay"
-              transition='standard'
+              animation='standard'
               o={0.5}
               enterStyle={{ o: 0 }}
               exitStyle={{ o: 0 }}
@@ -812,7 +812,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               bordered
               elevate
               key="content"
-              transition={[
+              animation={[
                 'standard',
                 {
                   opacity: {
@@ -828,7 +828,7 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
               opacity={1}
               y={0}
             >
-              <YStack gap='$2'>
+              <YStack space>
                 <Dialog.Title>Delete Account</Dialog.Title>
                 <Dialog.Description>
                   Really delete account {user.username} on {server!.host}? Media may take up to 24 hours to be deleted.
@@ -838,7 +838,9 @@ const UserVisibilityPermissions: React.FC<UserVisibilityPermissionsProps> = ({ u
                   <Dialog.Close asChild>
                     <Button>Cancel</Button>
                   </Dialog.Close>
-                  <Button theme="red" onPress={doDeleteUser}>Delete</Button>
+                  <Theme inverse>
+                    <Button onPress={doDeleteUser}>Delete</Button>
+                  </Theme>
                 </XStack>
               </YStack>
             </Dialog.Content>

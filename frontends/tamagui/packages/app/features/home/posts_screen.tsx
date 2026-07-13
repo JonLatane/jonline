@@ -66,7 +66,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
       loading={loadingPosts}
     >
       <YStack f={1} w='100%' jc="center" ai="center" py="$2"
-        maw={800} gap="$true">
+        maw={800} space>
         <YStack w='100%'>
           <AutoAnimatedList>
             <XStack id='pages-create' key='pages-create' w='100%'>
@@ -86,7 +86,7 @@ export const BasePostsScreen: React.FC<HomeScreenProps> = ({ selectedGroup }: Ho
               : undefined}
             {paginatedPosts.map((post) => {
               return <XStack key={`post-${federatedId(post)}`} w='100%'
-                transition='standard' {...standardAnimation}>
+                animation='standard' {...standardAnimation}>
                 <PostCard post={post} isPreview />
               </XStack>
                 ;

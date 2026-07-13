@@ -129,8 +129,6 @@ export enum WebUserInterface {
   HANDLEBARS_TEMPLATES = 1,
   /** REACT_TAMAGUI - React UI using Tamagui (a React Native UI library). */
   REACT_TAMAGUI = 2,
-  /** ELM_SPA - Uses the Elm SPA client. Loaded from /elm. */
-  ELM_SPA = 3,
   UNRECOGNIZED = -1,
 }
 
@@ -145,9 +143,6 @@ export function webUserInterfaceFromJSON(object: any): WebUserInterface {
     case 2:
     case "REACT_TAMAGUI":
       return WebUserInterface.REACT_TAMAGUI;
-    case 3:
-    case "ELM_SPA":
-      return WebUserInterface.ELM_SPA;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -163,8 +158,6 @@ export function webUserInterfaceToJSON(object: WebUserInterface): string {
       return "HANDLEBARS_TEMPLATES";
     case WebUserInterface.REACT_TAMAGUI:
       return "REACT_TAMAGUI";
-    case WebUserInterface.ELM_SPA:
-      return "ELM_SPA";
     case WebUserInterface.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

@@ -85,7 +85,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
 
   return horizontal ?
     <XStack ai='center'>
-      <Button chromeless
+      <Button transparent
         size='$2'
         p='$1'
         px={0}
@@ -95,12 +95,12 @@ export const StarButton: React.FC<StarButtonProps> = ({
         <ThemedStar {...{ starred, server: accountOrServer.server }} />
       </Button>
       <ZStack w='$2' h='$2' transform={[{ translateX: -3 }]}>
-        <XStack transition='standard' m='auto'
+        <XStack animation='standard' m='auto'
           o={firstStarred != starred ? 0.5 : 0}
         >
           <Spinner size='small' />
         </XStack>
-        <XStack transition='standard' m='auto'
+        <XStack animation='standard' m='auto'
           o={post.unauthenticatedStarCount > 0 ? 0.5 : 0.25}>
           <Paragraph size='$1' ta='center'>
             {post.unauthenticatedStarCount}
@@ -112,7 +112,7 @@ export const StarButton: React.FC<StarButtonProps> = ({
       ml={eventMargins ? 5 : -15}
       mr={eventMargins ? -12 : 3}
     >
-      <Button chromeless
+      <Button transparent
         size='$2'
         p='$1'
         px={0}
@@ -122,12 +122,12 @@ export const StarButton: React.FC<StarButtonProps> = ({
         <ThemedStar {...{ starred, server: accountOrServer.server }} />
       </Button>
       <ZStack w='$2' h='$2'>
-        <XStack transition='standard' mx='auto'
+        <XStack animation='standard' mx='auto'
           o={firstStarred != starred ? 0.5 : 0}
         >
           <Spinner size='small' />
         </XStack>
-        <XStack transition='standard' mx='auto'
+        <XStack animation='standard' mx='auto'
           o={post.unauthenticatedStarCount > 0 ? 0.5 : 0.25}>
           <Paragraph size='$1' ta='center'>
             {post.unauthenticatedStarCount}
@@ -147,28 +147,28 @@ export const ThemedStar: React.FC<ThemedStarProps> = ({ starred, server, invertC
   const { primaryAnchorColor, navColor } = useServerTheme(server);
 
   return <ZStack w='$2' h='$2' ml={2} mr={-2} mt={4}>
-    <ZStack w='$2' h='$2' transition='standard' o={starred ? 0 : 1}>
-      <Star opacity={0.5} />
+    <ZStack w='$2' h='$2' animation='standard' o={starred ? 0 : 1}>
+      <Star o={0.5} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'200ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'200ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.7} transform={[{ translateY: 0.5 }]} color={!invertColors ? navColor : primaryAnchorColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'400ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'400ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.3} transform={[{ translateY: 2 }]} color={!invertColors ? navColor : primaryAnchorColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'600ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'600ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.1} transform={[{ translateY: 7 }]} color={!invertColors ? navColor : primaryAnchorColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'100ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'100ms'*/} o={starred ? 1 : 0}>
       <Star scale={1} color={!invertColors ? primaryAnchorColor : navColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'300ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'300ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.5} transform={[{ translateY: 1 }]} color={!invertColors ? primaryAnchorColor : navColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'500ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'500ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.2} transform={[{ translateY: 2.5 }]} color={!invertColors ? primaryAnchorColor : navColor} />
     </ZStack>
-    <ZStack w='$2' h='$2' transition={'standard'/*'700ms'*/} o={starred ? 1 : 0}>
+    <ZStack w='$2' h='$2' animation={'standard'/*'700ms'*/} o={starred ? 1 : 0}>
       <Star scale={0.05} transform={[{ translateY: 12.5 }]} color={!invertColors ? primaryAnchorColor : navColor} />
     </ZStack>
   </ZStack>;

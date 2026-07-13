@@ -87,9 +87,9 @@ export function GroupButton({ group, selected, setOpen, onShowInfo, onGroupSelec
           px='$2'
           // bordered={false}
           // href={`/g/${group.shortname}`}
-          chromeless={!selected}
+          transparent={!selected}
 
-          // chromeless={}
+          // transparent={}
 
           // backgroundColor={selected ? navColor : undefined}
           {...themedButtonBackground(selected ? navColor : undefined, undefined, (disabled && !extraListItemChrome) ? 0.5 : 1)}
@@ -244,7 +244,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
   return account && (!hideLeaveButton || !joined)
     ? <XStack key='join-button' ac='center' jc='center' mx='auto' my='auto' >
       <Button mt='$2' backgroundColor={!joined && !membershipRequested ? primaryColor : undefined}
-        // {...standardAnimation} transition='standard'
+        // {...standardAnimation} animation='standard'
         mb='$2'
         p='$3'
         disabled={isLocked} opacity={isLocked ? 0.5 : 1}
@@ -260,7 +260,7 @@ export function GroupJoinLeaveButton({ group, hideLeaveButton }: GroupJoinLeaveB
             : undefined}
         </YStack>
       </Button>
-      <XStack position='absolute' pointerEvents='none' top={20} transition='standard' o={isLocked ? 1 : 0}>
+      <XStack position='absolute' pointerEvents='none' top={20} animation='standard' o={isLocked ? 1 : 0}>
         <Spinner />
       </XStack>
     </XStack> : <></>;

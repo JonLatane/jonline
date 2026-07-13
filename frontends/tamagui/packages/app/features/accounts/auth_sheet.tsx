@@ -1,4 +1,4 @@
-import { Button, Heading, Input, Sheet, TamaguiElement, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
+import { Button, Heading, Input, Sheet, standardAnimation, useMedia, XStack, YStack } from '@jonline/ui';
 import { ChevronLeft } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, TamaguiMarkdown } from 'app/components';
 import { useAuthSheetContext } from 'app/contexts/auth_sheet_context';
@@ -50,8 +50,8 @@ export function AuthSheet({ }: AuthSheetProps) {
   const specifiedServer = creationServer;
 
 
-  const usernameRef = React.useRef<TamaguiElement>(undefined as never);// as React.RefObject<TamaguiElement>;
-  const passwordRef = React.useRef<TamaguiElement>(undefined as never);// as React.RefObject<TamaguiElement>;
+  const usernameRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
+  const passwordRef = React.useRef(undefined as never) as React.MutableRefObject<TextInput>;
 
   const currentServer = useCurrentServer();
   const server = specifiedServer ?? currentServer;
@@ -213,7 +213,7 @@ export function AuthSheet({ }: AuthSheetProps) {
                   ? <XStack key='accounts' ml='$3'>
                     <Button h='auto' mih='$3'
                       {...addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                      chromeless={addingAccount}
+                      transparent={addingAccount}
                       borderTopRightRadius={0} borderBottomRightRadius={0}
                       onPress={() => {
                         setAddingAccount(false);
@@ -228,7 +228,7 @@ export function AuthSheet({ }: AuthSheetProps) {
                     </Button>
                     <Button h='auto' mih='$3'
                       {...!addingAccount ? {} : themedButtonBackground(navColor, navTextColor)}
-                      chromeless={!addingAccount}
+                      transparent={!addingAccount}
                       borderTopLeftRadius={0} borderBottomLeftRadius={0}
                       // opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
                       onPress={() => {
@@ -293,8 +293,8 @@ export function AuthSheet({ }: AuthSheetProps) {
               {addingAccount
                 ? <YStack key='add-account-panel' gap="$2" w='100%' pb='$3'>
                   <Heading size="$6">{server?.host}/</Heading>
-                  <Input textContentType="username" /*autoCorrect={false}*/ placeholder="Username" keyboardType='twitter'
-                    disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
+                  <Input textContentType="username" autoCorrect={false} placeholder="Username" keyboardType='twitter'
+                    editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountUser.length === 0 ? 0.5 : 1}
                     autoCapitalize='none'
                     value={newAccountUser}
                     ref={usernameRef}
@@ -308,14 +308,14 @@ export function AuthSheet({ }: AuthSheetProps) {
                         }
                       }
                     }}
-                    onChangeText={(text) => { setNewAccountUser(text) }} />
+                    onChange={(data) => { setNewAccountUser(data.nativeEvent.text) }} />
                   {loginMethod
-                    ? <XStack w='100%' transition='standard'  {...standardAnimation}>
+                    ? <XStack w='100%' animation='standard'  {...standardAnimation}>
                       <Input secureTextEntry w='100%'
                         ref={passwordRef}
                         textContentType={loginMethod === LoginMethod.Login ? "password" : "newPassword"}
                         placeholder="Password"
-                        disabled={disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
+                        editable={!disableAccountInputs} opacity={disableAccountInputs || newAccountPass.length === 0 ? 0.5 : 1}
                         onKeyPress={(e) => {
                           if (e.nativeEvent.key === 'Enter') {// || e.nativeEvent.keyCode === 13) {
                             if (loginMethod == LoginMethod.Login) {
@@ -326,7 +326,7 @@ export function AuthSheet({ }: AuthSheetProps) {
                           }
                         }}
                         value={newAccountPass}
-                        onChangeText={(text) => { setNewAccountPass(text) }} /></XStack>
+                        onChange={(data) => { setNewAccountPass(data.nativeEvent.text) }} /></XStack>
                     : undefined}
 
                   {loginMethod === LoginMethod.CreateAccount

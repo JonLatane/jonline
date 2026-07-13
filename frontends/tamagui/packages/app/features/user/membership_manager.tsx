@@ -133,7 +133,7 @@ export const MembershipManager: React.FC<MembershipManagerProps> = ({
           </XStack>
           <PermissionsEditor label='Membership Permissions'
             {...membershipPermissionsEditorProps} />
-          <XStack ml='auto' position='absolute' bottom={0} right={0} transition='standard' pointerEvents="none" o={saving ? 1 : 0}>
+          <XStack ml='auto' position='absolute' bottom={0} right={0} animation='standard' pointerEvents="none" o={saving ? 1 : 0}>
             <Spinner size='small' />
           </XStack>
         </YStack>

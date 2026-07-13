@@ -277,7 +277,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
         // onKeyPress={undefined}
         // key={`calendar-rendering-${serializedTimeFilter}`} 
         // mx='$1'
-        transition='standard' {...reverseStandardAnimation}
+        animation='standard' {...reverseStandardAnimation}
         //  w='100%'
 
         // width={width ?? bigCalWidth}
@@ -446,7 +446,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
       <Dialog.Portal zi={100000}>
         <Dialog.Overlay
           key="overlay"
-          transition="slow"
+          animation="slow"
           opacity={0.5}
           // zIndex={10000}
           enterStyle={{ opacity: 0 }}
@@ -461,7 +461,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
           key="content"
           // zIndex={10000}
           // animateOnly={['transform', 'opacity']}
-          transition='standard'
+          animation='standard'
           // maw={bigCalWidth}
           w={Math.min(800, bigCalWidth)}
           mah={borderedScreenHeight}
@@ -508,7 +508,7 @@ export const EventsFullCalendar: React.FC<EventsFullCalendarProps> = ({
                 : <XStack h={window.innerHeight / 2} ai='center' jc='center' w='100%'>
                   <Spinner
                     size='large'
-                    transition='standard'
+                    animation='standard'
                     color={primaryColor}
                     style={{ margin: 'auto' }}
                   />

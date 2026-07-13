@@ -1,5 +1,5 @@
 import { Location } from "@jonline/api";
-import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Sheet, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
+import { Adapt, Anchor, Button, Heading, Input, Label, Paragraph, Popover, ScrollView, Spinner, Text, XStack, YStack, useMedia } from "@jonline/ui";
 import { ExternalLink, MapPin, Scroll } from "@tamagui/lucide-icons";
 import { NominatimResult, useNominatim } from "app/hooks/use_nominatim";
 import { useQueryDebounce } from "app/hooks/use_query_debounce";
@@ -107,7 +107,7 @@ export const LocationControl: React.FC<Props> = ({
               <Adapt.Contents />
             </Popover.Sheet.Frame>
             <Popover.Sheet.Overlay
-              transition="lazy"
+              animation="lazy"
               enterStyle={{ opacity: 0 }}
               exitStyle={{ opacity: 0 }}
             />
@@ -121,7 +121,7 @@ export const LocationControl: React.FC<Props> = ({
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
-            transition={[
+            animation={[
               'standard',
               {
                 opacity: {
@@ -193,9 +193,9 @@ export const LocationControl: React.FC<Props> = ({
       disabled={disabled} opacity={disabled || '' ? 0.5 : 1}
       // autoCapitalize='words'
       value={value}
-      onChangeText={(text) => {
-        setCandidateAddress(text);
-        setValue(text)
+      onChange={(data) => {
+        setCandidateAddress(data.nativeEvent.text);
+        setValue(data.nativeEvent.text)
       }} />
 
     <Popover size="$5" allowFlip placement='left'>
@@ -204,16 +204,16 @@ export const LocationControl: React.FC<Props> = ({
       </Popover.Trigger>
 
       <Adapt when="sm" platform="touch">
-        <Sheet modal dismissOnSnapToBottom>
-          <Sheet.Frame padding="$4">
+        <Popover.Sheet modal dismissOnSnapToBottom>
+          <Popover.Sheet.Frame padding="$4">
             <Adapt.Contents />
-          </Sheet.Frame>
-          <Sheet.Overlay
-            transition="lazy"
+          </Popover.Sheet.Frame>
+          <Popover.Sheet.Overlay
+            animation="lazy"
             enterStyle={{ opacity: 0 }}
             exitStyle={{ opacity: 0 }}
           />
-        </Sheet>
+        </Popover.Sheet>
       </Adapt>
 
       <Popover.Content
@@ -222,7 +222,7 @@ export const LocationControl: React.FC<Props> = ({
         enterStyle={{ y: -10, opacity: 0 }}
         exitStyle={{ y: -10, opacity: 0 }}
         elevate
-        transition={[
+        animation={[
           'standard',
           {
             opacity: {
@@ -247,9 +247,9 @@ export const LocationControl: React.FC<Props> = ({
           {/* </Popover.Close> */}
           {results?.length === 0 ? <Paragraph mx='auto' {...willAdaptEdit ? { f: 1 } : {}}>No results.</Paragraph> : undefined}
           {willAdaptEdit ?
-            <Sheet.ScrollView f={1}>
+            <Popover.Sheet.ScrollView f={1}>
               {resultsView}
-            </Sheet.ScrollView>
+            </Popover.Sheet.ScrollView>
             : <ScrollView h='$20'>
               {resultsView}
             </ScrollView>}

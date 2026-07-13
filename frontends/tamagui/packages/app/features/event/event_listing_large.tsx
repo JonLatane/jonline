@@ -89,7 +89,7 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
           {/* <AnimatePresence> */}
           {events.length === 0
             ? <XStack key='no-events-found' style={{ width: '100%', margin: 'auto' }}
-            // transition='standard' {...standardAnimation}
+            // animation='standard' {...standardAnimation}
             >
               <YStack width='100%' maw={600} jc="center" ai="center" mx='auto'>
                 <Heading size='$5' mb='$3' o={0.5}>No events found.</Heading>
@@ -98,7 +98,7 @@ export const EventListingLarge: React.FC<EventListingLargeProps> = ({ events }) 
             : undefined}
           {paginatedEvents.map((event) => {
             return <XStack key={federateId(event.instances[0]?.id ?? '', currentServer)}
-              transition='standard' {...standardAnimation}
+              animation='standard' {...standardAnimation}
             >
               <XStack w={eventCardWidth}
                 mx='$1' px='$1'>

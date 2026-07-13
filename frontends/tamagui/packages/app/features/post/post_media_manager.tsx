@@ -43,7 +43,7 @@ export function PostMediaManager({ entityName = 'Post', media, setMedia, link = 
     jc='center'
     marginHorizontal='$5'
     p='$3'
-    transition='standard'
+    animation='standard'
     {...standardAnimation}
   >
     {media.length > 0 ? <ScrollView horizontal w='100%'>

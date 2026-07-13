@@ -15,7 +15,7 @@ export function UserDetailsScreen() {
 
   return (
     <TabsNavigation>
-      <YStack f={1} jc="center" ai="center" gap='$2'>
+      <YStack f={1} jc="center" ai="center" space>
         <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
         <Button {...linkProps} icon={ChevronLeft}>
           Go Home

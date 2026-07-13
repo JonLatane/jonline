@@ -1,5 +1,4 @@
 export * from './animations';
-export * from './InverseTheme';
 export * from 'tamagui';
 export * from '@tamagui/theme';
 export * from '@tamagui/toast';

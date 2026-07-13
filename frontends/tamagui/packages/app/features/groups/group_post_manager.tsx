@@ -126,7 +126,7 @@ export const GroupPostManager: React.FC<Props> = ({ post, isVisible = true, isDi
         ? <Text my='auto' ml='$1' mr='$2' fontSize={'$1'} fontFamily='$body'>.</Text>
         : undefined} */}
     </XStack>
-    <Spinner my='auto' mx='$2' color={primaryAnchorColor} transition='standard' size='small'
+    <Spinner my='auto' mx='$2' color={primaryAnchorColor} animation='standard' size='small'
       pointerEvents='none'
       position='absolute'
       right={8} top={7}

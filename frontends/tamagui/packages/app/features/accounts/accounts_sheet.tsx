@@ -1,4 +1,4 @@
-import { Button, ColorTokens, Heading, Image, Input, InverseTheme, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@jonline/ui';
+import { Button, ColorTokens, Heading, Image, Input, Label, Paragraph, ScrollView, Sheet, SizeTokens, Switch, Theme, Tooltip, XStack, YStack, ZStack, useDebounceValue, useMedia } from '@jonline/ui';
 import { AlertCircle, AlertTriangle, ArrowDownUp, AtSign, ChevronLeft, ChevronRight, Info, Plus, Router, SeparatorHorizontal } from '@tamagui/lucide-icons';
 import { DarkModeToggle } from 'app/components/dark_mode_toggle';
 import { useAppDispatch, useCurrentAccount, useFederatedAccountOrServer, useLocalConfiguration, usePinnedAccountsAndServers } from 'app/hooks';
@@ -222,24 +222,24 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
             <XStack f={1} /> */}
         <Button size='$3' circular p={0}
           onPress={() => dispatch(setBrowsingServers(!browsingServers))}
-          transition='standard'
+          animation='standard'
         // opacity={allowServerSelection || servers.length > 1 ? 1 : 0}
         // disabled={!(allowServerSelection || servers.length > 1)} 
         >
           <ZStack w='$2' h='$2'>
-            <XStack m='auto' transition='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+            <XStack m='auto' animation='standard' o={!browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
               <ChevronLeft size='$1' />
             </XStack>
-            <XStack m='auto' transition='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
+            <XStack m='auto' animation='standard' o={browsingServers ? 0 : 1} rotate={browsingServers ? '-90deg' : '0deg'}>
               <Router size='$1' />
             </XStack>
-            <InverseTheme>
-              <XStack m='auto' transition='standard' px='$1' borderRadius='$3'
+            <Theme inverse>
+              <XStack m='auto' animation='standard' px='$1' borderRadius='$3'
                 transform={[{ translateX: 15 }, { translateY: 10 }]}
                 backgroundColor={textColor}>
                 <Paragraph size='$1' color={backgroundColor} mx='$1' fontWeight='bold'>{servers.length}</Paragraph>
               </XStack>
-            </InverseTheme>
+            </Theme>
           </ZStack>
         </Button>
 
@@ -311,11 +311,11 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
               <XStack key='add-server' gap="$2" mt='$2' w='100%' maxWidth={600} width='100%' ai='center' alignSelf='center'>
                 {/* <Heading size="$10" f={1}>Add Server</Heading> */}
                 {/* <YStack> */}
-                <Input f={1} textContentType="URL" keyboardType='url' /*autoCorrect={false}*/ autoCapitalize='none' placeholder="Server Hostname"
-                  disabled={serversLoading}
+                <Input f={1} textContentType="URL" keyboardType='url' autoCorrect={false} autoCapitalize='none' placeholder="Server Hostname"
+                  editable={!serversLoading}
                   opacity={serversLoading || newServerHost.length === 0 ? 0.5 : 1}
                   value={newServerHost}
-                  onChangeText={(text) => setNewServerHost(text)} />
+                  onChange={(data) => setNewServerHost(data.nativeEvent.text)} />
                 {/* </YStack> */}
                 {/* <XStack> */}
                 {disableSecureSelection || true
@@ -325,7 +325,7 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
                       defaultChecked
                       onCheckedChange={(checked) => setNewServerSecure(checked)}
                       disabled={disableSecureSelection} >
-                      <Switch.Thumb transition='standard' disabled={disableSecureSelection} />
+                      <Switch.Thumb animation='standard' disabled={disableSecureSelection} />
                     </Switch>
 
                     <Label style={{ flex: 1, alignContent: 'center', marginLeft: 'auto', marginRight: 'auto' }} htmlFor={`newServerSecure-${secureLabelUuid}`} >
@@ -384,7 +384,7 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
                 <Button key='recommended-servers-link' mt='$2' size='$2' mx='auto' onPress={() => dispatch(setViewingRecommendedServers(!viewingRecommendedServers))}>
                   <XStack>
                     <Heading size='$1'>{browsingServers ? 'All ' : ''}Recommended Servers{recommendedServerHosts.length > 0 ? ` (${recommendedServerHosts.length})` : ''}</Heading>
-                    <XStack transition='standard' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
+                    <XStack animation='standard' rotate={viewingRecommendedServers ? '90deg' : '0deg'}>
                       <ChevronRight size='$1' />
                     </XStack>
                   </XStack>
@@ -469,7 +469,7 @@ export function AccountsSheet({ selectedGroup, primaryEntity }: AccountsSheetPro
                 {accounts.length > 1
                   ? <Button onPress={() => dispatch(setSeparateAccountsByServer(!separateAccountsByServer))}
                     icon={ArrowDownUp}
-                    chromeless
+                    transparent
                     circular
                     size='$2'
                     {...themedButtonBackground(

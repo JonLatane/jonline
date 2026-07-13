@@ -11,7 +11,7 @@ export function AccountDetailsScreen() {
   const linkProps = useLink({ href: '/' })
 
   return (
-    <YStack f={1} jc="center" ai="center" gap='$2'>
+    <YStack f={1} jc="center" ai="center" space>
       <Paragraph ta="center" fow="800">{`User ID: ${id}`}</Paragraph>
       <Button {...linkProps} icon={ChevronLeft}>
         Go Home

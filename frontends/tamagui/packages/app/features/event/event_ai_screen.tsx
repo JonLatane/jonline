@@ -317,17 +317,17 @@ ${aiText}
       topChrome={<YStack w='100%' my='$1' py='$1'>
         <CreationServerSelector requiredPermissions={[Permission.CREATE_EVENTS]} />
         <XStack w='100%'>
-          <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'inputText')}
+          <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'inputText')}
             onPress={() => setAiMode('inputText')}>
             Input Text
           </Button>
-          <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'setupAi')}
+          <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'setupAi')}
             onPress={() => setAiMode('setupAi')}>
             Setup LLM
           </Button>
           <Tooltip>
             <Tooltip.Trigger f={1}>
-              <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'previewEvents')}
+              <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'nav', aiMode === 'previewEvents')}
                 onPress={() => setAiMode('previewEvents')}
                 disabled={resultEvents.length === 0}
                 o={resultEvents.length === 0 ? 0.5 : 1}
@@ -347,11 +347,11 @@ ${aiText}
         {/* {aiMode === 'setupAi'
           ?
           <XStack w='100%'>
-            <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'webLlm')}
+            <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'webLlm')}
               onPress={() => setAiBackend('webLlm')}>
               WebLLM
             </Button>
-            <Button f={1} chromeless
+            <Button f={1} transparent
               {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'openAi')}
               onPress={() => setAiBackend('openAi')}>
               OpenAI
@@ -368,7 +368,7 @@ ${aiText}
           {aiMode === 'previewEvents'
             ? <Button onPress={() => setBigCalendar(!bigCalendar)}
               icon={CalendarIcon}
-              chromeless
+              transparent
               disabled={aiMode !== 'previewEvents'}
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
@@ -431,18 +431,18 @@ ${aiText}
               </Tooltip.Content>
               : undefined}
           </Tooltip>
-          {/* <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'primary', aiMode === 'setupAi')}
+          {/* <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'primary', aiMode === 'setupAi')}
             onPress={() => setAiMode('setupAi')}>
             Setup AI
           </Button>
-          <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'primary', aiMode === 'previewEvents')}
+          <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'primary', aiMode === 'previewEvents')}
             onPress={() => setAiMode('previewEvents')}>
             Preview Events
           </Button>
 
           <Button onPress={() => setBigCalendar(!bigCalendar)}
             icon={CalendarIcon}
-            chromeless
+            transparent
             {...themedButtonBackground(
               bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)} /> */}
 
@@ -460,7 +460,7 @@ ${aiText}
           {[
             aiMode === 'inputText'
               ? <div key='input-text'>
-                <TextArea key='bio-edit' transition='standard'
+                <TextArea key='bio-edit' animation='standard'
                   value={aiText} onChangeText={setAiText}
                   // size='$5'
                   // h='$14'
@@ -476,11 +476,11 @@ ${aiText}
                   <YStack w='100%' mt='$3'>
                     <Heading size='$3'>LLM Backend</Heading>
                     <XStack w='100%'>
-                      <Button f={1} chromeless {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'webLlm')}
+                      <Button f={1} transparent {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'webLlm')}
                         onPress={() => setAiBackend('webLlm')}>
                         WebLLM
                       </Button>
-                      <Button f={1} chromeless
+                      <Button f={1} transparent
                         {...highlightedButtonBackground(serverTheme, 'primary', aiBackend === 'openAi')}
                         onPress={() => setAiBackend('openAi')}>
                         OpenAI
@@ -502,7 +502,7 @@ ${aiText}
                             placeholder={`OpenAI API key`}
                             secureTextEntry={!revealOpenAiKey}
                             value={openAiKey}
-                            onChangeText={(text) => { setOpenAiKey(text) }} />
+                            onChange={(data) => { setOpenAiKey(data.nativeEvent.text) }} />
                           <Button circular
                             icon={revealOpenAiKey ? EyeOff : Eye}
                             onPress={() => setRevealOpenAiKey(!revealOpenAiKey)} />
@@ -510,7 +510,6 @@ ${aiText}
 
                         <Heading size='$3'>OpenAI Model</Heading>
                         <Select native
-                          zIndex={200000}
                           value={openAiModel}
                           onValueChange={setOpenAiModel}
                         >
@@ -519,7 +518,7 @@ ${aiText}
                           >
                             <Select.Value w='100%' placeholder="Choose LLM" />
                           </Select.Trigger>
-                          <Select.Content>
+                          <Select.Content zIndex={200000} >
                             <Select.Viewport minWidth={200} w='100%'>
                               <XStack w='100%'>
                                 <Select.Group gap="$0" w='100%'>
@@ -564,7 +563,6 @@ ${aiText}
                       <YStack w='100%'>
                         <Heading size='$3'>WebLLM Model</Heading>
                         <Select native
-                          zIndex={200000}
                           value={llmModel}
                           onValueChange={setLlmModel}
                         >
@@ -573,7 +571,7 @@ ${aiText}
                           >
                             <Select.Value w='100%' placeholder="Choose LLM" />
                           </Select.Trigger>
-                          <Select.Content>
+                          <Select.Content zIndex={200000} >
                             <Select.Viewport minWidth={200} w='100%'>
                               <XStack w='100%'>
                                 <Select.Group gap="$0" w='100%'>
@@ -644,7 +642,7 @@ ${aiText}
                   <Button key='prompt-preview-toggle' onPress={() => setShowPromptPreview(!showPromptPreview)}>
                     <XStack ai='center'>
                       <Heading key='prompt-header' f={1} size='$3'>Prompt Preview</Heading>
-                      <XStack transition='standard' rotate={showPromptPreview ? '90deg' : '0deg'}>
+                      <XStack animation='standard' rotate={showPromptPreview ? '90deg' : '0deg'}>
                         <ChevronRight size='$2' />
                       </XStack>
                     </XStack>

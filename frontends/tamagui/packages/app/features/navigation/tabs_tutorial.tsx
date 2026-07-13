@@ -102,8 +102,8 @@ export function TabsTutorial({ }) {
   const isInDarkMode = darkModeAuto ? doesPlatformPreferDarkMode() : darkMode;
   return <AnimatePresence>
     {showHelp && false
-      ? <ZStack w='100%' h={height} transition='standard' {...standardAnimation} mt='$3' pt='$2'>
-        <XStack w='100%' ai='center' gap='$2' transition='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
+      ? <ZStack w='100%' h={height} animation='standard' {...standardAnimation} mt='$3' pt='$2'>
+        <XStack w='100%' ai='center' gap='$2' animation='standard' o={hidingStarted ? 0 : showPhase1 ? 1 : 0}>
           <YStack gap='$1' ai='center' jc='center' ac='center' ml={homeButtonWidth + ((groupsButtonWidth - 20) / 2) - 5} >
             <XStack ml='$1'><MoveUp size='$5' opacity={multiphase && showPhase2 ? 0.25 : 1} /></XStack>
             <Paragraph mt='$1' size='$2' fontWeight='bold' transform={[{ translateX: -12 }]}>Groups</Paragraph>
@@ -121,16 +121,16 @@ export function TabsTutorial({ }) {
               </Heading>
             </Button>
           </YStack>
-          <ZStack h='100%' f={1} transition='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
+          <ZStack h='100%' f={1} animation='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
             <Paragraph my='auto' size='$2' textAlign="right" fontWeight='bold' o={hidingStarted ? 1 : 0}>
               View this again later
             </Paragraph>
-            <Paragraph my='auto' size='$2' textAlign="right" fontWeight='bold' transition='standard' o={showPhase2 && !hidingStarted ? 1 : 0}>
+            <Paragraph my='auto' size='$2' textAlign="right" fontWeight='bold' animation='standard' o={showPhase2 && !hidingStarted ? 1 : 0}>
               Accounts and Settings
             </Paragraph>
           </ZStack>
           <Paragraph size='$2' fontWeight='bold' o={showPhase2 || hidingStarted ? 1 : 0}>(</Paragraph>
-          <XStack mb='$1' opacity={hidingStarted ? 1 : 0.8} transition='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
+          <XStack mb='$1' opacity={hidingStarted ? 1 : 0.8} animation='standard' o={showPhase2 || hidingStarted ? 1 : 0}>
             {hidingStarted
               ? <TutorialToggle onPress={() => setHidingStarted(undefined)} />
               : <DarkModeToggle />}
