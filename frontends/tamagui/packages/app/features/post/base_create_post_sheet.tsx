@@ -1,5 +1,5 @@
 import { Group, MediaReference, Permission, Post, Visibility } from '@jonline/api';
-import { Button, Heading, Input, Paragraph, Sheet, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
+import { Button, Heading, Input, Paragraph, Sheet, TamaguiElement, TextArea, Tooltip, XStack, YStack, ZStack, standardAnimation, useDebounceValue, useMedia, useToastController } from '@jonline/ui';
 import { CalendarPlus, ChevronLeft, Cog, Image as ImageIcon, Plus } from '@tamagui/lucide-icons';
 import { AutoAnimatedList, ToggleRow, VisibilityPicker } from 'app/components';
 import { useCreationAccountOrServer } from 'app/hooks';
@@ -178,7 +178,7 @@ export function BaseCreatePostSheet({
     title, link, content, shareable, embedLink, media, visibility,
     author: { userId: account?.user.id, username: account?.user.username }
   })
-  const textAreaRef = React.createRef<HTMLInputElement>();
+  const textAreaRef = React.createRef<TamaguiElement>();
 
   const [posting, setPosting] = useState(false);
   const [postingError, setPostingError] = useState(undefined as string | undefined);
@@ -261,7 +261,7 @@ export function BaseCreatePostSheet({
           w='$3'
           p={0}
           disabled={server === undefined}
-          transparent
+          chromeless
           onPress={() => setOpen(!open)}>
           {entityName === 'Post'
             ? <Plus color={navAnchorColor} />
@@ -342,7 +342,7 @@ export function BaseCreatePostSheet({
                       ? undefined
                       : <Button
                         {...themedButtonBackground(showEditor ? navColor : undefined)}
-                        transparent={!showEditor}
+                        chromeless={!showEditor}
                         borderTopRightRadius={0}
                         borderBottomRightRadius={0}
                         onPress={() => setRenderType(RenderType.Edit)}>
@@ -352,7 +352,7 @@ export function BaseCreatePostSheet({
                       <Tooltip.Trigger>
                         <Button backgroundColor={showFullPreview ? navColor : undefined}
                           hoverStyle={{ backgroundColor: showFullPreview ? navColor : undefined }}
-                          transparent={!showFullPreview}
+                          chromeless={!showFullPreview}
                           // borderRadius={0}
                           borderTopLeftRadius={supportsSplitView ? undefined : 0}
                           borderBottomLeftRadius={supportsSplitView ? undefined : 0}
@@ -377,7 +377,7 @@ export function BaseCreatePostSheet({
                       <Tooltip.Trigger>
                         <Button backgroundColor={showShortPreview ? navColor : undefined}
                           hoverStyle={{ backgroundColor: showShortPreview ? navColor : undefined }}
-                          transparent={!showShortPreview}
+                          chromeless={!showShortPreview}
                           borderTopLeftRadius={0} borderBottomLeftRadius={0}
                           disabled={disablePreview}
                           opacity={disablePreview ? 0.5 : 1}
@@ -415,7 +415,7 @@ export function BaseCreatePostSheet({
                                 onFocus={() => setShowSettings(false)}
                                 // autoCapitalize='words'
                                 value={title}
-                                onChange={(data) => { setTitle(data.nativeEvent.text) }} />
+                                onChangeText={(text) => { setTitle(text) }} />
                               <Button ml='$2'
                                 {...highlightedButtonBackground(serverTheme, 'nav', showSettings)}
                                 // {...themedButtonBackground(showSettings ? navColor : undefined)}
@@ -430,7 +430,7 @@ export function BaseCreatePostSheet({
                                 onFocus={() => setShowSettings(false)}
                                 // autoCapitalize='words'
                                 value={link}
-                                onChange={(data) => { setLink(data.nativeEvent.text) }} />
+                                onChangeText={(text) => { setLink(text) }} />
 
                               <ZStack w='$4' ml='$2'>
                                 <Paragraph zi={1000} pointerEvents='none' size='$1' mt='auto' ml='auto' px={5} o={media.length > 0 ? 0.93 : 0.5}
@@ -449,7 +449,7 @@ export function BaseCreatePostSheet({
                           {showSettings
                             ? <YStack key='create-post-settings' ac='center' jc='center' ai='center' w='100%' p='$2'
                               mt='$2'
-                              animation='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
+                              transition='standard' {...standardAnimation} backgroundColor={'$backgroundHover'} borderRadius='$5'
                             >
                               {visibility != Visibility.PRIVATE
                                 ? <YStack w='100%' mb='$2' ai='center'>
@@ -495,7 +495,7 @@ export function BaseCreatePostSheet({
                           <TextArea key='content' w='100%' pt='$1' mt='$2' value={content} ref={textAreaRef}
                             onFocus={() => setShowSettings(false)}
                             disabled={posting} opacity={posting || content == '' ? 0.5 : 1}
-                            onChangeText={t => setContent(t.nativeEvent.text)}
+                            onChangeText={t => setContent(t)}
                             // onFocus={() => { _replyTextFocused = true; /*window.scrollTo({ top: window.scrollY - _viewportHeight/2, behavior: 'smooth' });*/ }}
                             // onBlur={() => _replyTextFocused = false}
                             placeholder={`Text content (optional). Markdown is supported.`} />

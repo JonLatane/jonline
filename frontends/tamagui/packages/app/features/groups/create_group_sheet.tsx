@@ -286,12 +286,12 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                           my='auto'
                           textContentType="name" placeholder={`Group Name (required)`}
                           borderColor={name == '' ? navAnchorColor : undefined}
-                          placeholderTextColor={navAnchorColor}
+                          placeholderTextColor={navAnchorColor as any}
                           disabled={disableInputs} opacity={disableInputs || name == '' ? 0.5 : 1}
                           // onFocus={() => setShowSettings(false)}
                           // autoCapitalize='words'
                           value={name}
-                          onChange={(data) => { setName(data.nativeEvent.text) }} />
+                          onChangeText={(text) => { setName(text) }} />
                         <Button p='$0'
                           ml='$2'
                           {...themedButtonBackground(showMedia ? navColor : undefined, showMedia ? navTextColor : undefined,)}
@@ -318,7 +318,7 @@ export function CreateGroupSheet({ }: CreateGroupSheetProps) {
                     {showSettings
                       ? <div key='create-group-settings' style={{ width: '100%', marginBottom: 8 }}>
                         <YStack key='create-group-settings'
-                          animation='standard'
+                          transition='standard'
                           p='$2'
                           backgroundColor='$backgroundHover'
                           borderRadius='$5'

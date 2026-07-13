@@ -140,7 +140,7 @@ export const AuthorInfo = ({
                     : undefined}
                 </Anchor>
               : 'anonymous'}
-            <Spinner size='small' ml='$2' animation='standard' color={textColor}
+            <Spinner size='small' ml='$2' transition='standard' color={textColor}
               opacity={renderAsLoading ? 0.5 : 0} />
             {nameOnly ? permissionsIndicators : undefined}
           </XStack>}

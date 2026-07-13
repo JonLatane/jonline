@@ -32,7 +32,10 @@
     "react-dom": "19.0.0",
     "react-refresh": "^0.14.0",
     "react-native-svg": "15.11.2",
-    "react-native-web": "^0.20.0"
+    "react-native-web": "^0.20.0",
+    "@tamagui/core": "^2.4.5",
+    "@tamagui/web": "^2.4.5",
+    "@tamagui/helpers-icon": "^2.4.5"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",

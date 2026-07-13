@@ -18,7 +18,7 @@ export const NativeToast = () => {
       y={0}
       opacity={1}
       scale={1}
-      animation='standard'
+      transition='standard'
     >
       <YStack>
         <Toast.Title>{currentToast.title}</Toast.Title>

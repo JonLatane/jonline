@@ -30,6 +30,7 @@ export function ModerationPicker({
 
   return <YStack w='100%' maw={350} opacity={disabled ? 0.5 : 1} pointerEvents={disabled ? 'none' : undefined}>
     <Select native id={id ?? 'moderation-picker'}
+      zIndex={200000}
       value={moderation.toString()}
       onValueChange={onValueSelected}
     // disabled={disabled}
@@ -38,7 +39,7 @@ export function ModerationPicker({
         disabled={disabled}>
         <Select.Value w='100%' placeholder="Choose Moderation" />
       </Select.Trigger>
-      <Select.Content zIndex={200000} >
+      <Select.Content>
         <Select.Viewport minWidth={200} w='100%'>
           <XStack w='100%'>
             <Select.Group gap="$0" w='100%'>

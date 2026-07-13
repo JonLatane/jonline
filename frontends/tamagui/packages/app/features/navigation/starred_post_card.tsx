@@ -223,7 +223,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
   } else {
     renderedCardView = <XStack w='100%'
       pl='$5'
-      animation='standard' {...standardAnimation} jc='center' ai='center'>
+      transition='standard' {...standardAnimation} jc='center' ai='center'>
       <XStack mb={-20}>
         <StarButton post={{ ...Post.create({ id: serverPostId }), serverHost }} />
       </XStack>
@@ -257,9 +257,9 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
           {renderedCardView}
         </XStack>
         {fullSize || !isActuallyStarred ? undefined :
-          <YStack key='side-buttons' ai='center' gap='$2' my='$1' animation='standard' {...standardHorizontalAnimation}>
+          <YStack key='side-buttons' ai='center' gap='$2' my='$1' transition='standard' {...standardHorizontalAnimation}>
             <Button key='moveUp' size='$2' circular
-              animation='standard'
+              transition='standard'
               disabled={unsortable || !canMoveUp}
               o={unsortable ? 0 : canMoveUp ? 1 : 0.5}
               transform={[{ translateY: unsortable ? 10 : 0 }]}
@@ -291,7 +291,7 @@ export function StarredPostCard({ postId, onOpen, fullSize, unsortable, unreadCo
               </YStack>
             </Button>
             <Button key='moveDown' size='$2' circular
-              animation='standard'
+              transition='standard'
               disabled={unsortable || !canMoveDown}
               o={unsortable ? 0 : canMoveDown ? 1 : 0.5}
               transform={[{ translateY: unsortable ? -10 : 0 }]}

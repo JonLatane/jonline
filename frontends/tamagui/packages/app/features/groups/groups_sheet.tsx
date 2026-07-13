@@ -1,5 +1,5 @@
 import { GroupListingType, Permission, PostContext } from '@jonline/api';
-import { Button, Heading, Image, Input, Paragraph, Sheet, Theme, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
+import { Button, Heading, Image, Input, InverseTheme, Paragraph, Sheet, XStack, YStack, useDebounceValue, useTheme } from '@jonline/ui';
 import { AtSign, Boxes, ChevronLeft, Info, Search, X as XIcon } from '@tamagui/lucide-icons';
 import { useGroupContext } from 'app/contexts';
 import { useNavigationContext } from 'app/contexts/navigation_context';
@@ -312,7 +312,7 @@ export function GroupsSheet({
             <Input size="$3" f={1} placeholder='Search for Groups' textContentType='name'
               paddingHorizontal={40} ref={searchInputRef}
 
-              onChange={(e) => setSearchText(e.nativeEvent.text)} value={searchText} >
+              onChangeText={(text) => setSearchText(text)} value={searchText} >
 
             </Input>
             <Button icon={XIcon} ml={-44} mr='$3'
@@ -464,7 +464,7 @@ export function GroupsSheetButton({
           // selectedAccount={account}
           // onAccountSelected={toggleAccountSelect}
           button={(onPress) =>
-            <Button onPress={onPress} animation='standard' h='auto' px='$2'
+            <Button onPress={onPress} transition='standard' h='auto' px='$2'
               borderBottomWidth={1} borderBottomLeftRadius={0} borderBottomRightRadius={0}
               o={account ? 1 : 0.5}
               {...themedButtonBackground(navColor, navTextColor)}>
@@ -537,7 +537,7 @@ export function GroupsSheetButton({
     {
       selectedGroup && !hideInfoButtons
         ? <>
-          <Theme inverse>
+          <InverseTheme>
             <XStack opacity={0.7} marginVertical='auto'>
               <Button icon={Info} size="$2" circular mt={showServerInfo ? '$4' : undefined}
                 ml={infoMarginLeft}
@@ -546,7 +546,7 @@ export function GroupsSheetButton({
                   // setInfoOpen((x) => !x)
                 }} />
             </XStack>
-          </Theme>
+          </InverseTheme>
         </>
         : undefined
     }

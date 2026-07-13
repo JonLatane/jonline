@@ -7,15 +7,19 @@ module Shared.AccountsPanel exposing
     , Model
     , Msg(..)
     , Server
+    , ServerLogoSize(..)
     , accountAvatarUrl
     , accountId
     , accountsMenuLabel
     , brandingFor
+    , displayName
     , hasAdminAccount
     , init
     , isAdmin
+    , isKnownServer
     , mainServerTheme
     , serverHasAccounts
+    , serverNameAndLogo
     , serverThemeFor
     , serverThemeOf
     , update
@@ -27,7 +31,11 @@ CDN backend_host discovery) that gets you from a typed-in hostname to a
 working connection.
 -}
 
+import Browser.Dom as Dom
+import Char
 import Grpc
+import Html exposing (Html, div, img, text)
+import Html.Attributes exposing (alt, class, src)
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
@@ -64,6 +72,7 @@ type alias Account =
     , enabled : Bool
     , avatarMediaId : Maybe String
     , permissions : List Permission
+    , realName : String
     }
 
 
@@ -132,13 +141,14 @@ type alias AccountForm =
     }
 
 
-{-| The "Add Server" control's own form state -- separate from `AccountForm`
+{-| The "Add Server" control's own status -- separate from `AccountForm`'s
 since adding a server (an unauthenticated `GetServerConfiguration` probe) and
 logging in are independent flows that can be in-flight/erroring independently.
+The host being added is `AccountForm.server` itself -- the Server field is
+shared between the two flows (see `AddServerClicked`).
 -}
 type alias AddServerForm =
-    { host : String
-    , status : FormStatus
+    { status : FormStatus
     }
 
 
@@ -176,15 +186,17 @@ type Msg
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
-    | ServerHostInputChanged String
     | AddServerClicked
     | GotNewServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | RemoveServerClicked String
     | ToggleAccountsPanel
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
+    | ServerChipClicked String
     | SetWebUserInterfaceClicked String WebUserInterface
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
+    | FocusInput String
+    | NoOp
 
 
 {-| A stable identifier for an account: a user's id is only unique per-server.
@@ -222,13 +234,26 @@ accountsMenuLabel model =
 
         [ only ] ->
             if only.server == model.accountForm.server then
-                only.username
+                displayName only
 
             else
-                only.username ++ "@" ++ only.server
+                displayName only ++ "@" ++ only.server
 
         many ->
             String.fromInt (List.length many) ++ " Accounts"
+
+
+{-| A username display enriched with the account's Real Name, if it has one --
+e.g. "Jon Latane (jon)" rather than just "jon". Falls back to the bare
+username when `realName` is empty (unset).
+-}
+displayName : Account -> String
+displayName account =
+    if String.isEmpty (String.trim account.realName) then
+        account.username
+
+    else
+        account.realName ++ " (" ++ account.username ++ ")"
 
 
 {-| The URL for an account's avatar, authorized with its own access token
@@ -304,6 +329,248 @@ mainServerTheme darkMode model =
     serverThemeFor darkMode model model.mainFrontendHost
 
 
+
+-- SERVER NAME + LOGO
+-- Port of the React app's `server_name_and_logo.tsx`: server names often
+-- encode a short "badge" name before a `|` or the name's first emoji, with a
+-- fuller name after it (e.g. "jonline.io | Jon's Cool Server 🎉"). This pulls
+-- that apart and picks a logo (the server's square image, its emoji, or an
+-- initial-letter placeholder, in that preference order) and font sizes so the
+-- short badge name doesn't look tiny next to a long full one.
+
+
+{-| `CompactServerLogo` is a single-line horizontal glyph+name, for tight
+spaces like the nav bar; `RegularServerLogo` stacks a larger glyph above a
+(possibly two-line) name, for the Accounts Panel's server chips.
+-}
+type ServerLogoSize
+    = CompactServerLogo
+    | RegularServerLogo
+
+
+serverNameAndLogo : Server -> ServerLogoSize -> Html msg
+serverNameAndLogo server size =
+    let
+        branding =
+            server.branding
+
+        ( namePrefix, emoji, nameSuffix ) =
+            splitOnFirstEmoji True branding.name
+
+        hasEmoji =
+            case emoji of
+                Just e ->
+                    e /= "" && e /= "|"
+
+                Nothing ->
+                    False
+
+        largeName =
+            String.length namePrefix < 10 && (nameSuffix == Nothing || nameSuffix == Just "")
+
+        logo =
+            case branding.logoUrl of
+                Just url ->
+                    img [ class "server-logo-image", src url, alt branding.name ] []
+
+                Nothing ->
+                    if hasEmoji then
+                        div [ class "server-logo-emoji" ] [ text (Maybe.withDefault "" emoji) ]
+
+                    else
+                        div [ class "server-logo-placeholder" ] [ text (initialLetter branding.name) ]
+
+        -- The emoji is folded into the primary line only when it's *not* already
+        -- standing in as the logo above (i.e. there's a real image logo).
+        primaryLine =
+            namePrefix
+                ++ (if branding.logoUrl /= Nothing && hasEmoji then
+                        " " ++ Maybe.withDefault "" emoji
+
+                    else
+                        ""
+                   )
+
+        primaryClasses =
+            "server-name-primary"
+                :: (if size == RegularServerLogo && largeName then
+                        [ "large" ]
+
+                    else
+                        []
+                   )
+
+        secondaryLine =
+            case nameSuffix of
+                Just suffix ->
+                    if size == RegularServerLogo && not largeName && suffix /= "" then
+                        div [ class "server-name-secondary" ] [ text suffix ]
+
+                    else
+                        text ""
+
+                Nothing ->
+                    text ""
+
+        sizeClass =
+            case size of
+                CompactServerLogo ->
+                    "compact"
+
+                RegularServerLogo ->
+                    "regular"
+    in
+    div [ class ("server-name-and-logo " ++ sizeClass) ]
+        [ logo
+        , div [ class "server-name-breakdown" ]
+            [ div [ class (String.join " " primaryClasses) ] [ text primaryLine ]
+            , secondaryLine
+            ]
+        ]
+
+
+initialLetter : String -> String
+initialLetter fullName =
+    fullName
+        |> String.trim
+        |> String.uncons
+        |> Maybe.map (Tuple.first >> Char.toUpper >> String.fromChar)
+        |> Maybe.withDefault "?"
+
+
+{-| Approximates the React app's `splitOnFirstEmoji` (which gets grapheme-
+cluster splitting for free from `Intl.Segmenter`): finds the first
+pictographic character (or, if `supportPipe`, a literal `|`) and splits the
+string around it, trimming both sides. A found emoji is extended to swallow
+any immediately-following variation-selector/ZWJ/skin-tone/pictographic/
+regional-indicator characters, so most multi-codepoint emoji (flags, ZWJ
+sequences, skin tones) stay together as one unit -- not a real grapheme
+segmenter, but close enough for the short server names this is applied to.
+-}
+splitOnFirstEmoji : Bool -> String -> ( String, Maybe String, Maybe String )
+splitOnFirstEmoji supportPipe fullText =
+    let
+        chars =
+            String.toList fullText
+
+        isSplitChar c =
+            isPictographic c || (supportPipe && c == '|')
+    in
+    case findIndex isSplitChar chars of
+        Nothing ->
+            ( fullText, Nothing, Nothing )
+
+        Just idx ->
+            let
+                before =
+                    List.take idx chars |> String.fromList |> String.trim
+
+                atSplit =
+                    List.drop idx chars
+            in
+            case atSplit of
+                '|' :: rest ->
+                    ( before, Just "|", ifNonEmpty (String.trim (String.fromList rest)) )
+
+                _ ->
+                    let
+                        ( emojiChars, rest ) =
+                            takeEmojiRun atSplit
+                    in
+                    ( before, Just (String.fromList emojiChars), ifNonEmpty (String.trim (String.fromList rest)) )
+
+
+findIndex : (a -> Bool) -> List a -> Maybe Int
+findIndex pred list =
+    list
+        |> List.indexedMap Tuple.pair
+        |> List.filter (Tuple.second >> pred)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+takeEmojiRun : List Char -> ( List Char, List Char )
+takeEmojiRun chars =
+    case chars of
+        first :: rest ->
+            let
+                ( continuation, remaining ) =
+                    spanEmojiContinuation rest
+            in
+            ( first :: continuation, remaining )
+
+        [] ->
+            ( [], [] )
+
+
+spanEmojiContinuation : List Char -> ( List Char, List Char )
+spanEmojiContinuation chars =
+    case chars of
+        c :: rest ->
+            if isEmojiContinuation c then
+                let
+                    ( more, remaining ) =
+                        spanEmojiContinuation rest
+                in
+                ( c :: more, remaining )
+
+            else
+                ( [], chars )
+
+        [] ->
+            ( [], [] )
+
+
+isEmojiContinuation : Char -> Bool
+isEmojiContinuation c =
+    isPictographic c || isVariationSelector c || isZeroWidthJoiner c || isSkinToneModifier c
+
+
+isVariationSelector : Char -> Bool
+isVariationSelector c =
+    Char.toCode c == 0xFE0F
+
+
+isZeroWidthJoiner : Char -> Bool
+isZeroWidthJoiner c =
+    Char.toCode c == 0x200D
+
+
+isSkinToneModifier : Char -> Bool
+isSkinToneModifier c =
+    let
+        code =
+            Char.toCode c
+    in
+    code >= 0x1F3FB && code <= 0x1F3FF
+
+
+isRegionalIndicator : Char -> Bool
+isRegionalIndicator c =
+    let
+        code =
+            Char.toCode c
+    in
+    code >= 0x1F1E6 && code <= 0x1F1FF
+
+
+{-| Approximates Unicode's `Extended_Pictographic` property (which the React
+app's regex engine gets for free) via known emoji code-point blocks -- covers
+the vast majority of emoji actually used in server names.
+-}
+isPictographic : Char -> Bool
+isPictographic c =
+    let
+        code =
+            Char.toCode c
+    in
+    (code >= 0x1F300 && code <= 0x1FAFF)
+        || (code >= 0x2600 && code <= 0x27BF)
+        || (code >= 0x2300 && code <= 0x23FF)
+        || (code >= 0x2B00 && code <= 0x2BFF)
+        || isRegionalIndicator c
+
+
 init : Request -> Flags -> ( Model, Cmd Msg )
 init req flags =
     let
@@ -374,7 +641,7 @@ emptyForm =
 
 emptyAddServerForm : AddServerForm
 emptyAddServerForm =
-    { host = "", status = Idle }
+    { status = Idle }
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -449,6 +716,7 @@ update req msg model =
                             , enabled = True
                             , avatarMediaId = Maybe.map .id user.avatar
                             , permissions = user.permissions
+                            , realName = user.realName
                             }
 
                         alreadyKnown =
@@ -539,9 +807,34 @@ update req msg model =
                                     else
                                         model.servers ++ [ server ]
                             }
+
+                        -- The base host may recommend other servers to federate with (see
+                        -- `federation.proto`'s `FederatedServer`). At this first-setup moment
+                        -- (this whole branch only runs the first time we've ever seen this
+                        -- browsing host -- see `init`'s `browsingHostAlreadyKnown`), connect to
+                        -- each one that's `configuredByDefault`, appending it after the base
+                        -- host once negotiated; `pinnedByDefault` ones are enabled immediately,
+                        -- the rest added disabled for the user to opt into.
+                        federatedServerCmds =
+                            config.federationInfo
+                                |> Maybe.map .servers
+                                |> Maybe.withDefault []
+                                |> List.filter
+                                    (\fs ->
+                                        fs.host /= resolvedFrontend && Maybe.withDefault False fs.configuredByDefault
+                                    )
+                                |> List.map
+                                    (\fs ->
+                                        negotiateServerConfig (isSecure req) fs.host
+                                            |> Task.attempt (GotReconnectResult (Maybe.withDefault False fs.pinnedByDefault))
+                                    )
                     in
                     ( newModel
-                    , Cmd.batch [ persist newModel, refreshPermissionsForServer server newModel.accounts ]
+                    , Cmd.batch
+                        (persist newModel
+                            :: refreshPermissionsForServer server newModel.accounts
+                            :: federatedServerCmds
+                        )
                     )
 
                 Err _ ->
@@ -606,13 +899,10 @@ update req msg model =
             in
             ( newModel, persist newModel )
 
-        ServerHostInputChanged host ->
-            ( { model | addServerForm = { host = host, status = Idle } }, Cmd.none )
-
         AddServerClicked ->
             let
                 host =
-                    String.trim model.addServerForm.host
+                    String.trim model.accountForm.server
             in
             if String.isEmpty host then
                 ( model, Cmd.none )
@@ -638,7 +928,12 @@ update req msg model =
                                 , addServerForm = emptyAddServerForm
                             }
                     in
-                    ( newModel, persist newModel )
+                    -- The server just typed into the (shared) Server field is now valid, so
+                    -- Username/Password become enabled -- move focus there, same as if the
+                    -- user had hit Enter on an already-known server (see `formView`).
+                    ( newModel
+                    , Cmd.batch [ persist newModel, Task.attempt (\_ -> NoOp) (Dom.focus "account-form-username") ]
+                    )
 
                 Err err ->
                     ( updateAddServerForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
@@ -668,6 +963,7 @@ update req msg model =
                                 | username = user.username
                                 , permissions = user.permissions
                                 , avatarMediaId = Maybe.map .id user.avatar
+                                , realName = user.realName
                             }
 
                         newModel =
@@ -685,11 +981,15 @@ update req msg model =
                 let
                     newModel =
                         { model | mainFrontendHost = frontendHost }
+                            |> updateForm (\f -> { f | server = frontendHost })
                 in
                 ( newModel, persist newModel )
 
             else
                 ( model, Cmd.none )
+
+        ServerChipClicked frontendHost ->
+            ( updateForm (\f -> { f | server = frontendHost }) model, Cmd.none )
 
         SetWebUserInterfaceClicked id ui ->
             let
@@ -733,6 +1033,12 @@ update req msg model =
                     -- doesn't visibly change; the admin can retry.
                     ( model, Cmd.none )
 
+        FocusInput domId ->
+            ( model, Task.attempt (\_ -> NoOp) (Dom.focus domId) )
+
+        NoOp ->
+            ( model, Cmd.none )
+
 
 {-| A server that has any associated accounts can't be removed (only disabled),
 since removing it would orphan those accounts' stored credentials.
@@ -740,6 +1046,17 @@ since removing it would orphan those accounts' stored credentials.
 serverHasAccounts : List Account -> String -> Bool
 serverHasAccounts accounts frontendHost =
     List.any (\a -> a.server == frontendHost) accounts
+
+
+{-| Whether `frontendHost` (trimmed) is a server we're actually connected to --
+used by the Account form to decide whether Username/Password/Log In/Create
+Account should be enabled, or whether "Add Server" should be offered instead
+(see `AddServerClicked`, which adds whatever's currently typed into the
+(shared) `AccountForm.server` field).
+-}
+isKnownServer : Model -> String -> Bool
+isKnownServer model frontendHost =
+    List.any (\s -> s.frontendHost == String.trim frontendHost) model.servers
 
 
 updateAddServerForm : (AddServerForm -> AddServerForm) -> Model -> Model
@@ -1122,6 +1439,7 @@ encodeAccount account =
         , ( "enabled", Encode.bool account.enabled )
         , ( "avatarMediaId", account.avatarMediaId |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         , ( "permissions", Encode.list (fieldNumbersPermission >> Encode.int) account.permissions )
+        , ( "realName", Encode.string account.realName )
         ]
 
 
@@ -1165,17 +1483,35 @@ persistedStateDecoder =
         (Decode.field "servers" (Decode.list persistedServerDecoder))
 
 
+{-| `elm/json` only provides `map8`, but `Account` now has 9 fields -- so this
+decodes the first 8 into a partially-applied `Account` constructor, then
+applies `realName` on top of that.
+-}
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map8 Account
-        (Decode.field "server" Decode.string)
-        (Decode.field "userId" Decode.string)
-        (Decode.field "username" Decode.string)
-        (Decode.field "refreshToken" tokenDecoder)
-        (Decode.field "accessToken" tokenDecoder)
-        (Decode.field "enabled" Decode.bool)
-        (optionalString "avatarMediaId")
-        permissionsDecoder
+    Decode.map2 (\partial realName -> partial realName)
+        (Decode.map8 Account
+            (Decode.field "server" Decode.string)
+            (Decode.field "userId" Decode.string)
+            (Decode.field "username" Decode.string)
+            (Decode.field "refreshToken" tokenDecoder)
+            (Decode.field "accessToken" tokenDecoder)
+            (Decode.field "enabled" Decode.bool)
+            (optionalString "avatarMediaId")
+            permissionsDecoder
+        )
+        realNameDecoder
+
+
+{-| Defaults to "" if the key is missing entirely (older persisted state),
+without failing the rest of the decode.
+-}
+realNameDecoder : Decoder String
+realNameDecoder =
+    Decode.oneOf
+        [ Decode.field "realName" Decode.string
+        , Decode.succeed ""
+        ]
 
 
 {-| Defaults to no permissions if the key is missing entirely (older

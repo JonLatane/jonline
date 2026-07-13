@@ -132,23 +132,23 @@ export function SaveButtonGroup({
     {canEdit
       ? editing
         ? <>
-          <Button my='auto' size='$2' icon={Save} onPress={reallyUpdate} color={primaryAnchorColor} disabled={savingEdits} transparent>
+          <Button my='auto' size='$2' icon={Save} onPress={reallyUpdate} color={primaryAnchorColor} disabled={savingEdits} chromeless>
             Save
           </Button>
-          <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} transparent>
+          <Button my='auto' size='$2' icon={XIcon} onPress={() => setEditing(false)} disabled={savingEdits} chromeless>
             Cancel
           </Button>
           {previewingEdits
-            ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} transparent>
+            ? <Button my='auto' size='$2' icon={Edit} onPress={() => setPreviewingEdits(false)} color={navAnchorColor} disabled={savingEdits} chromeless>
               Edit
             </Button>
             :
-            <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} transparent>
+            <Button my='auto' size='$2' icon={Eye} onPress={() => setPreviewingEdits(true)} color={navAnchorColor} disabled={savingEdits} chromeless>
               Preview
             </Button>}
         </>
         : <>
-          <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} transparent>
+          <Button my='auto' size='$2' icon={Edit} onPress={() => setEditing(true)} disabled={deleting} chromeless>
             Edit
           </Button>
 
@@ -157,7 +157,7 @@ export function SaveButtonGroup({
             : <Dialog>
               <Dialog.Trigger asChild>
                 <Button my='auto' size='$2' icon={Delete}
-                  disabled={deleting} transparent>
+                  disabled={deleting} chromeless>
                   Delete
                 </Button>
               </Dialog.Trigger>
@@ -166,7 +166,7 @@ export function SaveButtonGroup({
               <Dialog.Portal zIndex={2000011}>
                 <Dialog.Overlay
                   key="overlay"
-                  animation='standard'
+                  transition='standard'
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
@@ -177,7 +177,7 @@ export function SaveButtonGroup({
                   elevate
                   // zIndex={2000011}
                   key="content"
-                  animation={[
+                  transition={[
                     'standard',
                     {
                       opacity: {
@@ -193,7 +193,7 @@ export function SaveButtonGroup({
                   opacity={1}
                   y={0}
                 >
-                  <YStack space>
+                  <YStack gap="$true">
                     <Dialog.Title>Delete {entityType}</Dialog.Title>
                     {typeof deleteDialogText === 'string'
                       ? <Dialog.Description>

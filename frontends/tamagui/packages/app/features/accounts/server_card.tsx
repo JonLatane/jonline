@@ -1,4 +1,4 @@
-import { Button, Card, Dialog, Heading, Theme, XStack, YStack, standardHorizontalAnimation, Paragraph } from '@jonline/ui';
+import { Button, Card, Dialog, Heading, InverseTheme, XStack, YStack, standardHorizontalAnimation, Paragraph } from '@jonline/ui';
 import { AlertCircle, ChevronLeft, ChevronRight, ExternalLink, Info, Lock, Trash, Unlock } from "@tamagui/lucide-icons";
 import { colorMeta, useCurrentAccountOrServer, useAppDispatch, useAppSelector, useLocalConfiguration } from "app/hooks";
 import { JonlineServer, RootState, accountID, moveServerDown, moveServerUp, removeAccount, removeServer, selectAccount, selectAllAccounts, selectServer, serverID, useRootSelector, selectAccountById } from 'app/store';
@@ -78,8 +78,8 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
 
   const [deleting, setDeleting] = useState(false);
   return <>
-    <Card theme="dark" size="$4" bordered
-      animation='standard'
+    <Card theme="dark" size="$4" borderWidth={1} borderColor="$borderColor"
+      transition='standard'
       // {...standardHorizontalAnimation}
       scale={0.9}
       backgroundColor={selected ? primaryColor : undefined}
@@ -178,7 +178,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
         <Dialog.Overlay
           zIndex={1000000000000012}
           key="overlay"
-          animation='standard'
+          transition='standard'
           o={0.5}
           enterStyle={{ o: 0 }}
           exitStyle={{ o: 0 }}
@@ -188,7 +188,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
           bordered
           elevate
           key="content"
-          animation={[
+          transition={[
             'standard',
             {
               opacity: {
@@ -204,7 +204,7 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
           opacity={1}
           y={0}
         >
-          <YStack space>
+          <YStack gap="$true">
             <Dialog.Title>Remove Server</Dialog.Title>
             <Dialog.Description>
               {/* <Paragraph> */}
@@ -217,9 +217,9 @@ const ServerCard: React.FC<Props> = ({ server, isPreview = false, linkToServerIn
                 <Button>Cancel</Button>
               </Dialog.Close>
               {/* <Dialog.Action asChild onClick={doRemoveServer}> */}
-              <Theme inverse>
+              <InverseTheme>
                 <Button onPress={doRemoveServer}>Remove</Button>
-              </Theme>
+              </InverseTheme>
               {/* </Dialog.Action> */}
             </XStack>
           </YStack>

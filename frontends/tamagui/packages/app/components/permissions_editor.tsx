@@ -80,6 +80,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
       }
       {editMode && addablePermissions.length > 0 ?
         <Select native key={`permissions-${JSON.stringify(selectedPermissions)}`}
+          zIndex={200000}
           onValueChange={(p) => {
             if (p !== Permission.PERMISSION_UNKNOWN.toString()) {
               selectPermission(parseInt(p) as Permission);
@@ -102,7 +103,7 @@ export const PermissionsEditor: React.FC<PermissionsEditorProps> = ({
           </Sheet>
         </Adapt> */}
 
-          <Select.Content zIndex={200000}>
+          <Select.Content>
             {/* <Select.ScrollUpButton ai="center" jc="center" pos="relative" w="100%" h="$3">
             <YStack zi={10}>
               <ChevronUp size={20} />

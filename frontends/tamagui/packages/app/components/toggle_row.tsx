@@ -35,7 +35,7 @@ export function ToggleRow({ name, description, value: optionalValue, setter, dis
       // value={value.toString()}
       disabled={false}
       onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-      <Switch.Thumb animation='standard' backgroundColor='$background' />
+      <Switch.Thumb transition='standard' backgroundColor='$background' />
     </Switch>
   </XStack>;
 }

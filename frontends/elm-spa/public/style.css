@@ -125,6 +125,8 @@ body {
    page's link overrides that with the background-color-nav utility class
    (see UI.navLink) instead. */
 .nav-link {
+  display: inline-flex;
+  align-items: center;
   text-decoration: none;
   color: inherit;
   padding: 0.4rem 0.9rem;
@@ -155,7 +157,8 @@ button:disabled {
 
 input[type="text"],
 input:not([type]),
-input[type="password"] {
+input[type="password"],
+input[type="url"] {
   font: inherit;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
@@ -297,6 +300,12 @@ input[type="password"] {
   width: 320px;
   max-width: calc(100vw - 2rem);
   background: var(--panel-bg);
+  /* Without this, text here would inherit the navbar's primaryTextColor
+     (set on .navbar via the background-color-primary utility class), which
+     is chosen for contrast against a server's brand color and doesn't track
+     the app's own light/dark mode -- see the admin panel's "switch main
+     server" label. */
+  color: var(--fg);
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
@@ -351,7 +360,8 @@ input[type="password"] {
   padding: 0.5rem 0.4rem;
 }
 
-/* Only present while the Server Admin Panel's "switch main server" toggle is
+/* Always clickable -- fills the Account form's Server field; also sets the
+   main server while the Server Admin Panel's "switch main server" toggle is
    on -- see UI.elm's `serverChip`. */
 .server-chip-top.selectable {
   cursor: pointer;
@@ -383,11 +393,108 @@ input[type="password"] {
   font-weight: 700;
 }
 
-.server-chip-name {
+/* A server's logo + (possibly emoji/pipe-split) name -- see
+   `AccountsPanel.serverNameAndLogo`. `.compact` lays the glyph and name out in
+   a single horizontal line (nav bar); `.regular` stacks a larger glyph above
+   a name that can itself be two lines (server chips in the Accounts Panel). */
+.server-name-and-logo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.server-name-and-logo.compact {
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+.server-name-and-logo.regular {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.server-logo-image {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.server-name-and-logo.compact .server-logo-image {
+  width: 20px;
+  height: 20px;
+}
+
+.server-name-and-logo.regular .server-logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+.server-logo-emoji,
+.server-logo-placeholder {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.server-name-and-logo.compact .server-logo-emoji,
+.server-name-and-logo.compact .server-logo-placeholder {
+  width: 20px;
+  height: 20px;
+  font-size: 1rem;
+}
+
+.server-name-and-logo.regular .server-logo-emoji,
+.server-name-and-logo.regular .server-logo-placeholder {
+  width: 32px;
+  height: 32px;
+  font-size: 1.6rem;
+}
+
+.server-logo-placeholder {
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.25);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.server-name-and-logo.regular .server-logo-placeholder {
+  font-size: 1.1rem;
+}
+
+.server-name-breakdown {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.server-name-and-logo.regular .server-name-breakdown {
+  align-items: center;
+}
+
+.server-name-primary {
   font-size: 0.85rem;
   font-weight: 600;
-  text-align: center;
   overflow-wrap: anywhere;
+}
+
+.server-name-and-logo.regular .server-name-primary {
+  text-align: center;
+}
+
+.server-name-primary.large {
+  font-size: 1.1rem;
+}
+
+.server-name-secondary {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.server-name-and-logo.regular .server-name-secondary {
+  text-align: center;
 }
 
 .server-chip-host {
@@ -404,28 +511,6 @@ input[type="password"] {
   gap: 0.4rem;
   padding: 0.35rem 0.5rem;
 }
-
-.add-server {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.add-server-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.add-server-row input {
-  flex: 1;
-  min-width: 0;
-}
-
-.add-server-row button {
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-}
-
 
 /* Accounts: a vertically-scrolling list (this is the one that grows). */
 
@@ -529,6 +614,12 @@ input[type="password"] {
 
 .account-form-buttons button {
   flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.add-server-button {
+  width: 100%;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
 }

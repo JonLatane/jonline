@@ -281,7 +281,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
             <Tooltip.Trigger>
               <Button
                 // bordered={false}
-                transparent
+                chromeless
 
                 my='auto'
                 size="$3"
@@ -401,7 +401,7 @@ export function FeaturesNavigation({ appSection = AppSection.HOME, appSubsection
           x={0}
           y={0}
           o={1}
-          animation={[
+          transition={[
             'standard',
             {
               opacity: {

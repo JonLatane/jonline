@@ -114,7 +114,7 @@ export const CreationServerSelector: React.FC<CreationServerSelectorProps> = ({
     {isCurrentServer
       ? undefined :
       <YStack //ai='flex-end'//'center'
-        animation='standard' {...reverseHorizontalAnimation} o={0.5}
+        transition='standard' {...reverseHorizontalAnimation} o={0.5}
       >
         <XStack ml='$2' pl='$1'>
           <Paragraph pl='$1' size='$1'>via</Paragraph>

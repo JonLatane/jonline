@@ -1,5 +1,5 @@
 import { Permission, Post } from '@jonline/api'
-import { Button, Heading, ScrollView, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
+import { Button, Heading, ScrollView, TamaguiElement, TextArea, Tooltip, XStack, YStack, isClient, isWeb, reverseStandardAnimation, useTheme, useToastController, useWindowDimensions } from '@jonline/ui'
 import { ChevronRight, Eye, Send as SendIcon } from '@tamagui/lucide-icons'
 import { TamaguiMarkdown } from 'app/components'
 import { MediaRef, useAccountOrServerContext } from 'app/contexts'
@@ -31,7 +31,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
   const [replyText, setReplyText] = useState('');
   const [previewReply, setPreviewReply] = useState(false);
   const [isSendingReply, setIsSendingReply] = useState(false);
-  const textAreaRef = React.createRef<HTMLInputElement>();
+  const textAreaRef = React.createRef<TamaguiElement>();
   const chatUI = useRootSelector((state: RootState) => state.config.discussionChatUI);
   const [showMedia, setShowMedia] = useState(true);
   const maxPreviewHeight = (useWindowDimensions().height - 80 - (showMedia && media.length > 0 ? 100 : 0)) * 0.5;
@@ -100,7 +100,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
       {hasReplyTextFocused || media.length > 0
         ? <>
           <Button size='$1' onPress={() => setShowMedia(!showMedia)}>
-            <XStack animation='standard' rotate={showMedia ? '90deg' : '0deg'}>
+            <XStack transition='standard' rotate={showMedia ? '90deg' : '0deg'}>
               <ChevronRight size='$1' />
             </XStack>
             <Heading size='$1' f={1}>Media {media.length > 0 ? `(${media.length})` : undefined}</Heading>
@@ -114,7 +114,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         </>
         : undefined}
       {previewReply
-        ? <YStack px='$3' py='$1' f={1} animation='standard' {...reverseStandardAnimation}>
+        ? <YStack px='$3' py='$1' f={1} transition='standard' {...reverseStandardAnimation}>
           <ScrollView maxHeight={maxPreviewHeight}>
             {!showMedia && media.length > 0
               ? <PostMediaRenderer {...{
@@ -136,7 +136,7 @@ export const ReplyArea: React.FC<ReplyAreaProps> = ({ replyingToPath, hidden, on
         <YStack f={1} mt='$1'>
           <TextArea f={1} value={replyText} ref={textAreaRef}
             disabled={isSendingReply} opacity={isSendingReply || !canSend ? 0.5 : 1}
-            onChangeText={t => setReplyText(t.nativeEvent.text)}
+            onChangeText={t => setReplyText(t)}
             onFocus={() => setReplyTextFocused(true)}
             onBlur={() => setReplyTextFocused(false)}
             placeholder={`Reply to this post. Markdown is supported.`} />

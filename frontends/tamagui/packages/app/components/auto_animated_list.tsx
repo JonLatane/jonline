@@ -59,7 +59,7 @@ export function AutoAnimatedList({
   //     // value={value.toString()}
   //     disabled={false}
   //     onCheckedChange={(checked) => autoDispatch ? dispatch(setter(checked)) : setter(checked)}>
-  //     <Switch.Thumb animation='standard' backgroundColor='$background' />
+  //     <Switch.Thumb transition='standard' backgroundColor='$background' />
   //   </Switch>
   // </XStack>;
 }

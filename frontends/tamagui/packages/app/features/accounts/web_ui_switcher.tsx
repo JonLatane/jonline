@@ -66,7 +66,7 @@ export function WebUiSwitcher({ account, serverConfiguration }: Props) {
   }
 
   return (
-    <Card bordered p='$2'>
+    <Card borderWidth={1} borderColor="$borderColor" p='$2'>
       <Button unstyled onPress={() => setExpanded(!expanded)}>
         <XStack ai='center' gap='$2'>
           {avatarUrl
@@ -77,7 +77,7 @@ export function WebUiSwitcher({ account, serverConfiguration }: Props) {
           <Heading size='$2' f={1} numberOfLines={1}>{account.user.username}</Heading>
           {updating
             ? <Spinner size='small' />
-            : <XStack animation='standard' rotate={expanded ? '180deg' : '0deg'}>
+            : <XStack transition='standard' rotate={expanded ? '180deg' : '0deg'}>
               <ChevronDown size='$1' />
             </XStack>}
         </XStack>
@@ -85,7 +85,7 @@ export function WebUiSwitcher({ account, serverConfiguration }: Props) {
       <AnimatePresence>
         {expanded
           ? <XStack key={`web-ui-buttons-${accountID(account)}`} gap='$2' mt='$2'
-            animation='standard' {...standardAnimation}>
+            transition='standard' {...standardAnimation}>
             {uiButton(WebUserInterface.FLUTTER_WEB, 'Flutter', true)}
             {uiButton(WebUserInterface.REACT_TAMAGUI, 'React')}
             {uiButton(WebUserInterface.ELM_SPA, 'Elm')}

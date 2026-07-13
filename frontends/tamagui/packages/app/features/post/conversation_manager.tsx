@@ -58,13 +58,13 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
   return <YStack w='100%' key='comments'>
     <AutoAnimatedList>
       {interactionType === 'post'
-        ? <XStack animation='standard' {...standardAnimation}>
+        ? <XStack transition='standard' {...standardAnimation}>
           <XStack f={1} />
           <Tooltip placement="bottom">
             <Tooltip.Trigger>
               <Button backgroundColor={chatUI ? undefined : navColor}
                 hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
-                transparent={chatUI}
+                chromeless={chatUI}
                 onPress={handleDiscussionUIPress} mr='$2'>
                 <Heading size='$4' color={chatUI ? undefined : navTextColor}>Discussion</Heading>
               </Button>
@@ -79,7 +79,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
             <Tooltip.Trigger>
               <Button backgroundColor={!chatUI ? undefined : navColor}
                 hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
-                transparent={!chatUI}
+                chromeless={!chatUI}
                 borderTopRightRadius={0} borderBottomRightRadius={0}
                 onPress={handleChatUIPress}>
                 <Heading size='$4' color={!chatUI ? undefined : navTextColor}>Chat</Heading>
@@ -92,7 +92,7 @@ export const ConversationManager: React.FC<ConversationManagerProps> = ({ post, 
           </Tooltip>
           <Tooltip placement="bottom-end">
             <Tooltip.Trigger>
-              <Button transparent={!chatUI} icon={ListEnd}
+              <Button chromeless={!chatUI} icon={ListEnd}
                 borderTopLeftRadius={0} borderBottomLeftRadius={0}
                 opacity={!chatUI || showScrollPreserver ? 0.5 : 1}
                 onPress={handleScrollToBottomPress} />
@@ -282,7 +282,7 @@ export function useConversationCommentList({
       const result = <XStack key={`post-reply-${reply.id}`} id={`comment-${reply.id}`} w='100%'
         // w='100%' f={1}
         mt={(chatUI && !hideTopMargin) || (!chatUI && parentPost?.id == post?.id) ? '$3' : 0}
-      // animation='standard'
+      // transition='standard'
       // opacity={1}
       // scale={1}
       // y={0}

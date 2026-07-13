@@ -239,7 +239,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
         disabled={savingEdits} opacity={savingEdits || editedName == '' ? 0.5 : 1}
         // autoCapitalize='words'
         value={editedName}
-        onChange={(data) => { setEditedName(data.nativeEvent.text) }} />
+        onChangeText={(text) => { setEditedName(text) }} />
       : <Heading my='auto' f={1}>{displayedGroupName}</Heading>}
 
 
@@ -348,7 +348,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
 
             {editing || alreadyOnGroupPage
               ? groupNameAndLogo
-              : <Button px='$1' h='auto' transparent {...linkToGroup} f={1}>
+              : <Button px='$1' h='auto' chromeless {...linkToGroup} f={1}>
                 {groupNameAndLogo}
               </Button>}
             {infoRenderingGroup
@@ -358,7 +358,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
           <XStack ai='center'>
             {/* <Heading size='$2'>{server?.host}/g/{infoRenderingGroup?.shortname}</Heading> */}
             <XStack f={1} />
-            <Button transparent {...linkToMembers}>
+            <Button chromeless {...linkToMembers}>
               <Heading size='$1'>
                 {infoRenderingGroup?.memberCount} member{infoRenderingGroup?.memberCount == 1 ? '' : 's'}
               </Heading>
@@ -381,7 +381,7 @@ export function GroupDetailsSheet({ hideLeaveButtons }: GroupDetailsSheetProps) 
             <AnimatePresence>
               {showSettings
                 ? <YStack key='edit-group-settings'
-                  animation='standard'
+                  transition='standard'
                   mt='$2'
                   p='$2'
                   backgroundColor='$backgroundHover'

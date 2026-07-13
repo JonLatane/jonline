@@ -100,7 +100,7 @@ export const PageChooser: React.FC<Pagination<any> & {
               <Button key={pageButtonId(page)} mr='$1'
                 id={pageButtonId(page)}
                 {...highlightedButtonBackground(theme, 'nav', page === currentPage)}
-                transparent={page !== currentPage}
+                chromeless={page !== currentPage}
                 onPress={() => {
                   requestAnimationFrame(() => {
                     setPage(page);

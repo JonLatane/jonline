@@ -1,14 +1,10 @@
 import { createAnimations } from '@tamagui/animations-react-native';
-// import { AnimationDriver } from '@tamagui/use-presence';
-// import { createAnimations } from '@tamagui/animations-css';
 
-
-// export const animations = createAnimations({
-//   bouncy: 'ease-in 300ms',
-//   lazy: 'ease-in 500ms',
-//   quick: 'ease-in 100ms',
-// });
-
+// NOTE: tried switching to @tamagui/animations-css here to avoid the array-style
+// crash on Button's raw <button> render target (see git history), but its
+// `transition: all` output broke layout site-wide on any element whose non-animated
+// style props (e.g. height) change across renders, and enter/exit transitions got
+// stuck mid-offset app-wide. Reverted; the render-target crash needs a narrower fix.
 export const animations = createAnimations({
 
   // TODO: Maybe standard for web, bouncy for native/iOS?

@@ -202,7 +202,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
             iconAfter={CalendarArrowDown}
             {...(event
               ? highlightedButtonBackground(serverTheme, 'nav')
-              : { transparent: true })
+              : { chromeless: true })
             }
           >
             {tiny
@@ -237,7 +237,7 @@ export const EventCalendarExporter: React.FC<Props> = ({
             enterStyle={{ y: -10, opacity: 0 }}
             exitStyle={{ y: -10, opacity: 0 }}
             elevate
-            animation={[
+            transition={[
               'standard',
               {
                 opacity: {

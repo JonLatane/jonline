@@ -4,8 +4,9 @@ import Char
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
-import Html.Attributes exposing (alt, checked, class, disabled, href, placeholder, src, title, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Json.Decode as Decode
 import Page
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
@@ -43,8 +44,8 @@ layout shared currentRoute children =
     , header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
-                [ navLink shared currentRoute "Home" Route.Home_
-                , navLink shared currentRoute "About" Route.About
+                [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
+                , navLink shared currentRoute (text "About") Route.About
                 ]
             , div [ class "nav-right" ]
                 [ themeToggle shared
@@ -93,20 +94,40 @@ classes names =
     class (String.join " " names)
 
 
+{-| Fires `msg` (and suppresses the key's default effect, e.g. inserting a
+newline) when Enter is pressed in a text input -- used to chain focus through
+the login form and to trigger "Add Server"/"Log In" the same way clicking
+their buttons would.
+-}
+onEnter : msg -> Attribute msg
+onEnter msg =
+    preventDefaultOn "keydown"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Enter" then
+                        Decode.succeed ( msg, True )
+
+                    else
+                        Decode.fail "Not the Enter key"
+                )
+        )
+
+
 {-| A nav link styled as a button: the current page's link additionally gets
 `mainFrontendHost`'s `background-color-nav` utility class, tinting it with
 `navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
 navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them.
 -}
-navLink : Shared.Model -> Route -> String -> Route -> Html msg
-navLink shared currentRoute linkLabel linkRoute =
+navLink : Shared.Model -> Route -> Html msg -> Route -> Html msg
+navLink shared currentRoute content linkRoute =
     let
         isCurrent =
             linkRoute == currentRoute
     in
     a
-        [ href (Route.toHref linkRoute)
+        [ href (shared.basePath ++ Route.toHref linkRoute)
         , classes
             (if isCurrent then
                 [ "nav-link", shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
@@ -115,7 +136,30 @@ navLink shared currentRoute linkLabel linkRoute =
                 [ "nav-link" ]
             )
         ]
-        [ text linkLabel ]
+        [ content ]
+
+
+{-| The Home link's content is normally the browsing server's own
+logo/name (via `AccountsPanel.serverNameAndLogo`), same as any other server
+listing -- falling back to the literal text "Home" only for the brief window
+before `mainFrontendHost` has actually finished connecting (see
+`AccountsPanel.init`/`GotMainServerResult`), when it isn't in `servers` yet.
+-}
+homeLinkContent : Shared.Model -> Html msg
+homeLinkContent shared =
+    case mainServer shared of
+        Just server ->
+            AccountsPanel.serverNameAndLogo server AccountsPanel.CompactServerLogo
+
+        Nothing ->
+            text "Home"
+
+
+mainServer : Shared.Model -> Maybe AccountsPanel.Server
+mainServer shared =
+    shared.accountsPanel.servers
+        |> List.filter (\s -> s.frontendHost == shared.accountsPanel.mainFrontendHost)
+        |> List.head
 
 
 {-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
@@ -216,11 +260,10 @@ accountsPanel shared =
     in
     div [ classes [ "accounts-panel", stateClass ] ]
         [ serversStrip shared
-        , addServerRow accountsPanelModel.mainFrontendHost accountsPanelModel.addServerForm
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
-        , formView accountsPanelModel.mainFrontendHost accountsPanelModel.accountForm
+        , formView shared
         ]
 
 
@@ -238,9 +281,13 @@ serversStrip shared =
 utility classes (see `UI.EmittedStylesheet`); the enable switch and delete
 button sit in a bottom portion using `background-color-nav` instead.
 
-When the Server Admin Panel's "switch main server" toggle is on (see
-`Shared.AdminPanel`), the top portion also becomes clickable, setting that
-server as `mainFrontendHost` instead of doing nothing.
+The top portion is always clickable: tapping it fills the Account form's
+Server field with this server's `frontendHost` (`ServerChipClicked`), so
+switching which known server you're logging into/adding an account on is a
+single tap. When the Server Admin Panel's "switch main server" toggle is also
+on (see `Shared.AdminPanel`), that tap additionally sets this server as
+`mainFrontendHost` (`MainServerSelected`, which fills the Server field too --
+see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 -}
 serverChip : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
 serverChip shared server =
@@ -257,36 +304,35 @@ serverChip shared server =
         removable =
             not hasAccounts && not isMainServer
 
-        branding =
-            server.branding
-
         canSelectMain =
             shared.adminPanel.allowMainServerSwitch
 
         topClasses =
-            [ "server-chip-top", server.frontendHost, "background-color-primary" ]
-                ++ (if canSelectMain then
-                        [ "selectable" ]
-
-                    else
-                        []
-                   )
+            [ "server-chip-top", "selectable", server.frontendHost, "background-color-primary" ]
 
         topAttrs =
-            classes topClasses
-                :: (if canSelectMain then
-                        [ onClick (Shared.AccountsPanelMsg (AccountsPanel.MainServerSelected server.frontendHost))
-                        , title "Set as main server"
-                        ]
+            [ classes topClasses
+            , onClick
+                (Shared.AccountsPanelMsg
+                    (if canSelectMain then
+                        AccountsPanel.MainServerSelected server.frontendHost
 
-                    else
-                        []
-                   )
+                     else
+                        AccountsPanel.ServerChipClicked server.frontendHost
+                    )
+                )
+            , title
+                (if canSelectMain then
+                    "Set as main server"
+
+                 else
+                    "Use this server in the login form"
+                )
+            ]
     in
     div [ class "server-chip" ]
         [ div topAttrs
-            [ logoOrPlaceholder branding
-            , div [ class "server-chip-name" ] [ text branding.name ]
+            [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
             , if isMainServer then
                 div [ class "server-chip-main-badge" ] [ text "★ Main" ]
@@ -326,49 +372,6 @@ logoOrPlaceholder branding =
             div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
 
 
-{-| Adding a server first validates it (fetching its configuration) before it's
-added to the list -- so a typo'd or unreachable host shows an error instead of
-silently appearing as a dead chip.
--}
-addServerRow : String -> AccountsPanel.AddServerForm -> Html Shared.Msg
-addServerRow mainFrontendHost form =
-    let
-        checking =
-            form.status == AccountsPanel.Submitting
-    in
-    div [ class "add-server" ]
-        [ div [ class "add-server-row" ]
-            [ input
-                [ placeholder "Add a server host"
-                , value form.host
-                , onInput (AccountsPanel.ServerHostInputChanged >> Shared.AccountsPanelMsg)
-                , disabled checking
-                ]
-                []
-            , button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
-                , disabled checking
-                , classes [ mainFrontendHost, "background-color-nav" ]
-                ]
-                [ text
-                    (if checking then
-                        "Checking…"
-
-                     else
-                        "Add Server"
-                    )
-                ]
-            ]
-        , case form.status of
-            AccountsPanel.Errored err ->
-                div [ class "auth-error" ] [ text err ]
-
-            _ ->
-                text ""
-        ]
-
-
-
 -- ACCOUNTS
 
 
@@ -401,7 +404,7 @@ accountRow shared account =
         , avatarOrPlaceholder shared.accountsPanel.servers account
         , div [ class "account-row-label" ]
             [ div [ class "account-row-username" ]
-                [ text account.username
+                [ text (AccountsPanel.displayName account)
                 , if AccountsPanel.isAdmin account then
                     span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
 
@@ -459,48 +462,127 @@ switchInput isChecked toggleMsg =
 -- LOGIN FORM
 
 
-formView : String -> AccountsPanel.AccountForm -> Html Shared.Msg
-formView mainFrontendHost form =
+{-| The Server field is shared between logging in/creating an account and
+adding a new server (see `AccountsPanel.AddServerClicked`): as soon as it names
+a server we're not already connected to, Username/Password/Log In/Create
+Account are disabled and a full-width "Add Server" button appears right below
+it instead. Once that succeeds (or the field already named a known server),
+those re-enable, themed with *that* server's colors rather than
+`mainFrontendHost`'s -- see `AccountsPanel.GotNewServerResult` for the focus
+handoff to Username that completes the "type a host, Enter, type a username,
+Enter, type a password" flow.
+-}
+formView : Shared.Model -> Html Shared.Msg
+formView shared =
     let
+        accountsPanelModel =
+            shared.accountsPanel
+
+        form =
+            accountsPanelModel.accountForm
+
+        addForm =
+            accountsPanelModel.addServerForm
+
+        knownServer =
+            AccountsPanel.isKnownServer accountsPanelModel form.server
+
         submitting =
             form.status == AccountsPanel.Submitting
+
+        addingServer =
+            addForm.status == AccountsPanel.Submitting
+
+        accountFieldsDisabled =
+            not knownServer || submitting
+
+        themeHost =
+            if knownServer then
+                String.trim form.server
+
+            else
+                accountsPanelModel.mainFrontendHost
+
+        serverEnterMsg =
+            if knownServer then
+                AccountsPanel.FocusInput "account-form-username"
+
+            else
+                AccountsPanel.AddServerClicked
     in
     div [ class "account-form" ]
         [ input
-            [ placeholder "Server"
+            [ id "account-form-server"
+            , type_ "url"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
+            , placeholder "Server"
             , value form.server
             , onInput (AccountsPanel.ServerChanged >> Shared.AccountsPanelMsg)
+            , onEnter (Shared.AccountsPanelMsg serverEnterMsg)
             ]
             []
+        , if knownServer then
+            text ""
+
+          else
+            button
+                [ onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
+                , disabled (addingServer || String.isEmpty (String.trim form.server))
+                , classes [ "add-server-button", accountsPanelModel.mainFrontendHost, "background-color-nav" ]
+                ]
+                [ text
+                    (if addingServer then
+                        "Checking…"
+
+                     else
+                        "Add Server"
+                    )
+                ]
         , input
-            [ placeholder "Username"
+            [ id "account-form-username"
+            , type_ "text"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , attribute "autocomplete" "username"
+            , spellcheck False
+            , placeholder "Username"
             , value form.username
             , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
+            , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
+            , disabled accountFieldsDisabled
             ]
             []
         , input
-            [ type_ "password"
+            [ id "account-form-password"
+            , type_ "password"
             , placeholder "Password"
             , value form.password
             , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+            , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+            , disabled accountFieldsDisabled
             ]
             []
         , div [ class "account-form-buttons" ]
             [ button
                 [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-                , disabled submitting
-                , classes [ mainFrontendHost, "background-color-primary" ]
+                , disabled accountFieldsDisabled
+                , classes [ themeHost, "background-color-primary" ]
                 ]
                 [ text "Log In" ]
             , button
                 [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
-                , disabled submitting
-                , classes [ mainFrontendHost, "background-color-primary" ]
+                , disabled accountFieldsDisabled
+                , classes [ themeHost, "background-color-nav" ]
                 ]
                 [ text "Create Account" ]
             ]
-        , case form.status of
-            AccountsPanel.Errored err ->
+        , case ( form.status, addForm.status ) of
+            ( AccountsPanel.Errored err, _ ) ->
+                div [ class "auth-error" ] [ text err ]
+
+            ( _, AccountsPanel.Errored err ) ->
                 div [ class "auth-error" ] [ text err ]
 
             _ ->
@@ -585,7 +667,7 @@ adminAccountPanel shared account =
             , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
             ]
             [ avatarOrPlaceholder shared.accountsPanel.servers account
-            , span [ class "admin-account-username" ] [ text account.username ]
+            , span [ class "admin-account-username" ] [ text (AccountsPanel.displayName account) ]
             , span [ class "admin-account-server" ] [ text account.server ]
             , span
                 [ classes

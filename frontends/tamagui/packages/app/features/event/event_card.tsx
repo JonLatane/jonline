@@ -3,7 +3,7 @@ import { FederatedEvent, FederatedGroup, deleteEvent, federateId, federatedEntit
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Event, EventInstance, Location, Post, Visibility } from "@jonline/api";
-import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, Paragraph, ScrollView, Select, TextArea, Theme, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
+import { Anchor, AnimatePresence, Button, Card, DateTimePicker, Dialog, Heading, Image, Input, InverseTheme, Paragraph, ScrollView, Select, TextArea, Tooltip, XStack, YStack, ZStack, reverseStandardAnimation, standardAnimation, standardHorizontalAnimation, supportDateInput, toProtoISOString, useMedia, useWindowDimensions } from "@jonline/ui";
 import { CalendarPlus, Check, ChevronDown, ChevronRight, Delete, Edit3 as Edit, History, Link, Link2, Menu, Repeat, Save, X as XIcon } from '@tamagui/lucide-icons';
 import { ToggleRow, VisibilityPicker } from "app/components";
 import { GroupPostManager } from "app/features/groups";
@@ -386,7 +386,7 @@ export const EventCard: React.FC<Props> = ({
         <Input f={1} textContentType="URL" placeholder={`Event Link (required)`}
           disabled={savingEdits} opacity={savingEdits || editedLink == '' ? 0.5 : 1}
           value={editedLink}
-          onChange={(data) => { setEditedLink(data.nativeEvent.text) }} />
+          onChangeText={(text) => { setEditedLink(text) }} />
       </>
       : <Anchor key='post-link' textDecorationLine='none' {...(editing ? {} : postLink)} target="_blank">
         <XStack>
@@ -404,10 +404,10 @@ export const EventCard: React.FC<Props> = ({
     ? undefined
     : <Button p='$2' onPress={() => setScrollInstancesVertically(!scrollInstancesVertically)} ml="$1">
       <ZStack h='$1' w='$1' mx='auto' my='auto' transform={[{ translateY: -1 }]}>
-        <XStack animation='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+        <XStack transition='standard' o={scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
           <ChevronRight />
         </XStack>
-        <XStack animation='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
+        <XStack transition='standard' o={!scrollInstancesVertically ? 1 : 0} rotate={scrollInstancesVertically ? '90deg' : '0deg'}>
           <Menu />
         </XStack>
       </ZStack>
@@ -509,7 +509,7 @@ export const EventCard: React.FC<Props> = ({
       <Input f={1} textContentType="name" placeholder={`Event Title (required)`}
         disabled={savingEdits} opacity={savingEdits || editedTitle == '' ? 0.5 : 1}
         value={editedTitle}
-        onChange={(data) => { setEditedTitle(data.nativeEvent.text) }} />
+        onChangeText={(text) => { setEditedTitle(text) }} />
 
       {serverInfoView}
       {instanceModeButton}
@@ -578,7 +578,7 @@ export const EventCard: React.FC<Props> = ({
     const isPrimary = i.id == primaryInstance?.id;
     const isEditingInstance = i.id == editingInstance?.id;
     const highlight = editing ? isEditingInstance : isPrimary;
-    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$1' : undefined} animation='standard'
+    let result = <YStack key={`instance-${i.id}`} mx={editing ? '$1' : undefined} transition='standard'
       {...standardHorizontalAnimation} o={highlight ? 1 : 0.5} mb={scrollInstancesVertically ? '$2' : undefined}>
       <InstanceTime key={i.id} linkToInstance={!editing}
         event={event} instance={i}
@@ -586,9 +586,9 @@ export const EventCard: React.FC<Props> = ({
       />
       {editing
         ? <XStack w='100%' mt='$2'>
-          <Theme inverse={editingInstance?.id === i.id}>
+          <InverseTheme active={editingInstance?.id === i.id}>
             <Button mx='auto' size='$2' circular icon={Edit} onPress={() => setEditingInstance(i.id !== editingInstance?.id ? i : undefined)} />
-          </Theme>
+          </InverseTheme>
           {i.id == editingInstance?.id
             ? <Dialog>
               <Dialog.Trigger asChild>
@@ -597,7 +597,7 @@ export const EventCard: React.FC<Props> = ({
               <Dialog.Portal zi={1000011}>
                 <Dialog.Overlay
                   key="overlay"
-                  animation='standard'
+                  transition='standard'
                   o={0.5}
                   enterStyle={{ o: 0 }}
                   exitStyle={{ o: 0 }}
@@ -606,7 +606,7 @@ export const EventCard: React.FC<Props> = ({
                   bordered
                   elevate
                   key="content"
-                  animation={[
+                  transition={[
                     'standard',
                     {
                       opacity: {
@@ -622,17 +622,17 @@ export const EventCard: React.FC<Props> = ({
                   opacity={1}
                   y={0}
                 >
-                  <YStack space>
+                  <YStack gap="$true">
                     <Dialog.Title>Repeat Instance</Dialog.Title>
                     <Dialog.Description>
                       <Paragraph size="$2">Repeat for:</Paragraph>
                       <XStack>
-                        <Select native id={'repeat-weeks'} onValueChange={v => setRepeatWeeks(parseInt(v))} value={repeatWeeks.toString()}>
+                        <Select native id={'repeat-weeks'} zIndex={200000} onValueChange={v => setRepeatWeeks(parseInt(v))} value={repeatWeeks.toString()}>
                           <Select.Trigger w='100%' f={1} iconAfter={ChevronDown}>
                             <Select.Value w='100%' placeholder="Choose Visibility" />
                           </Select.Trigger>
 
-                          <Select.Content zIndex={200000}>
+                          <Select.Content>
                             <Select.Viewport minWidth={200} w='100%'>
                               <XStack w='100%'>
                                 <Select.Group gap="$0" w='100%'>
@@ -720,7 +720,7 @@ export const EventCard: React.FC<Props> = ({
 
   const deleteDialog = <Dialog key='delete-button-dialog'>
     <Dialog.Trigger asChild>
-      <Button key='delete-button' my='auto' size='$2' icon={Delete} transparent
+      <Button key='delete-button' my='auto' size='$2' icon={Delete} chromeless
         disabled={deleting} o={deleting ? 0.5 : 1}>
         Delete
       </Button>
@@ -728,7 +728,7 @@ export const EventCard: React.FC<Props> = ({
     <Dialog.Portal zi={1000011}>
       <Dialog.Overlay
         key="overlay"
-        animation='standard'
+        transition='standard'
         o={0.5}
         enterStyle={{ o: 0 }}
         exitStyle={{ o: 0 }} />
@@ -736,7 +736,7 @@ export const EventCard: React.FC<Props> = ({
         bordered
         elevate
         key="content"
-        animation={[
+        transition={[
           'standard',
           {
             opacity: {
@@ -752,7 +752,7 @@ export const EventCard: React.FC<Props> = ({
         opacity={1}
         y={0}
       >
-        <YStack space>
+        <YStack gap="$true">
           <Dialog.Title>Delete Event</Dialog.Title>
           <Dialog.Description>
             Really delete event? {event.instances.length > 1 ? `All ${event.instances.length} instances will be deleted. ` : undefined}
@@ -763,9 +763,9 @@ export const EventCard: React.FC<Props> = ({
             <Dialog.Close asChild>
               <Button>Cancel</Button>
             </Dialog.Close>
-            <Theme inverse>
+            <InverseTheme>
               <Button onPress={doDeletePost}>Delete</Button>
-            </Theme>
+            </InverseTheme>
           </XStack>
         </YStack>
       </Dialog.Content>
@@ -780,10 +780,10 @@ export const EventCard: React.FC<Props> = ({
       <div ref={visibilityRef} style={{ width: isPreview && horizontal ? recommendedHorizontalSize : '100%' }}>
         <YStack key={`event-card--${imagePostBackgrounds ? '-bg' : ''}-${fancyPostBackgrounds ? '-fancy' : ''}`}
           w={isPreview && horizontal ? recommendedHorizontalSize : '100%'}>
-          <Card theme="dark" size="$4" bordered id={componentKey}
+          <Card theme="dark" size="$4" borderWidth={1} id={componentKey}
             // key={`event-card-${event.id}-${isPreview ? primaryInstance?.id : 'details'}-${isPreview ? '-preview' : ''}`}
-            animation='standard'
-            borderColor={showServerInfo ? primaryColor : undefined}
+            transition='standard'
+            borderColor={showServerInfo ? primaryColor : '$borderColor'}
             margin='$0'
             marginBottom='$3'
             marginTop='$3'
@@ -816,16 +816,16 @@ export const EventCard: React.FC<Props> = ({
                     : undefined} */}
                   </XStack>
                   {!isPreview && (instances.length > 1 || editing)
-                    ? <XStack key='instances' w='100%' mt='$2' space>
+                    ? <XStack key='instances' w='100%' mt='$2' gap="$true">
 
 
                       {scrollInstancesVertically
-                        ? <XStack key='instance-display' jc='center' animation='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
+                        ? <XStack key='instance-display' jc='center' transition='standard' {...standardAnimation} gap='$2' flexWrap='wrap' f={1}>
                           <AnimatePresence>
                             {displayedInstances?.map((i) => renderInstance(i))}
                           </AnimatePresence>
                         </XStack>
-                        : <ScrollView key='instance-scroller' animation='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
+                        : <ScrollView key='instance-scroller' transition='standard' {...reverseStandardAnimation} f={1} horizontal pb='$3'>
                           <XStack mt='$1' px='$3' key='instance-scroller-list'>
                             <AnimatePresence key='instance-scroll-animator'>
                               {displayedInstances?.map((i) => renderInstance(i))}
@@ -866,7 +866,7 @@ export const EventCard: React.FC<Props> = ({
                 : <YStack key='footer-base' zi={1000} width='100%'>
                   <AnimatePresence>
                     {shrinkContent ? undefined
-                      : <YStack key='event-content' animation='standard' {...reverseStandardAnimation}
+                      : <YStack key='event-content' transition='standard' {...reverseStandardAnimation}
                         pt={0} w='100%' maw={800} mx='auto'>
                         <YStack key='location' px='$3' >
                           {primaryInstance// && (!isPreview || isVisible)
@@ -945,7 +945,7 @@ export const EventCard: React.FC<Props> = ({
                     : undefined}
                   <AnimatePresence>
                     {shrinkContent ? undefined
-                      : <YStack animation='standard' {...standardAnimation}>
+                      : <YStack transition='standard' {...standardAnimation}>
                         <XStack key='save-buttons' gap='$2' px='$3' py='$2' pt={0} flexWrap="wrap"
                           flexDirection='row-reverse'>
 
@@ -988,15 +988,15 @@ export const EventCard: React.FC<Props> = ({
                               {showEdit
                                 ? editing
                                   ? <>
-                                    <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} transparent
+                                    <Button my='auto' key='save-button' size='$2' icon={Save} onPress={saveEdits} color={primaryAnchorColor} chromeless
                                       disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                                       Save
                                     </Button>
-                                    <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} transparent
+                                    <Button my='auto' key='cancel-button' size='$2' icon={XIcon} onPress={() => { setEditing(false); setPreviewingEdits(false); }} chromeless
                                       disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                                       Cancel
                                     </Button>
-                                    <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} transparent
+                                    <Button my='auto' key='preview-button' size='$2' icon={Edit} onPress={() => setPreviewingEdits(!previewingEdits)} color={navAnchorColor} chromeless
                                       disabled={savingEdits} o={savingEdits ? 0.5 : 1}>
                                       {previewingEdits ? 'Edit' : 'Preview'}
                                     </Button>
@@ -1007,7 +1007,7 @@ export const EventCard: React.FC<Props> = ({
                                         setEditing(true); if (editedInstances.some(i => i.id === selectedInstance?.id)) {
                                           setEditingInstance(selectedInstance)
                                         }
-                                      }} transparent
+                                      }} chromeless
                                       disabled={deleting} o={deleting ? 0.5 : 1}>
                                       Edit
                                     </Button>
@@ -1039,7 +1039,7 @@ export const EventCard: React.FC<Props> = ({
                       <YStack key='discussion-anchor-root' h='100%'>
                         <Button key='comments-link-button'
                           opacity={isPreview ? 1 : 0.9}
-                          transparent={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
+                          chromeless={isPreview || !instancePost?.replyToPostId || instancePost.replyCount == 0}
                           disabled={true}
                           marginVertical='auto'
                           px='$2'

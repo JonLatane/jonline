@@ -49,14 +49,14 @@ export const FederatedProfiles: React.FC<Props> = ({ user, }) => {
           <Paragraph my='auto' size='$1' whiteSpace="nowrap" overflow="hidden" textOverflow="ellipsis">
             {user.realName || user.username} has {profiles.length} other {profiles.length === 1 ? 'profile' : 'profiles'}
           </Paragraph>
-          <XStack my='auto' animation='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
+          <XStack my='auto' transition='standard' rotate={showOtherProfiles ? '90deg' : '0deg'}>
             <ChevronRight size='$1' />
           </XStack>
         </XStack>
       </Button> : undefined}
     <AnimatePresence>
       {showOtherProfiles
-        ? <XStack w='100%' animation='standard' {...standardAnimation}>
+        ? <XStack w='100%' transition='standard' {...standardAnimation}>
           <ScrollView horizontal w='100%'>
             <AutoAnimatedList direction='horizontal'>
               {[

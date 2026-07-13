@@ -3,8 +3,10 @@ module Shared exposing
     , Model
     , Msg(..)
     , ThemePreference(..)
+    , basePathFromPath
     , effectiveDarkMode
     , init
+    , normalizeUrl
     , subscriptions
     , themePreferenceLabel
     , update
@@ -22,6 +24,7 @@ import Ports
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Url exposing (Url)
 
 
 type alias Flags =
@@ -42,6 +45,16 @@ type alias Model =
     , adminPanel : AdminPanel.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
+
+    -- The path prefix the app is being served under -- "" from `/`, "/elm"
+    -- from `/elm` (see `backend/src/web/elm_web.rs`) -- immutable for the
+    -- session, same as `AccountsPanel.Model`'s `browsingHost`. `Main.elm`
+    -- strips this from every `Url` before routing (see `normalizeUrl`) so
+    -- `Gen.Route.fromUrl` always sees app-relative paths regardless of which
+    -- host route served it; view code (see `UI.navLink`) prepends it back
+    -- onto any `Gen.Route.toHref` output so links/history stay under the
+    -- right mount.
+    , basePath : String
     }
 
 
@@ -120,14 +133,51 @@ nextThemePreference pref =
             ThemeAuto
 
 
+{-| The `/elm`-or-`/`-style mount prefix for a raw (un-normalized) URL path --
+see `Model`'s `basePath` field. Only ever `""` or `"/elm"` today (the only two
+hosts `backend/src/web/elm_web.rs`/`main_index.rs` serve this app from), found
+by checking whether `path` is exactly `/elm` or starts with `/elm/` -- "elm" is
+a reserved username (see `validate_username`), so this can never collide with
+a real in-app route or federated-user path.
+-}
+basePathFromPath : String -> String
+basePathFromPath path =
+    if path == "/elm" || String.startsWith "/elm/" path then
+        "/elm"
+
+    else
+        ""
+
+
+{-| Strips `basePath` off `url.path`, so `Gen.Route.fromUrl` can parse it as
+if the app were served from `/` -- see `Main.elm`, which calls this on every
+`Url` before it touches routing.
+-}
+normalizeUrl : String -> Url -> Url
+normalizeUrl basePath url =
+    if basePath == "" then
+        url
+
+    else if url.path == basePath then
+        { url | path = "/" }
+
+    else if String.startsWith (basePath ++ "/") url.path then
+        { url | path = String.dropLeft (String.length basePath) url.path }
+
+    else
+        url
+
+
 {-| `flags` is `{ state, systemPrefersDark, themePreference }` -- see
 `index.html`. `state` (the persisted accounts/servers blob) is handed to
 `AccountsPanel.init` un-decoded; appearance has its own, separate persisted
 key (`themePreference`) so changing it doesn't need to know anything about
-`AccountsPanel`'s persisted shape, or vice versa.
+`AccountsPanel`'s persisted shape, or vice versa. `req.url` is assumed
+already-normalized (see `normalizeUrl`) -- `basePath` is passed alongside it
+only because view code (see `UI.navLink`) needs it back to build hrefs.
 -}
-init : Request -> Flags -> ( Model, Cmd Msg )
-init req flags =
+init : String -> Request -> Flags -> ( Model, Cmd Msg )
+init basePath req flags =
     let
         accountsPanelFlags =
             Decode.decodeValue (Decode.field "state" Decode.value) flags
@@ -149,6 +199,7 @@ init req flags =
       , adminPanel = AdminPanel.init
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
+      , basePath = basePath
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd

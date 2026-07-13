@@ -168,18 +168,18 @@ export const BaseHomeScreen: React.FC<HomeScreenProps> = ({ selectedGroup }) => 
               <Heading size='$1' lh='$1'>Upcoming</Heading>
               <Heading size='$3' lh='$1'>Events</Heading>
             </YStack>
-            <XStack animation='standard' rotate={showEvents ? '90deg' : '0deg'}>
+            <XStack transition='standard' rotate={showEvents ? '90deg' : '0deg'}>
               <ChevronRight />
             </XStack>
           </Button>
           <XStack key='big-calendar-toggle' f={1} gap='$2' ai='center'
-            animation='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
+            transition='standard' o={showEvents ? allEvents.length ? 1 : 0.5 : 0}>
             <Button onPress={() => requestAnimationFrame(() => setBigCalendar(!bigCalendar))}
               icon={CalendarIcon}
-              transparent
+              chromeless
               {...themedButtonBackground(
                 bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-              // animation='standard'
+              // transition='standard'
               disabled={!showEvents || !allEvents.length}
 
             />

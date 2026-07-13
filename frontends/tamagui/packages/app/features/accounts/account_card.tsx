@@ -1,5 +1,5 @@
 import { Permission } from "@jonline/api";
-import { Anchor, Button, Card, Dialog, Heading, Image, Input, Paragraph, Text, Theme, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
+import { Anchor, Button, Card, Dialog, Heading, Image, Input, InverseTheme, Paragraph, TamaguiElement, Text, Tooltip, XStack, YStack, ZStack, formatError, useMedia, useTheme } from "@jonline/ui";
 import { AlertCircle, Bot, Check, ChevronDown, ChevronUp, Delete, Pin, Shield, User as UserIcon } from "@tamagui/lucide-icons";
 import { Selector, colorMeta, useAppSelector, useCredentialDispatch, useCurrentAccountId, useLocalConfiguration, useMediaUrl } from "app/hooks";
 import { useRequestResult } from "app/hooks/use_request_result";
@@ -172,7 +172,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   const mediaQuery = useMedia();
 
   const textColor = selected ? navTextColor : undefined;
-  const passwordRef = React.useRef(undefined as never) as React.RefObject<HTMLInputElement>;
+  const passwordRef = React.useRef(undefined as never) as React.RefObject<TamaguiElement>;
 
   const primaryBackgroundRight = pinned && !selected;
   const serverLogo = isCurrentServer ? undefined
@@ -187,8 +187,8 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
   }, [account]);
   const [deleting, setDeleting] = useState(false);
   return <>
-    <Card theme="dark" size="$4" bordered
-      animation='standard'
+    <Card theme="dark" size="$4" borderWidth={1} borderColor="$borderColor"
+      transition='standard'
       // w={250}
       // h={50}
       w='100%'
@@ -235,9 +235,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
 
 
             {hasAdminPermission(account.user)
-              ? <Shield color={selected ? navTextColor : textColor} mb='auto' /> : undefined}
+              ? <Shield color={selected ? navTextColor : textColor} marginBottom='auto' /> : undefined}
             {hasPermission(account.user, Permission.RUN_BOTS)
-              ? <Bot color={selected ? navTextColor : textColor} mb='auto' /> : undefined}
+              ? <Bot color={selected ? navTextColor : textColor} marginBottom='auto' /> : undefined}
           </XStack>
 
           {reauthenticationResult || account.needsReauthentication
@@ -249,8 +249,8 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                   disabled={!enablePasswordInput}
                   o={enablePasswordInput ? 1 : 0.5}
                   textContentType="password"
-                  onChange={(e) => {
-                    setReauthenticationPassword(e.nativeEvent.text)
+                  onChangeText={(text) => {
+                    setReauthenticationPassword(text)
                   }}
                   onKeyPress={(e) => {
                     if (e.nativeEvent.key === 'Enter') {
@@ -281,10 +281,10 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
                 }}>
                   <XStack gap='$2' ai='center'>
                     <ZStack w='$2' h='$2'>
-                      <XStack animation='standard' o={reauthenticationResult ? 1 : 0}>
+                      <XStack transition='standard' o={reauthenticationResult ? 1 : 0}>
                         <Check color={navAnchorColor} />
                       </XStack>
-                      <YStack animation='standard' o={reauthenticationResult ? 0 : 1}>
+                      <YStack transition='standard' o={reauthenticationResult ? 0 : 1}>
                         <AlertCircle color={navAnchorColor} />
                       </YStack>
                     </ZStack>
@@ -376,7 +376,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
         <Dialog.Overlay
           zIndex={1000000000000012}
           key="overlay"
-          animation='standard'
+          transition='standard'
           o={0.5}
           enterStyle={{ o: 0 }}
           exitStyle={{ o: 0 }}
@@ -386,7 +386,7 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
           bordered
           elevate
           key="content"
-          animation={[
+          transition={[
             'standard',
             {
               opacity: {
@@ -422,9 +422,9 @@ const AccountCard: React.FC<Props> = ({ account, totalAccounts, onProfileOpen, o
               <Dialog.Close asChild>
                 <Button>Cancel</Button>
               </Dialog.Close>
-              <Theme inverse>
+              <InverseTheme>
                 <Button onPress={() => dispatch(removeAccount(accountID(account)!))}>Remove</Button>
-              </Theme>
+              </InverseTheme>
             </XStack>
           </YStack>
         </Dialog.Content>

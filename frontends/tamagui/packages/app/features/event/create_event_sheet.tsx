@@ -135,10 +135,10 @@ export function CreateEventSheet({ selectedGroup, button }: CreateEventSheetProp
       <Button
         onPress={() => setBigCalendar(!bigCalendar)} mb='$2'
         icon={CalendarIcon}
-        transparent
+        chromeless
         {...themedButtonBackground(
           bigCalendar ? navColor : undefined, bigCalendar ? navTextColor : undefined)}
-      // animation='standard'
+      // transition='standard'
       // zi={100000}
       // disabled={!showEvents || allEvents.length === 0}
       // o={showEvents && allEvents.length > 0 ? 1 : 0}

@@ -120,10 +120,10 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
             <Input placeholder='Search'
               f={1}
               value={searchText}
-              onChange={(e) => setSearchText(e.nativeEvent.text)} />
+              onChangeText={(text) => setSearchText(text)} />
             <XStack position='absolute' right={55}
               pointerEvents="none"
-              animation='standard'
+              transition='standard'
               o={searchText !== debouncedSearchText ? 1 : 0}
             >
               <Spinner />
@@ -134,7 +134,7 @@ export const BasePeopleScreen: React.FC<PeopleScreenProps> = ({ listingType, sel
         </YStack>
       }
     >
-      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' pb='$3' maw={800} space>
+      <YStack f={1} w='100%' jc="center" ai="center" p="$0" paddingHorizontal='$2' mt='$2' pb='$3' maw={800} gap="$true">
         <AutoAnimatedList style={{ width: '100%' }}>
           <div key='pagest-top' id='pages-top' style={{ maxWidth: '100%' }}>
             <PageChooser {...pagination} />

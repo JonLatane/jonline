@@ -4,19 +4,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="/style.css">
+  <script>
+    // This app is served from either `/` or `/elm` (see
+    // `backend/src/web/elm_web.rs`) -- this regex must agree with
+    // `Shared.elm`'s `basePathFromPath`, which does the equivalent detection
+    // in Elm for routing/link purposes once the app is running.
+    var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style.css">');
+  </script>
 </head>
 
 <body>
-  <script src="/dist/elm.js"></script>
-  <!-- TODO: Figure out how link routing needs to work for putting the Elm app
-    on Rust server. It might serve the Elm-Spa app at `/elm` instead of `/`,
-    and then the Elm app needs to know that. It should all work the same,
-    regardless of whether it's serverd from `/` or `/elm`.
-
-    Maybe then we add something like this (or better, maybe don't have to):
-    
-    <script src="/elm/dist/elm.js"></script> -->
+  <script>
+    document.write('<script src="' + jonlineBasePath + '/dist/elm.js"><\/script>');
+  </script>
   <script>
     var storedState = null;
     try {

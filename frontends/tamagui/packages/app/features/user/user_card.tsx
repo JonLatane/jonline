@@ -158,7 +158,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
     </YStack>
     {/* {showServerInfo
       ?  */}
-    <YStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} animation='standard'
+    <YStack my='auto' w={mediaQuery.gtXxxs ? undefined : '$4'} h={mediaQuery.gtXxxs ? undefined : '$4'} transition='standard'
       o={showServerInfo ? 1 : 0} >
       <ServerNameAndLogo server={server} shrinkToSquare={!mediaQuery.gtXxxs} />
     </YStack>
@@ -185,13 +185,13 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const followHandler = <YStack w='100%'>
     <AnimatePresence>
       {followsCurrentUser
-        ? <Heading key='follow-request-heading' animation='standard' {...standardAnimation}
+        ? <Heading key='follow-request-heading' transition='standard' {...standardAnimation}
           size='$1' ta='center'>
           {following ? 'Friends' : 'Follows You'}
         </Heading>
         : undefined}
       {followRequestReceived ?
-        <YStack key='follow-request-heading' animation='standard' {...standardAnimation}
+        <YStack key='follow-request-heading' transition='standard' {...standardAnimation}
           gap='$2'>
           <Heading size='$1' ta='center'>Wants to follow you</Heading>
           <XStack ac='center' jc='center' mb='$2' gap='$2'>
@@ -213,7 +213,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
       {accountOrServer.account && accountOrServer.account.user.id != user.id ? <XStack key='follow-button' ac='center' jc='center'>
         <Button
           backgroundColor={!following && !followRequested ? primaryColor : undefined}
-          // animation='standard'
+          // transition='standard'
           {...standardAnimation}
           mb='$2'
           p='$3'
@@ -259,10 +259,10 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
   const backgroundSize = postBackgroundSize(media);
   return (
     <Theme /*inverse={isCurrentUser ?? false}*/>
-      <Card theme="dark" size="$4" bordered
-        animation='standard' {...standardAnimation}
+      <Card theme="dark" size="$4" borderWidth={1}
+        transition='standard' {...standardAnimation}
         // scale={0.9}
-        borderColor={showServerInfo ? primaryColor : undefined}
+        borderColor={showServerInfo ? primaryColor : '$borderColor'}
         pl='$2'
         margin='$0'
         width={'100%'}
@@ -311,7 +311,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
             </XStack>
           </YStack>
         </Card.Header>
-        <Card.Footer pb={shrinkPreviews ? 0 : '$2'} px='$3' animation='standard'>
+        <Card.Footer pb={shrinkPreviews ? 0 : '$2'} px='$3' transition='standard'>
           <YStack mt='$1' mr='$3' w='100%'>
             {isPreview
               ? <Anchor w='100%' f={1} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
@@ -322,7 +322,7 @@ export const UserCard: React.FC<Props> = ({ user, isPreview = false, username: i
             <AnimatePresence>
               {isPreview
                 ? shrinkPreviews ? undefined
-                  : <Anchor w='100%' f={1} animation='standard' {...standardAnimation} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
+                  : <Anchor w='100%' f={1} transition='standard' {...standardAnimation} textDecorationLine='none' {...(isPreview ? detailsLink : {})}>
                     {footerContent}
                   </Anchor>
                 : footerContent}

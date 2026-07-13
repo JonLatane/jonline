@@ -117,7 +117,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                   <XStack my='$2' o={app.inlineFeatureNavigation === undefined ? 0.5 : 1}>
                     <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
                       <YStack w='100%'>
-                        <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' animation='standard' o={inlineNavigation ? 0.5 : 1}>
+                        <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' transition='standard' o={inlineNavigation ? 0.5 : 1}>
                           Popover
                         </Paragraph>
                       </YStack>
@@ -128,11 +128,11 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                       value={inlineNavigation.toString()}
                       disabled={app.inlineFeatureNavigation === undefined}
                       onCheckedChange={(checked) => dispatch(setInlineFeatureNavigation(checked))}>
-                      <Switch.Thumb animation='standard' backgroundColor='$background' />
+                      <Switch.Thumb transition='standard' backgroundColor='$background' />
                     </Switch>
                     <Label htmlFor='nav-mode-toggle' my='auto' f={1}>
                       <YStack w='100%'>
-                        <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' animation='standard' o={!inlineNavigation ? 0.5 : 1}>
+                        <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' transition='standard' o={!inlineNavigation ? 0.5 : 1}>
                           Inline
                         </Paragraph>
                       </YStack>
@@ -168,7 +168,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
 
                   <AnimatePresence>
                     {app.inlineFeatureNavigation !== false
-                      ? <YStack key='inline-nav-options' animation='standard' {...standardAnimation}>
+                      ? <YStack key='inline-nav-options' transition='standard' {...standardAnimation}>
                         <Heading size='$4' mt='$2'>Inline Navigation</Heading>
                         <ToggleRow name='Shrink Inline Navigation'
                           description='Shrink inactive icons in the Inline Navigation UI.'
@@ -295,11 +295,11 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                   <XStack my='$2'>
                     <Label htmlFor='date-type-toggle' my='auto' f={1}>
                       <YStack w='100%'>
-                        <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' animation='standard'
+                        <Paragraph size='$7' fontWeight='800' my='auto' ta='right' mx='$2' transition='standard'
                           o={app.dateTimeRenderer === 'native' ? 0.5 : 1}>
                           Custom
                         </Paragraph>
-                        <Paragraph size='$1' my='auto' ta='right' mx='$2' animation='standard'
+                        <Paragraph size='$1' my='auto' ta='right' mx='$2' transition='standard'
                           fontFamily='$mono'
                           o={app.dateTimeRenderer === 'native' ? 0.5 : 1}>
                           react-datetime-picker
@@ -312,15 +312,15 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                       value={(app.dateTimeRenderer === 'native').toString()}
                       // disabled={app.inlineFeatureNavigation === undefined}
                       onCheckedChange={(checked) => dispatch(setDateTimeRenderer(checked ? 'native' : 'custom'))}>
-                      <Switch.Thumb animation='standard' backgroundColor='black' />
+                      <Switch.Thumb transition='standard' backgroundColor='black' />
                     </Switch>
                     <Label htmlFor='date-type-toggle' my='auto' f={1}>
                       <YStack w='100%'>
-                        <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' animation='standard'
+                        <Paragraph size='$7' fontWeight='800' my='auto' ta='left' mx='$2' transition='standard'
                           o={app.dateTimeRenderer !== 'native' ? 0.5 : 1}>
                           Native
                         </Paragraph>
-                        <Paragraph size='$1' my='auto' mx='$2' animation='standard'
+                        <Paragraph size='$1' my='auto' mx='$2' transition='standard'
                           o={app.dateTimeRenderer !== 'native' ? 0.5 : 1}>
                           Safari/Chrome/Firefox/Edge-specific UI
                         </Paragraph>
@@ -392,7 +392,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                     <Dialog.Portal zIndex={20000000}>
                       <Dialog.Overlay
                         key="overlay"
-                        animation='standard'
+                        transition='standard'
                         o={0.5}
                         enterStyle={{ o: 0 }}
                         exitStyle={{ o: 0 }}
@@ -401,7 +401,7 @@ export function SettingsSheet({ }: SettingsSheetProps) {
                         bordered
                         elevate
                         key="content"
-                        animation={[
+                        transition={[
                           'standard',
                           {
                             opacity: {

@@ -161,9 +161,9 @@ export function StarredPosts({ }: StarredPostsProps) {
     <ConversationContextProvider value={conversationContext}>
       {/* <AnimatePresence> */}
       {starredPostIds.length > 0
-        ? <XStack key='starred-posts' animation='standard' {...reverseHorizontalAnimation} exitStyle={{ x: 29, o: 0, }} >
+        ? <XStack key='starred-posts' transition='standard' {...reverseHorizontalAnimation} exitStyle={{ x: 29, o: 0, }} >
 
-          {/* <Button transparent
+          {/* <Button chromeless
               px='$2'
               onPress={() => setOpen(true)}
               color={primaryTextColor}
@@ -175,7 +175,7 @@ export function StarredPosts({ }: StarredPostsProps) {
             open={open} onOpenChange={setOpen}>
             <Popover.Trigger asChild>
 
-              <Button transparent
+              <Button chromeless
                 px='$2'
                 onPress={() => setOpen(true)}
                 color={primaryTextColor}
@@ -196,7 +196,7 @@ export function StarredPosts({ }: StarredPostsProps) {
               enterStyle={{ y: -10, opacity: 0 }}
               exitStyle={{ y: -10, opacity: 0 }}
               elevate
-              animation={[
+              transition={[
                 'standard',
                 {
                   opacity: {
@@ -224,7 +224,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             onPress={() => setStarredPostFilter(
                               starredPostFilter === 'posts' ? undefined : 'posts'
                             )}
-                            transparent
+                            chromeless
                             {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'posts')}
                           />
                         </div>
@@ -236,7 +236,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                             onPress={() => setStarredPostFilter(
                               starredPostFilter === 'events' ? undefined : 'events'
                             )}
-                            transparent
+                            chromeless
                             {...highlightedButtonBackground(serverTheme, 'nav', starredPostFilter === 'events')}
                           />
                         </div>
@@ -244,13 +244,13 @@ export function StarredPosts({ }: StarredPostsProps) {
                     ]}
                   {basePost
                     ? <div key='post-name' style={{ flex: 1 }}>
-                      <Button transparent onPress={() => scrollToTop(true)} >
+                      <Button chromeless onPress={() => scrollToTop(true)} >
                         <YStack>
                           <Paragraph size='$1'
                             color={primaryTextColor}
                             maw={Math.min(400, window.innerWidth - 150 - (eventWithSingleInstance ? 80 : 0))}
                             overflow='hidden' textOverflow='ellipsis' whiteSpace='nowrap'
-                            fontWeight='bold' my='auto' animation='standard' o={0.7} f={1}>
+                            fontWeight='bold' my='auto' transition='standard' o={0.7} f={1}>
                             {basePostTitle}
                           </Paragraph>
                         </YStack>
@@ -267,7 +267,7 @@ export function StarredPosts({ }: StarredPostsProps) {
 
                               <XStack key='starred' ai='center' gap='$2'>
                                 <Heading size='$4' color={primaryTextColor}>Starred</Heading>
-                                <Info size={16} o={0.5} color={primaryTextColor} />
+                                <Info size={16} opacity={0.5} color={primaryTextColor} />
                               </XStack>
 
                               {starredPostFilter === 'posts'
@@ -311,7 +311,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                       : undefined}
                 </AutoAnimatedList>
                 {openedPostId && basePost //&& basePost.responseCount > 0
-                  ? <XStack animation='standard' {...standardAnimation} key='chat-ui-toggle'
+                  ? <XStack transition='standard' {...standardAnimation} key='chat-ui-toggle'
                     w='100%' maw={800} mx='auto' mt='$1' ai='center'>
                     <XStack key='spacer1' f={1} />
                     <Tooltip key='discussionUI' placement="bottom">
@@ -319,7 +319,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         <Button h='$2' px='$2'
                           backgroundColor={chatUI ? undefined : navColor}
                           hoverStyle={{ backgroundColor: chatUI ? undefined : navColor }}
-                          transparent={chatUI}
+                          chromeless={chatUI}
                           borderTopRightRadius={0} borderBottomRightRadius={0}
 
                           icon={<ListEnd color={chatUI ? primaryTextColor : navTextColor} transform={[{ rotate: '180deg' }]} />}
@@ -342,7 +342,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         <Button h='$2' px='$2'
                           backgroundColor={!chatUI ? undefined : navColor}
                           hoverStyle={{ backgroundColor: !chatUI ? undefined : navColor }}
-                          transparent={!chatUI}
+                          chromeless={!chatUI}
                           iconAfter={<ListEnd color={!chatUI ? primaryTextColor : navTextColor} />}
                           borderTopLeftRadius={0} borderBottomLeftRadius={0}
                           onPress={() => {
@@ -406,7 +406,7 @@ export function StarredPosts({ }: StarredPostsProps) {
                         ]
                         : filteredPostIds.map((postId) =>
                           <XStack w='100%' key={`starred-post-card-${postId}`}
-                            animation='standard' {...standardAnimation}>
+                            transition='standard' {...standardAnimation}>
                             <StarredPostCard {...{ postId, onOpen: setOpenedPostId }}
                               unsortable={!!starredPostFilter} hasMainServerPrimaryBackground />
                           </XStack>
