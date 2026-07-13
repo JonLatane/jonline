@@ -4,31 +4,31 @@ name: Server CI/CD
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_call:
     secrets:
       DOCKERHUB_USERNAME:
-        description: 'DockerHub username for CD'
+        description: "DockerHub username for CD"
         required: true
       DOCKERHUB_TOKEN:
-        description: 'DockerHub access token for CD'
+        description: "DockerHub access token for CD"
         required: true
       DIGITALOCEAN_ACCESS_TOKEN:
-        description: 'DigitalOcean access token for CD'
+        description: "DigitalOcean access token for CD"
         required: true
       CLOUDFLARE_TOKEN:
-        description: 'Cloudflare API token for CD'
+        description: "Cloudflare API token for CD"
         required: true
       CLOUDFLARE_ZONE_JONLINEIO:
-        description: 'Cloudflare Zone ID for Jonline.io'
+        description: "Cloudflare Zone ID for Jonline.io"
         required: true
       CLOUDFLARE_ZONE_BULLCITY_SOCIAL:
-        description: 'Cloudflare Zone ID for Bull City Social'
+        description: "Cloudflare Zone ID for Bull City Social"
         required: true
       CLOUDFLARE_ZONE_OAKCITY_SOCIAL:
-        description: 'Cloudflare Zone ID for Oak City Social'
+        description: "Cloudflare Zone ID for Oak City Social"
         required: true
 
 jobs:
@@ -52,7 +52,7 @@ jobs:
         working-directory: frontends/tamagui
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
-  
+
       - uses: actions/cache@v4
         # id: yarn-cache
         with:
@@ -125,122 +125,122 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
-    
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 22.x
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - run: npm install --global yarn
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
 
-    - name: Get yarn cache directory path
-      working-directory: frontends/tamagui
-      id: yarn-cache-dir-path
-      run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
+      - run: npm install --global yarn
 
-    - uses: actions/cache@v4
-      # id: yarn-cache
-      with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - name: Get yarn cache directory path
+        working-directory: frontends/tamagui
+        id: yarn-cache-dir-path
+        run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
-    - working-directory: frontends/tamagui
-      run: yarn install
-    - working-directory: frontends/tamagui
-      run: yarn version:install
-    - working-directory: frontends/tamagui
-      run: yarn tsc
-    - working-directory: frontends/tamagui
-      run: yarn web:prod:build
+      - uses: actions/cache@v4
+        # id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
-    - uses: actions/cache/save@v4
-      id: web-app-cache
-      with:
-        path: frontends/tamagui/apps/next/out
-        key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - working-directory: frontends/tamagui
+        run: yarn install
+      - working-directory: frontends/tamagui
+        run: yarn version:install
+      - working-directory: frontends/tamagui
+        run: yarn tsc
+      - working-directory: frontends/tamagui
+        run: yarn web:prod:build
+
+      - uses: actions/cache/save@v4
+        id: web-app-cache
+        with:
+          path: frontends/tamagui/apps/next/out
+          key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_elm_ui:
     name: Build Elm SPA Web UI
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18.x
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18.x
 
-    - name: Cache Elm packages
-      uses: actions/cache@v4
-      with:
-        path: ~/.elm
-        key: jonline-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
-        restore-keys: |
-          jonline-elm-build-${{ runner.os }}-
+      - name: Cache Elm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.elm
+          key: jonline-elm-build-${{ runner.os }}-${{ hashFiles('frontends/elm-spa/elm.json') }}
+          restore-keys: |
+            jonline-elm-build-${{ runner.os }}-
 
-    - run: npm install --global elm elm-spa
+      - run: npm install --global elm elm-spa
 
-    - working-directory: frontends/elm-spa
-      run: make build
+      - working-directory: frontends/elm-spa
+        run: make build
 
-    - uses: actions/cache/save@v4
-      id: elm-app-cache
-      with:
-        path: frontends/elm-spa/public
-        key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/save@v4
+        id: elm-app-cache
+        with:
+          path: frontends/elm-spa/public
+          key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_rust_binaries:
     name: Build Rust Binaries
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
-    - uses: dtolnay/rust-toolchain@stable
-    - uses: arduino/setup-protoc@v3
-      with:
-        version: "26.x"
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: arduino/setup-protoc@v3
+        with:
+          version: "26.x"
 
-    - uses: Swatinem/rust-cache@v2
-      with:
-        workspaces: ./backend -> target
-        # default key
-        key: jonline-build-${{ runner.OS }}-github-build
-        shared-key: jonline-build-${{ runner.OS }}-github-build
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          # default key
+          key: jonline-build-${{ runner.OS }}-github-build
+          shared-key: jonline-build-${{ runner.OS }}-github-build
 
-    - working-directory: backend
-      run: cargo build --release
+      - working-directory: backend
+        run: cargo build --release
 
-    - uses: actions/cache/save@v4
-      id: rust-app-cache
-      with:
-        path: backend/target/release
-        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/save@v4
+        id: rust-app-cache
+        with:
+          path: backend/target/release
+          key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   test_rust_binaries:
     name: Test Rust Binaries
@@ -268,33 +268,33 @@ jobs:
     name: Test Tamagui Web UI
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 22.x
-    - run: npm install --global yarn
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+      - run: npm install --global yarn
 
-    - name: Get yarn cache directory path
-      working-directory: frontends/tamagui
-      id: yarn-cache-dir-path
-      run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
+      - name: Get yarn cache directory path
+        working-directory: frontends/tamagui
+        id: yarn-cache-dir-path
+        run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
-    - uses: actions/cache@v4
-      # id: yarn-cache
-      with:
-        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-        key: jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
-        restore-keys: |
-          jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+      - uses: actions/cache@v4
+        # id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
-    - working-directory: frontends/tamagui
-      run: yarn install
-    - working-directory: frontends/tamagui
-      run: yarn version:install
-    - working-directory: frontends/tamagui
-      run: yarn build
-    - working-directory: frontends/tamagui
-      run: yarn tsc
+      - working-directory: frontends/tamagui
+        run: yarn install
+      - working-directory: frontends/tamagui
+        run: yarn version:install
+      - working-directory: frontends/tamagui
+        run: yarn build
+      - working-directory: frontends/tamagui
+        run: yarn tsc
 
   # test_flutter_ui:
   #   name: Test Flutter Web UI
@@ -313,8 +313,8 @@ jobs:
   #     run: flutter build web
 
   push_server:
-    name: 'DockerHub: Server'
-    if: github.ref == 'refs/heads/main'
+    name: "DockerHub: Server"
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/experiments/elm-spa'
     runs-on: ubuntu-latest
     needs:
       # - build_flutter_ui
@@ -324,117 +324,115 @@ jobs:
       - test_consistency
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    
-    - uses: actions/cache/restore@v4
-      id: flutter-app-cache
-      continue-on-error: true
-      with:
-        path: frontends/flutter/build/web
-        key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-    - run: mkdir -p frontends/flutter/build/web
-    - uses: actions/cache/restore@v4
-      id: web-app-cache
-      with:
-        path: frontends/tamagui/apps/next/out
-        key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-    - uses: actions/cache/restore@v4
-      id: elm-app-cache
-      with:
-        path: frontends/elm-spa/public
-        key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-    - uses: actions/cache/restore@v4
-      id: rust-app-cache
-      with:
-        path: backend/target/release
-        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: flutter-app-cache
+        continue-on-error: true
+        with:
+          path: frontends/flutter/build/web
+          key: flutter-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - run: mkdir -p frontends/flutter/build/web
+      - uses: actions/cache/restore@v4
+        id: web-app-cache
+        with:
+          path: frontends/tamagui/apps/next/out
+          key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: elm-app-cache
+        with:
+          path: frontends/elm-spa/public
+          key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: rust-app-cache
+        with:
+          path: backend/target/release
+          key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - uses: docker/setup-buildx-action@v3
-    - uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Rename Rust binaries for Dockerfiles
+        run: >-
+          mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+          mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
+          mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
+          mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
+          mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
+          mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
+          mv backend/target/release/set_permission backend/target/release/set_permission__server_release &&
+          mv backend/target/release/to_db_id backend/target/release/to_db_id__server_release &&
+          mv backend/target/release/to_proto_id backend/target/release/to_proto_id__server_release
 
-    - name: Rename Rust binaries for Dockerfiles
-      run: >-
-           mv backend/target/release/jonline backend/target/release/jonline__server_release &&
-           mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
-           mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
-           mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
-           mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
-           mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
-           mv backend/target/release/set_permission backend/target/release/set_permission__server_release &&
-           mv backend/target/release/to_db_id backend/target/release/to_db_id__server_release &&
-           mv backend/target/release/to_proto_id backend/target/release/to_proto_id__server_release
-
-    - name: Build and push jonline image
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-        context: .
-        file: ./deploys/docker/server/Dockerfile
-        platforms: linux/amd64,linux/arm64
+      - name: Build and push jonline image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+          context: .
+          file: ./deploys/docker/server/Dockerfile
+          platforms: linux/amd64,linux/arm64
 
   push_preview_generator:
-    name: 'DockerHub: Preview Generator'
-    if: github.ref == 'refs/heads/main'
+    name: "DockerHub: Preview Generator"
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/experiments/elm-spa'
     runs-on: ubuntu-latest
     needs:
       - build_rust_binaries
       - test_consistency
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - uses: actions/cache/restore@v4
-      id: rust-app-cache
-      with:
-        path: backend/target/release
-        key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: rust-app-cache
+        with:
+          path: backend/target/release
+          key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
-    - uses: docker/setup-buildx-action@v3
-    - uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    - name: Rename Rust binaries for Dockerfiles
-      run: >-
-            mv backend/target/release/jonline backend/target/release/jonline__server_release &&
-            mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
-            mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
-            mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
-            mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
-            mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
-            mv backend/target/release/set_permission backend/target/release/set_permission__server_release
+      - name: Rename Rust binaries for Dockerfiles
+        run: >-
+          mv backend/target/release/jonline backend/target/release/jonline__server_release &&
+          mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
+          mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
+          mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
+          mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
+          mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
+          mv backend/target/release/set_permission backend/target/release/set_permission__server_release
 
-    - name: Build and push jonline_preview_generator image
-      uses: docker/build-push-action@v5
-      with:
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-        context: .
-        file: ./deploys/docker/preview_generator/Dockerfile
-        platforms: linux/amd64,linux/arm64
+      - name: Build and push jonline_preview_generator image
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }},${{ secrets.DOCKERHUB_USERNAME }}/jonline_preview_generator:${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+          context: .
+          file: ./deploys/docker/preview_generator/Dockerfile
+          platforms: linux/amd64,linux/arm64
 
   deploy_jonlineio_server:
     name: Deploy Jonline.io Server
@@ -447,43 +445,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
-    - uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-    - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
 
-    - name: Save DigitalOcean kubeconfig with short-lived credentials
-      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    # If you haven't already integrated with your registry and only want workloads in a particular namespace to be able to pull 
-    # from your registry, uncomment the next two commands.
-    # - name: Upload credentials of your registry to your DigitalOcean Kubernetes cluster
-    #   run: doctl registry kubernetes-manifest | kubectl apply -f -
-      
-    # - name: Reference the secret you just uploaded as an imagePullSecrets
-    #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
+      # If you haven't already integrated with your registry and only want workloads in a particular namespace to be able to pull
+      # from your registry, uncomment the next two commands.
+      # - name: Upload credentials of your registry to your DigitalOcean Kubernetes cluster
+      #   run: doctl registry kubernetes-manifest | kubectl apply -f -
 
-    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/server_external.yaml -n jonline
+      # - name: Reference the secret you just uploaded as an imagePullSecrets
+      #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
-    - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
+      - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+        run: kubectl apply -f deploys/k8s/server_external.yaml -n jonline
 
-    - name: Purge Cloudflare cache
-      uses: jakejarvis/cloudflare-purge-action@master
-      env:
-        CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
-        CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+      - name: Verify Server deployment
+        run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
+
+      - name: Purge Cloudflare cache
+        uses: jakejarvis/cloudflare-purge-action@master
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
 
   deploy_jonlineio_preview_generator:
     name: Deploy Jonline.io Preview Generator
@@ -494,39 +492,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
-    - uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-    - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
+      - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
-    - name: Save DigitalOcean kubeconfig with short-lived credentials
-      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
+      - name: Deploy to Jonline.io via DigitalOcean Kubernetes
+        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
 
-    - name: Purge Cloudflare cache
-      uses: jakejarvis/cloudflare-purge-action@master
-      env:
-        CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
-        CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+      - name: Purge Cloudflare cache
+        uses: jakejarvis/cloudflare-purge-action@master
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
 
   create_github_release:
-    name: 'GitHub: Release'
+    name: "GitHub: Release"
     # permissions: write-all
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: 
+    needs:
       - deploy_jonlineio_server
       - deploy_jonlineio_preview_generator
       - push_server
@@ -536,81 +534,81 @@ jobs:
       # - test_flutter_ui
       - test_tamagui_ui
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/\"//g')"
-        sha_short="$(git rev-parse --short=7 HEAD)"
-        echo "be_version=${be_version}" >> $GITHUB_OUTPUT
-        echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
-        echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/\"//g')"
+          sha_short="$(git rev-parse --short=7 HEAD)"
+          echo "be_version=${be_version}" >> $GITHUB_OUTPUT
+          echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
+          echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
 
-    - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
-      run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
-    - name: Push tag v${{ steps.vars.outputs.full_version }}
-      uses: mathieudutour/github-tag-action@v6.2
-      with:
-        custom_tag: "${{ steps.vars.outputs.full_version }}"
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Push tag v${{ steps.vars.outputs.full_version }}
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          custom_tag: "${{ steps.vars.outputs.full_version }}"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Extract Changelog
-      id: changelog
-      run: |
-        delimiter="$(openssl rand -hex 32)"
-        echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
-        echo "$(git --no-pager log -10 --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
-        echo "${delimiter}" >> $GITHUB_OUTPUT
-    - name: Display Changelog (for debugging the CI/CD process)
-      run: |
-        echo "The string is: \n${{ steps.changelog.outputs.ci_changelog }}"
+      - name: Extract Changelog
+        id: changelog
+        run: |
+          delimiter="$(openssl rand -hex 32)"
+          echo "ci_changelog<<${delimiter}" >> $GITHUB_OUTPUT
+          echo "$(git --no-pager log -10 --pretty='- [`%h` / *%ch*] %B')" >> $GITHUB_OUTPUT
+          echo "${delimiter}" >> $GITHUB_OUTPUT
+      - name: Display Changelog (for debugging the CI/CD process)
+        run: |
+          echo "The string is: \n${{ steps.changelog.outputs.ci_changelog }}"
 
-    - name: Create release v${{ steps.vars.outputs.full_version }}
-      uses: ncipollo/release-action@v1
-      with:
-        name: "v${{ steps.vars.outputs.full_version }} (CI/CD)"
-        tag: "v${{ steps.vars.outputs.full_version }}"
-        makeLatest: true
-        body: |-
-          # Jonline CI/CD Release
+      - name: Create release v${{ steps.vars.outputs.full_version }}
+        uses: ncipollo/release-action@v1
+        with:
+          name: "v${{ steps.vars.outputs.full_version }} (CI/CD)"
+          tag: "v${{ steps.vars.outputs.full_version }}"
+          makeLatest: true
+          body: |-
+            # Jonline CI/CD Release
 
-          ### `v${{ steps.vars.outputs.full_version }}`
+            ### `v${{ steps.vars.outputs.full_version }}`
 
-          Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml).
+            Built by the [Server CI/CD GitHub Action ![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml).
 
-          Images are available on DockerHub:
-          
-          - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.full_version }})
-          
-          - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+            Images are available on DockerHub:
 
-          - *In testing/not yet ready for production use:* [DockerHub: JBL (Jonline Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
+            - [DockerHub: Jonline Server (jonlatane/jonline:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
-          ## Deployments
-          
-          Deployments will be brought up-to-date at around the same time as this release is created.
+            - [DockerHub: Jonline Preview Generator (jonlatane/jonline_preview_generator:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
-          First, Jonline.io (and any other "development" deployments) will be updated.
+            - *In testing/not yet ready for production use:* [DockerHub: JBL (Jonline Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
-          Then, this release is created (so, Jonline.io should already be updated).
+            ## Deployments
 
-          Finally, Bull City Social and Oak City Social (and any other "production" deployments) will be updated.
-          
-          | Deployment | Links | Deployment Version |
-          | --- | --- | --- |
-          | [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                      | [About](https://jonline.io/about), [Protocol Docs](https://jonline.io/docs/protocol/)           | Development |
-          | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | [About](https://BullCity.Social/about), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production  |
-          | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | [About](https://OakCity.Social/about), [Protocol Docs](https://OakCity.Social/docs/protocol/)   | Production  |
-          
-          ## Changelog
-          
-          This list's Markdown was generated with `git log -100 --pretty='- [%h / *%ch*] %B'` at release time:
-          
-          ${{ steps.changelog.outputs.ci_changelog }}
+            Deployments will be brought up-to-date at around the same time as this release is created.
+
+            First, Jonline.io (and any other "development" deployments) will be updated.
+
+            Then, this release is created (so, Jonline.io should already be updated).
+
+            Finally, Bull City Social and Oak City Social (and any other "production" deployments) will be updated.
+
+            | Deployment | Links | Deployment Version |
+            | --- | --- | --- |
+            | [Jonline.io ![Jonline.io](https://jonline.io/info_shield?56fdas586)](https://jonline.io)                      | [About](https://jonline.io/about), [Protocol Docs](https://jonline.io/docs/protocol/)           | Development |
+            | [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?56fdas586)](https://BullCity.Social/) | [About](https://BullCity.Social/about), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production  |
+            | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?56fdas586)](https://OakCity.Social/)     | [About](https://OakCity.Social/about), [Protocol Docs](https://OakCity.Social/docs/protocol/)   | Production  |
+
+            ## Changelog
+
+            This list's Markdown was generated with `git log -100 --pretty='- [%h / *%ch*] %B'` at release time:
+
+            ${{ steps.changelog.outputs.ci_changelog }}
 
   deploy_bullcitysocial:
     name: Deploy Bull City Social
@@ -619,41 +617,41 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
-    - uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-    - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
 
-    - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
+      - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
-    - name: Save DigitalOcean kubeconfig with short-lived credentials
-      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Bull City Social via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/server_external.yaml -n bullcitysocial
+      - name: Deploy to Bull City Social via DigitalOcean Kubernetes
+        run: kubectl apply -f deploys/k8s/server_external.yaml -n bullcitysocial
 
-    - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n bullcitysocial --timeout 2m
+      - name: Verify Server deployment
+        run: kubectl rollout status deployment/jonline -n bullcitysocial --timeout 2m
 
-    - name: Deploy Preview Generator
-      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
+      - name: Deploy Preview Generator
+        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
 
-    - name: Purge Cloudflare cache
-      uses: jakejarvis/cloudflare-purge-action@master
-      env:
-        CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_BULLCITY_SOCIAL }}
-        CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+      - name: Purge Cloudflare cache
+        uses: jakejarvis/cloudflare-purge-action@master
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_BULLCITY_SOCIAL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
 
   deploy_oakcitysocial:
     name: Deploy Oak City Social
@@ -662,38 +660,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Extract Versioning Data
-      id: vars
-      run: |-
-        echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
-        echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
 
-    - uses: digitalocean/action-doctl@v2
-      with:
-        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-    - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
 
-    - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-      run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
+      - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
 
-    - name: Save DigitalOcean kubeconfig with short-lived credentials
-      run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
-    - name: Deploy to Oak City Social via DigitalOcean Kubernetes
-      run: kubectl apply -f deploys/k8s/server_external.yaml -n oakcitysocial
+      - name: Deploy to Oak City Social via DigitalOcean Kubernetes
+        run: kubectl apply -f deploys/k8s/server_external.yaml -n oakcitysocial
 
-    - name: Verify Server deployment
-      run: kubectl rollout status deployment/jonline -n oakcitysocial --timeout 2m
+      - name: Verify Server deployment
+        run: kubectl rollout status deployment/jonline -n oakcitysocial --timeout 2m
 
-    - name: Deploy Preview Generator
-      run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial
+      - name: Deploy Preview Generator
+        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial
 
-    - name: Purge Cloudflare cache
-      uses: jakejarvis/cloudflare-purge-action@master
-      env:
-        CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_OAKCITY_SOCIAL }}
-        CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+      - name: Purge Cloudflare cache
+        uses: jakejarvis/cloudflare-purge-action@master
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_OAKCITY_SOCIAL }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
