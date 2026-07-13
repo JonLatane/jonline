@@ -2,12 +2,13 @@ module UI.EmittedStylesheet exposing (view)
 
 {-| A `<style>` tag, computed fresh from the current `Shared.Model` on every
 render (so it updates automatically any time a server is added/removed, or
-the current server/dark-light mode changes): one text-color rule for every
-link on the page, plus, for each known server, a handful of color "utility
-class" pairs so any element can be given that server's colors just by adding
-two classes -- e.g. `class="jonline.io background-color-primary"` -- rather
-than needing that server's `ServerTheme` threaded in as a view-function
-argument.
+the current server/dark-light mode changes): `mainFrontendServerRules` (root
+element rules -- `a`, switches, buttons -- driven by `mainFrontendHost`'s
+theme, standing in for what used to be the static `--accent` CSS var), plus,
+for each known server, a handful of color "utility class" pairs so any
+element can be given that server's colors just by adding two classes -- e.g.
+`class="jonline.io background-color-primary"` -- rather than needing that
+server's `ServerTheme` threaded in as a view-function argument.
 
   - `<host> background-color-primary` -- `primaryColor` / `primaryTextColor`
   - `<host> background-color-nav` -- `navColor` / `navTextColor`
@@ -39,13 +40,39 @@ css shared =
         darkMode =
             Shared.effectiveDarkMode shared
     in
-    linkRule (AccountsPanel.mainServerTheme darkMode shared.accountsPanel).primaryAnchorColor
+    mainFrontendServerRules darkMode shared.accountsPanel
         ++ String.concat (List.map (serverRules darkMode) shared.accountsPanel.servers)
 
 
-linkRule : String -> String
-linkRule anchorColor =
-    "a { color: " ++ anchorColor ++ "; }\n"
+{-| Root-element rules driven by `mainFrontendHost`'s theme -- these apply
+app-wide (not scoped to a per-server class) since they stand in for what used
+to be the single, static `--accent` CSS var: every link's color, and the
+"on" color of every toggle switch and every selected `web-ui-button`.
+
+The one exception is contrast against a switch's own row: an `account-row`
+for an account on `mainFrontendHost` itself is already tinted with that
+host's `primaryColor` (see `UI.elm`'s `accountRow`), so `primaryAnchorColor`
+(derived from that same `primaryColor`) wouldn't read as well there as
+`navAnchorColor` does. The `.account-row` rule's selector is more specific
+than the plain switch rule above, so it wins there regardless of rule
+order. Other accounts' rows aren't tinted with `mainFrontendHost`'s colors
+at all, so they don't need (or get) this override.
+-}
+mainFrontendServerRules : Bool -> AccountsPanel.Model -> String
+mainFrontendServerRules darkMode accountsPanel =
+    let
+        theme =
+            AccountsPanel.mainServerTheme darkMode accountsPanel
+
+        mainHostSelector =
+            "." ++ escapeClass accountsPanel.mainFrontendHost
+    in
+    String.concat
+        [ "a { color: " ++ theme.primaryAnchorColor ++ "; }\n"
+        , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
+        , ".web-ui-button.selected { background: " ++ theme.primaryAnchorColor ++ "; border-color: " ++ theme.primaryAnchorColor ++ "; }\n"
+        , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
+        ]
 
 
 serverRules : Bool -> AccountsPanel.Server -> String

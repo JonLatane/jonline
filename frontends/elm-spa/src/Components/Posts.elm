@@ -3,6 +3,7 @@ module Components.Posts exposing
     , fetchRecentPosts
     , postAuthorName
     , postCard
+    , postCommentCount
     , postDetail
     , postHref
     , postTimestamp
@@ -192,6 +193,31 @@ postVisibilityText post =
             "Unknown"
 
 
+{-| A post's star count -- `unauthenticatedStarCount` is a protobuf `int64`,
+which `protoc-gen-elm` represents as `Protobuf.Types.Int64.Int64` rather than
+plain `Int` since it may exceed JS's safe integer range in general; star
+counts never will, so this is a safe, simple conversion for display.
+-}
+postStarCount : Post -> Int
+postStarCount post =
+    MaybeAccountRequest.int64ToInt post.unauthenticatedStarCount
+
+
+{-| A post's comment count -- `responseCount` (replies *and* replies to
+replies, etc.), matching the Tamagui app's "N comments" label.
+-}
+postCommentCount : Post -> Int
+postCommentCount post =
+    post.responseCount
+
+
+{-| "★ 3 · 💬 12"-style suffix for a post's meta line.
+-}
+postCountsText : Post -> String
+postCountsText post =
+    "★ " ++ String.fromInt (postStarCount post) ++ " · 💬 " ++ String.fromInt (postCommentCount post)
+
+
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
 otherwise obvious once posts from several are mixed together by recency. Tinted
@@ -213,7 +239,16 @@ postCard basePath viewingServerHost postServerHost post =
         ]
         [ div [ class "post-card-title" ] [ text (postTitleText post) ]
         , div [ class "post-card-meta" ]
-            [ text (postAuthorName post ++ " · " ++ postServerHost ++ " · " ++ postVisibilityText post) ]
+            [ text
+                (postAuthorName post
+                    ++ " · "
+                    ++ postServerHost
+                    ++ " · "
+                    ++ postVisibilityText post
+                    ++ " · "
+                    ++ postCountsText post
+                )
+            ]
         ]
 
 
@@ -227,7 +262,15 @@ postDetail postServerHost post =
     div [ UI.classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
         , div [ class "post-detail-meta" ]
-            [ text ("by " ++ postAuthorName post ++ " · " ++ postVisibilityText post) ]
+            [ text
+                ("by "
+                    ++ postAuthorName post
+                    ++ " · "
+                    ++ postVisibilityText post
+                    ++ " · "
+                    ++ postCountsText post
+                )
+            ]
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content

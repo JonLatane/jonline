@@ -1,5 +1,6 @@
 module Shared.MaybeAccountRequest exposing
     ( Token
+    , int64ToInt
     , isExpired
     , perform
     , performWithAccount

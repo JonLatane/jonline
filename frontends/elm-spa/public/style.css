@@ -4,7 +4,6 @@
   --muted: #6b7280;
   --border: #d9dce1;
   --panel-bg: #ffffff;
-  --accent: #3b6fe0;
   --danger: #c0392b;
   --chip-bg: #f4f5f7;
 }
@@ -16,7 +15,6 @@
     --muted: #9aa1ab;
     --border: #33363d;
     --panel-bg: #21242b;
-    --accent: #6c93ec;
     --danger: #e0685a;
     --chip-bg: #2a2d34;
   }
@@ -34,7 +32,6 @@
   --muted: #6b7280;
   --border: #d9dce1;
   --panel-bg: #ffffff;
-  --accent: #3b6fe0;
   --danger: #c0392b;
   --chip-bg: #f4f5f7;
 }
@@ -45,7 +42,6 @@
   --muted: #9aa1ab;
   --border: #33363d;
   --panel-bg: #21242b;
-  --accent: #6c93ec;
   --danger: #e0685a;
   --chip-bg: #2a2d34;
 }
@@ -314,10 +310,10 @@ input[type="url"] {
   font-size: 0.8rem;
 }
 
+/* .selected's background/border-color come from the emitted
+   `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
 .web-ui-button.selected {
-  background: var(--accent);
   color: white;
-  border-color: var(--accent);
 }
 
 .host-mismatch-warning {
@@ -720,9 +716,8 @@ input[type="url"] {
   transition: transform 0.15s ease;
 }
 
-.switch input:checked + .slider {
-  background: var(--accent);
-}
+/* .switch input:checked + .slider's background comes from the emitted
+   `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
 
 .switch input:checked + .slider::before {
   transform: translateX(14px);
@@ -831,6 +826,10 @@ input[type="url"] {
 .post-detail-content td {
   border: 1px solid var(--border);
   padding: 0.3rem 0.6rem;
+}
+
+.post-comments-link {
+  margin-top: 0.8rem;
 }
 
 .post-loading,

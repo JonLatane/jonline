@@ -5,8 +5,8 @@ import Components.ServerDependentView as ServerDependentView
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
 import Grpc
-import Html exposing (Html, p, text)
-import Html.Attributes exposing (class)
+import Html exposing (Html, a, div, p, text)
+import Html.Attributes exposing (class, href)
 import Page
 import Proto.Jonline exposing (Post)
 import Request
@@ -186,7 +186,7 @@ subscriptions model =
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
     { title = titleFor model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
+    , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
     }
 
 
@@ -200,8 +200,8 @@ titleFor model =
             "Post"
 
 
-bodyView : Shared.Model -> Model -> Html Msg
-bodyView shared model =
+bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg
+bodyView shared req model =
     ServerDependentView.view
         { hostname = model.targetHost
         , servers = shared.accountsPanel.servers
@@ -218,5 +218,77 @@ bodyView shared model =
                     p [ class "post-error" ] [ text "Couldn't load this post." ]
 
                 PostLoaded post ->
-                    Posts.postDetail model.targetHost post
+                    div []
+                        [ Posts.postDetail model.targetHost post
+                        , commentsLinkView shared req post
+                        ]
         )
+
+
+{-| A link out to the same post's comments on the React (Tamagui) app, which
+has actual comment-viewing/-posting UI this app doesn't yet -- only shown if
+there are any comments to see. Same origin the Elm app itself is being viewed
+from (just `/elm` swapped for `/tamagui`, and `#comments` appended to jump
+straight there) -- except when that origin is the bare `elm-spa server` dev
+server (port 1234), which has no Rust backend of its own to serve `/tamagui`
+from at all, so that case links to the local backend's default port (8000)
+instead.
+-}
+commentsLinkView : Shared.Model -> Request.With Params -> Post -> Html Msg
+commentsLinkView shared req post =
+    let
+        commentCount =
+            Posts.postCommentCount post
+    in
+    if commentCount <= 0 then
+        text ""
+
+    else
+        p [ class "post-comments-link" ]
+            [ a [ href (reactCommentsHref shared req) ]
+                [ text
+                    ("View "
+                        ++ String.fromInt commentCount
+                        ++ " comment"
+                        ++ (if commentCount == 1 then
+                                ""
+
+                            else
+                                "s"
+                           )
+                    )
+                ]
+            ]
+
+
+reactCommentsHref : Shared.Model -> Request.With Params -> String
+reactCommentsHref shared req =
+    let
+        isDevServer =
+            req.url.port_ == Just 1234
+
+        scheme =
+            if AccountsPanel.isSecure req then
+                "https://"
+
+            else
+                "http://"
+
+        port_ =
+            if isDevServer then
+                Just 8000
+
+            else
+                req.url.port_
+
+        portSuffix =
+            port_
+                |> Maybe.map (\p -> ":" ++ String.fromInt p)
+                |> Maybe.withDefault ""
+    in
+    scheme
+        ++ shared.accountsPanel.browsingHost
+        ++ portSuffix
+        ++ "/tamagui/post/"
+        ++ req.params.postId
+        ++ "#comments"
