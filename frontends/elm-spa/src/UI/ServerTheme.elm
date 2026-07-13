@@ -253,6 +253,16 @@ lightenHelper color iterations =
 {-| Shades a `#rrggbb` color by `percent` (e.g. `-20` or `20`), matching the
 Tamagui app's `shadeColor` channel math (including its "nudge by 1 if
 rounding would otherwise be a no-op" step) exactly.
+
+Deliberately does *not* floor/ceiling-clamp each channel to `[10, 245]`
+before scaling it, the way the naive "shade a color" recipe this was
+originally based on does. That clamp forces near-0 channels (e.g. the blue
+in a pure yellow) to hover around 10 forever while the other channels keep
+shrinking freely, so the ratio between channels drifts and saturation drains
+out -- a dark yellow ends up looking brown/olive instead of a darker yellow.
+Scaling every channel by the same `multiplier` with no floor preserves
+hue and saturation exactly (in HSV terms, only `V` changes), so darkened/
+lightened colors keep reading as the same color.
 -}
 shade : String -> Int -> String
 shade colorHex percent =
@@ -266,7 +276,7 @@ shade colorHex percent =
         adjust n0 =
             let
                 n =
-                    toFloat (clamp 10 245 n0)
+                    toFloat n0
 
                 result =
                     n * multiplier

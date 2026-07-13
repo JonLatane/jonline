@@ -21,9 +21,13 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
+import Process
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.StarredPostsPanel as StarredPostsPanel
+import Task
+import Time
 import Url exposing (Url)
 
 
@@ -43,6 +47,7 @@ type ThemePreference
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
+    , starredPostsPanel : StarredPostsPanel.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
 
@@ -61,8 +66,10 @@ type alias Model =
 type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
+    | StarredPostsPanelMsg StarredPostsPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
+    | CloseAccountsPanelAfterDelay
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -183,6 +190,10 @@ init basePath req flags =
             Decode.decodeValue (Decode.field "state" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        starredPostsFlags =
+            Decode.decodeValue (Decode.field "starredPosts" Decode.value) flags
+                |> Result.withDefault Encode.null
+
         systemPrefersDark =
             Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
                 |> Result.withDefault False
@@ -197,6 +208,7 @@ init basePath req flags =
     in
     ( { accountsPanel = accountsPanelModel
       , adminPanel = AdminPanel.init
+      , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
@@ -221,6 +233,26 @@ update req msg model =
         AdminPanelMsg subMsg ->
             ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
 
+        StarredPostsPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, maybeRefreshedAccount ) =
+                    StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeRefreshedAccount of
+                        Just account ->
+                            AccountsPanel.update req (AccountsPanel.AccountRefreshed account) model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel }
+            , Cmd.batch
+                [ Cmd.map StarredPostsPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
         ThemePreferenceClicked ->
             let
                 newPreference =
@@ -236,7 +268,24 @@ update req msg model =
         SystemPrefersDarkChanged prefersDark ->
             ( { model | systemPrefersDark = prefersDark }, Cmd.none )
 
+        CloseAccountsPanelAfterDelay ->
+            ( model
+            , Process.sleep 500
+                |> Task.perform (\_ -> AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+            )
 
+
+{-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
+only while the panel's actually open -- there's nothing to show for it
+otherwise, so no reason to keep hitting servers in the background.
+-}
 subscriptions : Request -> Model -> Sub Msg
-subscriptions _ _ =
-    Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+subscriptions _ model =
+    Sub.batch
+        [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , if model.starredPostsPanel.showStarredPostsPanel then
+            Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
+
+          else
+            Sub.none
+        ]

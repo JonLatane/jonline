@@ -11,4 +11,4 @@ upgrade_tamagui:
 	$(MAKE) rebuild_fe
 
 rebuild_fe:
-	yarn tsc && yarn build && yarn web:prod:build
+	export NODE_OPTIONS=--max-old-space-size=8192; yarn tsc && yarn build && yarn web:prod:build

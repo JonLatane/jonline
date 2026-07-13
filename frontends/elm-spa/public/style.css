@@ -133,6 +133,75 @@ body {
   opacity: 0.85;
 }
 
+/* The Home link swaps in the browsing server's RegularServerLogo (glyph +
+   possibly-two-line name -- see UI.homeLinkContent) instead of plain text, so
+   it needs its own layout: the glyph on the left stretched to the full
+   height of the button (rather than RegularServerLogo's usual stacked
+   glyph-above-name/fixed glyph size, which is why the width/height rules
+   below override .server-name-and-logo.regular's defaults from
+   AccountsPanel.elm's CSS instead of just reusing them) with the
+   left-aligned name stack to its right, plus
+   .accounts-menu-toggle.has-summary's negative-margin hack (here -18px, vs.
+   that button's -5px, since this content is taller) so the taller button
+   overflows the navbar row instead of stretching it. `border-radius` is
+   dialed back from .nav-link's pill shape -- a stadium radius on a shape this
+   much taller than it is wide reads as an odd rounded-off oval rather than a
+   button, so a fixed radius is used instead. */
+.nav-link-home {
+  align-items: stretch;
+  padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+  border-radius: 14px;
+  margin-top: -10px;
+  margin-bottom: -10px;
+}
+
+.nav-link-home .server-name-and-logo.regular {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-image,
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji,
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  /* `height: 100%` alone is unreliable here -- .nav-link-home's height comes
+     from its content (padding around the name text), not an explicit value,
+     and percentage heights don't resolve against an auto-height ancestor. So
+     real (often non-square, sometimes huge) logo images fall back to their
+     intrinsic size instead of stretching, blowing out the button. `max-*`
+     clamps that regardless of which way it resolves; `object-fit: cover`
+     (from the base .server-logo-image rule) crops non-square source images
+     into the resulting square instead of distorting them. */
+  width: auto;
+  height: 100%;
+  max-width: 48px;
+  max-height: 48px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 2.2rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  font-size: 1.4rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-breakdown {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-primary,
+.nav-link-home .server-name-and-logo.regular .server-name-secondary {
+  text-align: left;
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 main {
   padding: 1rem;
 }
@@ -164,7 +233,7 @@ input[type="url"] {
 }
 
 
-/* Nav-right: theme toggle + accounts menu */
+/* Nav-right: accounts menu (+ starred posts/admin menus) */
 
 .nav-right {
   display: flex;
@@ -172,13 +241,39 @@ input[type="url"] {
   gap: 0.5rem;
 }
 
-.theme-toggle {
-  padding: 0.3rem 0.5rem;
-  border-radius: 999px;
+/* Sits at the Accounts Panel's top-right corner, overlapping the servers
+   strip's top edge -- that's fine since the overlapped area (the server
+   chip's logo/name) isn't the only way to select it, so covering a sliver of
+   it costs nothing. Higher z-index than the strip so it stays clickable.
+   Info ("i") button on top, theme toggle below it -- see UI.elm's
+   `accountsPanel`. */
+.panel-icon-stack {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.panel-icon-button {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--chip-bg);
+  color: var(--fg);
   line-height: 1;
+  text-decoration: none;
 }
+
 
 .accounts-menu,
 .admin-menu {
@@ -192,6 +287,10 @@ input[type="url"] {
 }
 
 .accounts-menu-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
   padding: 0.4rem 0.9rem;
   border-radius: 999px;
   border: 1px solid var(--border);
@@ -201,6 +300,18 @@ input[type="url"] {
 
 .accounts-menu-toggle.has-avatars {
   padding: 0.25rem 0.6rem;
+}
+
+.accounts-menu-toggle.has-summary {
+  margin-top: -5px;
+  margin-bottom: -5px;
+}
+
+.accounts-menu-server-summary {
+  font-size: 0.6rem;
+  line-height: 1;
+  opacity: 0.75;
+  white-space: nowrap;
 }
 
 .accounts-menu-avatars {
@@ -234,6 +345,74 @@ input[type="url"] {
 
 .admin-panel {
   width: 260px;
+}
+
+.accounts-panel.starred-posts-panel {
+  /* Its toggle sits in `.nav-links`, between Home and About (see `UI.elm`'s
+     `headerNav`), well to the left of the Accounts Panel's own toggle -- still
+     given a higher z-index so it layers above the Accounts Panel if both
+     happen to be open at once. */
+  z-index: 25;
+  width: 360px;
+
+  /* `.accounts-panel`'s default `right: 0` hangs a panel off the *left* of
+     its toggle -- right for the Accounts/Admin menus, which sit at the far
+     right of the navbar, but this toggle now sits over on the left (between
+     Home and About), so anchor from the toggle's left edge instead, nudged a
+     little further left so the toggle isn't flush against the panel's edge. */
+  right: auto;
+  left: -100px;
+}
+
+/* Notification-style count bubble on the Starred Posts toggle's corner --
+   positioned relative to `.admin-menu` (see `.accounts-menu, .admin-menu`
+   above), which wraps just the toggle button with no extra layout box of its
+   own, so this lines up with the button's own corner. Its background/text
+   color come from the emitted `mainFrontendHost background-color-nav` rule
+   (navColor/navTextColor -- see `UI.EmittedStylesheet`), same as e.g. the
+   Login form's buttons, rather than a fixed color here. */
+.starred-posts-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.starred-posts-header {
+  font-weight: 700;
+}
+
+.starred-posts-empty {
+  color: var(--muted);
+}
+
+/* One entry per starred post -- see Shared/StarredPostsPanel.elm's
+   `starredPostView`. Its `.post-card` (a plain `<a>`) is reused as-is. */
+
+.starred-post-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.starred-post-context {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--chip-bg);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
 }
 
 .admin-switch-row {
@@ -317,7 +496,7 @@ input[type="url"] {
 }
 
 .host-mismatch-warning {
-  cursor: help;
+  cursor: pointer;
   font-size: 1.1rem;
   line-height: 1;
 }
@@ -576,6 +755,12 @@ input[type="url"] {
   font-size: 0.9rem;
 }
 
+.servers-unreachable-warning {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.2rem 0;
+}
+
 .account-row {
   display: flex;
   align-items: center;
@@ -754,6 +939,16 @@ input[type="url"] {
 .post-card-meta {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.post-star {
+  display: inline-block;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.15s ease;
+}
+
+.post-star.starred {
+  transform: scale(1.2);
 }
 
 .post-detail {

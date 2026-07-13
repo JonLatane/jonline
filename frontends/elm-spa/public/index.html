@@ -52,11 +52,20 @@
     var storedThemePreference = localStorage.getItem("jonlineThemePreference") || "auto";
     var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
+    var storedStarredPosts = [];
+    try {
+      var rawStarredPosts = localStorage.getItem("jonlineStarredPosts");
+      storedStarredPosts = rawStarredPosts ? JSON.parse(rawStarredPosts) : [];
+    } catch (e) {
+      console.error("Failed to read stored starred posts", e);
+    }
+
     var app = Elm.Main.init({
       flags: {
         state: storedState,
         systemPrefersDark: darkMediaQuery.matches,
-        themePreference: storedThemePreference
+        themePreference: storedThemePreference,
+        starredPosts: storedStarredPosts
       }
     });
 
@@ -66,6 +75,10 @@
 
     app.ports.persistThemePreference.subscribe(function (preference) {
       localStorage.setItem("jonlineThemePreference", preference);
+    });
+
+    app.ports.persistStarredPosts.subscribe(function (starredPosts) {
+      localStorage.setItem("jonlineStarredPosts", JSON.stringify(starredPosts));
     });
 
     var currentThemePreference = storedThemePreference;

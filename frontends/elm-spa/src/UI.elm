@@ -1,4 +1,4 @@
-module UI exposing (classes, layout, page)
+module UI exposing (layout, page)
 
 import Char
 import Effect exposing (Effect)
@@ -10,9 +10,12 @@ import Json.Decode as Decode
 import Page
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
+import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.StarredPostsPanel as StarredPostsPanel
+import UI.Classes exposing (classes)
 import UI.EmittedStylesheet
 import View exposing (View)
 
@@ -58,11 +61,14 @@ headerNav shared currentRoute =
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
-                , navLink shared currentRoute (text "About") Route.About
+                , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
+                    text ""
+
+                  else
+                    starredPostsMenu shared
                 ]
             , div [ class "nav-right" ]
-                [ themeToggle shared
-                , accountsMenu shared
+                [ accountsMenu shared
                 , if AccountsPanel.hasAdminAccount shared.accountsPanel then
                     adminMenu shared
 
@@ -129,7 +135,10 @@ onEnter msg =
 `mainFrontendHost`'s `background-color-nav` utility class, tinting it with
 `navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
 navbar around it; other links just inherit that surrounding primary color/text
-color by not overriding them.
+color by not overriding them. The Home link also gets its own `nav-link-home`
+class (regardless of `isCurrent`) so `style.css` can give its bigger,
+stacked `RegularServerLogo` content (see `homeLinkContent`) the same
+negative-margin overflow treatment as the Accounts Panel toggle.
 -}
 navLink : Shared.Model -> Route -> Html msg -> Route -> Html msg
 navLink shared currentRoute content linkRoute =
@@ -140,37 +149,69 @@ navLink shared currentRoute content linkRoute =
     a
         [ href (shared.basePath ++ Route.toHref linkRoute)
         , classes
-            (if isCurrent then
-                [ "nav-link", shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+            ("nav-link"
+                :: (if linkRoute == Route.Home_ then
+                        [ "nav-link-home" ]
 
-             else
-                [ "nav-link" ]
+                    else
+                        []
+                   )
+                ++ (if isCurrent then
+                        [ shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+                    else
+                        []
+                   )
             )
         ]
         [ content ]
 
 
 {-| The Home link's content is normally the browsing server's own
-logo/name (via `AccountsPanel.serverNameAndLogo`), same as any other server
-listing -- falling back to the literal text "Home" only for the brief window
-before `mainFrontendHost` has actually finished connecting (see
+logo/name (via `AccountsPanel.serverNameAndLogo`), same `RegularServerLogo`
+(stacked glyph-above-multi-line-name) style as the server chips in the
+Accounts Panel -- just bigger, per `.nav-link-home` in `style.css` -- falling
+back to the literal text "Home" only for the brief window before
+`mainFrontendHost` has actually finished connecting (see
 `AccountsPanel.init`/`GotMainServerResult`), when it isn't in `servers` yet.
 -}
 homeLinkContent : Shared.Model -> Html msg
 homeLinkContent shared =
     case mainServer shared of
         Just server ->
-            AccountsPanel.serverNameAndLogo server AccountsPanel.CompactServerLogo
+            AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
 
         Nothing ->
             text "Home"
 
 
+{-| Looks up a known server by `frontendHost` -- a thin wrapper around
+`AccountsPanel.serverForHost` for callers that already have a `Shared.Model`
+in scope rather than the bare `List AccountsPanel.Server`.
+-}
+findServer : Shared.Model -> String -> Maybe AccountsPanel.Server
+findServer shared frontendHost =
+    AccountsPanel.serverForHost shared.accountsPanel.servers frontendHost
+
+
 mainServer : Shared.Model -> Maybe AccountsPanel.Server
 mainServer shared =
-    shared.accountsPanel.servers
-        |> List.filter (\s -> s.frontendHost == shared.accountsPanel.mainFrontendHost)
-        |> List.head
+    findServer shared shared.accountsPanel.mainFrontendHost
+
+
+{-| The former "About" nav link, now a small circular "i" button stacked above
+the theme toggle at the Accounts Panel's top-right corner (see
+`accountsPanel`).
+-}
+infoButton : Shared.Model -> Html Shared.Msg
+infoButton shared =
+    a
+        [ class "panel-icon-button"
+        , href (shared.basePath ++ Route.toHref Route.About)
+        , title "About"
+        , onClick Shared.CloseAccountsPanelAfterDelay
+        ]
+        [ text "ℹ" ]
 
 
 {-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
@@ -191,7 +232,7 @@ themeToggle shared =
                     "🌙"
     in
     button
-        [ class "theme-toggle"
+        [ classes [ "panel-icon-button", "theme-toggle" ]
         , onClick Shared.ThemePreferenceClicked
         , title ("Appearance: " ++ Shared.themePreferenceLabel shared.themePreference ++ " (click to change)")
         ]
@@ -216,6 +257,12 @@ accountsMenu shared =
                     else
                         [ "has-avatars" ]
                    )
+                ++ (if List.length (AccountsPanel.enabledServers shared.accountsPanel) == 1 then
+                        []
+
+                    else
+                        [ "has-summary" ]
+                   )
     in
     div [ class "accounts-menu" ]
         [ div [ class "accounts-menu-row" ]
@@ -223,7 +270,9 @@ accountsMenu shared =
                 [ classes toggleClasses
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
                 ]
-                [ accountsMenuButtonContent shared enabledAccounts ]
+                [ accountsMenuButtonContent shared enabledAccounts
+                , accountsMenuServerSummary shared.accountsPanel
+                ]
             , hostMismatchWarning shared
             ]
         , accountsPanel shared
@@ -242,6 +291,57 @@ accountsMenuButtonContent shared enabledAccounts =
 
         accounts ->
             div [ class "accounts-menu-avatars" ] (List.map (accountsMenuAvatar shared) accounts)
+
+
+{-| A small-font subtitle under the accounts-menu toggle button's "Login" text/
+avatars, summarizing how many servers are currently enabled: nothing for the
+common single-server case, "N servers" for any other count, or "No servers ⚠️"
+when every server's been disabled. If any account's server is currently
+unreachable (see `AccountsPanel.unreachableAccountHosts`, surfaced below as
+"Couldn't reach: ..."), the count is always shown -- even "1 server" -- with
+its own ⚠️, so that warning isn't silently hidden behind the usual
+single-server blank state. Recomputed on every render (so it updates live as
+servers are toggled/reconnected) directly off `AccountsPanel.enabledServers`
+and `AccountsPanel.unreachableAccountHosts`.
+-}
+accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
+accountsMenuServerSummary accountsPanelModel =
+    let
+        count =
+            List.length (AccountsPanel.enabledServers accountsPanelModel)
+
+        hasUnreachableServers =
+            not (List.isEmpty (AccountsPanel.unreachableAccountHosts accountsPanelModel))
+
+        serversText =
+            String.fromInt count
+                ++ " server"
+                ++ (if count == 1 then
+                        ""
+
+                    else
+                        "s"
+                   )
+                ++ (if hasUnreachableServers then
+                        " ⚠️"
+
+                    else
+                        ""
+                   )
+    in
+    case count of
+        0 ->
+            div [ class "accounts-menu-server-summary" ] [ text "No servers ⚠️" ]
+
+        1 ->
+            if hasUnreachableServers then
+                div [ class "accounts-menu-server-summary" ] [ text serversText ]
+
+            else
+                text ""
+
+        _ ->
+            div [ class "accounts-menu-server-summary" ] [ text serversText ]
 
 
 {-| A small avatar/placeholder for the accounts-menu toggle button, bordered
@@ -277,8 +377,10 @@ accountsMenuAvatar shared account =
 being viewed from turns out to be a backend-only host with a different public
 identity (see `Shared.AccountsPanel`'s `resolvedFrontendHost`) -- worth
 flagging, since the user probably has the "wrong" (if working) URL open.
+Clicking it force-resets `mainFrontendHost` back to `browsingHost`
+(`ResetMainFrontendHost`) rather than navigating anywhere.
 -}
-hostMismatchWarning : Shared.Model -> Html msg
+hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
     let
         accountsPanelModel =
@@ -287,14 +389,15 @@ hostMismatchWarning shared =
     if accountsPanelModel.browsingHost /= accountsPanelModel.mainFrontendHost then
         span
             [ class "host-mismatch-warning"
+            , onClick (Shared.AccountsPanelMsg AccountsPanel.ResetMainFrontendHost)
             , title
                 ("You're browsing from "
                     ++ accountsPanelModel.browsingHost
                     ++ ", but it's configured to look like "
                     ++ accountsPanelModel.mainFrontendHost
-                    ++ ". You should probably just browse from "
-                    ++ accountsPanelModel.mainFrontendHost
-                    ++ "."
+                    ++ ". Click to browse from "
+                    ++ accountsPanelModel.browsingHost
+                    ++ " instead."
                 )
             ]
             [ text "⚠️" ]
@@ -327,7 +430,9 @@ accountsPanel shared =
                 "is-closed"
     in
     div [ classes [ "accounts-panel", stateClass ] ]
-        [ serversStrip shared
+        [ div [ class "panel-icon-stack" ] [ infoButton shared, themeToggle shared ]
+        , serversStrip shared
+        , unreachableServersWarning shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -439,6 +544,26 @@ logoOrPlaceholder branding =
 
         Nothing ->
             div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
+
+
+{-| Accounts are kept around even when their server currently has no `Server`
+entry (down, moved, unreachable -- see `AccountsPanel.unreachableAccountHosts`),
+so they wouldn't otherwise show up anywhere in `serversStrip`. Surfaced here as
+a plain-text note of just their hosts, rather than a full chip, since there's
+nothing (name/logo/theme) to render for a server we can't currently reach.
+-}
+unreachableServersWarning : Shared.Model -> Html msg
+unreachableServersWarning shared =
+    let
+        hosts =
+            AccountsPanel.unreachableAccountHosts shared.accountsPanel
+    in
+    if List.isEmpty hosts then
+        text ""
+
+    else
+        div [ class "servers-unreachable-warning" ]
+            [ text ("Couldn't reach: " ++ String.join ", " hosts) ]
 
 
 
@@ -681,6 +806,38 @@ adminMenu shared =
         ]
 
 
+{-| Only shown at all once at least one Post has been starred (see
+`Shared.StarredPostsPanel.starKey`) -- same "only show the nav icon once
+there's something behind it" idea as `adminMenu`. The panel's own content is
+`StarredPostsPanel.view` -- it returns `Html StarredPostsPanel.Msg` rather
+than `Html Shared.Msg` (unlike the rest of this module's panels), since
+`Shared.StarredPostsPanel` can't itself import `Shared` (that'd be a cycle --
+`Shared` already imports it for `Shared.Model`'s `starredPostsPanel` field),
+so it's mapped into `Shared.Msg` here instead.
+-}
+starredPostsMenu : Shared.Model -> Html Shared.Msg
+starredPostsMenu shared =
+    div [ class "admin-menu" ]
+        [ button
+            [ class "accounts-menu-toggle"
+            , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+            , title "Starred Posts"
+            ]
+            [ text "⭐"
+            , span
+                [ classes
+                    [ "starred-posts-count-badge"
+                    , shared.accountsPanel.mainFrontendHost
+                    , "background-color-nav"
+                    ]
+                ]
+                [ text (String.fromInt (Set.size shared.starredPostsPanel.starredPostIds)) ]
+            ]
+        , Html.map Shared.StarredPostsPanelMsg
+            (StarredPostsPanel.view shared.basePath shared.accountsPanel shared.starredPostsPanel)
+        ]
+
+
 adminPanel : Shared.Model -> Html Shared.Msg
 adminPanel shared =
     let
@@ -724,9 +881,7 @@ adminAccountPanel shared account =
             AdminPanel.isAccountPanelOpen id shared.adminPanel
 
         currentUi =
-            shared.accountsPanel.servers
-                |> List.filter (\s -> s.frontendHost == account.server)
-                |> List.head
+            findServer shared account.server
                 |> Maybe.andThen (\s -> s.configuration.serverInfo)
                 |> Maybe.andThen .webUserInterface
                 |> Maybe.withDefault REACTTAMAGUI

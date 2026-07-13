@@ -6,12 +6,13 @@ import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
 import Grpc
 import Html exposing (Html, a, div, p, text)
-import Html.Attributes exposing (class, href)
+import Html.Attributes exposing (class, href, target)
 import Page
 import Proto.Jonline exposing (Post)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
 import UI
@@ -219,10 +220,26 @@ bodyView shared req model =
 
                 PostLoaded post ->
                     div []
-                        [ Posts.postDetail model.targetHost post
+                        [ postDetailView shared model post
                         , commentsLinkView shared req post
                         ]
         )
+
+
+postDetailView : Shared.Model -> Model -> Post -> Html Msg
+postDetailView shared model post =
+    let
+        starred =
+            StarredPostsPanel.isStarred model.targetHost post shared.starredPostsPanel
+
+        onStarClicked =
+            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+                |> Maybe.map
+                    (\server ->
+                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server post))
+                    )
+    in
+    Posts.postDetail model.targetHost starred onStarClicked post
 
 
 {-| A link out to the same post's comments on the React (Tamagui) app, which
@@ -241,11 +258,16 @@ commentsLinkView shared req post =
             Posts.postCommentCount post
     in
     if commentCount <= 0 then
-        text ""
+        p [ class "post-comments-link" ]
+            [ a [ href (reactCommentsHref shared req), target "_self" ]
+                [ text
+                    "View from the React app"
+                ]
+            ]
 
     else
         p [ class "post-comments-link" ]
-            [ a [ href (reactCommentsHref shared req) ]
+            [ a [ href (reactCommentsHref shared req), target "_self" ]
                 [ text
                     ("View "
                         ++ String.fromInt commentCount
@@ -256,6 +278,7 @@ commentsLinkView shared req post =
                             else
                                 "s"
                            )
+                        ++ " from the React app"
                     )
                 ]
             ]
@@ -291,4 +314,7 @@ reactCommentsHref shared req =
         ++ portSuffix
         ++ "/tamagui/post/"
         ++ req.params.postId
-        ++ "#comments"
+
+
+
+-- ++ "#discussion"

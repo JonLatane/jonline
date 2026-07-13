@@ -4,6 +4,7 @@ module Components.Posts exposing
     , postAuthorName
     , postCard
     , postCommentCount
+    , postContextLabel
     , postDetail
     , postHref
     , postTimestamp
@@ -23,16 +24,19 @@ route's `id` or `id@host` segment.
 import Components.Markdown as Markdown
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, text)
+import Html exposing (Html, a, div, h1, span, text)
 import Html.Attributes exposing (class, href)
+import Html.Events
+import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task exposing (Task)
 import Time
-import UI
+import UI.Classes exposing (classes)
 
 
 {-| Fetches a single post (including reply/preview data) from `server`,
@@ -193,6 +197,37 @@ postVisibilityText post =
             "Unknown"
 
 
+{-| A human-facing label for a Post's `context` when it's something other than
+a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
+plain `POST`, since that's the common case and doesn't need calling out
+wherever a Post is shown alongside its context (see
+`Shared.StarredPostsPanel`'s panel view).
+-}
+postContextLabel : PostContext -> Maybe String
+postContextLabel context =
+    case context of
+        POST ->
+            Nothing
+
+        REPLY ->
+            Just "Reply"
+
+        EVENT ->
+            Just "Event"
+
+        EVENTINSTANCE ->
+            Just "Event Instance"
+
+        FEDERATEDPOST ->
+            Just "Federated Post"
+
+        FEDERATEDEVENTINSTANCE ->
+            Just "Federated Event Instance"
+
+        PostContextUnrecognized_ _ ->
+            Nothing
+
+
 {-| A post's star count -- `unauthenticatedStarCount` is a protobuf `int64`,
 which `protoc-gen-elm` represents as `Protobuf.Types.Int64.Int64` rather than
 plain `Int` since it may exceed JS's safe integer range in general; star
@@ -211,11 +246,45 @@ postCommentCount post =
     post.responseCount
 
 
-{-| "★ 3 · 💬 12"-style suffix for a post's meta line.
+{-| The "★ N" star button of a post's meta line -- clickable (unless
+`onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
+the post (see `Shared.StarredPostsPanel`), filling with `postServerHost`'s
+`primaryAnchorColor` (`.post-star.starred`, see `UI.EmittedStylesheet`) and
+animating the fill via `transition` in `style.css` when `starred` flips.
+`stopPropagation`/`preventDefault` keep a click here from also following
+`postCard`'s enclosing link.
 -}
-postCountsText : Post -> String
-postCountsText post =
-    "★ " ++ String.fromInt (postStarCount post) ++ " · 💬 " ++ String.fromInt (postCommentCount post)
+starButton : String -> Bool -> Maybe msg -> Post -> Html msg
+starButton postServerHost starred onStarClicked post =
+    span
+        (classes
+            (postServerHost
+                :: "post-star"
+                :: (if starred then
+                        [ "starred" ]
+
+                    else
+                        []
+                   )
+            )
+            :: (case onStarClicked of
+                    Just msg ->
+                        [ Html.Events.custom "click"
+                            (Decode.succeed { message = msg, stopPropagation = True, preventDefault = True })
+                        ]
+
+                    Nothing ->
+                        []
+               )
+        )
+        [ text ("★ " ++ String.fromInt (postStarCount post)) ]
+
+
+{-| "· 💬 12"-style suffix for a post's meta line, following `starButton`.
+-}
+commentCountText : Post -> String
+commentCountText post =
+    " · 💬 " ++ String.fromInt (postCommentCount post)
 
 
 {-| Compact rendering for a list of posts from multiple servers at once (see
@@ -226,11 +295,11 @@ with `postServerHost`'s `primaryAnchorColor` border (see `UI.EmittedStylesheet`'
 classes) -- faint normally, filling in on hover since the whole card is a link
 -- so that's obvious at a glance too.
 -}
-postCard : String -> String -> String -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost post =
+postCard : String -> String -> String -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost starred onStarClicked post =
     a
         [ href (postHref basePath viewingServerHost postServerHost post)
-        , UI.classes
+        , classes
             [ "post-card"
             , postServerHost
             , "border-color-primary-anchor-50"
@@ -246,8 +315,9 @@ postCard basePath viewingServerHost postServerHost post =
                     ++ " · "
                     ++ postVisibilityText post
                     ++ " · "
-                    ++ postCountsText post
                 )
+            , starButton postServerHost starred onStarClicked post
+            , text (commentCountText post)
             ]
         ]
 
@@ -257,9 +327,9 @@ since that's already the page you're on, but still tinted with `postServerHost`'
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
 since this one isn't a link).
 -}
-postDetail : String -> Post -> Html msg
-postDetail postServerHost post =
-    div [ UI.classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
+postDetail : String -> Bool -> Maybe msg -> Post -> Html msg
+postDetail postServerHost starred onStarClicked post =
+    div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
         , div [ class "post-detail-meta" ]
             [ text
@@ -268,8 +338,9 @@ postDetail postServerHost post =
                     ++ " · "
                     ++ postVisibilityText post
                     ++ " · "
-                    ++ postCountsText post
                 )
+            , starButton postServerHost starred onStarClicked post
+            , text (commentCountText post)
             ]
         , case post.content of
             Just content ->

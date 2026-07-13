@@ -12,6 +12,7 @@ import Proto.Jonline exposing (Post)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
 import UI
@@ -203,7 +204,20 @@ recentPostsView shared model =
 
     else
         div [ class "posts-list" ]
-            (List.map
-                (\( host, post ) -> Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host post)
-                allPosts
-            )
+            (List.map (postCardView shared) allPosts)
+
+
+postCardView : Shared.Model -> ( String, Post ) -> Html Msg
+postCardView shared ( host, post ) =
+    let
+        starred =
+            StarredPostsPanel.isStarred host post shared.starredPostsPanel
+
+        onStarClicked =
+            AccountsPanel.serverForHost shared.accountsPanel.servers host
+                |> Maybe.map
+                    (\server ->
+                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server post))
+                    )
+    in
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host starred onStarClicked post

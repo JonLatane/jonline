@@ -100,6 +100,20 @@ fn create_rocket<T: rocket::figment::Provider>(
             tempdir,
         })
         .mount("/", routes)
+        // The Tamagui SPA is also reachable under a "/tamagui" prefix (e.g. when
+        // another frontend, like Elm, owns "/"), so its page routes need to
+        // resolve there too -- not just the literal "/tamagui" index page.
+        // The catch-all `tamagui_file_or_username` ("/<file..>") is excluded:
+        // its wildcard already matches any "/tamagui/..." path at the same
+        // rank as a re-mounted copy would, which Rocket rejects as a collision.
+        .mount(
+            "/tamagui",
+            (*web::TAMAGUI_PAGES)
+                .clone()
+                .into_iter()
+                .filter(|r| r.name.as_deref() != Some("tamagui_file_or_username"))
+                .collect::<Vec<_>>(),
+        )
         .register("/", catchers![web::catchers::not_found]);
     // Delete the "false &&" to disable compression in debug mode. Useful for debugging.
     if false && cfg!(debug_assertions) {

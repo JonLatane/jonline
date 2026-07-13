@@ -17,6 +17,7 @@ server's `ServerTheme` threaded in as a view-function argument.
   - `<host> border-color-primary-anchor` -- `primaryAnchorColor` (border-color only; unused so far, but establishes the naming convention below)
   - `<host> border-color-primary-anchor-50` -- `primaryAnchorColor` at 50% opacity (border-color only)
   - `<host> hover-border-color-primary-anchor` -- `primaryAnchorColor` (border-color only), applied only on `:hover` -- pair with `border-color-primary-anchor-50` (or similar) for a border that "fills in" on hover; add `transition: border-color` yourself if you want that to animate, since this class alone is just the `:hover` color rule.
+  - `<host> post-star.starred` -- `primaryAnchorColor` (text color only), used by `Components.Posts`' star button to fill in once a Post is starred (see `Shared.StarredPostsPanel`); `.post-star`'s own `transition` (in `style.css`) is what animates it.
 
 This is cheap to regenerate (it's just string-building); the actual expensive
 color math is already cached in `Shared.Branding`.
@@ -27,6 +28,7 @@ import Char
 import Html exposing (Html, node, text)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import UI.ServerTheme
 
 
 view : Shared.Model -> Html msg
@@ -39,9 +41,15 @@ css shared =
     let
         darkMode =
             Shared.effectiveDarkMode shared
+
+        mainTheme =
+            AccountsPanel.mainServerTheme darkMode shared.accountsPanel
     in
-    mainFrontendServerRules darkMode shared.accountsPanel
-        ++ String.concat (List.map (serverRules darkMode) shared.accountsPanel.servers)
+    mainFrontendServerRules mainTheme shared.accountsPanel
+        ++ String.concat
+            (List.map (serverRules darkMode mainTheme shared.accountsPanel.mainFrontendHost)
+                shared.accountsPanel.servers
+            )
 
 
 {-| Root-element rules driven by `mainFrontendHost`'s theme -- these apply
@@ -58,12 +66,9 @@ than the plain switch rule above, so it wins there regardless of rule
 order. Other accounts' rows aren't tinted with `mainFrontendHost`'s colors
 at all, so they don't need (or get) this override.
 -}
-mainFrontendServerRules : Bool -> AccountsPanel.Model -> String
-mainFrontendServerRules darkMode accountsPanel =
+mainFrontendServerRules : UI.ServerTheme.ServerTheme -> AccountsPanel.Model -> String
+mainFrontendServerRules theme accountsPanel =
     let
-        theme =
-            AccountsPanel.mainServerTheme darkMode accountsPanel
-
         mainHostSelector =
             "." ++ escapeClass accountsPanel.mainFrontendHost
     in
@@ -75,14 +80,47 @@ mainFrontendServerRules darkMode accountsPanel =
         ]
 
 
-serverRules : Bool -> AccountsPanel.Server -> String
-serverRules darkMode server =
+serverRules : Bool -> UI.ServerTheme.ServerTheme -> String -> AccountsPanel.Server -> String
+serverRules darkMode mainTheme mainFrontendHost server =
     let
         theme =
             AccountsPanel.serverThemeOf darkMode server
 
         selector =
             "." ++ escapeClass server.frontendHost
+
+        -- The server chip's enable switch sits on a `background-color-nav`
+        -- (this server's own navColor) tile, so its "on" color needs to
+        -- contrast against *that* rather than the generic switch rule's
+        -- mainFrontendHost.primaryAnchorColor (see `mainFrontendServerRules`)
+        -- -- same idea as that rule's `.account-row` override, but keyed off
+        -- this server's navColor lightness instead of darkMode.
+        switchOnColor =
+            if server.branding.nav.isDark then
+                mainTheme.primaryDarkColor
+
+            else
+                mainTheme.primaryLightColor
+
+        -- Same idea for an account row's switch, keyed off this server's
+        -- primaryColor lightness (what `account-row` is tinted with) instead
+        -- of navColor. Skipped for mainFrontendHost -- its account rows are
+        -- already handled by `mainFrontendServerRules`' own `.account-row`
+        -- override, which uses navAnchorColor rather than this
+        -- light/dark-of-primaryColor logic.
+        accountSwitchOnColor =
+            if server.branding.primary.isDark then
+                mainTheme.primaryDarkColor
+
+            else
+                mainTheme.primaryLightColor
+
+        accountRowSwitchRule =
+            if server.frontendHost == mainFrontendHost then
+                ""
+
+            else
+                ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
     in
     String.concat
         [ colorRule (selector ++ ".background-color-primary") theme.primaryColor theme.primaryTextColor
@@ -92,6 +130,9 @@ serverRules darkMode server =
         , borderColorRule (selector ++ ".border-color-primary-anchor") theme.primaryAnchorColor
         , borderColorRule (selector ++ ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
         , borderColorRule (selector ++ ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
+        , textColorRule (selector ++ ".post-star.starred") theme.primaryAnchorColor
+        , ".server-chip-bottom" ++ selector ++ " .switch input:checked + .slider { background: " ++ switchOnColor ++ "; }\n"
+        , accountRowSwitchRule
         ]
 
 
@@ -103,6 +144,11 @@ colorRule selector backgroundColor foregroundColor =
 borderColorRule : String -> String -> String
 borderColorRule selector borderColor =
     selector ++ " { border-color: " ++ borderColor ++ "; }\n"
+
+
+textColorRule : String -> String -> String
+textColorRule selector color =
+    selector ++ " { color: " ++ color ++ "; }\n"
 
 
 {-| Escapes a hostname for literal use as one segment of a CSS class

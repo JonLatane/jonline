@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "cd ../.. && yarn build && cd apps/next && next build",
+    "build": "cd ../.. && yarn build && cd apps/next && yarn build:export",
+    "build:export": "rm -rf .next out out-tamagui && TAMAGUI_BASE_PATH=/tamagui next build && mv out out-tamagui && rm -rf .next && next build",
     "start": "next start",
     "serve": "NODE_ENV=production next start --port 8151",
     "lint": "next lint",

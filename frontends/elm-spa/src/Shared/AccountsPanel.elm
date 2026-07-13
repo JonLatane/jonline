@@ -29,6 +29,7 @@ module Shared.AccountsPanel exposing
     , serverThemeFor
     , serverThemeOf
     , serverUrl
+    , unreachableAccountHosts
     , update
     )
 
@@ -52,6 +53,7 @@ import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
 import Request exposing (Request)
+import Set
 import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
 import Task exposing (Task)
 import Time
@@ -176,9 +178,14 @@ type alias Model =
     -- itself, but corrected to a CDN's public `frontendHost` if `browsingHost`
     -- turns out to be a backend host presenting a different public identity
     -- (see `resolvedFrontendHost`). A mismatch between the two is shown as a
-    -- warning. This is also (ordinarily) the one server entry the user isn't
-    -- allowed to remove from the Accounts Panel -- see `MainServerSelected`
-    -- for how an admin can change it.
+    -- warning (`UI.hostMismatchWarning`), which the user can click to force it
+    -- back to `browsingHost` (`ResetMainFrontendHost`) -- same as the brief
+    -- window before the main server's first connect resolves, this leaves
+    -- `mainFrontendHost` pointing at a host with no `servers` entry until a
+    -- reconnect adds one, which `UI.mainServer` already tolerates. This is
+    -- also (ordinarily) the one server entry the user isn't allowed to remove
+    -- from the Accounts Panel -- see `MainServerSelected` for how an admin
+    -- can change it.
     , mainFrontendHost : String
     }
 
@@ -199,8 +206,10 @@ type Msg
     | GotNewServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | RemoveServerClicked String
     | ToggleAccountsPanel
+    | CloseAccountsPanel
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
+    | ResetMainFrontendHost
     | ServerChipClicked String
     | SetWebUserInterfaceClicked String WebUserInterface
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
@@ -262,9 +271,7 @@ accountAvatarUrl servers account =
     account.avatarMediaId
         |> Maybe.andThen
             (\id ->
-                servers
-                    |> List.filter (\s -> s.frontendHost == account.server)
-                    |> List.head
+                serverForHost servers account.server
                     |> Maybe.map
                         (\s ->
                             mediaBaseUrl (connectionOf s)
@@ -282,9 +289,7 @@ back to the bare hostname and neutral colors if that server isn't known.
 -}
 brandingFor : List Server -> String -> Branding
 brandingFor servers frontendHost =
-    servers
-        |> List.filter (\s -> s.frontendHost == frontendHost)
-        |> List.head
+    serverForHost servers frontendHost
         |> Maybe.map .branding
         |> Maybe.withDefault (defaultBranding frontendHost)
 
@@ -730,7 +735,9 @@ update req msg model =
 
                         newModel =
                             { model
-                                | accounts = upsertAccount account model.accounts
+                                | accounts =
+                                    upsertAccount account model.accounts
+                                        |> disableOtherAccountsOnServer (accountId account) account.server
                                 , servers =
                                     if alreadyKnown then
                                         model.servers
@@ -765,10 +772,18 @@ update req msg model =
                             serverFrom connection enabled config
 
                         newModel =
-                            { model | servers = model.servers ++ [ server ] }
+                            { model
+                                | servers =
+                                    List.filter (\s -> s.frontendHost /= server.frontendHost) model.servers
+                                        ++ [ server ]
+                            }
                     in
-                    -- Persisting here is a no-op for a server that was already known, but is
-                    -- how a freshly auto-detected "current host" server (see `init`) gets saved.
+                    -- Replaces (rather than just skipping) any existing entry for this host --
+                    -- this fires on every reconnect (app startup/reload, `init`'s
+                    -- `reconnectCmds`), so an unconditional append here would otherwise
+                    -- duplicate the server on each successful reconnect. Persisting is a no-op
+                    -- for a server that was already known, but is how a freshly auto-detected
+                    -- "current host" server (see `init`) gets saved.
                     -- Also refresh permissions for any of its enabled accounts now that we can
                     -- actually reach it -- this is what makes permissions current on app
                     -- startup/reload, not just after a fresh login.
@@ -864,6 +879,17 @@ update req msg model =
                         |> List.filter (\a -> accountId a == id && a.enabled)
                         |> List.head
 
+                -- Only one account per server may be enabled (signed in) at a time --
+                -- enabling this one disables any other account already enabled on the
+                -- same server.
+                exclusiveAccounts =
+                    case justEnabledAccount of
+                        Just account ->
+                            disableOtherAccountsOnServer id account.server toggledAccounts
+
+                        Nothing ->
+                            toggledAccounts
+
                 -- Re-enabling an account whose server is disabled would leave it
                 -- silently excluded from aggregated data anyway -- bring the
                 -- server along, the mirror of `ToggleServerEnabled` taking its
@@ -885,15 +911,13 @@ update req msg model =
                             model.servers
 
                 newModel =
-                    { model | accounts = toggledAccounts, servers = newServers }
+                    { model | accounts = exclusiveAccounts, servers = newServers }
 
                 refreshCmd =
                     justEnabledAccount
                         |> Maybe.andThen
                             (\account ->
-                                newModel.servers
-                                    |> List.filter (\s -> s.frontendHost == account.server)
-                                    |> List.head
+                                serverForHost newModel.servers account.server
                                     |> Maybe.map (\server -> refreshPermissions server account)
                             )
                         |> Maybe.withDefault Cmd.none
@@ -910,9 +934,7 @@ update req msg model =
         ToggleServerEnabled frontendHost ->
             let
                 wasEnabled =
-                    model.servers
-                        |> List.filter (\s -> s.frontendHost == frontendHost)
-                        |> List.head
+                    serverForHost model.servers frontendHost
                         |> Maybe.map .enabled
                         |> Maybe.withDefault False
 
@@ -1008,6 +1030,9 @@ update req msg model =
         ToggleAccountsPanel ->
             ( { model | showAccountsPanel = not model.showAccountsPanel }, Cmd.none )
 
+        CloseAccountsPanel ->
+            ( { model | showAccountsPanel = False }, Cmd.none )
+
         GotPermissionsRefresh _ result ->
             case result of
                 Ok ( refreshedAccount, user ) ->
@@ -1042,6 +1067,13 @@ update req msg model =
             else
                 ( model, Cmd.none )
 
+        ResetMainFrontendHost ->
+            let
+                newModel =
+                    { model | mainFrontendHost = model.browsingHost }
+            in
+            ( newModel, persist newModel )
+
         ServerChipClicked frontendHost ->
             ( updateForm (\f -> { f | server = frontendHost }) model, Cmd.none )
 
@@ -1052,7 +1084,7 @@ update req msg model =
 
                 maybeServer =
                     maybeAccount
-                        |> Maybe.andThen (\a -> model.servers |> List.filter (\s -> s.frontendHost == a.server) |> List.head)
+                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
             in
             case ( maybeAccount, maybeServer ) of
                 ( Just account, Just server ) ->
@@ -1118,6 +1150,21 @@ since removing it would orphan those accounts' stored credentials.
 serverHasAccounts : List Account -> String -> Bool
 serverHasAccounts accounts frontendHost =
     List.any (\a -> a.server == frontendHost) accounts
+
+
+{-| Hosts of accounts we're keeping around but currently have no `Server` entry
+for -- e.g. the server's down, moved, or otherwise unreachable right now (see
+`GotReconnectResult`'s `Err` branch, which leaves a failed-to-reconnect server
+out of `model.servers` without dropping its accounts). Deduplicated, for a
+"Couldn't reach: host1, host2" warning below the Servers strip.
+-}
+unreachableAccountHosts : Model -> List String
+unreachableAccountHosts model =
+    model.accounts
+        |> List.map .server
+        |> List.filter (\host -> not (List.any (\s -> s.frontendHost == host) model.servers))
+        |> Set.fromList
+        |> Set.toList
 
 
 {-| Whether `frontendHost` (trimmed) is a server we're actually connected to --
@@ -1191,6 +1238,24 @@ updateForm fn model =
     { model | accountForm = fn model.accountForm }
 
 
+{-| Disables every other account on `server` besides `keepEnabledId` -- only one
+account per server may be signed in (enabled) at a time, since aggregated
+feeds/permissions assume a single identity per server. Called whenever an
+account becomes enabled, whether by toggling it on or by a fresh sign-in.
+-}
+disableOtherAccountsOnServer : String -> String -> List Account -> List Account
+disableOtherAccountsOnServer keepEnabledId server accounts =
+    List.map
+        (\a ->
+            if a.server == server && accountId a /= keepEnabledId then
+                { a | enabled = False }
+
+            else
+                a
+        )
+        accounts
+
+
 upsertAccount : Account -> List Account -> List Account
 upsertAccount account accounts =
     if List.any (\a -> accountId a == accountId account) accounts then
@@ -1203,6 +1268,35 @@ upsertAccount account accounts =
                     a
             )
             accounts
+
+    else
+        insertAfterSameServer account accounts
+
+
+{-| Inserts a newly-seen account (fresh login/create-account) directly after
+the last existing account on the same server, rather than always at the very
+end of the whole list -- so a server's accounts stay grouped together in the
+persisted list (and the flat accounts-list UI) even when other servers'
+accounts are interleaved. Falls back to appending at the end when this is the
+first account on that server.
+-}
+insertAfterSameServer : Account -> List Account -> List Account
+insertAfterSameServer account accounts =
+    let
+        ( result, inserted ) =
+            List.foldr
+                (\a ( acc, alreadyInserted ) ->
+                    if not alreadyInserted && a.server == account.server then
+                        ( a :: account :: acc, True )
+
+                    else
+                        ( a :: acc, alreadyInserted )
+                )
+                ( [], False )
+                accounts
+    in
+    if inserted then
+        result
 
     else
         accounts ++ [ account ]
@@ -1336,7 +1430,7 @@ configuration if we have one; otherwise negotiates a fresh connection.
 -}
 resolveHost : Bool -> List Server -> String -> Task Grpc.Error ( Connection, ServerConfiguration )
 resolveHost pageIsSecure servers frontendHost =
-    case List.filter (\s -> s.frontendHost == frontendHost) servers |> List.head of
+    case serverForHost servers frontendHost of
         Just server ->
             Task.succeed ( connectionOf server, server.configuration )
 

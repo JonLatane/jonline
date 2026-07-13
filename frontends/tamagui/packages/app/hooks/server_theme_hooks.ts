@@ -206,8 +206,14 @@ function shadeColor(color: string, percent: number) {
   const B = parseInt(color.substring(5, 7), 16);
   const multiplier = ((100.0 + percent) / 100.0);
   // console.log('initial', color, multiplier, [R, G, B]);
+  // Deliberately no floor/ceiling clamp here before scaling: clamping a
+  // near-0 channel (e.g. the blue in a pure yellow) up to 10 every
+  // iteration would keep it from ever shrinking toward 0 while the other
+  // channels do, draining saturation and drifting the color toward
+  // brown/olive instead of a darker version of itself. Scaling every
+  // channel by the same multiplier with no floor preserves hue and
+  // saturation exactly (in HSV terms, only V changes).
   const [R1, G1, B1] = [R, G, B]
-    .map(n => Math.max(10, Math.min(245, n)))
     .map(n => {
       const result = n * multiplier;
       if (Math.round(result) === Math.round(n)) {

@@ -24,8 +24,13 @@ COPY backend/target/release/generate_preview_images__server_release /opt/generat
 # Flutter web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/flutter/build/web/ /opt/flutter_web
 
-# Tamagui web app release (served from the filesystem by Rocket within Jonline)
+# Tamagui web app release (served from the filesystem by Rocket within Jonline).
+# Built twice (see apps/next/package.json's "build:export"): "out" has no basePath
+# baked in (served at "/"), "out-tamagui" has basePath "/tamagui" baked in (served
+# at "/tamagui") -- Next's router/asset URLs assume a single fixed basePath, so
+# this can't be just one build serving both prefixes.
 COPY frontends/tamagui/apps/next/out/ /opt/tamagui_web
+COPY frontends/tamagui/apps/next/out-tamagui/ /opt/tamagui_web_tamagui
 
 # Elm SPA web app release (served from the filesystem by Rocket within Jonline)
 COPY frontends/elm-spa/public/ /opt/elm_web
