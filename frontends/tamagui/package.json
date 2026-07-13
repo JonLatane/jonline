@@ -34,8 +34,8 @@
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
     "@tamagui/core": "^2.4.5",
-    "@tamagui/web": "^2.4.5",
-    "@tamagui/helpers-icon": "^2.4.5"
+    "@tamagui/helpers-icon": "^2.4.5",
+    "@tamagui/web": "patch:@tamagui/web@npm%3A2.4.5#~/.yarn/patches/@tamagui-web-npm-2.4.5-c231c3586c.patch"
   },
   "dependencies": {
     "@babel/runtime": "^7.26.0",

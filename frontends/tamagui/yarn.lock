@@ -6394,7 +6394,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@tamagui/web@npm:^2.4.5":
+"@tamagui/web@npm:2.4.5":
   version: 2.4.5
   resolution: "@tamagui/web@npm:2.4.5"
   dependencies:
@@ -6413,6 +6413,28 @@ __metadata:
     react: ">=19"
     react-dom: "*"
   checksum: 10/df9ede45ce9777069aeef7ced91b296cf6b6056ad4ba19d421eb36165827a9e569021c552a5808dd035b008bc768dbc77f064eaa71522e1a000f3253e7751b39
+  languageName: node
+  linkType: hard
+
+"@tamagui/web@patch:@tamagui/web@npm%3A2.4.5#~/.yarn/patches/@tamagui-web-npm-2.4.5-c231c3586c.patch":
+  version: 2.4.5
+  resolution: "@tamagui/web@patch:@tamagui/web@npm%3A2.4.5#~/.yarn/patches/@tamagui-web-npm-2.4.5-c231c3586c.patch::version=2.4.5&hash=53978f"
+  dependencies:
+    "@tamagui/compose-refs": "npm:2.4.5"
+    "@tamagui/constants": "npm:2.4.5"
+    "@tamagui/helpers": "npm:2.4.5"
+    "@tamagui/is-equal-shallow": "npm:2.4.5"
+    "@tamagui/native": "npm:2.4.5"
+    "@tamagui/normalize-css-color": "npm:2.4.5"
+    "@tamagui/timer": "npm:2.4.5"
+    "@tamagui/types": "npm:2.4.5"
+    "@tamagui/use-did-finish-ssr": "npm:2.4.5"
+    "@tamagui/use-event": "npm:2.4.5"
+    "@tamagui/use-force-update": "npm:2.4.5"
+  peerDependencies:
+    react: ">=19"
+    react-dom: "*"
+  checksum: 10/84d3d9a1861a110d6c3c30f63d7c8cc62f9c88d2c8e1907e38e12a54deb9ede5da334a0686c8f0012f31612c181191bdd3b0297beeb901707d5a8bff87755f74
   languageName: node
   linkType: hard
 

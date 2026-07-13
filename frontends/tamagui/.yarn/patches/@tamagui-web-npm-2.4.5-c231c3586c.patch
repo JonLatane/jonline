@@ -1,0 +1,66 @@
+diff --git a/dist/cjs/helpers/mergeSlotStyleProps.cjs b/dist/cjs/helpers/mergeSlotStyleProps.cjs
+index 28150b563c70ca803df8f240fb326acde9efff28..141ff2803dd33a3375db6eff5a636ba353f54172 100644
+--- a/dist/cjs/helpers/mergeSlotStyleProps.cjs
++++ b/dist/cjs/helpers/mergeSlotStyleProps.cjs
+@@ -28,16 +28,27 @@ module.exports = __toCommonJS(mergeSlotStyleProps_exports);
+ var import_compose_refs = require("@tamagui/compose-refs");
+ var import_helpers = require("@tamagui/helpers");
+ const isEventHandler = /^on[A-Z]/;
++function flattenSlotStyleValue(value) {
++  if (!value) return value;
++  if (Array.isArray(value)) {
++    return Object.assign({}, ...value.map(flattenSlotStyleValue).filter(Boolean));
++  }
++  return value;
++}
+ function mergeSlotStyleProps(base, overlay) {
+   for (const key in overlay) {
+     const baseVal = base[key];
+     const overlayVal = overlay[key];
+     if (overlayVal === void 0) continue;
+     if (key === "style") {
+-      base.style = baseVal && overlayVal ? {
++      const merged = baseVal && overlayVal ? {
+         ...baseVal,
+         ...overlayVal
+       } : overlayVal || baseVal;
++      // render:-target elements (e.g. Button's raw <button>) get their style prop
++      // passed straight to react-dom, which doesn't flatten array-form styles the
++      // way React Native/RNW's View does. Flatten here so it never leaks an array.
++      base.style = flattenSlotStyleValue(merged);
+     } else if (key === "className") {
+       base.className = baseVal && overlayVal ? `${baseVal} ${overlayVal}` : overlayVal || baseVal;
+     } else if (key === "ref") {
+diff --git a/dist/esm/helpers/mergeSlotStyleProps.mjs b/dist/esm/helpers/mergeSlotStyleProps.mjs
+index af24d880476acba6720288632305c3389da96db1..6fb148638f06a2c0f140035fb5b1ba4b906485d8 100644
+--- a/dist/esm/helpers/mergeSlotStyleProps.mjs
++++ b/dist/esm/helpers/mergeSlotStyleProps.mjs
+@@ -1,16 +1,27 @@
+ import { composeRefs } from "@tamagui/compose-refs";
+ import { composeEventHandlers } from "@tamagui/helpers";
+ const isEventHandler = /^on[A-Z]/;
++function flattenSlotStyleValue(value) {
++  if (!value) return value;
++  if (Array.isArray(value)) {
++    return Object.assign({}, ...value.map(flattenSlotStyleValue).filter(Boolean));
++  }
++  return value;
++}
+ function mergeSlotStyleProps(base, overlay) {
+   for (const key in overlay) {
+     const baseVal = base[key];
+     const overlayVal = overlay[key];
+     if (overlayVal === void 0) continue;
+     if (key === "style") {
+-      base.style = baseVal && overlayVal ? {
++      const merged = baseVal && overlayVal ? {
+         ...baseVal,
+         ...overlayVal
+       } : overlayVal || baseVal;
++      // render:-target elements (e.g. Button's raw <button>) get their style prop
++      // passed straight to react-dom, which doesn't flatten array-form styles the
++      // way React Native/RNW's View does. Flatten here so it never leaks an array.
++      base.style = flattenSlotStyleValue(merged);
+     } else if (key === "className") {
+       base.className = baseVal && overlayVal ? `${baseVal} ${overlayVal}` : overlayVal || baseVal;
+     } else if (key === "ref") {
