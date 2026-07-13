@@ -1,7 +1,7 @@
-import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType } from '@jonline/api';
+import { ExternalCDNConfig, Media, Permission, ServerConfiguration, ServerInfo, UserListingType, WebUserInterface } from '@jonline/api';
 import { Anchor, AnimatePresence, Button, Card, Heading, Input, Label, Paragraph, ScrollView, Spinner, Switch, Text, TextArea, XStack, YStack, ZStack, formatError, isWeb, standardAnimation, useToastController, useWindowDimensions } from '@jonline/ui';
 import { Binary, CheckCircle, ChevronDown, ChevronRight, ChevronUp, Code, Cog, Container, Delete, Github, Heart, Info, Network, Palette, TabletSmartphone } from '@tamagui/lucide-icons';
-import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown } from 'app/components';
+import { AutoAnimatedList, PermissionsEditor, PermissionsEditorProps, SubnavButton, TamaguiMarkdown, WebUserInterfacePicker } from 'app/components';
 import { colorMeta, useAppDispatch, useFederatedAccountOrServer, usePaginatedRendering, useUsersPage } from 'app/hooks';
 import { JonlineServer, RootState, federatedId, getCachedServerClient, getConfiguredServerClient, getCredentialClient, getServerClient, selectServerById, serverID, upsertServer, useRootSelector, useServerTheme } from 'app/store';
 import { hasAdminPermission, setDocumentTitle, themedButtonBackground } from 'app/utils';
@@ -126,6 +126,9 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const serverLogo = serverConfiguration?.serverInfo?.logo;
   const [logo, setLogo] = useState(serverLogo || undefined);
 
+  const serverWebUserInterface = serverConfiguration?.serverInfo?.webUserInterface ?? WebUserInterface.REACT_TAMAGUI;
+  const [webUserInterface, setWebUserInterface] = useState(serverWebUserInterface);
+
   const serverExternalCdnConfig = serverConfiguration?.externalCdnConfig;
   const [externalCdnConfig, setExternalCdnConfig] = useState(serverExternalCdnConfig);
 
@@ -177,6 +180,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
     setDescription(serverDescription);
     setPrivacyPolicy(serverPrivacyPolicy);
     setLogo(serverLogo);
+    setWebUserInterface(serverWebUserInterface);
     setExternalCdnConfig(serverExternalCdnConfig);
     setDefaultPermissions(serverDefaultPermissions);
     setAnonymousPermissions(serverAnonymousPermissions);
@@ -230,6 +234,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       description,
       privacyPolicy,
       logo,
+      webUserInterface,
       colors: {
         ...serverConfiguration?.serverInfo?.colors,
         primary: newPrimaryColorInt, navigation: newNavColorInt
@@ -570,6 +575,14 @@ export function BaseServerDetailsScreen(specificServer?: string) {
                   {section === 'settings' ? <>
                     <Heading size='$9' als='center' mt='$3'>Server Settings</Heading>
                     <YStack gap='$3' mt='$3'>
+                      <YStack gap='$2' als='center'>
+                        <Heading size='$4'>Default Web UI</Heading>
+                        <WebUserInterfacePicker
+                          webUserInterface={webUserInterface}
+                          onChange={setWebUserInterface}
+                          disabled={!isAdmin} />
+                      </YStack>
+
                       {<PermissionsEditor label='Anonymous User Permissions'
                         description='These permissions are granted to users who are not logged in.'
                         {...anonymousPermissionsEditorProps} />}

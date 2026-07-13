@@ -7,6 +7,7 @@ export * from './shareable_toggle';
 export * from './subnav_button';
 export * from './toggle_row';
 export * from './visibility_picker';
+export * from './web_user_interface_picker';
 export * from './tamagui_markdown';
 export * from './permissions_editor';
 export * from './auto_animated_list';
