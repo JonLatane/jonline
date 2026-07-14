@@ -482,10 +482,14 @@ jobs:
         run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
 
       - name: Purge Cloudflare cache
-        uses: jakejarvis/cloudflare-purge-action@master
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+        run: |
+          curl -sS --fail -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
 
   deploy_jonlineio_preview_generator:
     name: Deploy Jonline.io Preview Generator
@@ -518,10 +522,14 @@ jobs:
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n jonline
 
       - name: Purge Cloudflare cache
-        uses: jakejarvis/cloudflare-purge-action@master
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+        run: |
+          curl -sS --fail -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
 
   create_github_release:
     name: "GitHub: Release"
@@ -652,10 +660,14 @@ jobs:
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n bullcitysocial
 
       - name: Purge Cloudflare cache
-        uses: jakejarvis/cloudflare-purge-action@master
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_BULLCITY_SOCIAL }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+        run: |
+          curl -sS --fail -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
 
   deploy_oakcitysocial:
     name: Deploy Oak City Social
@@ -695,7 +707,11 @@ jobs:
         run: kubectl apply -f deploys/k8s/preview_generator.yaml -n oakcitysocial
 
       - name: Purge Cloudflare cache
-        uses: jakejarvis/cloudflare-purge-action@master
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_OAKCITY_SOCIAL }}
           CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+        run: |
+          curl -sS --fail -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
