@@ -80,7 +80,7 @@ body {
   position: sticky;
   top: 0;
   border-bottom: 1px solid var(--border);
-  /* Its own stacking context, above .accounts-backdrop, so the nav (and its
+  /* Its own stacking context, above .shared-backdrop, so the nav (and its
      descendant .accounts-panel) is never blurred/covered/click-intercepted
      by the backdrop. */
   z-index: 25;
@@ -97,12 +97,37 @@ body {
   padding: 0.75rem 1rem;
 }
 
-/* Covers everything below/behind the nav while the Accounts Panel is open;
-   see UI.elm's `accountsBackdrop`. */
-.accounts-backdrop {
+/* Phone-width screens: claw back nearly all of the navbar's left/right
+   padding -- 1rem on each side is space worth reclaiming when the whole
+   navbar is barely wider than the Home/Accounts buttons themselves. Left/
+   right are trimmed to a hairline 2px (rather than 0) so the Home and
+   Accounts buttons don't butt straight up against the screen edge; top/
+   bottom padding is untouched. Tablet and up keep the original padding.
+   Shares its 639px breakpoint with `.accounts-panel.starred-posts-panel`'s
+   own narrow-screen override below (search this file for `639px`) -- CSS
+   custom properties can't be used inside `@media` feature values (no
+   `@custom-media` support in browsers), so there's no way to define this
+   once; keep both in sync by hand if it ever changes. */
+@media (max-width: 639px) {
+  .navbar-inner {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
+/* Covers everything below/behind the nav for every panel that closes via a
+   background tap (Starred Posts, Accounts -- see UI.elm's `sharedBackdrop`,
+   which lists them nearest-first and picks the frontmost open one to close on
+   click, so they peel off one at a time rather than all closing together).
+   Only blurred/tinted (`.blurred`, driven by `sharedBackdrop`'s per-panel
+   `blurs` flag) while the Accounts Panel specifically is open -- unlike it,
+   the Starred Posts panel doesn't block interaction with the rest of the
+   page, since starring/unstarring posts while it's open is an expected,
+   encouraged interaction rather than something to obscure. */
+.shared-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 15;
+  z-index: 10;
   background: rgba(0, 0, 0, 0);
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
@@ -110,29 +135,14 @@ body {
   transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
 }
 
-.accounts-backdrop.is-open {
+.shared-backdrop.is-open {
+  pointer-events: auto;
+}
+
+.shared-backdrop.is-open.blurred {
   background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  pointer-events: auto;
-}
-
-/* Covers everything below/behind the nav while the Starred Posts panel is
-   open; see UI.elm's `starredPostsBackdrop`. Unlike `.accounts-backdrop`, it
-   never blurs/tints the page -- clicking a starred post to see it change is
-   part of using this panel, not something to obscure -- it only exists to
-   catch clicks on the page behind the panel and close it. Lower z-index than
-   `.accounts-backdrop` so that backdrop still wins the click (closing only
-   the Accounts Panel) when both panels are open at once. */
-.starred-posts-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.starred-posts-backdrop.is-open {
-  pointer-events: auto;
 }
 
 .nav-links {
@@ -265,21 +275,51 @@ input[type="url"] {
   gap: 0.5rem;
 }
 
-/* Sits at the Accounts Panel's top-right corner, overlapping the servers
-   strip's top edge -- that's fine since the overlapped area (the server
-   chip's logo/name) isn't the only way to select it, so covering a sliver of
-   it costs nothing. Higher z-index than the strip so it stays clickable.
-   Info ("i") button on top, theme toggle below it -- see UI.elm's
-   `accountsPanel`. */
-.panel-icon-stack {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 5;
+/* The Accounts Panel's tab bar: tabs (Accounts and Servers/Settings/Admin, see
+   UI.elm's `accountsPanelTab`) on the left, info ("i")/theme toggle buttons
+   -- horizontal here, unlike their old stacked-in-the-corner layout -- pinned
+   to the far right. */
+.accounts-panel-tab-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.accounts-panel-tabs {
+  display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.accounts-panel-tab {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.accounts-panel-tab.selected {
+  opacity: 1;
+  background: var(--panel-bg);
+  border-color: var(--fg);
+}
+
+/* The Settings/Admin tabs -- a single cog/shield emoji each, so they don't
+   need the wider padding a text label like "Accounts and Servers" does. */
+.accounts-panel-tab.narrow {
+  padding: 0.3rem 0.55rem;
+}
+
+.panel-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .panel-icon-button {
@@ -387,10 +427,6 @@ input[type="url"] {
   font-size: 0.7rem;
 }
 
-.admin-panel {
-  width: 260px;
-}
-
 .accounts-panel.starred-posts-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
      both happen to be open at once. */
@@ -398,7 +434,7 @@ input[type="url"] {
   --panel-width: 360px;
   width: var(--panel-width);
 
-  /* Unlike the Accounts/Admin panels, this one is rendered by `UI.elm`'s
+  /* Unlike the Accounts Panel, this one is rendered by `UI.elm`'s
      `starredPostsPanel` as a direct child of `.navbar` itself (see
      `headerNav`) rather than of its toggle's own `.admin-menu` wrapper, so
      `left` here is in `.navbar`'s own coordinates -- and since `.navbar`
@@ -430,14 +466,29 @@ input[type="url"] {
   left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
 
   /* The base `.accounts-panel` rule's `top: calc(100% + 0.5rem)` means
-     something different here than it does for the Accounts/Admin panels:
-     theirs is relative to their own toggle's own (short) box, but this one's
+     something different here than it does for the Accounts Panel: that one's
+     relative to its own toggle's own (short) box, but this one's
      relative to the full `.navbar` (see the `left` comment above for why),
      which is taller since it's centered around the Home link's bigger logo.
      The `12.6px` correction is that height difference -- it's what actually
      lines this panel's top up with the Accounts Panel's, rather than sitting
      visibly lower. */
   top: calc(100% + 0.5rem - 12.6px);
+}
+
+/* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
+   hairline 2px above, so the panel's left edge needs its own tighter offset
+   (3px, not the full 16px) to stay close to the Home link's new position
+   instead of sitting well right of it. `(100vw - 800px) / 2` is always 0 in
+   this breakpoint (max 639px is nowhere near the 800px it'd need to go
+   positive), so the base rule's full `calc()` collapses to this flat value
+   here. Placed after the base rule (rather than alongside `.navbar-inner`'s
+   own narrow-screen override above) so it wins the cascade on source order
+   alone, without needing `!important`. */
+@media (max-width: 639px) {
+  .accounts-panel.starred-posts-panel {
+    left: 3px;
+  }
 }
 
 /* Notification-style count bubble on the Starred Posts toggle's corner --
@@ -460,21 +511,6 @@ input[type="url"] {
   font-weight: 700;
   line-height: 16px;
   text-align: center;
-}
-
-/* ⚠️ badge on the Admin Panel toggle's corner, shown in place of the
-   standalone `.host-mismatch-warning` whenever the Admin Panel button is
-   also present (see UI.elm's `adminMenu`/`accountsMenu`) -- so the warning
-   and the Admin Panel toggle never end up sitting side by side in the
-   navbar. Positioned the same way as `.starred-posts-count-badge` (relative
-   to the wrapping `.admin-menu`), but no background -- the emoji itself
-   reads fine on its own. */
-.host-mismatch-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 0.75rem;
-  line-height: 1;
 }
 
 .starred-posts-header {
@@ -959,7 +995,7 @@ input[type="url"] {
    Accounts/Starred Posts panels) shown after "Create Account" is clicked,
    before the account is actually created -- see UI.elm's
    `createAccountConfirmationModal`. Its own backdrop sits above
-   `.accounts-backdrop`/`.navbar` since it can appear on top of the (already
+   `.shared-backdrop`/`.navbar` since it can appear on top of the (already
    open) Accounts Panel. */
 
 .create-account-backdrop {
@@ -1129,7 +1165,7 @@ input[type="url"] {
 /* .switch input:checked + .slider's background comes from the emitted
    `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
 
-.switch input:checked + .slider::before {
+.switch input:checked+.slider::before {
   transform: translateX(14px);
 }
 

@@ -50,10 +50,10 @@ call the moment its server reconnects — which includes app startup and page re
 not just fresh logins — so permission changes made elsewhere (or on another device)
 show up without the user doing anything.
 
-**A Server Admin Panel**, shown to anyone signed into an account with `ADMIN` on its
-server. Today it holds:
-- a "tap a server chip to make it the main server" toggle, and
-- a **Web UI switcher**: one collapsible panel per admin-capable signed-in account
+**Settings and Admin tabs on the Accounts Panel**, shown to anyone signed into an
+account with `ADMIN` on its server. Today they hold:
+- a Settings tab with a "tap a server chip to make it the main server" toggle, and
+- an Admin tab with a **Web UI switcher**: one collapsible panel per admin-capable signed-in account
   (showing that account's username/avatar, since the change is authenticated
   *as that account*, not "whichever one's active"), letting them flip which frontend
   — Flutter, React, or Elm — the server hands out at `/`. Flutter's option is always

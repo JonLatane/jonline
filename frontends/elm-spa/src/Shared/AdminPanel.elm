@@ -1,11 +1,13 @@
-module Shared.AdminPanel exposing (Model, Msg(..), init, isAccountPanelOpen, update)
+module Shared.AdminPanel exposing (AccountsPanelTab(..), Model, Msg(..), init, isAccountPanelOpen, update)
 
-{-| The Server Admin Panel: only shown (see `Shared.AccountsPanel.hasAdminAccount`)
-when at least one signed-in account has `ADMIN` on its server. Holds the
-"allow switching main server" flag, which changes what tapping a server chip
-in the Accounts Panel does (see `UI.elm`'s `serverChip`), plus which
-admin-capable accounts' "web UI" panels (see `UI.elm`'s `adminAccountPanel`)
-are expanded -- future admin features (moderation, ...) land here too.
+{-| Settings/Admin state for the Accounts Panel's "Settings" and "Admin" tabs
+(see `UI.elm`'s `accountsPanel`) -- `activeTab` tracks which of the panel's
+tabs is showing, `allowMainServerSwitch` is the Settings tab's "switch main
+server by tapping servers" flag (which changes what tapping a server chip in
+the Accounts Panel does, see `UI.elm`'s `serverChip`), and `openAccountPanels`
+tracks which admin-capable accounts' "web UI" panels (see `UI.elm`'s
+`adminAccountPanel`) are expanded on the Admin tab -- future admin features
+(moderation, ...) land here too.
 
 The actual "set web UI" action lives in `Shared.AccountsPanel` (it needs that
 module's `Account`/`Server`/RPC machinery); this module only tracks which
@@ -15,22 +17,28 @@ panels are open.
 import Set exposing (Set)
 
 
+type AccountsPanelTab
+    = AccountsAndServersTab
+    | SettingsTab
+    | AdminTab
+
+
 type alias Model =
-    { showAdminPanel : Bool
+    { activeTab : AccountsPanelTab
     , allowMainServerSwitch : Bool
     , openAccountPanels : Set String
     }
 
 
 type Msg
-    = ToggleAdminPanel
+    = TabSelected AccountsPanelTab
     | ToggleAllowMainServerSwitch
     | ToggleAccountPanel String
 
 
 init : Model
 init =
-    { showAdminPanel = False
+    { activeTab = AccountsAndServersTab
     , allowMainServerSwitch = False
     , openAccountPanels = Set.empty
     }
@@ -44,8 +52,8 @@ isAccountPanelOpen id model =
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        ToggleAdminPanel ->
-            { model | showAdminPanel = not model.showAdminPanel }
+        TabSelected tab ->
+            { model | activeTab = tab }
 
         ToggleAllowMainServerSwitch ->
             { model | allowMainServerSwitch = not model.allowMainServerSwitch }
