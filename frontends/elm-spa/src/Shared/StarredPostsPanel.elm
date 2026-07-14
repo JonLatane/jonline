@@ -390,7 +390,7 @@ view basePath accountsPanelModel currentPostKey model =
         stateClass =
             openClosedClass model.showStarredPostsPanel
     in
-    div [ classes [ "accounts-panel", "starred-posts-panel", stateClass ] ]
+    div [ classes [ "starred-posts-panel", "nav-panel", stateClass ] ]
         (div [ class "starred-posts-header" ] [ text "Starred Posts" ]
             :: (if Set.isEmpty model.starredPostIds then
                     [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]

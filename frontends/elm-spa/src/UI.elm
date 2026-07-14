@@ -502,7 +502,7 @@ you'll accumulate the most of.
 
 Always rendered (even "closed"), so opening/closing can be a plain CSS
 transition (fade + slide) rather than the panel just appearing/disappearing
-outright -- see `.accounts-panel`/`.accounts-panel.is-closed` in style.css.
+outright -- see `.nav-panel`/`.nav-panel.is-closed` in style.css.
 
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
@@ -511,7 +511,7 @@ accountsPanel shared =
         accountsPanelModel =
             shared.accountsPanel
     in
-    div [ classes [ "accounts-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
+    div [ classes [ "accounts-panel", "nav-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ accountsPanelTabBar shared
         , case activeTab shared of
             AdminPanel.AccountsAndServersTab ->
@@ -1153,7 +1153,7 @@ starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
-            [ classes [ "accounts-menu-toggle", "circular" ]
+            [ classes [ "nav-menu-toggle", "circular" ]
             , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
             , title "Starred Posts"
             ]

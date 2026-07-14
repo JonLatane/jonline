@@ -81,8 +81,8 @@ body {
   top: 0;
   border-bottom: 1px solid var(--border);
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
-     descendant .accounts-panel) is never blurred/covered/click-intercepted
-     by the backdrop. */
+     descendant .nav-panel elements -- Accounts, Starred Posts) is never
+     blurred/covered/click-intercepted by the backdrop. */
   z-index: 25;
 }
 
@@ -103,8 +103,8 @@ body {
    right are trimmed to a hairline 2px (rather than 0) so the Home and
    Accounts buttons don't butt straight up against the screen edge; top/
    bottom padding is untouched. Tablet and up keep the original padding.
-   Shares its 639px breakpoint with `.accounts-panel.starred-posts-panel`'s
-   own narrow-screen override below (search this file for `639px`) -- CSS
+   Shares its 639px breakpoint with `.starred-posts-panel`'s own
+   narrow-screen override below (search this file for `639px`) -- CSS
    custom properties can't be used inside `@media` feature values (no
    `@custom-media` support in browsers), so there's no way to define this
    once; keep both in sync by hand if it ever changes. */
@@ -369,6 +369,7 @@ input[type="url"] {
 .accounts-menu,
 .admin-menu {
   position: relative;
+  display: flex;
 }
 
 .accounts-menu-row {
@@ -377,6 +378,7 @@ input[type="url"] {
   gap: 0.4rem;
 }
 
+.nav-menu-toggle,
 .accounts-menu-toggle {
   display: flex;
   flex-direction: column;
@@ -387,6 +389,8 @@ input[type="url"] {
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .accounts-menu-toggle.has-avatars {
@@ -402,6 +406,7 @@ input[type="url"] {
    buttons with no avatars/summary, so round them into plain circles rather
    than the wider pill shape `.accounts-menu-toggle` uses for the main
    Accounts Panel toggle. */
+.nav-menu-toggle.circular,
 .accounts-menu-toggle.circular {
   flex-direction: row;
   justify-content: center;
@@ -447,7 +452,7 @@ input[type="url"] {
   font-size: 0.7rem;
 }
 
-.accounts-panel.starred-posts-panel {
+.starred-posts-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
      both happen to be open at once. */
   z-index: 25;
@@ -485,7 +490,7 @@ input[type="url"] {
   right: auto;
   left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
 
-  /* The base `.accounts-panel` rule's `top: calc(100% + 0.5rem)` means
+  /* The base `.nav-panel` rule's `top: calc(100% + 0.5rem)` means
      something different here than it does for the Accounts Panel: that one's
      relative to its own toggle's own (short) box, but this one's
      relative to the full `.navbar` (see the `left` comment above for why),
@@ -506,7 +511,7 @@ input[type="url"] {
    own narrow-screen override above) so it wins the cascade on source order
    alone, without needing `!important`. */
 @media (max-width: 639px) {
-  .accounts-panel.starred-posts-panel {
+  .starred-posts-panel {
     left: 3px;
   }
 }
@@ -648,7 +653,7 @@ input[type="url"] {
   line-height: 1;
 }
 
-.accounts-panel {
+.nav-panel {
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
@@ -680,7 +685,7 @@ input[type="url"] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.accounts-panel.is-closed {
+.nav-panel.is-closed {
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
@@ -708,9 +713,9 @@ input[type="url"] {
   overflow-y: hidden;
   padding-bottom: 0.35rem;
   /* This strip sets `overflow-x`/`overflow-y`, which makes its automatic
-     minimum size (as a flex item in .accounts-panel's column) 0 instead of
+     minimum size (as a flex item in .nav-panel's column) 0 instead of
      content-based -- without flex-shrink: 0, that lets it get squashed
-     whenever .accounts-panel's own max-height/overflow-y (added for short
+     whenever .nav-panel's own max-height/overflow-y (added for short
      screens) needs the vertical space, instead of the panel scrolling. */
   flex-shrink: 0;
 }
@@ -893,7 +898,7 @@ input[type="url"] {
   overflow-y: auto;
   /* Same reasoning as .servers-strip's flex-shrink: 0 -- this already has its
      own scroll for "many accounts"; it shouldn't also get squashed below
-     that by .accounts-panel's outer overflow-y on short screens. */
+     that by .nav-panel's outer overflow-y on short screens. */
   flex-shrink: 0;
 }
 
