@@ -240,14 +240,23 @@ bodyView shared req model =
 postDetailView : Shared.Model -> Model -> Post -> Html Msg
 postDetailView shared model post =
     let
+        displayPost =
+            StarredPostsPanel.freshestPost model.targetHost post shared.starredPostsPanel
+
         starred =
-            StarredPostsPanel.isStarred model.targetHost post shared.starredPostsPanel
+            StarredPostsPanel.isStarred model.targetHost displayPost shared.starredPostsPanel
 
         onStarClicked =
-            StarredPostsPanel.toggleStarMsg shared.accountsPanel model.targetHost post
+            StarredPostsPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
                 |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
+
+        maybeServer =
+            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+
+        maybeAccount =
+            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
     in
-    Posts.postDetail model.targetHost starred onStarClicked post
+    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount starred onStarClicked displayPost
 
 
 {-| A link out to the same post's comments on the React (Tamagui) app, which

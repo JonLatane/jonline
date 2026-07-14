@@ -26,6 +26,7 @@ module Shared.AccountsPanel exposing
     , isKnownServer
     , isSecure
     , mainServerTheme
+    , mediaUrl
     , serverForHost
     , serverHasAccounts
     , serverInfoOf
@@ -308,15 +309,18 @@ accountAvatarUrl servers account =
         |> Maybe.andThen
             (\id ->
                 serverForHost servers account.server
-                    |> Maybe.map
-                        (\s ->
-                            mediaBaseUrl (connectionOf s)
-                                ++ "/media/"
-                                ++ id
-                                ++ "?authorization="
-                                ++ account.accessToken.token
-                        )
+                    |> Maybe.map (\s -> mediaUrl s id ++ "?authorization=" ++ account.accessToken.token)
             )
+
+
+{-| The (unauthorized) base URL for a piece of media by `id` on `server` --
+e.g. avatars belonging to some other user (see `Components.Users.avatarUrl`),
+which the caller may still need to append its own `?authorization=` to if
+that media turns out to be visibility-restricted.
+-}
+mediaUrl : Server -> String -> String
+mediaUrl server id =
+    mediaBaseUrl (connectionOf server) ++ "/media/" ++ id
 
 
 {-| A server's branding, looked up by its `frontendHost` (for e.g. an
@@ -419,16 +423,15 @@ serverNameAndLogo server size =
                     else
                         div [ class "server-logo-placeholder" ] [ text (initialLetter branding.name) ]
 
-        -- The emoji is folded into the primary line only when it's *not* already
-        -- standing in as the logo above (i.e. there's a real image logo).
+        -- The emoji never gets folded into the primary line, even when it's
+        -- not already standing in as the logo above (i.e. there's a real
+        -- image logo) -- appending it as text throws off the browser's width
+        -- measurement for the nav's ellipsis-truncated name (emoji glyphs
+        -- need font-fallback shaping that the intrinsic-sizing pass
+        -- under-measures vs. their actual painted width), causing the name
+        -- to truncate early even with plenty of room on screen.
         primaryLine =
             namePrefix
-                ++ (if branding.logoUrl /= Nothing && hasEmoji then
-                        " " ++ Maybe.withDefault "" emoji
-
-                    else
-                        ""
-                   )
 
         primaryClasses =
             "server-name-primary"

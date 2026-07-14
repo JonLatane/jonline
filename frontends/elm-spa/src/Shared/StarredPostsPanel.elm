@@ -40,7 +40,6 @@ import Proto.Jonline.Jonline as Jonline
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Task
-import Time
 import UI.Classes exposing (classes, openClosedClass)
 
 
@@ -61,6 +60,11 @@ type PostFetchStatus
 
 type alias Model =
     { starredPostIds : Set String
+
+    -- Same keys as `starredPostIds`, but ordered newest-star-first --
+    -- `starredPostIds` is a `Set` (unordered) so it can't drive display order
+    -- itself. Kept in lockstep with `starredPostIds` by every mutation below.
+    , starOrder : List String
     , showStarredPostsPanel : Bool
     , posts : Dict String PostFetchStatus
     }
@@ -80,10 +84,13 @@ handed down from `Shared.init`, un-decoded -- same convention as
 -}
 init : Decode.Value -> Model
 init flags =
-    { starredPostIds =
-        Decode.decodeValue (Decode.list Decode.string) flags
-            |> Result.map Set.fromList
-            |> Result.withDefault Set.empty
+    let
+        persistedOrder =
+            Decode.decodeValue (Decode.list Decode.string) flags
+                |> Result.withDefault []
+    in
+    { starredPostIds = Set.fromList persistedOrder
+    , starOrder = persistedOrder
     , showStarredPostsPanel = False
     , posts = Dict.empty
     }
@@ -121,9 +128,9 @@ freshestPost frontendHost post model =
             post
 
 
-persistCmd : Set String -> Cmd Msg
-persistCmd starredPostIds =
-    Ports.persistStarredPosts (Encode.list Encode.string (Set.toList starredPostIds))
+persistCmd : List String -> Cmd Msg
+persistCmd starOrder =
+    Ports.persistStarredPosts (Encode.list Encode.string starOrder)
 
 
 {-| `update` also needs `AccountsPanel.Model` (to resolve starred posts' hosts
@@ -152,6 +159,13 @@ update accountsPanelModel msg model =
                     else
                         Set.remove key model.starredPostIds
 
+                newStarOrder =
+                    if starring then
+                        key :: model.starOrder
+
+                    else
+                        List.filter ((/=) key) model.starOrder
+
                 rpc =
                     if starring then
                         Jonline.starPost
@@ -161,13 +175,14 @@ update accountsPanelModel msg model =
             in
             ( { model
                 | starredPostIds = newStarredPostIds
+                , starOrder = newStarOrder
 
                 -- We already have this Post in hand -- cache it so the panel can show
                 -- it immediately without a redundant fetch.
                 , posts = Dict.insert key (PostFetchLoaded server.frontendHost post) model.posts
               }
             , Cmd.batch
-                [ persistCmd newStarredPostIds
+                [ persistCmd newStarOrder
                 , Grpc.new rpc post
                     |> Grpc.setHost (AccountsPanel.serverUrl server)
                     |> Grpc.toTask
@@ -196,8 +211,15 @@ update accountsPanelModel msg model =
 
                     else
                         Set.insert key model.starredPostIds
+
+                revertedStarOrder =
+                    if starring then
+                        List.filter ((/=) key) model.starOrder
+
+                    else
+                        key :: model.starOrder
             in
-            ( { model | starredPostIds = revertedStarredPostIds }, persistCmd revertedStarredPostIds, Nothing )
+            ( { model | starredPostIds = revertedStarredPostIds, starOrder = revertedStarOrder }, persistCmd revertedStarOrder, Nothing )
 
         ToggleStarredPostsPanel ->
             let
@@ -367,11 +389,6 @@ view basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
             openClosedClass model.showStarredPostsPanel
-
-        orderedKeys =
-            model.starredPostIds
-                |> Set.toList
-                |> List.sortBy (\key -> -(loadedTimestampMillis model.posts key))
     in
     div [ classes [ "accounts-panel", "starred-posts-panel", stateClass ] ]
         (div [ class "starred-posts-header" ] [ text "Starred Posts" ]
@@ -379,23 +396,11 @@ view basePath accountsPanelModel currentPostKey model =
                     [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]
 
                 else
-                    List.map (starredPostView basePath accountsPanelModel currentPostKey model) orderedKeys
+                    -- `starOrder` is already newest-star-first (see `Model`), so newly
+                    -- starred posts show up at the top regardless of their own timestamp.
+                    List.map (starredPostView basePath accountsPanelModel currentPostKey model) model.starOrder
                )
         )
-
-
-{-| Loaded posts sort most-recent-first, same as the Home page's feed; posts
-that aren't loaded yet (or never will be) have no timestamp to sort by, so
-they're pinned behind every loaded one instead of jumping around as they load.
--}
-loadedTimestampMillis : Dict String PostFetchStatus -> String -> Int
-loadedTimestampMillis posts key =
-    case Dict.get key posts of
-        Just (PostFetchLoaded _ post) ->
-            Time.posixToMillis (Posts.postTimestamp post)
-
-        _ ->
-            0
 
 
 starredPostView : String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg
@@ -411,6 +416,12 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                 onStarClicked =
                     toggleStarMsg accountsPanelModel host post
+
+                maybeServer =
+                    AccountsPanel.serverForHost accountsPanelModel.servers host
+
+                maybeAccount =
+                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
             in
             div [ class "starred-post-entry" ]
                 [ case Posts.postContextLabel post.context of
@@ -419,7 +430,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host current starred onStarClicked post
+                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

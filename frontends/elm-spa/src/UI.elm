@@ -1,7 +1,8 @@
-module UI exposing (layout, page)
+module UI exposing (imageOrInitial, layout, page)
 
 import Components.Markdown as Markdown
 import Components.Posts as Posts
+import Components.Users as Users
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
@@ -125,6 +126,7 @@ interaction with the rest of the page while its login/server-management forms
 are open); the Starred Posts panel doesn't, since starring/unstarring posts
 while it's open is an expected, encouraged interaction rather than something
 to block.
+
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -218,7 +220,7 @@ navLink shared currentRoute content linkRoute =
         [ href (shared.basePath ++ Route.toHref linkRoute)
         , classes
             ("nav-link"
-                :: (if linkRoute == Route.Home_ then
+                :: (if linkRoute == Route.Home_ && mainServer shared /= Nothing then
                         [ "nav-link-home" ]
 
                     else
@@ -325,11 +327,16 @@ accountsMenu shared =
                     else
                         [ "has-avatars" ]
                    )
-                ++ (if List.length (AccountsPanel.enabledServers shared.accountsPanel) == 1 then
-                        []
+                ++ (case AccountsPanel.enabledServers shared.accountsPanel of
+                        [ singleServer ] ->
+                            if singleServer.frontendHost == shared.accountsPanel.mainFrontendHost then
+                                []
 
-                    else
-                        [ "has-summary" ]
+                            else
+                                [ "has-summary" ]
+
+                        _ ->
+                            [ "has-summary" ]
                    )
     in
     div [ class "accounts-menu" ]
@@ -363,20 +370,26 @@ accountsMenuButtonContent shared enabledAccounts =
 
 {-| A small-font subtitle under the accounts-menu toggle button's "Login" text/
 avatars, summarizing how many servers are currently enabled: nothing for the
-common single-server case, "N servers" for any other count, or "No servers ⚠️"
-when every server's been disabled. If any account's server is currently
-unreachable (see `AccountsPanel.unreachableAccountHosts`, surfaced below as
-"Couldn't reach: ..."), the count is always shown -- even "1 server" -- with
-its own ⚠️, so that warning isn't silently hidden behind the usual
-single-server blank state. Recomputed on every render (so it updates live as
-servers are toggled/reconnected) directly off `AccountsPanel.enabledServers`
-and `AccountsPanel.unreachableAccountHosts`.
+common single-server case where that server is `mainFrontendHost`, that
+server's branding name when it's the lone enabled server but not
+`mainFrontendHost` (so it's clear which server is actually being browsed),
+"N servers" for any other count, or "No servers ⚠️" when every server's been
+disabled. If any account's server is currently unreachable (see
+`AccountsPanel.unreachableAccountHosts`, surfaced below as "Couldn't reach:
+..."), the count is always shown -- even "1 server" -- with its own ⚠️, so
+that warning isn't silently hidden behind the usual single-server blank
+state. Recomputed on every render (so it updates live as servers are
+toggled/reconnected) directly off `AccountsPanel.enabledServers` and
+`AccountsPanel.unreachableAccountHosts`.
 -}
 accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
 accountsMenuServerSummary accountsPanelModel =
     let
+        servers =
+            AccountsPanel.enabledServers accountsPanelModel
+
         count =
-            List.length (AccountsPanel.enabledServers accountsPanelModel)
+            List.length servers
 
         hasUnreachableServers =
             not (List.isEmpty (AccountsPanel.unreachableAccountHosts accountsPanelModel))
@@ -397,12 +410,12 @@ accountsMenuServerSummary accountsPanelModel =
                         ""
                    )
     in
-    case count of
-        0 ->
+    case servers of
+        [] ->
             div [ class "accounts-menu-server-summary" ] [ text "No servers ⚠️" ]
 
-        1 ->
-            if hasUnreachableServers then
+        [ singleServer ] ->
+            if hasUnreachableServers || not (singleServer.frontendHost == accountsPanelModel.mainFrontendHost) then
                 div [ class "accounts-menu-server-summary" ] [ text serversText ]
 
             else
@@ -818,18 +831,23 @@ accountRow shared account =
     in
     div [ classes [ "account-row", account.server, "background-color-primary" ] ]
         [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
-        , avatarOrPlaceholder shared.accountsPanel.servers account
-        , div [ class "account-row-label" ]
-            [ div [ class "account-row-username" ]
-                [ text (AccountsPanel.displayName account)
-                , if AccountsPanel.isAdmin account then
-                    span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
+        , a
+            [ class "account-row-profile-link"
+            , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
+            ]
+            [ avatarOrPlaceholder shared.accountsPanel.servers account
+            , div [ class "account-row-label" ]
+                [ div [ class "account-row-username" ]
+                    [ text (AccountsPanel.displayName account)
+                    , if AccountsPanel.isAdmin account then
+                        span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
 
-                  else
-                    text ""
+                      else
+                        text ""
+                    ]
+                , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
+                    [ text (account.server ++ " | " ++ branding.name) ]
                 ]
-            , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
-                [ text (account.server ++ " | " ++ branding.name) ]
             ]
         , button
             [ class "remove-btn"
