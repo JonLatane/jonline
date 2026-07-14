@@ -4,7 +4,7 @@ module Main exposing (main)
 which this was copied from and now overrides -- `.elm-spa/` itself is
 gitignored/regenerated, so this is the only place changes here persist).
 
-Two changes from the default:
+Three changes from the default:
 
 1. This app can be served from `/` or from `/elm` (see
 `backend/src/web/elm_web.rs`), so every `Url` gotten from the browser is
@@ -25,14 +25,26 @@ lives in `Shared.Model` (it's shown from every page's header, via
 deferred version meant `view` ran once per keystroke with the stale
 pre-keystroke model -- snapping a mid-edit cursor to the end of the old text
 -- and then again with the correct model, snapping it again.
+
+3. `Shared sharedMsg` (a top-level `Shared.Msg`, e.g. `GotReconnectResult`
+firing from a `Cmd` kicked off in `Shared.init`) additionally forwards that
+same message into the currently active page via `notifyPageOfSharedMsg`, for
+pages that expose a `fromShared` hook (see `Pages.Home_`, `Pages.Post.PostId_`).
+The default only ever routes messages page -> shared (via `Page pageMsg`,
+change 2 above); without this, a page has no way to notice state that changes
+outside of its own `update` -- e.g. a persisted server finishing its
+reconnect at startup -- short of polling for it.
 -}
 
 import Browser
 import Browser.Navigation as Nav exposing (Key)
-import Effect
+import Effect exposing (Effect)
 import Gen.Model
+import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
+import Pages.Home_
+import Pages.Post.PostId_
 import Request
 import Shared
 import Url exposing (Url)
@@ -148,8 +160,12 @@ update msg model =
                 )
 
             else
-                ( { model | shared = shared }
-                , Cmd.map Shared sharedCmd
+                let
+                    ( notifiedPage, notifyCmd ) =
+                        notifyPageOfSharedMsg sharedMsg shared model.page model.url model.key
+                in
+                ( { model | shared = shared, page = notifiedPage }
+                , Cmd.batch [ Cmd.map Shared sharedCmd, notifyCmd ]
                 )
 
         Page pageMsg ->
@@ -173,6 +189,49 @@ update msg model =
             ( { model | page = page, shared = shared }
             , Cmd.batch [ sharedCmd, Effect.toCmd ( Shared, Page ) remainingEffect ]
             )
+
+
+{-| Forwards a `Shared.Msg` that originated outside any page's `update` --
+e.g. `GotReconnectResult`, fired from a `Cmd` kicked off in `Shared.init` when
+reconnecting persisted servers at startup -- into the currently active page,
+so pages that react to it via their own `SharedMsg` case (see `Pages.Home_`,
+`Pages.Post.PostId_`) notice immediately instead of relying on a poll to
+eventually catch up. Only wired up for pages that actually have a `SharedMsg`
+case; others pass through untouched.
+
+Any `Shared.Msg`s the page's own `update` forwards back out in response (via
+`Effect.fromShared`) are dropped rather than reapplied to `Shared.update` --
+a page's `SharedMsg` handler only ever echoes back the very message it was
+just given here, and `sharedMsg` has already been applied by the caller, so
+reapplying it would double up a state change that's already been made.
+-}
+notifyPageOfSharedMsg : Shared.Msg -> Shared.Model -> Gen.Model.Model -> Url -> Key -> ( Gen.Model.Model, Cmd Msg )
+notifyPageOfSharedMsg sharedMsg shared page url key =
+    let
+        pageMsg =
+            case page of
+                Gen.Model.Home_ _ _ ->
+                    Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
+
+                Gen.Model.Post__PostId_ _ _ ->
+                    Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+                _ ->
+                    Nothing
+    in
+    case pageMsg of
+        Nothing ->
+            ( page, Cmd.none )
+
+        Just pm ->
+            let
+                ( newPage, effect ) =
+                    Pages.update pm page shared url key
+
+                ( _, remainingEffect ) =
+                    Effect.partitionShared effect
+            in
+            ( newPage, Effect.toCmd ( Shared, Page ) remainingEffect )
 
 
 

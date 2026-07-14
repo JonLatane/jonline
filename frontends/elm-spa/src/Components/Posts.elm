@@ -1,6 +1,7 @@
 module Components.Posts exposing
     ( fetchPost
     , fetchRecentPosts
+    , parsePostRouteId
     , postAuthorName
     , postCard
     , postCommentCount
@@ -118,6 +119,19 @@ postHref basePath viewingServerHost postServerHost post =
                 post.id ++ "@" ++ postServerHost
     in
     basePath ++ Gen.Route.toHref (Gen.Route.Post__PostId_ { postId = postId })
+
+
+{-| The inverse of `postHref`: `rawPostId` is either a bare id (a post on
+`mainFrontendHost`) or `id@host` (a post on some other, federated server).
+-}
+parsePostRouteId : String -> String -> ( String, String )
+parsePostRouteId mainFrontendHost rawPostId =
+    case String.split "@" rawPostId of
+        [ id, host ] ->
+            ( id, host )
+
+        _ ->
+            ( rawPostId, mainFrontendHost )
 
 
 
@@ -294,17 +308,31 @@ with `postServerHost`'s `primaryAnchorColor` border (see `UI.EmittedStylesheet`'
 `border-color-primary-anchor-50`/`hover-border-color-primary-anchor` utility
 classes) -- faint normally, filling in on hover since the whole card is a link
 -- so that's obvious at a glance too.
+
+`current` marks this card as the one for the Post currently being viewed
+(see `Shared.StarredPostsPanel.view`, called from `UI.elm` with the current
+route's post already resolved) -- filling the whole card with
+`postServerHost`'s `primaryColor`/`primaryTextColor` (the `background-color-primary`
+utility class) rather than just tinting its border, so it stands out from the
+rest of the (unopened) Starred Posts panel at a glance.
 -}
-postCard : String -> String -> String -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost starred onStarClicked post =
+postCard : String -> String -> String -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost current starred onStarClicked post =
     a
         [ href (postHref basePath viewingServerHost postServerHost post)
         , classes
-            [ "post-card"
-            , postServerHost
-            , "border-color-primary-anchor-50"
-            , "hover-border-color-primary-anchor"
-            ]
+            ([ "post-card"
+             , postServerHost
+             , "border-color-primary-anchor-50"
+             , "hover-border-color-primary-anchor"
+             ]
+                ++ (if current then
+                        [ "post-card-current", "background-color-primary" ]
+
+                    else
+                        []
+                   )
+            )
         ]
         [ div [ class "post-card-title" ] [ text (postTitleText post) ]
         , div [ class "post-card-meta" ]

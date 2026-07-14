@@ -1,4 +1,4 @@
-module Pages.Home_ exposing (Model, Msg, page)
+module Pages.Home_ exposing (Model, Msg, fromShared, page)
 
 import Components.Posts as Posts
 import Dict exposing (Dict)
@@ -59,16 +59,20 @@ init shared =
     fetchNewServers shared { postsByServer = Dict.empty }
 
 
-{-| Servers connect asynchronously -- on app startup (reconnecting persisted
-servers) or any time later (the user adding/enabling one) -- via `Shared`'s
-own update, not this page's, so there's no direct hook for "a server or
-account just changed". Polling (see `subscriptions`/`Poll`) is how this page
-notices: it drops posts for servers that are no longer enabled (so disabling
-a server hides its posts entirely), and re-fetches a server whose acting
-account (the first enabled account signed into it, or anonymous) has changed
-since the last fetch -- covering both disabling an account (falls back to
-anonymous) and enabling a different one. Already-fetched-with-the-same-account
-servers are cheap to skip, so this is safe to call as often as it likes.
+{-| Drops posts for servers that are no longer enabled (so disabling a server
+hides its posts entirely), and re-fetches a server whose acting account (the
+first enabled account signed into it, or anonymous) has changed since the
+last fetch -- covering both disabling an account (falls back to anonymous)
+and enabling a different one. Already-fetched-with-the-same-account servers
+are cheap to skip, so this is safe to call as often as it likes.
+
+This is event-driven -- any `AccountsPanel` message passing through `update`'s
+`SharedMsg` branch triggers a call, since that covers server/account
+add/remove/enable/toggle, including reconnecting persisted servers on app
+startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
+messages into whichever page is active). `subscriptions`' poll is just a
+distrustful fallback in case some future state change doesn't route through
+`SharedMsg`, so it can be slow.
 -}
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
@@ -123,6 +127,16 @@ type Msg
     | SharedMsg Shared.Msg
 
 
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
+exposing the `SharedMsg` constructor itself (and thus every other constructor
+of this otherwise-opaque `Msg`) outside this module.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
@@ -154,12 +168,21 @@ update shared msg model =
             fetchNewServers shared model
 
         SharedMsg subMsg ->
-            ( model, Effect.fromShared subMsg )
+            let
+                ( fetchedModel, fetchEffect ) =
+                    case subMsg of
+                        Shared.AccountsPanelMsg _ ->
+                            fetchNewServers shared model
+
+                        _ ->
+                            ( model, Effect.none )
+            in
+            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Time.every 2000 (\_ -> Poll)
+    Time.every 30000 (\_ -> Poll)
 
 
 
@@ -223,4 +246,4 @@ postCardView shared ( host, post ) =
                         SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server displayPost))
                     )
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host starred onStarClicked displayPost
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host False starred onStarClicked displayPost

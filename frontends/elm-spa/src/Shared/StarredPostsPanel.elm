@@ -1,4 +1,4 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, starKey, update, view)
+module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, starKey, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -350,8 +350,8 @@ directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPostsPanel`, so the reverse import would be a cycle).
 -}
-view : String -> AccountsPanel.Model -> Model -> Html Msg
-view basePath accountsPanelModel model =
+view : String -> AccountsPanel.Model -> Maybe String -> Model -> Html Msg
+view basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
             if model.showStarredPostsPanel then
@@ -371,7 +371,7 @@ view basePath accountsPanelModel model =
                     [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]
 
                 else
-                    List.map (starredPostView basePath accountsPanelModel model) orderedKeys
+                    List.map (starredPostView basePath accountsPanelModel currentPostKey model) orderedKeys
                )
         )
 
@@ -390,13 +390,16 @@ loadedTimestampMillis posts key =
             0
 
 
-starredPostView : String -> AccountsPanel.Model -> Model -> String -> Html Msg
-starredPostView basePath accountsPanelModel model key =
+starredPostView : String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg
+starredPostView basePath accountsPanelModel currentPostKey model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             let
                 starred =
                     isStarred host post model
+
+                current =
+                    currentPostKey == Just key
 
                 onStarClicked =
                     AccountsPanel.serverForHost accountsPanelModel.servers host
@@ -409,7 +412,7 @@ starredPostView basePath accountsPanelModel model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host starred onStarClicked post
+                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

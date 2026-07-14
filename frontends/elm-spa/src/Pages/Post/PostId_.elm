@@ -1,4 +1,4 @@
-module Pages.Post.PostId_ exposing (Model, Msg, page)
+module Pages.Post.PostId_ exposing (Model, Msg, fromShared, page)
 
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
@@ -52,7 +52,7 @@ init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     let
         ( postId, targetHost ) =
-            parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
+            Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
     in
     fetchIfReady shared
         { targetHost = targetHost
@@ -63,26 +63,18 @@ init shared params =
         }
 
 
-{-| `postId` is either a bare id (a post on the server this app's currently
-browsing from) or `id@host` (a post on some other, federated server) -- see
-the other side of this in `Components.Posts.postHref`.
--}
-parsePostRouteId : String -> String -> ( String, String )
-parsePostRouteId mainFrontendHost rawPostId =
-    case String.split "@" rawPostId of
-        [ id, host ] ->
-            ( id, host )
-
-        _ ->
-            ( rawPostId, mainFrontendHost )
-
-
 {-| Kicks off the actual `GetPosts` fetch the first time `targetHost` is a
 known, connected server -- whether that was already true at `init`, or only
 became true later because the user connected it (`ConnectClicked`) or it
-auto-reconnected in the background. Reconnecting happens via `Shared`'s own
-update, not this page's, so there's no direct hook for "a server just became
-available" -- polling (see `subscriptions`/`Poll`) is how this page notices.
+auto-reconnected in the background.
+
+This is event-driven -- any `AccountsPanel` message passing through `update`'s
+`SharedMsg` branch triggers a call, since that covers a server
+connecting/being added, including reconnecting persisted servers on app
+startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
+messages into whichever page is active). `subscriptions`' poll is just a
+distrustful fallback in case some future state change doesn't route through
+`SharedMsg`, so it can be slow.
 -}
 fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchIfReady shared model =
@@ -115,6 +107,16 @@ type Msg
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | Poll
     | SharedMsg Shared.Msg
+
+
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
+(see `Main.notifyPageOfSharedMsg`) into `update`'s `SharedMsg` branch, without
+exposing the `SharedMsg` constructor itself (and thus every other constructor
+of this otherwise-opaque `Msg`) outside this module.
+-}
+fromShared : Shared.Msg -> Msg
+fromShared =
+    SharedMsg
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -168,7 +170,16 @@ update shared req msg model =
             fetchIfReady shared model
 
         SharedMsg subMsg ->
-            ( model, Effect.fromShared subMsg )
+            let
+                ( fetchedModel, fetchEffect ) =
+                    case subMsg of
+                        Shared.AccountsPanelMsg _ ->
+                            fetchIfReady shared model
+
+                        _ ->
+                            ( model, Effect.none )
+            in
+            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
 
 
 subscriptions : Model -> Sub Msg
@@ -177,7 +188,7 @@ subscriptions model =
         Sub.none
 
     else
-        Time.every 1500 (\_ -> Poll)
+        Time.every 30000 (\_ -> Poll)
 
 
 
