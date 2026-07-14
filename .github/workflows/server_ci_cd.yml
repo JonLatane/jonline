@@ -166,7 +166,9 @@ jobs:
       - uses: actions/cache/save@v4
         id: web-app-cache
         with:
-          path: frontends/tamagui/apps/next/out
+          path: |
+            frontends/tamagui/apps/next/out
+            frontends/tamagui/apps/next/out-tamagui
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   build_elm_ui:
@@ -344,7 +346,9 @@ jobs:
       - uses: actions/cache/restore@v4
         id: web-app-cache
         with:
-          path: frontends/tamagui/apps/next/out
+          path: |
+            frontends/tamagui/apps/next/out
+            frontends/tamagui/apps/next/out-tamagui
           key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
       - uses: actions/cache/restore@v4
         id: elm-app-cache
