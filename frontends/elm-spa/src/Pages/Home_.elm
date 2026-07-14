@@ -240,10 +240,7 @@ postCardView shared ( host, post ) =
             StarredPostsPanel.isStarred host displayPost shared.starredPostsPanel
 
         onStarClicked =
-            AccountsPanel.serverForHost shared.accountsPanel.servers host
-                |> Maybe.map
-                    (\server ->
-                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server displayPost))
-                    )
+            StarredPostsPanel.toggleStarMsg shared.accountsPanel host displayPost
+                |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
     in
     Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host False starred onStarClicked displayPost

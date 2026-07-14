@@ -244,11 +244,8 @@ postDetailView shared model post =
             StarredPostsPanel.isStarred model.targetHost post shared.starredPostsPanel
 
         onStarClicked =
-            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
-                |> Maybe.map
-                    (\server ->
-                        SharedMsg (Shared.StarredPostsPanelMsg (StarredPostsPanel.ToggleStar server post))
-                    )
+            StarredPostsPanel.toggleStarMsg shared.accountsPanel model.targetHost post
+                |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
     in
     Posts.postDetail model.targetHost starred onStarClicked post
 

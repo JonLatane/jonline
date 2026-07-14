@@ -1,6 +1,5 @@
 module UI exposing (layout, page)
 
-import Char
 import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Effect exposing (Effect)
@@ -17,7 +16,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
 import View exposing (View)
 
@@ -110,19 +109,7 @@ receives clicks (`pointer-events`) while open.
 -}
 accountsBackdrop : Shared.Model -> Html Shared.Msg
 accountsBackdrop shared =
-    let
-        stateClass =
-            if shared.accountsPanel.showAccountsPanel then
-                "is-open"
-
-            else
-                "is-closed"
-    in
-    div
-        [ classes [ "accounts-backdrop", stateClass ]
-        , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
-        ]
-        []
+    overlayBackdrop "accounts-backdrop" shared.accountsPanel.showAccountsPanel (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
 
 
 {-| Like `accountsBackdrop`, but for the Starred Posts panel: clicking the page
@@ -137,28 +124,22 @@ once.
 -}
 starredPostsBackdrop : Shared.Model -> Html Shared.Msg
 starredPostsBackdrop shared =
-    let
-        stateClass =
-            if shared.starredPostsPanel.showStarredPostsPanel then
-                "is-open"
+    overlayBackdrop "starred-posts-backdrop" shared.starredPostsPanel.showStarredPostsPanel (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
 
-            else
-                "is-closed"
-    in
+
+{-| A full-viewport-covering `div`, always rendered (even "closed") so opening/
+closing can be a plain CSS transition rather than the element itself
+appearing/disappearing outright -- shared by `accountsBackdrop`,
+`starredPostsBackdrop`, and `createAccountConfirmationBackdrop`, which differ
+only in their class name, open/closed state, and the message a click sends.
+-}
+overlayBackdrop : String -> Bool -> Shared.Msg -> Html Shared.Msg
+overlayBackdrop backdropClass isOpen closeMsg =
     div
-        [ classes [ "starred-posts-backdrop", stateClass ]
-        , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+        [ classes [ backdropClass, openClosedClass isOpen ]
+        , onClick closeMsg
         ]
         []
-
-
-{-| Combines several class names into one `class` attribute -- `Html`
-attributes of the same kind don't merge, so `[ class "a", class "b" ]` would
-just apply "b".
--}
-classes : List String -> Attribute msg
-classes names =
-    class (String.join " " names)
 
 
 {-| Fires `msg` (and suppresses the key's default effect, e.g. inserting a
@@ -418,12 +399,7 @@ accountsMenuAvatar shared account =
                         []
                    )
     in
-    case AccountsPanel.accountAvatarUrl accountsPanelModel.servers account of
-        Just url ->
-            img [ classes avatarClasses, src url, alt account.username ] []
-
-        Nothing ->
-            div [ classes ("placeholder" :: avatarClasses) ] [ text (initial account.username) ]
+    imageOrInitial avatarClasses account.username (AccountsPanel.accountAvatarUrl accountsPanelModel.servers account)
 
 
 {-| `browsingHost` and `mainFrontendHost` differ when the host we're actually
@@ -503,15 +479,8 @@ accountsPanel shared =
     let
         accountsPanelModel =
             shared.accountsPanel
-
-        stateClass =
-            if accountsPanelModel.showAccountsPanel then
-                "is-open"
-
-            else
-                "is-closed"
     in
-    div [ classes [ "accounts-panel", stateClass ] ]
+    div [ classes [ "accounts-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ div [ class "panel-icon-stack" ] [ infoButton shared, themeToggle shared ]
         , serversStrip shared
         , unreachableServersWarning shared
@@ -620,12 +589,25 @@ serverChip shared server =
 
 logoOrPlaceholder : AccountsPanel.Branding -> Html msg
 logoOrPlaceholder branding =
-    case branding.logoUrl of
+    imageOrInitial [ "server-chip-logo" ] branding.name branding.logoUrl
+
+
+{-| An `img` if `maybeUrl` is present, otherwise a `div` showing the first
+letter of `name`, upper-cased (via `AccountsPanel.initialLetter`) -- shared by
+every avatar/logo that falls back to an initial when there's no image: account
+avatars (`avatarOrPlaceholder`, `accountsMenuAvatar`) and server logos
+(`logoOrPlaceholder`). `baseClasses` names the element itself (e.g.
+"account-avatar"); the placeholder `div` additionally gets a "placeholder"
+class alongside it.
+-}
+imageOrInitial : List String -> String -> Maybe String -> Html msg
+imageOrInitial baseClasses name maybeUrl =
+    case maybeUrl of
         Just url ->
-            img [ class "server-chip-logo", src url, alt branding.name ] []
+            img [ classes baseClasses, src url, alt name ] []
 
         Nothing ->
-            div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
+            div [ classes ("placeholder" :: baseClasses) ] [ text (AccountsPanel.initialLetter name) ]
 
 
 {-| Accounts are kept around even when their server currently has no `Server`
@@ -701,23 +683,7 @@ accountRow shared account =
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
 avatarOrPlaceholder servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
-        Just url ->
-            img [ class "account-avatar", src url, alt account.username ] []
-
-        Nothing ->
-            div [ class "account-avatar placeholder" ] [ text (initial account.username) ]
-
-
-{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder.
--}
-initial : String -> String
-initial name =
-    name
-        |> String.trim
-        |> String.uncons
-        |> Maybe.map (Tuple.first >> Char.toUpper >> String.fromChar)
-        |> Maybe.withDefault "?"
+    imageOrInitial [ "account-avatar" ] account.username (AccountsPanel.accountAvatarUrl servers account)
 
 
 {-| A checkbox styled as a toggle switch.
@@ -878,19 +844,9 @@ rendered, like the other backdrops, so opening/closing is a CSS transition.
 -}
 createAccountConfirmationBackdrop : Shared.Model -> Html Shared.Msg
 createAccountConfirmationBackdrop shared =
-    let
-        stateClass =
-            if shared.accountsPanel.createAccountConfirmation /= Nothing then
-                "is-open"
-
-            else
-                "is-closed"
-    in
-    div
-        [ classes [ "create-account-backdrop", stateClass ]
-        , onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
-        ]
-        []
+    overlayBackdrop "create-account-backdrop"
+        (shared.accountsPanel.createAccountConfirmation /= Nothing)
+        (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
 
 
 {-| The confirmation step shown after clicking "Create Account", before the
@@ -1107,11 +1063,7 @@ adminPanel : Shared.Model -> Html Shared.Msg
 adminPanel shared =
     let
         stateClass =
-            if shared.adminPanel.showAdminPanel then
-                "is-open"
-
-            else
-                "is-closed"
+            openClosedClass shared.adminPanel.showAdminPanel
 
         adminAccounts =
             List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts

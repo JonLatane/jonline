@@ -21,6 +21,7 @@ module Shared.AccountsPanel exposing
     , grpcErrorToString
     , hasAdminAccount
     , init
+    , initialLetter
     , isAdmin
     , isKnownServer
     , isSecure
@@ -467,6 +468,9 @@ serverNameAndLogo server size =
         ]
 
 
+{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder
+-- see `UI.imageOrInitial`.
+-}
 initialLetter : String -> String
 initialLetter fullName =
     fullName
