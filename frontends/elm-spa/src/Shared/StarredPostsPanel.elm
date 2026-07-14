@@ -1,4 +1,4 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, starKey, update, view)
+module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, starKey, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -41,7 +41,7 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Task
 import Time
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, openClosedClass)
 
 
 {-| The fetch state of one starred post, keyed by its `starKey` -- see
@@ -338,6 +338,18 @@ rawKey postId host =
     postId ++ "@" ++ host
 
 
+{-| `ToggleStar`, if `host` currently resolves to a connected `Server` --
+`Nothing` if it doesn't (nothing to star it against). Shared by every page
+that renders a `postCard`/`postDetail` (`Pages.Home_`, `Pages.Post.PostId_`,
+and this module's own `starredPostView`) so each doesn't re-derive the same
+"look up the server, then wrap `ToggleStar`" logic.
+-}
+toggleStarMsg : AccountsPanel.Model -> String -> Post -> Maybe Msg
+toggleStarMsg accountsPanelModel host post =
+    AccountsPanel.serverForHost accountsPanelModel.servers host
+        |> Maybe.map (\server -> ToggleStar server post)
+
+
 
 -- VIEW
 
@@ -350,15 +362,11 @@ directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPostsPanel`, so the reverse import would be a cycle).
 -}
-view : String -> AccountsPanel.Model -> Model -> Html Msg
-view basePath accountsPanelModel model =
+view : String -> AccountsPanel.Model -> Maybe String -> Model -> Html Msg
+view basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
-            if model.showStarredPostsPanel then
-                "is-open"
-
-            else
-                "is-closed"
+            openClosedClass model.showStarredPostsPanel
 
         orderedKeys =
             model.starredPostIds
@@ -371,7 +379,7 @@ view basePath accountsPanelModel model =
                     [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]
 
                 else
-                    List.map (starredPostView basePath accountsPanelModel model) orderedKeys
+                    List.map (starredPostView basePath accountsPanelModel currentPostKey model) orderedKeys
                )
         )
 
@@ -390,17 +398,19 @@ loadedTimestampMillis posts key =
             0
 
 
-starredPostView : String -> AccountsPanel.Model -> Model -> String -> Html Msg
-starredPostView basePath accountsPanelModel model key =
+starredPostView : String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg
+starredPostView basePath accountsPanelModel currentPostKey model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             let
                 starred =
                     isStarred host post model
 
+                current =
+                    currentPostKey == Just key
+
                 onStarClicked =
-                    AccountsPanel.serverForHost accountsPanelModel.servers host
-                        |> Maybe.map (\server -> ToggleStar server post)
+                    toggleStarMsg accountsPanelModel host post
             in
             div [ class "starred-post-entry" ]
                 [ case Posts.postContextLabel post.context of
@@ -409,7 +419,7 @@ starredPostView basePath accountsPanelModel model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host starred onStarClicked post
+                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

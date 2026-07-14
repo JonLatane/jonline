@@ -6,12 +6,14 @@ module Shared.AccountsPanel exposing
     , FormStatus(..)
     , Model
     , Msg(..)
+    , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
     , accountAvatarUrl
     , accountId
     , brandingFor
     , connectToServer
+    , createAccountModalBodyId
     , displayName
     , enabledAccountForServer
     , enabledAccounts
@@ -19,12 +21,14 @@ module Shared.AccountsPanel exposing
     , grpcErrorToString
     , hasAdminAccount
     , init
+    , initialLetter
     , isAdmin
     , isKnownServer
     , isSecure
     , mainServerTheme
     , serverForHost
     , serverHasAccounts
+    , serverInfoOf
     , serverNameAndLogo
     , serverThemeFor
     , serverThemeOf
@@ -48,7 +52,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (RefreshTokenResponse, ServerConfiguration, User)
+import Proto.Jonline exposing (RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -152,6 +156,28 @@ type alias AccountForm =
     }
 
 
+{-| Everything needed to actually create the account once the user confirms,
+captured when `CreateAccountClicked` first resolves the server (see
+`GotCreateAccountServerInfo`) rather than re-read from `accountForm` later --
+so a confirmed submission always uses the username/password that were on
+screen at the moment "Create Account" was clicked, even if the form's fields
+somehow changed while the confirmation step (`UI.createAccountConfirmationModal`)
+was up.
+-}
+type alias PendingCreateAccount =
+    { server : Server
+    , username : String
+    , password : String
+
+    -- Whether the user has scrolled the confirmation modal's policy text
+    -- (see `UI.createAccountConfirmationModal`) to its bottom -- or it never
+    -- needed scrolling in the first place, per `GotCreateAccountModalViewport`
+    -- -- gating the modal's own "Create Account" button so it can't be
+    -- clicked past unread policy text.
+    , reachedBottom : Bool
+    }
+
+
 {-| The "Add Server" control's own status -- separate from `AccountForm`'s
 since adding a server (an unauthenticated `GetServerConfiguration` probe) and
 logging in are independent flows that can be in-flight/erroring independently.
@@ -169,6 +195,11 @@ type alias Model =
     , accountForm : AccountForm
     , addServerForm : AddServerForm
     , showAccountsPanel : Bool
+
+    -- Set once `CreateAccountClicked` has resolved the target server's
+    -- configuration, until the user confirms or cancels -- see
+    -- `UI.createAccountConfirmationModal`. `Nothing` the rest of the time.
+    , createAccountConfirmation : Maybe PendingCreateAccount
 
     -- The host this app is actually being viewed from (immutable for the
     -- session -- it's a plain SPA reload to change it).
@@ -196,6 +227,11 @@ type Msg
     | PasswordChanged String
     | LoginClicked
     | CreateAccountClicked
+    | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | GotCreateAccountModalViewport (Result Dom.Error Dom.Viewport)
+    | CreateAccountModalScrolled Bool
+    | ConfirmCreateAccountClicked
+    | CancelCreateAccountClicked
     | GotAuthResult (Result Grpc.Error ( Connection, ServerConfiguration, RefreshTokenResponse ))
     | GotReconnectResult Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
@@ -432,6 +468,9 @@ serverNameAndLogo server size =
         ]
 
 
+{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder
+-- see `UI.imageOrInitial`.
+-}
 initialLetter : String -> String
 initialLetter fullName =
     fullName
@@ -616,6 +655,7 @@ init req flags =
       , accountForm = emptyForm
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
+      , createAccountConfirmation = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
       }
@@ -656,7 +696,7 @@ update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
     case msg of
         ServerChanged server ->
-            ( updateForm (\form -> { form | server = server }) model, Cmd.none )
+            ( setServerField server model, Cmd.none )
 
         UsernameChanged username ->
             ( updateForm (\form -> { form | username = username }) model, Cmd.none )
@@ -672,7 +712,9 @@ update req msg model =
                 server =
                     String.trim form.server
             in
-            ( updateForm (\f -> { f | status = Submitting }) model
+            ( model
+                |> updateForm (\f -> { f | status = Submitting })
+                |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
             , resolveHost (isSecure req) model.servers server
                 |> Task.andThen
                     (\( connection, config ) ->
@@ -695,24 +737,89 @@ update req msg model =
                 form =
                     model.accountForm
             in
-            ( updateForm (\f -> { f | status = Submitting }) model
+            ( model
+                |> updateForm (\f -> { f | status = Submitting })
+                |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
             , resolveHost (isSecure req) model.servers (String.trim form.server)
-                |> Task.andThen
-                    (\( connection, config ) ->
-                        Grpc.new Jonline.createAccount
-                            { username = form.username
-                            , password = form.password
-                            , email = Nothing
-                            , phone = Nothing
-                            , expiresAt = Nothing
-                            , deviceName = Nothing
-                            }
-                            |> Grpc.setHost (connectionUrl connection)
-                            |> Grpc.toTask
-                            |> Task.map (\resp -> ( connection, config, resp ))
-                    )
-                |> Task.attempt GotAuthResult
+                |> Task.attempt GotCreateAccountServerInfo
             )
+
+        GotCreateAccountServerInfo (Ok ( connection, config )) ->
+            let
+                form =
+                    model.accountForm
+
+                newModel =
+                    { model
+                        | createAccountConfirmation =
+                            Just
+                                { server = serverFrom connection True config
+                                , username = form.username
+                                , password = form.password
+                                , reachedBottom = False
+                                }
+                    }
+            in
+            ( updateForm (\f -> { f | status = Idle }) newModel
+            , Task.attempt GotCreateAccountModalViewport (Dom.getViewportOf createAccountModalBodyId)
+            )
+
+        GotCreateAccountServerInfo (Err err) ->
+            ( updateForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
+            , Cmd.none
+            )
+
+        GotCreateAccountModalViewport result ->
+            case result of
+                Ok viewport ->
+                    -- The policy text didn't even need scrolling to begin
+                    -- with (it all already fits) -- nothing more to wait on.
+                    if viewport.scene.height <= viewport.viewport.height + 1 then
+                        ( markCreateAccountBottomReached model, Cmd.none )
+
+                    else
+                        ( model, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
+        CreateAccountModalScrolled atBottom ->
+            ( if atBottom then
+                markCreateAccountBottomReached model
+
+              else
+                model
+            , Cmd.none
+            )
+
+        CancelCreateAccountClicked ->
+            ( { model | createAccountConfirmation = Nothing }, Cmd.none )
+
+        ConfirmCreateAccountClicked ->
+            case model.createAccountConfirmation of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just pending ->
+                    let
+                        connection =
+                            connectionOf pending.server
+                    in
+                    ( { model | createAccountConfirmation = Nothing }
+                        |> updateForm (\f -> { f | status = Submitting })
+                    , Grpc.new Jonline.createAccount
+                        { username = pending.username
+                        , password = pending.password
+                        , email = Nothing
+                        , phone = Nothing
+                        , expiresAt = Nothing
+                        , deviceName = Nothing
+                        }
+                        |> Grpc.setHost (connectionUrl connection)
+                        |> Grpc.toTask
+                        |> Task.map (\resp -> ( connection, pending.server.configuration, resp ))
+                        |> Task.attempt GotAuthResult
+                    )
 
         GotAuthResult (Ok ( connection, config, resp )) ->
             case ( resp.user, resp.refreshToken, resp.accessToken ) of
@@ -984,12 +1091,16 @@ update req msg model =
                 ( model, Cmd.none )
 
             else if List.any (\s -> s.frontendHost == host) model.servers then
-                ( updateAddServerForm (\f -> { f | status = Errored "That server is already in your list." }) model
+                ( model
+                    |> updateAddServerForm (\f -> { f | status = Errored "That server is already in your list." })
+                    |> updateForm (\f -> { f | status = clearErrored f.status })
                 , Cmd.none
                 )
 
             else
-                ( updateAddServerForm (\f -> { f | status = Submitting }) model
+                ( model
+                    |> updateAddServerForm (\f -> { f | status = Submitting })
+                    |> updateForm (\f -> { f | status = clearErrored f.status })
                 , negotiateServerConfig (isSecure req) host
                     |> Task.attempt GotNewServerResult
                 )
@@ -1031,7 +1142,7 @@ update req msg model =
             ( { model | showAccountsPanel = not model.showAccountsPanel }, Cmd.none )
 
         CloseAccountsPanel ->
-            ( { model | showAccountsPanel = False }, Cmd.none )
+            ( { model | showAccountsPanel = False, createAccountConfirmation = Nothing }, Cmd.none )
 
         GotPermissionsRefresh _ result ->
             case result of
@@ -1060,7 +1171,7 @@ update req msg model =
                 let
                     newModel =
                         { model | mainFrontendHost = frontendHost }
-                            |> updateForm (\f -> { f | server = frontendHost })
+                            |> setServerField frontendHost
                 in
                 ( newModel, persist newModel )
 
@@ -1075,7 +1186,7 @@ update req msg model =
             ( newModel, persist newModel )
 
         ServerChipClicked frontendHost ->
-            ( updateForm (\f -> { f | server = frontendHost }) model, Cmd.none )
+            ( setServerField frontendHost model, Cmd.none )
 
         SetWebUserInterfaceClicked id ui ->
             let
@@ -1236,6 +1347,59 @@ updateAddServerForm fn model =
 updateForm : (AccountForm -> AccountForm) -> Model -> Model
 updateForm fn model =
     { model | accountForm = fn model.accountForm }
+
+
+{-| The `id` of the Create Account confirmation modal's scrolling policy-text
+body -- shared between `Dom.getViewportOf` (see `GotCreateAccountServerInfo`)
+and the `id` attribute `UI.createAccountConfirmationModal` puts on that same
+element, so the two can't drift out of sync.
+-}
+createAccountModalBodyId : String
+createAccountModalBodyId =
+    "create-account-modal-body"
+
+
+{-| Marks the pending Create Account confirmation (if any -- a no-op once the
+user's already confirmed/canceled it away) as having had its policy text
+fully read, per `GotCreateAccountModalViewport`/`CreateAccountModalScrolled`.
+-}
+markCreateAccountBottomReached : Model -> Model
+markCreateAccountBottomReached model =
+    { model
+        | createAccountConfirmation =
+            Maybe.map (\pending -> { pending | reachedBottom = True }) model.createAccountConfirmation
+    }
+
+
+{-| Resets an `Errored` status back to `Idle`, leaving `Submitting`/`Idle`
+alone -- used to drop a stale error from the _other_ form (login vs. add-server)
+sharing the Server field, without clobbering a submission that's actually
+in flight (see `ServerChanged`, `LoginClicked`, `CreateAccountClicked`,
+`AddServerClicked`).
+-}
+clearErrored : FormStatus -> FormStatus
+clearErrored status =
+    case status of
+        Errored _ ->
+            Idle
+
+        other ->
+            other
+
+
+{-| Sets the (shared) Server field and clears any stale error left over from
+either form -- both `AccountForm.status` and `AddServerForm.status` render
+into the same message below the field (see `UI.elm`'s `formView`), so an old
+error (a failed login, "That server is already in your list.", etc.) needs
+clearing whenever the field changes for _any_ reason: typing
+(`ServerChanged`), tapping a known server's chip (`ServerChipClicked`), or
+picking a new main server (`MainServerSelected`).
+-}
+setServerField : String -> Model -> Model
+setServerField server model =
+    model
+        |> updateForm (\form -> { form | server = server, status = clearErrored form.status })
+        |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
 
 
 {-| Disables every other account on `server` besides `keepEnabledId` -- only one
@@ -1561,6 +1725,16 @@ mediaBaseUrl connection =
         "http://"
     )
         ++ connection.backendHost
+
+
+{-| A server's raw `ServerInfo` (name, description, privacy/media policy
+text, etc.), defaulted the same way `brandingFromConfig` does -- for callers
+that need fields `Branding` doesn't carry, e.g. `UI.createAccountConfirmationModal`
+showing the description/privacy policy/media policy during account creation.
+-}
+serverInfoOf : Server -> ServerInfo
+serverInfoOf server =
+    Maybe.withDefault defaultServerInfo server.configuration.serverInfo
 
 
 brandingFromConfig : Connection -> ServerConfiguration -> Branding

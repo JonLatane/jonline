@@ -50,6 +50,12 @@
   box-sizing: border-box;
 }
 
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -292,6 +298,13 @@ input[type="url"] {
   text-decoration: none;
 }
 
+.info-button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
 
 .accounts-menu,
 .admin-menu {
@@ -379,20 +392,52 @@ input[type="url"] {
 }
 
 .accounts-panel.starred-posts-panel {
-  /* Its toggle sits in `.nav-links`, between Home and About (see `UI.elm`'s
-     `headerNav`), well to the left of the Accounts Panel's own toggle -- still
-     given a higher z-index so it layers above the Accounts Panel if both
-     happen to be open at once. */
+  /* Given a higher z-index than the Accounts Panel so it layers above it if
+     both happen to be open at once. */
   z-index: 25;
-  width: 360px;
+  --panel-width: 360px;
+  width: var(--panel-width);
 
-  /* `.accounts-panel`'s default `right: 0` hangs a panel off the *left* of
-     its toggle -- right for the Accounts/Admin menus, which sit at the far
-     right of the navbar, but this toggle now sits over on the left (between
-     Home and About), so anchor from the toggle's left edge instead, nudged a
-     little further left so the toggle isn't flush against the panel's edge. */
+  /* Unlike the Accounts/Admin panels, this one is rendered by `UI.elm`'s
+     `starredPostsPanel` as a direct child of `.navbar` itself (see
+     `headerNav`) rather than of its toggle's own `.admin-menu` wrapper, so
+     `left` here is in `.navbar`'s own coordinates -- and since `.navbar`
+     spans the full viewport width with no side margins, that's the same as
+     the screen's coordinates too.
+
+     Wants to hang as far left as it can while staying attached below its
+     toggle (the star button in `.nav-links`, after the Home link), but never
+     spill left of the Home link's own left edge -- crowding out/overlapping
+     the Home link would read as covering nav chrome rather than just
+     dropping down from the toggle. Both `16px` (the Home link's left edge,
+     i.e. `.navbar-inner`'s 1rem padding, once narrow enough that its
+     `max-width: 800px` isn't centering it away from 0) and `188px` (the
+     toggle's own right edge from that same origin -- the Home link's
+     rendered width + `.nav-links`' gap + the toggle's own ~35px) are
+     measured relative to `.navbar-inner`'s left edge; `max(0px, (100vw -
+     800px) / 2)` mirrors `.navbar-inner`'s own centering math for wider
+     viewports (its `margin: 0 auto` drifting everything inside it rightward
+     by half the excess over 800px) and is common to both, so it factors out
+     of the inner `max()` entirely. Since this panel (360px) is wider than
+     the ~172px gap between the Home link's left edge and the toggle's right
+     edge, attaching flush to the toggle would always spill past the Home
+     link regardless of viewport width -- so in practice this always resolves
+     to the Home link's left edge, extending rightward past the toggle; the
+     `max()` is still written generally (rather than hardcoded to just the
+     Home link's edge) so it keeps doing the right thing if the panel or
+     toggle's width ever changes enough to close that gap. */
   right: auto;
-  left: -100px;
+  left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
+
+  /* The base `.accounts-panel` rule's `top: calc(100% + 0.5rem)` means
+     something different here than it does for the Accounts/Admin panels:
+     theirs is relative to their own toggle's own (short) box, but this one's
+     relative to the full `.navbar` (see the `left` comment above for why),
+     which is taller since it's centered around the Home link's bigger logo.
+     The `12.6px` correction is that height difference -- it's what actually
+     lines this panel's top up with the Accounts Panel's, rather than sitting
+     visibly lower. */
+  top: calc(100% + 0.5rem - 12.6px);
 }
 
 /* Notification-style count bubble on the Starred Posts toggle's corner --
@@ -910,6 +955,140 @@ input[type="url"] {
 }
 
 
+/* Create Account confirmation: a centered dialog (unlike the edge-anchored
+   Accounts/Starred Posts panels) shown after "Create Account" is clicked,
+   before the account is actually created -- see UI.elm's
+   `createAccountConfirmationModal`. Its own backdrop sits above
+   `.accounts-backdrop`/`.navbar` since it can appear on top of the (already
+   open) Accounts Panel. */
+
+.create-account-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.create-account-backdrop.is-open {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.create-account-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  /* Only .create-account-modal-body scrolls internally -- the header and
+     Cancel/Create Account buttons stay put -- both so they're never lost off
+     the bottom on a short screen, and so "scrolled to bottom" (see
+     UI.createAccountConfirmationModal, which disables Create Account until
+     then) refers to that one, unambiguous scroll container. */
+  overflow: hidden;
+  background: var(--panel-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+/* Wider on desktop -- 360px (a good match for the compact login/add-server
+   fields it's triggered from) leaves the description/privacy/media policy
+   Markdown cramped and needlessly tall once there's the horizontal room to
+   spread out. */
+@media (min-width: 640px) {
+  .create-account-modal {
+    width: 560px;
+  }
+}
+
+.create-account-modal.is-closed {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  /* Zero size while closed -- otherwise this always-rendered (for the fade
+     transition), centered, empty dialog would still sit in the page's normal
+     flow-independent stacking, invisible but there, adding scroll-affecting
+     dead space isn't actually a risk (position: fixed), just tidiness. */
+  padding: 0;
+  border: none;
+}
+
+.create-account-modal-header {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.create-account-modal-header .server-name-and-logo.regular .server-logo-image,
+.create-account-modal-header .server-name-and-logo.regular .server-logo-emoji,
+.create-account-modal-header .server-name-and-logo.regular .server-logo-placeholder {
+  width: 56px;
+  height: 56px;
+}
+
+.create-account-modal-header .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 2.4rem;
+}
+
+.create-account-modal-header .server-name-and-logo.regular .server-name-primary {
+  font-size: 1.05rem;
+}
+
+.create-account-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  /* The flexible item in .create-account-modal's column -- shrinks to
+     whatever's left after the header/buttons take their fixed space, then
+     scrolls its own overflow. `min-height: 0` overrides flexbox's default
+     content-based minimum, which would otherwise ignore the parent's
+     max-height and force the whole dialog to grow instead of this scrolling. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.create-account-policy-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: 0.2rem;
+}
+
+.create-account-policy-body {
+  font-size: 0.85rem;
+}
+
+.create-account-modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.create-account-modal-buttons button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+
 /* Toggle switch */
 
 .switch {
@@ -985,6 +1164,29 @@ input[type="url"] {
 .post-card-meta {
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+/* The Starred Posts panel entry for the Post currently being viewed (see
+   `Shared.StarredPostsPanel.view`/`UI.elm`'s `currentStarredPostKey`) --
+   `.post-card`'s own `background-color-primary` utility class (added
+   alongside this marker class, see `Components.Posts.postCard`) already
+   fills the card with its server's primaryColor/primaryTextColor; this just
+   stops `.post-card-meta`'s `var(--muted)` from fighting that fill. */
+.post-card-current .post-card-meta {
+  color: inherit;
+}
+
+/* The star button/count keeps its usual per-host `primaryAnchorColor` (see
+   `UI.EmittedStylesheet`'s `.post-star.starred` rule) even on a highlighted
+   card, which doesn't reliably contrast against that same server's
+   primaryColor fill -- backing it with the app's own background color (see
+   `UI.EmittedStylesheet`'s `.post-card-current .post-star` rule, driven by
+   `ServerTheme.backgroundColor`) keeps it legible regardless of how the two
+   colors relate. Just the shape/spacing here -- the color is emitted
+   per-server/per-theme, not fixed in this stylesheet. */
+.post-card-current .post-star {
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
 }
 
 .post-star {

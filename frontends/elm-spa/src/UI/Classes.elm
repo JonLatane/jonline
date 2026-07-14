@@ -1,4 +1,4 @@
-module UI.Classes exposing (classes)
+module UI.Classes exposing (classes, openClosedClass)
 
 {-| Just `UI.classes`, split into its own leaf module so `Components.Posts`
 can use it without importing `UI` itself -- `UI` imports
@@ -18,3 +18,17 @@ just apply "b".
 classes : List String -> Attribute msg
 classes names =
     class (String.join " " names)
+
+
+{-| "is-open"/"is-closed", for a panel/backdrop's own transition-driving class
+-- always rendered in one state or the other (see e.g. `UI.accountsPanel`)
+rather than the element itself appearing/disappearing outright, so opening/
+closing can be a plain CSS transition.
+-}
+openClosedClass : Bool -> String
+openClosedClass isOpen =
+    if isOpen then
+        "is-open"
+
+    else
+        "is-closed"

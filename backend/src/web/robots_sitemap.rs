@@ -113,20 +113,24 @@ async fn manifest(state: &State<RocketState>, _host: &Host<'_>) -> CacheResponse
         format!(
             "{{
   \"name\": \"{}\",
+  \"short_name\": \"{}\",
   \"theme_color\": \"#{}CC\",
+  \"background_color\": \"#{}\",
   \"start_url\": \"/\",
   \"display\": \"standalone\",
   \"orientation\": \"portrait-primary\",
   \"icons\": [
     {{
-      \"src\": \"favicon.ico\",
-      \"sizes\": \"500x500\",
-      \"type\": \"image&#x2F;png\"
+      \"src\": \"/favicon.ico\",
+      \"sizes\": \"any\",
+      \"type\": \"image/x-icon\"
     }}
   ]
 }}
 ",
             server_name.replace("\"", "\\\""),
+            server_name.replace("\"", "\\\""),
+            primary_color,
             primary_color,
         )
         .to_string(),

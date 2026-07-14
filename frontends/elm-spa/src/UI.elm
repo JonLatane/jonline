@@ -1,11 +1,12 @@
 module UI exposing (layout, page)
 
-import Char
+import Components.Markdown as Markdown
+import Components.Posts as Posts
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
 import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
-import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
 import Json.Decode as Decode
 import Page
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -15,7 +16,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
 import View exposing (View)
 
@@ -29,6 +30,7 @@ Closes the Accounts Panel on `init` -- relying on the navigating link's own
 click-to-navigation handling, with no guaranteed order. Closing here instead
 is deterministic: it always runs once the destination page actually loads,
 regardless of how the panel got left open.
+
 -}
 page : Shared.Model -> Request.With params -> View Shared.Msg -> Page.With () Shared.Msg
 page shared req body =
@@ -58,6 +60,8 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (starredPostsBackdrop shared)
     , Html.map toMsg (accountsBackdrop shared)
     , Html.map toMsg (headerNav shared currentRoute)
+    , Html.map toMsg (createAccountConfirmationBackdrop shared)
+    , Html.map toMsg (createAccountConfirmationModal shared)
     , div [ class "container" ] [ main_ [] children ]
     ]
 
@@ -72,7 +76,7 @@ headerNav shared currentRoute =
                     text ""
 
                   else
-                    starredPostsMenu shared
+                    starredPostsToggle shared
                 ]
             , div [ class "nav-right" ]
                 [ accountsMenu shared
@@ -83,6 +87,17 @@ headerNav shared currentRoute =
                     text ""
                 ]
             ]
+
+        -- A direct child of `.navbar` itself (a positioned ancestor spanning
+        -- the full viewport width), not of `.admin-menu` (the toggle's own
+        -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
+        -- `left: 0` in style.css hugs the actual screen edge instead of just
+        -- the toggle's left edge. See `starredPostsPanel`.
+        , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
+            text ""
+
+          else
+            starredPostsPanel shared currentRoute
         ]
 
 
@@ -94,19 +109,7 @@ receives clicks (`pointer-events`) while open.
 -}
 accountsBackdrop : Shared.Model -> Html Shared.Msg
 accountsBackdrop shared =
-    let
-        stateClass =
-            if shared.accountsPanel.showAccountsPanel then
-                "is-open"
-
-            else
-                "is-closed"
-    in
-    div
-        [ classes [ "accounts-backdrop", stateClass ]
-        , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
-        ]
-        []
+    overlayBackdrop "accounts-backdrop" shared.accountsPanel.showAccountsPanel (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
 
 
 {-| Like `accountsBackdrop`, but for the Starred Posts panel: clicking the page
@@ -121,28 +124,22 @@ once.
 -}
 starredPostsBackdrop : Shared.Model -> Html Shared.Msg
 starredPostsBackdrop shared =
-    let
-        stateClass =
-            if shared.starredPostsPanel.showStarredPostsPanel then
-                "is-open"
+    overlayBackdrop "starred-posts-backdrop" shared.starredPostsPanel.showStarredPostsPanel (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
 
-            else
-                "is-closed"
-    in
+
+{-| A full-viewport-covering `div`, always rendered (even "closed") so opening/
+closing can be a plain CSS transition rather than the element itself
+appearing/disappearing outright -- shared by `accountsBackdrop`,
+`starredPostsBackdrop`, and `createAccountConfirmationBackdrop`, which differ
+only in their class name, open/closed state, and the message a click sends.
+-}
+overlayBackdrop : String -> Bool -> Shared.Msg -> Html Shared.Msg
+overlayBackdrop backdropClass isOpen closeMsg =
     div
-        [ classes [ "starred-posts-backdrop", stateClass ]
-        , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+        [ classes [ backdropClass, openClosedClass isOpen ]
+        , onClick closeMsg
         ]
         []
-
-
-{-| Combines several class names into one `class` attribute -- `Html`
-attributes of the same kind don't merge, so `[ class "a", class "b" ]` would
-just apply "b".
--}
-classes : List String -> Attribute msg
-classes names =
-    class (String.join " " names)
 
 
 {-| Fires `msg` (and suppresses the key's default effect, e.g. inserting a
@@ -240,11 +237,11 @@ the theme toggle at the Accounts Panel's top-right corner (see
 infoButton : Shared.Model -> Html Shared.Msg
 infoButton shared =
     a
-        [ class "panel-icon-button"
+        [ classes [ "panel-icon-button", "info-button" ]
         , href (shared.basePath ++ Route.toHref Route.About)
         , title "About"
         ]
-        [ text "ℹ" ]
+        [ text "i" ]
 
 
 {-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
@@ -402,12 +399,7 @@ accountsMenuAvatar shared account =
                         []
                    )
     in
-    case AccountsPanel.accountAvatarUrl accountsPanelModel.servers account of
-        Just url ->
-            img [ classes avatarClasses, src url, alt account.username ] []
-
-        Nothing ->
-            div [ classes ("placeholder" :: avatarClasses) ] [ text (initial account.username) ]
+    imageOrInitial avatarClasses account.username (AccountsPanel.accountAvatarUrl accountsPanelModel.servers account)
 
 
 {-| `browsingHost` and `mainFrontendHost` differ when the host we're actually
@@ -421,6 +413,7 @@ Only shown next to the Accounts Panel toggle when the Admin Panel button
 isn't also shown (see `accountsMenu`) -- with both present, the warning is
 folded into the Admin Panel instead (`hostMismatchPanelButton`, plus a badge
 on `adminMenu`'s toggle) so the two never sit side by side in the navbar.
+
 -}
 hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
@@ -486,15 +479,8 @@ accountsPanel shared =
     let
         accountsPanelModel =
             shared.accountsPanel
-
-        stateClass =
-            if accountsPanelModel.showAccountsPanel then
-                "is-open"
-
-            else
-                "is-closed"
     in
-    div [ classes [ "accounts-panel", stateClass ] ]
+    div [ classes [ "accounts-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
         [ div [ class "panel-icon-stack" ] [ infoButton shared, themeToggle shared ]
         , serversStrip shared
         , unreachableServersWarning shared
@@ -603,12 +589,25 @@ serverChip shared server =
 
 logoOrPlaceholder : AccountsPanel.Branding -> Html msg
 logoOrPlaceholder branding =
-    case branding.logoUrl of
+    imageOrInitial [ "server-chip-logo" ] branding.name branding.logoUrl
+
+
+{-| An `img` if `maybeUrl` is present, otherwise a `div` showing the first
+letter of `name`, upper-cased (via `AccountsPanel.initialLetter`) -- shared by
+every avatar/logo that falls back to an initial when there's no image: account
+avatars (`avatarOrPlaceholder`, `accountsMenuAvatar`) and server logos
+(`logoOrPlaceholder`). `baseClasses` names the element itself (e.g.
+"account-avatar"); the placeholder `div` additionally gets a "placeholder"
+class alongside it.
+-}
+imageOrInitial : List String -> String -> Maybe String -> Html msg
+imageOrInitial baseClasses name maybeUrl =
+    case maybeUrl of
         Just url ->
-            img [ class "server-chip-logo", src url, alt branding.name ] []
+            img [ classes baseClasses, src url, alt name ] []
 
         Nothing ->
-            div [ class "server-chip-logo placeholder" ] [ text (initial branding.name) ]
+            div [ classes ("placeholder" :: baseClasses) ] [ text (AccountsPanel.initialLetter name) ]
 
 
 {-| Accounts are kept around even when their server currently has no `Server`
@@ -684,23 +683,7 @@ accountRow shared account =
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
 avatarOrPlaceholder servers account =
-    case AccountsPanel.accountAvatarUrl servers account of
-        Just url ->
-            img [ class "account-avatar", src url, alt account.username ] []
-
-        Nothing ->
-            div [ class "account-avatar placeholder" ] [ text (initial account.username) ]
-
-
-{-| First letter of a name, upper-cased, for use as an avatar/logo placeholder.
--}
-initial : String -> String
-initial name =
-    name
-        |> String.trim
-        |> String.uncons
-        |> Maybe.map (Tuple.first >> Char.toUpper >> String.fromChar)
-        |> Maybe.withDefault "?"
+    imageOrInitial [ "account-avatar" ] account.username (AccountsPanel.accountAvatarUrl servers account)
 
 
 {-| A checkbox styled as a toggle switch.
@@ -851,6 +834,135 @@ formView shared =
 
 
 
+-- CREATE ACCOUNT CONFIRMATION
+
+
+{-| Covers the whole page (including the Accounts Panel) while the Create
+Account confirmation step is up -- higher `z-index` than `accountsBackdrop`
+since it can appear on top of the (already open) Accounts Panel. Always
+rendered, like the other backdrops, so opening/closing is a CSS transition.
+-}
+createAccountConfirmationBackdrop : Shared.Model -> Html Shared.Msg
+createAccountConfirmationBackdrop shared =
+    overlayBackdrop "create-account-backdrop"
+        (shared.accountsPanel.createAccountConfirmation /= Nothing)
+        (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
+
+
+{-| The confirmation step shown after clicking "Create Account", before the
+account is actually created: the target server's identity (the same
+glyph+name as `homeLinkContent`, per the "home button style" this was asked
+to reuse) plus its description/privacy policy/media policy from `ServerInfo`
+-- fields the Elm frontend otherwise never surfaces, despite being meant for
+exactly this per their proto doc comments -- so the user can see what
+they're signing up for before confirming.
+
+A centered dialog (unlike the edge-anchored Accounts/Starred Posts panels)
+since it interrupts a specific action rather than being an ambient panel.
+Always rendered (empty when closed) so the backdrop's fade isn't paired with
+the dialog itself just popping in/out.
+
+-}
+createAccountConfirmationModal : Shared.Model -> Html Shared.Msg
+createAccountConfirmationModal shared =
+    case shared.accountsPanel.createAccountConfirmation of
+        Nothing ->
+            div [ classes [ "create-account-modal", "is-closed" ] ] []
+
+        Just pending ->
+            let
+                info =
+                    AccountsPanel.serverInfoOf pending.server
+
+                submitting =
+                    shared.accountsPanel.accountForm.status == AccountsPanel.Submitting
+            in
+            div [ classes [ "create-account-modal", "is-open" ] ]
+                [ div [ class "create-account-modal-header" ]
+                    [ AccountsPanel.serverNameAndLogo pending.server AccountsPanel.RegularServerLogo ]
+                , div
+                    [ class "create-account-modal-body"
+                    , id AccountsPanel.createAccountModalBodyId
+                    , on "scroll" (Decode.map (AccountsPanel.CreateAccountModalScrolled >> Shared.AccountsPanelMsg) scrolledToBottomDecoder)
+                    ]
+                    [ policyMarkdown "" info.description
+                    , policyMarkdown "Privacy Policy" info.privacyPolicy
+                    , policyMarkdown "Media Policy" info.mediaPolicy
+                    ]
+                , div [ class "create-account-modal-buttons" ]
+                    [ button
+                        [ onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
+                        , disabled submitting
+                        ]
+                        [ text "Cancel" ]
+                    , button
+                        [ onClick (Shared.AccountsPanelMsg AccountsPanel.ConfirmCreateAccountClicked)
+                        , disabled (submitting || not pending.reachedBottom)
+                        , classes [ pending.server.frontendHost, "background-color-primary" ]
+                        , title
+                            (if pending.reachedBottom then
+                                ""
+
+                             else
+                                "Please scroll down to read the rest first"
+                            )
+                        ]
+                        [ text
+                            (if submitting then
+                                "Creating…"
+
+                             else
+                                "Create Account"
+                            )
+                        ]
+                    ]
+                ]
+
+
+{-| Reads a `scroll` event's target `scrollTop`/`clientHeight`/`scrollHeight`
+to decide whether it's scrolled (near enough) to the bottom -- used to gate
+the Create Account confirmation modal's submit button on the user having
+actually scrolled through its policy text (see `createAccountConfirmationModal`).
+A couple pixels of slack absorbs sub-pixel layout rounding some browsers
+produce, which would otherwise leave the true bottom permanently
+unreachable.
+-}
+scrolledToBottomDecoder : Decode.Decoder Bool
+scrolledToBottomDecoder =
+    Decode.map3 (\scrollTop clientHeight scrollHeight -> scrollTop + clientHeight >= scrollHeight - 2)
+        (Decode.at [ "target", "scrollTop" ] Decode.float)
+        (Decode.at [ "target", "clientHeight" ] Decode.float)
+        (Decode.at [ "target", "scrollHeight" ] Decode.float)
+
+
+{-| One optional block of server-supplied policy Markdown (rendered via
+`Components.Markdown.view`, same as post content), omitted entirely when
+blank (most servers won't set all of description/privacy policy/media
+policy). An empty `heading` is used for the plain description, which gets no
+heading of its own.
+-}
+policyMarkdown : String -> Maybe String -> Html msg
+policyMarkdown heading maybeText =
+    case Maybe.map String.trim maybeText of
+        Just body ->
+            if body == "" then
+                text ""
+
+            else
+                div [ class "create-account-policy" ]
+                    [ if heading == "" then
+                        text ""
+
+                      else
+                        div [ class "create-account-policy-heading" ] [ text heading ]
+                    , Markdown.view [ classes [ "post-detail-content", "create-account-policy-body" ] ] body
+                    ]
+
+        Nothing ->
+            text ""
+
+
+
 -- ADMIN MENU
 
 
@@ -862,6 +974,7 @@ Wears a ⚠️ badge when `hostMismatch` is true -- since `hostMismatchWarning`
 itself is suppressed whenever this menu is shown (see `accountsMenu`), this
 badge plus `hostMismatchPanelButton` in `adminPanel` are the only places that
 warning surfaces.
+
 -}
 adminMenu : Shared.Model -> Html Shared.Msg
 adminMenu shared =
@@ -885,15 +998,14 @@ adminMenu shared =
 
 {-| Only shown at all once at least one Post has been starred (see
 `Shared.StarredPostsPanel.starKey`) -- same "only show the nav icon once
-there's something behind it" idea as `adminMenu`. The panel's own content is
-`StarredPostsPanel.view` -- it returns `Html StarredPostsPanel.Msg` rather
-than `Html Shared.Msg` (unlike the rest of this module's panels), since
-`Shared.StarredPostsPanel` can't itself import `Shared` (that'd be a cycle --
-`Shared` already imports it for `Shared.Model`'s `starredPostsPanel` field),
-so it's mapped into `Shared.Msg` here instead.
+there's something behind it" idea as `adminMenu`. Just the toggle button --
+unlike `adminMenu`/`accountsMenu`, its panel (`starredPostsPanel`) is rendered
+separately, as a direct child of `.navbar` itself rather than of this button's
+own `.admin-menu` wrapper, so it can hug the actual screen edge (see
+`.starred-posts-panel` in style.css).
 -}
-starredPostsMenu : Shared.Model -> Html Shared.Msg
-starredPostsMenu shared =
+starredPostsToggle : Shared.Model -> Html Shared.Msg
+starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
             [ classes [ "accounts-menu-toggle", "circular" ]
@@ -910,20 +1022,48 @@ starredPostsMenu shared =
                 ]
                 [ text (String.fromInt (Set.size shared.starredPostsPanel.starredPostIds)) ]
             ]
-        , Html.map Shared.StarredPostsPanelMsg
-            (StarredPostsPanel.view shared.basePath shared.accountsPanel shared.starredPostsPanel)
         ]
+
+
+{-| The Starred Posts panel's content -- see `starredPostsToggle` for why this
+is separate from (and rendered outside) the toggle button. Its own content is
+`StarredPostsPanel.view` -- it returns `Html StarredPostsPanel.Msg` rather
+than `Html Shared.Msg` (unlike the rest of this module's panels), since
+`Shared.StarredPostsPanel` can't itself import `Shared` (that'd be a cycle --
+`Shared` already imports it for `Shared.Model`'s `starredPostsPanel` field),
+so it's mapped into `Shared.Msg` here instead.
+-}
+starredPostsPanel : Shared.Model -> Route -> Html Shared.Msg
+starredPostsPanel shared currentRoute =
+    Html.map Shared.StarredPostsPanelMsg
+        (StarredPostsPanel.view shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPostsPanel)
+
+
+{-| The `starKey` of the Post currently being viewed (see
+`Pages.Post.PostId_`), if `currentRoute` is that page -- lets
+`Shared.StarredPostsPanel.view` highlight the matching entry, if any, with
+its server's colors. `params.postId` is either a bare id (a post on
+`mainFrontendHost`) or `id@host` -- see `Components.Posts.parsePostRouteId`.
+-}
+currentStarredPostKey : Shared.Model -> Route -> Maybe String
+currentStarredPostKey shared currentRoute =
+    case currentRoute of
+        Route.Post__PostId_ params ->
+            let
+                ( postId, host ) =
+                    Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
+            in
+            Just (StarredPostsPanel.rawKey postId host)
+
+        _ ->
+            Nothing
 
 
 adminPanel : Shared.Model -> Html Shared.Msg
 adminPanel shared =
     let
         stateClass =
-            if shared.adminPanel.showAdminPanel then
-                "is-open"
-
-            else
-                "is-closed"
+            openClosedClass shared.adminPanel.showAdminPanel
 
         adminAccounts =
             List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
