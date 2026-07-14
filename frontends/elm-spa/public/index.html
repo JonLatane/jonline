@@ -9,8 +9,19 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)">
+  <title>Jonline</title>
+  <meta name="description"
+    content="Jonline is a decentralized, federated, easy-to-deploy social network built in Rust and gRPC, with Flutter and Web frontends.">
   <link rel="icon" href="/favicon.ico">
   <link rel="apple-touch-icon" href="/favicon.ico">
+  <!-- These placeholders are replaced server-side per-request with page-specific
+       link-preview data -- see `spa_web_path`'s `spa_web_path` fn in
+       `backend/src/web/spa_web_path.rs`, which does the same replacements for
+       Tamagui's static export (see `apps/next/pages/_document.tsx`). The
+       marker strings must match exactly between the two templates. -->
+  <meta property="og:title" content="Jonline Social Link"/>
+  <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat"/>
+  <meta property="og:image" content="/favicon.ico"/>
   <link rel="manifest" href="/manifest.json">
   <script>
     // This app is served from either `/` or `/elm` (see

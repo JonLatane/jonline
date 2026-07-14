@@ -18,24 +18,35 @@ use crate::{
 };
 
 use super::{
-    is_tamagui_prefixed, jonline_path, strip_tamagui_prefix, tamagui_path, JonlineResponder,
-    JonlineSummary,
+    jonline_path, spa_prefix, spa_web_path, strip_spa_prefix, JonlineResponder, JonlineSummary,
+    SpaApp,
 };
 
-#[rocket::get("/<file..>")]
-pub async fn tamagui_file_or_username(
+/// Fallback for arbitrary Tamagui build assets and username shortcut links
+/// (e.g. "/someuser") -- both Tamagui-specific concerns, so unlike the pages
+/// in `spa_pages.rs`, this always renders Tamagui regardless of the
+/// configured `WebUserInterface`. Only ever mounted at root (see rocket.rs).
+///
+/// `rank = 20`: this route's own shape ("/<file..>", fully dynamic) gives it
+/// a better default Rocket rank than `elm_web::elm_file`'s ("/elm/<file..>",
+/// static + dynamic), so without an explicit override it would steal asset
+/// requests like "/elm/dist/elm.js" out from under that route -- this is
+/// meant to be the last-resort fallback of the whole route table (it matches
+/// literally any path), so it should always lose ties.
+#[rocket::get("/<file..>", rank = 20)]
+pub async fn spa_file_or_username(
     file: PathBuf,
     state: &State<RocketState>,
     origin: &Origin<'_>,
 ) -> CacheResponse<Result<JonlineResponder, Status>> {
     log::info!("file_or_username: {:?}", &file);
-    // See tamagui_path.rs: Next bakes a single fixed basePath into a build, so
+    // See spa_web_path.rs: Next bakes a single fixed basePath into a build, so
     // "/" and "/tamagui" are served from two separate exports on disk. This
-    // route is only ever mounted at root (see rocket.rs), so under the
-    // "/tamagui" prefix `file` still carries a leading "tamagui" component
-    // that must be stripped before joining it against either variant's
-    // directory -- that directory already stands in for the prefix.
-    let is_tamagui = is_tamagui_prefixed(origin.path().as_str());
+    // route is only ever mounted at root, so under the "/tamagui" prefix
+    // `file` still carries a leading "tamagui" component that must be
+    // stripped before joining it against either variant's directory -- that
+    // directory already stands in for the prefix.
+    let is_tamagui = spa_prefix(origin.path().as_str()) == Some(SpaApp::Tamagui);
     let (opt_dir, repo_dir) = if is_tamagui {
         ("tamagui_web_tamagui", "out-tamagui")
     } else {
@@ -67,11 +78,17 @@ pub async fn tamagui_file_or_username(
                             .map(|i| i.name)
                             .flatten()
                             .unwrap_or("Jonline".to_string());
-                        let path = strip_tamagui_prefix(origin.path().as_str());
+                        let path = strip_spa_prefix(origin.path().as_str());
                         let path_components = path.split('/').collect_vec();
                         // FUck it let's see if this works
                         if path_components.len() != 2 {
-                            return tamagui_path(relative_file.to_str().unwrap(), None, is_tamagui).await;
+                            return spa_web_path(
+                                SpaApp::Tamagui,
+                                relative_file.to_str().unwrap(),
+                                None,
+                                is_tamagui,
+                            )
+                            .await;
                         }
 
                         let username =
@@ -116,7 +133,7 @@ pub async fn tamagui_file_or_username(
                             description,
                             image: avatar,
                         });
-                        return tamagui_path("[username].html", summary, is_tamagui).await;
+                        return spa_web_path(SpaApp::Tamagui, "[username].html", summary, is_tamagui).await;
                     }
                 }
             }

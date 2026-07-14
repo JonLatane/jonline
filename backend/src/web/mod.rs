@@ -18,9 +18,11 @@ pub use flutter_web::*;
 pub mod elm_web;
 pub use elm_web::*;
 
-pub mod tamagui_path;
-pub use tamagui_path::*;
-pub mod tamagui_file_or_username;
+pub mod spa_web_path;
+pub use spa_web_path::*;
+pub mod spa_pages;
+pub use spa_pages::*;
+pub mod spa_file_or_username;
 pub mod tamagui_web;
 pub use tamagui_web::*;
 
