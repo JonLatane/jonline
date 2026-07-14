@@ -893,6 +893,40 @@ Enter, type a password" flow.
 -}
 formView : Shared.Model -> Html Shared.Msg
 formView shared =
+    if AccountsPanel.shouldShowAddAccountForm shared.accountsPanel then
+        addAccountForm shared
+
+    else
+        div [ class "account-form" ]
+            [ button
+                [ classes [ "show-add-account-form-button", formThemeHost shared.accountsPanel, "background-color-primary" ]
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
+                ]
+                [ text "Add Account/Server..." ]
+            ]
+
+
+{-| The server whose theme the form's own controls (Login/Create Account,
+and the collapsed "Add Account/Server..." button) should be tinted with: the
+Server field's own host once it names a server we're connected to, falling
+back to `mainFrontendHost` otherwise (e.g. the field is empty, still being
+typed, or naming an unknown host -- see `AccountsPanel.AddServerClicked`).
+-}
+formThemeHost : AccountsPanel.Model -> String
+formThemeHost accountsPanelModel =
+    let
+        form =
+            accountsPanelModel.accountForm
+    in
+    if AccountsPanel.isKnownServer accountsPanelModel form.server then
+        String.trim form.server
+
+    else
+        accountsPanelModel.mainFrontendHost
+
+
+addAccountForm : Shared.Model -> Html Shared.Msg
+addAccountForm shared =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -916,11 +950,7 @@ formView shared =
             not knownServer || submitting
 
         themeHost =
-            if knownServer then
-                String.trim form.server
-
-            else
-                accountsPanelModel.mainFrontendHost
+            formThemeHost accountsPanelModel
 
         serverEnterMsg =
             if knownServer then

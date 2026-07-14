@@ -34,6 +34,7 @@ module Shared.AccountsPanel exposing
     , serverThemeFor
     , serverThemeOf
     , serverUrl
+    , shouldShowAddAccountForm
     , unreachableAccountHosts
     , update
     )
@@ -197,6 +198,12 @@ type alias Model =
     , addServerForm : AddServerForm
     , showAccountsPanel : Bool
 
+    -- Whether the "Add Account/Server" form (Server/Username/Password/etc.)
+    -- is expanded, once there's at least one account already -- see
+    -- `shouldShowAddAccountForm`. Irrelevant (the form always shows) when
+    -- `accounts` is empty.
+    , addAccountFormExpanded : Bool
+
     -- Set once `CreateAccountClicked` has resolved the target server's
     -- configuration, until the user confirms or cancels -- see
     -- `UI.createAccountConfirmationModal`. `Nothing` the rest of the time.
@@ -244,6 +251,7 @@ type Msg
     | RemoveServerClicked String
     | ToggleAccountsPanel
     | CloseAccountsPanel
+    | ShowAddAccountFormClicked
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
     | ResetMainFrontendHost
@@ -652,17 +660,41 @@ init req flags =
                         |> Task.attempt (GotReconnectResult ps.enabled)
                 )
                 persisted.servers
+
+        -- Accounts whose server host has no persisted Server entry at all (stale/
+        -- corrupted localStorage, a server dropped by an old bug, etc.) would
+        -- otherwise never get a reconnect attempt and stay permanently
+        -- "unreachable" (see `unreachableAccountHosts`) even though we still have
+        -- credentials for them. Treat each such host like any other reconnect,
+        -- enabling it if any of its accounts are themselves enabled -- mirrors
+        -- `ToggleAccountEnabled` bringing a disabled server along with an account
+        -- being re-enabled.
+        missingServerHosts =
+            persisted.accounts
+                |> List.map .server
+                |> List.filter (\host -> not (List.any (\s -> s.frontendHost == host) persisted.servers))
+                |> Set.fromList
+                |> Set.toList
+
+        missingServerCmds =
+            List.map
+                (\host ->
+                    negotiateServerConfig pageIsSecure host
+                        |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                )
+                missingServerHosts
     in
     ( { accounts = persisted.accounts
       , servers = []
       , accountForm = emptyForm
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
+      , addAccountFormExpanded = False
       , createAccountConfirmation = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
       }
-    , Cmd.batch (mainServerCmd :: reconnectCmds)
+    , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
 
 
@@ -1142,10 +1174,29 @@ update req msg model =
                 ( newModel, persist newModel )
 
         ToggleAccountsPanel ->
-            ( { model | showAccountsPanel = not model.showAccountsPanel }, Cmd.none )
+            let
+                newlyShown =
+                    not model.showAccountsPanel
+
+                newModel =
+                    { model | showAccountsPanel = newlyShown }
+            in
+            ( if newlyShown then
+                newModel
+
+              else
+                collapseAddAccountFormIfIdle newModel
+            , Cmd.none
+            )
 
         CloseAccountsPanel ->
-            ( { model | showAccountsPanel = False, createAccountConfirmation = Nothing }, Cmd.none )
+            ( collapseAddAccountFormIfIdle
+                { model | showAccountsPanel = False, createAccountConfirmation = Nothing }
+            , Cmd.none
+            )
+
+        ShowAddAccountFormClicked ->
+            ( { model | addAccountFormExpanded = True }, Cmd.none )
 
         GotPermissionsRefresh _ result ->
             case result of
@@ -1290,6 +1341,49 @@ Account should be enabled, or whether "Add Server" should be offered instead
 isKnownServer : Model -> String -> Bool
 isKnownServer model frontendHost =
     List.any (\s -> s.frontendHost == String.trim frontendHost) model.servers
+
+
+{-| Whether the Add Account/Server form (Server/Username/Password/etc.)
+should be shown outright, rather than collapsed behind an "Add Account/Server"
+button -- always true while there are no accounts yet (there'd be nothing for
+the button to hide behind), otherwise only once the user's expanded it (see
+`ShowAddAccountFormClicked`).
+-}
+shouldShowAddAccountForm : Model -> Bool
+shouldShowAddAccountForm model =
+    List.isEmpty model.accounts || model.addAccountFormExpanded
+
+
+{-| Whether the user has unsaved progress in the Add Account/Server form that
+would be surprising to lose by auto-collapsing it back behind the button --
+either they've typed something into Username/Password, or the typed-in Server
+names a host we're not connected to yet (so "Add Server" is the button
+actually showing, rather than Login/Create Account). Shared by
+`ToggleAccountsPanel` and `CloseAccountsPanel`, the panel's two ways of
+closing -- see `collapseAddAccountFormIfIdle`.
+-}
+hasInProgressAddAccountInput : Model -> Bool
+hasInProgressAddAccountInput model =
+    let
+        form =
+            model.accountForm
+    in
+    (String.trim form.username /= "")
+        || (String.trim form.password /= "")
+        || not (isKnownServer model form.server)
+
+
+{-| Collapses the Add Account/Server form back behind its button when the
+Accounts Panel closes, unless `hasInProgressAddAccountInput` says there's
+progress worth keeping visible.
+-}
+collapseAddAccountFormIfIdle : Model -> Model
+collapseAddAccountFormIfIdle model =
+    if hasInProgressAddAccountInput model then
+        model
+
+    else
+        { model | addAccountFormExpanded = False }
 
 
 {-| Looks up a known server by its `frontendHost` -- e.g. for a route param

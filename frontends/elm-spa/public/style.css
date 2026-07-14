@@ -286,6 +286,10 @@ input[type="url"] {
   color: var(--fg);
 }
 
+input[disabled] {
+  opacity: 0.6;
+}
+
 
 /* Nav-right: accounts menu (+ starred posts/admin menus) */
 
@@ -364,7 +368,6 @@ input[type="url"] {
   font-weight: bold;
   font-size: 0.95rem;
 }
-
 
 .accounts-menu,
 .admin-menu {
@@ -1004,7 +1007,8 @@ input[type="url"] {
   border: 1px solid var(--border);
 }
 
-.add-server-button {
+.add-server-button,
+.show-add-account-form-button {
   width: 100%;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
@@ -1421,6 +1425,62 @@ input[type="url"] {
 .post-detail-content td {
   border: 1px solid var(--border);
   padding: 0.3rem 0.6rem;
+}
+
+/* Post media: a horizontally-scrolling strip, same pattern as the Accounts
+   Panel's .servers-strip. */
+
+.post-media-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0.8rem;
+}
+
+.post-media-item {
+  flex: 0 0 auto;
+  width: 260px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chip-bg);
+}
+
+@media (min-width: 640px) {
+  .post-media-item {
+    width: 400px;
+    height: 320px;
+  }
+}
+
+.media-renderer-image,
+.media-renderer-video,
+.media-renderer-object {
+  width: 100%;
+  height: 100%;
+}
+
+.media-renderer-image {
+  object-fit: contain;
+}
+
+.media-renderer-video {
+  background: black;
+}
+
+.media-renderer-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .post-comments-link {

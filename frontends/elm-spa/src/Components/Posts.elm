@@ -24,6 +24,7 @@ route's `id` or `id@host` segment.
 -}
 
 import Components.Markdown as Markdown
+import Components.PostMediaRenderer as PostMediaRenderer
 import Components.Users as Users
 import Gen.Route
 import Grpc
@@ -285,7 +286,7 @@ postStarCount post =
     MaybeAccountRequest.int64ToInt post.unauthenticatedStarCount
 
 
-{-| A post's comment count -- `responseCount` (replies *and* replies to
+{-| A post's comment count -- `responseCount` (replies _and_ replies to
 replies, etc.), matching the Tamagui app's "N comments" label.
 -}
 postCommentCount : Post -> Int
@@ -391,23 +392,24 @@ utility class) rather than just tinting its border, so it stands out from the
 rest of the (unopened) Starred Posts panel at a glance.
 
 The card as a whole isn't a single enclosing `<a>` (despite looking/behaving
-like one) -- `authorLink` needs to be a *real*, independently-clickable link of
+like one) -- `authorLink` needs to be a _real_, independently-clickable link of
 its own, and nesting an `<a>` inside an `<a>` doesn't work in Elm: every
 anchor's `href` navigation is wired up by `elm/browser` as its own native click
 listener attached directly to that anchor's DOM node (see `_VirtualDom_divertHrefToApp`
 in the compiled runtime), not by walking up to the nearest enclosing `<a>` --
-so a click on a nested author link would fire *both* listeners (author's, then
+so a click on a nested author link would fire _both_ listeners (author's, then
 bubbling up to the card's), and since both call `preventDefault`/navigate, the
 outer (later) one always wins and the author link would silently just open the
 post instead. Instead this uses the "stretched link" pattern: the first child
 below is an invisible `<a>` (`.post-card-link-overlay`) absolutely filling the
-whole `.post-card`, sitting *behind* the title/meta content (`position:
+whole `.post-card`, sitting _behind_ the title/meta content (`position:
 relative` on `.post-card-meta` -- title needs none, see its own lack of
 interactive descendants -- stacks it above the overlay per normal CSS painting
 order) with `.post-card-meta`'s own `pointer-events: none` (see `style.css`)
 making its plain text transparent to clicks, which fall through to the overlay
 below -- while `authorLink`/`starButton`, both opted back in via
 `pointer-events: auto`, catch clicks themselves before they ever reach it.
+
 -}
 postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Maybe msg -> Post -> Html msg
 postCard basePath viewingServerHost postServerHost maybeServer maybeAccount current starred onStarClicked post =
@@ -471,6 +473,12 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount st
                 , text (commentCountText post)
                 ]
             ]
+        , case maybeServer of
+            Just server ->
+                PostMediaRenderer.view server maybeAccount post.media
+
+            Nothing ->
+                text ""
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content
