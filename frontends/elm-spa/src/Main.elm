@@ -148,23 +148,23 @@ update msg model =
                 ( shared, sharedCmd ) =
                     Shared.update (Request.create () model.url model.key) sharedMsg model.shared
 
-                ( page, effect ) =
+                ( redirectPage, redirectEffect ) =
                     Pages.init (Route.fromUrl model.url) shared model.url model.key
             in
-            if page == Gen.Model.Redirecting_ then
-                ( { model | shared = shared, page = page }
+            if redirectPage == Gen.Model.Redirecting_ then
+                ( { model | shared = shared, page = redirectPage }
                 , Cmd.batch
                     [ Cmd.map Shared sharedCmd
-                    , Effect.toCmd ( Shared, Page ) effect
+                    , Effect.toCmd ( Shared, Page ) redirectEffect
                     ]
                 )
 
             else
                 let
-                    ( notifiedPage, notifyCmd ) =
+                    ( page, notifyCmd ) =
                         notifyPageOfSharedMsg sharedMsg shared model.page model.url model.key
                 in
-                ( { model | shared = shared, page = notifiedPage }
+                ( { model | shared = shared, page = page }
                 , Cmd.batch [ Cmd.map Shared sharedCmd, notifyCmd ]
                 )
 
@@ -191,13 +191,30 @@ update msg model =
             )
 
 
+{-| The `Gen.Msg.Msg` that delivers `sharedMsg` to `page` via its `fromShared`
+hook, for whichever page is currently active. `Nothing` for pages with no
+such hook (e.g. `About`, `NotFound`) -- see `Pages.Home_.fromShared`,
+`Pages.Post.PostId_.fromShared`.
+-}
+sharedMsgForPage : Shared.Msg -> Gen.Model.Model -> Maybe Gen.Msg.Msg
+sharedMsgForPage sharedMsg page =
+    case page of
+        Gen.Model.Home_ _ _ ->
+            Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
+
+        Gen.Model.Post__PostId_ _ _ ->
+            Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+        _ ->
+            Nothing
+
+
 {-| Forwards a `Shared.Msg` that originated outside any page's `update` --
 e.g. `GotReconnectResult`, fired from a `Cmd` kicked off in `Shared.init` when
 reconnecting persisted servers at startup -- into the currently active page,
 so pages that react to it via their own `SharedMsg` case (see `Pages.Home_`,
 `Pages.Post.PostId_`) notice immediately instead of relying on a poll to
-eventually catch up. Only wired up for pages that actually have a `SharedMsg`
-case; others pass through untouched.
+eventually catch up.
 
 Any `Shared.Msg`s the page's own `update` forwards back out in response (via
 `Effect.fromShared`) are dropped rather than reapplied to `Shared.update` --
@@ -207,26 +224,14 @@ reapplying it would double up a state change that's already been made.
 -}
 notifyPageOfSharedMsg : Shared.Msg -> Shared.Model -> Gen.Model.Model -> Url -> Key -> ( Gen.Model.Model, Cmd Msg )
 notifyPageOfSharedMsg sharedMsg shared page url key =
-    let
-        pageMsg =
-            case page of
-                Gen.Model.Home_ _ _ ->
-                    Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
-
-                Gen.Model.Post__PostId_ _ _ ->
-                    Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
-
-                _ ->
-                    Nothing
-    in
-    case pageMsg of
+    case sharedMsgForPage sharedMsg page of
         Nothing ->
             ( page, Cmd.none )
 
-        Just pm ->
+        Just msg ->
             let
                 ( newPage, effect ) =
-                    Pages.update pm page shared url key
+                    Pages.update msg page shared url key
 
                 ( _, remainingEffect ) =
                     Effect.partitionShared effect
