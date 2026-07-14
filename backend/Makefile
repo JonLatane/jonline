@@ -24,7 +24,7 @@ rebuild_tamagui_and_run:
 	$(MAKE) run
 
 rebuild_elm_and_run:
-	cd ../frontends/elm && $(MAKE) build
+	cd ../frontends/elm-spa && $(MAKE) build
 	$(MAKE) run
 
 rebuild_protos: clean_protos build

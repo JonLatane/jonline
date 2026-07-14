@@ -12,8 +12,14 @@ use crate::rpcs::get_server_configuration_proto;
 use crate::web::RocketState;
 
 lazy_static! {
-    pub static ref ELM_PAGES: Vec<Route> =
-        routes![elm_index, elm_file, elm_root_style, elm_root_dist,];
+    pub static ref ELM_PAGES: Vec<Route> = routes![
+        elm_index,
+        elm_file,
+        elm_root_style,
+        elm_root_dist,
+        elm_root_vendor,
+        elm_root_markdown_js,
+    ];
 }
 
 #[rocket::get("/elm/<file..>")]
@@ -48,15 +54,16 @@ pub async fn elm_index() -> CacheResponse<Result<NamedFile, Status>> {
 
 /// A server can serve the Elm SPA at its *root* too (`main_index.rs`'s
 /// `WebUserInterface::ElmSpa` branch) -- but `index.html` there references its
-/// assets at plain `/style.css`/`/dist/elm.js` (see `index.html`'s base-path
-/// bootstrap script), which would otherwise only ever reach
-/// `tamagui_file_or_username`'s `/<file..>` catch-all (there is no other root
-/// route for them). These two routes claim those paths first -- literal/
-/// mostly-literal routes outrank a bare `/<file..>` wildcard under Rocket's
-/// default ranking, same as e.g. `tamagui_web.rs`'s `/g/<_>/posts` already
-/// relies on -- but only when `ElmSpaAtRoot` actually succeeds; otherwise they
-/// forward, and Rocket falls through to that same catch-all, so this can't
-/// intercept `/style.css`/`/dist/*` for any other frontend.
+/// assets at plain `/style.css`, `/dist/elm.js`, `/vendor/*`, and
+/// `/markdown.js` (see `index.html`'s base-path bootstrap script), which would
+/// otherwise only ever reach `tamagui_file_or_username`'s `/<file..>`
+/// catch-all (there is no other root route for them). These routes claim
+/// those paths first -- literal/mostly-literal routes outrank a bare
+/// `/<file..>` wildcard under Rocket's default ranking, same as e.g.
+/// `tamagui_web.rs`'s `/g/<_>/posts` already relies on -- but only when
+/// `ElmSpaAtRoot` actually succeeds; otherwise they forward, and Rocket falls
+/// through to that same catch-all, so this can't intercept these paths for
+/// any other frontend.
 #[rocket::get("/style.css")]
 async fn elm_root_style(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(Path::new("style.css")).await;
@@ -73,6 +80,29 @@ async fn elm_root_dist(
     file: PathBuf,
 ) -> CacheResponse<Result<NamedFile, Status>> {
     let result = elm_asset(&Path::new("dist").join(file)).await;
+    CacheResponse::Public {
+        responder: result,
+        max_age: 60,
+        must_revalidate: false,
+    }
+}
+
+#[rocket::get("/vendor/<file..>")]
+async fn elm_root_vendor(
+    _gate: ElmSpaAtRoot,
+    file: PathBuf,
+) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(&Path::new("vendor").join(file)).await;
+    CacheResponse::Public {
+        responder: result,
+        max_age: 60,
+        must_revalidate: false,
+    }
+}
+
+#[rocket::get("/markdown.js")]
+async fn elm_root_markdown_js(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(Path::new("markdown.js")).await;
     CacheResponse::Public {
         responder: result,
         max_age: 60,
