@@ -43,7 +43,7 @@ spec:
         app: jonline
     spec:
       containers:
-        - image: docker.io/jonlatane/jonline:0.3.534
+        - image: docker.io/jonlatane/jonline:0.5.535
           name: jonline
           env:
             - name: DATABASE_URL
@@ -51,7 +51,7 @@ spec:
             - name: MINIO_ENDPOINT
               value: http://jonline-minio:9000
             - name: MINIO_REGION
-              value: ''
+              value: ""
             - name: MINIO_BUCKET
               value: jonline
             - name: MINIO_ACCESS_KEY
@@ -105,14 +105,14 @@ spec:
       template:
         spec:
           containers:
-          - name: delete-expired-tokens
-            image: docker.io/jonlatane/jonline:0.3.534
-            imagePullPolicy: IfNotPresent
-            env:
-              - name: DATABASE_URL
-                value: postgres://admin:secure_password1@jonline-postgres/jonline
-            command:
-            - /opt/delete_expired_tokens
+            - name: delete-expired-tokens
+              image: docker.io/jonlatane/jonline:0.5.535
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: DATABASE_URL
+                  value: postgres://admin:secure_password1@jonline-postgres/jonline
+              command:
+                - /opt/delete_expired_tokens
           restartPolicy: Never
 ---
 apiVersion: batch/v1
@@ -128,22 +128,22 @@ spec:
       template:
         spec:
           containers:
-          - name: delete-unowned-media
-            image: docker.io/jonlatane/jonline:0.3.534
-            imagePullPolicy: IfNotPresent
-            env:
-              - name: DATABASE_URL
-                value: postgres://admin:secure_password1@jonline-postgres/jonline
-              - name: MINIO_ENDPOINT
-                value: http://jonline-minio:9000
-              - name: MINIO_REGION
-                value: ''
-              - name: MINIO_BUCKET
-                value: jonline
-              - name: MINIO_ACCESS_KEY
-                value: minio
-              - name: MINIO_SECRET_KEY
-                value: minio123
-            command:
-            - /opt/delete_unowned_media
+            - name: delete-unowned-media
+              image: docker.io/jonlatane/jonline:0.5.535
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: DATABASE_URL
+                  value: postgres://admin:secure_password1@jonline-postgres/jonline
+                - name: MINIO_ENDPOINT
+                  value: http://jonline-minio:9000
+                - name: MINIO_REGION
+                  value: ""
+                - name: MINIO_BUCKET
+                  value: jonline
+                - name: MINIO_ACCESS_KEY
+                  value: minio
+                - name: MINIO_SECRET_KEY
+                  value: minio123
+              command:
+                - /opt/delete_unowned_media
           restartPolicy: Never

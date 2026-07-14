@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -20,6 +21,5 @@ const Empty$json = {
 };
 
 /// Descriptor for `Empty`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List emptyDescriptor = $convert.base64Decode(
-    'CgVFbXB0eQ==');
-
+final $typed_data.Uint8List emptyDescriptor =
+    $convert.base64Decode('CgVFbXB0eQ==');

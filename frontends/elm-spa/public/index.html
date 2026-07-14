@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>
+    // This app is served from either `/` or `/elm` (see
+    // `backend/src/web/elm_web.rs`) -- this regex must agree with
+    // `Shared.elm`'s `basePathFromPath`, which does the equivalent detection
+    // in Elm for routing/link purposes once the app is running.
+    var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style.css">');
+
+    // Markdown rendering (see `public/markdown.js`) -- vendored rather than
+    // CDN-loaded, so the app keeps working offline/behind a firewall.
+    document.write('<script src="' + jonlineBasePath + '/vendor/marked.js"><\/script>');
+    document.write('<script src="' + jonlineBasePath + '/vendor/highlight.min.js"><\/script>');
+    document.write('<script src="' + jonlineBasePath + '/vendor/dompurify.min.js"><\/script>');
+    document.write('<script src="' + jonlineBasePath + '/markdown.js"><\/script>');
+
+    // Same "auto" resolution `Shared.effectiveDarkMode` does in Elm -- kept in
+    // sync with it via the `setTheme` port subscription below, which fires
+    // once at startup (`Shared.init`) and again on every change. This has to
+    // live in `<head>`, not `<body>` -- `Browser.application` (see `Main.elm`)
+    // takes ownership of `<body>`'s contents on init and would wipe out any
+    // element written there that Elm doesn't itself know about.
+    document.write(
+      '<link id="hljs-theme" rel="stylesheet" data-base-href="' + jonlineBasePath + '/vendor/" href="' +
+      jonlineBasePath + '/vendor/' +
+      (((localStorage.getItem("jonlineThemePreference") || "auto") === "dark" ||
+        ((localStorage.getItem("jonlineThemePreference") || "auto") === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches))
+        ? "highlight-dark.css" : "highlight-light.css") +
+      '">'
+    );
+  </script>
+</head>
+
+<body>
+  <script>
+    document.write('<script src="' + jonlineBasePath + '/dist/elm.js"><\/script>');
+  </script>
+  <script>
+    var storedState = null;
+    try {
+      var raw = localStorage.getItem("jonlineState");
+      storedState = raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error("Failed to read stored Jonline state", e);
+    }
+
+    var storedThemePreference = localStorage.getItem("jonlineThemePreference") || "auto";
+    var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    var storedStarredPosts = [];
+    try {
+      var rawStarredPosts = localStorage.getItem("jonlineStarredPosts");
+      storedStarredPosts = rawStarredPosts ? JSON.parse(rawStarredPosts) : [];
+    } catch (e) {
+      console.error("Failed to read stored starred posts", e);
+    }
+
+    var app = Elm.Main.init({
+      flags: {
+        state: storedState,
+        systemPrefersDark: darkMediaQuery.matches,
+        themePreference: storedThemePreference,
+        starredPosts: storedStarredPosts
+      }
+    });
+
+    app.ports.persist.subscribe(function (state) {
+      localStorage.setItem("jonlineState", JSON.stringify(state));
+    });
+
+    app.ports.persistThemePreference.subscribe(function (preference) {
+      localStorage.setItem("jonlineThemePreference", preference);
+    });
+
+    app.ports.persistStarredPosts.subscribe(function (starredPosts) {
+      localStorage.setItem("jonlineStarredPosts", JSON.stringify(starredPosts));
+    });
+
+    var currentThemePreference = storedThemePreference;
+
+    app.ports.setTheme.subscribe(function (theme) {
+      currentThemePreference = theme;
+      if (theme === "auto") {
+        document.documentElement.removeAttribute("data-theme");
+      } else {
+        document.documentElement.setAttribute("data-theme", theme);
+      }
+      window.jonlineUpdateCodeTheme(theme === "dark" || (theme === "auto" && darkMediaQuery.matches));
+    });
+
+    darkMediaQuery.addEventListener("change", function (e) {
+      app.ports.systemPrefersDarkChanged.send(e.matches);
+      if (currentThemePreference === "auto") {
+        window.jonlineUpdateCodeTheme(e.matches);
+      }
+    });
+  </script>
+</body>
+
+</html>

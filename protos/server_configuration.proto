@@ -217,6 +217,8 @@ enum WebUserInterface {
   HANDLEBARS_TEMPLATES = 1 [deprecated = true];
   // React UI using Tamagui (a React Native UI library).
   REACT_TAMAGUI = 2;
+  // Uses the Elm SPA client. Loaded from /elm.
+  ELM_SPA = 3;
 }
 
 // Color in ARGB hex format (i.e `0xAARRGGBB`).

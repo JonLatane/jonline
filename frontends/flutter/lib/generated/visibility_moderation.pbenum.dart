@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -34,21 +34,32 @@ import 'package:protobuf/protobuf.dart' as $pb;
 /// - A `GLOBAL_PUBLIC` entity is visible to the open internet.
 class Visibility extends $pb.ProtobufEnum {
   /// A visibility that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)
-  static const Visibility VISIBILITY_UNKNOWN = Visibility._(0, _omitEnumNames ? '' : 'VISIBILITY_UNKNOWN');
+  static const Visibility VISIBILITY_UNKNOWN =
+      Visibility._(0, _omitEnumNames ? '' : 'VISIBILITY_UNKNOWN');
+
   /// Subject is only visible to the user who owns it.
-  static const Visibility PRIVATE = Visibility._(1, _omitEnumNames ? '' : 'PRIVATE');
+  static const Visibility PRIVATE =
+      Visibility._(1, _omitEnumNames ? '' : 'PRIVATE');
+
   /// Subject is only visible to explictly associated Groups and Users. See: [`GroupPost`](#jonline-GroupPost) and [`UserPost`](#jonline-UserPost).
-  static const Visibility LIMITED = Visibility._(2, _omitEnumNames ? '' : 'LIMITED');
+  static const Visibility LIMITED =
+      Visibility._(2, _omitEnumNames ? '' : 'LIMITED');
+
   /// Subject is visible to all authenticated users.
-  static const Visibility SERVER_PUBLIC = Visibility._(3, _omitEnumNames ? '' : 'SERVER_PUBLIC');
+  static const Visibility SERVER_PUBLIC =
+      Visibility._(3, _omitEnumNames ? '' : 'SERVER_PUBLIC');
+
   /// Subject is visible to all users on the internet.
-  static const Visibility GLOBAL_PUBLIC = Visibility._(4, _omitEnumNames ? '' : 'GLOBAL_PUBLIC');
+  static const Visibility GLOBAL_PUBLIC =
+      Visibility._(4, _omitEnumNames ? '' : 'GLOBAL_PUBLIC');
+
   /// [TODO] Subject is visible to explicitly-associated Users. Only applicable to Posts and Events.
   /// For Users, this is the same as LIMITED.
   /// See: [`UserPost`](#jonline-UserPost).
-  static const Visibility DIRECT = Visibility._(5, _omitEnumNames ? '' : 'DIRECT');
+  static const Visibility DIRECT =
+      Visibility._(5, _omitEnumNames ? '' : 'DIRECT');
 
-  static const $core.List<Visibility> values = <Visibility> [
+  static const $core.List<Visibility> values = <Visibility>[
     VISIBILITY_UNKNOWN,
     PRIVATE,
     LIMITED,
@@ -57,8 +68,10 @@ class Visibility extends $pb.ProtobufEnum {
     DIRECT,
   ];
 
-  static final $core.List<Visibility?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 5);
-  static Visibility? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
+  static final $core.List<Visibility?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 5);
+  static Visibility? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const Visibility._(super.value, super.name);
 }
@@ -87,17 +100,26 @@ class Visibility extends $pb.ProtobufEnum {
 ///   related `GroupPost` behavior, for "Group Events."
 class Moderation extends $pb.ProtobufEnum {
   /// A moderation that is not known to the protocol. (Likely, the client and server use different versions of the Jonline protocol.)
-  static const Moderation MODERATION_UNKNOWN = Moderation._(0, _omitEnumNames ? '' : 'MODERATION_UNKNOWN');
-  /// Subject has not been moderated and is visible to all users.
-  static const Moderation UNMODERATED = Moderation._(1, _omitEnumNames ? '' : 'UNMODERATED');
-  /// Subject is awaiting moderation and not visible to any users.
-  static const Moderation PENDING = Moderation._(2, _omitEnumNames ? '' : 'PENDING');
-  /// Subject has been approved by moderators and is visible to all users.
-  static const Moderation APPROVED = Moderation._(3, _omitEnumNames ? '' : 'APPROVED');
-  /// Subject has been rejected by moderators and is not visible to any users.
-  static const Moderation REJECTED = Moderation._(4, _omitEnumNames ? '' : 'REJECTED');
+  static const Moderation MODERATION_UNKNOWN =
+      Moderation._(0, _omitEnumNames ? '' : 'MODERATION_UNKNOWN');
 
-  static const $core.List<Moderation> values = <Moderation> [
+  /// Subject has not been moderated and is visible to all users.
+  static const Moderation UNMODERATED =
+      Moderation._(1, _omitEnumNames ? '' : 'UNMODERATED');
+
+  /// Subject is awaiting moderation and not visible to any users.
+  static const Moderation PENDING =
+      Moderation._(2, _omitEnumNames ? '' : 'PENDING');
+
+  /// Subject has been approved by moderators and is visible to all users.
+  static const Moderation APPROVED =
+      Moderation._(3, _omitEnumNames ? '' : 'APPROVED');
+
+  /// Subject has been rejected by moderators and is not visible to any users.
+  static const Moderation REJECTED =
+      Moderation._(4, _omitEnumNames ? '' : 'REJECTED');
+
+  static const $core.List<Moderation> values = <Moderation>[
     MODERATION_UNKNOWN,
     UNMODERATED,
     PENDING,
@@ -105,11 +127,13 @@ class Moderation extends $pb.ProtobufEnum {
     REJECTED,
   ];
 
-  static final $core.List<Moderation?> _byValue = $pb.ProtobufEnum.$_initByValueList(values, 4);
-  static Moderation? valueOf($core.int value) =>  value < 0 || value >= _byValue.length ? null : _byValue[value];
+  static final $core.List<Moderation?> _byValue =
+      $pb.ProtobufEnum.$_initByValueList(values, 4);
+  static Moderation? valueOf($core.int value) =>
+      value < 0 || value >= _byValue.length ? null : _byValue[value];
 
   const Moderation._(super.value, super.name);
 }
 
-
-const $core.bool _omitEnumNames = $core.bool.fromEnvironment('protobuf.omit_enum_names');
+const $core.bool _omitEnumNames =
+    $core.bool.fromEnvironment('protobuf.omit_enum_names');

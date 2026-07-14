@@ -8,14 +8,15 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $0;
 
 import 'events.pbenum.dart';
-import 'google/protobuf/timestamp.pb.dart' as $0;
 import 'location.pb.dart' as $2;
 import 'media.pb.dart' as $4;
 import 'permissions.pbenum.dart' as $6;
@@ -59,7 +60,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
     if (timeFilter != null) result.timeFilter = timeFilter;
     if (attendeeId != null) result.attendeeId = attendeeId;
-    if (attendanceStatuses != null) result.attendanceStatuses.addAll(attendanceStatuses);
+    if (attendanceStatuses != null)
+      result.attendanceStatuses.addAll(attendanceStatuses);
     if (postId != null) result.postId = postId;
     if (listingType != null) result.listingType = listingType;
     return result;
@@ -67,26 +69,40 @@ class GetEventsRequest extends $pb.GeneratedMessage {
 
   GetEventsRequest._();
 
-  factory GetEventsRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetEventsRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetEventsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetEventsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetEventsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventId')
     ..aOS(2, _omitFieldNames ? '' : 'authorUserId')
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
     ..aOS(4, _omitFieldNames ? '' : 'eventInstanceId')
-    ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter', subBuilder: TimeFilter.create)
+    ..aOM<TimeFilter>(5, _omitFieldNames ? '' : 'timeFilter',
+        subBuilder: TimeFilter.create)
     ..aOS(6, _omitFieldNames ? '' : 'attendeeId')
-    ..pc<AttendanceStatus>(7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values, defaultEnumValue: AttendanceStatus.INTERESTED)
+    ..pc<AttendanceStatus>(
+        7, _omitFieldNames ? '' : 'attendanceStatuses', $pb.PbFieldType.KE,
+        valueOf: AttendanceStatus.valueOf,
+        enumValues: AttendanceStatus.values,
+        defaultEnumValue: AttendanceStatus.INTERESTED)
     ..aOS(8, _omitFieldNames ? '' : 'postId')
-    ..e<EventListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: EventListingType.ALL_ACCESSIBLE_EVENTS, valueOf: EventListingType.valueOf, enumValues: EventListingType.values)
-    ..hasRequiredFields = false
-  ;
+    ..aE<EventListingType>(10, _omitFieldNames ? '' : 'listingType',
+        enumValues: EventListingType.values)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsRequest clone() => GetEventsRequest()..mergeFromMessage(this);
+  GetEventsRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsRequest copyWith(void Function(GetEventsRequest) updates) => super.copyWith((message) => updates(message as GetEventsRequest)) as GetEventsRequest;
+  GetEventsRequest copyWith(void Function(GetEventsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetEventsRequest))
+          as GetEventsRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -95,9 +111,9 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   static GetEventsRequest create() => GetEventsRequest._();
   @$core.override
   GetEventsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetEventsRequest> createRepeated() => $pb.PbList<GetEventsRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetEventsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
+  static GetEventsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetEventsRequest>(create);
   static GetEventsRequest? _defaultInstance;
 
   /// Returns the single event with the given ID.
@@ -208,21 +224,32 @@ class TimeFilter extends $pb.GeneratedMessage {
 
   TimeFilter._();
 
-  factory TimeFilter.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory TimeFilter.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory TimeFilter.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory TimeFilter.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'TimeFilter', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore', subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'TimeFilter',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOM<$0.Timestamp>(1, _omitFieldNames ? '' : 'startsAfter',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(2, _omitFieldNames ? '' : 'endsAfter',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(3, _omitFieldNames ? '' : 'startsBefore',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(4, _omitFieldNames ? '' : 'endsBefore',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  TimeFilter clone() => TimeFilter()..mergeFromMessage(this);
+  TimeFilter clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  TimeFilter copyWith(void Function(TimeFilter) updates) => super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter;
+  TimeFilter copyWith(void Function(TimeFilter) updates) =>
+      super.copyWith((message) => updates(message as TimeFilter)) as TimeFilter;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -231,9 +258,9 @@ class TimeFilter extends $pb.GeneratedMessage {
   static TimeFilter create() => TimeFilter._();
   @$core.override
   TimeFilter createEmptyInstance() => create();
-  static $pb.PbList<TimeFilter> createRepeated() => $pb.PbList<TimeFilter>();
   @$core.pragma('dart2js:noInline')
-  static TimeFilter getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
+  static TimeFilter getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<TimeFilter>(create);
   static TimeFilter? _defaultInstance;
 
   /// Filter to events that start after the given time.
@@ -307,18 +334,26 @@ class GetEventsResponse extends $pb.GeneratedMessage {
 
   GetEventsResponse._();
 
-  factory GetEventsResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetEventsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetEventsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetEventsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Event>(1, _omitFieldNames ? '' : 'events', $pb.PbFieldType.PM, subBuilder: Event.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetEventsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<Event>(1, _omitFieldNames ? '' : 'events', subBuilder: Event.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsResponse clone() => GetEventsResponse()..mergeFromMessage(this);
+  GetEventsResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventsResponse copyWith(void Function(GetEventsResponse) updates) => super.copyWith((message) => updates(message as GetEventsResponse)) as GetEventsResponse;
+  GetEventsResponse copyWith(void Function(GetEventsResponse) updates) =>
+      super.copyWith((message) => updates(message as GetEventsResponse))
+          as GetEventsResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -327,9 +362,9 @@ class GetEventsResponse extends $pb.GeneratedMessage {
   static GetEventsResponse create() => GetEventsResponse._();
   @$core.override
   GetEventsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetEventsResponse> createRepeated() => $pb.PbList<GetEventsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetEventsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventsResponse>(create);
+  static GetEventsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetEventsResponse>(create);
   static GetEventsResponse? _defaultInstance;
 
   @$pb.TagNumber(1)
@@ -357,21 +392,30 @@ class Event extends $pb.GeneratedMessage {
 
   Event._();
 
-  factory Event.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Event.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Event.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Event.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Event', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Event',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$1.Post>(2, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
-    ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info', subBuilder: EventInfo.create)
-    ..pc<EventInstance>(4, _omitFieldNames ? '' : 'instances', $pb.PbFieldType.PM, subBuilder: EventInstance.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<EventInfo>(3, _omitFieldNames ? '' : 'info',
+        subBuilder: EventInfo.create)
+    ..pPM<EventInstance>(4, _omitFieldNames ? '' : 'instances',
+        subBuilder: EventInstance.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Event clone() => Event()..mergeFromMessage(this);
+  Event clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Event copyWith(void Function(Event) updates) => super.copyWith((message) => updates(message as Event)) as Event;
+  Event copyWith(void Function(Event) updates) =>
+      super.copyWith((message) => updates(message as Event)) as Event;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -380,9 +424,9 @@ class Event extends $pb.GeneratedMessage {
   static Event create() => Event._();
   @$core.override
   Event createEmptyInstance() => create();
-  static $pb.PbList<Event> createRepeated() => $pb.PbList<Event>();
   @$core.pragma('dart2js:noInline')
-  static Event getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
+  static Event getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Event>(create);
   static Event? _defaultInstance;
 
   /// Unique ID for the event generated by the Jonline BE.
@@ -436,31 +480,43 @@ class EventInfo extends $pb.GeneratedMessage {
   }) {
     final result = create();
     if (allowsRsvps != null) result.allowsRsvps = allowsRsvps;
-    if (allowsAnonymousRsvps != null) result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    if (allowsAnonymousRsvps != null)
+      result.allowsAnonymousRsvps = allowsAnonymousRsvps;
     if (maxAttendees != null) result.maxAttendees = maxAttendees;
-    if (hideLocationUntilRsvpApproved != null) result.hideLocationUntilRsvpApproved = hideLocationUntilRsvpApproved;
-    if (defaultRsvpModeration != null) result.defaultRsvpModeration = defaultRsvpModeration;
+    if (hideLocationUntilRsvpApproved != null)
+      result.hideLocationUntilRsvpApproved = hideLocationUntilRsvpApproved;
+    if (defaultRsvpModeration != null)
+      result.defaultRsvpModeration = defaultRsvpModeration;
     return result;
   }
 
   EventInfo._();
 
-  factory EventInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventInfo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventInfo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventInfo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
-    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
+    ..aI(3, _omitFieldNames ? '' : 'maxAttendees',
+        fieldType: $pb.PbFieldType.OU3)
     ..aOB(4, _omitFieldNames ? '' : 'hideLocationUntilRsvpApproved')
-    ..e<$5.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration', $pb.PbFieldType.OE, defaultOrMaker: $5.Moderation.MODERATION_UNKNOWN, valueOf: $5.Moderation.valueOf, enumValues: $5.Moderation.values)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$5.Moderation>(5, _omitFieldNames ? '' : 'defaultRsvpModeration',
+        enumValues: $5.Moderation.values)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInfo clone() => EventInfo()..mergeFromMessage(this);
+  EventInfo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInfo copyWith(void Function(EventInfo) updates) => super.copyWith((message) => updates(message as EventInfo)) as EventInfo;
+  EventInfo copyWith(void Function(EventInfo) updates) =>
+      super.copyWith((message) => updates(message as EventInfo)) as EventInfo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -469,9 +525,9 @@ class EventInfo extends $pb.GeneratedMessage {
   static EventInfo create() => EventInfo._();
   @$core.override
   EventInfo createEmptyInstance() => create();
-  static $pb.PbList<EventInfo> createRepeated() => $pb.PbList<EventInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
+  static EventInfo getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInfo>(create);
   static EventInfo? _defaultInstance;
 
   /// Whether to allow RSVPs for the event.
@@ -555,24 +611,36 @@ class EventInstance extends $pb.GeneratedMessage {
 
   EventInstance._();
 
-  factory EventInstance.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventInstance.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventInstance.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventInstance.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventInstance',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventId')
     ..aOM<$1.Post>(3, _omitFieldNames ? '' : 'post', subBuilder: $1.Post.create)
-    ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info', subBuilder: EventInstanceInfo.create)
-    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'startsAt', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'endsAt', subBuilder: $0.Timestamp.create)
-    ..aOM<$2.Location>(7, _omitFieldNames ? '' : 'location', subBuilder: $2.Location.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<EventInstanceInfo>(4, _omitFieldNames ? '' : 'info',
+        subBuilder: EventInstanceInfo.create)
+    ..aOM<$0.Timestamp>(5, _omitFieldNames ? '' : 'startsAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'endsAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$2.Location>(7, _omitFieldNames ? '' : 'location',
+        subBuilder: $2.Location.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstance clone() => EventInstance()..mergeFromMessage(this);
+  EventInstance clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstance copyWith(void Function(EventInstance) updates) => super.copyWith((message) => updates(message as EventInstance)) as EventInstance;
+  EventInstance copyWith(void Function(EventInstance) updates) =>
+      super.copyWith((message) => updates(message as EventInstance))
+          as EventInstance;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -581,9 +649,9 @@ class EventInstance extends $pb.GeneratedMessage {
   static EventInstance create() => EventInstance._();
   @$core.override
   EventInstance createEmptyInstance() => create();
-  static $pb.PbList<EventInstance> createRepeated() => $pb.PbList<EventInstance>();
   @$core.pragma('dart2js:noInline')
-  static EventInstance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
+  static EventInstance getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventInstance>(create);
   static EventInstance? _defaultInstance;
 
   /// Unique ID for the event instance generated by the Jonline BE.
@@ -680,18 +748,27 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
 
   EventInstanceInfo._();
 
-  factory EventInstanceInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventInstanceInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventInstanceInfo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventInstanceInfo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo', subBuilder: EventInstanceRsvpInfo.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventInstanceInfo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOM<EventInstanceRsvpInfo>(1, _omitFieldNames ? '' : 'rsvpInfo',
+        subBuilder: EventInstanceRsvpInfo.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceInfo clone() => EventInstanceInfo()..mergeFromMessage(this);
+  EventInstanceInfo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) => super.copyWith((message) => updates(message as EventInstanceInfo)) as EventInstanceInfo;
+  EventInstanceInfo copyWith(void Function(EventInstanceInfo) updates) =>
+      super.copyWith((message) => updates(message as EventInstanceInfo))
+          as EventInstanceInfo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -700,9 +777,9 @@ class EventInstanceInfo extends $pb.GeneratedMessage {
   static EventInstanceInfo create() => EventInstanceInfo._();
   @$core.override
   EventInstanceInfo createEmptyInstance() => create();
-  static $pb.PbList<EventInstanceInfo> createRepeated() => $pb.PbList<EventInstanceInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
+  static EventInstanceInfo getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventInstanceInfo>(create);
   static EventInstanceInfo? _defaultInstance;
 
   /// RSVP configuration and metadata for the event instance.
@@ -734,12 +811,14 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   }) {
     final result = create();
     if (allowsRsvps != null) result.allowsRsvps = allowsRsvps;
-    if (allowsAnonymousRsvps != null) result.allowsAnonymousRsvps = allowsAnonymousRsvps;
+    if (allowsAnonymousRsvps != null)
+      result.allowsAnonymousRsvps = allowsAnonymousRsvps;
     if (maxAttendees != null) result.maxAttendees = maxAttendees;
     if (goingRsvps != null) result.goingRsvps = goingRsvps;
     if (goingAttendees != null) result.goingAttendees = goingAttendees;
     if (interestedRsvps != null) result.interestedRsvps = interestedRsvps;
-    if (interestedAttendees != null) result.interestedAttendees = interestedAttendees;
+    if (interestedAttendees != null)
+      result.interestedAttendees = interestedAttendees;
     if (invitedRsvps != null) result.invitedRsvps = invitedRsvps;
     if (invitedAttendees != null) result.invitedAttendees = invitedAttendees;
     return result;
@@ -747,26 +826,41 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
 
   EventInstanceRsvpInfo._();
 
-  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventInstanceRsvpInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventInstanceRsvpInfo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventInstanceRsvpInfo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventInstanceRsvpInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventInstanceRsvpInfo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'allowsRsvps')
     ..aOB(2, _omitFieldNames ? '' : 'allowsAnonymousRsvps')
-    ..a<$core.int>(3, _omitFieldNames ? '' : 'maxAttendees', $pb.PbFieldType.OU3)
-    ..a<$core.int>(4, _omitFieldNames ? '' : 'goingRsvps', $pb.PbFieldType.OU3)
-    ..a<$core.int>(5, _omitFieldNames ? '' : 'goingAttendees', $pb.PbFieldType.OU3)
-    ..a<$core.int>(6, _omitFieldNames ? '' : 'interestedRsvps', $pb.PbFieldType.OU3)
-    ..a<$core.int>(7, _omitFieldNames ? '' : 'interestedAttendees', $pb.PbFieldType.OU3)
-    ..a<$core.int>(8, _omitFieldNames ? '' : 'invitedRsvps', $pb.PbFieldType.OU3)
-    ..a<$core.int>(9, _omitFieldNames ? '' : 'invitedAttendees', $pb.PbFieldType.OU3)
-    ..hasRequiredFields = false
-  ;
+    ..aI(3, _omitFieldNames ? '' : 'maxAttendees',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(4, _omitFieldNames ? '' : 'goingRsvps', fieldType: $pb.PbFieldType.OU3)
+    ..aI(5, _omitFieldNames ? '' : 'goingAttendees',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(6, _omitFieldNames ? '' : 'interestedRsvps',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(7, _omitFieldNames ? '' : 'interestedAttendees',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(8, _omitFieldNames ? '' : 'invitedRsvps',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aI(9, _omitFieldNames ? '' : 'invitedAttendees',
+        fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceRsvpInfo clone() => EventInstanceRsvpInfo()..mergeFromMessage(this);
+  EventInstanceRsvpInfo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventInstanceRsvpInfo copyWith(void Function(EventInstanceRsvpInfo) updates) => super.copyWith((message) => updates(message as EventInstanceRsvpInfo)) as EventInstanceRsvpInfo;
+  EventInstanceRsvpInfo copyWith(
+          void Function(EventInstanceRsvpInfo) updates) =>
+      super.copyWith((message) => updates(message as EventInstanceRsvpInfo))
+          as EventInstanceRsvpInfo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -775,9 +869,9 @@ class EventInstanceRsvpInfo extends $pb.GeneratedMessage {
   static EventInstanceRsvpInfo create() => EventInstanceRsvpInfo._();
   @$core.override
   EventInstanceRsvpInfo createEmptyInstance() => create();
-  static $pb.PbList<EventInstanceRsvpInfo> createRepeated() => $pb.PbList<EventInstanceRsvpInfo>();
   @$core.pragma('dart2js:noInline')
-  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
+  static EventInstanceRsvpInfo getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventInstanceRsvpInfo>(create);
   static EventInstanceRsvpInfo? _defaultInstance;
 
   /// Overrides `EventInfo.allows_rsvps`, if set, for this instance.
@@ -879,25 +973,36 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   }) {
     final result = create();
     if (eventInstanceId != null) result.eventInstanceId = eventInstanceId;
-    if (anonymousAttendeeAuthToken != null) result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
+    if (anonymousAttendeeAuthToken != null)
+      result.anonymousAttendeeAuthToken = anonymousAttendeeAuthToken;
     return result;
   }
 
   GetEventAttendancesRequest._();
 
-  factory GetEventAttendancesRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetEventAttendancesRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetEventAttendancesRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetEventAttendancesRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetEventAttendancesRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetEventAttendancesRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'eventInstanceId')
     ..aOS(2, _omitFieldNames ? '' : 'anonymousAttendeeAuthToken')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventAttendancesRequest clone() => GetEventAttendancesRequest()..mergeFromMessage(this);
+  GetEventAttendancesRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetEventAttendancesRequest copyWith(void Function(GetEventAttendancesRequest) updates) => super.copyWith((message) => updates(message as GetEventAttendancesRequest)) as GetEventAttendancesRequest;
+  GetEventAttendancesRequest copyWith(
+          void Function(GetEventAttendancesRequest) updates) =>
+      super.copyWith(
+              (message) => updates(message as GetEventAttendancesRequest))
+          as GetEventAttendancesRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -906,9 +1011,9 @@ class GetEventAttendancesRequest extends $pb.GeneratedMessage {
   static GetEventAttendancesRequest create() => GetEventAttendancesRequest._();
   @$core.override
   GetEventAttendancesRequest createEmptyInstance() => create();
-  static $pb.PbList<GetEventAttendancesRequest> createRepeated() => $pb.PbList<GetEventAttendancesRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetEventAttendancesRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetEventAttendancesRequest>(create);
+  static GetEventAttendancesRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetEventAttendancesRequest>(create);
   static GetEventAttendancesRequest? _defaultInstance;
 
   /// The ID of the event to get RSVP data for.
@@ -948,19 +1053,29 @@ class EventAttendances extends $pb.GeneratedMessage {
 
   EventAttendances._();
 
-  factory EventAttendances.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventAttendances.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventAttendances.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventAttendances.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendances', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<EventAttendance>(1, _omitFieldNames ? '' : 'attendances', $pb.PbFieldType.PM, subBuilder: EventAttendance.create)
-    ..aOM<$2.Location>(2, _omitFieldNames ? '' : 'hiddenLocation', subBuilder: $2.Location.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventAttendances',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<EventAttendance>(1, _omitFieldNames ? '' : 'attendances',
+        subBuilder: EventAttendance.create)
+    ..aOM<$2.Location>(2, _omitFieldNames ? '' : 'hiddenLocation',
+        subBuilder: $2.Location.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendances clone() => EventAttendances()..mergeFromMessage(this);
+  EventAttendances clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendances copyWith(void Function(EventAttendances) updates) => super.copyWith((message) => updates(message as EventAttendances)) as EventAttendances;
+  EventAttendances copyWith(void Function(EventAttendances) updates) =>
+      super.copyWith((message) => updates(message as EventAttendances))
+          as EventAttendances;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -969,9 +1084,9 @@ class EventAttendances extends $pb.GeneratedMessage {
   static EventAttendances create() => EventAttendances._();
   @$core.override
   EventAttendances createEmptyInstance() => create();
-  static $pb.PbList<EventAttendances> createRepeated() => $pb.PbList<EventAttendances>();
   @$core.pragma('dart2js:noInline')
-  static EventAttendances getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendances>(create);
+  static EventAttendances getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventAttendances>(create);
   static EventAttendances? _defaultInstance;
 
   /// The attendance data for the event, in no particular order.
@@ -991,11 +1106,7 @@ class EventAttendances extends $pb.GeneratedMessage {
   $2.Location ensureHiddenLocation() => $_ensure(1);
 }
 
-enum EventAttendance_Attendee {
-  userAttendee, 
-  anonymousAttendee, 
-  notSet
-}
+enum EventAttendance_Attendee { userAttendee, anonymousAttendee, notSet }
 
 /// Could be called an "RSVP." Describes the attendance of a user at an `EventInstance`. Such as:
 /// * A user's RSVP to an `EventInstance` (one of `INTERESTED`, `GOING`, `NOT_GOING`, or , `REQUESTED` (i.e. invited)).
@@ -1034,35 +1145,51 @@ class EventAttendance extends $pb.GeneratedMessage {
 
   EventAttendance._();
 
-  factory EventAttendance.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory EventAttendance.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory EventAttendance.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory EventAttendance.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static const $core.Map<$core.int, EventAttendance_Attendee> _EventAttendance_AttendeeByTag = {
-    3 : EventAttendance_Attendee.userAttendee,
-    4 : EventAttendance_Attendee.anonymousAttendee,
-    0 : EventAttendance_Attendee.notSet
+  static const $core.Map<$core.int, EventAttendance_Attendee>
+      _EventAttendance_AttendeeByTag = {
+    3: EventAttendance_Attendee.userAttendee,
+    4: EventAttendance_Attendee.anonymousAttendee,
+    0: EventAttendance_Attendee.notSet
   };
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'EventAttendance', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'EventAttendance',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..oo(0, [3, 4])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'eventInstanceId')
-    ..aOM<UserAttendee>(3, _omitFieldNames ? '' : 'userAttendee', subBuilder: UserAttendee.create)
-    ..aOM<AnonymousAttendee>(4, _omitFieldNames ? '' : 'anonymousAttendee', subBuilder: AnonymousAttendee.create)
-    ..a<$core.int>(5, _omitFieldNames ? '' : 'numberOfGuests', $pb.PbFieldType.OU3)
-    ..e<AttendanceStatus>(6, _omitFieldNames ? '' : 'status', $pb.PbFieldType.OE, defaultOrMaker: AttendanceStatus.INTERESTED, valueOf: AttendanceStatus.valueOf, enumValues: AttendanceStatus.values)
+    ..aOM<UserAttendee>(3, _omitFieldNames ? '' : 'userAttendee',
+        subBuilder: UserAttendee.create)
+    ..aOM<AnonymousAttendee>(4, _omitFieldNames ? '' : 'anonymousAttendee',
+        subBuilder: AnonymousAttendee.create)
+    ..aI(5, _omitFieldNames ? '' : 'numberOfGuests',
+        fieldType: $pb.PbFieldType.OU3)
+    ..aE<AttendanceStatus>(6, _omitFieldNames ? '' : 'status',
+        enumValues: AttendanceStatus.values)
     ..aOS(7, _omitFieldNames ? '' : 'invitingUserId')
     ..aOS(8, _omitFieldNames ? '' : 'privateNote')
     ..aOS(9, _omitFieldNames ? '' : 'publicNote')
-    ..e<$5.Moderation>(10, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $5.Moderation.MODERATION_UNKNOWN, valueOf: $5.Moderation.valueOf, enumValues: $5.Moderation.values)
-    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'createdAt', subBuilder: $0.Timestamp.create)
-    ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt', subBuilder: $0.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$5.Moderation>(10, _omitFieldNames ? '' : 'moderation',
+        enumValues: $5.Moderation.values)
+    ..aOM<$0.Timestamp>(11, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $0.Timestamp.create)
+    ..aOM<$0.Timestamp>(12, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $0.Timestamp.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendance clone() => EventAttendance()..mergeFromMessage(this);
+  EventAttendance clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  EventAttendance copyWith(void Function(EventAttendance) updates) => super.copyWith((message) => updates(message as EventAttendance)) as EventAttendance;
+  EventAttendance copyWith(void Function(EventAttendance) updates) =>
+      super.copyWith((message) => updates(message as EventAttendance))
+          as EventAttendance;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -1071,12 +1198,17 @@ class EventAttendance extends $pb.GeneratedMessage {
   static EventAttendance create() => EventAttendance._();
   @$core.override
   EventAttendance createEmptyInstance() => create();
-  static $pb.PbList<EventAttendance> createRepeated() => $pb.PbList<EventAttendance>();
   @$core.pragma('dart2js:noInline')
-  static EventAttendance getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
+  static EventAttendance getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<EventAttendance>(create);
   static EventAttendance? _defaultInstance;
 
-  EventAttendance_Attendee whichAttendee() => _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(3)
+  @$pb.TagNumber(4)
+  EventAttendance_Attendee whichAttendee() =>
+      _EventAttendance_AttendeeByTag[$_whichOneof(0)]!;
+  @$pb.TagNumber(3)
+  @$pb.TagNumber(4)
   void clearAttendee() => $_clearField($_whichOneof(0));
 
   /// Unique server-generated ID for the attendance.
@@ -1227,20 +1359,29 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
 
   AnonymousAttendee._();
 
-  factory AnonymousAttendee.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory AnonymousAttendee.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory AnonymousAttendee.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory AnonymousAttendee.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'AnonymousAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'AnonymousAttendee',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
-    ..pc<$3.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods', $pb.PbFieldType.PM, subBuilder: $3.ContactMethod.create)
+    ..pPM<$3.ContactMethod>(2, _omitFieldNames ? '' : 'contactMethods',
+        subBuilder: $3.ContactMethod.create)
     ..aOS(3, _omitFieldNames ? '' : 'authToken')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AnonymousAttendee clone() => AnonymousAttendee()..mergeFromMessage(this);
+  AnonymousAttendee clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) => super.copyWith((message) => updates(message as AnonymousAttendee)) as AnonymousAttendee;
+  AnonymousAttendee copyWith(void Function(AnonymousAttendee) updates) =>
+      super.copyWith((message) => updates(message as AnonymousAttendee))
+          as AnonymousAttendee;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -1249,9 +1390,9 @@ class AnonymousAttendee extends $pb.GeneratedMessage {
   static AnonymousAttendee create() => AnonymousAttendee._();
   @$core.override
   AnonymousAttendee createEmptyInstance() => create();
-  static $pb.PbList<AnonymousAttendee> createRepeated() => $pb.PbList<AnonymousAttendee>();
   @$core.pragma('dart2js:noInline')
-  static AnonymousAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AnonymousAttendee>(create);
+  static AnonymousAttendee getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<AnonymousAttendee>(create);
   static AnonymousAttendee? _defaultInstance;
 
   /// A name for the anonymous user. For instance, "Bob Gomez" or "The guy on your front porch."
@@ -1302,22 +1443,35 @@ class UserAttendee extends $pb.GeneratedMessage {
 
   UserAttendee._();
 
-  factory UserAttendee.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory UserAttendee.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory UserAttendee.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UserAttendee.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserAttendee', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UserAttendee',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'username')
-    ..aOM<$4.MediaReference>(3, _omitFieldNames ? '' : 'avatar', subBuilder: $4.MediaReference.create)
+    ..aOM<$4.MediaReference>(3, _omitFieldNames ? '' : 'avatar',
+        subBuilder: $4.MediaReference.create)
     ..aOS(4, _omitFieldNames ? '' : 'realName')
-    ..pc<$6.Permission>(5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE, valueOf: $6.Permission.valueOf, enumValues: $6.Permission.values, defaultEnumValue: $6.Permission.PERMISSION_UNKNOWN)
-    ..hasRequiredFields = false
-  ;
+    ..pc<$6.Permission>(
+        5, _omitFieldNames ? '' : 'permissions', $pb.PbFieldType.KE,
+        valueOf: $6.Permission.valueOf,
+        enumValues: $6.Permission.values,
+        defaultEnumValue: $6.Permission.PERMISSION_UNKNOWN)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserAttendee clone() => UserAttendee()..mergeFromMessage(this);
+  UserAttendee clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserAttendee copyWith(void Function(UserAttendee) updates) => super.copyWith((message) => updates(message as UserAttendee)) as UserAttendee;
+  UserAttendee copyWith(void Function(UserAttendee) updates) =>
+      super.copyWith((message) => updates(message as UserAttendee))
+          as UserAttendee;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -1326,9 +1480,9 @@ class UserAttendee extends $pb.GeneratedMessage {
   static UserAttendee create() => UserAttendee._();
   @$core.override
   UserAttendee createEmptyInstance() => create();
-  static $pb.PbList<UserAttendee> createRepeated() => $pb.PbList<UserAttendee>();
   @$core.pragma('dart2js:noInline')
-  static UserAttendee getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserAttendee>(create);
+  static UserAttendee getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<UserAttendee>(create);
   static UserAttendee? _defaultInstance;
 
   /// The user ID of the attendee.
@@ -1376,6 +1530,7 @@ class UserAttendee extends $pb.GeneratedMessage {
   $pb.PbList<$6.Permission> get permissions => $_getList(4);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

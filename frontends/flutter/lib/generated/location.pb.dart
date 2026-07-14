@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -26,26 +26,34 @@ class Location extends $pb.GeneratedMessage {
     final result = create();
     if (id != null) result.id = id;
     if (creatorId != null) result.creatorId = creatorId;
-    if (uniformlyFormattedAddress != null) result.uniformlyFormattedAddress = uniformlyFormattedAddress;
+    if (uniformlyFormattedAddress != null)
+      result.uniformlyFormattedAddress = uniformlyFormattedAddress;
     return result;
   }
 
   Location._();
 
-  factory Location.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Location.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Location.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Location.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Location', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Location',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOS(2, _omitFieldNames ? '' : 'creatorId')
     ..aOS(3, _omitFieldNames ? '' : 'uniformlyFormattedAddress')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Location clone() => Location()..mergeFromMessage(this);
+  Location clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Location copyWith(void Function(Location) updates) => super.copyWith((message) => updates(message as Location)) as Location;
+  Location copyWith(void Function(Location) updates) =>
+      super.copyWith((message) => updates(message as Location)) as Location;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -54,9 +62,9 @@ class Location extends $pb.GeneratedMessage {
   static Location create() => Location._();
   @$core.override
   Location createEmptyInstance() => create();
-  static $pb.PbList<Location> createRepeated() => $pb.PbList<Location>();
   @$core.pragma('dart2js:noInline')
-  static Location getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Location>(create);
+  static Location getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Location>(create);
   static Location? _defaultInstance;
 
   /// The ID of the location. May not be unique.
@@ -92,6 +100,7 @@ class Location extends $pb.GeneratedMessage {
   void clearUniformlyFormattedAddress() => $_clearField(3);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

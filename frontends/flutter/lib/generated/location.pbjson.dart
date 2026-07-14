@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -20,7 +21,13 @@ const Location$json = {
   '2': [
     {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
     {'1': 'creator_id', '3': 2, '4': 1, '5': 9, '10': 'creatorId'},
-    {'1': 'uniformly_formatted_address', '3': 3, '4': 1, '5': 9, '10': 'uniformlyFormattedAddress'},
+    {
+      '1': 'uniformly_formatted_address',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '10': 'uniformlyFormattedAddress'
+    },
   ],
 };
 
@@ -29,4 +36,3 @@ final $typed_data.Uint8List locationDescriptor = $convert.base64Decode(
     'CghMb2NhdGlvbhIOCgJpZBgBIAEoCVICaWQSHQoKY3JlYXRvcl9pZBgCIAEoCVIJY3JlYXRvck'
     'lkEj4KG3VuaWZvcm1seV9mb3JtYXR0ZWRfYWRkcmVzcxgDIAEoCVIZdW5pZm9ybWx5Rm9ybWF0'
     'dGVkQWRkcmVzcw==');
-

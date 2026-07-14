@@ -58,10 +58,21 @@ const plugins = [
 // module.exports = {
 // }
 
+// Jonline's Rust server serves this app both at "/" and at "/tamagui" (so it
+// works the same whichever prefix another frontend, like Elm, leaves it).
+// Next.js's router/asset URLs assume a single fixed basePath baked in at
+// build time, so we build this app twice -- once per prefix -- and TAMAGUI_BASE_PATH
+// selects which one a given `next build` invocation produces. See
+// apps/next/package.json's "build:export" script for the two-build sequence,
+// and backend/src/web/tamagui_path.rs for how the Rust side picks the
+// matching output directory per request.
+const basePath = process.env.TAMAGUI_BASE_PATH || ''
+
 module.exports = function () {
   /** @type {import('next').NextConfig} */
   let config = {
     output: 'export', //'export', 'standalone'
+    basePath,
     typescript: {
       ignoreBuildErrors: true,
     },

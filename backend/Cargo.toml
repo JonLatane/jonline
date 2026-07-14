@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.3.534"
+version = "0.5.535"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -19,7 +19,12 @@ panic = 'abort'
 panic = 'abort'
 
 [dependencies]
-tokio = { version = "1.20.0", features = ["macros", "rt-multi-thread", "fs", "sync"] }
+tokio = { version = "1.20.0", features = [
+  "macros",
+  "rt-multi-thread",
+  "fs",
+  "sync",
+] }
 tokio-stream = "0.1.15"
 tonic = { version = "0.12.2", features = [
   "tls",
@@ -56,7 +61,7 @@ log = "0.4.17"
 uuid = { version = "1.10.0", features = ["v4", "fast-rng"] }
 lazy_static = "1.5.0"
 env_logger = "0.11.5"
-rust-s3 = { version="0.35.1" }
+rust-s3 = { version = "0.35.1" }
 aws-creds = "0.37.0"
 # aws-region = "0.26.0"
 bytes = "1.7.1"

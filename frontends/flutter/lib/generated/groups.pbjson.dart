@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -38,19 +39,95 @@ const Group$json = {
     {'1': 'name', '3': 2, '4': 1, '5': 9, '10': 'name'},
     {'1': 'shortname', '3': 3, '4': 1, '5': 9, '10': 'shortname'},
     {'1': 'description', '3': 4, '4': 1, '5': 9, '10': 'description'},
-    {'1': 'avatar', '3': 5, '4': 1, '5': 11, '6': '.jonline.MediaReference', '9': 0, '10': 'avatar', '17': true},
-    {'1': 'default_membership_permissions', '3': 6, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultMembershipPermissions'},
-    {'1': 'default_membership_moderation', '3': 7, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultMembershipModeration'},
-    {'1': 'default_post_moderation', '3': 8, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultPostModeration'},
-    {'1': 'default_event_moderation', '3': 9, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultEventModeration'},
-    {'1': 'visibility', '3': 10, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'visibility'},
+    {
+      '1': 'avatar',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.MediaReference',
+      '9': 0,
+      '10': 'avatar',
+      '17': true
+    },
+    {
+      '1': 'default_membership_permissions',
+      '3': 6,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.Permission',
+      '10': 'defaultMembershipPermissions'
+    },
+    {
+      '1': 'default_membership_moderation',
+      '3': 7,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'defaultMembershipModeration'
+    },
+    {
+      '1': 'default_post_moderation',
+      '3': 8,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'defaultPostModeration'
+    },
+    {
+      '1': 'default_event_moderation',
+      '3': 9,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'defaultEventModeration'
+    },
+    {
+      '1': 'visibility',
+      '3': 10,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Visibility',
+      '10': 'visibility'
+    },
     {'1': 'member_count', '3': 11, '4': 1, '5': 13, '10': 'memberCount'},
     {'1': 'post_count', '3': 12, '4': 1, '5': 13, '10': 'postCount'},
     {'1': 'event_count', '3': 13, '4': 1, '5': 13, '10': 'eventCount'},
-    {'1': 'non_member_permissions', '3': 18, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'nonMemberPermissions'},
-    {'1': 'current_user_membership', '3': 19, '4': 1, '5': 11, '6': '.jonline.Membership', '9': 1, '10': 'currentUserMembership', '17': true},
-    {'1': 'created_at', '3': 20, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '10': 'createdAt'},
-    {'1': 'updated_at', '3': 21, '4': 1, '5': 11, '6': '.google.protobuf.Timestamp', '9': 2, '10': 'updatedAt', '17': true},
+    {
+      '1': 'non_member_permissions',
+      '3': 18,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.Permission',
+      '10': 'nonMemberPermissions'
+    },
+    {
+      '1': 'current_user_membership',
+      '3': 19,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.Membership',
+      '9': 1,
+      '10': 'currentUserMembership',
+      '17': true
+    },
+    {
+      '1': 'created_at',
+      '3': 20,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 21,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 2,
+      '10': 'updatedAt',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_avatar'},
@@ -84,10 +161,41 @@ final $typed_data.Uint8List groupDescriptor = $convert.base64Decode(
 const GetGroupsRequest$json = {
   '1': 'GetGroupsRequest',
   '2': [
-    {'1': 'group_id', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'groupId', '17': true},
-    {'1': 'group_name', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'groupName', '17': true},
-    {'1': 'group_shortname', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'groupShortname', '17': true},
-    {'1': 'listing_type', '3': 10, '4': 1, '5': 14, '6': '.jonline.GroupListingType', '10': 'listingType'},
+    {
+      '1': 'group_id',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'groupId',
+      '17': true
+    },
+    {
+      '1': 'group_name',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'groupName',
+      '17': true
+    },
+    {
+      '1': 'group_shortname',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'groupShortname',
+      '17': true
+    },
+    {
+      '1': 'listing_type',
+      '3': 10,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.GroupListingType',
+      '10': 'listingType'
+    },
     {'1': 'page', '3': 11, '4': 1, '5': 5, '9': 3, '10': 'page', '17': true},
   ],
   '8': [
@@ -110,7 +218,14 @@ final $typed_data.Uint8List getGroupsRequestDescriptor = $convert.base64Decode(
 const GetGroupsResponse$json = {
   '1': 'GetGroupsResponse',
   '2': [
-    {'1': 'groups', '3': 1, '4': 3, '5': 11, '6': '.jonline.Group', '10': 'groups'},
+    {
+      '1': 'groups',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.Group',
+      '10': 'groups'
+    },
     {'1': 'has_next_page', '3': 2, '4': 1, '5': 8, '10': 'hasNextPage'},
   ],
 };
@@ -125,7 +240,14 @@ const Member$json = {
   '1': 'Member',
   '2': [
     {'1': 'user', '3': 1, '4': 1, '5': 11, '6': '.jonline.User', '10': 'user'},
-    {'1': 'membership', '3': 2, '4': 1, '5': 11, '6': '.jonline.Membership', '10': 'membership'},
+    {
+      '1': 'membership',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.Membership',
+      '10': 'membership'
+    },
   ],
 };
 
@@ -139,8 +261,25 @@ const GetMembersRequest$json = {
   '1': 'GetMembersRequest',
   '2': [
     {'1': 'group_id', '3': 1, '4': 1, '5': 9, '10': 'groupId'},
-    {'1': 'username', '3': 2, '4': 1, '5': 9, '9': 0, '10': 'username', '17': true},
-    {'1': 'group_moderation', '3': 3, '4': 1, '5': 14, '6': '.jonline.Moderation', '9': 1, '10': 'groupModeration', '17': true},
+    {
+      '1': 'username',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'username',
+      '17': true
+    },
+    {
+      '1': 'group_moderation',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '9': 1,
+      '10': 'groupModeration',
+      '17': true
+    },
     {'1': 'page', '3': 10, '4': 1, '5': 5, '9': 2, '10': 'page', '17': true},
   ],
   '8': [
@@ -161,7 +300,14 @@ final $typed_data.Uint8List getMembersRequestDescriptor = $convert.base64Decode(
 const GetMembersResponse$json = {
   '1': 'GetMembersResponse',
   '2': [
-    {'1': 'members', '3': 1, '4': 3, '5': 11, '6': '.jonline.Member', '10': 'members'},
+    {
+      '1': 'members',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.Member',
+      '10': 'members'
+    },
     {'1': 'has_next_page', '3': 2, '4': 1, '5': 8, '10': 'hasNextPage'},
   ],
 };
@@ -170,4 +316,3 @@ const GetMembersResponse$json = {
 final $typed_data.Uint8List getMembersResponseDescriptor = $convert.base64Decode(
     'ChJHZXRNZW1iZXJzUmVzcG9uc2USKQoHbWVtYmVycxgBIAMoCzIPLmpvbmxpbmUuTWVtYmVyUg'
     'dtZW1iZXJzEiIKDWhhc19uZXh0X3BhZ2UYAiABKAhSC2hhc05leHRQYWdl');
-

@@ -8,7 +8,8 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names, unused_import
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
+// ignore_for_file: unused_import
 
 import 'dart:convert' as $convert;
 import 'dart:core' as $core;
@@ -55,32 +56,139 @@ const WebUserInterface$json = {
       '3': {'1': true},
     },
     {'1': 'REACT_TAMAGUI', '2': 2},
+    {'1': 'ELM_SPA', '2': 3},
   ],
 };
 
 /// Descriptor for `WebUserInterface`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List webUserInterfaceDescriptor = $convert.base64Decode(
     'ChBXZWJVc2VySW50ZXJmYWNlEg8KC0ZMVVRURVJfV0VCEAASHAoUSEFORExFQkFSU19URU1QTE'
-    'FURVMQARoCCAESEQoNUkVBQ1RfVEFNQUdVSRAC');
+    'FURVMQARoCCAESEQoNUkVBQ1RfVEFNQUdVSRACEgsKB0VMTV9TUEEQAw==');
 
 @$core.Deprecated('Use serverConfigurationDescriptor instead')
 const ServerConfiguration$json = {
   '1': 'ServerConfiguration',
   '2': [
-    {'1': 'server_info', '3': 1, '4': 1, '5': 11, '6': '.jonline.ServerInfo', '9': 0, '10': 'serverInfo', '17': true},
-    {'1': 'federation_info', '3': 2, '4': 1, '5': 11, '6': '.jonline.FederationInfo', '9': 1, '10': 'federationInfo', '17': true},
-    {'1': 'anonymous_user_permissions', '3': 10, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'anonymousUserPermissions'},
-    {'1': 'default_user_permissions', '3': 11, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'defaultUserPermissions'},
-    {'1': 'basic_user_permissions', '3': 12, '4': 3, '5': 14, '6': '.jonline.Permission', '10': 'basicUserPermissions'},
-    {'1': 'people_settings', '3': 20, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'peopleSettings'},
-    {'1': 'group_settings', '3': 21, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'groupSettings'},
-    {'1': 'post_settings', '3': 22, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'postSettings'},
-    {'1': 'event_settings', '3': 23, '4': 1, '5': 11, '6': '.jonline.PostSettings', '10': 'eventSettings'},
-    {'1': 'media_settings', '3': 24, '4': 1, '5': 11, '6': '.jonline.FeatureSettings', '10': 'mediaSettings'},
-    {'1': 'external_cdn_config', '3': 90, '4': 1, '5': 11, '6': '.jonline.ExternalCDNConfig', '9': 2, '10': 'externalCdnConfig', '17': true},
-    {'1': 'private_user_strategy', '3': 100, '4': 1, '5': 14, '6': '.jonline.PrivateUserStrategy', '10': 'privateUserStrategy'},
-    {'1': 'authentication_features', '3': 101, '4': 3, '5': 14, '6': '.jonline.AuthenticationFeature', '10': 'authenticationFeatures'},
-    {'1': 'web_push_config', '3': 110, '4': 1, '5': 11, '6': '.jonline.WebPushConfig', '9': 3, '10': 'webPushConfig', '17': true},
+    {
+      '1': 'server_info',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ServerInfo',
+      '9': 0,
+      '10': 'serverInfo',
+      '17': true
+    },
+    {
+      '1': 'federation_info',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.FederationInfo',
+      '9': 1,
+      '10': 'federationInfo',
+      '17': true
+    },
+    {
+      '1': 'anonymous_user_permissions',
+      '3': 10,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.Permission',
+      '10': 'anonymousUserPermissions'
+    },
+    {
+      '1': 'default_user_permissions',
+      '3': 11,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.Permission',
+      '10': 'defaultUserPermissions'
+    },
+    {
+      '1': 'basic_user_permissions',
+      '3': 12,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.Permission',
+      '10': 'basicUserPermissions'
+    },
+    {
+      '1': 'people_settings',
+      '3': 20,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.FeatureSettings',
+      '10': 'peopleSettings'
+    },
+    {
+      '1': 'group_settings',
+      '3': 21,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.FeatureSettings',
+      '10': 'groupSettings'
+    },
+    {
+      '1': 'post_settings',
+      '3': 22,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.PostSettings',
+      '10': 'postSettings'
+    },
+    {
+      '1': 'event_settings',
+      '3': 23,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.PostSettings',
+      '10': 'eventSettings'
+    },
+    {
+      '1': 'media_settings',
+      '3': 24,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.FeatureSettings',
+      '10': 'mediaSettings'
+    },
+    {
+      '1': 'external_cdn_config',
+      '3': 90,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ExternalCDNConfig',
+      '9': 2,
+      '10': 'externalCdnConfig',
+      '17': true
+    },
+    {
+      '1': 'private_user_strategy',
+      '3': 100,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.PrivateUserStrategy',
+      '10': 'privateUserStrategy'
+    },
+    {
+      '1': 'authentication_features',
+      '3': 101,
+      '4': 3,
+      '5': 14,
+      '6': '.jonline.AuthenticationFeature',
+      '10': 'authenticationFeatures'
+    },
+    {
+      '1': 'web_push_config',
+      '3': 110,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.WebPushConfig',
+      '9': 3,
+      '10': 'webPushConfig',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_server_info'},
@@ -120,8 +228,24 @@ const ExternalCDNConfig$json = {
     {'1': 'frontend_host', '3': 1, '4': 1, '5': 9, '10': 'frontendHost'},
     {'1': 'backend_host', '3': 2, '4': 1, '5': 9, '10': 'backendHost'},
     {'1': 'secure_media', '3': 3, '4': 1, '5': 8, '10': 'secureMedia'},
-    {'1': 'media_ipv4_allowlist', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'mediaIpv4Allowlist', '17': true},
-    {'1': 'media_ipv6_allowlist', '3': 5, '4': 1, '5': 9, '9': 1, '10': 'mediaIpv6Allowlist', '17': true},
+    {
+      '1': 'media_ipv4_allowlist',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'mediaIpv4Allowlist',
+      '17': true
+    },
+    {
+      '1': 'media_ipv6_allowlist',
+      '3': 5,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'mediaIpv6Allowlist',
+      '17': true
+    },
     {'1': 'cdn_grpc', '3': 6, '4': 1, '5': 8, '10': 'cdnGrpc'},
   ],
   '8': [
@@ -144,9 +268,31 @@ const FeatureSettings$json = {
   '1': 'FeatureSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
-    {'1': 'custom_title', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'customTitle', '17': true},
+    {
+      '1': 'default_moderation',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'defaultModeration'
+    },
+    {
+      '1': 'default_visibility',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Visibility',
+      '10': 'defaultVisibility'
+    },
+    {
+      '1': 'custom_title',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'customTitle',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_custom_title'},
@@ -166,10 +312,40 @@ const PostSettings$json = {
   '1': 'PostSettings',
   '2': [
     {'1': 'visible', '3': 1, '4': 1, '5': 8, '10': 'visible'},
-    {'1': 'default_moderation', '3': 2, '4': 1, '5': 14, '6': '.jonline.Moderation', '10': 'defaultModeration'},
-    {'1': 'default_visibility', '3': 3, '4': 1, '5': 14, '6': '.jonline.Visibility', '10': 'defaultVisibility'},
-    {'1': 'custom_title', '3': 4, '4': 1, '5': 9, '9': 0, '10': 'customTitle', '17': true},
-    {'1': 'enable_replies', '3': 5, '4': 1, '5': 8, '9': 1, '10': 'enableReplies', '17': true},
+    {
+      '1': 'default_moderation',
+      '3': 2,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Moderation',
+      '10': 'defaultModeration'
+    },
+    {
+      '1': 'default_visibility',
+      '3': 3,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.Visibility',
+      '10': 'defaultVisibility'
+    },
+    {
+      '1': 'custom_title',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'customTitle',
+      '17': true
+    },
+    {
+      '1': 'enable_replies',
+      '3': 5,
+      '4': 1,
+      '5': 8,
+      '9': 1,
+      '10': 'enableReplies',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_custom_title'},
@@ -191,13 +367,72 @@ const ServerInfo$json = {
   '1': 'ServerInfo',
   '2': [
     {'1': 'name', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'name', '17': true},
-    {'1': 'short_name', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'shortName', '17': true},
-    {'1': 'description', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'description', '17': true},
-    {'1': 'privacy_policy', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'privacyPolicy', '17': true},
-    {'1': 'logo', '3': 5, '4': 1, '5': 11, '6': '.jonline.ServerLogo', '9': 4, '10': 'logo', '17': true},
-    {'1': 'web_user_interface', '3': 6, '4': 1, '5': 14, '6': '.jonline.WebUserInterface', '9': 5, '10': 'webUserInterface', '17': true},
-    {'1': 'colors', '3': 7, '4': 1, '5': 11, '6': '.jonline.ServerColors', '9': 6, '10': 'colors', '17': true},
-    {'1': 'media_policy', '3': 8, '4': 1, '5': 9, '9': 7, '10': 'mediaPolicy', '17': true},
+    {
+      '1': 'short_name',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'shortName',
+      '17': true
+    },
+    {
+      '1': 'description',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'description',
+      '17': true
+    },
+    {
+      '1': 'privacy_policy',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 3,
+      '10': 'privacyPolicy',
+      '17': true
+    },
+    {
+      '1': 'logo',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ServerLogo',
+      '9': 4,
+      '10': 'logo',
+      '17': true
+    },
+    {
+      '1': 'web_user_interface',
+      '3': 6,
+      '4': 1,
+      '5': 14,
+      '6': '.jonline.WebUserInterface',
+      '9': 5,
+      '10': 'webUserInterface',
+      '17': true
+    },
+    {
+      '1': 'colors',
+      '3': 7,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.ServerColors',
+      '9': 6,
+      '10': 'colors',
+      '17': true
+    },
+    {
+      '1': 'media_policy',
+      '3': 8,
+      '4': 1,
+      '5': 9,
+      '9': 7,
+      '10': 'mediaPolicy',
+      '17': true
+    },
     {
       '1': 'recommended_server_hosts',
       '3': 9,
@@ -236,10 +471,42 @@ final $typed_data.Uint8List serverInfoDescriptor = $convert.base64Decode(
 const ServerLogo$json = {
   '1': 'ServerLogo',
   '2': [
-    {'1': 'squareMediaId', '3': 1, '4': 1, '5': 9, '9': 0, '10': 'squareMediaId', '17': true},
-    {'1': 'squareMediaIdDark', '3': 2, '4': 1, '5': 9, '9': 1, '10': 'squareMediaIdDark', '17': true},
-    {'1': 'wideMediaId', '3': 3, '4': 1, '5': 9, '9': 2, '10': 'wideMediaId', '17': true},
-    {'1': 'wideMediaIdDark', '3': 4, '4': 1, '5': 9, '9': 3, '10': 'wideMediaIdDark', '17': true},
+    {
+      '1': 'squareMediaId',
+      '3': 1,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'squareMediaId',
+      '17': true
+    },
+    {
+      '1': 'squareMediaIdDark',
+      '3': 2,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'squareMediaIdDark',
+      '17': true
+    },
+    {
+      '1': 'wideMediaId',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'wideMediaId',
+      '17': true
+    },
+    {
+      '1': 'wideMediaIdDark',
+      '3': 4,
+      '4': 1,
+      '5': 9,
+      '9': 3,
+      '10': 'wideMediaIdDark',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_squareMediaId'},
@@ -261,11 +528,43 @@ final $typed_data.Uint8List serverLogoDescriptor = $convert.base64Decode(
 const ServerColors$json = {
   '1': 'ServerColors',
   '2': [
-    {'1': 'primary', '3': 1, '4': 1, '5': 13, '9': 0, '10': 'primary', '17': true},
-    {'1': 'navigation', '3': 2, '4': 1, '5': 13, '9': 1, '10': 'navigation', '17': true},
-    {'1': 'author', '3': 3, '4': 1, '5': 13, '9': 2, '10': 'author', '17': true},
+    {
+      '1': 'primary',
+      '3': 1,
+      '4': 1,
+      '5': 13,
+      '9': 0,
+      '10': 'primary',
+      '17': true
+    },
+    {
+      '1': 'navigation',
+      '3': 2,
+      '4': 1,
+      '5': 13,
+      '9': 1,
+      '10': 'navigation',
+      '17': true
+    },
+    {
+      '1': 'author',
+      '3': 3,
+      '4': 1,
+      '5': 13,
+      '9': 2,
+      '10': 'author',
+      '17': true
+    },
     {'1': 'admin', '3': 4, '4': 1, '5': 13, '9': 3, '10': 'admin', '17': true},
-    {'1': 'moderator', '3': 5, '4': 1, '5': 13, '9': 4, '10': 'moderator', '17': true},
+    {
+      '1': 'moderator',
+      '3': 5,
+      '4': 1,
+      '5': 13,
+      '9': 4,
+      '10': 'moderator',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_primary'},
@@ -297,4 +596,3 @@ const WebPushConfig$json = {
 final $typed_data.Uint8List webPushConfigDescriptor = $convert.base64Decode(
     'Cg1XZWJQdXNoQ29uZmlnEigKEHB1YmxpY192YXBpZF9rZXkYASABKAlSDnB1YmxpY1ZhcGlkS2'
     'V5EioKEXByaXZhdGVfdmFwaWRfa2V5GAIgASgJUg9wcml2YXRlVmFwaWRLZXk=');
-

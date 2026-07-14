@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::collections::HashMap;
 
 use diesel::*;
 use tonic::{Code, Status};
@@ -285,29 +285,44 @@ fn get_replies_to_post_id(
             ))
         }
     };
-    let result = query_visible_posts!(user)
-        .filter(posts::parent_post_id.eq(post_db_id))
+    let mut replies_by_parent = get_replies_to_post_ids(user, &[post_db_id], reply_depth, conn)?;
+    Ok(replies_by_parent.remove(&post_db_id).unwrap_or_default())
+}
+
+// Fetches replies to a batch of parent post ids, `reply_depth` levels deep, keyed
+// by parent post id. Each depth level is a single query covering every post at
+// that level (via `eq_any`), so getting replies `reply_depth` levels deep for any
+// number of posts takes exactly `reply_depth` queries, not one query per post.
+fn get_replies_to_post_ids(
+    user: &Option<&models::User>,
+    post_ids: &[i64],
+    reply_depth: u32,
+    conn: &mut PgPooledConnection,
+) -> Result<HashMap<i64, Vec<MarshalablePost>>, Status> {
+    if reply_depth == 0 || post_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+
+    let level = query_visible_posts!(user)
+        .filter(posts::parent_post_id.eq_any(post_ids))
         .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
         .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())
         .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
-        .unwrap()
-        .iter()
-        .map(|(post, author)| {
-            if reply_depth > 1 {
-                let replies = get_replies_to_post_id(
-                    user,
-                    &post.id.to_proto_id(),
-                    min(reply_depth - 1, 1),
-                    conn,
-                )
-                .unwrap_or(vec![]);
-                MarshalablePost(post.clone(), author.clone(), None, None, replies)
-            } else {
-                MarshalablePost(post.clone(), author.clone(), None, None, vec![])
-            }
-        })
-        .collect();
-    Ok(result)
+        .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?;
+
+    let child_ids: Vec<i64> = level.iter().map(|(post, _)| post.id).collect();
+    let mut grandchildren = get_replies_to_post_ids(user, &child_ids, reply_depth - 1, conn)?;
+
+    let mut replies_by_parent: HashMap<i64, Vec<MarshalablePost>> = HashMap::new();
+    for (post, author) in level {
+        let replies = grandchildren.remove(&post.id).unwrap_or_default();
+        replies_by_parent
+            .entry(post.parent_post_id.unwrap_or(0))
+            .or_default()
+            .push(MarshalablePost(post, author, None, None, replies));
+    }
+
+    Ok(replies_by_parent)
 }

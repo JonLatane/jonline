@@ -8,7 +8,7 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
@@ -44,48 +44,87 @@ class ServerConfiguration extends $pb.GeneratedMessage {
     final result = create();
     if (serverInfo != null) result.serverInfo = serverInfo;
     if (federationInfo != null) result.federationInfo = federationInfo;
-    if (anonymousUserPermissions != null) result.anonymousUserPermissions.addAll(anonymousUserPermissions);
-    if (defaultUserPermissions != null) result.defaultUserPermissions.addAll(defaultUserPermissions);
-    if (basicUserPermissions != null) result.basicUserPermissions.addAll(basicUserPermissions);
+    if (anonymousUserPermissions != null)
+      result.anonymousUserPermissions.addAll(anonymousUserPermissions);
+    if (defaultUserPermissions != null)
+      result.defaultUserPermissions.addAll(defaultUserPermissions);
+    if (basicUserPermissions != null)
+      result.basicUserPermissions.addAll(basicUserPermissions);
     if (peopleSettings != null) result.peopleSettings = peopleSettings;
     if (groupSettings != null) result.groupSettings = groupSettings;
     if (postSettings != null) result.postSettings = postSettings;
     if (eventSettings != null) result.eventSettings = eventSettings;
     if (mediaSettings != null) result.mediaSettings = mediaSettings;
     if (externalCdnConfig != null) result.externalCdnConfig = externalCdnConfig;
-    if (privateUserStrategy != null) result.privateUserStrategy = privateUserStrategy;
-    if (authenticationFeatures != null) result.authenticationFeatures.addAll(authenticationFeatures);
+    if (privateUserStrategy != null)
+      result.privateUserStrategy = privateUserStrategy;
+    if (authenticationFeatures != null)
+      result.authenticationFeatures.addAll(authenticationFeatures);
     if (webPushConfig != null) result.webPushConfig = webPushConfig;
     return result;
   }
 
   ServerConfiguration._();
 
-  factory ServerConfiguration.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory ServerConfiguration.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory ServerConfiguration.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ServerConfiguration.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerConfiguration', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo', subBuilder: ServerInfo.create)
-    ..aOM<$0.FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo', subBuilder: $0.FederationInfo.create)
-    ..pc<$1.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions', $pb.PbFieldType.KE, valueOf: $1.Permission.valueOf, enumValues: $1.Permission.values, defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
-    ..pc<$1.Permission>(11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE, valueOf: $1.Permission.valueOf, enumValues: $1.Permission.values, defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
-    ..pc<$1.Permission>(12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE, valueOf: $1.Permission.valueOf, enumValues: $1.Permission.values, defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
-    ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings', subBuilder: FeatureSettings.create)
-    ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings', subBuilder: FeatureSettings.create)
-    ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings', subBuilder: PostSettings.create)
-    ..aOM<PostSettings>(23, _omitFieldNames ? '' : 'eventSettings', subBuilder: PostSettings.create)
-    ..aOM<FeatureSettings>(24, _omitFieldNames ? '' : 'mediaSettings', subBuilder: FeatureSettings.create)
-    ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig', subBuilder: ExternalCDNConfig.create)
-    ..e<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy', $pb.PbFieldType.OE, defaultOrMaker: PrivateUserStrategy.ACCOUNT_IS_FROZEN, valueOf: PrivateUserStrategy.valueOf, enumValues: PrivateUserStrategy.values)
-    ..pc<AuthenticationFeature>(101, _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE, valueOf: AuthenticationFeature.valueOf, enumValues: AuthenticationFeature.values, defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
-    ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig', subBuilder: WebPushConfig.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerConfiguration',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aOM<ServerInfo>(1, _omitFieldNames ? '' : 'serverInfo',
+        subBuilder: ServerInfo.create)
+    ..aOM<$0.FederationInfo>(2, _omitFieldNames ? '' : 'federationInfo',
+        subBuilder: $0.FederationInfo.create)
+    ..pc<$1.Permission>(10, _omitFieldNames ? '' : 'anonymousUserPermissions',
+        $pb.PbFieldType.KE,
+        valueOf: $1.Permission.valueOf,
+        enumValues: $1.Permission.values,
+        defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
+    ..pc<$1.Permission>(
+        11, _omitFieldNames ? '' : 'defaultUserPermissions', $pb.PbFieldType.KE,
+        valueOf: $1.Permission.valueOf,
+        enumValues: $1.Permission.values,
+        defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
+    ..pc<$1.Permission>(
+        12, _omitFieldNames ? '' : 'basicUserPermissions', $pb.PbFieldType.KE,
+        valueOf: $1.Permission.valueOf,
+        enumValues: $1.Permission.values,
+        defaultEnumValue: $1.Permission.PERMISSION_UNKNOWN)
+    ..aOM<FeatureSettings>(20, _omitFieldNames ? '' : 'peopleSettings',
+        subBuilder: FeatureSettings.create)
+    ..aOM<FeatureSettings>(21, _omitFieldNames ? '' : 'groupSettings',
+        subBuilder: FeatureSettings.create)
+    ..aOM<PostSettings>(22, _omitFieldNames ? '' : 'postSettings',
+        subBuilder: PostSettings.create)
+    ..aOM<PostSettings>(23, _omitFieldNames ? '' : 'eventSettings',
+        subBuilder: PostSettings.create)
+    ..aOM<FeatureSettings>(24, _omitFieldNames ? '' : 'mediaSettings',
+        subBuilder: FeatureSettings.create)
+    ..aOM<ExternalCDNConfig>(90, _omitFieldNames ? '' : 'externalCdnConfig',
+        subBuilder: ExternalCDNConfig.create)
+    ..aE<PrivateUserStrategy>(100, _omitFieldNames ? '' : 'privateUserStrategy',
+        enumValues: PrivateUserStrategy.values)
+    ..pc<AuthenticationFeature>(101,
+        _omitFieldNames ? '' : 'authenticationFeatures', $pb.PbFieldType.KE,
+        valueOf: AuthenticationFeature.valueOf,
+        enumValues: AuthenticationFeature.values,
+        defaultEnumValue: AuthenticationFeature.AUTHENTICATION_FEATURE_UNKNOWN)
+    ..aOM<WebPushConfig>(110, _omitFieldNames ? '' : 'webPushConfig',
+        subBuilder: WebPushConfig.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerConfiguration clone() => ServerConfiguration()..mergeFromMessage(this);
+  ServerConfiguration clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerConfiguration copyWith(void Function(ServerConfiguration) updates) => super.copyWith((message) => updates(message as ServerConfiguration)) as ServerConfiguration;
+  ServerConfiguration copyWith(void Function(ServerConfiguration) updates) =>
+      super.copyWith((message) => updates(message as ServerConfiguration))
+          as ServerConfiguration;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -94,9 +133,9 @@ class ServerConfiguration extends $pb.GeneratedMessage {
   static ServerConfiguration create() => ServerConfiguration._();
   @$core.override
   ServerConfiguration createEmptyInstance() => create();
-  static $pb.PbList<ServerConfiguration> createRepeated() => $pb.PbList<ServerConfiguration>();
   @$core.pragma('dart2js:noInline')
-  static ServerConfiguration getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerConfiguration>(create);
+  static ServerConfiguration getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServerConfiguration>(create);
   static ServerConfiguration? _defaultInstance;
 
   /// The name, description, logo, color scheme, etc. of the server.
@@ -277,31 +316,41 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
     if (frontendHost != null) result.frontendHost = frontendHost;
     if (backendHost != null) result.backendHost = backendHost;
     if (secureMedia != null) result.secureMedia = secureMedia;
-    if (mediaIpv4Allowlist != null) result.mediaIpv4Allowlist = mediaIpv4Allowlist;
-    if (mediaIpv6Allowlist != null) result.mediaIpv6Allowlist = mediaIpv6Allowlist;
+    if (mediaIpv4Allowlist != null)
+      result.mediaIpv4Allowlist = mediaIpv4Allowlist;
+    if (mediaIpv6Allowlist != null)
+      result.mediaIpv6Allowlist = mediaIpv6Allowlist;
     if (cdnGrpc != null) result.cdnGrpc = cdnGrpc;
     return result;
   }
 
   ExternalCDNConfig._();
 
-  factory ExternalCDNConfig.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory ExternalCDNConfig.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory ExternalCDNConfig.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ExternalCDNConfig.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ExternalCDNConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ExternalCDNConfig',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'frontendHost')
     ..aOS(2, _omitFieldNames ? '' : 'backendHost')
     ..aOB(3, _omitFieldNames ? '' : 'secureMedia')
     ..aOS(4, _omitFieldNames ? '' : 'mediaIpv4Allowlist')
     ..aOS(5, _omitFieldNames ? '' : 'mediaIpv6Allowlist')
     ..aOB(6, _omitFieldNames ? '' : 'cdnGrpc')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ExternalCDNConfig clone() => ExternalCDNConfig()..mergeFromMessage(this);
+  ExternalCDNConfig clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ExternalCDNConfig copyWith(void Function(ExternalCDNConfig) updates) => super.copyWith((message) => updates(message as ExternalCDNConfig)) as ExternalCDNConfig;
+  ExternalCDNConfig copyWith(void Function(ExternalCDNConfig) updates) =>
+      super.copyWith((message) => updates(message as ExternalCDNConfig))
+          as ExternalCDNConfig;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -310,9 +359,9 @@ class ExternalCDNConfig extends $pb.GeneratedMessage {
   static ExternalCDNConfig create() => ExternalCDNConfig._();
   @$core.override
   ExternalCDNConfig createEmptyInstance() => create();
-  static $pb.PbList<ExternalCDNConfig> createRepeated() => $pb.PbList<ExternalCDNConfig>();
   @$core.pragma('dart2js:noInline')
-  static ExternalCDNConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ExternalCDNConfig>(create);
+  static ExternalCDNConfig getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ExternalCDNConfig>(create);
   static ExternalCDNConfig? _defaultInstance;
 
   /// The domain where the frontend is hosted. For example, jonline.io. Typically
@@ -408,21 +457,31 @@ class FeatureSettings extends $pb.GeneratedMessage {
 
   FeatureSettings._();
 
-  factory FeatureSettings.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory FeatureSettings.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory FeatureSettings.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory FeatureSettings.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FeatureSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'FeatureSettings',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $2.Moderation.MODERATION_UNKNOWN, valueOf: $2.Moderation.valueOf, enumValues: $2.Moderation.values)
-    ..e<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $2.Visibility.VISIBILITY_UNKNOWN, valueOf: $2.Visibility.valueOf, enumValues: $2.Visibility.values)
+    ..aE<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration',
+        enumValues: $2.Moderation.values)
+    ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
+        enumValues: $2.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'customTitle')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FeatureSettings clone() => FeatureSettings()..mergeFromMessage(this);
+  FeatureSettings clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  FeatureSettings copyWith(void Function(FeatureSettings) updates) => super.copyWith((message) => updates(message as FeatureSettings)) as FeatureSettings;
+  FeatureSettings copyWith(void Function(FeatureSettings) updates) =>
+      super.copyWith((message) => updates(message as FeatureSettings))
+          as FeatureSettings;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -431,9 +490,9 @@ class FeatureSettings extends $pb.GeneratedMessage {
   static FeatureSettings create() => FeatureSettings._();
   @$core.override
   FeatureSettings createEmptyInstance() => create();
-  static $pb.PbList<FeatureSettings> createRepeated() => $pb.PbList<FeatureSettings>();
   @$core.pragma('dart2js:noInline')
-  static FeatureSettings getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FeatureSettings>(create);
+  static FeatureSettings getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<FeatureSettings>(create);
   static FeatureSettings? _defaultInstance;
 
   /// Hide the Posts or Events tab from the user with this flag.
@@ -505,22 +564,32 @@ class PostSettings extends $pb.GeneratedMessage {
 
   PostSettings._();
 
-  factory PostSettings.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory PostSettings.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory PostSettings.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory PostSettings.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'PostSettings', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'PostSettings',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOB(1, _omitFieldNames ? '' : 'visible')
-    ..e<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration', $pb.PbFieldType.OE, defaultOrMaker: $2.Moderation.MODERATION_UNKNOWN, valueOf: $2.Moderation.valueOf, enumValues: $2.Moderation.values)
-    ..e<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility', $pb.PbFieldType.OE, defaultOrMaker: $2.Visibility.VISIBILITY_UNKNOWN, valueOf: $2.Visibility.valueOf, enumValues: $2.Visibility.values)
+    ..aE<$2.Moderation>(2, _omitFieldNames ? '' : 'defaultModeration',
+        enumValues: $2.Moderation.values)
+    ..aE<$2.Visibility>(3, _omitFieldNames ? '' : 'defaultVisibility',
+        enumValues: $2.Visibility.values)
     ..aOS(4, _omitFieldNames ? '' : 'customTitle')
     ..aOB(5, _omitFieldNames ? '' : 'enableReplies')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  PostSettings clone() => PostSettings()..mergeFromMessage(this);
+  PostSettings clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  PostSettings copyWith(void Function(PostSettings) updates) => super.copyWith((message) => updates(message as PostSettings)) as PostSettings;
+  PostSettings copyWith(void Function(PostSettings) updates) =>
+      super.copyWith((message) => updates(message as PostSettings))
+          as PostSettings;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -529,9 +598,9 @@ class PostSettings extends $pb.GeneratedMessage {
   static PostSettings create() => PostSettings._();
   @$core.override
   PostSettings createEmptyInstance() => create();
-  static $pb.PbList<PostSettings> createRepeated() => $pb.PbList<PostSettings>();
   @$core.pragma('dart2js:noInline')
-  static PostSettings getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PostSettings>(create);
+  static PostSettings getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<PostSettings>(create);
   static PostSettings? _defaultInstance;
 
   /// Hide the Posts or Events tab from the user with this flag.
@@ -605,7 +674,7 @@ class ServerInfo extends $pb.GeneratedMessage {
     WebUserInterface? webUserInterface,
     ServerColors? colors,
     $core.String? mediaPolicy,
-  @$core.Deprecated('This field is deprecated.')
+    @$core.Deprecated('This field is deprecated.')
     $core.Iterable<$core.String>? recommendedServerHosts,
   }) {
     final result = create();
@@ -617,32 +686,43 @@ class ServerInfo extends $pb.GeneratedMessage {
     if (webUserInterface != null) result.webUserInterface = webUserInterface;
     if (colors != null) result.colors = colors;
     if (mediaPolicy != null) result.mediaPolicy = mediaPolicy;
-    if (recommendedServerHosts != null) result.recommendedServerHosts.addAll(recommendedServerHosts);
+    if (recommendedServerHosts != null)
+      result.recommendedServerHosts.addAll(recommendedServerHosts);
     return result;
   }
 
   ServerInfo._();
 
-  factory ServerInfo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory ServerInfo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory ServerInfo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ServerInfo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerInfo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerInfo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'name')
     ..aOS(2, _omitFieldNames ? '' : 'shortName')
     ..aOS(3, _omitFieldNames ? '' : 'description')
     ..aOS(4, _omitFieldNames ? '' : 'privacyPolicy')
-    ..aOM<ServerLogo>(5, _omitFieldNames ? '' : 'logo', subBuilder: ServerLogo.create)
-    ..e<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface', $pb.PbFieldType.OE, defaultOrMaker: WebUserInterface.FLUTTER_WEB, valueOf: WebUserInterface.valueOf, enumValues: WebUserInterface.values)
-    ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors', subBuilder: ServerColors.create)
+    ..aOM<ServerLogo>(5, _omitFieldNames ? '' : 'logo',
+        subBuilder: ServerLogo.create)
+    ..aE<WebUserInterface>(6, _omitFieldNames ? '' : 'webUserInterface',
+        enumValues: WebUserInterface.values)
+    ..aOM<ServerColors>(7, _omitFieldNames ? '' : 'colors',
+        subBuilder: ServerColors.create)
     ..aOS(8, _omitFieldNames ? '' : 'mediaPolicy')
     ..pPS(9, _omitFieldNames ? '' : 'recommendedServerHosts')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerInfo clone() => ServerInfo()..mergeFromMessage(this);
+  ServerInfo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerInfo copyWith(void Function(ServerInfo) updates) => super.copyWith((message) => updates(message as ServerInfo)) as ServerInfo;
+  ServerInfo copyWith(void Function(ServerInfo) updates) =>
+      super.copyWith((message) => updates(message as ServerInfo)) as ServerInfo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -651,9 +731,9 @@ class ServerInfo extends $pb.GeneratedMessage {
   static ServerInfo create() => ServerInfo._();
   @$core.override
   ServerInfo createEmptyInstance() => create();
-  static $pb.PbList<ServerInfo> createRepeated() => $pb.PbList<ServerInfo>();
   @$core.pragma('dart2js:noInline')
-  static ServerInfo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerInfo>(create);
+  static ServerInfo getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServerInfo>(create);
   static ServerInfo? _defaultInstance;
 
   /// Name of the server.
@@ -766,21 +846,30 @@ class ServerLogo extends $pb.GeneratedMessage {
 
   ServerLogo._();
 
-  factory ServerLogo.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory ServerLogo.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory ServerLogo.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ServerLogo.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerLogo', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerLogo',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'squareMediaId', protoName: 'squareMediaId')
-    ..aOS(2, _omitFieldNames ? '' : 'squareMediaIdDark', protoName: 'squareMediaIdDark')
+    ..aOS(2, _omitFieldNames ? '' : 'squareMediaIdDark',
+        protoName: 'squareMediaIdDark')
     ..aOS(3, _omitFieldNames ? '' : 'wideMediaId', protoName: 'wideMediaId')
-    ..aOS(4, _omitFieldNames ? '' : 'wideMediaIdDark', protoName: 'wideMediaIdDark')
-    ..hasRequiredFields = false
-  ;
+    ..aOS(4, _omitFieldNames ? '' : 'wideMediaIdDark',
+        protoName: 'wideMediaIdDark')
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerLogo clone() => ServerLogo()..mergeFromMessage(this);
+  ServerLogo clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerLogo copyWith(void Function(ServerLogo) updates) => super.copyWith((message) => updates(message as ServerLogo)) as ServerLogo;
+  ServerLogo copyWith(void Function(ServerLogo) updates) =>
+      super.copyWith((message) => updates(message as ServerLogo)) as ServerLogo;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -789,9 +878,9 @@ class ServerLogo extends $pb.GeneratedMessage {
   static ServerLogo create() => ServerLogo._();
   @$core.override
   ServerLogo createEmptyInstance() => create();
-  static $pb.PbList<ServerLogo> createRepeated() => $pb.PbList<ServerLogo>();
   @$core.pragma('dart2js:noInline')
-  static ServerLogo getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerLogo>(create);
+  static ServerLogo getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServerLogo>(create);
   static ServerLogo? _defaultInstance;
 
   /// The media ID for the square logo.
@@ -855,22 +944,30 @@ class ServerColors extends $pb.GeneratedMessage {
 
   ServerColors._();
 
-  factory ServerColors.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory ServerColors.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory ServerColors.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory ServerColors.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'ServerColors', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..a<$core.int>(1, _omitFieldNames ? '' : 'primary', $pb.PbFieldType.OU3)
-    ..a<$core.int>(2, _omitFieldNames ? '' : 'navigation', $pb.PbFieldType.OU3)
-    ..a<$core.int>(3, _omitFieldNames ? '' : 'author', $pb.PbFieldType.OU3)
-    ..a<$core.int>(4, _omitFieldNames ? '' : 'admin', $pb.PbFieldType.OU3)
-    ..a<$core.int>(5, _omitFieldNames ? '' : 'moderator', $pb.PbFieldType.OU3)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'ServerColors',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..aI(1, _omitFieldNames ? '' : 'primary', fieldType: $pb.PbFieldType.OU3)
+    ..aI(2, _omitFieldNames ? '' : 'navigation', fieldType: $pb.PbFieldType.OU3)
+    ..aI(3, _omitFieldNames ? '' : 'author', fieldType: $pb.PbFieldType.OU3)
+    ..aI(4, _omitFieldNames ? '' : 'admin', fieldType: $pb.PbFieldType.OU3)
+    ..aI(5, _omitFieldNames ? '' : 'moderator', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerColors clone() => ServerColors()..mergeFromMessage(this);
+  ServerColors clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  ServerColors copyWith(void Function(ServerColors) updates) => super.copyWith((message) => updates(message as ServerColors)) as ServerColors;
+  ServerColors copyWith(void Function(ServerColors) updates) =>
+      super.copyWith((message) => updates(message as ServerColors))
+          as ServerColors;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -879,9 +976,9 @@ class ServerColors extends $pb.GeneratedMessage {
   static ServerColors create() => ServerColors._();
   @$core.override
   ServerColors createEmptyInstance() => create();
-  static $pb.PbList<ServerColors> createRepeated() => $pb.PbList<ServerColors>();
   @$core.pragma('dart2js:noInline')
-  static ServerColors getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<ServerColors>(create);
+  static ServerColors getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<ServerColors>(create);
   static ServerColors? _defaultInstance;
 
   /// App Bar/primary accent color.
@@ -949,19 +1046,27 @@ class WebPushConfig extends $pb.GeneratedMessage {
 
   WebPushConfig._();
 
-  factory WebPushConfig.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory WebPushConfig.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory WebPushConfig.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory WebPushConfig.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'WebPushConfig', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'WebPushConfig',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'publicVapidKey')
     ..aOS(2, _omitFieldNames ? '' : 'privateVapidKey')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  WebPushConfig clone() => WebPushConfig()..mergeFromMessage(this);
+  WebPushConfig clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  WebPushConfig copyWith(void Function(WebPushConfig) updates) => super.copyWith((message) => updates(message as WebPushConfig)) as WebPushConfig;
+  WebPushConfig copyWith(void Function(WebPushConfig) updates) =>
+      super.copyWith((message) => updates(message as WebPushConfig))
+          as WebPushConfig;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -970,9 +1075,9 @@ class WebPushConfig extends $pb.GeneratedMessage {
   static WebPushConfig create() => WebPushConfig._();
   @$core.override
   WebPushConfig createEmptyInstance() => create();
-  static $pb.PbList<WebPushConfig> createRepeated() => $pb.PbList<WebPushConfig>();
   @$core.pragma('dart2js:noInline')
-  static WebPushConfig getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<WebPushConfig>(create);
+  static WebPushConfig getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<WebPushConfig>(create);
   static WebPushConfig? _defaultInstance;
 
   /// Public VAPID key for the server.
@@ -997,6 +1102,7 @@ class WebPushConfig extends $pb.GeneratedMessage {
   void clearPrivateVapidKey() => $_clearField(2);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

@@ -8,14 +8,15 @@
 // ignore_for_file: constant_identifier_names
 // ignore_for_file: curly_braces_in_flow_control_structures
 // ignore_for_file: deprecated_member_use_from_same_package, library_prefixes
-// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, prefer_relative_imports
 
 import 'dart:core' as $core;
 
 import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/well_known_types/google/protobuf/timestamp.pb.dart'
+    as $2;
 
-import 'google/protobuf/timestamp.pb.dart' as $2;
 import 'media.pb.dart' as $1;
 import 'posts.pbenum.dart';
 import 'users.pb.dart' as $0;
@@ -66,25 +67,35 @@ class GetPostsRequest extends $pb.GeneratedMessage {
 
   GetPostsRequest._();
 
-  factory GetPostsRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetPostsRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetPostsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetPostsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPostsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPostsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'postId')
     ..aOS(2, _omitFieldNames ? '' : 'authorUserId')
     ..aOS(3, _omitFieldNames ? '' : 'groupId')
-    ..a<$core.int>(4, _omitFieldNames ? '' : 'replyDepth', $pb.PbFieldType.OU3)
-    ..e<PostContext>(5, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
+    ..aI(4, _omitFieldNames ? '' : 'replyDepth', fieldType: $pb.PbFieldType.OU3)
+    ..aE<PostContext>(5, _omitFieldNames ? '' : 'context',
+        enumValues: PostContext.values)
     ..aOS(9, _omitFieldNames ? '' : 'postIds')
-    ..e<PostListingType>(10, _omitFieldNames ? '' : 'listingType', $pb.PbFieldType.OE, defaultOrMaker: PostListingType.ALL_ACCESSIBLE_POSTS, valueOf: PostListingType.valueOf, enumValues: PostListingType.values)
-    ..a<$core.int>(15, _omitFieldNames ? '' : 'page', $pb.PbFieldType.OU3)
-    ..hasRequiredFields = false
-  ;
+    ..aE<PostListingType>(10, _omitFieldNames ? '' : 'listingType',
+        enumValues: PostListingType.values)
+    ..aI(15, _omitFieldNames ? '' : 'page', fieldType: $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetPostsRequest clone() => GetPostsRequest()..mergeFromMessage(this);
+  GetPostsRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetPostsRequest copyWith(void Function(GetPostsRequest) updates) => super.copyWith((message) => updates(message as GetPostsRequest)) as GetPostsRequest;
+  GetPostsRequest copyWith(void Function(GetPostsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetPostsRequest))
+          as GetPostsRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -93,9 +104,9 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   static GetPostsRequest create() => GetPostsRequest._();
   @$core.override
   GetPostsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetPostsRequest> createRepeated() => $pb.PbList<GetPostsRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetPostsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPostsRequest>(create);
+  static GetPostsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPostsRequest>(create);
   static GetPostsRequest? _defaultInstance;
 
   /// Returns the single post with the given ID.
@@ -191,18 +202,26 @@ class GetPostsResponse extends $pb.GeneratedMessage {
 
   GetPostsResponse._();
 
-  factory GetPostsResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetPostsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetPostsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetPostsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetPostsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<Post>(1, _omitFieldNames ? '' : 'posts', $pb.PbFieldType.PM, subBuilder: Post.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetPostsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<Post>(1, _omitFieldNames ? '' : 'posts', subBuilder: Post.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetPostsResponse clone() => GetPostsResponse()..mergeFromMessage(this);
+  GetPostsResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetPostsResponse copyWith(void Function(GetPostsResponse) updates) => super.copyWith((message) => updates(message as GetPostsResponse)) as GetPostsResponse;
+  GetPostsResponse copyWith(void Function(GetPostsResponse) updates) =>
+      super.copyWith((message) => updates(message as GetPostsResponse))
+          as GetPostsResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -211,9 +230,9 @@ class GetPostsResponse extends $pb.GeneratedMessage {
   static GetPostsResponse create() => GetPostsResponse._();
   @$core.override
   GetPostsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetPostsResponse> createRepeated() => $pb.PbList<GetPostsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetPostsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetPostsResponse>(create);
+  static GetPostsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetPostsResponse>(create);
   static GetPostsResponse? _defaultInstance;
 
   /// The posts returned by the request.
@@ -277,46 +296,64 @@ class Post extends $pb.GeneratedMessage {
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (publishedAt != null) result.publishedAt = publishedAt;
     if (lastActivityAt != null) result.lastActivityAt = lastActivityAt;
-    if (unauthenticatedStarCount != null) result.unauthenticatedStarCount = unauthenticatedStarCount;
+    if (unauthenticatedStarCount != null)
+      result.unauthenticatedStarCount = unauthenticatedStarCount;
     return result;
   }
 
   Post._();
 
-  factory Post.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory Post.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory Post.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory Post.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Post', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'Post',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'id')
-    ..aOM<$0.Author>(2, _omitFieldNames ? '' : 'author', subBuilder: $0.Author.create)
+    ..aOM<$0.Author>(2, _omitFieldNames ? '' : 'author',
+        subBuilder: $0.Author.create)
     ..aOS(3, _omitFieldNames ? '' : 'replyToPostId')
     ..aOS(4, _omitFieldNames ? '' : 'title')
     ..aOS(5, _omitFieldNames ? '' : 'link')
     ..aOS(6, _omitFieldNames ? '' : 'content')
-    ..a<$core.int>(7, _omitFieldNames ? '' : 'responseCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(8, _omitFieldNames ? '' : 'replyCount', $pb.PbFieldType.O3)
-    ..a<$core.int>(9, _omitFieldNames ? '' : 'groupCount', $pb.PbFieldType.O3)
-    ..pc<$1.MediaReference>(10, _omitFieldNames ? '' : 'media', $pb.PbFieldType.PM, subBuilder: $1.MediaReference.create)
+    ..aI(7, _omitFieldNames ? '' : 'responseCount')
+    ..aI(8, _omitFieldNames ? '' : 'replyCount')
+    ..aI(9, _omitFieldNames ? '' : 'groupCount')
+    ..pPM<$1.MediaReference>(10, _omitFieldNames ? '' : 'media',
+        subBuilder: $1.MediaReference.create)
     ..aOB(11, _omitFieldNames ? '' : 'mediaGenerated')
     ..aOB(12, _omitFieldNames ? '' : 'embedLink')
     ..aOB(13, _omitFieldNames ? '' : 'shareable')
-    ..e<PostContext>(14, _omitFieldNames ? '' : 'context', $pb.PbFieldType.OE, defaultOrMaker: PostContext.POST, valueOf: PostContext.valueOf, enumValues: PostContext.values)
-    ..e<$3.Visibility>(15, _omitFieldNames ? '' : 'visibility', $pb.PbFieldType.OE, defaultOrMaker: $3.Visibility.VISIBILITY_UNKNOWN, valueOf: $3.Visibility.valueOf, enumValues: $3.Visibility.values)
-    ..e<$3.Moderation>(16, _omitFieldNames ? '' : 'moderation', $pb.PbFieldType.OE, defaultOrMaker: $3.Moderation.MODERATION_UNKNOWN, valueOf: $3.Moderation.valueOf, enumValues: $3.Moderation.values)
-    ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost', subBuilder: GroupPost.create)
-    ..pc<Post>(19, _omitFieldNames ? '' : 'replies', $pb.PbFieldType.PM, subBuilder: Post.create)
-    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$2.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt', subBuilder: $2.Timestamp.create)
+    ..aE<PostContext>(14, _omitFieldNames ? '' : 'context',
+        enumValues: PostContext.values)
+    ..aE<$3.Visibility>(15, _omitFieldNames ? '' : 'visibility',
+        enumValues: $3.Visibility.values)
+    ..aE<$3.Moderation>(16, _omitFieldNames ? '' : 'moderation',
+        enumValues: $3.Moderation.values)
+    ..aOM<GroupPost>(18, _omitFieldNames ? '' : 'currentGroupPost',
+        subBuilder: GroupPost.create)
+    ..pPM<Post>(19, _omitFieldNames ? '' : 'replies', subBuilder: Post.create)
+    ..aOM<$2.Timestamp>(20, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(21, _omitFieldNames ? '' : 'updatedAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(22, _omitFieldNames ? '' : 'publishedAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$2.Timestamp>(23, _omitFieldNames ? '' : 'lastActivityAt',
+        subBuilder: $2.Timestamp.create)
     ..aInt64(24, _omitFieldNames ? '' : 'unauthenticatedStarCount')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Post clone() => Post()..mergeFromMessage(this);
+  Post clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  Post copyWith(void Function(Post) updates) => super.copyWith((message) => updates(message as Post)) as Post;
+  Post copyWith(void Function(Post) updates) =>
+      super.copyWith((message) => updates(message as Post)) as Post;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -325,9 +362,9 @@ class Post extends $pb.GeneratedMessage {
   static Post create() => Post._();
   @$core.override
   Post createEmptyInstance() => create();
-  static $pb.PbList<Post> createRepeated() => $pb.PbList<Post>();
   @$core.pragma('dart2js:noInline')
-  static Post getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Post>(create);
+  static Post getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Post>(create);
   static Post? _defaultInstance;
 
   /// Unique ID of the post.
@@ -574,8 +611,7 @@ class GroupPost extends $pb.GeneratedMessage {
   factory GroupPost({
     $core.String? groupId,
     $core.String? postId,
-  @$core.Deprecated('This field is deprecated.')
-    $core.String? userId,
+    @$core.Deprecated('This field is deprecated.') $core.String? userId,
     $3.Moderation? groupModeration,
     $2.Timestamp? createdAt,
     $0.Author? sharedBy,
@@ -592,23 +628,33 @@ class GroupPost extends $pb.GeneratedMessage {
 
   GroupPost._();
 
-  factory GroupPost.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GroupPost.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GroupPost.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GroupPost.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GroupPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GroupPost',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'groupId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
     ..aOS(3, _omitFieldNames ? '' : 'userId')
-    ..e<$3.Moderation>(4, _omitFieldNames ? '' : 'groupModeration', $pb.PbFieldType.OE, defaultOrMaker: $3.Moderation.MODERATION_UNKNOWN, valueOf: $3.Moderation.valueOf, enumValues: $3.Moderation.values)
-    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..aOM<$0.Author>(6, _omitFieldNames ? '' : 'sharedBy', subBuilder: $0.Author.create)
-    ..hasRequiredFields = false
-  ;
+    ..aE<$3.Moderation>(4, _omitFieldNames ? '' : 'groupModeration',
+        enumValues: $3.Moderation.values)
+    ..aOM<$2.Timestamp>(5, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..aOM<$0.Author>(6, _omitFieldNames ? '' : 'sharedBy',
+        subBuilder: $0.Author.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GroupPost clone() => GroupPost()..mergeFromMessage(this);
+  GroupPost clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GroupPost copyWith(void Function(GroupPost) updates) => super.copyWith((message) => updates(message as GroupPost)) as GroupPost;
+  GroupPost copyWith(void Function(GroupPost) updates) =>
+      super.copyWith((message) => updates(message as GroupPost)) as GroupPost;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -617,9 +663,9 @@ class GroupPost extends $pb.GeneratedMessage {
   static GroupPost create() => GroupPost._();
   @$core.override
   GroupPost createEmptyInstance() => create();
-  static $pb.PbList<GroupPost> createRepeated() => $pb.PbList<GroupPost>();
   @$core.pragma('dart2js:noInline')
-  static GroupPost getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GroupPost>(create);
+  static GroupPost getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GroupPost>(create);
   static GroupPost? _defaultInstance;
 
   /// The ID of the group this post is in.
@@ -708,20 +754,28 @@ class UserPost extends $pb.GeneratedMessage {
 
   UserPost._();
 
-  factory UserPost.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory UserPost.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory UserPost.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory UserPost.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UserPost', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'UserPost',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'userId')
     ..aOS(2, _omitFieldNames ? '' : 'postId')
-    ..aOM<$2.Timestamp>(3, _omitFieldNames ? '' : 'createdAt', subBuilder: $2.Timestamp.create)
-    ..hasRequiredFields = false
-  ;
+    ..aOM<$2.Timestamp>(3, _omitFieldNames ? '' : 'createdAt',
+        subBuilder: $2.Timestamp.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserPost clone() => UserPost()..mergeFromMessage(this);
+  UserPost clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  UserPost copyWith(void Function(UserPost) updates) => super.copyWith((message) => updates(message as UserPost)) as UserPost;
+  UserPost copyWith(void Function(UserPost) updates) =>
+      super.copyWith((message) => updates(message as UserPost)) as UserPost;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -730,9 +784,9 @@ class UserPost extends $pb.GeneratedMessage {
   static UserPost create() => UserPost._();
   @$core.override
   UserPost createEmptyInstance() => create();
-  static $pb.PbList<UserPost> createRepeated() => $pb.PbList<UserPost>();
   @$core.pragma('dart2js:noInline')
-  static UserPost getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserPost>(create);
+  static UserPost getDefault() =>
+      _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UserPost>(create);
   static UserPost? _defaultInstance;
 
   /// The ID of the user the post is shared with.
@@ -782,19 +836,27 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
 
   GetGroupPostsRequest._();
 
-  factory GetGroupPostsRequest.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetGroupPostsRequest.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetGroupPostsRequest.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetGroupPostsRequest.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupPostsRequest', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetGroupPostsRequest',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'postId')
     ..aOS(2, _omitFieldNames ? '' : 'groupId')
-    ..hasRequiredFields = false
-  ;
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupPostsRequest clone() => GetGroupPostsRequest()..mergeFromMessage(this);
+  GetGroupPostsRequest clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupPostsRequest copyWith(void Function(GetGroupPostsRequest) updates) => super.copyWith((message) => updates(message as GetGroupPostsRequest)) as GetGroupPostsRequest;
+  GetGroupPostsRequest copyWith(void Function(GetGroupPostsRequest) updates) =>
+      super.copyWith((message) => updates(message as GetGroupPostsRequest))
+          as GetGroupPostsRequest;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -803,9 +865,9 @@ class GetGroupPostsRequest extends $pb.GeneratedMessage {
   static GetGroupPostsRequest create() => GetGroupPostsRequest._();
   @$core.override
   GetGroupPostsRequest createEmptyInstance() => create();
-  static $pb.PbList<GetGroupPostsRequest> createRepeated() => $pb.PbList<GetGroupPostsRequest>();
   @$core.pragma('dart2js:noInline')
-  static GetGroupPostsRequest getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupPostsRequest>(create);
+  static GetGroupPostsRequest getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetGroupPostsRequest>(create);
   static GetGroupPostsRequest? _defaultInstance;
 
   /// The ID of the post to get `GroupPost`s for.
@@ -841,18 +903,28 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
 
   GetGroupPostsResponse._();
 
-  factory GetGroupPostsResponse.fromBuffer($core.List<$core.int> data, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(data, registry);
-  factory GetGroupPostsResponse.fromJson($core.String json, [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(json, registry);
+  factory GetGroupPostsResponse.fromBuffer($core.List<$core.int> data,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromBuffer(data, registry);
+  factory GetGroupPostsResponse.fromJson($core.String json,
+          [$pb.ExtensionRegistry registry = $pb.ExtensionRegistry.EMPTY]) =>
+      create()..mergeFromJson(json, registry);
 
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'GetGroupPostsResponse', package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'), createEmptyInstance: create)
-    ..pc<GroupPost>(1, _omitFieldNames ? '' : 'groupPosts', $pb.PbFieldType.PM, subBuilder: GroupPost.create)
-    ..hasRequiredFields = false
-  ;
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(
+      _omitMessageNames ? '' : 'GetGroupPostsResponse',
+      package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
+      createEmptyInstance: create)
+    ..pPM<GroupPost>(1, _omitFieldNames ? '' : 'groupPosts',
+        subBuilder: GroupPost.create)
+    ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupPostsResponse clone() => GetGroupPostsResponse()..mergeFromMessage(this);
+  GetGroupPostsResponse clone() => deepCopy();
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
-  GetGroupPostsResponse copyWith(void Function(GetGroupPostsResponse) updates) => super.copyWith((message) => updates(message as GetGroupPostsResponse)) as GetGroupPostsResponse;
+  GetGroupPostsResponse copyWith(
+          void Function(GetGroupPostsResponse) updates) =>
+      super.copyWith((message) => updates(message as GetGroupPostsResponse))
+          as GetGroupPostsResponse;
 
   @$core.override
   $pb.BuilderInfo get info_ => _i;
@@ -861,9 +933,9 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
   static GetGroupPostsResponse create() => GetGroupPostsResponse._();
   @$core.override
   GetGroupPostsResponse createEmptyInstance() => create();
-  static $pb.PbList<GetGroupPostsResponse> createRepeated() => $pb.PbList<GetGroupPostsResponse>();
   @$core.pragma('dart2js:noInline')
-  static GetGroupPostsResponse getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<GetGroupPostsResponse>(create);
+  static GetGroupPostsResponse getDefault() => _defaultInstance ??=
+      $pb.GeneratedMessage.$_defaultFor<GetGroupPostsResponse>(create);
   static GetGroupPostsResponse? _defaultInstance;
 
   /// The `GroupPost`s for the given `Post` or `Group`.
@@ -871,6 +943,7 @@ class GetGroupPostsResponse extends $pb.GeneratedMessage {
   $pb.PbList<GroupPost> get groupPosts => $_getList(0);
 }
 
-
-const $core.bool _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
-const $core.bool _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+const $core.bool _omitFieldNames =
+    $core.bool.fromEnvironment('protobuf.omit_field_names');
+const $core.bool _omitMessageNames =
+    $core.bool.fromEnvironment('protobuf.omit_message_names');

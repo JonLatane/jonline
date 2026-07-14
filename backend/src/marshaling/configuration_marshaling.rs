@@ -89,10 +89,11 @@ impl ToProtoServerConfiguration for models::ServerConfiguration {
     }
 }
 
-pub const ALL_WEB_UIS: [WebUserInterface; 3] = [
+pub const ALL_WEB_UIS: [WebUserInterface; 4] = [
     WebUserInterface::FlutterWeb,
     WebUserInterface::HandlebarsTemplates,
     WebUserInterface::ReactTamagui,
+    WebUserInterface::ElmSpa,
 ];
 
 pub trait ToProtoWebUI {

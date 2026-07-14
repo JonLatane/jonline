@@ -1,10 +1,7 @@
 use lazy_static::lazy_static;
 
 use rocket::{
-    http::{
-        uri::{Origin, Path},
-        Status,
-    },
+    http::{uri::Origin, Status},
     routes, Route, State,
 };
 use rocket_cache_response::CacheResponse;
@@ -20,7 +17,10 @@ use crate::{
     protos::{GetEventsRequest, Post},
 };
 
-use super::{tamagui_file_or_username, tamagui_path, JonlineResponder, JonlineSummary};
+use super::{
+    is_tamagui_prefixed, strip_tamagui_prefix, tamagui_file_or_username, tamagui_path,
+    JonlineResponder, JonlineSummary,
+};
 
 lazy_static! {
     pub static ref TAMAGUI_PAGES: Vec<Route> = routes![
@@ -53,8 +53,9 @@ macro_rules! webui {
     // (@inner ;) => { {print!(";");} };
     ($name:tt, $web_route:tt, $html_path:literal) => {
         #[rocket::get($web_route)]
-        pub async fn $name() -> CacheResponse<Result<JonlineResponder, Status>> {
-            tamagui_path($html_path, None).await
+        pub async fn $name(origin: &Origin<'_>) -> CacheResponse<Result<JonlineResponder, Status>> {
+            let is_tamagui = is_tamagui_prefixed(origin.path().as_str());
+            tamagui_path($html_path, None, is_tamagui).await
         }
     };
     // (@inner $summary:stmt) => { $summary };
@@ -83,10 +84,12 @@ macro_rules! webui {
                 })
                 .square_media_id;
             let server_logo = server_logo_id.map(|id| format!("/media/{}", id));
-            let path = origin.path();
+            let raw_path = origin.path();
+            let is_tamagui = is_tamagui_prefixed(raw_path.as_str());
+            let path = strip_tamagui_prefix(raw_path.as_str());
             let summary: Option<JonlineSummary> =
-                ($summary)(connection, server_name, server_logo, path);
-            tamagui_path($html_path, summary).await
+                ($summary)(connection, server_name, server_logo, &path);
+            tamagui_path($html_path, summary, is_tamagui).await
         }
     };
 }
@@ -98,7 +101,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("Latest | {}", server_name)),
             description: Some("Posts and Events from a Jonline community".to_string()),
@@ -114,7 +117,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("Posts | {}", server_name)),
             description: Some("Posts from a Jonline community".to_string()),
@@ -129,7 +132,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("Events | {}", server_name)),
             description: Some("Searchable, RSVPable Events from a Jonline community".to_string()),
@@ -144,7 +147,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("About Community | {}", server_name)),
             description: Some("Information a Jonline community".to_string()),
@@ -159,7 +162,7 @@ webui!(
     |_connection: PgPooledConnection,
      _server_name: String,
      _server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some("About Jonline".to_string()),
             description: Some(
@@ -176,8 +179,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let post = match federated_path_component(&path, 2) {
+     path: &str| {
+        let post = match federated_path_component(path, 2) {
             Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
             Some(FederatedId::Federated(_, _domain)) => {
                 // let _domain = 
@@ -203,8 +206,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let event = match federated_path_component(&path, 2) {
+     path: &str| {
+        let event = match federated_path_component(path, 2) {
             Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
             Some(FederatedId::Federated(_, _)) => None,
             None => return None,
@@ -229,7 +232,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("People | {}", server_name)),
             description: Some("User listings for a Jonline community".to_string()),
@@ -244,7 +247,7 @@ webui!(
     |_connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some(format!("Follow Requests | {}", server_name)),
             description: None,
@@ -259,8 +262,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
         Some(JonlineSummary {
             title: Some(format!("{}: Latest | {}", group_name, server_name)),
@@ -276,8 +279,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
         Some(JonlineSummary {
             title: Some(format!("{}: Posts | {}", group_name, server_name)),
@@ -293,10 +296,10 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
-        let post = match federated_path_component(&path, 4) {
+        let post = match federated_path_component(path, 4) {
             Some(FederatedId::Local(post_id)) => get_post(post_id, &mut connection),
             Some(FederatedId::Federated(_, _)) => None,
             None => return None,
@@ -319,8 +322,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let shortname = path_component(&path, 2).unwrap();
+     path: &str| {
+        let shortname = path_component(path, 2).unwrap();
         let group_name = rpcs::get_groups(
             crate::protos::GetGroupsRequest {
                 group_shortname: Some(shortname),
@@ -348,10 +351,10 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
-        let event = match federated_path_component(&path, 4) {
+        let event = match federated_path_component(path, 4) {
             Some(FederatedId::Local(instance_id)) => get_event(instance_id, &mut connection),
             Some(FederatedId::Federated(_, _)) => None,
             None => return None,
@@ -374,8 +377,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
         Some(JonlineSummary {
             title: Some(format!("Members | {} | {}", group_name, server_name)),
@@ -391,8 +394,8 @@ webui!(
     |mut connection: PgPooledConnection,
      server_name: String,
      server_logo: Option<String>,
-     path: Path| {
-        let group_name = group_name(&path, &mut connection);
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
 
         Some(JonlineSummary {
             title: Some(format!("{} | Member Details | {}", group_name, server_name)),
@@ -410,7 +413,7 @@ webui!(
     |_connection: PgPooledConnection,
      _server_name: String,
      _server_logo: Option<String>,
-     _path: Path| {
+     _path: &str| {
         Some(JonlineSummary {
             title: Some("Jonline AI Event Importer".to_string()),
             description: Some("AI-powered bulk import of Events for Jonline".to_string()),
@@ -418,8 +421,8 @@ webui!(
         })
     }
 );
-fn group_name(path: &Path, connection: &mut PgPooledConnection) -> String {
-    match federated_path_component(&path, 2) {
+fn group_name(path: &str, connection: &mut PgPooledConnection) -> String {
+    match federated_path_component(path, 2) {
         Some(FederatedId::Local(shortname)) => rpcs::get_groups(
             crate::protos::GetGroupsRequest {
                 group_shortname: Some(shortname.clone()),
@@ -564,7 +567,7 @@ enum FederatedId {
     Federated(String, String),
 }
 
-fn federated_path_component(path: &Path, index: usize) -> Option<FederatedId> {
+fn federated_path_component(path: &str, index: usize) -> Option<FederatedId> {
     let path_component = path_component(path, index);
     match path_component {
         Some(path_component) if path_component.split('@').count() == 1 => {
@@ -580,7 +583,7 @@ fn federated_path_component(path: &Path, index: usize) -> Option<FederatedId> {
     }
 }
 
-fn path_component(path: &Path, index: usize) -> Option<String> {
+fn path_component(path: &str, index: usize) -> Option<String> {
     let path_components = path.split('/').collect_vec();
     if path_components.len() <= index {
         return None;

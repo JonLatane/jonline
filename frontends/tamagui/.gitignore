@@ -20,6 +20,7 @@ node_modules
 /build
 
 apps/next/out
+apps/next/out-tamagui
 
 # debug
 npm-debug.log*

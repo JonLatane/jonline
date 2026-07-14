@@ -91,6 +91,7 @@ local_minio_delete:
 protos:
 	cd frontends/flutter && $(MAKE) protos
 	cd frontends/tamagui && yarn protos
+	cd frontends/elm-spa && $(MAKE) protos
 
 # Core release targets (for general use, CI/CD, etc.)
 release_ios:
