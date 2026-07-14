@@ -72,11 +72,37 @@ current server's primary color, with the active page's link picking up the nav c
 instead. All of it reuses the same per-server utility classes the Accounts Panel
 already emits; no new color logic needed.
 
+**A Home feed and Post page that read across every connected server at once.**
+Home fetches each connected server's recent posts independently — authenticated
+if you're signed into that server, anonymous otherwise — and merges them into
+one recency-sorted feed, with each post's card tinted in *its own* server's
+colors (not the browsing server's) so a mixed feed still reads as "which
+server is this from" at a glance. The Post page (`/post/:id`, or
+`/post/:id@host` for a post that's from some other, federated server) will
+connect to that other server on the fly if it isn't already. Comments aren't
+implemented here yet — a full post links out to "View N comments from the
+React app" instead.
+
+**Starring, without accounts.** `StarPost`/`UnstarPost` (see `jonline.proto`)
+are anonymous, friendly counters — the backend keeps no per-user record of who
+starred what. The Elm app fills that gap client-side: which posts you've
+starred is tracked in `localStorage` (`Shared.StarredPostsPanel`), keyed by
+`postId@frontendHost` so posts from different servers can't collide, and
+survives reloads. A **Starred Posts panel**, opened from the nav alongside the
+Accounts/Admin panels, lists every starred post — fetched (and periodically
+re-polled) from whichever server it actually lives on, including servers
+you're not currently signed into.
+
 ## Why Elm
 
-Mostly as an experiment in whether a stricter, smaller-surface-area language changes
-how a non-trivial multi-account/multi-server/permissions app gets built. A few things
-that fell out of that:
+Elm is a serious, production-grade choice here, battle-tested well beyond this
+project. It's also, I'd argue, one of the most promising frontend languages
+for AI-assisted development specifically — precisely *because* of how
+strictly it enforces The Elm Architecture: a codebase where an LLM can't
+quietly corrupt state with a stray mutation or a skipped null check is one it
+can be turned loose on with real confidence in the result. A few things that
+fell out of building a non-trivial multi-account/multi-server/permissions app
+this way:
 
 - No `null`/`undefined` crashes — expired tokens, missing servers, and absent
   permissions are all just values the compiler makes you handle.
@@ -86,6 +112,16 @@ that fell out of that:
 - Nothing here reaches for a state management library, an effects framework, or a
   routing library beyond elm-spa itself — the type system and `Cmd`/`Task` plumbing
   carry the whole thing.
+
+Make no mistake: Elm going from 0.19.1 six years ago to 0.19.2 today — with
+zero security holes, zero app code breaking for six years,
+a 2.4kb runtime, and industry-leading performance the
+whole time (with 20%+ more performance coming in the next release) — is a
+*feature*, not "stagnation" of any sort. While "has lots of updates" is certainly a
+metric you could choose for success, at least for a tool, "doesn't need updates"
+should make a different sort of sense.
+
+The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simply a matter of emitting CSS classes, say, .jonline-io.background-color-primary for a div with `background-color` and `color` set to the `jonline.io` host's primary color and a contrasting text color for it. See below for details.
 
 ## Architecture, briefly
 
@@ -97,6 +133,14 @@ that fell out of that:
   per-account panels, the main-server-switch flag).
 - `Shared/MaybeAccountRequest.elm` — token-expiry-aware request wrapper, decoupled
   from the concrete `Account` type via an extensible record.
+- `Shared/StarredPostsPanel.elm` — the client-only, `localStorage`-persisted
+  starred-posts set, its `StarPost`/`UnstarPost` RPCs, and the nav's Starred
+  Posts panel.
+- `Components/Posts.elm` — shared Post rendering (`postCard`/`postDetail`) and
+  fetch helpers, used by the Home feed, the Post page, and the Starred Posts
+  panel alike.
+- `Pages/Home_.elm` / `Pages/Post/PostId_.elm` — the recency-sorted,
+  multi-server Home feed and the single-post Post page.
 - `UI.elm` / `UI/EmittedStylesheet.elm` / `UI/ServerTheme.elm` — shared layout/nav/panel
   rendering, the emitted per-server CSS, and the color math behind it.
 - `Proto/` — generated gRPC/protobuf bindings (`protoc --elm_out=./src -I../../protos
@@ -124,6 +168,13 @@ instead of threading a `ServerTheme` through as a view-function argument:
 
 This is cheap to regenerate (it's just string-building); the actual expensive
 color math is already cached in `Shared.Branding`/`UI.ServerTheme`.
+
+Posts reuse these same classes, keyed to *the server the post itself is from*
+rather than the server you're currently browsing — a post card in the Home
+feed or Starred Posts panel is tinted with its own server's colors even when
+that's not the "main" server, and its ★ star button fills with that server's
+`primaryAnchorColor` (`.post-star.starred`) when starred, animated via a CSS
+`transition` on toggle.
 
 ## Running locally
 
