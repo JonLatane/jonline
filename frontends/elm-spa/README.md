@@ -121,7 +121,7 @@ whole time (with 20%+ more performance coming in the next release) — is a
 metric you could choose for success, at least for a tool, "doesn't need updates"
 should make a different sort of sense.
 
-The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simply a matter of emitting CSS classes, say, .jonline-io.background-color-primary for a div with `background-color` and `color` set to the `jonline.io` host's primary color and a contrasting text color for it. See below for details.
+The only "creative" thing Jonline's Elm FE does is Emitted Styles. This is simply a matter of emitting CSS classes, say, `.jonline-io.background-color-primary` for a div with `background-color` and `color` set to the `jonline.io` host's primary color and a contrasting text color for it. See below for details.
 
 ## Architecture, briefly
 
