@@ -911,6 +911,15 @@ accountsList shared =
 
         count =
             List.length accounts
+
+        -- Accounts on the main server always sort to the front (see
+        -- `AccountsPanel.sortMainServerAccountsFirst`), so they're exactly
+        -- the leading `mainCount` accounts here -- `accountRow` uses this to
+        -- hide any arrow that would cross that group boundary.
+        mainCount =
+            accounts
+                |> List.filter (\a -> a.server == shared.accountsPanel.mainFrontendHost)
+                |> List.length
     in
     if List.isEmpty accounts then
         div [ class "accounts-empty" ] [ text "No accounts yet." ]
@@ -919,7 +928,7 @@ accountsList shared =
         Html.Keyed.node "div"
             [ classes [ "accounts-list", "flip-animated-column" ] ]
             (List.indexedMap
-                (\index account -> ( AccountsPanel.accountId account, accountRowFlip shared count index account ))
+                (\index account -> ( AccountsPanel.accountId account, accountRowFlip shared count mainCount index account ))
                 accounts
             )
 
@@ -933,8 +942,8 @@ with its *own*, independent reorder-slide `moveAttrs` -- lives one layer
 further in, so the two animations (fade/collapse vs. reorder-slide) apply to
 different elements and never fight over the same `transform`.
 -}
-accountRowFlip : Shared.Model -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
-accountRowFlip shared count index account =
+accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRowFlip shared count mainCount index account =
     let
         flipState =
             Dict.get (AccountsPanel.accountId account) shared.accountsPanel.accountAnimations
@@ -948,7 +957,7 @@ accountRowFlip shared count index account =
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Vertical flipState)
-        [ div pointerEventsAttr [ accountRow shared count index account ] ]
+        [ div pointerEventsAttr [ accountRow shared count mainCount index account ] ]
 
 
 {-| The whole row is tinted with the account's server's `background-color-primary`
@@ -962,9 +971,15 @@ mid-slide after `reorderButtons` moved it (see `UI.Flip.MoveState`,
 `AccountsPanel.moveAnimations`), empty (identity) otherwise. The row's own DOM
 `id` (`AccountsPanel.accountRowDomId`) is what lets `AccountsPanel.update`
 measure its position before/after a reorder to drive that slide.
+
+`mainCount` (see `accountsList`) is how many leading accounts belong to the
+main server -- `canMoveUp`/`canMoveDown` use it to hide (see
+`AccountsPanel.sortMainServerAccountsFirst`'s doc) whichever arrow would
+otherwise move an account across the main/non-main boundary, rather than
+just checking this account's own position against the list's two ends.
 -}
-accountRow : Shared.Model -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
-accountRow shared count index account =
+accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRow shared count mainCount index account =
     let
         accId =
             AccountsPanel.accountId account
@@ -977,6 +992,31 @@ accountRow shared count index account =
                 |> Dict.get accId
                 |> Maybe.map UI.Flip.moveAttributes
                 |> Maybe.withDefault []
+
+        isMainServerAccount =
+            account.server == shared.accountsPanel.mainFrontendHost
+
+        canMoveUp =
+            if isMainServerAccount then
+                index > 0
+
+            else
+                index > mainCount
+
+        canMoveDown =
+            if isMainServerAccount then
+                index < mainCount - 1
+
+            else
+                index < count - 1
+
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Vertical
+                { moveBackward = onClick (Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId))
+                , moveForward = onClick (Shared.AccountsPanelMsg (AccountsPanel.MoveAccountDownClicked accId))
+                , canMoveBackward = canMoveUp
+                , canMoveForward = canMoveDown
+                }
     in
     div
         (id (AccountsPanel.accountRowDomId accId)
@@ -1002,12 +1042,10 @@ accountRow shared count index account =
                     [ text (account.server ++ " | " ++ branding.name) ]
                 ]
             ]
-        , UI.Flip.reorderButtons
-            { moveUp = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId)
-            , moveDown = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountDownClicked accId)
-            , canMoveUp = index > 0
-            , canMoveDown = index < count - 1
-            }
+        , div [ class "reorder-buttons" ]
+            [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveUp ) ] ] [ reorderPair.backward ]
+            , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveDown ) ] ] [ reorderPair.forward ]
+            ]
         , button
             [ class "remove-btn"
             , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
@@ -1497,7 +1535,7 @@ adminAccountPanel shared account =
                 [ text "▾" ]
             ]
         , if isOpen then
-            webUiToggleRow id currentUi
+            webUiToggleRow id account.server currentUi
 
           else
             text ""
@@ -1508,22 +1546,26 @@ adminAccountPanel shared account =
 disabled -- see `WebUserInterface`'s doc comment: it's badly behind React/Elm
 and not meant to be chosen going forward.
 -}
-webUiToggleRow : String -> WebUserInterface -> Html Shared.Msg
-webUiToggleRow id currentUi =
+webUiToggleRow : String -> String -> WebUserInterface -> Html Shared.Msg
+webUiToggleRow id serverHost currentUi =
     div [ class "web-ui-toggle-row" ]
-        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
-        , webUiButton "React" False (currentUi == REACTTAMAGUI) (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
-        , webUiButton "Elm" False (currentUi == ELMSPA) (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
+        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) serverHost (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
+        , webUiButton "React" False (currentUi == REACTTAMAGUI) serverHost (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
+        , webUiButton "Elm" False (currentUi == ELMSPA) serverHost (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
         ]
 
 
-webUiButton : String -> Bool -> Bool -> AccountsPanel.Msg -> Html Shared.Msg
-webUiButton label_ isDisabled isSelected msg =
+{-| When selected, tinted with `serverHost`'s own `background-color-primary`
+(see `UI.EmittedStylesheet`) -- this button is per-account, so it should
+reflect that account's server, not `mainFrontendHost`.
+-}
+webUiButton : String -> Bool -> Bool -> String -> AccountsPanel.Msg -> Html Shared.Msg
+webUiButton label_ isDisabled isSelected serverHost msg =
     button
         [ classes
             ("web-ui-button"
                 :: (if isSelected then
-                        [ "selected" ]
+                        [ serverHost, "background-color-primary" ]
 
                     else
                         []

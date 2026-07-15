@@ -666,12 +666,6 @@ input[disabled] {
   font-size: 0.8rem;
 }
 
-/* .selected's background/border-color come from the emitted
-   `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
-.web-ui-button.selected {
-  color: white;
-}
-
 .host-mismatch-warning {
   cursor: pointer;
   font-size: 1.1rem;
@@ -1086,11 +1080,13 @@ input[disabled] {
   border-radius: 50%;
   background: var(--bg);
   color: var(--fg);
+  opacity: 0.8;
 }
 
 .reorder-btn:hover:not(:disabled) {
   background: var(--fg);
   color: var(--bg);
+  opacity: 1;
 }
 
 .reorder-btn:disabled {

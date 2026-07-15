@@ -56,7 +56,9 @@ css shared =
 {-| Root-element rules driven by `mainFrontendHost`'s theme -- these apply
 app-wide (not scoped to a per-server class) since they stand in for what used
 to be the single, static `--accent` CSS var: every link's color, and the
-"on" color of every toggle switch and every selected `web-ui-button`.
+"on" color of every toggle switch. (A selected `web-ui-button` is tinted with
+its own account's server, via the per-server `background-color-primary`
+utility class below -- see `UI.elm`'s `webUiButton`.)
 
 The one exception is contrast against a switch's own row: an `account-row`
 for an account on `mainFrontendHost` itself is already tinted with that
@@ -76,7 +78,6 @@ mainFrontendServerRules theme accountsPanel =
     String.concat
         [ "a { color: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
-        , ".web-ui-button.selected { background: " ++ theme.primaryAnchorColor ++ "; border-color: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
         ]
 

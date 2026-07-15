@@ -373,6 +373,24 @@ sortMainServerFirst model =
     { model | servers = mainServers ++ otherServers }
 
 
+{-| Same idea as `sortMainServerFirst`, for `accounts` -- pins every account
+on the `mainFrontendHost` server at the front, preserving the relative order
+of everything else. Run at the same two points (see `sortMainServerFirst`'s
+doc), this keeps the main server's account(s) contiguous at the front, which
+is what lets `UI.accountRow` hide (rather than merely disable) an arrow that
+would otherwise cross the main/non-main boundary -- moving a main-server
+account below the group, or a non-main one above it -- instead of just
+tracking each account's own up/down bounds.
+-}
+sortMainServerAccountsFirst : Model -> Model
+sortMainServerAccountsFirst model =
+    let
+        ( mainAccounts, otherAccounts ) =
+            List.partition (\a -> a.server == model.mainFrontendHost) model.accounts
+    in
+    { model | accounts = mainAccounts ++ otherAccounts }
+
+
 {-| Whether an account has the `ADMIN` permission.
 -}
 isAdmin : Account -> Bool
@@ -840,18 +858,19 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations` and
-`sortMainServerFirst` run unconditionally afterward -- so every code path
-that can add an account/server, or change `mainFrontendHost`, gets its enter
-animation/correct ordering for free, without auditing each one by hand.
-Cheap enough (`accounts`/`servers` are small) to run after every single
-message.
+{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations`,
+`sortMainServerFirst`, and `sortMainServerAccountsFirst` run unconditionally
+afterward -- so every code path that can add an account/server, or change
+`mainFrontendHost`, gets its enter animation/correct ordering for free,
+without auditing each one by hand. Cheap enough (`accounts`/`servers` are
+small) to run after every single message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
     updateHelp req msg model
         |> Tuple.mapFirst syncItemAnimations
         |> Tuple.mapFirst sortMainServerFirst
+        |> Tuple.mapFirst sortMainServerAccountsFirst
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
