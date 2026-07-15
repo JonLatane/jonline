@@ -30,11 +30,15 @@
     // in Elm for routing/link purposes once the app is running.
     var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/main.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/modal.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/switch.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/flip.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/reordering.css">');
+
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/media.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/profiles.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/flip.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/reordering.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/posts.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/nav.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/accounts_panel.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/starred_posts_panel.css">');
 

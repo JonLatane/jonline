@@ -1,0 +1,187 @@
+/* Spans the full page width (it's a top-level element, not inside
+   .container); its background/text color come from the mainFrontendHost's
+   background-color-primary utility class (see UI.EmittedStylesheet) instead
+   of a fixed color, so it's tinted with that server's primaryColor. Sticking
+   to the top of the viewport on scroll needs nothing more than this --
+   sticky content already reserves its own space in the page flow, so
+   nothing below it needs compensating padding the way position: fixed
+   would require. */
+.navbar {
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border);
+  /* Its own stacking context, above .shared-backdrop, so the nav (and its
+     descendant .nav-panel elements -- Accounts, Starred Posts) is never
+     blurred/covered/click-intercepted by the backdrop. */
+  z-index: 25;
+}
+
+/* Keeps the navbar's content lined up with the (narrower) page content
+   below it, the same way .container does for main. */
+.navbar-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+/* Phone-width screens: claw back nearly all of the navbar's left/right
+   padding -- 1rem on each side is space worth reclaiming when the whole
+   navbar is barely wider than the Home/Accounts buttons themselves. Left/
+   right are trimmed to a hairline 2px (rather than 0) so the Home and
+   Accounts buttons don't butt straight up against the screen edge; top/
+   bottom padding is untouched. Tablet and up keep the original padding.
+   Shares its 639px breakpoint with `.starred-posts-panel`'s own
+   narrow-screen override below (search this file for `639px`) -- CSS
+   custom properties can't be used inside `@media` feature values (no
+   `@custom-media` support in browsers), so there's no way to define this
+   once; keep both in sync by hand if it ever changes. */
+@media (max-width: 639px) {
+  .navbar-inner {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
+/* Covers everything below/behind the nav for every panel that closes via a
+   background tap (Starred Posts, Accounts -- see UI.elm's `sharedBackdrop`,
+   which lists them nearest-first and picks the frontmost open one to close on
+   click, so they peel off one at a time rather than all closing together).
+   Only blurred/tinted (`.blurred`, driven by `sharedBackdrop`'s per-panel
+   `blurs` flag) while the Accounts Panel specifically is open -- unlike it,
+   the Starred Posts panel doesn't block interaction with the rest of the
+   page, since starring/unstarring posts while it's open is an expected,
+   encouraged interaction rather than something to obscure. */
+.shared-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.shared-backdrop.is-open {
+  pointer-events: auto;
+}
+
+.shared-backdrop.is-open.blurred {
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  /* Without this, a flex item's default auto min-width is its content size,
+     which -- since .nav-link-home's name is `white-space: nowrap` -- is the
+     full un-truncated name, blocking it from ever actually shrinking/
+     ellipsizing under real space pressure. */
+  min-width: 0;
+}
+
+/* Button-styled nav links. No background/text color of their own -- they
+   inherit the navbar's primaryColor/primaryTextColor by default; the current
+   page's link overrides that with the background-color-nav utility class
+   (see UI.navLink) instead. */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+}
+
+.nav-link:hover {
+  opacity: 0.85;
+}
+
+/* The Home link swaps in the browsing server's RegularServerLogo (glyph +
+   possibly-two-line name -- see UI.homeLinkContent) instead of plain text, so
+   it needs its own layout: the glyph on the left stretched to the full
+   height of the button (rather than RegularServerLogo's usual stacked
+   glyph-above-name/fixed glyph size, which is why the width/height rules
+   below override .server-name-and-logo.regular's defaults from
+   AccountsPanel.elm's CSS instead of just reusing them) with the
+   left-aligned name stack to its right, plus
+   .accounts-menu-toggle.has-summary's negative-margin hack (here -18px, vs.
+   that button's -5px, since this content is taller) so the taller button
+   overflows the navbar row instead of stretching it. `border-radius` is
+   dialed back from .nav-link's pill shape -- a stadium radius on a shape this
+   much taller than it is wide reads as an odd rounded-off oval rather than a
+   button, so a fixed radius is used instead. */
+.nav-link-home {
+  align-items: stretch;
+  /* No top/bottom/left padding -- the logo (see below) sits flush against
+     those three edges, flush enough that it'd otherwise poke past the
+     button's own rounded corners, hence `overflow: hidden` here too. */
+  padding: 0 0.6rem 0 0;
+  overflow: hidden;
+  border-radius: 14px;
+  margin-top: -10px;
+  margin-bottom: -10px;
+  /* See .nav-links' min-width comment -- same reasoning, one level down. */
+  min-width: 0;
+}
+
+.nav-link-home .server-name-and-logo.regular {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-image,
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji,
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  /* The parent row's `align-items: stretch` (not a `height: 100%` here) is
+     what stretches this to the button's full height -- .nav-link-home's own
+     height comes from its content (padding around the name text), not an
+     explicit value, and a *percentage* height on this sibling, even though it
+     resolves fine at paint time, throws off the browser's intrinsic-width
+     pass for `.server-name-primary`/`.server-name-secondary` next to it
+     (their shrink-to-fit ellipsis box ends up a few px too narrow, clipping
+     text that would otherwise fully fit). `min-height` forces the button (and
+     therefore this stretched glyph) noticeably taller than a single line of
+     name text alone would be, since the point is a big glyph flush with the
+     button's left/top/bottom edges (`.nav-link-home`'s own padding/overflow
+     handle that flushness); `max-height` only matters as a cap for
+     multi-line names tall enough to exceed it. `aspect-ratio` keeps it square
+     off of whichever of those actually wins; `object-fit: cover` (from the
+     base .server-logo-image rule) crops non-square source images into the
+     resulting square instead of distorting them. */
+  width: auto;
+  min-height: 64px;
+  max-width: 64px;
+  max-height: 64px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 3.6rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  font-size: 2.3rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-breakdown {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-primary,
+.nav-link-home .server-name-and-logo.regular .server-name-secondary {
+  text-align: left;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

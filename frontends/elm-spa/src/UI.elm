@@ -114,7 +114,7 @@ type alias BackdropPanel =
 
 
 {-| Covers everything except the top nav (which sits in its own, higher
-stacking context -- see `.navbar` in main.css) for every panel that closes
+stacking context -- see `.navbar` in nav.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel and the Accounts
 Panel, with more expected to join this list later. Always rendered, like the
 panels themselves, so opening/closing (and the blur) is a plain CSS
@@ -197,7 +197,7 @@ onEnter msg =
 `navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
 navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them. The Home link also gets its own `nav-link-home`
-class (regardless of `isCurrent`) so `main.css` can give its bigger,
+class (regardless of `isCurrent`) so `nav.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
 negative-margin overflow treatment as the Accounts Panel toggle.
 -}
@@ -231,7 +231,7 @@ navLink shared currentRoute content linkRoute =
 {-| The Home link's content is normally the browsing server's own
 logo/name (via `AccountsPanel.serverNameAndLogo`), same `RegularServerLogo`
 (stacked glyph-above-multi-line-name) style as the server chips in the
-Accounts Panel -- just bigger, per `.nav-link-home` in `main.css` -- falling
+Accounts Panel -- just bigger, per `.nav-link-home` in `nav.css` -- falling
 back to the literal text "Home" only for the brief window before
 `mainFrontendHost` has actually finished connecting (see
 `AccountsPanel.init`/`GotMainServerResult`), when it isn't in `servers` yet.
