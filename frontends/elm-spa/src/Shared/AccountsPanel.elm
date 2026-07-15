@@ -237,7 +237,7 @@ type alias Model =
     -- via `MoveAccountUpClicked`/`MoveAccountDownClicked` (see
     -- `UI.Flip.MoveState`), keyed by `accountId`. An account with no entry
     -- here (the common case) just renders at rest.
-    , moveAnimations : Dict String UI.Flip.MoveState
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
 
     -- Same as `moveAnimations`, but for servers reordered via
     -- `MoveServerLeftClicked`/`MoveServerRightClicked`, keyed by
@@ -245,7 +245,7 @@ type alias Model =
     -- dict shared by both lists) since they're two independent keyed lists --
     -- an account id and a server host happening to collide as plain strings
     -- would otherwise cross-wire their animations.
-    , serverMoveAnimations : Dict String UI.Flip.MoveState
+    , serverMoveAnimations : Dict String (UI.Flip.MoveState Msg)
 
     -- Each account's enter/leave `UI.Flip.State`, keyed by `accountId` --
     -- `update`'s very last step (see `syncItemAnimations`) is always
@@ -303,11 +303,13 @@ type Msg
     | AccountRefreshed Account
     | MoveAccountUpClicked String
     | MoveAccountDownClicked String
-    | GotPreMovePositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | GotPreMovePositions String (List String) String Int (Result Dom.Error ( Dom.Element, Dom.Element, Dom.Element ))
     | MoveServerLeftClicked String
     | MoveServerRightClicked String
     | GotPreMoveServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
+    | MoveSettled String
+    | ServerMoveSettled String
     | FinishRemoveAccount String
     | FinishRemoveServer String
     | AnimateItemFlip Animation.Msg
@@ -340,12 +342,130 @@ serverChipDomId frontendHost =
     "server-chip-" ++ frontendHost
 
 
+accountAt : Int -> List Account -> Maybe Account
+accountAt idx accounts =
+    List.drop idx accounts |> List.head
+
+
+accountIndex : String -> List Account -> Maybe Int
+accountIndex id accounts =
+    accounts
+        |> List.indexedMap Tuple.pair
+        |> List.filter (\( _, a ) -> accountId a == id)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+slice : Int -> Int -> List a -> List a
+slice lo hi items =
+    items |> List.drop lo |> List.take (hi - lo + 1)
+
+
+{-| What `id` moving by `offset` (always +-1, from a move button) actually
+swaps: normally just `id`'s own Account trading places with its single
+`offset` neighbor -- but if that neighbor is on a *different* server, `id`
+sits at the edge of its own same-server group nearest that neighbor (top
+edge moving up, bottom edge moving down), so every other Account on `id`'s
+server on the *other* side (below it moving up, above it moving down) comes
+along too. That group is found by scanning *only* away from the neighbor,
+back across `id`'s own side -- same-server Accounts are already kept
+contiguous elsewhere (see `sortMainServerAccountsFirst`/
+`insertAfterSameServer`), so there's never a need to also expand the
+neighbor's own group; the swap is always against that one neighbor Account,
+whatever group it belongs to.
+
+Returns the moved Accounts' index range `( lo, hi )` and the neighbor's own
+index, or `Nothing` if `id` isn't found or there's no neighbor in that
+direction.
+-}
+accountSwapRange : Int -> String -> List Account -> Maybe ( ( Int, Int ), Int )
+accountSwapRange offset id accounts =
+    accountIndex id accounts
+        |> Maybe.andThen
+            (\i ->
+                let
+                    neighborIdx =
+                        i + offset
+                in
+                case ( accountAt i accounts, accountAt neighborIdx accounts ) of
+                    ( Just clicked, Just neighbor ) ->
+                        if clicked.server == neighbor.server then
+                            Just ( ( i, i ), neighborIdx )
+
+                        else
+                            let
+                                walk idx =
+                                    if (accountAt (idx - offset) accounts |> Maybe.map .server) == Just clicked.server then
+                                        walk (idx - offset)
+
+                                    else
+                                        idx
+
+                                edge =
+                                    walk i
+                            in
+                            Just ( ( min i edge, max i edge ), neighborIdx )
+
+                    _ ->
+                        Nothing
+            )
+
+
 {-| `accounts`' own order is exactly what `UI.accountsList` renders, so
-reordering is just reordering this list.
+reordering is just reordering this list (see `accountSwapRange`).
 -}
 moveAccountBy : Int -> String -> List Account -> List Account
-moveAccountBy =
-    UI.Flip.moveListItemBy accountId
+moveAccountBy offset id accounts =
+    case accountSwapRange offset id accounts of
+        Nothing ->
+            accounts
+
+        Just ( ( lo, hi ), neighborIdx ) ->
+            if neighborIdx < lo then
+                List.take neighborIdx accounts
+                    ++ slice lo hi accounts
+                    ++ slice neighborIdx neighborIdx accounts
+                    ++ List.drop (hi + 1) accounts
+
+            else
+                List.take lo accounts
+                    ++ slice neighborIdx neighborIdx accounts
+                    ++ slice lo hi accounts
+                    ++ List.drop (neighborIdx + 1) accounts
+
+
+{-| Kicks off a reorder move (see `accountSwapRange`): measures the pre-swap
+position of the moved Account(s)' first/last row and the single neighbor
+row it's swapping past (the "First" of FLIP), via `GotPreMovePositions` --
+so the resulting message has something to compare the post-swap position
+against. A no-op (no neighbor in that direction) just does nothing.
+-}
+beginAccountMove : Int -> String -> List Account -> Cmd Msg
+beginAccountMove offset id accounts =
+    case accountSwapRange offset id accounts of
+        Nothing ->
+            Cmd.none
+
+        Just ( ( lo, hi ), neighborIdx ) ->
+            let
+                movedIds =
+                    slice lo hi accounts |> List.map accountId
+
+                neighborId =
+                    accountAt neighborIdx accounts |> Maybe.map accountId |> Maybe.withDefault id
+
+                movedFirstId =
+                    List.head movedIds |> Maybe.withDefault id
+
+                movedLastId =
+                    List.reverse movedIds |> List.head |> Maybe.withDefault id
+            in
+            Task.attempt (GotPreMovePositions id movedIds neighborId offset)
+                (Task.map3 (\a b c -> ( a, b, c ))
+                    (Dom.getElement (accountRowDomId movedFirstId))
+                    (Dom.getElement (accountRowDomId movedLastId))
+                    (Dom.getElement (accountRowDomId neighborId))
+                )
 
 
 {-| `servers`' own order is exactly what `UI.serversStrip` renders.
@@ -1252,12 +1372,12 @@ updateHelp req msg model =
             ( newModel, persist newModel )
 
         MoveAccountUpClicked id ->
-            ( model, UI.Flip.beginReorder accountId accountRowDomId GotPreMovePositions -1 id model.accounts )
+            ( model, beginAccountMove -1 id model.accounts )
 
         MoveAccountDownClicked id ->
-            ( model, UI.Flip.beginReorder accountId accountRowDomId GotPreMovePositions 1 id model.accounts )
+            ( model, beginAccountMove 1 id model.accounts )
 
-        GotPreMovePositions id _ offset (Err _) ->
+        GotPreMovePositions id _ _ offset (Err _) ->
             -- Couldn't measure -- e.g. a row not actually mounted -- fall back to
             -- swapping without a slide animation, same end state either way.
             let
@@ -1266,24 +1386,46 @@ updateHelp req msg model =
             in
             ( newModel, persist newModel )
 
-        GotPreMovePositions id neighborId offset (Ok ( rowEl, neighborEl )) ->
-            -- Both `id` and `neighborId` are adjacent, so their post-swap
-            -- positions are derivable from this one (pre-swap) measurement --
-            -- see `UI.Flip.applyReorder`/`swapDeltas`. Computing it this way
-            -- (rather than swapping first, then measuring again after the
-            -- next render) means the pinned "Invert" transform is set in the
-            -- very same update as the swap, so there's no frame where the
-            -- swapped list renders at rest before the animation kicks in.
+        GotPreMovePositions id movedIds neighborId offset (Ok ( movedFirstEl, movedLastEl, neighborEl )) ->
+            -- `movedIds`' post-swap position is derivable from this one
+            -- (pre-swap) measurement of its first/last row and the single
+            -- neighbor row it's swapping past (see `accountSwapRange`).
+            -- Computing it this way (rather than swapping first, then
+            -- measuring again after the next render) means the pinned
+            -- "Invert" transform is set in the very same update as the swap,
+            -- so there's no frame where the swapped list renders at rest
+            -- before the animation kicks in.
             let
                 newModel =
                     { model | accounts = moveAccountBy offset id model.accounts }
+
+                -- The moved row(s) span from `movedFirstEl`'s top to
+                -- `movedLastEl`'s bottom -- a single synthetic rect standing
+                -- in for the whole moved group, so `UI.Flip.swapDeltas`
+                -- (built for a plain two-item swap) can compute one shared
+                -- slide delta for it against the single neighbor rect.
+                movedSpan =
+                    { movedFirstEl
+                        | element =
+                            { x = movedFirstEl.element.x
+                            , y = movedFirstEl.element.y
+                            , width = movedFirstEl.element.width
+                            , height = movedLastEl.element.y + movedLastEl.element.height - movedFirstEl.element.y
+                            }
+                    }
+
+                ( movedDelta, neighborDelta ) =
+                    UI.Flip.swapDeltas UI.Flip.Vertical movedSpan neighborEl
+
+                startOrRestart delta key anims =
+                    Dict.insert key (UI.Flip.startMove (MoveSettled key) delta (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)) anims
+
+                newMoveAnimations =
+                    newModel.moveAnimations
+                        |> (\anims -> List.foldl (startOrRestart movedDelta) anims movedIds)
+                        |> startOrRestart neighborDelta neighborId
             in
-            ( { newModel
-                | moveAnimations =
-                    UI.Flip.applyReorder UI.Flip.Vertical id neighborId rowEl neighborEl newModel.moveAnimations
-              }
-            , persist newModel
-            )
+            ( { newModel | moveAnimations = newMoveAnimations }, persist newModel )
 
         MoveServerLeftClicked id ->
             ( model, UI.Flip.beginReorder .frontendHost serverChipDomId GotPreMoveServerPositions -1 id model.servers )
@@ -1305,16 +1447,37 @@ updateHelp req msg model =
             in
             ( { newModel
                 | serverMoveAnimations =
-                    UI.Flip.applyReorder UI.Flip.Horizontal id neighborId chipEl neighborEl newModel.serverMoveAnimations
+                    UI.Flip.applyReorder UI.Flip.Horizontal ServerMoveSettled id neighborId chipEl neighborEl newModel.serverMoveAnimations
               }
             , persist newModel
             )
 
         AnimateMove animMsg ->
-            ( { model
-                | moveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.moveAnimations
-                , serverMoveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.serverMoveAnimations
-              }
+            let
+                step key state ( states, cmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.moveAnimate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: cmds )
+
+                ( newMoveAnimations, moveCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.moveAnimations
+
+                ( newServerMoveAnimations, serverMoveCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.serverMoveAnimations
+            in
+            ( { model | moveAnimations = newMoveAnimations, serverMoveAnimations = newServerMoveAnimations }
+            , Cmd.batch (moveCmds ++ serverMoveCmds)
+            )
+
+        MoveSettled id ->
+            ( { model | moveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.moveAnimations }
+            , Cmd.none
+            )
+
+        ServerMoveSettled id ->
+            ( { model | serverMoveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.serverMoveAnimations }
             , Cmd.none
             )
 

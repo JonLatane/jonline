@@ -713,6 +713,11 @@ serverChipFlip shared count index server =
             Dict.get server.frontendHost shared.accountsPanel.serverAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving =
+            Dict.get server.frontendHost shared.accountsPanel.serverMoveAnimations
+                |> Maybe.map .moving
+                |> Maybe.withDefault False
+
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -720,7 +725,7 @@ serverChipFlip shared count index server =
             else
                 []
     in
-    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState)
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
         [ div pointerEventsAttr [ serverChip shared count index server ] ]
 
 
@@ -949,6 +954,11 @@ accountRowFlip shared count mainCount index account =
             Dict.get (AccountsPanel.accountId account) shared.accountsPanel.accountAnimations
                 |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving =
+            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.moveAnimations
+                |> Maybe.map .moving
+                |> Maybe.withDefault False
+
         pointerEventsAttr =
             if flipState.removing then
                 [ style "pointer-events" "none" ]
@@ -956,7 +966,7 @@ accountRowFlip shared count mainCount index account =
             else
                 []
     in
-    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState)
+    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
         [ div pointerEventsAttr [ accountRow shared count mainCount index account ] ]
 
 

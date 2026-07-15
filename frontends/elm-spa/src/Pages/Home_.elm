@@ -382,7 +382,7 @@ postAnimationView shared ( key, anim ) =
                 []
     in
     ( key
-    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip)
+    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
         [ div pointerEventsAttr [ postCardView shared ( anim.host, anim.post ) ] ]
     )
 

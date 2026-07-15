@@ -455,7 +455,8 @@ input[disabled] {
   font-size: 0.7rem;
 }
 
-.starred-posts-panel {
+.starred-posts-panel,
+.nav-panel.starred-posts-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
      both happen to be open at once. */
   z-index: 25;
@@ -498,10 +499,10 @@ input[disabled] {
      relative to its own toggle's own (short) box, but this one's
      relative to the full `.navbar` (see the `left` comment above for why),
      which is taller since it's centered around the Home link's bigger logo.
-     The `12.6px` correction is that height difference -- it's what actually
-     lines this panel's top up with the Accounts Panel's, rather than sitting
-     visibly lower. */
-  top: calc(100% + 0.5rem - 12.6px);
+     The `22.6px` correction is that height difference (plus a further ~10px
+     nudge up) -- it's what actually lines this panel's top up with the
+     Accounts Panel's, rather than sitting visibly lower. */
+  top: calc(100% + 0.5rem - 17.6px);
 }
 
 /* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
@@ -578,6 +579,12 @@ input[disabled] {
      the row instead of filling the space next to the reorder buttons. */
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.flip-animated-item.flip-moving .starred-post-entry .post-card {
+  /* flex: 1 1 auto;
+  min-width: 0; */
+  backdrop-filter: blur(4px);
 }
 
 .starred-post-context {
@@ -925,6 +932,12 @@ input[disabled] {
   flex-shrink: 0;
 }
 
+.accounts-list .flip-animated-item.flip-moving>* {
+  /* TODO*/
+  max-width: 292px;
+}
+
+
 .accounts-empty {
   color: var(--muted);
   font-size: 0.9rem;
@@ -937,6 +950,8 @@ input[disabled] {
 }
 
 .account-row {
+  /* max-width: 100%;
+  width: 100%; */
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1084,8 +1099,8 @@ input[disabled] {
 }
 
 .reorder-btn:hover:not(:disabled) {
-  background: var(--fg);
-  color: var(--bg);
+  /* background: var(--fg);
+  color: var(--bg); */
   opacity: 1;
 }
 
@@ -1396,13 +1411,43 @@ input[disabled] {
 }
 
 .flip-animated-item>* {
-  /* This breaks animations: overflow: hidden; */
+  overflow: hidden;
   padding-bottom: 0.6rem;
 }
 
-/* .flip-animated-item:last-child>* {
+.flip-animated-item.flip-moving button:hover {
+  /* pointer-events: none; */
+  /* color: initial;
+  background-color: initial; */
+}
+
+/* While the item nested inside this clip layer is mid reorder-slide (see
+   `UI.Flip.itemAttributes`'s `moving` param/`MoveState.moving`), its own
+   `transform` carries it outside this box's bounds without changing the
+   box's size (a transform is purely visual, so it doesn't affect layout) --
+   the `overflow: hidden` above, meant only to clip the grid-row-collapse
+   above/below during entering/removing, would otherwise clip that slide too.
+   Suspending it just for `flip-moving` (rather than dropping it altogether)
+   keeps the collapse-clip intact for every other state, including a moved
+   item that's later removed.
+
+   Only the axis the slide actually moves along (`overflow-y` here, a
+   vertical list's up/down swap) is freed -- `overflow-x` deliberately stays
+   `hidden`. Per the grid/flexbox sizing spec, a grid item's automatic
+   minimum size in an axis is 0 when that axis's overflow isn't `visible`,
+   which is what lets this row's track shrink to the panel's width instead of
+   growing to fit a long, unbreakable `white-space: nowrap` label (e.g. a
+   long server name in `.account-row-server-badge`) -- freeing `overflow-x`
+   too would drop that clamp and balloon the row exactly as wide as its
+   longest label whenever it slides. */
+.flip-animated-item.flip-moving>* {
+  overflow: visible;
+}
+
+
+.flip-animated-item:last-child>* {
   padding-bottom: 0;
-} */
+}
 
 /* Horizontal counterpart of `.flip-animated-column`/`.flip-animated-item`,
    for a row instead (e.g. the Servers strip) -- same collapsing-grid-track
@@ -1689,32 +1734,6 @@ input[disabled] {
   }
 }
 
-.media-renderer-image,
-.media-renderer-video,
-.media-renderer-object {
-  width: 100%;
-  height: 100%;
-}
-
-.media-renderer-image {
-  object-fit: contain;
-}
-
-.media-renderer-video {
-  background: black;
-}
-
-.media-renderer-fallback {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 0.6rem;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
 .post-comments-link {
   margin-top: 0.8rem;
 }
@@ -1757,195 +1776,4 @@ input[disabled] {
   min-width: 0;
   color: inherit;
   text-decoration: none;
-}
-
-
-/* Components/UserProfilePage.elm's profile page (Pages/User/UserId_.elm,
-   Pages/Username_.elm) -- mirrors post-detail's look. */
-
-.profile-detail {
-  margin: 1rem 0;
-  padding: 0.8rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-
-.profile-header {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.profile-avatar {
-  flex: 0 0 auto;
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-avatar.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(127, 127, 127, 0.35);
-  color: var(--fg);
-  font-weight: 700;
-  font-size: 1.5rem;
-}
-
-.profile-header-names {
-  min-width: 0;
-}
-
-.profile-username {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0;
-}
-
-.profile-admin-badge {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--muted);
-}
-
-.profile-real-name {
-  color: var(--muted);
-}
-
-.profile-meta {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin: 0.5rem 0;
-}
-
-.profile-counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.2rem;
-  margin: 0.8rem 0;
-}
-
-.profile-count {
-  text-align: center;
-}
-
-.profile-count-value {
-  font-weight: 700;
-  font-size: 1.1rem;
-}
-
-.profile-count-label {
-  color: var(--muted);
-  font-size: 0.75rem;
-}
-
-.profile-bio {
-  display: block;
-  line-height: 1.5;
-  overflow-wrap: break-word;
-  margin: 0.8rem 0;
-}
-
-.profile-bio>*:first-child {
-  margin-top: 0;
-}
-
-.profile-bio>*:last-child {
-  margin-bottom: 0;
-}
-
-.profile-bio blockquote {
-  margin: 0.8rem 0;
-  padding: 0.2rem 0.8rem;
-  border-left: 3px solid var(--border);
-  color: var(--muted);
-}
-
-.profile-bio :not(pre)>code {
-  background: var(--chip-bg);
-  border-radius: 4px;
-  padding: 0.15em 0.35em;
-  font-size: 0.9em;
-}
-
-.profile-bio pre {
-  background: var(--chip-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.8rem;
-  overflow-x: auto;
-}
-
-.profile-bio pre code {
-  background: none;
-  padding: 0;
-}
-
-.profile-bio img {
-  max-width: 100%;
-}
-
-.profile-section-title {
-  flex-basis: 100%;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: 0.8rem 0 0.4rem;
-}
-
-.profile-permissions,
-.profile-federated {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-}
-
-.profile-permission-badge {
-  display: inline-block;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  font-size: 0.8rem;
-}
-
-.profile-federated-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  font-size: 0.8rem;
-  text-decoration: none;
-}
-
-.profile-federated-avatar {
-  flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  object-fit: cover;
-}
-
-.profile-federated-avatar.placeholder {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(127, 127, 127, 0.35);
-  font-weight: 700;
-  font-size: 0.7rem;
-}
-
-.profile-federated-badge {
-  font-size: 0.75rem;
-}
-
-.profile-loading,
-.profile-error {
-  color: var(--muted);
 }

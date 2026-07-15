@@ -1,0 +1,25 @@
+.media-renderer-image,
+.media-renderer-video,
+.media-renderer-object {
+  width: 100%;
+  height: 100%;
+}
+
+.media-renderer-image {
+  object-fit: contain;
+}
+
+.media-renderer-video {
+  background: black;
+}
+
+.media-renderer-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}

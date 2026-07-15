@@ -157,13 +157,25 @@ The output's `msg` is a wholly separate type variable from `state`'s own --
 event handler), so a caller isn't forced to `Html.map` a whole subtree just
 because `state`'s own `msg` (e.g. `remove`'s `onRemoved`) belongs to a
 different module's `Msg` than the content being wrapped does.
+
+`moving` is a caller-supplied `MoveState.moving` (see its own doc) for
+whatever's nested inside this item, and drives a third class, `flip-moving`.
+`style.css`'s `.flip-animated-item > *` carries `overflow: hidden` so the
+grid-row-collapse trick above can clip a shrinking/growing item's content --
+but that same clip also cuts off a reorder-slide's `moveAttributes` transform
+on the item nested inside it, since sliding away from rest visually pokes
+past that box without changing its layout size. `flip-moving` only needs to
+suspend the clip for the slide's own duration, not disable it outright (a
+moved item can still later need the collapse-clip if it's removed), so it's a
+separate class rather than folded into `flip-collapsed`.
 -}
-itemAttributes : Axis -> State state -> List (Html.Attribute msg)
-itemAttributes axis state =
+itemAttributes : Axis -> State state -> Bool -> List (Html.Attribute msg)
+itemAttributes axis state moving =
     classList
         [ ( "flip-animated-item", True )
         , ( "horizontal", axis == Horizontal )
         , ( "flip-collapsed", state.entering || state.removing )
+        , ( "flip-moving", moving )
         ]
         :: Animation.render state.style
 
@@ -207,19 +219,28 @@ syncEnter idOf items animations =
 -- MOVING
 
 
-{-| An item's move animation state: just a `translate`, since a move (unlike
-entering/leaving) never needs a completion callback -- it settles at
-`translate 0 0` and stays there, harmless to leave in a `Dict` indefinitely.
+{-| An item's move animation state: a `translate` plus whether it's currently
+mid-slide. Unlike entering/leaving, a move settling back to `translate 0 0`
+would be harmless to leave untracked forever -- but `moving` itself still
+needs a completion callback (see `startMove`'s `onSettled`) so a caller can
+clear it back to `False` once the slide actually finishes, which is what lets
+`itemAttributes`' `flip-moving` class (see its own doc) apply only for the
+slide's real duration rather than staying stuck on for good the first time an
+item ever moves.
 -}
-type alias MoveState =
-    Animation.State
+type alias MoveState msg =
+    { moving : Bool
+    , style : Animation.Messenger.State msg
+    }
 
 
 {-| The identity/no-op move state -- an item that hasn't moved.
 -}
-atRest : MoveState
+atRest : MoveState msg
 atRest =
-    Animation.style [ Animation.translate (Animation.px 0) (Animation.px 0) ]
+    { moving = False
+    , style = Animation.style [ Animation.translate (Animation.px 0) (Animation.px 0) ]
+    }
 
 
 {-| Starts (or restarts) a move: `( deltaX, deltaY )` is how far, in px, the
@@ -233,14 +254,24 @@ only ever needs one non-zero component; a future grid would set both. Pins
 the item at its old position via an instant, non-animated `translate`
 ("Invert"), then animates back to `translate 0 0` ("Play"), so it visually
 slides from where it was to where it now is instead of jumping.
+
+`onSettled` fires (see `moveAnimate`) once the "Play" step actually reaches
+`translate 0 0` -- a caller stores it keyed the same as this `MoveState` and,
+on receipt, sets `moving` back to `False` (mirroring `remove`'s `onRemoved`),
+rather than clearing it eagerly the way `entering` is -- since here the whole
+point is for `moving` to stay `True` for the slide's real duration.
 -}
-startMove : ( Float, Float ) -> MoveState -> MoveState
-startMove ( deltaX, deltaY ) state =
-    Animation.interrupt
-        [ Animation.set [ Animation.translate (Animation.px deltaX) (Animation.px deltaY) ]
-        , Animation.to [ Animation.translate (Animation.px 0) (Animation.px 0) ]
-        ]
-        state
+startMove : msg -> ( Float, Float ) -> MoveState msg -> MoveState msg
+startMove onSettled ( deltaX, deltaY ) state =
+    { moving = True
+    , style =
+        Animation.interrupt
+            [ Animation.set [ Animation.translate (Animation.px deltaX) (Animation.px deltaY) ]
+            , Animation.to [ Animation.translate (Animation.px 0) (Animation.px 0) ]
+            , Animation.Messenger.send onSettled
+            ]
+            state.style
+    }
 
 
 {-| The post-swap `( deltaX, deltaY )` "Invert" offsets (see `startMove`) for
@@ -307,23 +338,30 @@ swapDeltas axis moved neighbor =
 {-| Attributes (just an inline `transform`) for the moving item's own
 element.
 -}
-moveAttributes : MoveState -> List (Html.Attribute msg)
+moveAttributes : MoveState msg -> List (Html.Attribute msg2)
 moveAttributes state =
-    Animation.render state
+    Animation.render state.style
 
 
-{-| Steps a `MoveState` forward on an `Animation.Msg` tick.
+{-| Steps a `MoveState` forward on an `Animation.Msg` tick, returning any
+`Cmd` from its `onSettled` (see `startMove`) firing this tick -- a caller
+batches this in alongside its other per-item `Cmd`s the same way
+`AnimateItemFlip`-style handlers already do for `animate`.
 -}
-moveAnimate : Animation.Msg -> MoveState -> MoveState
-moveAnimate =
-    Animation.update
+moveAnimate : Animation.Msg -> MoveState msg -> ( MoveState msg, Cmd msg )
+moveAnimate animMsg state =
+    let
+        ( newStyle, cmd ) =
+            Animation.Messenger.update animMsg state.style
+    in
+    ( { state | style = newStyle }, cmd )
 
 
 {-| The `Sub` for every live item's move animation.
 -}
-moveSubscription : (Animation.Msg -> msg) -> List MoveState -> Sub msg
+moveSubscription : (Animation.Msg -> msg2) -> List (MoveState msg) -> Sub msg2
 moveSubscription toMsg states =
-    Animation.subscription toMsg states
+    Animation.subscription toMsg (List.map .style states)
 
 
 
@@ -419,23 +457,25 @@ beginReorder idOf domId toMsg offset id items =
 
 {-| Applies a just-measured pre-swap pair (see `beginReorder`) to
 `animations`: computes both items' slide deltas (`swapDeltas`) and
-starts/restarts each one's `MoveState`.
+starts/restarts each one's `MoveState`. `onSettled` builds each item's
+settle-notification `msg` (see `startMove`) from its key.
 -}
 applyReorder :
     Axis
+    -> (String -> msg)
     -> String
     -> String
     -> Dom.Element
     -> Dom.Element
-    -> Dict String MoveState
-    -> Dict String MoveState
-applyReorder axis id neighborId movedEl neighborEl animations =
+    -> Dict String (MoveState msg)
+    -> Dict String (MoveState msg)
+applyReorder axis onSettled id neighborId movedEl neighborEl animations =
     let
         ( movedDelta, neighborDelta ) =
             swapDeltas axis movedEl neighborEl
 
         startOrRestart key delta anims =
-            Dict.insert key (startMove delta (Dict.get key anims |> Maybe.withDefault atRest)) anims
+            Dict.insert key (startMove (onSettled key) delta (Dict.get key anims |> Maybe.withDefault atRest)) anims
     in
     animations
         |> startOrRestart id movedDelta

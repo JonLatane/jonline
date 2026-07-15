@@ -1,9 +1,9 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, starKey, subscriptions, toggleStarMsg, update, view)
+module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, starKey, subscriptions, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
 with no per-user state on the server at all (see `Post.unauthenticated_star_count`)
--- the *only* record of "did I star this" is this module's `starredPostIds`,
+-- the _only_ record of "did I star this" is this module's `starredPostIds`,
 persisted to localStorage (see `Ports.persistStarredPosts`) keyed by
 `postId@frontendHost` (see `starKey`) so it survives reloads and tells posts
 from different servers apart.
@@ -25,6 +25,7 @@ This module also owns fetching+rendering the actual starred `Post`s for the
 nav's Starred Posts panel (`view`) -- `posts` is a cache of that fetched data,
 separate from `starredPostIds` itself so a re-star/unstar doesn't need a
 round-trip to redisplay a post we already have in hand (see `ToggleStar`).
+
 -}
 
 import Animation
@@ -78,7 +79,7 @@ type alias Model =
     -- reordered via `MoveStarUpClicked`/`MoveStarDownClicked` (see
     -- `UI.Flip.MoveState`), keyed the same as `starOrder`/`posts`. An entry
     -- with no key here (the common case) just renders at rest.
-    , moveAnimations : Dict String UI.Flip.MoveState
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
 
     -- Each starred post's enter/leave `UI.Flip.State`, keyed the same as
     -- `starOrder`/`posts` -- `update`'s very last step (see
@@ -107,6 +108,7 @@ type Msg
     | MoveStarDownClicked String
     | GotPreMoveStarPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
+    | MoveSettled String
     | FinishUnstar String
     | AnimateItemFlip Animation.Msg
 
@@ -423,14 +425,31 @@ updateHelp accountsPanelModel msg model =
             in
             ( { newModel
                 | moveAnimations =
-                    UI.Flip.applyReorder UI.Flip.Vertical key neighborKey entryEl neighborEl newModel.moveAnimations
+                    UI.Flip.applyReorder UI.Flip.Vertical MoveSettled key neighborKey entryEl neighborEl newModel.moveAnimations
               }
             , persistCmd newOrder
             , Nothing
             )
 
         AnimateMove animMsg ->
-            ( { model | moveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.moveAnimations }
+            let
+                step key state ( states, cmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.moveAnimate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: cmds )
+
+                ( newMoveAnimations, moveCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.moveAnimations
+            in
+            ( { model | moveAnimations = newMoveAnimations }
+            , Cmd.batch moveCmds
+            , Nothing
+            )
+
+        MoveSettled key ->
+            ( { model | moveAnimations = Dict.update key (Maybe.map (\state -> { state | moving = False })) model.moveAnimations }
             , Cmd.none
             , Nothing
             )
@@ -481,6 +500,39 @@ kickOffFetches accountsPanelModel model =
                 |> List.foldl (fetchGroup accountsPanelModel) ( model.posts, [] )
     in
     ( { model | posts = newPosts }, Cmd.batch cmds )
+
+
+{-| Clears any cached fetched Posts (see `posts`) on `hosts` and kicks off
+fresh fetches for whichever of those are still starred -- for `Shared.update`
+to call when the signed-in account for a server changes (comparing
+`AccountsPanel.enabledAccountForServer` before/after an `AccountsPanelMsg`),
+since a starred post's visibility -- and its cached `freshestPost` snapshot --
+can depend on which account fetched it. A no-op if `hosts` is empty, the
+common case for most `AccountsPanel.Msg`s.
+-}
+refreshHosts : AccountsPanel.Model -> List String -> Model -> ( Model, Cmd Msg )
+refreshHosts accountsPanelModel hosts model =
+    if List.isEmpty hosts then
+        ( model, Cmd.none )
+
+    else
+        let
+            hostSet =
+                Set.fromList hosts
+
+            clearedPosts =
+                Dict.filter
+                    (\key _ ->
+                        case parseStarKey key of
+                            Just ( _, host ) ->
+                                not (Set.member host hostSet)
+
+                            Nothing ->
+                                True
+                    )
+                    model.posts
+        in
+        kickOffFetches accountsPanelModel { model | posts = clearedPosts }
 
 
 fetchGroup :
@@ -623,6 +675,9 @@ starredPostRowFlip basePath accountsPanelModel currentPostKey model count index 
         flipState =
             Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
 
+        isMoving =
+            Dict.get key model.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
+
         pointerEventsAttr =
             if flipState.removing then
                 [ Html.Attributes.style "pointer-events" "none" ]
@@ -630,7 +685,7 @@ starredPostRowFlip basePath accountsPanelModel currentPostKey model count index 
             else
                 []
     in
-    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState)
+    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
         [ div pointerEventsAttr [ starredPostRow basePath accountsPanelModel currentPostKey model count index key ] ]
 
 
@@ -696,7 +751,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
 
         Just PostFetchFailed ->
-            div [ class "starred-post-entry post-error" ] [ text "Couldn't load this post." ]
+            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Post " ++ key ++ ".") ]
 
         Just ServerUnavailable ->
             div [ class "starred-post-entry post-error" ] [ text "That post's server isn't reachable right now." ]

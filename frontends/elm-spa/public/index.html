@@ -19,9 +19,9 @@
        `backend/src/web/spa_web_path.rs`, which does the same replacements for
        Tamagui's static export (see `apps/next/pages/_document.tsx`). The
        marker strings must match exactly between the two templates. -->
-  <meta property="og:title" content="Jonline Social Link"/>
-  <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat"/>
-  <meta property="og:image" content="/favicon.ico"/>
+  <meta property="og:title" content="Jonline Social Link" />
+  <meta property="og:description" content="A link from a fediverse community with events, posts, and realtime chat" />
+  <meta property="og:image" content="/favicon.ico" />
   <link rel="manifest" href="/manifest.json">
   <script>
     // This app is served from either `/` or `/elm` (see
@@ -30,6 +30,8 @@
     // in Elm for routing/link purposes once the app is running.
     var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/media.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/profiles.css">');
 
     // Markdown rendering (see `public/markdown.js`) -- vendored rather than
     // CDN-loaded, so the app keeps working offline/behind a firewall.

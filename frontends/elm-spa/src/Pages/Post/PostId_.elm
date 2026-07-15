@@ -75,6 +75,7 @@ startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
 messages into whichever page is active). `subscriptions`' poll is just a
 distrustful fallback in case some future state change doesn't route through
 `SharedMsg`, so it can be slow.
+
 -}
 fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchIfReady shared model =
@@ -231,7 +232,7 @@ bodyView shared req model =
                     p [ class "post-loading" ] [ text "Loading…" ]
 
                 PostFailed ->
-                    p [ class "post-error" ] [ text "Couldn't load this post." ]
+                    p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ".") ]
 
                 PostLoaded post ->
                     div []

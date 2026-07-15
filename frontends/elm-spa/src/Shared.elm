@@ -246,8 +246,19 @@ update req msg model =
             let
                 ( subModel, subCmd ) =
                     AccountsPanel.update req subMsg model.accountsPanel
+
+                changedHosts =
+                    accountIdentityChangedHosts model.accountsPanel subModel
+
+                ( refreshedStarredPostsPanel, refreshCmd ) =
+                    StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
             in
-            ( { model | accountsPanel = subModel }, Cmd.map AccountsPanelMsg subCmd )
+            ( { model | accountsPanel = subModel, starredPostsPanel = refreshedStarredPostsPanel }
+            , Cmd.batch
+                [ Cmd.map AccountsPanelMsg subCmd
+                , Cmd.map StarredPostsPanelMsg refreshCmd
+                ]
+            )
 
         AdminPanelMsg subMsg ->
             ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
@@ -319,6 +330,39 @@ update req msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+
+{-| Hosts whose signed-in account (see `AccountsPanel.enabledAccountForServer`)
+differs between `before` and `after` -- e.g. logging into/switching accounts on
+a server, signing out, or disabling/re-enabling it (`ToggleServerEnabled`
+disables its accounts too). Tells `Shared.StarredPostsPanel.refreshHosts` which
+servers' cached starred `Post`s might now be wrong -- a starred post's
+visibility can depend on which account fetched it -- and so need
+clearing/refetching.
+-}
+accountIdentityChangedHosts : AccountsPanel.Model -> AccountsPanel.Model -> List String
+accountIdentityChangedHosts before after =
+    let
+        dedupe list =
+            List.foldl
+                (\host acc ->
+                    if List.member host acc then
+                        acc
+
+                    else
+                        host :: acc
+                )
+                []
+                list
+
+        hosts =
+            dedupe ((before.accounts |> List.map .server) ++ (after.accounts |> List.map .server))
+
+        identity model_ host =
+            AccountsPanel.enabledAccountForServer model_.accounts host
+                |> Maybe.map AccountsPanel.accountId
+    in
+    hosts |> List.filter (\host -> identity before host /= identity after host)
 
 
 {-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
