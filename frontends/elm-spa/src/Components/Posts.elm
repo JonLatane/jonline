@@ -2,6 +2,7 @@ module Components.Posts exposing
     ( fetchPost
     , fetchRecentPosts
     , parsePostRouteId
+    , postAuthorHref
     , postAuthorName
     , postCard
     , postCommentCount
@@ -23,10 +24,12 @@ route's `id` or `id@host` segment.
 -}
 
 import Components.Markdown as Markdown
+import Components.PostMediaRenderer as PostMediaRenderer
+import Components.Users as Users
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, span, text)
-import Html.Attributes exposing (class, href)
+import Html exposing (Html, a, div, h1, img, span, text)
+import Html.Attributes exposing (alt, attribute, class, href, src)
 import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
@@ -166,6 +169,37 @@ postAuthorName post =
         |> Maybe.withDefault "unknown"
 
 
+{-| The author's profile link -- `Nothing` if the post has no `author` at all
+(shouldn't normally happen, but `Post.author` is optional). The author is
+always on `postServerHost` (the same server as the post itself; `Author` has
+no host of its own to look elsewhere) -- see `Components.Users.profileHref`,
+which already falls back to `/user/:id` if the username isn't routable.
+-}
+postAuthorHref : String -> String -> String -> Post -> Maybe String
+postAuthorHref basePath viewingServerHost postServerHost post =
+    post.author
+        |> Maybe.map
+            (\author ->
+                Users.profileHref basePath
+                    viewingServerHost
+                    postServerHost
+                    { userId = author.userId, username = Maybe.withDefault "" author.username }
+            )
+
+
+{-| The author's avatar URL -- `Nothing` if the post has no `author`, `server`
+isn't resolved yet (e.g. still connecting), or the author just has no avatar
+set. `server` (unlike `postAuthorHref`'s plain `postServerHost` string) needs
+to be the actual resolved `Shared.AccountsPanel.Server` -- building a media URL
+needs its connection details, not just its hostname (see
+`Shared.AccountsPanel.mediaUrl`).
+-}
+postAuthorAvatarUrl : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Post -> Maybe String
+postAuthorAvatarUrl maybeServer maybeAccount post =
+    Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer post.author
+        |> Maybe.andThen identity
+
+
 {-| A post's most relevant timestamp for "recency" sorting/display: when it
 was published, falling back to when it was created (drafts, or servers that
 don't distinguish the two).
@@ -252,7 +286,7 @@ postStarCount post =
     MaybeAccountRequest.int64ToInt post.unauthenticatedStarCount
 
 
-{-| A post's comment count -- `responseCount` (replies *and* replies to
+{-| A post's comment count -- `responseCount` (replies _and_ replies to
 replies, etc.), matching the Tamagui app's "N comments" label.
 -}
 postCommentCount : Post -> Int
@@ -301,6 +335,47 @@ commentCountText post =
     " · 💬 " ++ String.fromInt (postCommentCount post)
 
 
+{-| A small avatar/placeholder for a post's author, matching the size of the
+Accounts Panel toggle's own avatars (`.post-author-avatar`, see `style.css`).
+Falls back to an initial-letter placeholder the same way `UI.imageOrInitial`
+does elsewhere in the app; duplicated here rather than reusing that function
+since `UI` itself imports `Components.Posts` (for `postCard`), so the reverse
+import would be a cycle.
+-}
+authorAvatar : String -> Maybe String -> Html msg
+authorAvatar name maybeUrl =
+    case maybeUrl of
+        Just url ->
+            img [ class "post-author-avatar", src url, alt name ] []
+
+        Nothing ->
+            div [ classes [ "post-author-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+
+
+{-| A post's author avatar + name, linking to their profile (see
+`postAuthorHref`) -- a `span` (not a link) if the post somehow has no `author`
+at all, so the avatar still shows either way. Used by both `postDetail` (a
+plain, unwrapped link -- fine as-is) and `postCard` (which needs the
+"stretched link" dance in its own doc comment to keep this independently
+clickable without nesting an `<a>` inside `postCard`'s own enclosing one).
+-}
+authorLink : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Post -> Html msg
+authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post =
+    let
+        name =
+            postAuthorName post
+
+        content =
+            [ authorAvatar name (postAuthorAvatarUrl maybeServer maybeAccount post), text name ]
+    in
+    case postAuthorHref basePath viewingServerHost postServerHost post of
+        Just profileHref ->
+            a [ href profileHref, class "post-author-link" ] content
+
+        Nothing ->
+            span [ class "post-author-link" ] content
+
+
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
 otherwise obvious once posts from several are mixed together by recency. Tinted
@@ -315,12 +390,31 @@ route's post already resolved) -- filling the whole card with
 `postServerHost`'s `primaryColor`/`primaryTextColor` (the `background-color-primary`
 utility class) rather than just tinting its border, so it stands out from the
 rest of the (unopened) Starred Posts panel at a glance.
+
+The card as a whole isn't a single enclosing `<a>` (despite looking/behaving
+like one) -- `authorLink` needs to be a _real_, independently-clickable link of
+its own, and nesting an `<a>` inside an `<a>` doesn't work in Elm: every
+anchor's `href` navigation is wired up by `elm/browser` as its own native click
+listener attached directly to that anchor's DOM node (see `_VirtualDom_divertHrefToApp`
+in the compiled runtime), not by walking up to the nearest enclosing `<a>` --
+so a click on a nested author link would fire _both_ listeners (author's, then
+bubbling up to the card's), and since both call `preventDefault`/navigate, the
+outer (later) one always wins and the author link would silently just open the
+post instead. Instead this uses the "stretched link" pattern: the first child
+below is an invisible `<a>` (`.post-card-link-overlay`) absolutely filling the
+whole `.post-card`, sitting _behind_ the title/meta content (`position:
+relative` on `.post-card-meta` -- title needs none, see its own lack of
+interactive descendants -- stacks it above the overlay per normal CSS painting
+order) with `.post-card-meta`'s own `pointer-events: none` (see `style.css`)
+making its plain text transparent to clicks, which fall through to the overlay
+below -- while `authorLink`/`starButton`, both opted back in via
+`pointer-events: auto`, catch clicks themselves before they ever reach it.
+
 -}
-postCard : String -> String -> String -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost current starred onStarClicked post =
-    a
-        [ href (postHref basePath viewingServerHost postServerHost post)
-        , classes
+postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost maybeServer maybeAccount current starred onStarClicked post =
+    div
+        [ classes
             ([ "post-card"
              , postServerHost
              , "border-color-primary-anchor-50"
@@ -334,18 +428,27 @@ postCard basePath viewingServerHost postServerHost current starred onStarClicked
                    )
             )
         ]
-        [ div [ class "post-card-title" ] [ text (postTitleText post) ]
+        [ a
+            [ href (postHref basePath viewingServerHost postServerHost post)
+            , class "post-card-link-overlay"
+            , attribute "aria-label" (postTitleText post)
+            ]
+            []
+        , div [ class "post-card-title" ] [ text (postTitleText post) ]
         , div [ class "post-card-meta" ]
-            [ text
-                (postAuthorName post
-                    ++ " · "
-                    ++ postServerHost
-                    ++ " · "
-                    ++ postVisibilityText post
-                    ++ " · "
-                )
-            , starButton postServerHost starred onStarClicked post
-            , text (commentCountText post)
+            [ span [ class "post-meta-left" ]
+                [ authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                , text
+                    (" · "
+                        ++ postServerHost
+                        ++ " · "
+                        ++ postVisibilityText post
+                    )
+                ]
+            , span [ class "post-meta-right" ]
+                [ starButton postServerHost starred onStarClicked post
+                , text (commentCountText post)
+                ]
             ]
         ]
 
@@ -355,21 +458,27 @@ since that's already the page you're on, but still tinted with `postServerHost`'
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
 since this one isn't a link).
 -}
-postDetail : String -> Bool -> Maybe msg -> Post -> Html msg
-postDetail postServerHost starred onStarClicked post =
+postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Maybe msg -> Post -> Html msg
+postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount starred onStarClicked post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
         , div [ class "post-detail-meta" ]
-            [ text
-                ("by "
-                    ++ postAuthorName post
-                    ++ " · "
-                    ++ postVisibilityText post
-                    ++ " · "
-                )
-            , starButton postServerHost starred onStarClicked post
-            , text (commentCountText post)
+            [ span [ class "post-meta-left" ]
+                [ text "by "
+                , authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                , text (" · " ++ postVisibilityText post)
+                ]
+            , span [ class "post-meta-right" ]
+                [ starButton postServerHost starred onStarClicked post
+                , text (commentCountText post)
+                ]
             ]
+        , case maybeServer of
+            Just server ->
+                PostMediaRenderer.view server maybeAccount post.media
+
+            Nothing ->
+                text ""
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content

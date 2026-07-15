@@ -45,6 +45,8 @@ import Gen.Pages as Pages
 import Gen.Route as Route
 import Pages.Home_
 import Pages.Post.PostId_
+import Pages.User.UserId_
+import Pages.Username_
 import Request
 import Shared
 import Url exposing (Url)
@@ -185,9 +187,29 @@ update msg model =
                             Shared.update (Request.create () model.url model.key) sharedMsg accShared
                     in
                     ( newShared, Cmd.batch [ accCmd, Cmd.map Shared cmd ] )
+
+                -- The page itself was just updated against `model.shared` -- the state as it
+                -- stood *before* the `sharedMsgs` it forwarded were applied above, so any
+                -- `fromShared` handler that reads shared state (e.g. `Pages.Home_`'s
+                -- `fetchNewServers`, keying off `AccountsPanel.enabledServers`) sees last
+                -- message's state, not this one's. Re-notify the page with the now-updated
+                -- `shared`, exactly as `notifyPageOfSharedMsg` already does for Shared.Msgs
+                -- that originate outside any page -- see its doc for why re-emitted
+                -- Shared.Msgs from this second pass are safe to drop.
+                ( notifiedPage, notifyCmd ) =
+                    List.foldl
+                        (\sharedMsg ( accPage, accCmd ) ->
+                            let
+                                ( newPage, cmd ) =
+                                    notifyPageOfSharedMsg sharedMsg shared accPage model.url model.key
+                            in
+                            ( newPage, Cmd.batch [ accCmd, cmd ] )
+                        )
+                        ( page, Cmd.none )
+                        sharedMsgs
             in
-            ( { model | page = page, shared = shared }
-            , Cmd.batch [ sharedCmd, Effect.toCmd ( Shared, Page ) remainingEffect ]
+            ( { model | page = notifiedPage, shared = shared }
+            , Cmd.batch [ sharedCmd, notifyCmd, Effect.toCmd ( Shared, Page ) remainingEffect ]
             )
 
 
@@ -204,6 +226,12 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.Post__PostId_ _ _ ->
             Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+        Gen.Model.User__UserId_ _ _ ->
+            Just (Gen.Msg.User__UserId_ (Pages.User.UserId_.fromShared sharedMsg))
+
+        Gen.Model.Username_ _ _ ->
+            Just (Gen.Msg.Username_ (Pages.Username_.fromShared sharedMsg))
 
         _ ->
             Nothing

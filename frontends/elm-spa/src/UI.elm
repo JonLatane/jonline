@@ -1,7 +1,8 @@
-module UI exposing (layout, page)
+module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
 import Components.Posts as Posts
+import Components.Users as Users
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
@@ -57,8 +58,7 @@ too, mapping its `Shared.Msg` clicks into their own `Msg` type. See
 layout : Shared.Model -> Route -> (Shared.Msg -> msg) -> List (Html msg) -> List (Html msg)
 layout shared currentRoute toMsg children =
     [ Html.map toMsg (UI.EmittedStylesheet.view shared)
-    , Html.map toMsg (starredPostsBackdrop shared)
-    , Html.map toMsg (accountsBackdrop shared)
+    , Html.map toMsg (sharedBackdrop shared)
     , Html.map toMsg (headerNav shared currentRoute)
     , Html.map toMsg (createAccountConfirmationBackdrop shared)
     , Html.map toMsg (createAccountConfirmationModal shared)
@@ -78,14 +78,7 @@ headerNav shared currentRoute =
                   else
                     starredPostsToggle shared
                 ]
-            , div [ class "nav-right" ]
-                [ accountsMenu shared
-                , if AccountsPanel.hasAdminAccount shared.accountsPanel then
-                    adminMenu shared
-
-                  else
-                    text ""
-                ]
+            , div [ class "nav-right" ] [ accountsMenu shared ]
             ]
 
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
@@ -101,37 +94,83 @@ headerNav shared currentRoute =
         ]
 
 
+{-| One entry in `sharedBackdrop`'s priority list: whether this panel is
+currently open, the message that closes just this panel, and whether its
+being open should blur/tint the shared backdrop (only the Accounts Panel
+blocks interaction with the rest of the page like that -- see
+`sharedBackdrop`).
+-}
+type alias BackdropPanel =
+    { isOpen : Bool
+    , closeMsg : Shared.Msg
+    , blurs : Bool
+    }
+
+
 {-| Covers everything except the top nav (which sits in its own, higher
-stacking context -- see `.navbar` in style.css) with a transitioned blur while
-the Accounts Panel is open; clicking it closes the panel. Always rendered,
-like `accountsPanel`, so the blur fades rather than snapping in/out, and only
-receives clicks (`pointer-events`) while open.
--}
-accountsBackdrop : Shared.Model -> Html Shared.Msg
-accountsBackdrop shared =
-    overlayBackdrop "accounts-backdrop" shared.accountsPanel.showAccountsPanel (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
+stacking context -- see `.navbar` in style.css) for every panel that closes
+via a background tap -- currently the Starred Posts panel and the Accounts
+Panel, with more expected to join this list later. Always rendered, like the
+panels themselves, so opening/closing (and the blur) is a plain CSS
+transition rather than the element appearing/disappearing outright, and only
+receives clicks (`pointer-events`) while at least one listed panel is open.
 
-
-{-| Like `accountsBackdrop`, but for the Starred Posts panel: clicking the page
-behind it closes the panel, but -- unlike the Accounts Panel, which blocks
+Listed nearest-first: when several panels are open at once, a background tap
+closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
+panel to peel them off in order, front-to-back, rather than closing everything
+at once. Right now that means tapping the background closes the Starred Posts
+panel first, then (on a second tap) the Accounts Panel behind it -- swap their
+order here to change that priority. Only blurs/tints the page while a panel
+with `blurs = True` is open (currently just the Accounts Panel, which blocks
 interaction with the rest of the page while its login/server-management forms
-are open -- it doesn't blur the background, since starring/unstarring posts
-while the panel is open is an expected, encouraged interaction rather than
-something to block. Lower `z-index` than `accountsBackdrop` (see
-`.starred-posts-backdrop` in style.css) so that backdrop still wins the click
-(and only closes the Accounts Panel) when both panels happen to be open at
-once.
+are open); the Starred Posts panel doesn't, since starring/unstarring posts
+while it's open is an expected, encouraged interaction rather than something
+to block.
+
 -}
-starredPostsBackdrop : Shared.Model -> Html Shared.Msg
-starredPostsBackdrop shared =
-    overlayBackdrop "starred-posts-backdrop" shared.starredPostsPanel.showStarredPostsPanel (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+sharedBackdrop : Shared.Model -> Html Shared.Msg
+sharedBackdrop shared =
+    let
+        panels : List BackdropPanel
+        panels =
+            [ { isOpen = shared.starredPostsPanel.showStarredPostsPanel
+              , closeMsg = Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel
+              , blurs = False
+              }
+            , { isOpen = shared.accountsPanel.showAccountsPanel
+              , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
+              , blurs = True
+              }
+            ]
+
+        topmostOpenPanel : Maybe BackdropPanel
+        topmostOpenPanel =
+            List.filter .isOpen panels |> List.head
+    in
+    div
+        [ classes
+            ([ "shared-backdrop", openClosedClass (topmostOpenPanel /= Nothing) ]
+                ++ (if List.any (\panel -> panel.isOpen && panel.blurs) panels then
+                        [ "blurred" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick
+            (topmostOpenPanel
+                |> Maybe.map .closeMsg
+                |> Maybe.withDefault (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
+            )
+        ]
+        []
 
 
 {-| A full-viewport-covering `div`, always rendered (even "closed") so opening/
 closing can be a plain CSS transition rather than the element itself
-appearing/disappearing outright -- shared by `accountsBackdrop`,
-`starredPostsBackdrop`, and `createAccountConfirmationBackdrop`, which differ
-only in their class name, open/closed state, and the message a click sends.
+appearing/disappearing outright -- used by `createAccountConfirmationBackdrop`
+(`sharedBackdrop` needs its own click-priority logic, so it builds its `div`
+directly rather than going through this).
 -}
 overlayBackdrop : String -> Bool -> Shared.Msg -> Html Shared.Msg
 overlayBackdrop backdropClass isOpen closeMsg =
@@ -181,7 +220,7 @@ navLink shared currentRoute content linkRoute =
         [ href (shared.basePath ++ Route.toHref linkRoute)
         , classes
             ("nav-link"
-                :: (if linkRoute == Route.Home_ then
+                :: (if linkRoute == Route.Home_ && mainServer shared /= Nothing then
                         [ "nav-link-home" ]
 
                     else
@@ -230,6 +269,31 @@ mainServer shared =
     findServer shared shared.accountsPanel.mainFrontendHost
 
 
+{-| Every page's browser tab title, built from `segments` (most-specific
+first, e.g. a post's title, or -- once posts/profiles can belong to one --
+that title *and* its Group's name) followed by `mainFrontendHost`'s own
+branding name, e.g. `"My Post | My Server"`. An empty `segments` (the Home
+page) is just the server name on its own, with no leading `" | "`.
+
+Centralizing this means every page's title updates together if the format
+ever changes, and a future segment (like that Group name) is just another
+list entry for the page to prepend -- not a new format to invent.
+-}
+pageTitle : Shared.Model -> List String -> String
+pageTitle shared segments =
+    String.join " | " (segments ++ [ serverName shared ])
+
+
+{-| `mainFrontendHost`'s branding name, falling back to the bare hostname for
+the brief window before that server's finished connecting (see `mainServer`).
+-}
+serverName : Shared.Model -> String
+serverName shared =
+    mainServer shared
+        |> Maybe.map (.branding >> .name)
+        |> Maybe.withDefault shared.accountsPanel.mainFrontendHost
+
+
 {-| The former "About" nav link, now a small circular "i" button stacked above
 the theme toggle at the Accounts Panel's top-right corner (see
 `accountsPanel`).
@@ -239,6 +303,7 @@ infoButton shared =
     a
         [ classes [ "panel-icon-button", "info-button" ]
         , href (shared.basePath ++ Route.toHref Route.About)
+        , onClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
         , title "About"
         ]
         [ text "i" ]
@@ -287,11 +352,16 @@ accountsMenu shared =
                     else
                         [ "has-avatars" ]
                    )
-                ++ (if List.length (AccountsPanel.enabledServers shared.accountsPanel) == 1 then
-                        []
+                ++ (case AccountsPanel.enabledServers shared.accountsPanel of
+                        [ singleServer ] ->
+                            if singleServer.frontendHost == shared.accountsPanel.mainFrontendHost then
+                                []
 
-                    else
-                        [ "has-summary" ]
+                            else
+                                [ "has-summary" ]
+
+                        _ ->
+                            [ "has-summary" ]
                    )
     in
     div [ class "accounts-menu" ]
@@ -303,11 +373,7 @@ accountsMenu shared =
                 [ accountsMenuButtonContent shared enabledAccounts
                 , accountsMenuServerSummary shared.accountsPanel
                 ]
-            , if AccountsPanel.hasAdminAccount shared.accountsPanel then
-                text ""
-
-              else
-                hostMismatchWarning shared
+            , hostMismatchWarning shared
             ]
         , accountsPanel shared
         ]
@@ -329,20 +395,26 @@ accountsMenuButtonContent shared enabledAccounts =
 
 {-| A small-font subtitle under the accounts-menu toggle button's "Login" text/
 avatars, summarizing how many servers are currently enabled: nothing for the
-common single-server case, "N servers" for any other count, or "No servers ⚠️"
-when every server's been disabled. If any account's server is currently
-unreachable (see `AccountsPanel.unreachableAccountHosts`, surfaced below as
-"Couldn't reach: ..."), the count is always shown -- even "1 server" -- with
-its own ⚠️, so that warning isn't silently hidden behind the usual
-single-server blank state. Recomputed on every render (so it updates live as
-servers are toggled/reconnected) directly off `AccountsPanel.enabledServers`
-and `AccountsPanel.unreachableAccountHosts`.
+common single-server case where that server is `mainFrontendHost`, that
+server's branding name when it's the lone enabled server but not
+`mainFrontendHost` (so it's clear which server is actually being browsed),
+"N servers" for any other count, or "No servers ⚠️" when every server's been
+disabled. If any account's server is currently unreachable (see
+`AccountsPanel.unreachableAccountHosts`, surfaced below as "Couldn't reach:
+..."), the count is always shown -- even "1 server" -- with its own ⚠️, so
+that warning isn't silently hidden behind the usual single-server blank
+state. Recomputed on every render (so it updates live as servers are
+toggled/reconnected) directly off `AccountsPanel.enabledServers` and
+`AccountsPanel.unreachableAccountHosts`.
 -}
 accountsMenuServerSummary : AccountsPanel.Model -> Html Shared.Msg
 accountsMenuServerSummary accountsPanelModel =
     let
+        servers =
+            AccountsPanel.enabledServers accountsPanelModel
+
         count =
-            List.length (AccountsPanel.enabledServers accountsPanelModel)
+            List.length servers
 
         hasUnreachableServers =
             not (List.isEmpty (AccountsPanel.unreachableAccountHosts accountsPanelModel))
@@ -363,12 +435,12 @@ accountsMenuServerSummary accountsPanelModel =
                         ""
                    )
     in
-    case count of
-        0 ->
+    case servers of
+        [] ->
             div [ class "accounts-menu-server-summary" ] [ text "No servers ⚠️" ]
 
-        1 ->
-            if hasUnreachableServers then
+        [ singleServer ] ->
+            if hasUnreachableServers || not (singleServer.frontendHost == accountsPanelModel.mainFrontendHost) then
                 div [ class "accounts-menu-server-summary" ] [ text serversText ]
 
             else
@@ -409,36 +481,20 @@ flagging, since the user probably has the "wrong" (if working) URL open.
 Clicking it force-resets `mainFrontendHost` back to `browsingHost`
 (`ResetMainFrontendHost`) rather than navigating anywhere.
 
-Only shown next to the Accounts Panel toggle when the Admin Panel button
-isn't also shown (see `accountsMenu`) -- with both present, the warning is
-folded into the Admin Panel instead (`hostMismatchPanelButton`, plus a badge
-on `adminMenu`'s toggle) so the two never sit side by side in the navbar.
+Always shown next to the Accounts Panel toggle (regardless of whether an admin
+account is signed in -- the Admin Panel now lives inside the Accounts Panel
+itself as a tab, see `adminTab`), rather than being folded into it.
 
 -}
 hostMismatchWarning : Shared.Model -> Html Shared.Msg
 hostMismatchWarning shared =
-    hostMismatchIcon "host-mismatch-warning" shared
-
-
-{-| Same warning/click behavior as `hostMismatchWarning`, but styled as one of
-the circular `panel-icon-button`s stacked at the Admin Panel's top-right
-corner (see `adminPanel`) -- used there instead whenever the Admin Panel
-button is shown.
--}
-hostMismatchPanelButton : Shared.Model -> Html Shared.Msg
-hostMismatchPanelButton shared =
-    hostMismatchIcon "panel-icon-button" shared
-
-
-hostMismatchIcon : String -> Shared.Model -> Html Shared.Msg
-hostMismatchIcon buttonClass shared =
     let
         accountsPanelModel =
             shared.accountsPanel
     in
     if hostMismatch shared then
         span
-            [ class buttonClass
+            [ class "host-mismatch-warning"
             , onClick (Shared.AccountsPanelMsg AccountsPanel.ResetMainFrontendHost)
             , title
                 ("You're browsing from "
@@ -471,7 +527,7 @@ you'll accumulate the most of.
 
 Always rendered (even "closed"), so opening/closing can be a plain CSS
 transition (fade + slide) rather than the panel just appearing/disappearing
-outright -- see `.accounts-panel`/`.accounts-panel.is-closed` in style.css.
+outright -- see `.nav-panel`/`.nav-panel.is-closed` in style.css.
 
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
@@ -480,14 +536,154 @@ accountsPanel shared =
         accountsPanelModel =
             shared.accountsPanel
     in
-    div [ classes [ "accounts-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
-        [ div [ class "panel-icon-stack" ] [ infoButton shared, themeToggle shared ]
-        , serversStrip shared
+    div [ classes [ "accounts-panel", "nav-panel", openClosedClass accountsPanelModel.showAccountsPanel ] ]
+        [ accountsPanelTabBar shared
+        , case activeTab shared of
+            AdminPanel.AccountsAndServersTab ->
+                accountsAndServersTab shared
+
+            AdminPanel.SettingsTab ->
+                settingsTab shared
+
+            AdminPanel.AdminTab ->
+                adminTab shared
+        ]
+
+
+{-| The tab bar itself: the "Accounts and Servers"/Settings/Admin tabs (see
+`accountsPanelTab`) on the left, the info/brightness buttons -- horizontal
+here, unlike their old stacked-in-the-corner layout -- on the right.
+-}
+accountsPanelTabBar : Shared.Model -> Html Shared.Msg
+accountsPanelTabBar shared =
+    div [ class "accounts-panel-tab-bar" ]
+        [ div [ class "accounts-panel-tabs" ]
+            (List.filterMap identity
+                [ Just (accountsPanelTab shared AdminPanel.AccountsAndServersTab "Accounts & Servers" False)
+                , if settingsCount shared > 0 then
+                    Just (accountsPanelTab shared AdminPanel.SettingsTab "⚙️" True)
+
+                  else
+                    Nothing
+                , if AccountsPanel.hasAdminAccount shared.accountsPanel then
+                    Just (accountsPanelTab shared AdminPanel.AdminTab "🛡️" True)
+
+                  else
+                    Nothing
+                ]
+            )
+        , div [ class "panel-icon-row" ] [ themeToggle shared, infoButton shared ]
+        ]
+
+
+accountsPanelTab : Shared.Model -> AdminPanel.AccountsPanelTab -> String -> Bool -> Html Shared.Msg
+accountsPanelTab shared tab label isNarrow =
+    button
+        [ classes
+            ("accounts-panel-tab"
+                :: (if isNarrow then
+                        [ "narrow" ]
+
+                    else
+                        []
+                   )
+                ++ (if activeTab shared == tab then
+                        [ "selected" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick (Shared.AdminPanelMsg (AdminPanel.TabSelected tab))
+        ]
+        [ text label ]
+
+
+{-| How many Settings the Settings tab currently holds -- just the "switch
+main server by tapping servers" toggle (admin-only) for now, but tracked as a
+count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
+settings later without changing how its visibility is decided.
+-}
+settingsCount : Shared.Model -> Int
+settingsCount shared =
+    if AccountsPanel.hasAdminAccount shared.accountsPanel then
+        1
+
+    else
+        0
+
+
+{-| `shared.adminPanel.activeTab`, falling back to `AccountsAndServersTab`
+whenever the selected tab isn't actually visible right now (e.g. the signed-in
+admin account was just removed while the Admin tab was showing) -- so the
+panel never ends up rendering a tab's content with no matching tab button
+selected.
+-}
+activeTab : Shared.Model -> AdminPanel.AccountsPanelTab
+activeTab shared =
+    case shared.adminPanel.activeTab of
+        AdminPanel.SettingsTab ->
+            if settingsCount shared > 0 then
+                AdminPanel.SettingsTab
+
+            else
+                AdminPanel.AccountsAndServersTab
+
+        AdminPanel.AdminTab ->
+            if AccountsPanel.hasAdminAccount shared.accountsPanel then
+                AdminPanel.AdminTab
+
+            else
+                AdminPanel.AccountsAndServersTab
+
+        AdminPanel.AccountsAndServersTab ->
+            AdminPanel.AccountsAndServersTab
+
+
+{-| The current UI of the Accounts Panel, minus the info/brightness buttons
+(now in `accountsPanelTabBar` instead). Always shows, for everyone.
+-}
+accountsAndServersTab : Shared.Model -> Html Shared.Msg
+accountsAndServersTab shared =
+    div [ class "accounts-panel-tab-content" ]
+        [ serversStrip shared
         , unreachableServersWarning shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
         , formView shared
+        ]
+
+
+{-| Just the "switch main server by tapping servers" toggle (see `serverChip`)
+for now -- only shown (via `settingsCount`) while an admin account is signed
+in.
+-}
+settingsTab : Shared.Model -> Html Shared.Msg
+settingsTab shared =
+    div [ class "accounts-panel-tab-content" ]
+        [ label [ class "admin-switch-row" ]
+            [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            , span [] [ text "Switch main server by tapping servers" ]
+            ]
+        ]
+
+
+{-| The per-admin-Account sections (see `adminAccountPanel`) from the old
+standalone Admin Panel.
+-}
+adminTab : Shared.Model -> Html Shared.Msg
+adminTab shared =
+    let
+        adminAccounts =
+            List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
+    in
+    div [ class "accounts-panel-tab-content" ]
+        [ if List.isEmpty adminAccounts then
+            text ""
+
+          else
+            div [ class "admin-accounts-list" ] (List.map (adminAccountPanel shared) adminAccounts)
         ]
 
 
@@ -660,18 +856,23 @@ accountRow shared account =
     in
     div [ classes [ "account-row", account.server, "background-color-primary" ] ]
         [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
-        , avatarOrPlaceholder shared.accountsPanel.servers account
-        , div [ class "account-row-label" ]
-            [ div [ class "account-row-username" ]
-                [ text (AccountsPanel.displayName account)
-                , if AccountsPanel.isAdmin account then
-                    span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
+        , a
+            [ class "account-row-profile-link"
+            , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
+            ]
+            [ avatarOrPlaceholder shared.accountsPanel.servers account
+            , div [ class "account-row-label" ]
+                [ div [ class "account-row-username" ]
+                    [ text (AccountsPanel.displayName account)
+                    , if AccountsPanel.isAdmin account then
+                        span [ class "account-admin-badge", title "Admin on this server" ] [ text "🛡️" ]
 
-                  else
-                    text ""
+                      else
+                        text ""
+                    ]
+                , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
+                    [ text (account.server ++ " | " ++ branding.name) ]
                 ]
-            , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
-                [ text (account.server ++ " | " ++ branding.name) ]
             ]
         , button
             [ class "remove-btn"
@@ -717,6 +918,40 @@ Enter, type a password" flow.
 -}
 formView : Shared.Model -> Html Shared.Msg
 formView shared =
+    if AccountsPanel.shouldShowAddAccountForm shared.accountsPanel then
+        addAccountForm shared
+
+    else
+        div [ class "account-form" ]
+            [ button
+                [ classes [ "show-add-account-form-button", formThemeHost shared.accountsPanel, "background-color-primary" ]
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
+                ]
+                [ text "Add Account/Server..." ]
+            ]
+
+
+{-| The server whose theme the form's own controls (Login/Create Account,
+and the collapsed "Add Account/Server..." button) should be tinted with: the
+Server field's own host once it names a server we're connected to, falling
+back to `mainFrontendHost` otherwise (e.g. the field is empty, still being
+typed, or naming an unknown host -- see `AccountsPanel.AddServerClicked`).
+-}
+formThemeHost : AccountsPanel.Model -> String
+formThemeHost accountsPanelModel =
+    let
+        form =
+            accountsPanelModel.accountForm
+    in
+    if AccountsPanel.isKnownServer accountsPanelModel form.server then
+        String.trim form.server
+
+    else
+        accountsPanelModel.mainFrontendHost
+
+
+addAccountForm : Shared.Model -> Html Shared.Msg
+addAccountForm shared =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -740,11 +975,7 @@ formView shared =
             not knownServer || submitting
 
         themeHost =
-            if knownServer then
-                String.trim form.server
-
-            else
-                accountsPanelModel.mainFrontendHost
+            formThemeHost accountsPanelModel
 
         serverEnterMsg =
             if knownServer then
@@ -838,7 +1069,7 @@ formView shared =
 
 
 {-| Covers the whole page (including the Accounts Panel) while the Create
-Account confirmation step is up -- higher `z-index` than `accountsBackdrop`
+Account confirmation step is up -- higher `z-index` than `sharedBackdrop`
 since it can appear on top of the (already open) Accounts Panel. Always
 rendered, like the other backdrops, so opening/closing is a CSS transition.
 -}
@@ -963,52 +1194,21 @@ policyMarkdown heading maybeText =
 
 
 
--- ADMIN MENU
-
-
-{-| Only shown at all when `AccountsPanel.hasAdminAccount` -- see `layout`.
-For now just holds the "switch main server" toggle (see `serverChip`); future
-admin features land here too.
-
-Wears a ⚠️ badge when `hostMismatch` is true -- since `hostMismatchWarning`
-itself is suppressed whenever this menu is shown (see `accountsMenu`), this
-badge plus `hostMismatchPanelButton` in `adminPanel` are the only places that
-warning surfaces.
-
--}
-adminMenu : Shared.Model -> Html Shared.Msg
-adminMenu shared =
-    div [ class "admin-menu" ]
-        [ button
-            [ classes [ "accounts-menu-toggle", "circular" ]
-            , onClick (Shared.AdminPanelMsg AdminPanel.ToggleAdminPanel)
-            , title "Server Admin Panel"
-            ]
-            (text "🛡️"
-                :: (if hostMismatch shared then
-                        [ span [ class "host-mismatch-badge" ] [ text "⚠️" ] ]
-
-                    else
-                        []
-                   )
-            )
-        , adminPanel shared
-        ]
+-- STARRED POSTS TOGGLE
 
 
 {-| Only shown at all once at least one Post has been starred (see
-`Shared.StarredPostsPanel.starKey`) -- same "only show the nav icon once
-there's something behind it" idea as `adminMenu`. Just the toggle button --
-unlike `adminMenu`/`accountsMenu`, its panel (`starredPostsPanel`) is rendered
-separately, as a direct child of `.navbar` itself rather than of this button's
-own `.admin-menu` wrapper, so it can hug the actual screen edge (see
-`.starred-posts-panel` in style.css).
+`Shared.StarredPostsPanel.starKey`) -- only show the nav icon once there's
+something behind it. Just the toggle button -- unlike `accountsMenu`, its
+panel (`starredPostsPanel`) is rendered separately, as a direct child of
+`.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
+can hug the actual screen edge (see `.starred-posts-panel` in style.css).
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
-            [ classes [ "accounts-menu-toggle", "circular" ]
+            [ classes [ "nav-menu-toggle", "circular" ]
             , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
             , title "Starred Posts"
             ]
@@ -1057,33 +1257,6 @@ currentStarredPostKey shared currentRoute =
 
         _ ->
             Nothing
-
-
-adminPanel : Shared.Model -> Html Shared.Msg
-adminPanel shared =
-    let
-        stateClass =
-            openClosedClass shared.adminPanel.showAdminPanel
-
-        adminAccounts =
-            List.filter AccountsPanel.isAdmin shared.accountsPanel.accounts
-    in
-    div [ classes [ "accounts-panel", "admin-panel", stateClass ] ]
-        [ if hostMismatch shared then
-            div [ class "panel-icon-stack" ] [ hostMismatchPanelButton shared ]
-
-          else
-            text ""
-        , label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
-            , span [] [ text "Switch main server by tapping servers" ]
-            ]
-        , if List.isEmpty adminAccounts then
-            text ""
-
-          else
-            div [ class "admin-accounts-list" ] (List.map (adminAccountPanel shared) adminAccounts)
-        ]
 
 
 {-| A collapsible panel, one per admin-capable signed-in account, for setting

@@ -191,7 +191,7 @@ subscriptions _ =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = "Homepage"
+    { title = UI.pageTitle shared []
     , body =
         UI.layout shared
             req.route
@@ -242,5 +242,11 @@ postCardView shared ( host, post ) =
         onStarClicked =
             StarredPostsPanel.toggleStarMsg shared.accountsPanel host displayPost
                 |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
+
+        maybeServer =
+            AccountsPanel.serverForHost shared.accountsPanel.servers host
+
+        maybeAccount =
+            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host False starred onStarClicked displayPost
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount False starred onStarClicked displayPost

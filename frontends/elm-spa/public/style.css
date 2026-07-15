@@ -80,9 +80,9 @@ body {
   position: sticky;
   top: 0;
   border-bottom: 1px solid var(--border);
-  /* Its own stacking context, above .accounts-backdrop, so the nav (and its
-     descendant .accounts-panel) is never blurred/covered/click-intercepted
-     by the backdrop. */
+  /* Its own stacking context, above .shared-backdrop, so the nav (and its
+     descendant .nav-panel elements -- Accounts, Starred Posts) is never
+     blurred/covered/click-intercepted by the backdrop. */
   z-index: 25;
 }
 
@@ -97,12 +97,37 @@ body {
   padding: 0.75rem 1rem;
 }
 
-/* Covers everything below/behind the nav while the Accounts Panel is open;
-   see UI.elm's `accountsBackdrop`. */
-.accounts-backdrop {
+/* Phone-width screens: claw back nearly all of the navbar's left/right
+   padding -- 1rem on each side is space worth reclaiming when the whole
+   navbar is barely wider than the Home/Accounts buttons themselves. Left/
+   right are trimmed to a hairline 2px (rather than 0) so the Home and
+   Accounts buttons don't butt straight up against the screen edge; top/
+   bottom padding is untouched. Tablet and up keep the original padding.
+   Shares its 639px breakpoint with `.starred-posts-panel`'s own
+   narrow-screen override below (search this file for `639px`) -- CSS
+   custom properties can't be used inside `@media` feature values (no
+   `@custom-media` support in browsers), so there's no way to define this
+   once; keep both in sync by hand if it ever changes. */
+@media (max-width: 639px) {
+  .navbar-inner {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
+/* Covers everything below/behind the nav for every panel that closes via a
+   background tap (Starred Posts, Accounts -- see UI.elm's `sharedBackdrop`,
+   which lists them nearest-first and picks the frontmost open one to close on
+   click, so they peel off one at a time rather than all closing together).
+   Only blurred/tinted (`.blurred`, driven by `sharedBackdrop`'s per-panel
+   `blurs` flag) while the Accounts Panel specifically is open -- unlike it,
+   the Starred Posts panel doesn't block interaction with the rest of the
+   page, since starring/unstarring posts while it's open is an expected,
+   encouraged interaction rather than something to obscure. */
+.shared-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 15;
+  z-index: 10;
   background: rgba(0, 0, 0, 0);
   backdrop-filter: blur(0px);
   -webkit-backdrop-filter: blur(0px);
@@ -110,34 +135,24 @@ body {
   transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
 }
 
-.accounts-backdrop.is-open {
+.shared-backdrop.is-open {
+  pointer-events: auto;
+}
+
+.shared-backdrop.is-open.blurred {
   background: rgba(0, 0, 0, 0.15);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  pointer-events: auto;
-}
-
-/* Covers everything below/behind the nav while the Starred Posts panel is
-   open; see UI.elm's `starredPostsBackdrop`. Unlike `.accounts-backdrop`, it
-   never blurs/tints the page -- clicking a starred post to see it change is
-   part of using this panel, not something to obscure -- it only exists to
-   catch clicks on the page behind the panel and close it. Lower z-index than
-   `.accounts-backdrop` so that backdrop still wins the click (closing only
-   the Accounts Panel) when both panels are open at once. */
-.starred-posts-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.starred-posts-backdrop.is-open {
-  pointer-events: auto;
 }
 
 .nav-links {
   display: flex;
   gap: 0.5rem;
+  /* Without this, a flex item's default auto min-width is its content size,
+     which -- since .nav-link-home's name is `white-space: nowrap` -- is the
+     full un-truncated name, blocking it from ever actually shrinking/
+     ellipsizing under real space pressure. */
+  min-width: 0;
 }
 
 /* Button-styled nav links. No background/text color of their own -- they
@@ -173,10 +188,16 @@ body {
    button, so a fixed radius is used instead. */
 .nav-link-home {
   align-items: stretch;
-  padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+  /* No top/bottom/left padding -- the logo (see below) sits flush against
+     those three edges, flush enough that it'd otherwise poke past the
+     button's own rounded corners, hence `overflow: hidden` here too. */
+  padding: 0 0.6rem 0 0;
+  overflow: hidden;
   border-radius: 14px;
   margin-top: -10px;
   margin-bottom: -10px;
+  /* See .nav-links' min-width comment -- same reasoning, one level down. */
+  min-width: 0;
 }
 
 .nav-link-home .server-name-and-logo.regular {
@@ -188,28 +209,37 @@ body {
 .nav-link-home .server-name-and-logo.regular .server-logo-image,
 .nav-link-home .server-name-and-logo.regular .server-logo-emoji,
 .nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
-  /* `height: 100%` alone is unreliable here -- .nav-link-home's height comes
-     from its content (padding around the name text), not an explicit value,
-     and percentage heights don't resolve against an auto-height ancestor. So
-     real (often non-square, sometimes huge) logo images fall back to their
-     intrinsic size instead of stretching, blowing out the button. `max-*`
-     clamps that regardless of which way it resolves; `object-fit: cover`
-     (from the base .server-logo-image rule) crops non-square source images
-     into the resulting square instead of distorting them. */
+  /* The parent row's `align-items: stretch` (not a `height: 100%` here) is
+     what stretches this to the button's full height -- .nav-link-home's own
+     height comes from its content (padding around the name text), not an
+     explicit value, and a *percentage* height on this sibling, even though it
+     resolves fine at paint time, throws off the browser's intrinsic-width
+     pass for `.server-name-primary`/`.server-name-secondary` next to it
+     (their shrink-to-fit ellipsis box ends up a few px too narrow, clipping
+     text that would otherwise fully fit). `min-height` forces the button (and
+     therefore this stretched glyph) noticeably taller than a single line of
+     name text alone would be, since the point is a big glyph flush with the
+     button's left/top/bottom edges (`.nav-link-home`'s own padding/overflow
+     handle that flushness); `max-height` only matters as a cap for
+     multi-line names tall enough to exceed it. `aspect-ratio` keeps it square
+     off of whichever of those actually wins; `object-fit: cover` (from the
+     base .server-logo-image rule) crops non-square source images into the
+     resulting square instead of distorting them. */
   width: auto;
-  height: 100%;
-  max-width: 48px;
-  max-height: 48px;
+  min-height: 64px;
+  max-width: 64px;
+  max-height: 64px;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
+  border-radius: 0;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-logo-emoji {
-  font-size: 2.2rem;
+  font-size: 3.6rem;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
-  font-size: 1.4rem;
+  font-size: 2.3rem;
 }
 
 .nav-link-home .server-name-and-logo.regular .server-name-breakdown {
@@ -220,7 +250,7 @@ body {
 .nav-link-home .server-name-and-logo.regular .server-name-primary,
 .nav-link-home .server-name-and-logo.regular .server-name-secondary {
   text-align: left;
-  max-width: 130px;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -256,6 +286,10 @@ input[type="url"] {
   color: var(--fg);
 }
 
+input[disabled] {
+  opacity: 0.6;
+}
+
 
 /* Nav-right: accounts menu (+ starred posts/admin menus) */
 
@@ -265,21 +299,51 @@ input[type="url"] {
   gap: 0.5rem;
 }
 
-/* Sits at the Accounts Panel's top-right corner, overlapping the servers
-   strip's top edge -- that's fine since the overlapped area (the server
-   chip's logo/name) isn't the only way to select it, so covering a sliver of
-   it costs nothing. Higher z-index than the strip so it stays clickable.
-   Info ("i") button on top, theme toggle below it -- see UI.elm's
-   `accountsPanel`. */
-.panel-icon-stack {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 5;
+/* The Accounts Panel's tab bar: tabs (Accounts and Servers/Settings/Admin, see
+   UI.elm's `accountsPanelTab`) on the left, info ("i")/theme toggle buttons
+   -- horizontal here, unlike their old stacked-in-the-corner layout -- pinned
+   to the far right. */
+.accounts-panel-tab-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.accounts-panel-tabs {
+  display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.accounts-panel-tab {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.accounts-panel-tab.selected {
+  opacity: 1;
+  background: var(--panel-bg);
+  border-color: var(--fg);
+}
+
+/* The Settings/Admin tabs -- a single cog/shield emoji each, so they don't
+   need the wider padding a text label like "Accounts and Servers" does. */
+.accounts-panel-tab.narrow {
+  padding: 0.3rem 0.55rem;
+}
+
+.panel-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
 }
 
 .panel-icon-button {
@@ -305,10 +369,10 @@ input[type="url"] {
   font-size: 0.95rem;
 }
 
-
 .accounts-menu,
 .admin-menu {
   position: relative;
+  display: flex;
 }
 
 .accounts-menu-row {
@@ -317,6 +381,7 @@ input[type="url"] {
   gap: 0.4rem;
 }
 
+.nav-menu-toggle,
 .accounts-menu-toggle {
   display: flex;
   flex-direction: column;
@@ -327,6 +392,8 @@ input[type="url"] {
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);
+  margin-top: auto;
+  margin-bottom: auto;
 }
 
 .accounts-menu-toggle.has-avatars {
@@ -342,6 +409,7 @@ input[type="url"] {
    buttons with no avatars/summary, so round them into plain circles rather
    than the wider pill shape `.accounts-menu-toggle` uses for the main
    Accounts Panel toggle. */
+.nav-menu-toggle.circular,
 .accounts-menu-toggle.circular {
   flex-direction: row;
   justify-content: center;
@@ -387,18 +455,14 @@ input[type="url"] {
   font-size: 0.7rem;
 }
 
-.admin-panel {
-  width: 260px;
-}
-
-.accounts-panel.starred-posts-panel {
+.starred-posts-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
      both happen to be open at once. */
   z-index: 25;
   --panel-width: 360px;
   width: var(--panel-width);
 
-  /* Unlike the Accounts/Admin panels, this one is rendered by `UI.elm`'s
+  /* Unlike the Accounts Panel, this one is rendered by `UI.elm`'s
      `starredPostsPanel` as a direct child of `.navbar` itself (see
      `headerNav`) rather than of its toggle's own `.admin-menu` wrapper, so
      `left` here is in `.navbar`'s own coordinates -- and since `.navbar`
@@ -429,15 +493,30 @@ input[type="url"] {
   right: auto;
   left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
 
-  /* The base `.accounts-panel` rule's `top: calc(100% + 0.5rem)` means
-     something different here than it does for the Accounts/Admin panels:
-     theirs is relative to their own toggle's own (short) box, but this one's
+  /* The base `.nav-panel` rule's `top: calc(100% + 0.5rem)` means
+     something different here than it does for the Accounts Panel: that one's
+     relative to its own toggle's own (short) box, but this one's
      relative to the full `.navbar` (see the `left` comment above for why),
      which is taller since it's centered around the Home link's bigger logo.
      The `12.6px` correction is that height difference -- it's what actually
      lines this panel's top up with the Accounts Panel's, rather than sitting
      visibly lower. */
   top: calc(100% + 0.5rem - 12.6px);
+}
+
+/* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
+   hairline 2px above, so the panel's left edge needs its own tighter offset
+   (3px, not the full 16px) to stay close to the Home link's new position
+   instead of sitting well right of it. `(100vw - 800px) / 2` is always 0 in
+   this breakpoint (max 639px is nowhere near the 800px it'd need to go
+   positive), so the base rule's full `calc()` collapses to this flat value
+   here. Placed after the base rule (rather than alongside `.navbar-inner`'s
+   own narrow-screen override above) so it wins the cascade on source order
+   alone, without needing `!important`. */
+@media (max-width: 639px) {
+  .starred-posts-panel {
+    left: 3px;
+  }
 }
 
 /* Notification-style count bubble on the Starred Posts toggle's corner --
@@ -460,21 +539,6 @@ input[type="url"] {
   font-weight: 700;
   line-height: 16px;
   text-align: center;
-}
-
-/* ⚠️ badge on the Admin Panel toggle's corner, shown in place of the
-   standalone `.host-mismatch-warning` whenever the Admin Panel button is
-   also present (see UI.elm's `adminMenu`/`accountsMenu`) -- so the warning
-   and the Admin Panel toggle never end up sitting side by side in the
-   navbar. Positioned the same way as `.starred-posts-count-badge` (relative
-   to the wrapping `.admin-menu`), but no background -- the emoji itself
-   reads fine on its own. */
-.host-mismatch-badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  font-size: 0.75rem;
-  line-height: 1;
 }
 
 .starred-posts-header {
@@ -592,7 +656,7 @@ input[type="url"] {
   line-height: 1;
 }
 
-.accounts-panel {
+.nav-panel {
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
@@ -624,7 +688,7 @@ input[type="url"] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-.accounts-panel.is-closed {
+.nav-panel.is-closed {
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
@@ -652,9 +716,9 @@ input[type="url"] {
   overflow-y: hidden;
   padding-bottom: 0.35rem;
   /* This strip sets `overflow-x`/`overflow-y`, which makes its automatic
-     minimum size (as a flex item in .accounts-panel's column) 0 instead of
+     minimum size (as a flex item in .nav-panel's column) 0 instead of
      content-based -- without flex-shrink: 0, that lets it get squashed
-     whenever .accounts-panel's own max-height/overflow-y (added for short
+     whenever .nav-panel's own max-height/overflow-y (added for short
      screens) needs the vertical space, instead of the panel scrolling. */
   flex-shrink: 0;
 }
@@ -837,7 +901,7 @@ input[type="url"] {
   overflow-y: auto;
   /* Same reasoning as .servers-strip's flex-shrink: 0 -- this already has its
      own scroll for "many accounts"; it shouldn't also get squashed below
-     that by .accounts-panel's outer overflow-y on short screens. */
+     that by .nav-panel's outer overflow-y on short screens. */
   flex-shrink: 0;
 }
 
@@ -943,7 +1007,8 @@ input[type="url"] {
   border: 1px solid var(--border);
 }
 
-.add-server-button {
+.add-server-button,
+.show-add-account-form-button {
   width: 100%;
   padding: 0.4rem 0.5rem;
   border: 1px solid var(--border);
@@ -959,7 +1024,7 @@ input[type="url"] {
    Accounts/Starred Posts panels) shown after "Create Account" is clicked,
    before the account is actually created -- see UI.elm's
    `createAccountConfirmationModal`. Its own backdrop sits above
-   `.accounts-backdrop`/`.navbar` since it can appear on top of the (already
+   `.shared-backdrop`/`.navbar` since it can appear on top of the (already
    open) Accounts Panel. */
 
 .create-account-backdrop {
@@ -1129,7 +1194,7 @@ input[type="url"] {
 /* .switch input:checked + .slider's background comes from the emitted
    `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
 
-.switch input:checked + .slider::before {
+.switch input:checked+.slider::before {
   transform: translateX(14px);
 }
 
@@ -1148,6 +1213,7 @@ input[type="url"] {
 }
 
 .post-card {
+  position: relative;
   display: block;
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--border);
@@ -1157,13 +1223,103 @@ input[type="url"] {
   transition: border-color 0.2s ease;
 }
 
+/* The "stretched link" that makes the whole card open the post -- an
+   invisible `<a>` absolutely filling `.post-card`, sitting *behind*
+   `.post-card-title`/`.post-card-meta` (both painted above it -- `-meta` via
+   its own `position: relative`, `-title` for free since unpositioned in-flow
+   content always paints below positioned content regardless of DOM order).
+   Exists so `.post-card-meta`'s `authorLink` can be a real, independently
+   clickable link without nesting an `<a>` inside this one -- see
+   `Components.Posts.postCard`'s doc comment for why that doesn't work in
+   Elm. */
+.post-card-link-overlay {
+  position: absolute;
+  inset: 0;
+}
+
 .post-card-title {
   font-weight: 700;
 }
 
 .post-card-meta {
+  position: relative;
   color: var(--muted);
   font-size: 0.85rem;
+  /* Makes plain text here (and anything else that doesn't opt back in)
+     transparent to clicks, which fall through to `.post-card-link-overlay`
+     behind -- so clicking anywhere in the meta line except an opted-in
+     interactive descendant still opens the post, same as before this was
+     split out of the card's own enclosing `<a>`. */
+  pointer-events: none;
+}
+
+/* `.post-card-meta`/`.post-detail-meta` are both split into a `.post-meta-left`
+   (author/host/visibility) and `.post-meta-right` (star + comment count)
+   flex item -- `.post-meta-right`'s `margin-left: auto` pins it to the
+   bottom-right of the card at any width, and `flex-wrap: wrap` on the
+   container drops it to its own right-aligned line (rather than letting the
+   browser wrap `.post-star`/the comment count text apart from each other
+   mid-group) once `.post-meta-left` no longer leaves it enough room on the
+   first line. */
+.post-card-meta,
+.post-detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
+}
+
+.post-meta-left {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.post-meta-right {
+  flex: 0 0 auto;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+
+.post-author-link,
+.post-card-meta .post-star {
+  pointer-events: auto;
+}
+
+.post-author-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: inherit;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.post-author-link:hover {
+  text-decoration: underline;
+}
+
+/* Small avatar/placeholder next to a post's author name -- same size as the
+   Accounts Panel toggle's own avatars (`.accounts-menu-avatar`). Used by both
+   `postCard`'s `.post-card-meta` and `postDetail`'s `.post-detail-meta`. */
+.post-author-avatar {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.post-author-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.65rem;
 }
 
 /* The Starred Posts panel entry for the Post currently being viewed (see
@@ -1271,6 +1427,62 @@ input[type="url"] {
   padding: 0.3rem 0.6rem;
 }
 
+/* Post media: a horizontally-scrolling strip, same pattern as the Accounts
+   Panel's .servers-strip. */
+
+.post-media-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0.8rem;
+}
+
+.post-media-item {
+  flex: 0 0 auto;
+  width: 260px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chip-bg);
+}
+
+@media (min-width: 640px) {
+  .post-media-item {
+    width: 400px;
+    height: 320px;
+  }
+}
+
+.media-renderer-image,
+.media-renderer-video,
+.media-renderer-object {
+  width: 100%;
+  height: 100%;
+}
+
+.media-renderer-image {
+  object-fit: contain;
+}
+
+.media-renderer-video {
+  background: black;
+}
+
+.media-renderer-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.6rem;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
 .post-comments-link {
   margin-top: 0.8rem;
 }
@@ -1298,4 +1510,210 @@ input[type="url"] {
 .server-dependent-error {
   color: var(--danger);
   font-size: 0.85rem;
+}
+
+
+/* AccountsPanel's account rows link out to that account's profile (see
+   UI.elm's accountRow) -- the link wraps the avatar + label, not the whole
+   row, so the switch/remove-button controls stay their own separate clicks. */
+
+.account-row-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+
+/* Components/UserProfilePage.elm's profile page (Pages/User/UserId_.elm,
+   Pages/Username_.elm) -- mirrors post-detail's look. */
+
+.profile-detail {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.profile-avatar {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.profile-header-names {
+  min-width: 0;
+}
+
+.profile-username {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.profile-admin-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.profile-real-name {
+  color: var(--muted);
+}
+
+.profile-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.profile-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin: 0.8rem 0;
+}
+
+.profile-count {
+  text-align: center;
+}
+
+.profile-count-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.profile-count-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.profile-bio {
+  display: block;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  margin: 0.8rem 0;
+}
+
+.profile-bio>*:first-child {
+  margin-top: 0;
+}
+
+.profile-bio>*:last-child {
+  margin-bottom: 0;
+}
+
+.profile-bio blockquote {
+  margin: 0.8rem 0;
+  padding: 0.2rem 0.8rem;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+.profile-bio :not(pre)>code {
+  background: var(--chip-bg);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.9em;
+}
+
+.profile-bio pre {
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+  overflow-x: auto;
+}
+
+.profile-bio pre code {
+  background: none;
+  padding: 0;
+}
+
+.profile-bio img {
+  max-width: 100%;
+}
+
+.profile-section-title {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0.8rem 0 0.4rem;
+}
+
+.profile-permissions,
+.profile-federated {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.profile-permission-badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+}
+
+.profile-federated-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.profile-federated-avatar {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-federated-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.profile-federated-badge {
+  font-size: 0.75rem;
+}
+
+.profile-loading,
+.profile-error {
+  color: var(--muted);
 }

@@ -13,7 +13,7 @@ page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     UI.page shared
         req
-        { title = "About"
+        { title = UI.pageTitle shared [ "About" ]
         , body =
             [ p [] [ text "Jonline is a federated, decentralized social media platform created by Jon Latané." ]
             , p [] [ text "It's available under the AGPL, with a Rust BE and a new Elm FE, ", a [ href "https://github.com/JonLatane/jonline" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
