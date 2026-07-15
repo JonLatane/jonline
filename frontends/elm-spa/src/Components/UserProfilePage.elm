@@ -383,7 +383,7 @@ view shared model =
                     p [ class "profile-loading" ] [ text "Loading…" ]
 
                 UserFailed ->
-                    p [ class "profile-error" ] [ text ("Couldn't load the profile for " ++ lookupToString model.targetHost model.lookup ++ ".") ]
+                    p [ class "profile-error" ] [ text ("Couldn't load the profile for " ++ lookupToString model.targetHost model.lookup ++ ". Maybe they don't exist, or maybe you need to be logged in?") ]
 
                 UserLoaded user ->
                     profileDetail shared model server maybeAccount user

@@ -751,7 +751,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
 
         Just PostFetchFailed ->
-            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Post " ++ key ++ ".") ]
+            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Post " ++ key ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
 
         Just ServerUnavailable ->
             div [ class "starred-post-entry post-error" ] [ text "That post's server isn't reachable right now." ]

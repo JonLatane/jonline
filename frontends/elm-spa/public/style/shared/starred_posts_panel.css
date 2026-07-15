@@ -124,7 +124,8 @@
   min-width: 0;
 }
 
-.flip-animated-item.flip-moving .starred-post-entry .post-card {
+.flip-animated-item.flip-moving .starred-post-entry .post-card,
+.flip-animated-item.flip-moving .starred-post-entry .post-error {
   /* flex: 1 1 auto;
   min-width: 0; */
   backdrop-filter: blur(4px);

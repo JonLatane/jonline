@@ -1,6 +1,4 @@
-.media-renderer-image,
-.media-renderer-video,
-.media-renderer-object {
+.media-renderer-fill {
   width: 100%;
   height: 100%;
 }
@@ -11,6 +9,29 @@
 
 .media-renderer-video {
   background: black;
+  object-fit: contain;
+}
+
+/* Lets an image/video keep its own aspect ratio (portrait, landscape,
+   square, 4:3, whatever) instead of being stretched/cropped into a
+   fixed-size box -- used for a post's single "focus" media item. Only one
+   of width/height ends up constrained by the ratio itself; the other is
+   capped by max-width/max-height so it never overflows a reasonably-sized
+   viewport. */
+.media-renderer-natural.media-renderer-image,
+.media-renderer-natural.media-renderer-video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 70vh;
+}
+
+/* `<object>` embeds (PDFs, etc.) have no intrinsic size to preserve, so
+   "natural" sizing just falls back to a roomy fixed-height box. */
+.media-renderer-natural.media-renderer-object {
+  width: 100%;
+  height: 60vh;
 }
 
 .media-renderer-fallback {
@@ -22,4 +43,51 @@
   text-align: center;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+/* Components.MultiMediaRenderer -- a single media item is a post's "focus",
+   so it's shown big at its own aspect ratio (see .media-renderer-natural
+   above) rather than being squashed into a fixed box; multiple items
+   instead fall back to a horizontally-scrolling strip of fixed-size
+   thumbnails, same pattern as the Accounts Panel's .servers-strip. */
+
+.multi-media-single {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.8rem;
+}
+
+.multi-media-single-item {
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chip-bg);
+}
+
+.multi-media-strip {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0.8rem;
+}
+
+.multi-media-item {
+  flex: 0 0 auto;
+  width: 260px;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--chip-bg);
+}
+
+@media (min-width: 640px) {
+  .multi-media-item {
+    width: 400px;
+    height: 320px;
+  }
 }

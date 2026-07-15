@@ -232,7 +232,7 @@ bodyView shared req model =
                     p [ class "post-loading" ] [ text "Loading…" ]
 
                 PostFailed ->
-                    p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ".") ]
+                    p [ class "post-error" ] [ text ("Couldn't load Post " ++ model.postId ++ "@" ++ model.targetHost ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
 
                 PostLoaded post ->
                     div []

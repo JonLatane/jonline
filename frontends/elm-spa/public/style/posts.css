@@ -225,36 +225,6 @@
   padding: 0.3rem 0.6rem;
 }
 
-/* Post media: a horizontally-scrolling strip, same pattern as the Accounts
-   Panel's .servers-strip. */
-
-.post-media-strip {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 0.5rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  margin-bottom: 0.8rem;
-}
-
-.post-media-item {
-  flex: 0 0 auto;
-  width: 260px;
-  height: 220px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--chip-bg);
-}
-
-@media (min-width: 640px) {
-  .post-media-item {
-    width: 400px;
-    height: 320px;
-  }
-}
-
 .post-comments-link {
   margin-top: 0.8rem;
 }

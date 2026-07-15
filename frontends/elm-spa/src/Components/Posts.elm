@@ -24,7 +24,7 @@ route's `id` or `id@host` segment.
 -}
 
 import Components.Markdown as Markdown
-import Components.PostMediaRenderer as PostMediaRenderer
+import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Users as Users
 import Gen.Route
 import Grpc
@@ -475,7 +475,7 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount st
             ]
         , case maybeServer of
             Just server ->
-                PostMediaRenderer.view server maybeAccount post.media
+                MultiMediaRenderer.view server maybeAccount post.media
 
             Nothing ->
                 text ""
