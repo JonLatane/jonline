@@ -68,6 +68,7 @@ host's `primaryColor` (see `UI.elm`'s `accountRow`), so `primaryAnchorColor`
 than the plain switch rule above, so it wins there regardless of rule
 order. Other accounts' rows aren't tinted with `mainFrontendHost`'s colors
 at all, so they don't need (or get) this override.
+
 -}
 mainFrontendServerRules : UI.ServerTheme.ServerTheme -> AccountsPanel.Model -> String
 mainFrontendServerRules theme accountsPanel =
@@ -126,6 +127,10 @@ serverRules darkMode mainTheme mainFrontendHost server =
     in
     String.concat
         [ colorRule (selector ++ ".background-color-primary") theme.primaryColor theme.primaryTextColor
+        , colorRule (selector ++ ".background-color-primary-5") (theme.primaryColor ++ "05") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-10") (theme.primaryColor ++ "10") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
         , colorRule (selector ++ ".background-color-nav") theme.navColor theme.navTextColor
         , colorRule (selector ++ ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (selector ++ ".border-color-primary") theme.primaryColor

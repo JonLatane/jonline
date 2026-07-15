@@ -1396,13 +1396,13 @@ input[disabled] {
 }
 
 .flip-animated-item>* {
-  overflow: hidden;
+  /* This breaks animations: overflow: hidden; */
   padding-bottom: 0.6rem;
 }
 
-.flip-animated-item:last-child>* {
+/* .flip-animated-item:last-child>* {
   padding-bottom: 0;
-}
+} */
 
 /* Horizontal counterpart of `.flip-animated-column`/`.flip-animated-item`,
    for a row instead (e.g. the Servers strip) -- same collapsing-grid-track

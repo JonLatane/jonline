@@ -424,7 +424,7 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
                         [ "post-card-current", "background-color-primary" ]
 
                     else
-                        []
+                        [ "background-color-primary-5" ]
                    )
             )
         ]
