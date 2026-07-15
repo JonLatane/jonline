@@ -116,7 +116,7 @@ titleFor model =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = titleFor model
+    { title = UI.pageTitle shared [ titleFor model ]
     , body =
         UI.layout shared
             req.route

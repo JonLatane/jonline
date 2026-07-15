@@ -191,7 +191,7 @@ subscriptions _ =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = "Homepage"
+    { title = UI.pageTitle shared []
     , body =
         UI.layout shared
             req.route

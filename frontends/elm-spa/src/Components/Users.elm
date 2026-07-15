@@ -11,6 +11,7 @@ module Components.Users exposing
     , parseUserRouteId
     , permissionText
     , profileHref
+    , titleName
     , userIdHref
     , usernameHref
     , visibilityText
@@ -186,6 +187,19 @@ displayName user =
 
     else
         user.realName ++ " (" ++ user.username ++ ")"
+
+
+{-| A user's Real Name, if they have one, otherwise just their username --
+unlike `displayName`, never both at once, since this is for contexts (e.g. a
+browser tab title) too terse for the parenthetical.
+-}
+titleName : User -> String
+titleName user =
+    if String.isEmpty (String.trim user.realName) then
+        user.username
+
+    else
+        user.realName
 
 
 {-| The URL for a user's avatar, authorized with `maybeAccount`'s access token

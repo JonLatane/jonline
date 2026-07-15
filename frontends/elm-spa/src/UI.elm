@@ -1,4 +1,4 @@
-module UI exposing (imageOrInitial, layout, page)
+module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
 import Components.Posts as Posts
@@ -267,6 +267,31 @@ findServer shared frontendHost =
 mainServer : Shared.Model -> Maybe AccountsPanel.Server
 mainServer shared =
     findServer shared shared.accountsPanel.mainFrontendHost
+
+
+{-| Every page's browser tab title, built from `segments` (most-specific
+first, e.g. a post's title, or -- once posts/profiles can belong to one --
+that title *and* its Group's name) followed by `mainFrontendHost`'s own
+branding name, e.g. `"My Post | My Server"`. An empty `segments` (the Home
+page) is just the server name on its own, with no leading `" | "`.
+
+Centralizing this means every page's title updates together if the format
+ever changes, and a future segment (like that Group name) is just another
+list entry for the page to prepend -- not a new format to invent.
+-}
+pageTitle : Shared.Model -> List String -> String
+pageTitle shared segments =
+    String.join " | " (segments ++ [ serverName shared ])
+
+
+{-| `mainFrontendHost`'s branding name, falling back to the bare hostname for
+the brief window before that server's finished connecting (see `mainServer`).
+-}
+serverName : Shared.Model -> String
+serverName shared =
+    mainServer shared
+        |> Maybe.map (.branding >> .name)
+        |> Maybe.withDefault shared.accountsPanel.mainFrontendHost
 
 
 {-| The former "About" nav link, now a small circular "i" button stacked above

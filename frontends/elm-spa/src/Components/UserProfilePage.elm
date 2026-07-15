@@ -333,14 +333,24 @@ subscriptions model =
 -- VIEW
 
 
+{-| Before the `User` has loaded, falls back to whatever the route itself
+already told us: the username for `ByUsername` (`Pages.Username_`), or else
+"User <id>" for `ById` (`Pages.User.UserId_`, which has no username to show
+yet).
+-}
 titleFor : Model -> String
 titleFor model =
     case model.status of
         UserLoaded user ->
-            Users.displayName user
+            Users.titleName user
 
         _ ->
-            "Profile"
+            case model.lookup of
+                ByUsername username ->
+                    username
+
+                ById userId ->
+                    "User " ++ userId
 
 
 view : Shared.Model -> Model -> Html Msg

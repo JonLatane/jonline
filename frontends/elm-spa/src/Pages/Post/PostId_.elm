@@ -197,19 +197,23 @@ subscriptions model =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = titleFor model
+    { title = titleFor shared model
     , body = UI.layout shared req.route SharedMsg [ bodyView shared req model ]
     }
 
 
-titleFor : Model -> String
-titleFor model =
-    case model.postStatus of
-        PostLoaded post ->
-            Posts.postTitleText post
+titleFor : Shared.Model -> Model -> String
+titleFor shared model =
+    let
+        subtitle =
+            case model.postStatus of
+                PostLoaded post ->
+                    Posts.postTitleText post
 
-        _ ->
-            "Post"
+                _ ->
+                    "Post " ++ model.postId
+    in
+    UI.pageTitle shared [ subtitle ]
 
 
 bodyView : Shared.Model -> Request.With Params -> Model -> Html Msg

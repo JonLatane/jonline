@@ -69,6 +69,6 @@ fromShared =
 
 view : Shared.Model -> Request.With Params -> Model -> View Msg
 view shared req model =
-    { title = UserProfilePage.titleFor model
+    { title = UI.pageTitle shared [ UserProfilePage.titleFor model ]
     , body = UI.layout shared req.route fromShared [ UserProfilePage.view shared model ]
     }
