@@ -330,6 +330,7 @@ subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
+        , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 

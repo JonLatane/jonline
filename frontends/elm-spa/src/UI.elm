@@ -767,7 +767,7 @@ serverChip shared count index server =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
         reorderPair =
-            reorderButtonPair UI.Flip.Horizontal
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
                 { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
                 , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerRightClicked server.frontendHost))
                 , canMoveBackward = index > 0
@@ -933,7 +933,7 @@ accountRow shared count index account =
                     [ text (account.server ++ " | " ++ branding.name) ]
                 ]
             ]
-        , reorderButtons
+        , UI.Flip.reorderButtons
             { moveUp = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId)
             , moveDown = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountDownClicked accId)
             , canMoveUp = index > 0
@@ -945,56 +945,6 @@ accountRow shared count index account =
             ]
             [ text "×" ]
         ]
-
-
-{-| One circular move-backward/move-forward pair, shared by every reorderable
-list's controls -- glyph/title implied by `axis`. Returns the two buttons
-separately (rather than assembling them into one container) since callers
-arrange the pair differently: `reorderButtons` below stacks them into one
-`.reorder-buttons` element for a vertical list; `serverChip` instead splits
-them to either side of a horizontal list's item content. Takes the click
-`Attribute` itself (rather than a bare `msg`) so a caller whose pair sits
-*inside* some other clickable element -- e.g. `serverChip`'s, inside
-`.server-chip-top`'s own "select this server" click target -- can pass
-`stopPropagationOn "click" ...` instead of a plain `onClick`, so tapping an
-arrow doesn't also trigger that.
--}
-reorderButtonPair :
-    UI.Flip.Axis
-    -> { moveBackward : Attribute msg, moveForward : Attribute msg, canMoveBackward : Bool, canMoveForward : Bool }
-    -> { backward : Html msg, forward : Html msg }
-reorderButtonPair axis { moveBackward, moveForward, canMoveBackward, canMoveForward } =
-    let
-        ( ( backwardGlyph, backwardTitle ), ( forwardGlyph, forwardTitle ) ) =
-            case axis of
-                UI.Flip.Vertical ->
-                    ( ( "▲", "Move up" ), ( "▼", "Move down" ) )
-
-                UI.Flip.Horizontal ->
-                    ( ( "◀", "Move left" ), ( "▶", "Move right" ) )
-    in
-    { backward =
-        button [ class "reorder-btn", moveBackward, disabled (not canMoveBackward), title backwardTitle ] [ text backwardGlyph ]
-    , forward =
-        button [ class "reorder-btn", moveForward, disabled (not canMoveForward), title forwardTitle ] [ text forwardGlyph ]
-    }
-
-
-{-| Stacked ▲/▼ pair for a `UI.Flip.Vertical` list (Accounts), just left of
-that row's Delete button.
--}
-reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg
-reorderButtons { moveUp, moveDown, canMoveUp, canMoveDown } =
-    let
-        pair =
-            reorderButtonPair UI.Flip.Vertical
-                { moveBackward = onClick moveUp
-                , moveForward = onClick moveDown
-                , canMoveBackward = canMoveUp
-                , canMoveForward = canMoveDown
-                }
-    in
-    div [ class "reorder-buttons" ] [ pair.backward, pair.forward ]
 
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg

@@ -1,4 +1,4 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, starKey, toggleStarMsg, update, view)
+module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, starKey, subscriptions, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -27,11 +27,14 @@ separate from `starredPostIds` itself so a re-star/unstar doesn't need a
 round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 -}
 
+import Animation
+import Browser.Dom as Dom
 import Components.Posts as Posts
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, text)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, id)
+import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
@@ -41,6 +44,7 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Task
 import UI.Classes exposing (classes, openClosedClass)
+import UI.Flip
 
 
 {-| The fetch state of one starred post, keyed by its `starKey` -- see
@@ -61,12 +65,20 @@ type PostFetchStatus
 type alias Model =
     { starredPostIds : Set String
 
-    -- Same keys as `starredPostIds`, but ordered newest-star-first --
-    -- `starredPostIds` is a `Set` (unordered) so it can't drive display order
-    -- itself. Kept in lockstep with `starredPostIds` by every mutation below.
+    -- Same keys as `starredPostIds`, but ordered -- newest-star-first until
+    -- the user drags that order around with `MoveStarUpClicked`/
+    -- `MoveStarDownClicked` -- `starredPostIds` is a `Set` (unordered) so it
+    -- can't drive display order itself. Kept in lockstep with
+    -- `starredPostIds` by every mutation below.
     , starOrder : List String
     , showStarredPostsPanel : Bool
     , posts : Dict String PostFetchStatus
+
+    -- In-flight/settling FLIP slide animations for starred posts just
+    -- reordered via `MoveStarUpClicked`/`MoveStarDownClicked` (see
+    -- `UI.Flip.MoveState`), keyed the same as `starOrder`/`posts`. An entry
+    -- with no key here (the common case) just renders at rest.
+    , moveAnimations : Dict String UI.Flip.MoveState
     }
 
 
@@ -76,6 +88,10 @@ type Msg
     | ToggleStarredPostsPanel
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
     | PollStarredPosts
+    | MoveStarUpClicked String
+    | MoveStarDownClicked String
+    | GotPreMoveStarPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | AnimateMove Animation.Msg
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -93,6 +109,7 @@ init flags =
     , starOrder = persistedOrder
     , showStarredPostsPanel = False
     , posts = Dict.empty
+    , moveAnimations = Dict.empty
     }
 
 
@@ -105,6 +122,16 @@ pointing at the server it actually came from regardless.
 starKey : String -> Post -> String
 starKey frontendHost post =
     post.id ++ "@" ++ frontendHost
+
+
+{-| The DOM `id` a starred post's entry is rendered with (see
+`starredPostEntry`) -- purely so `MoveStarUpClicked`/`MoveStarDownClicked` can
+measure its position before/after a reorder (`Browser.Dom.getElement`) to
+drive its `UI.Flip` slide.
+-}
+starEntryDomId : String -> String
+starEntryDomId key =
+    "starred-post-entry-" ++ key
 
 
 isStarred : String -> Post -> Model -> Bool
@@ -258,6 +285,64 @@ update accountsPanelModel msg model =
         GotStarredPost key (Err _) ->
             ( { model | posts = Dict.insert key PostFetchFailed model.posts }, Cmd.none, Nothing )
 
+        MoveStarUpClicked key ->
+            ( model, UI.Flip.beginReorder identity starEntryDomId GotPreMoveStarPositions -1 key model.starOrder, Nothing )
+
+        MoveStarDownClicked key ->
+            ( model, UI.Flip.beginReorder identity starEntryDomId GotPreMoveStarPositions 1 key model.starOrder, Nothing )
+
+        GotPreMoveStarPositions key _ offset (Err _) ->
+            -- Couldn't measure -- e.g. an entry not actually mounted -- fall
+            -- back to reordering without a slide animation, same end state
+            -- either way.
+            let
+                newOrder =
+                    UI.Flip.moveListItemBy identity offset key model.starOrder
+            in
+            ( { model | starOrder = newOrder }, persistCmd newOrder, Nothing )
+
+        GotPreMoveStarPositions key neighborKey offset (Ok ( entryEl, neighborEl )) ->
+            -- Both `key` and `neighborKey` are adjacent, so their post-swap
+            -- positions are derivable from this one (pre-swap) measurement --
+            -- see `UI.Flip.applyReorder`/`swapDeltas`. Computing it this way
+            -- (rather than reordering first, then measuring again after the
+            -- next render) means the pinned "Invert" transform is set in the
+            -- very same update as the reorder, so there's no frame where the
+            -- reordered list renders at rest before the animation kicks in.
+            let
+                newOrder =
+                    UI.Flip.moveListItemBy identity offset key model.starOrder
+
+                newModel =
+                    { model | starOrder = newOrder }
+            in
+            ( { newModel
+                | moveAnimations =
+                    UI.Flip.applyReorder UI.Flip.Vertical key neighborKey entryEl neighborEl newModel.moveAnimations
+              }
+            , persistCmd newOrder
+            , Nothing
+            )
+
+        AnimateMove animMsg ->
+            ( { model | moveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.moveAnimations }
+            , Cmd.none
+            , Nothing
+            )
+
+
+{-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
+-- only while the panel's actually open, same reasoning as `Shared.subscriptions`'
+own poll for this module.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if model.showStarredPostsPanel then
+        UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
+
+    else
+        Sub.none
+
 
 {-| Fetches every starred post that isn't already loaded, in flight, or
 permanently failed (see `PostFetchStatus`) -- grouped by host first, so each
@@ -389,6 +474,9 @@ view basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
             openClosedClass model.showStarredPostsPanel
+
+        count =
+            List.length model.starOrder
     in
     div [ classes [ "starred-posts-panel", "nav-panel", stateClass ] ]
         (div [ class "starred-posts-header" ] [ text "Starred Posts" ]
@@ -396,11 +484,46 @@ view basePath accountsPanelModel currentPostKey model =
                     [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]
 
                 else
-                    -- `starOrder` is already newest-star-first (see `Model`), so newly
-                    -- starred posts show up at the top regardless of their own timestamp.
-                    List.map (starredPostView basePath accountsPanelModel currentPostKey model) model.starOrder
+                    -- `starOrder` starts newest-star-first (see `Model`), but the user
+                    -- can then drag it around from there via `MoveStarUpClicked`/
+                    -- `MoveStarDownClicked`.
+                    [ Html.Keyed.node "div"
+                        [ class "starred-posts-list" ]
+                        (List.indexedMap
+                            (\index key -> ( key, starredPostRow basePath accountsPanelModel currentPostKey model count index key ))
+                            model.starOrder
+                        )
+                    ]
                )
         )
+
+
+{-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder
+transform and the up/down reorder buttons -- mirrors `UI.accountRow`'s
+equivalent for Accounts.
+-}
+starredPostRow : String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRow basePath accountsPanelModel currentPostKey model count index key =
+    let
+        moveAttrs =
+            model.moveAnimations
+                |> Dict.get key
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
+    in
+    div
+        (id (starEntryDomId key)
+            :: class "starred-post-row"
+            :: moveAttrs
+        )
+        [ UI.Flip.reorderButtons
+            { moveUp = MoveStarUpClicked key
+            , moveDown = MoveStarDownClicked key
+            , canMoveUp = index > 0
+            , canMoveDown = index < count - 1
+            }
+        , starredPostView basePath accountsPanelModel currentPostKey model key
+        ]
 
 
 starredPostView : String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg

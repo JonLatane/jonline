@@ -549,6 +549,25 @@ input[disabled] {
   color: var(--muted);
 }
 
+/* The reorderable list itself -- see Shared/StarredPostsPanel.elm's `view`.
+   Its own `gap` (rather than relying on `.nav-panel`'s, which only spaces
+   this list as a whole from the header/empty-state above it) is what spaces
+   each `.starred-post-row` from the next. */
+.starred-posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* One row per starred post: `UI.Flip`'s up/down reorder buttons (see
+   `starredPostRow`) just left of the entry itself, same arrangement as
+   `UI.accountRow`'s for Accounts. */
+.starred-post-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
 /* One entry per starred post -- see Shared/StarredPostsPanel.elm's
    `starredPostView`. Its `.post-card` (a plain `<a>`) is reused as-is. */
 
@@ -556,6 +575,12 @@ input[disabled] {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  /* `.starred-post-row` is the flex item now (`display: flex` still on this,
+     the entry itself) -- without this, the entry would only claim its
+     content's own width, leaving `.post-card` free to shrink narrower than
+     the row instead of filling the space next to the reorder buttons. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .starred-post-context {

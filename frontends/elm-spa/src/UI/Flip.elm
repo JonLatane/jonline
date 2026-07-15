@@ -2,6 +2,8 @@ module UI.Flip exposing
     ( Axis(..)
     , State, enter, reappear, remove, animate, subscription, itemAttributes
     , MoveState, atRest, startMove, swapDeltas, moveAttributes, moveAnimate, moveSubscription
+    , moveListItemBy, beginReorder, applyReorder
+    , reorderButtonPair, reorderButtons
     )
 
 {-| Generic FLIP-style ("First, Last, Invert, Play") animation helpers for
@@ -30,8 +32,11 @@ A caller wraps one or both of these alongside its own per-item data, e.g.
 import Animation
 import Animation.Messenger
 import Browser.Dom as Dom
-import Html
-import Html.Attributes exposing (classList)
+import Dict exposing (Dict)
+import Html exposing (Attribute, Html, button, div, text)
+import Html.Attributes exposing (class, classList, disabled, title)
+import Html.Events exposing (onClick)
+import Task
 
 
 {-| Which way a list lays its items out -- `Vertical` for a column (top to
@@ -265,3 +270,171 @@ moveAnimate =
 moveSubscription : (Animation.Msg -> msg) -> List MoveState -> Sub msg
 moveSubscription toMsg states =
     Animation.subscription toMsg states
+
+
+
+-- REORDERING A LIST
+
+
+{-| Moves the item identified by `idOf`/`id` one slot earlier/later in
+`items` -- `offset` is always +-1 (adjacent swap, from a pair of move
+buttons) -- a no-op if that would walk off either end. Shared by every
+reorderable list (Accounts, Servers, Starred Posts, ...).
+-}
+moveListItemBy : (a -> String) -> Int -> String -> List a -> List a
+moveListItemBy idOf offset id items =
+    case indexOfListItem idOf id items of
+        Nothing ->
+            items
+
+        Just i ->
+            let
+                j =
+                    i + offset
+
+                elementAt idx =
+                    List.drop idx items |> List.head
+            in
+            if j < 0 || j >= List.length items then
+                items
+
+            else
+                case ( elementAt i, elementAt j ) of
+                    ( Just ai, Just aj ) ->
+                        List.indexedMap
+                            (\idx item ->
+                                if idx == i then
+                                    aj
+
+                                else if idx == j then
+                                    ai
+
+                                else
+                                    item
+                            )
+                            items
+
+                    _ ->
+                        items
+
+
+indexOfListItem : (a -> String) -> String -> List a -> Maybe Int
+indexOfListItem idOf id items =
+    items
+        |> List.indexedMap Tuple.pair
+        |> List.filter (\( _, item ) -> idOf item == id)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+{-| Kicks off a reorder move: measures the current (pre-swap) position of the
+item at `id` and its `offset` neighbor (the "First" of FLIP) before touching
+the list at all, via `toMsg` -- so the resulting message has something to
+compare the post-swap position against (see `applyReorder`). A no-op (no
+neighbor in that direction) just does nothing.
+-}
+beginReorder :
+    (a -> String)
+    -> (String -> String)
+    -> (String -> String -> Int -> Result Dom.Error ( Dom.Element, Dom.Element ) -> msg)
+    -> Int
+    -> String
+    -> List a
+    -> Cmd msg
+beginReorder idOf domId toMsg offset id items =
+    case indexOfListItem idOf id items of
+        Nothing ->
+            Cmd.none
+
+        Just i ->
+            case List.drop (i + offset) items |> List.head of
+                Nothing ->
+                    Cmd.none
+
+                Just neighbor ->
+                    let
+                        neighborId =
+                            idOf neighbor
+                    in
+                    Task.attempt (toMsg id neighborId offset)
+                        (Task.map2 Tuple.pair
+                            (Dom.getElement (domId id))
+                            (Dom.getElement (domId neighborId))
+                        )
+
+
+{-| Applies a just-measured pre-swap pair (see `beginReorder`) to
+`animations`: computes both items' slide deltas (`swapDeltas`) and
+starts/restarts each one's `MoveState`.
+-}
+applyReorder :
+    Axis
+    -> String
+    -> String
+    -> Dom.Element
+    -> Dom.Element
+    -> Dict String MoveState
+    -> Dict String MoveState
+applyReorder axis id neighborId movedEl neighborEl animations =
+    let
+        ( movedDelta, neighborDelta ) =
+            swapDeltas axis movedEl neighborEl
+
+        startOrRestart key delta anims =
+            Dict.insert key (startMove delta (Dict.get key anims |> Maybe.withDefault atRest)) anims
+    in
+    animations
+        |> startOrRestart id movedDelta
+        |> startOrRestart neighborId neighborDelta
+
+
+
+-- REORDER BUTTONS
+
+
+{-| One circular move-backward/move-forward pair, shared by every reorderable
+list's controls -- glyph/title implied by `axis`. Returns the two buttons
+separately (rather than assembling them into one container) since callers
+arrange the pair differently: `reorderButtons` below stacks them into one
+`.reorder-buttons` element for a vertical list; `UI.serverChip` instead splits
+them to either side of a horizontal list's item content. Takes the click
+`Attribute` itself (rather than a bare `msg`) so a caller whose pair sits
+*inside* some other clickable element can pass `stopPropagationOn "click" ...`
+instead of a plain `onClick`, so tapping an arrow doesn't also trigger that.
+-}
+reorderButtonPair :
+    Axis
+    -> { moveBackward : Attribute msg, moveForward : Attribute msg, canMoveBackward : Bool, canMoveForward : Bool }
+    -> { backward : Html msg, forward : Html msg }
+reorderButtonPair axis { moveBackward, moveForward, canMoveBackward, canMoveForward } =
+    let
+        ( ( backwardGlyph, backwardTitle ), ( forwardGlyph, forwardTitle ) ) =
+            case axis of
+                Vertical ->
+                    ( ( "▲", "Move up" ), ( "▼", "Move down" ) )
+
+                Horizontal ->
+                    ( ( "◀", "Move left" ), ( "▶", "Move right" ) )
+    in
+    { backward =
+        button [ class "reorder-btn", moveBackward, disabled (not canMoveBackward), title backwardTitle ] [ text backwardGlyph ]
+    , forward =
+        button [ class "reorder-btn", moveForward, disabled (not canMoveForward), title forwardTitle ] [ text forwardGlyph ]
+    }
+
+
+{-| Stacked ▲/▼ pair for a `Vertical` list (Accounts, Starred Posts), just
+left of that row's own content.
+-}
+reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg
+reorderButtons { moveUp, moveDown, canMoveUp, canMoveDown } =
+    let
+        pair =
+            reorderButtonPair Vertical
+                { moveBackward = onClick moveUp
+                , moveForward = onClick moveDown
+                , canMoveBackward = canMoveUp
+                , canMoveForward = canMoveDown
+                }
+    in
+    div [ class "reorder-buttons" ] [ pair.backward, pair.forward ]
