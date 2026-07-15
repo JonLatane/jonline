@@ -1,13 +1,17 @@
 module UI.Flip exposing
-    ( State, enter, reappear, remove, animate, subscription, itemAttributes
-    , MoveState, atRest, startMove, moveAttributes, moveAnimate, moveSubscription
+    ( Axis(..)
+    , State, enter, reappear, remove, animate, subscription, itemAttributes
+    , MoveState, atRest, startMove, swapDeltas, moveAttributes, moveAnimate, moveSubscription
     )
 
 {-| Generic FLIP-style ("First, Last, Invert, Play") animation helpers for
-items in a keyed, flex-column list -- extracted from `Pages.Home_`'s original
+items in a keyed, flex list -- extracted from `Pages.Home_`'s original
 per-post `PostAnimation` (see its history) so every animated list (recent
-posts, Accounts, future ones) shares one implementation. Pair with
-`.flip-animated-column`/`.flip-animated-item` in `style.css`.
+posts, Accounts, Servers, future ones -- including a future grid, which is why
+everything below is in terms of both axes even where today's callers only
+ever move along one) shares one implementation. Pair with
+`.flip-animated-column`/`.flip-animated-row`/`.flip-animated-item` in
+`style.css`.
 
 There are two independent things a list item can animate:
 
@@ -25,8 +29,21 @@ A caller wraps one or both of these alongside its own per-item data, e.g.
 
 import Animation
 import Animation.Messenger
+import Browser.Dom as Dom
 import Html
 import Html.Attributes exposing (classList)
+
+
+{-| Which way a list lays its items out -- `Vertical` for a column (top to
+bottom, e.g. Accounts), `Horizontal` for a row (left to right, e.g. Servers).
+A future grid would need a move along both axes at once, which is why
+`MoveState`/`startMove` already carry a full `(x, y)` offset rather than one
+scalar -- `Axis` only decides which of the two `swapDeltas` actually fills in
+for a plain list.
+-}
+type Axis
+    = Vertical
+    | Horizontal
 
 
 
@@ -112,14 +129,16 @@ subscription toMsg states =
 
 {-| Attributes for the wrapping `div` -- `.flip-collapsed` (present while
 `entering` or `removing`) is what makes `.flip-animated-item` in `style.css`
-grow/shrink this wrapper's own height, sliding the rest of a
-`.flip-animated-column` smoothly into the space this item leaves/needs, on
-top of its own fade/scale from `style`.
+grow/shrink this wrapper's own height (`axis = Vertical`, for a
+`.flip-animated-column`) or width (`axis = Horizontal`, for a
+`.flip-animated-row`), sliding the rest of the list smoothly into the space
+this item leaves/needs, on top of its own fade/scale from `style`.
 -}
-itemAttributes : State msg -> List (Html.Attribute msg)
-itemAttributes state =
+itemAttributes : Axis -> State msg -> List (Html.Attribute msg)
+itemAttributes axis state =
     classList
         [ ( "flip-animated-item", True )
+        , ( "horizontal", axis == Horizontal )
         , ( "flip-collapsed", state.entering || state.removing )
         ]
         :: Animation.render state.style
@@ -144,23 +163,86 @@ atRest =
     Animation.style [ Animation.translate (Animation.px 0) (Animation.px 0) ]
 
 
-{-| Starts (or restarts) a move: `deltaY` is how far, in px, the item's *new*
-position differs from where it just was (`old.top - new.top`, so a positive
-`deltaY` means it moved *up* and should slide up into place from below, while
-a negative `deltaY` means it moved *down* and should slide down into place
-from above) -- see `Browser.Dom.getElement` for how a caller measures that
-(the "Invert" step of FLIP). Pins the item at its old position via an
-instant, non-animated `translate` ("Invert"), then animates back to
-`translate 0 0` ("Play"), so it visually slides from where it was to where it
-now is instead of jumping.
+{-| Starts (or restarts) a move: `( deltaX, deltaY )` is how far, in px, the
+item's *new* position differs from where it just was along each axis
+(`old - new`, so a positive component means it moved backward along that axis
+-- up or left -- and should slide forward into place; a negative component
+means it moved forward -- down or right -- and should slide backward into
+place) -- see `swapDeltas` for how a caller measures that (the "Invert" step
+of FLIP) for an adjacent-swap reorder. A plain vertical or horizontal list
+only ever needs one non-zero component; a future grid would set both. Pins
+the item at its old position via an instant, non-animated `translate`
+("Invert"), then animates back to `translate 0 0` ("Play"), so it visually
+slides from where it was to where it now is instead of jumping.
 -}
-startMove : Float -> MoveState -> MoveState
-startMove deltaY state =
+startMove : ( Float, Float ) -> MoveState -> MoveState
+startMove ( deltaX, deltaY ) state =
     Animation.interrupt
-        [ Animation.set [ Animation.translate (Animation.px 0) (Animation.px deltaY) ]
+        [ Animation.set [ Animation.translate (Animation.px deltaX) (Animation.px deltaY) ]
         , Animation.to [ Animation.translate (Animation.px 0) (Animation.px 0) ]
         ]
         state
+
+
+{-| The post-swap `( deltaX, deltaY )` "Invert" offsets (see `startMove`) for
+two *adjacent* items that just swapped places along `axis` -- e.g. two account
+rows in a vertical list, or two server chips in a horizontal strip. Derived
+entirely from their *pre-swap* rects (`Browser.Dom.getElement`), so a caller
+can compute this in the very same `update` that performs the swap, without
+waiting for a second DOM measurement after the swap re-renders -- since the
+item that was "first" along `axis` keeps that position, and the other lands
+immediately after it (plus whatever gap was between them), swapping places.
+
+Returns `(movedItemDelta, neighborDelta)`, matching the order `moved`/
+`neighbor` were passed in.
+-}
+swapDeltas : Axis -> Dom.Element -> Dom.Element -> ( ( Float, Float ), ( Float, Float ) )
+swapDeltas axis moved neighbor =
+    let
+        ( ( movedPos, movedSize ), ( neighborPos, neighborSize ) ) =
+            case axis of
+                Vertical ->
+                    ( ( moved.element.y, moved.element.height ), ( neighbor.element.y, neighbor.element.height ) )
+
+                Horizontal ->
+                    ( ( moved.element.x, moved.element.width ), ( neighbor.element.x, neighbor.element.width ) )
+
+        ( movedDelta1D, neighborDelta1D ) =
+            if movedPos < neighborPos then
+                let
+                    gap =
+                        neighborPos - movedPos - movedSize
+
+                    newNeighborPos =
+                        movedPos
+
+                    newMovedPos =
+                        newNeighborPos + neighborSize + gap
+                in
+                ( movedPos - newMovedPos, neighborPos - newNeighborPos )
+
+            else
+                let
+                    gap =
+                        movedPos - neighborPos - neighborSize
+
+                    newMovedPos =
+                        neighborPos
+
+                    newNeighborPos =
+                        newMovedPos + movedSize + gap
+                in
+                ( movedPos - newMovedPos, neighborPos - newNeighborPos )
+
+        toXY delta1D =
+            case axis of
+                Vertical ->
+                    ( 0, delta1D )
+
+                Horizontal ->
+                    ( delta1D, 0 )
+    in
+    ( toXY movedDelta1D, toXY neighborDelta1D )
 
 
 {-| Attributes (just an inline `transform`) for the moving item's own

@@ -725,7 +725,7 @@ input[disabled] {
 
 .server-chip {
   flex: 0 0 auto;
-  width: 128px;
+  width: 108px;
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -987,10 +987,10 @@ input[disabled] {
   color: white;
 }
 
-/* Up/down reorder controls, stacked vertically just left of .remove-btn --
-   see UI.reorderButtons. Circular (unlike .remove-btn's square) so the pair
-   reads as one distinct control cluster rather than two more square buttons
-   blending in with Delete. */
+/* Vertical move-backward/move-forward reorder controls (Accounts), stacked
+   just before .remove-btn -- see UI.reorderButtons. Circular (unlike
+   .remove-btn's square) so the pair reads as one distinct control cluster
+   rather than two more square buttons blending in with Delete. */
 .reorder-buttons {
   display: flex;
   flex-direction: column;
@@ -998,9 +998,50 @@ input[disabled] {
   flex: 0 0 auto;
 }
 
+/* Horizontal reorder controls (Servers): the ◀/▶ pair flanks
+   `serverNameAndLogo` itself (see `serverChip`) rather than stacking
+   together the way `.reorder-buttons` does for a vertical list -- there's no
+   natural "just left of Delete" spot for these in a horizontal strip the way
+   there is in a vertical list, and Servers' own `.server-chip-bottom` is
+   already fairly packed (switch + Delete). `margin` (rather than `gap` on
+   the row) is what actually pushes them to the outside, away from the
+   logo/name column, since flex's default alignment would otherwise hug them
+   right up against it. */
+/* `justify-content: space-between` (rather than the block's own auto
+   margins) is what keeps the arrows pinned to the row's outer edges
+   regardless of how wide the logo/name block itself is -- the first/last
+   flex item sit flush against the container's own start/end this way,
+   independent of the middle item's own size or margin. */
+.server-chip-logo-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Bleeds outward into the row's edge-anchored gaps (see above), so the
+   logo/name block sits closer to the arrows than the row's own available
+   width would otherwise put it, in a chip that's otherwise fairly narrow. */
+.server-chip-logo-row .server-name-and-logo {
+  margin: 0;
+}
+
+.server-chip-logo-row .server-name-and-logo:nth-child(2) {
+  margin: 0 -25px;
+}
+
+.server-chip-logo-row .reorder-btn {
+  margin-top: 0.3rem;
+}
+
 .reorder-btn {
   width: 1.3rem;
   height: 1.3rem;
+  /* Without this, a flex row that's short on space (e.g. `.server-chip-logo-row`
+     for a server with a long name) shrinks a plain flex item's width below
+     its set `width` -- height isn't touched the same way, so the button
+     would go oval instead of staying circular. */
+  flex-shrink: 0;
   padding: 0;
   line-height: 1;
   font-size: 0.6rem;
@@ -1316,13 +1357,45 @@ input[disabled] {
   grid-template-rows: 0fr;
 }
 
-.flip-animated-item > * {
+.flip-animated-item>* {
   overflow: hidden;
   padding-bottom: 0.6rem;
 }
 
-.flip-animated-item:last-child > * {
+.flip-animated-item:last-child>* {
   padding-bottom: 0;
+}
+
+/* Horizontal counterpart of `.flip-animated-column`/`.flip-animated-item`,
+   for a row instead (e.g. the Servers strip) -- same collapsing-grid-track
+   trick, just turned 90 degrees: `.flip-animated-item.horizontal` collapses
+   `grid-template-columns` instead of `-rows`, and its clip-layer spacing
+   lives as `padding-right` instead of `-bottom`, so it still sits *between*
+   items (not inside the last one) when the row runs left-to-right. See
+   `UI.Flip.itemAttributes`/`Axis` for how a caller picks this vs. the
+   vertical rules above with one `axis` argument. */
+.flip-animated-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flip-animated-item.horizontal {
+  grid-template-rows: none;
+  grid-template-columns: 1fr;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.flip-animated-item.horizontal.flip-collapsed {
+  grid-template-columns: 0fr;
+}
+
+.flip-animated-item.horizontal>* {
+  padding-bottom: 0;
+  padding-right: 0.6rem;
+}
+
+.flip-animated-item.horizontal:last-child>* {
+  padding-right: 0;
 }
 
 .post-card {

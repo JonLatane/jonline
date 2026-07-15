@@ -8,7 +8,7 @@ import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
 import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
-import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
+import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Page
@@ -684,8 +684,19 @@ adminTab shared =
 
 serversStrip : Shared.Model -> Html Shared.Msg
 serversStrip shared =
-    div [ class "servers-strip" ]
-        (List.map (serverChip shared) shared.accountsPanel.servers)
+    let
+        servers =
+            shared.accountsPanel.servers
+
+        count =
+            List.length servers
+    in
+    Html.Keyed.node "div"
+        [ class "servers-strip" ]
+        (List.indexedMap
+            (\index server -> ( server.frontendHost, serverChip shared count index server ))
+            servers
+        )
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
@@ -701,8 +712,8 @@ on (see `Shared.AdminPanel`), that tap additionally sets this server as
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 
 -}
-serverChip : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
-serverChip shared server =
+serverChip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
+serverChip shared count index server =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -741,10 +752,39 @@ serverChip shared server =
                     "Use this server in the login form"
                 )
             ]
+
+        moveAttrs =
+            accountsPanelModel.serverMoveAnimations
+                |> Dict.get server.frontendHost
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
+
+        -- `stopPropagationOn`, not `onClick` -- these two buttons sit inside
+        -- `topAttrs`'s own "select this server" click target (see
+        -- `reorderButtonPair`'s doc), so a plain `onClick` here would also
+        -- fire that.
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
+        reorderPair =
+            reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
+                , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerRightClicked server.frontendHost))
+                , canMoveBackward = index > 0
+                , canMoveForward = index < count - 1
+                }
     in
-    div [ class "server-chip" ]
+    div
+        (id (AccountsPanel.serverChipDomId server.frontendHost)
+            :: class "server-chip"
+            :: moveAttrs
+        )
         [ div topAttrs
-            [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
+            [ div [ class "server-chip-logo-row" ]
+                [ reorderPair.backward
+                , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
+                , reorderPair.forward
+                ]
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
             , if isMainServer then
                 div [ class "server-chip-main-badge" ] [ text "★ Main" ]
@@ -907,27 +947,54 @@ accountRow shared count index account =
         ]
 
 
-{-| Circular up/down buttons, stacked vertically -- reusable wherever a list
-gets reorder controls (currently just Accounts).
+{-| One circular move-backward/move-forward pair, shared by every reorderable
+list's controls -- glyph/title implied by `axis`. Returns the two buttons
+separately (rather than assembling them into one container) since callers
+arrange the pair differently: `reorderButtons` below stacks them into one
+`.reorder-buttons` element for a vertical list; `serverChip` instead splits
+them to either side of a horizontal list's item content. Takes the click
+`Attribute` itself (rather than a bare `msg`) so a caller whose pair sits
+*inside* some other clickable element -- e.g. `serverChip`'s, inside
+`.server-chip-top`'s own "select this server" click target -- can pass
+`stopPropagationOn "click" ...` instead of a plain `onClick`, so tapping an
+arrow doesn't also trigger that.
+-}
+reorderButtonPair :
+    UI.Flip.Axis
+    -> { moveBackward : Attribute msg, moveForward : Attribute msg, canMoveBackward : Bool, canMoveForward : Bool }
+    -> { backward : Html msg, forward : Html msg }
+reorderButtonPair axis { moveBackward, moveForward, canMoveBackward, canMoveForward } =
+    let
+        ( ( backwardGlyph, backwardTitle ), ( forwardGlyph, forwardTitle ) ) =
+            case axis of
+                UI.Flip.Vertical ->
+                    ( ( "▲", "Move up" ), ( "▼", "Move down" ) )
+
+                UI.Flip.Horizontal ->
+                    ( ( "◀", "Move left" ), ( "▶", "Move right" ) )
+    in
+    { backward =
+        button [ class "reorder-btn", moveBackward, disabled (not canMoveBackward), title backwardTitle ] [ text backwardGlyph ]
+    , forward =
+        button [ class "reorder-btn", moveForward, disabled (not canMoveForward), title forwardTitle ] [ text forwardGlyph ]
+    }
+
+
+{-| Stacked ▲/▼ pair for a `UI.Flip.Vertical` list (Accounts), just left of
+that row's Delete button.
 -}
 reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg
 reorderButtons { moveUp, moveDown, canMoveUp, canMoveDown } =
-    div [ class "reorder-buttons" ]
-        [ button
-            [ class "reorder-btn"
-            , onClick moveUp
-            , disabled (not canMoveUp)
-            , title "Move up"
-            ]
-            [ text "▲" ]
-        , button
-            [ class "reorder-btn"
-            , onClick moveDown
-            , disabled (not canMoveDown)
-            , title "Move down"
-            ]
-            [ text "▼" ]
-        ]
+    let
+        pair =
+            reorderButtonPair UI.Flip.Vertical
+                { moveBackward = onClick moveUp
+                , moveForward = onClick moveDown
+                , canMoveBackward = canMoveUp
+                , canMoveForward = canMoveDown
+                }
+    in
+    div [ class "reorder-buttons" ] [ pair.backward, pair.forward ]
 
 
 avatarOrPlaceholder : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
