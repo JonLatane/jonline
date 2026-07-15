@@ -7,7 +7,7 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, style, title, type_, value)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, placeholder, spellcheck, src, style, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -791,12 +791,29 @@ serverChip shared count index server =
         stopClick msg =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
+        -- The main server (always `index == 0` -- see
+        -- `AccountsPanel.sortMainServerFirst`) is pinned in place and isn't
+        -- reorderable at all, so neither of its arrows is interactive. The
+        -- server right after it can't move left into the main server's fixed
+        -- slot, so its left arrow isn't interactive either; the last server
+        -- can't move right past the end, so its right arrow isn't. Both
+        -- conditions naturally leave a lone non-main server (`count == 2`)
+        -- with neither arrow interactive. Non-interactive arrows still
+        -- render (`reorder-arrow-hidden` just fades/no-ops them) rather than
+        -- disappearing, so the chip's width/layout doesn't jump around
+        -- depending on position.
+        showBackward =
+            index > 1
+
+        showForward =
+            index > 0 && index < count - 1
+
         reorderPair =
             UI.Flip.reorderButtonPair UI.Flip.Horizontal
                 { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
                 , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerRightClicked server.frontendHost))
-                , canMoveBackward = index > 0
-                , canMoveForward = index < count - 1
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
                 }
     in
     div
@@ -806,9 +823,9 @@ serverChip shared count index server =
         )
         [ div topAttrs
             [ div [ class "server-chip-logo-row" ]
-                [ reorderPair.backward
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
                 , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
-                , reorderPair.forward
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
                 ]
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
             , if isMainServer then

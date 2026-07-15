@@ -1056,6 +1056,17 @@ input[disabled] {
   margin: 0 -25px;
 }
 
+/* `server-name-and-logo` above bleeds into both arrows' space via its
+   negative margin. As the flex row's *middle* child, it would otherwise
+   paint over the backward arrow (which comes before it in DOM order) while
+   staying under the forward arrow (which comes after) -- silently eating
+   the backward arrow's clicks in the overlap. Flex items honor `z-index`
+   without needing `position` set, so this reliably keeps both arrows above
+   that bleed regardless of DOM order. */
+.server-chip-logo-row .reorder-arrow {
+  z-index: 1;
+}
+
 .server-chip-logo-row .reorder-btn {
   margin-top: 0.3rem;
 }
@@ -1084,6 +1095,11 @@ input[disabled] {
 
 .reorder-btn:disabled {
   opacity: 0.3;
+}
+
+.reorder-arrow-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 

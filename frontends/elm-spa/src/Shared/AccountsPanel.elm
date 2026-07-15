@@ -355,6 +355,24 @@ moveServerBy =
     UI.Flip.moveListItemBy .frontendHost
 
 
+{-| Pins the `mainFrontendHost` server (if known yet) at the front of
+`servers`, preserving the relative order of everything else -- run
+unconditionally after every `update` (see its doc) so this holds both right
+after app startup resolves `mainFrontendHost` from `browsingHost`
+(`GotMainServerResult`) and whenever it's changed afterward
+(`MainServerSelected`/`ResetMainFrontendHost`), without needing to fix up
+`servers` by hand at each of those call sites. `UI.serverChip` relies on this
+to special-case index `0` as the one, unmovable main server.
+-}
+sortMainServerFirst : Model -> Model
+sortMainServerFirst model =
+    let
+        ( mainServers, otherServers ) =
+            List.partition (\s -> s.frontendHost == model.mainFrontendHost) model.servers
+    in
+    { model | servers = mainServers ++ otherServers }
+
+
 {-| Whether an account has the `ADMIN` permission.
 -}
 isAdmin : Account -> Bool
@@ -822,16 +840,18 @@ emptyAddServerForm =
     { status = Idle }
 
 
-{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations` run
-unconditionally afterward -- so every code path that can add an account/
-server (not just the ones that obviously do) gets its enter animation for
-free, without auditing each one by hand. Cheap enough (`accounts`/`servers`
-are small) to run after every single message.
+{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations` and
+`sortMainServerFirst` run unconditionally afterward -- so every code path
+that can add an account/server, or change `mainFrontendHost`, gets its enter
+animation/correct ordering for free, without auditing each one by hand.
+Cheap enough (`accounts`/`servers` are small) to run after every single
+message.
 -}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
     updateHelp req msg model
         |> Tuple.mapFirst syncItemAnimations
+        |> Tuple.mapFirst sortMainServerFirst
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
