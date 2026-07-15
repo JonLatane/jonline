@@ -1204,12 +1204,64 @@ input[disabled] {
 .posts-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
   margin: 1rem 0;
 }
 
 .posts-empty {
   color: var(--muted);
+}
+
+/* Makes a flex/grid column's *children* (each a `.flip-animated-item`) slide
+   smoothly as posts enter/leave (see `Pages.Home_`'s `postAnimations`) --
+   each post already fades/scales in place via inline styles from
+   `elm-style-animation` (`Animation.render`), but that alone can't animate
+   *other* posts sliding into the space a removed/added post leaves/needs,
+   since nothing about a sibling's removal is itself an animatable CSS
+   property change. Note there's deliberately no `gap` here -- inter-post
+   spacing instead lives as `.flip-animated-item`'s own `padding-bottom`, so
+   it can shrink away smoothly along with everything else; a `gap` wouldn't
+   participate in that at all, and would instead hold its full width right up
+   until the post's element is actually removed, then snap shut all at once. */
+.flip-animated-column {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Each post is its own single-row grid whose row size (`grid-template-rows`)
+   is transitioned between `1fr` (natural height) and `0fr` (collapsed) --
+   that *is* an animatable property, so as long as the post stays in the DOM
+   for the whole transition (rather than being removed outright), the browser
+   smoothly reflows/slides the remaining siblings as a side effect of
+   continuously relaying out around its shrinking/growing box. `Pages.Home_`
+   toggles `.flip-collapsed` on a new post for exactly one frame (so the
+   browser has something to transition *from*) and for as long as a post is
+   fading out, then removes the element once the fade/collapse finishes.
+
+   The `.post-card` itself isn't the row's clipped grid item -- if it were,
+   its own `padding-bottom` (below, standing in for `gap`) would end up
+   visually *inside* its border, shrinking away as a bordered dead-space strip
+   instead of just disappearing. Instead `Pages.Home_` puts a plain,
+   borderless `div` between the two purely to hold `overflow: hidden` (so the
+   `1fr` track can actually shrink below the post's content height) and that
+   `padding-bottom` -- so what's animating away is invisible whitespace, not
+   part of the visible card. */
+.flip-animated-item {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.25s ease;
+}
+
+.flip-animated-item.flip-collapsed {
+  grid-template-rows: 0fr;
+}
+
+.flip-animated-item > * {
+  overflow: hidden;
+  padding-bottom: 0.6rem;
+}
+
+.flip-animated-item:last-child > * {
+  padding-bottom: 0;
 }
 
 .post-card {
