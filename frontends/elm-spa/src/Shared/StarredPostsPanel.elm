@@ -31,10 +31,12 @@ round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 import Animation
 import Browser.Dom as Dom
 import Components.Posts as Posts
+import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
 import Grpc
-import Html exposing (Html, div, text)
+import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, id)
+import Html.Events exposing (onClick)
 import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -102,6 +104,7 @@ type Msg
     = ToggleStar AccountsPanel.Server Post
     | GotStarResult String Bool (Result Grpc.Error Post)
     | ToggleStarredPostsPanel
+    | EnableServerClicked String
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
     | PollStarredPosts
     | MoveStarUpClicked String
@@ -187,19 +190,22 @@ persistCmd starOrder =
 
 {-| `update` also needs `AccountsPanel.Model` (to resolve starred posts' hosts
 to actual connected `Server`s/signed-in `Account`s -- see `kickOffFetches`)
-and can itself surface a refreshed `Account` (from fetching a starred post
-whose access token needed renewing first, see `Shared.MaybeAccountRequest`)
-for `Shared.update` to persist via `AccountsPanel.AccountRefreshed` -- this
-module can't dispatch that itself without importing `Shared` (a cycle, since
-`Shared` imports this module).
+and can itself surface an `AccountsPanel.Msg` it needs forwarded on its behalf
+-- either a refreshed `Account` (from fetching a starred post whose access
+token needed renewing first, see `Shared.MaybeAccountRequest`), persisted via
+`AccountsPanel.AccountRefreshed`, or a disabled server's owner re-enabling it
+(`EnableServerClicked`), forwarded as `AccountsPanel.ToggleServerEnabled` --
+for `Shared.update` to actually dispatch. This module can't dispatch either
+itself without importing `Shared` (a cycle, since `Shared` imports this
+module).
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Account )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
 update accountsPanelModel msg model =
     let
-        ( newModel, cmd, maybeAccount ) =
+        ( newModel, cmd, maybeAccountsPanelMsg ) =
             updateHelp accountsPanelModel msg model
     in
-    ( syncItemAnimations newModel, cmd, maybeAccount )
+    ( syncItemAnimations newModel, cmd, maybeAccountsPanelMsg )
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `starAnimations` for any starred
@@ -212,7 +218,7 @@ syncItemAnimations model =
     { model | starAnimations = UI.Flip.syncEnter identity model.starOrder model.starAnimations }
 
 
-updateHelp : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Account )
+updateHelp : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
 updateHelp accountsPanelModel msg model =
     case msg of
         ToggleStar server post ->
@@ -370,6 +376,13 @@ updateHelp accountsPanelModel msg model =
             else
                 ( toggledModel, Cmd.none, Nothing )
 
+        EnableServerClicked host ->
+            -- Just forwards to `AccountsPanel.ToggleServerEnabled` -- once
+            -- `Shared.update` dispatches it and the server's `enabled` flips
+            -- back on, `refreshHosts` re-fetches this post the same as any
+            -- other reconnect (see `Shared.starredPostsRefreshHosts`).
+            ( model, Cmd.none, Just (AccountsPanel.ToggleServerEnabled host) )
+
         PollStarredPosts ->
             let
                 ( fetchedModel, cmd ) =
@@ -387,7 +400,7 @@ updateHelp accountsPanelModel msg model =
                         _ ->
                             PostFetchFailed
             in
-            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, maybeAccount )
+            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
 
         GotStarredPost key (Err _) ->
             ( { model | posts = Dict.insert key PostFetchFailed model.posts }, Cmd.none, Nothing )
@@ -535,13 +548,20 @@ refreshHosts accountsPanelModel hosts model =
         kickOffFetches accountsPanelModel { model | posts = clearedPosts }
 
 
+{-| `ServerDependentView.availableServer` -- not the raw
+`AccountsPanel.serverForHost` -- so a starred post whose server is known but
+disabled (see `Shared.AccountsPanel`'s `Server.enabled`) is treated the same
+as one whose server was never connected at all: marked `ServerUnavailable`
+below rather than fetched, matching the panel's own `starredPostView`, which
+shows the same "server isn't reachable" message either way.
+-}
 fetchGroup :
     AccountsPanel.Model
     -> ( String, List String )
     -> ( Dict String PostFetchStatus, List (Cmd Msg) )
     -> ( Dict String PostFetchStatus, List (Cmd Msg) )
 fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
-    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+    case ServerDependentView.availableServer accountsPanelModel.servers host of
         Nothing ->
             ( List.foldl (\postId -> Dict.insert (rawKey postId host) ServerUnavailable) posts postIds
             , cmds
@@ -754,7 +774,34 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
             div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Post " ++ key ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
 
         Just ServerUnavailable ->
-            div [ class "starred-post-entry post-error" ] [ text "That post's server isn't reachable right now." ]
+            let
+                -- `ServerUnavailable` covers both "server not connected at
+                -- all" and "server connected but disabled" (see `fetchGroup`'s
+                -- use of `ServerDependentView.availableServer`) -- only the
+                -- latter has anything to offer a button for, so re-derive the
+                -- actual `Server` (if disabled) from `key`'s host.
+                maybeDisabledServer =
+                    parseStarKey key
+                        |> Maybe.andThen (\( _, host ) -> AccountsPanel.serverForHost accountsPanelModel.servers host)
+                        |> Maybe.andThen
+                            (\server ->
+                                if server.enabled then
+                                    Nothing
+
+                                else
+                                    Just server
+                            )
+            in
+            div [ class "starred-post-entry post-error" ]
+                (text "That post's server isn't reachable right now."
+                    :: (case maybeDisabledServer of
+                            Just server ->
+                                [ button [ onClick (EnableServerClicked server.frontendHost) ] [ text ("Enable " ++ server.frontendHost) ] ]
+
+                            Nothing ->
+                                []
+                       )
+                )
 
         Nothing ->
             text ""

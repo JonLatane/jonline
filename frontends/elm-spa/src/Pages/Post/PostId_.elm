@@ -106,6 +106,7 @@ type Msg
     = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | EnableClicked
     | Poll
     | SharedMsg Shared.Msg
 
@@ -167,6 +168,9 @@ update shared req msg model =
             , Effect.none
             )
 
+        EnableClicked ->
+            ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.targetHost)) )
+
         Poll ->
             fetchIfReady shared model
 
@@ -225,6 +229,7 @@ bodyView shared req model =
         , accounts = shared.accountsPanel.accounts
         , connectStatus = model.connectStatus
         , onConnectClicked = ConnectClicked
+        , onEnableClicked = EnableClicked
         }
         (\_ _ ->
             case model.postStatus of

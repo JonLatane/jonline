@@ -248,7 +248,7 @@ update req msg model =
                     AccountsPanel.update req subMsg model.accountsPanel
 
                 changedHosts =
-                    accountIdentityChangedHosts model.accountsPanel subModel
+                    starredPostsRefreshHosts model.accountsPanel subModel
 
                 ( refreshedStarredPostsPanel, refreshCmd ) =
                     StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
@@ -265,13 +265,13 @@ update req msg model =
 
         StarredPostsPanelMsg subMsg ->
             let
-                ( subModel, subCmd, maybeRefreshedAccount ) =
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
                     StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
-                    case maybeRefreshedAccount of
-                        Just account ->
-                            AccountsPanel.update req (AccountsPanel.AccountRefreshed account) model.accountsPanel
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
 
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
@@ -332,16 +332,20 @@ update req msg model =
                     ( model, Cmd.none )
 
 
-{-| Hosts whose signed-in account (see `AccountsPanel.enabledAccountForServer`)
-differs between `before` and `after` -- e.g. logging into/switching accounts on
-a server, signing out, or disabling/re-enabling it (`ToggleServerEnabled`
-disables its accounts too). Tells `Shared.StarredPostsPanel.refreshHosts` which
-servers' cached starred `Post`s might now be wrong -- a starred post's
-visibility can depend on which account fetched it -- and so need
+{-| Hosts whose "usable right now" state differs between `before` and `after`
+-- either their signed-in account (see `AccountsPanel.enabledAccountForServer`,
+e.g. logging into/switching accounts on a server, signing out) or whether
+their `Server` itself is enabled (`ToggleServerEnabled` -- which also disables
+its accounts, but not for a server with none signed into it, so that flip
+needs checking on its own). Tells `Shared.StarredPostsPanel.refreshHosts`
+which servers' cached starred `Post`s might now be wrong -- a starred post's
+visibility can depend on which account fetched it, and an unavailable
+server's shouldn't be fetched/shown at all (see
+`Components.ServerDependentView.availableServer`) -- and so need
 clearing/refetching.
 -}
-accountIdentityChangedHosts : AccountsPanel.Model -> AccountsPanel.Model -> List String
-accountIdentityChangedHosts before after =
+starredPostsRefreshHosts : AccountsPanel.Model -> AccountsPanel.Model -> List String
+starredPostsRefreshHosts before after =
     let
         dedupe list =
             List.foldl
@@ -356,11 +360,19 @@ accountIdentityChangedHosts before after =
                 list
 
         hosts =
-            dedupe ((before.accounts |> List.map .server) ++ (after.accounts |> List.map .server))
+            dedupe
+                ((before.accounts |> List.map .server)
+                    ++ (after.accounts |> List.map .server)
+                    ++ (before.servers |> List.map .frontendHost)
+                    ++ (after.servers |> List.map .frontendHost)
+                )
 
         identity model_ host =
-            AccountsPanel.enabledAccountForServer model_.accounts host
+            ( AccountsPanel.enabledAccountForServer model_.accounts host
                 |> Maybe.map AccountsPanel.accountId
+            , AccountsPanel.serverForHost model_.servers host
+                |> Maybe.map .enabled
+            )
     in
     hosts |> List.filter (\host -> identity before host /= identity after host)
 
