@@ -303,7 +303,7 @@ type Msg
     | AccountRefreshed Account
     | MoveAccountUpClicked String
     | MoveAccountDownClicked String
-    | GotPreMovePositions String (List String) String Int (Result Dom.Error ( Dom.Element, Dom.Element, Dom.Element ))
+    | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
     | MoveServerLeftClicked String
     | MoveServerRightClicked String
     | GotPreMoveServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
@@ -363,22 +363,28 @@ slice lo hi items =
 
 {-| What `id` moving by `offset` (always +-1, from a move button) actually
 swaps: normally just `id`'s own Account trading places with its single
-`offset` neighbor -- but if that neighbor is on a *different* server, `id`
+`offset` neighbor -- but if that neighbor is on a _different_ server, `id`
 sits at the edge of its own same-server group nearest that neighbor (top
 edge moving up, bottom edge moving down), so every other Account on `id`'s
-server on the *other* side (below it moving up, above it moving down) comes
-along too. That group is found by scanning *only* away from the neighbor,
+server on the _other_ side (below it moving up, above it moving down) comes
+along too. That group is found by scanning _only_ away from the neighbor,
 back across `id`'s own side -- same-server Accounts are already kept
 contiguous elsewhere (see `sortMainServerAccountsFirst`/
-`insertAfterSameServer`), so there's never a need to also expand the
-neighbor's own group; the swap is always against that one neighbor Account,
-whatever group it belongs to.
+`insertAfterSameServer`).
 
-Returns the moved Accounts' index range `( lo, hi )` and the neighbor's own
-index, or `Nothing` if `id` isn't found or there's no neighbor in that
-direction.
+The neighbor's own same-server group has to come along too, though: it's
+just as contiguous as `id`'s, so swapping `id`'s group past only the single
+adjacent neighbor Account would split the neighbor's group in two (its far
+side ending up on the wrong side of the moved group). So the neighbor side
+is expanded the same way -- scanning _forward_, away from `id`, from
+`neighborIdx`.
+
+Returns the moved Accounts' index range `( lo, hi )` and the neighbor
+group's own index range, or `Nothing` if `id` isn't found or there's no
+neighbor in that direction.
+
 -}
-accountSwapRange : Int -> String -> List Account -> Maybe ( ( Int, Int ), Int )
+accountSwapRange : Int -> String -> List Account -> Maybe ( ( Int, Int ), ( Int, Int ) )
 accountSwapRange offset id accounts =
     accountIndex id accounts
         |> Maybe.andThen
@@ -390,21 +396,27 @@ accountSwapRange offset id accounts =
                 case ( accountAt i accounts, accountAt neighborIdx accounts ) of
                     ( Just clicked, Just neighbor ) ->
                         if clicked.server == neighbor.server then
-                            Just ( ( i, i ), neighborIdx )
+                            Just ( ( i, i ), ( neighborIdx, neighborIdx ) )
 
                         else
                             let
-                                walk idx =
-                                    if (accountAt (idx - offset) accounts |> Maybe.map .server) == Just clicked.server then
-                                        walk (idx - offset)
+                                walk step server idx =
+                                    if (accountAt (idx + step) accounts |> Maybe.map .server) == Just server then
+                                        walk step server (idx + step)
 
                                     else
                                         idx
 
-                                edge =
-                                    walk i
+                                movedEdge =
+                                    walk -offset clicked.server i
+
+                                neighborEdge =
+                                    walk offset neighbor.server neighborIdx
                             in
-                            Just ( ( min i edge, max i edge ), neighborIdx )
+                            Just
+                                ( ( min i movedEdge, max i movedEdge )
+                                , ( min neighborIdx neighborEdge, max neighborIdx neighborEdge )
+                                )
 
                     _ ->
                         Nothing
@@ -420,25 +432,26 @@ moveAccountBy offset id accounts =
         Nothing ->
             accounts
 
-        Just ( ( lo, hi ), neighborIdx ) ->
-            if neighborIdx < lo then
-                List.take neighborIdx accounts
+        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
+            if nhi < lo then
+                List.take nlo accounts
                     ++ slice lo hi accounts
-                    ++ slice neighborIdx neighborIdx accounts
+                    ++ slice nlo nhi accounts
                     ++ List.drop (hi + 1) accounts
 
             else
                 List.take lo accounts
-                    ++ slice neighborIdx neighborIdx accounts
+                    ++ slice nlo nhi accounts
                     ++ slice lo hi accounts
-                    ++ List.drop (neighborIdx + 1) accounts
+                    ++ List.drop (nhi + 1) accounts
 
 
 {-| Kicks off a reorder move (see `accountSwapRange`): measures the pre-swap
-position of the moved Account(s)' first/last row and the single neighbor
-row it's swapping past (the "First" of FLIP), via `GotPreMovePositions` --
-so the resulting message has something to compare the post-swap position
-against. A no-op (no neighbor in that direction) just does nothing.
+position of the moved Account(s)' first/last row and the neighbor group's
+first/last row it's swapping past (the "First" of FLIP), via
+`GotPreMovePositions` -- so the resulting message has something to compare
+the post-swap position against. A no-op (no neighbor in that direction) just
+does nothing.
 -}
 beginAccountMove : Int -> String -> List Account -> Cmd Msg
 beginAccountMove offset id accounts =
@@ -446,25 +459,30 @@ beginAccountMove offset id accounts =
         Nothing ->
             Cmd.none
 
-        Just ( ( lo, hi ), neighborIdx ) ->
+        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
             let
                 movedIds =
                     slice lo hi accounts |> List.map accountId
 
-                neighborId =
-                    accountAt neighborIdx accounts |> Maybe.map accountId |> Maybe.withDefault id
+                neighborIds =
+                    slice nlo nhi accounts |> List.map accountId
 
                 movedFirstId =
                     List.head movedIds |> Maybe.withDefault id
 
                 movedLastId =
                     List.reverse movedIds |> List.head |> Maybe.withDefault id
+
+                neighborFirstId =
+                    List.head neighborIds |> Maybe.withDefault id
+
+                neighborLastId =
+                    List.reverse neighborIds |> List.head |> Maybe.withDefault id
             in
-            Task.attempt (GotPreMovePositions id movedIds neighborId offset)
-                (Task.map3 (\a b c -> ( a, b, c ))
-                    (Dom.getElement (accountRowDomId movedFirstId))
-                    (Dom.getElement (accountRowDomId movedLastId))
-                    (Dom.getElement (accountRowDomId neighborId))
+            Task.attempt (GotPreMovePositions id movedIds neighborIds offset)
+                (Task.map2 Tuple.pair
+                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId movedFirstId)) (Dom.getElement (accountRowDomId movedLastId)))
+                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId neighborFirstId)) (Dom.getElement (accountRowDomId neighborLastId)))
                 )
 
 
@@ -1386,36 +1404,36 @@ updateHelp req msg model =
             in
             ( newModel, persist newModel )
 
-        GotPreMovePositions id movedIds neighborId offset (Ok ( movedFirstEl, movedLastEl, neighborEl )) ->
+        GotPreMovePositions id movedIds neighborIds offset (Ok ( ( movedFirstEl, movedLastEl ), ( neighborFirstEl, neighborLastEl ) )) ->
             -- `movedIds`' post-swap position is derivable from this one
-            -- (pre-swap) measurement of its first/last row and the single
-            -- neighbor row it's swapping past (see `accountSwapRange`).
-            -- Computing it this way (rather than swapping first, then
-            -- measuring again after the next render) means the pinned
-            -- "Invert" transform is set in the very same update as the swap,
-            -- so there's no frame where the swapped list renders at rest
-            -- before the animation kicks in.
+            -- (pre-swap) measurement of its first/last row and the
+            -- neighbor group's first/last row it's swapping past (see
+            -- `accountSwapRange`). Computing it this way (rather than
+            -- swapping first, then measuring again after the next render)
+            -- means the pinned "Invert" transform is set in the very same
+            -- update as the swap, so there's no frame where the swapped
+            -- list renders at rest before the animation kicks in.
             let
                 newModel =
                     { model | accounts = moveAccountBy offset id model.accounts }
 
-                -- The moved row(s) span from `movedFirstEl`'s top to
-                -- `movedLastEl`'s bottom -- a single synthetic rect standing
-                -- in for the whole moved group, so `UI.Flip.swapDeltas`
-                -- (built for a plain two-item swap) can compute one shared
-                -- slide delta for it against the single neighbor rect.
-                movedSpan =
-                    { movedFirstEl
+                -- Both groups span from their first row's top to their last
+                -- row's bottom -- a single synthetic rect standing in for
+                -- each whole group, so `UI.Flip.swapDeltas` (built for a
+                -- plain two-item swap) can compute one shared slide delta
+                -- for each side.
+                span firstEl lastEl =
+                    { firstEl
                         | element =
-                            { x = movedFirstEl.element.x
-                            , y = movedFirstEl.element.y
-                            , width = movedFirstEl.element.width
-                            , height = movedLastEl.element.y + movedLastEl.element.height - movedFirstEl.element.y
+                            { x = firstEl.element.x
+                            , y = firstEl.element.y
+                            , width = firstEl.element.width
+                            , height = lastEl.element.y + lastEl.element.height - firstEl.element.y
                             }
                     }
 
                 ( movedDelta, neighborDelta ) =
-                    UI.Flip.swapDeltas UI.Flip.Vertical movedSpan neighborEl
+                    UI.Flip.swapDeltas UI.Flip.Vertical (span movedFirstEl movedLastEl) (span neighborFirstEl neighborLastEl)
 
                 startOrRestart delta key anims =
                     Dict.insert key (UI.Flip.startMove (MoveSettled key) delta (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)) anims
@@ -1423,7 +1441,7 @@ updateHelp req msg model =
                 newMoveAnimations =
                     newModel.moveAnimations
                         |> (\anims -> List.foldl (startOrRestart movedDelta) anims movedIds)
-                        |> startOrRestart neighborDelta neighborId
+                        |> (\anims -> List.foldl (startOrRestart neighborDelta) anims neighborIds)
             in
             ( { newModel | moveAnimations = newMoveAnimations }, persist newModel )
 
