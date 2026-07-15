@@ -1,0 +1,456 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d9dce1;
+  --panel-bg: #ffffff;
+  --danger: #c0392b;
+  --chip-bg: #f4f5f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d;
+    --fg: #eaeaea;
+    --muted: #9aa1ab;
+    --border: #33363d;
+    --panel-bg: #21242b;
+    --danger: #e0685a;
+    --chip-bg: #2a2d34;
+  }
+}
+
+/* Explicit Light/Dark selections (see the theme toggle) override the system
+   preference above in both directions -- these win regardless of source
+   order since an attribute selector on :root is more specific than a bare
+   `:root` inside the media query. "Auto" clears the attribute entirely,
+   falling back to the media query. */
+
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d9dce1;
+  --panel-bg: #ffffff;
+  --danger: #c0392b;
+  --chip-bg: #f4f5f7;
+}
+
+:root[data-theme="dark"] {
+  --bg: #16181d;
+  --fg: #eaeaea;
+  --muted: #9aa1ab;
+  --border: #33363d;
+  --panel-bg: #21242b;
+  --danger: #e0685a;
+  --chip-bg: #2a2d34;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Spans the full page width (it's a top-level element, not inside
+   .container); its background/text color come from the mainFrontendHost's
+   background-color-primary utility class (see UI.EmittedStylesheet) instead
+   of a fixed color, so it's tinted with that server's primaryColor. Sticking
+   to the top of the viewport on scroll needs nothing more than this --
+   sticky content already reserves its own space in the page flow, so
+   nothing below it needs compensating padding the way position: fixed
+   would require. */
+.navbar {
+  position: sticky;
+  top: 0;
+  border-bottom: 1px solid var(--border);
+  /* Its own stacking context, above .shared-backdrop, so the nav (and its
+     descendant .nav-panel elements -- Accounts, Starred Posts) is never
+     blurred/covered/click-intercepted by the backdrop. */
+  z-index: 25;
+}
+
+/* Keeps the navbar's content lined up with the (narrower) page content
+   below it, the same way .container does for main. */
+.navbar-inner {
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+}
+
+/* Phone-width screens: claw back nearly all of the navbar's left/right
+   padding -- 1rem on each side is space worth reclaiming when the whole
+   navbar is barely wider than the Home/Accounts buttons themselves. Left/
+   right are trimmed to a hairline 2px (rather than 0) so the Home and
+   Accounts buttons don't butt straight up against the screen edge; top/
+   bottom padding is untouched. Tablet and up keep the original padding.
+   Shares its 639px breakpoint with `.starred-posts-panel`'s own
+   narrow-screen override below (search this file for `639px`) -- CSS
+   custom properties can't be used inside `@media` feature values (no
+   `@custom-media` support in browsers), so there's no way to define this
+   once; keep both in sync by hand if it ever changes. */
+@media (max-width: 639px) {
+  .navbar-inner {
+    padding-left: 2px;
+    padding-right: 2px;
+  }
+}
+
+/* Covers everything below/behind the nav for every panel that closes via a
+   background tap (Starred Posts, Accounts -- see UI.elm's `sharedBackdrop`,
+   which lists them nearest-first and picks the frontmost open one to close on
+   click, so they peel off one at a time rather than all closing together).
+   Only blurred/tinted (`.blurred`, driven by `sharedBackdrop`'s per-panel
+   `blurs` flag) while the Accounts Panel specifically is open -- unlike it,
+   the Starred Posts panel doesn't block interaction with the rest of the
+   page, since starring/unstarring posts while it's open is an expected,
+   encouraged interaction rather than something to obscure. */
+.shared-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.shared-backdrop.is-open {
+  pointer-events: auto;
+}
+
+.shared-backdrop.is-open.blurred {
+  background: rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.5rem;
+  /* Without this, a flex item's default auto min-width is its content size,
+     which -- since .nav-link-home's name is `white-space: nowrap` -- is the
+     full un-truncated name, blocking it from ever actually shrinking/
+     ellipsizing under real space pressure. */
+  min-width: 0;
+}
+
+/* Button-styled nav links. No background/text color of their own -- they
+   inherit the navbar's primaryColor/primaryTextColor by default; the current
+   page's link overrides that with the background-color-nav utility class
+   (see UI.navLink) instead. */
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+}
+
+.nav-link:hover {
+  opacity: 0.85;
+}
+
+/* The Home link swaps in the browsing server's RegularServerLogo (glyph +
+   possibly-two-line name -- see UI.homeLinkContent) instead of plain text, so
+   it needs its own layout: the glyph on the left stretched to the full
+   height of the button (rather than RegularServerLogo's usual stacked
+   glyph-above-name/fixed glyph size, which is why the width/height rules
+   below override .server-name-and-logo.regular's defaults from
+   AccountsPanel.elm's CSS instead of just reusing them) with the
+   left-aligned name stack to its right, plus
+   .accounts-menu-toggle.has-summary's negative-margin hack (here -18px, vs.
+   that button's -5px, since this content is taller) so the taller button
+   overflows the navbar row instead of stretching it. `border-radius` is
+   dialed back from .nav-link's pill shape -- a stadium radius on a shape this
+   much taller than it is wide reads as an odd rounded-off oval rather than a
+   button, so a fixed radius is used instead. */
+.nav-link-home {
+  align-items: stretch;
+  /* No top/bottom/left padding -- the logo (see below) sits flush against
+     those three edges, flush enough that it'd otherwise poke past the
+     button's own rounded corners, hence `overflow: hidden` here too. */
+  padding: 0 0.6rem 0 0;
+  overflow: hidden;
+  border-radius: 14px;
+  margin-top: -10px;
+  margin-bottom: -10px;
+  /* See .nav-links' min-width comment -- same reasoning, one level down. */
+  min-width: 0;
+}
+
+.nav-link-home .server-name-and-logo.regular {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-image,
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji,
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  /* The parent row's `align-items: stretch` (not a `height: 100%` here) is
+     what stretches this to the button's full height -- .nav-link-home's own
+     height comes from its content (padding around the name text), not an
+     explicit value, and a *percentage* height on this sibling, even though it
+     resolves fine at paint time, throws off the browser's intrinsic-width
+     pass for `.server-name-primary`/`.server-name-secondary` next to it
+     (their shrink-to-fit ellipsis box ends up a few px too narrow, clipping
+     text that would otherwise fully fit). `min-height` forces the button (and
+     therefore this stretched glyph) noticeably taller than a single line of
+     name text alone would be, since the point is a big glyph flush with the
+     button's left/top/bottom edges (`.nav-link-home`'s own padding/overflow
+     handle that flushness); `max-height` only matters as a cap for
+     multi-line names tall enough to exceed it. `aspect-ratio` keeps it square
+     off of whichever of those actually wins; `object-fit: cover` (from the
+     base .server-logo-image rule) crops non-square source images into the
+     resulting square instead of distorting them. */
+  width: auto;
+  min-height: 64px;
+  max-width: 64px;
+  max-height: 64px;
+  aspect-ratio: 1 / 1;
+  flex-shrink: 0;
+  border-radius: 0;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 3.6rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-logo-placeholder {
+  font-size: 2.3rem;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-breakdown {
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.nav-link-home .server-name-and-logo.regular .server-name-primary,
+.nav-link-home .server-name-and-logo.regular .server-name-secondary {
+  text-align: left;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+main {
+  padding: 1rem;
+}
+
+/* Every link's color (nav links, About-page content links, ...) comes from
+   the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+input[type="text"],
+input:not([type]),
+input[type="password"],
+input[type="url"] {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+input[disabled] {
+  opacity: 0.6;
+}
+
+
+/* Generic centered dialog -- a fixed backdrop + header/body/buttons frame,
+   used by every Cancel/Confirm-style dialog (Create Account confirmation,
+   delete confirmation, and future ones) via UI/Modal.elm's `backdrop`/`view`.
+   A dialog's own `config.class` (e.g. `.create-account-modal`,
+   `.confirm-delete-modal`, added below `.modal` itself) is for that dialog's
+   own width/content overrides layered on top of these shared rules. Sits
+   above `.shared-backdrop`/`.navbar` since a dialog can appear on top of the
+   (already open) Accounts Panel. */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.modal-backdrop.is-open {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  /* Only .modal-body scrolls internally -- the header and buttons stay put --
+     both so they're never lost off the bottom on a short screen, and (for
+     Create Account specifically) so "scrolled to bottom" -- see
+     UI.createAccountConfirmationModal, which disables Create Account until
+     then -- refers to that one, unambiguous scroll container. */
+  overflow: hidden;
+  background: var(--panel-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.modal.is-closed {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  /* Zero size while closed -- otherwise this always-rendered (for the fade
+     transition), centered, empty dialog would still sit in the page's normal
+     flow-independent stacking, invisible but there, adding scroll-affecting
+     dead space isn't actually a risk (position: fixed), just tidiness. */
+  padding: 0;
+  border: none;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  /* The flexible item in .modal's column -- shrinks to whatever's left after
+     the header/buttons take their fixed space, then scrolls its own
+     overflow. `min-height: 0` overrides flexbox's default content-based
+     minimum, which would otherwise ignore the parent's max-height and force
+     the whole dialog to grow instead of this scrolling. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.modal-buttons button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+
+/* Toggle switch */
+
+.switch {
+  position: relative;
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch .slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.switch .slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+}
+
+/* .switch input:checked + .slider's background comes from the emitted
+   `mainFrontendServerRules` -- see UI.EmittedStylesheet. */
+
+.switch input:checked+.slider::before {
+  transform: translateX(14px);
+}
+
+
+/* Components/ServerDependentView.elm's "connect to this server" prompt */
+
+.server-dependent-prompt {
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.server-dependent-prompt button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+}
+
+.server-dependent-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}

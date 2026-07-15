@@ -360,11 +360,11 @@ recentPostsView shared model =
 
 {-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`
 (see `syncAnimations`) -- the `.flip-collapsed` class (present while
-`entering` or `removing`) is what makes `style.css`'s `.flip-animated-item`
+`entering` or `removing`) is what makes `flip.css`'s `.flip-animated-item`
 rules grow/shrink this wrapper's own height, which is what makes the *other*
 posts slide smoothly into the space this one leaves/needs, on top of its own
 fade -- see that rule's doc comment for how. The inner `div` is purely a clip
-layer (`.flip-animated-item > *` in `style.css`, invisible/borderless) so the
+layer (`.flip-animated-item > *` in `flip.css`, invisible/borderless) so the
 inter-post spacing it holds as `padding-bottom` can shrink away smoothly
 along with everything else, rather than showing up inside `.post-card`'s own
 border; it also carries `pointer-events: none` while `removing` so a

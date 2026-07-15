@@ -90,7 +90,7 @@ headerNav shared currentRoute =
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
         -- the full viewport width), not of `.admin-menu` (the toggle's own
         -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
-        -- `left: 0` in style.css hugs the actual screen edge instead of just
+        -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
         -- the toggle's left edge. See `starredPostsPanel`.
         , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
             text ""
@@ -114,7 +114,7 @@ type alias BackdropPanel =
 
 
 {-| Covers everything except the top nav (which sits in its own, higher
-stacking context -- see `.navbar` in style.css) for every panel that closes
+stacking context -- see `.navbar` in main.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel and the Accounts
 Panel, with more expected to join this list later. Always rendered, like the
 panels themselves, so opening/closing (and the blur) is a plain CSS
@@ -197,7 +197,7 @@ onEnter msg =
 `navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
 navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them. The Home link also gets its own `nav-link-home`
-class (regardless of `isCurrent`) so `style.css` can give its bigger,
+class (regardless of `isCurrent`) so `main.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
 negative-margin overflow treatment as the Accounts Panel toggle.
 -}
@@ -231,7 +231,7 @@ navLink shared currentRoute content linkRoute =
 {-| The Home link's content is normally the browsing server's own
 logo/name (via `AccountsPanel.serverNameAndLogo`), same `RegularServerLogo`
 (stacked glyph-above-multi-line-name) style as the server chips in the
-Accounts Panel -- just bigger, per `.nav-link-home` in `style.css` -- falling
+Accounts Panel -- just bigger, per `.nav-link-home` in `main.css` -- falling
 back to the literal text "Home" only for the brief window before
 `mainFrontendHost` has actually finished connecting (see
 `AccountsPanel.init`/`GotMainServerResult`), when it isn't in `servers` yet.
@@ -518,7 +518,7 @@ you'll accumulate the most of.
 
 Always rendered (even "closed"), so opening/closing can be a plain CSS
 transition (fade + slide) rather than the panel just appearing/disappearing
-outright -- see `.nav-panel`/`.nav-panel.is-closed` in style.css.
+outright -- see `.nav-panel`/`.nav-panel.is-closed` in main.css.
 
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
@@ -1444,7 +1444,7 @@ policyMarkdown heading maybeText =
 something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
 `.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
-can hug the actual screen edge (see `.starred-posts-panel` in style.css).
+can hug the actual screen edge (see `.starred-posts-panel` in starred_posts_panel.css).
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =

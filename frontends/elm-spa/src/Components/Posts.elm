@@ -298,7 +298,7 @@ postCommentCount post =
 `onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
 the post (see `Shared.StarredPostsPanel`), filling with `postServerHost`'s
 `primaryAnchorColor` (`.post-star.starred`, see `UI.EmittedStylesheet`) and
-animating the fill via `transition` in `style.css` when `starred` flips.
+animating the fill via `transition` in `posts.css` when `starred` flips.
 `stopPropagation`/`preventDefault` keep a click here from also following
 `postCard`'s enclosing link.
 -}
@@ -336,7 +336,7 @@ commentCountText post =
 
 
 {-| A small avatar/placeholder for a post's author, matching the size of the
-Accounts Panel toggle's own avatars (`.post-author-avatar`, see `style.css`).
+Accounts Panel toggle's own avatars (`.post-author-avatar`, see `posts.css`).
 Falls back to an initial-letter placeholder the same way `UI.imageOrInitial`
 does elsewhere in the app; duplicated here rather than reusing that function
 since `UI` itself imports `Components.Posts` (for `postCard`), so the reverse
@@ -405,7 +405,7 @@ below is an invisible `<a>` (`.post-card-link-overlay`) absolutely filling the
 whole `.post-card`, sitting _behind_ the title/meta content (`position:
 relative` on `.post-card-meta` -- title needs none, see its own lack of
 interactive descendants -- stacks it above the overlay per normal CSS painting
-order) with `.post-card-meta`'s own `pointer-events: none` (see `style.css`)
+order) with `.post-card-meta`'s own `pointer-events: none` (see `posts.css`)
 making its plain text transparent to clicks, which fall through to the overlay
 below -- while `authorLink`/`starButton`, both opted back in via
 `pointer-events: auto`, catch clicks themselves before they ever reach it.

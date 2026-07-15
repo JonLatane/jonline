@@ -3,7 +3,7 @@ module UI.Modal exposing (Config, backdrop, view)
 {-| A generic centered dialog: fixed backdrop + header/body/buttons frame,
 always rendered (even closed) so opening/closing is a CSS transition rather
 than the elements themselves appearing/disappearing outright -- see
-`style.css`'s `.modal`/`.modal-backdrop`. Extracted from the Create Account
+`main.css`'s `.modal`/`.modal-backdrop`. Extracted from the Create Account
 confirmation dialog (`UI.createAccountConfirmationModal`) so every
 Cancel/Confirm-style dialog (Create Account, delete confirmation, and future
 ones) shares one implementation. `config.class` (e.g. "create-account-modal")

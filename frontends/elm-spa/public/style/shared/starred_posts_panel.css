@@ -1,0 +1,143 @@
+.starred-posts-panel,
+.nav-panel.starred-posts-panel {
+  /* Given a higher z-index than the Accounts Panel so it layers above it if
+     both happen to be open at once. */
+  z-index: 25;
+  --panel-width: 360px;
+  width: var(--panel-width);
+
+  /* Unlike the Accounts Panel, this one is rendered by `UI.elm`'s
+     `starredPostsPanel` as a direct child of `.navbar` itself (see
+     `headerNav`) rather than of its toggle's own `.admin-menu` wrapper, so
+     `left` here is in `.navbar`'s own coordinates -- and since `.navbar`
+     spans the full viewport width with no side margins, that's the same as
+     the screen's coordinates too.
+
+     Wants to hang as far left as it can while staying attached below its
+     toggle (the star button in `.nav-links`, after the Home link), but never
+     spill left of the Home link's own left edge -- crowding out/overlapping
+     the Home link would read as covering nav chrome rather than just
+     dropping down from the toggle. Both `16px` (the Home link's left edge,
+     i.e. `.navbar-inner`'s 1rem padding, once narrow enough that its
+     `max-width: 800px` isn't centering it away from 0) and `188px` (the
+     toggle's own right edge from that same origin -- the Home link's
+     rendered width + `.nav-links`' gap + the toggle's own ~35px) are
+     measured relative to `.navbar-inner`'s left edge; `max(0px, (100vw -
+     800px) / 2)` mirrors `.navbar-inner`'s own centering math for wider
+     viewports (its `margin: 0 auto` drifting everything inside it rightward
+     by half the excess over 800px) and is common to both, so it factors out
+     of the inner `max()` entirely. Since this panel (360px) is wider than
+     the ~172px gap between the Home link's left edge and the toggle's right
+     edge, attaching flush to the toggle would always spill past the Home
+     link regardless of viewport width -- so in practice this always resolves
+     to the Home link's left edge, extending rightward past the toggle; the
+     `max()` is still written generally (rather than hardcoded to just the
+     Home link's edge) so it keeps doing the right thing if the panel or
+     toggle's width ever changes enough to close that gap. */
+  right: auto;
+  left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
+
+  /* The base `.nav-panel` rule's `top: calc(100% + 0.5rem)` means
+     something different here than it does for the Accounts Panel: that one's
+     relative to its own toggle's own (short) box, but this one's
+     relative to the full `.navbar` (see the `left` comment above for why),
+     which is taller since it's centered around the Home link's bigger logo.
+     The `22.6px` correction is that height difference (plus a further ~10px
+     nudge up) -- it's what actually lines this panel's top up with the
+     Accounts Panel's, rather than sitting visibly lower. */
+  top: calc(100% + 0.5rem - 17.6px);
+}
+
+/* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
+   hairline 2px above, so the panel's left edge needs its own tighter offset
+   (3px, not the full 16px) to stay close to the Home link's new position
+   instead of sitting well right of it. `(100vw - 800px) / 2` is always 0 in
+   this breakpoint (max 639px is nowhere near the 800px it'd need to go
+   positive), so the base rule's full `calc()` collapses to this flat value
+   here. Placed after the base rule (rather than alongside `.navbar-inner`'s
+   own narrow-screen override above) so it wins the cascade on source order
+   alone, without needing `!important`. */
+@media (max-width: 639px) {
+  .starred-posts-panel {
+    left: 3px;
+  }
+}
+
+/* Notification-style count bubble on the Starred Posts toggle's corner --
+   positioned relative to `.admin-menu` (see `.accounts-menu, .admin-menu`
+   above), which wraps just the toggle button with no extra layout box of its
+   own, so this lines up with the button's own corner. Its background/text
+   color come from the emitted `mainFrontendHost background-color-nav` rule
+   (navColor/navTextColor -- see `UI.EmittedStylesheet`), same as e.g. the
+   Login form's buttons, rather than a fixed color here. */
+.starred-posts-count-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+.starred-posts-header {
+  font-weight: 700;
+}
+
+.starred-posts-empty {
+  color: var(--muted);
+}
+
+/* The reorderable list itself -- see Shared/StarredPostsPanel.elm's `view`.
+   Styled entirely by the `.flip-animated-column` class also on it (`display:
+   flex; flex-direction: column;`, deliberately no `gap` -- same "let each
+   `.flip-animated-item`'s own padding-bottom hold the spacing instead"
+   reasoning as `.accounts-list`, so a removed/unstarred entry's space
+   shrinks away smoothly instead of snapping shut once it's actually gone). */
+
+/* One row per starred post: `UI.Flip`'s up/down reorder buttons (see
+   `starredPostRow`) just left of the entry itself, same arrangement as
+   `UI.accountRow`'s for Accounts. */
+.starred-post-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+/* One entry per starred post -- see Shared/StarredPostsPanel.elm's
+   `starredPostView`. Its `.post-card` (a plain `<a>`) is reused as-is. */
+
+.starred-post-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  /* `.starred-post-row` is the flex item now (`display: flex` still on this,
+     the entry itself) -- without this, the entry would only claim its
+     content's own width, leaving `.post-card` free to shrink narrower than
+     the row instead of filling the space next to the reorder buttons. */
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.flip-animated-item.flip-moving .starred-post-entry .post-card {
+  /* flex: 1 1 auto;
+  min-width: 0; */
+  backdrop-filter: blur(4px);
+}
+
+.starred-post-context {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--chip-bg);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}

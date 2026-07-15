@@ -13,7 +13,7 @@ posts, Accounts, Servers, future ones -- including a future grid, which is why
 everything below is in terms of both axes even where today's callers only
 ever move along one) shares one implementation. Pair with
 `.flip-animated-column`/`.flip-animated-row`/`.flip-animated-item` in
-`style.css`.
+`flip.css`.
 
 There are two independent things a list item can animate:
 
@@ -146,7 +146,7 @@ subscription toMsg states =
 
 
 {-| Attributes for the wrapping `div` -- `.flip-collapsed` (present while
-`entering` or `removing`) is what makes `.flip-animated-item` in `style.css`
+`entering` or `removing`) is what makes `.flip-animated-item` in `flip.css`
 grow/shrink this wrapper's own height (`axis = Vertical`, for a
 `.flip-animated-column`) or width (`axis = Horizontal`, for a
 `.flip-animated-row`), sliding the rest of the list smoothly into the space
@@ -160,7 +160,7 @@ different module's `Msg` than the content being wrapped does.
 
 `moving` is a caller-supplied `MoveState.moving` (see its own doc) for
 whatever's nested inside this item, and drives a third class, `flip-moving`.
-`style.css`'s `.flip-animated-item > *` carries `overflow: hidden` so the
+`flip.css`'s `.flip-animated-item > *` carries `overflow: hidden` so the
 grid-row-collapse trick above can clip a shrinking/growing item's content --
 but that same clip also cuts off a reorder-slide's `moveAttributes` transform
 on the item nested inside it, since sliding away from rest visually pokes

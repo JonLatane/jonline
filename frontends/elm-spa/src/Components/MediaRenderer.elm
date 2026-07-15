@@ -4,7 +4,7 @@ module Components.MediaRenderer exposing (view)
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
 download-link fallback for content types the browser can't render inline.
 Always fills its container (`width`/`height: 100%`, see `.media-renderer-*`
-in `style.css`), so callers (currently just `Components.PostMediaRenderer`)
+in `media.css`), so callers (currently just `Components.PostMediaRenderer`)
 control sizing.
 
 Mirrors the Tamagui app's `media_renderer.tsx`, minus its social embed

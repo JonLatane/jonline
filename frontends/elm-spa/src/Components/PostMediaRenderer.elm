@@ -2,7 +2,7 @@ module Components.PostMediaRenderer exposing (view)
 
 {-| Renders a `Post`'s `media` as a horizontally-scrolling strip of
 `Components.MediaRenderer`s (`.post-media-strip`/`.post-media-item` in
-`style.css`, the same horizontal-scroll pattern as the Accounts Panel's
+`posts.css`, the same horizontal-scroll pattern as the Accounts Panel's
 `.servers-strip`). Mirrors the Tamagui app's `post_media_renderer.tsx`, minus
 its embed-link (Twitter/Instagram/etc., which key off `Post.link` rather than
 `Post.media`) and "single full-width preview vs. scrollable strip" branching

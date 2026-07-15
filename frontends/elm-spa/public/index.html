@@ -29,9 +29,14 @@
     // `Shared.elm`'s `basePathFromPath`, which does the equivalent detection
     // in Elm for routing/link purposes once the app is running.
     var jonlineBasePath = /^\/elm(\/|$)/.test(window.location.pathname) ? "/elm" : "";
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/media.css">');
-    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/profiles.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/main.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/media.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/profiles.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/flip.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/reordering.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/posts.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/accounts_panel.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/starred_posts_panel.css">');
 
     // Markdown rendering (see `public/markdown.js`) -- vendored rather than
     // CDN-loaded, so the app keeps working offline/behind a firewall.
