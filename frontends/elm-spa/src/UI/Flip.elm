@@ -1,6 +1,6 @@
 module UI.Flip exposing
     ( Axis(..)
-    , State, enter, reappear, remove, animate, subscription, itemAttributes
+    , State, restingState, enter, reappear, remove, animate, subscription, itemAttributes, syncEnter
     , MoveState, atRest, startMove, swapDeltas, moveAttributes, moveAnimate, moveSubscription
     , moveListItemBy, beginReorder, applyReorder
     , reorderButtonPair, reorderButtons
@@ -61,6 +61,19 @@ type alias State msg =
     { removing : Bool
     , entering : Bool
     , style : Animation.Messenger.State msg
+    }
+
+
+{-| A static "already here, nothing animating" state -- the right thing to
+default a not-yet-tracked item to, e.g. one that's about to be removed for
+the first time and needs a real (visible, settled) state for `remove` to
+interrupt/animate away from, unlike `enter`'s hidden/shrunk starting point.
+-}
+restingState : State msg
+restingState =
+    { removing = False
+    , entering = False
+    , style = Animation.style [ Animation.opacity 1, Animation.scale 1 ]
     }
 
 
@@ -138,8 +151,14 @@ grow/shrink this wrapper's own height (`axis = Vertical`, for a
 `.flip-animated-column`) or width (`axis = Horizontal`, for a
 `.flip-animated-row`), sliding the rest of the list smoothly into the space
 this item leaves/needs, on top of its own fade/scale from `style`.
+
+The output's `msg` is a wholly separate type variable from `state`'s own --
+`Animation.render` never actually produces a `msg` value (nothing here is an
+event handler), so a caller isn't forced to `Html.map` a whole subtree just
+because `state`'s own `msg` (e.g. `remove`'s `onRemoved`) belongs to a
+different module's `Msg` than the content being wrapped does.
 -}
-itemAttributes : Axis -> State msg -> List (Html.Attribute msg)
+itemAttributes : Axis -> State state -> List (Html.Attribute msg)
 itemAttributes axis state =
     classList
         [ ( "flip-animated-item", True )
@@ -147,6 +166,41 @@ itemAttributes axis state =
         , ( "flip-collapsed", state.entering || state.removing )
         ]
         :: Animation.render state.style
+
+
+{-| Ensures every item in `items` has a `State` entry in `animations`,
+inserting a fresh `enter` for any that don't -- so a caller can call this
+after every update to a list of persistent items (accounts, servers, starred
+posts, ...) and have newly-appeared ones animate in automatically, without
+hunting down every individual "this added a new one" call site by hand.
+Leaves existing entries (resting, still entering, or removing) untouched.
+
+Doesn't touch entries for ids no longer in `items` -- those belong to
+whatever's mid-remove (see `remove`), which cleans up its own entry once its
+fade finishes; nothing here should race that.
+
+A caller whose items already exist before any interactive add/remove (e.g.
+persisted accounts/servers reloaded on startup) should pre-seed `animations`
+with `restingState` for each of them (rather than starting from `Dict.empty`)
+before ever calling this, so this treats them as "already known" rather than
+"just appeared" the first time it runs.
+-}
+syncEnter : (a -> String) -> List a -> Dict String (State msg) -> Dict String (State msg)
+syncEnter idOf items animations =
+    List.foldl
+        (\item acc ->
+            let
+                key =
+                    idOf item
+            in
+            if Dict.member key acc then
+                acc
+
+            else
+                Dict.insert key enter acc
+        )
+        animations
+        items
 
 
 

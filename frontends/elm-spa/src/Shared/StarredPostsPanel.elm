@@ -79,6 +79,21 @@ type alias Model =
     -- `UI.Flip.MoveState`), keyed the same as `starOrder`/`posts`. An entry
     -- with no key here (the common case) just renders at rest.
     , moveAnimations : Dict String UI.Flip.MoveState
+
+    -- Each starred post's enter/leave `UI.Flip.State`, keyed the same as
+    -- `starOrder`/`posts` -- `update`'s very last step (see
+    -- `syncItemAnimations`) is always `UI.Flip.syncEnter identity
+    -- model.starOrder`, which inserts a fresh `UI.Flip.enter` for any key
+    -- that doesn't have an entry yet, so a newly-starred post animates in
+    -- with no need to hunt down every "this added a star" code path by hand.
+    -- A post mid fade-out after being unstarred (see `ToggleStar`) stays in
+    -- `starredPostIds`/`starOrder` -- and its entry here keeps `removing =
+    -- True` -- until its fade actually finishes (`FinishUnstar`), so it keeps
+    -- rendering (fading/collapsing) in the panel instead of just vanishing.
+    -- `init` seeds this with a plain `UI.Flip.restingState` (not `enter`) for
+    -- every persisted star, so reloading the app doesn't replay their
+    -- entrances.
+    , starAnimations : Dict String (UI.Flip.State Msg)
     }
 
 
@@ -92,6 +107,8 @@ type Msg
     | MoveStarDownClicked String
     | GotPreMoveStarPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
+    | FinishUnstar String
+    | AnimateItemFlip Animation.Msg
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -110,6 +127,12 @@ init flags =
     , showStarredPostsPanel = False
     , posts = Dict.empty
     , moveAnimations = Dict.empty
+
+    -- Seeded with a *resting* (not `enter`) state for every persisted star,
+    -- so `syncItemAnimations` -- which would otherwise treat any key with no
+    -- entry as "just appeared" -- doesn't replay every star's entrance on
+    -- every reload.
+    , starAnimations = persistedOrder |> List.map (\key -> ( key, UI.Flip.restingState )) |> Dict.fromList
     }
 
 
@@ -170,6 +193,25 @@ module can't dispatch that itself without importing `Shared` (a cycle, since
 -}
 update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Account )
 update accountsPanelModel msg model =
+    let
+        ( newModel, cmd, maybeAccount ) =
+            updateHelp accountsPanelModel msg model
+    in
+    ( syncItemAnimations newModel, cmd, maybeAccount )
+
+
+{-| Inserts a fresh `UI.Flip.enter` into `starAnimations` for any starred
+post that doesn't have an entry yet -- see that field's own doc, and
+`UI.Flip.syncEnter`. Run unconditionally after every message (see `update`),
+same reasoning as `AccountsPanel.syncItemAnimations`.
+-}
+syncItemAnimations : Model -> Model
+syncItemAnimations model =
+    { model | starAnimations = UI.Flip.syncEnter identity model.starOrder model.starAnimations }
+
+
+updateHelp : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Account )
+updateHelp accountsPanelModel msg model =
     case msg of
         ToggleStar server post ->
             let
@@ -179,44 +221,53 @@ update accountsPanelModel msg model =
                 starring =
                     not (Set.member key model.starredPostIds)
 
-                newStarredPostIds =
-                    if starring then
-                        Set.insert key model.starredPostIds
-
-                    else
-                        Set.remove key model.starredPostIds
-
-                newStarOrder =
-                    if starring then
-                        key :: model.starOrder
-
-                    else
-                        List.filter ((/=) key) model.starOrder
-
                 rpc =
                     if starring then
                         Jonline.starPost
 
                     else
                         Jonline.unstarPost
-            in
-            ( { model
-                | starredPostIds = newStarredPostIds
-                , starOrder = newStarOrder
+
+                rpcCmd =
+                    Grpc.new rpc post
+                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> Grpc.toTask
+                        |> Task.attempt (GotStarResult key starring)
 
                 -- We already have this Post in hand -- cache it so the panel can show
                 -- it immediately without a redundant fetch.
-                , posts = Dict.insert key (PostFetchLoaded server.frontendHost post) model.posts
-              }
-            , Cmd.batch
-                [ persistCmd newStarOrder
-                , Grpc.new rpc post
-                    |> Grpc.setHost (AccountsPanel.serverUrl server)
-                    |> Grpc.toTask
-                    |> Task.attempt (GotStarResult key starring)
-                ]
-            , Nothing
-            )
+                newPosts =
+                    Dict.insert key (PostFetchLoaded server.frontendHost post) model.posts
+            in
+            if starring then
+                let
+                    newStarredPostIds =
+                        Set.insert key model.starredPostIds
+
+                    newStarOrder =
+                        key :: model.starOrder
+                in
+                ( { model | starredPostIds = newStarredPostIds, starOrder = newStarOrder, posts = newPosts }
+                , Cmd.batch [ persistCmd newStarOrder, rpcCmd ]
+                , Nothing
+                )
+
+            else
+                -- Doesn't actually unstar (remove from `starredPostIds`/`starOrder`)
+                -- yet -- starts its fade-out in the panel (see `starAnimations`),
+                -- which sends `FinishUnstar` once that finishes to do the real
+                -- removal. The RPC itself still fires immediately either way.
+                let
+                    currentState =
+                        Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
+                in
+                ( { model
+                    | posts = newPosts
+                    , starAnimations = Dict.insert key (UI.Flip.remove (FinishUnstar key) currentState) model.starAnimations
+                  }
+                , rpcCmd
+                , Nothing
+                )
 
         GotStarResult key _ (Ok updatedPost) ->
             let
@@ -231,22 +282,76 @@ update accountsPanelModel msg model =
             ( { model | posts = newPosts }, Cmd.none, Nothing )
 
         GotStarResult key starring (Err _) ->
-            let
-                revertedStarredPostIds =
-                    if starring then
+            if starring then
+                -- Starring failed -- we DID optimistically add it, so revert that.
+                let
+                    revertedStarredPostIds =
                         Set.remove key model.starredPostIds
 
-                    else
-                        Set.insert key model.starredPostIds
-
-                revertedStarOrder =
-                    if starring then
+                    revertedStarOrder =
                         List.filter ((/=) key) model.starOrder
+                in
+                ( { model | starredPostIds = revertedStarredPostIds, starOrder = revertedStarOrder }
+                , persistCmd revertedStarOrder
+                , Nothing
+                )
 
-                    else
-                        key :: model.starOrder
+            else
+                -- Unstarring failed -- we deferred actually removing it (see
+                -- `ToggleStar`), so it's still in `starredPostIds`/`starOrder`
+                -- either way; just undo whatever we started.
+                case Dict.get key model.starAnimations of
+                    Just _ ->
+                        -- Still fading out -- cancel that, fading back in instead
+                        -- (`UI.Flip.reappear`), same as a post that was mid
+                        -- fade-out reappearing elsewhere (see `Pages.Home_`).
+                        ( { model | starAnimations = Dict.update key (Maybe.map UI.Flip.reappear) model.starAnimations }
+                        , Cmd.none
+                        , Nothing
+                        )
+
+                    Nothing ->
+                        -- The fade (and the real removal, `FinishUnstar`) already
+                        -- finished before this reply arrived -- re-add it, same as
+                        -- if freshly starred again.
+                        let
+                            revertedStarredPostIds =
+                                Set.insert key model.starredPostIds
+
+                            revertedStarOrder =
+                                key :: model.starOrder
+                        in
+                        ( { model | starredPostIds = revertedStarredPostIds, starOrder = revertedStarOrder }
+                        , persistCmd revertedStarOrder
+                        , Nothing
+                        )
+
+        FinishUnstar key ->
+            let
+                newStarredPostIds =
+                    Set.remove key model.starredPostIds
+
+                newStarOrder =
+                    List.filter ((/=) key) model.starOrder
             in
-            ( { model | starredPostIds = revertedStarredPostIds, starOrder = revertedStarOrder }, persistCmd revertedStarOrder, Nothing )
+            ( { model | starredPostIds = newStarredPostIds, starOrder = newStarOrder, starAnimations = Dict.remove key model.starAnimations }
+            , persistCmd newStarOrder
+            , Nothing
+            )
+
+        AnimateItemFlip animMsg ->
+            let
+                step key state ( states, accCmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.animate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: accCmds )
+
+                ( newStarAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.starAnimations
+            in
+            ( { model | starAnimations = newStarAnimations }, Cmd.batch cmds, Nothing )
 
         ToggleStarredPostsPanel ->
             let
@@ -337,11 +442,20 @@ own poll for this module.
 -}
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.showStarredPostsPanel then
-        UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
+    Sub.batch
+        [ if model.showStarredPostsPanel then
+            UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
 
-    else
-        Sub.none
+          else
+            Sub.none
+
+        -- Unlike the reorder-only `AnimateMove` above, this can't be gated on
+        -- the panel being open -- `ToggleStar` (and so a pending `FinishUnstar`)
+        -- can be triggered from anywhere a post card renders (Home, Post
+        -- detail, ...), not just from here, so this needs to keep ticking
+        -- regardless in order to ever actually fire.
+        , UI.Flip.subscription AnimateItemFlip (Dict.values model.starAnimations)
+        ]
 
 
 {-| Fetches every starred post that isn't already loaded, in flight, or
@@ -488,14 +602,36 @@ view basePath accountsPanelModel currentPostKey model =
                     -- can then drag it around from there via `MoveStarUpClicked`/
                     -- `MoveStarDownClicked`.
                     [ Html.Keyed.node "div"
-                        [ class "starred-posts-list" ]
+                        [ classes [ "starred-posts-list", "flip-animated-column" ] ]
                         (List.indexedMap
-                            (\index key -> ( key, starredPostRow basePath accountsPanelModel currentPostKey model count index key ))
+                            (\index key -> ( key, starredPostRowFlip basePath accountsPanelModel currentPostKey model count index key ))
                             model.starOrder
                         )
                     ]
                )
         )
+
+
+{-| Wraps `starredPostRow` in a fading/scaling/collapsing animated outer
+`div` (entering when freshly starred, removing when unstarred -- see
+`starAnimations`/`UI.Flip`), same two-layer reasoning as `UI.accountRowFlip`
+(fade/collapse here vs. `starredPostRow`'s own, independent reorder-slide).
+-}
+starredPostRowFlip : String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRowFlip basePath accountsPanelModel currentPostKey model count index key =
+    let
+        flipState =
+            Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ Html.Attributes.style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState)
+        [ div pointerEventsAttr [ starredPostRow basePath accountsPanelModel currentPostKey model count index key ] ]
 
 
 {-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder

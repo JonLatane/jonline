@@ -7,7 +7,7 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
+import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, style, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -692,11 +692,36 @@ serversStrip shared =
             List.length servers
     in
     Html.Keyed.node "div"
-        [ class "servers-strip" ]
+        [ classes [ "servers-strip", "flip-animated-row" ] ]
         (List.indexedMap
-            (\index server -> ( server.frontendHost, serverChip shared count index server ))
+            (\index server -> ( server.frontendHost, serverChipFlip shared count index server ))
             servers
         )
+
+
+{-| Wraps `serverChip` in a fading/scaling/collapsing animated outer `div`
+(entering when freshly added, removing when deleted -- see
+`AccountsPanel.serverAnimations`/`UI.Flip`) -- the `UI.Flip.Horizontal`
+counterpart of `accountRowFlip`, whose doc covers the two-layer reasoning
+(fade/collapse here vs. `serverChip`'s own, independent reorder-slide) in
+full.
+-}
+serverChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
+serverChipFlip shared count index server =
+    let
+        flipState =
+            Dict.get server.frontendHost shared.accountsPanel.serverAnimations
+                |> Maybe.withDefault UI.Flip.restingState
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState)
+        [ div pointerEventsAttr [ serverChip shared count index server ] ]
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
@@ -875,11 +900,38 @@ accountsList shared =
 
     else
         Html.Keyed.node "div"
-            [ class "accounts-list" ]
+            [ classes [ "accounts-list", "flip-animated-column" ] ]
             (List.indexedMap
-                (\index account -> ( AccountsPanel.accountId account, accountRow shared count index account ))
+                (\index account -> ( AccountsPanel.accountId account, accountRowFlip shared count index account ))
                 accounts
             )
+
+
+{-| Wraps `accountRow` in a fading/scaling/collapsing animated outer `div`
+(entering when freshly added, removing when deleted -- see
+`AccountsPanel.accountAnimations`/`UI.Flip`), mirroring `Pages.Home_`'s
+`postAnimationView`. The inner clip-layer `div` (same reasoning as there)
+holds the FLIP-collapse's own `padding-bottom` spacing; `accountRow` itself --
+with its *own*, independent reorder-slide `moveAttrs` -- lives one layer
+further in, so the two animations (fade/collapse vs. reorder-slide) apply to
+different elements and never fight over the same `transform`.
+-}
+accountRowFlip : Shared.Model -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRowFlip shared count index account =
+    let
+        flipState =
+            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.accountAnimations
+                |> Maybe.withDefault UI.Flip.restingState
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState)
+        [ div pointerEventsAttr [ accountRow shared count index account ] ]
 
 
 {-| The whole row is tinted with the account's server's `background-color-primary`

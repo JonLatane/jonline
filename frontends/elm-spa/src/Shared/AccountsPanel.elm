@@ -246,6 +246,26 @@ type alias Model =
     -- an account id and a server host happening to collide as plain strings
     -- would otherwise cross-wire their animations.
     , serverMoveAnimations : Dict String UI.Flip.MoveState
+
+    -- Each account's enter/leave `UI.Flip.State`, keyed by `accountId` --
+    -- `update`'s very last step (see `syncItemAnimations`) is always
+    -- `UI.Flip.syncEnter accountId model.accounts`, which inserts a fresh
+    -- `UI.Flip.enter` for any account that doesn't have an entry yet, so a
+    -- newly-added account animates in with no need to hunt down every single
+    -- "this added an account" code path by hand. An account mid fade-out
+    -- after `RemoveAccountClicked` (confirmed via `UI.deleteConfirmationModal`)
+    -- stays in `accounts` -- and its entry here keeps `removing = True` --
+    -- until its fade actually finishes (`FinishRemoveAccount`), so it keeps
+    -- rendering (fading/collapsing) instead of just vanishing. `init` seeds
+    -- this with a plain `UI.Flip.restingState` (not `enter`) for every
+    -- persisted account, so reloading the app doesn't replay their entrances.
+    , accountAnimations : Dict String (UI.Flip.State Msg)
+
+    -- Same as `accountAnimations`, but for servers (keyed by `frontendHost`)
+    -- via `MoveServerLeftClicked`/`RemoveServerClicked`/`syncEnter .frontendHost
+    -- model.servers` -- see `accountAnimations`'s own doc for why these stay
+    -- separate dicts.
+    , serverAnimations : Dict String (UI.Flip.State Msg)
     }
 
 
@@ -288,6 +308,9 @@ type Msg
     | MoveServerRightClicked String
     | GotPreMoveServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
     | AnimateMove Animation.Msg
+    | FinishRemoveAccount String
+    | FinishRemoveServer String
+    | AnimateItemFlip Animation.Msg
     | NoOp
 
 
@@ -756,6 +779,15 @@ init req flags =
       , mainFrontendHost = browsingHost
       , moveAnimations = Dict.empty
       , serverMoveAnimations = Dict.empty
+
+      -- Seeded with a *resting* (not `enter`) state for everything already
+      -- persisted, so `syncItemAnimations` -- which would otherwise treat any
+      -- id with no entry as "just appeared" -- doesn't replay every account's/
+      -- server's entrance on every reload. Only genuinely new ones (signed in,
+      -- or added, after this) start from `Dict.empty`-implied absence and so
+      -- actually animate in.
+      , accountAnimations = persisted.accounts |> List.map (\account -> ( accountId account, UI.Flip.restingState )) |> Dict.fromList
+      , serverAnimations = persisted.servers |> List.map (\server -> ( server.frontendHost, UI.Flip.restingState )) |> Dict.fromList
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -790,8 +822,32 @@ emptyAddServerForm =
     { status = Idle }
 
 
+{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations` run
+unconditionally afterward -- so every code path that can add an account/
+server (not just the ones that obviously do) gets its enter animation for
+free, without auditing each one by hand. Cheap enough (`accounts`/`servers`
+are small) to run after every single message.
+-}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
+    updateHelp req msg model
+        |> Tuple.mapFirst syncItemAnimations
+
+
+{-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
+for any account/server that doesn't have an entry yet -- see those fields'
+own docs, and `UI.Flip.syncEnter`.
+-}
+syncItemAnimations : Model -> Model
+syncItemAnimations model =
+    { model
+        | accountAnimations = UI.Flip.syncEnter accountId model.accounts model.accountAnimations
+        , serverAnimations = UI.Flip.syncEnter .frontendHost model.servers model.serverAnimations
+    }
+
+
+updateHelp : Request -> Msg -> Model -> ( Model, Cmd Msg )
+updateHelp req msg model =
     case msg of
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
@@ -948,7 +1004,10 @@ update req msg model =
                                         model.servers
 
                                     else
-                                        model.servers ++ [ serverFrom connection True config ]
+                                        -- TODO: temporarily prepending (not appending) so newly-added
+                                        -- servers are visible without scrolling, to see their FLIP
+                                        -- entrance animation -- revisit ordering later.
+                                        serverFrom connection True config :: model.servers
                                 , accountForm =
                                     let
                                         form =
@@ -1031,7 +1090,9 @@ update req msg model =
                                         model.servers
 
                                     else
-                                        model.servers ++ [ server ]
+                                        -- TODO: temporarily prepending -- see the identical note in
+                                        -- `GotAuthResult`.
+                                        server :: model.servers
                             }
 
                         -- The base host may recommend other servers to federate with (see
@@ -1130,9 +1191,24 @@ update req msg model =
             ( newModel, Cmd.batch [ persist newModel, refreshCmd ] )
 
         RemoveAccountClicked id ->
+            -- Doesn't actually remove the account yet -- starts its fade-out
+            -- (see `accountAnimations`), which sends `FinishRemoveAccount` once
+            -- that finishes to do the real removal.
+            let
+                currentState =
+                    Dict.get id model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
+            in
+            ( { model | accountAnimations = Dict.insert id (UI.Flip.remove (FinishRemoveAccount id) currentState) model.accountAnimations }
+            , Cmd.none
+            )
+
+        FinishRemoveAccount id ->
             let
                 newModel =
-                    { model | accounts = List.filter (\account -> accountId account /= id) model.accounts }
+                    { model
+                        | accounts = List.filter (\account -> accountId account /= id) model.accounts
+                        , accountAnimations = Dict.remove id model.accountAnimations
+                    }
             in
             ( newModel, persist newModel )
 
@@ -1201,6 +1277,25 @@ update req msg model =
                 , serverMoveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.serverMoveAnimations
               }
             , Cmd.none
+            )
+
+        AnimateItemFlip animMsg ->
+            let
+                step key state ( states, cmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.animate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: cmds )
+
+                ( newAccountAnimations, accountCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.accountAnimations
+
+                ( newServerAnimations, serverCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.serverAnimations
+            in
+            ( { model | accountAnimations = newAccountAnimations, serverAnimations = newServerAnimations }
+            , Cmd.batch (accountCmds ++ serverCmds)
             )
 
         ToggleServerEnabled frontendHost ->
@@ -1276,7 +1371,9 @@ update req msg model =
                     let
                         newModel =
                             { model
-                                | servers = model.servers ++ [ serverFrom connection True config ]
+                                -- TODO: temporarily prepending -- see the identical note in
+                                -- `GotAuthResult`.
+                                | servers = serverFrom connection True config :: model.servers
                                 , addServerForm = emptyAddServerForm
                             }
                     in
@@ -1293,15 +1390,29 @@ update req msg model =
                     )
 
         RemoveServerClicked frontendHost ->
+            -- Same "fade first, actually remove once that finishes" deferral as
+            -- `RemoveAccountClicked` -- see `serverAnimations`.
             if serverHasAccounts model.accounts frontendHost || frontendHost == model.mainFrontendHost then
                 ( model, Cmd.none )
 
             else
                 let
-                    newModel =
-                        { model | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers }
+                    currentState =
+                        Dict.get frontendHost model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
                 in
-                ( newModel, persist newModel )
+                ( { model | serverAnimations = Dict.insert frontendHost (UI.Flip.remove (FinishRemoveServer frontendHost) currentState) model.serverAnimations }
+                , Cmd.none
+                )
+
+        FinishRemoveServer frontendHost ->
+            let
+                newModel =
+                    { model
+                        | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers
+                        , serverAnimations = Dict.remove frontendHost model.serverAnimations
+                    }
+            in
+            ( newModel, persist newModel )
 
         ToggleAccountsPanel ->
             let
@@ -1424,7 +1535,9 @@ update req msg model =
             else
                 let
                     newModel =
-                        { model | servers = model.servers ++ [ server ] }
+                        -- TODO: temporarily prepending -- see the identical note in
+                        -- `GotAuthResult`.
+                        { model | servers = server :: model.servers }
                 in
                 ( newModel, persist newModel )
 
@@ -1444,8 +1557,12 @@ update req msg model =
 -}
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    UI.Flip.moveSubscription AnimateMove
-        (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
+    Sub.batch
+        [ UI.Flip.moveSubscription AnimateMove
+            (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
+        , UI.Flip.subscription AnimateItemFlip
+            (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
+        ]
 
 
 {-| A server that has any associated accounts can't be removed (only disabled),
@@ -1670,7 +1787,10 @@ upsertAccount account accounts =
             accounts
 
     else
-        insertAfterSameServer account accounts
+        -- TODO: temporarily prepending (bypassing insertAfterSameServer) so a
+        -- newly-added account is visible without scrolling, to see its FLIP
+        -- entrance animation -- revisit ordering later.
+        account :: accounts
 
 
 {-| Inserts a newly-seen account (fresh login/create-account) directly after

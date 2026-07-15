@@ -550,14 +550,11 @@ input[disabled] {
 }
 
 /* The reorderable list itself -- see Shared/StarredPostsPanel.elm's `view`.
-   Its own `gap` (rather than relying on `.nav-panel`'s, which only spaces
-   this list as a whole from the header/empty-state above it) is what spaces
-   each `.starred-post-row` from the next. */
-.starred-posts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+   Styled entirely by the `.flip-animated-column` class also on it (`display:
+   flex; flex-direction: column;`, deliberately no `gap` -- same "let each
+   `.flip-animated-item`'s own padding-bottom hold the spacing instead"
+   reasoning as `.accounts-list`, so a removed/unstarred entry's space
+   shrinks away smoothly instead of snapping shut once it's actually gone). */
 
 /* One row per starred post: `UI.Flip`'s up/down reorder buttons (see
    `starredPostRow`) just left of the entry itself, same arrangement as
@@ -729,14 +726,15 @@ input[disabled] {
 /* Servers: a short horizontally-scrolling strip, distinct from the taller,
    vertically-scrolling account list below it. */
 
+/* `.flip-animated-row` (see UI.elm's `serversStrip`) supplies `display: flex;
+   flex-direction: row;` -- deliberately no `gap` here, same "let
+   .flip-animated-item.horizontal's own padding-right hold the spacing
+   instead" reasoning as `.accounts-list`. */
 .servers-strip {
-  display: flex;
-  flex-direction: row;
   /* Otherwise flex's default `stretch` forces every chip to the height of
      the tallest one in the row, leaving blank space below the shorter ones'
      content (their border/background still fills the stretched box). */
   align-items: flex-start;
-  gap: 0.5rem;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;
@@ -918,10 +916,13 @@ input[disabled] {
 
 /* Accounts: a vertically-scrolling list (this is the one that grows). */
 
+/* `.flip-animated-column` (see UI.elm's `accountsList`) supplies `display:
+   flex; flex-direction: column;` -- deliberately no `gap` here, same
+   reasoning as `.posts-list`: inter-row spacing instead lives as each row's
+   own `.flip-animated-item` `padding-bottom`, so it can shrink away smoothly
+   when a row's removed instead of holding its full width until the row
+   itself is gone, then snapping shut all at once. */
 .accounts-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
   max-height: 240px;
   overflow-y: auto;
   /* Same reasoning as .servers-strip's flex-shrink: 0 -- this already has its
@@ -1408,6 +1409,14 @@ input[disabled] {
   grid-template-rows: none;
   grid-template-columns: 1fr;
   transition: grid-template-columns 0.25s ease;
+  /* Unlike the vertical case (where a column flex container's cross-axis
+     sizing, not `flex-shrink`, governs width -- so items already stay full
+     width for free), this sits in a *row* flex container (`.servers-strip`),
+     where `flex-shrink`'s default of 1 lets it shrink narrower than its
+     content instead of the row overflowing/scrolling like it's supposed to
+     -- clipping the chip inside and starving `.servers-strip`'s
+     `overflow-x: auto` of anything to actually scroll. */
+  flex-shrink: 0;
 }
 
 .flip-animated-item.horizontal.flip-collapsed {
