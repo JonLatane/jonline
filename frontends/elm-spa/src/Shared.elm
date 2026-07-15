@@ -1,5 +1,6 @@
 module Shared exposing
-    ( Flags
+    ( DeleteConfirmation(..)
+    , Flags
     , Model
     , Msg(..)
     , ThemePreference(..)
@@ -42,6 +43,19 @@ type ThemePreference
     | ThemeDark
 
 
+{-| Something the user has clicked "delete" on, awaiting confirmation --
+`UI.deleteConfirmationModal` is one shared dialog for all of these, rather
+than each having its own bespoke confirmation step (compare
+`AccountsPanel.PendingCreateAccount`, which stays separate since Create
+Account's confirmation isn't a plain "are you sure you want to delete this"
+prompt). More constructors (e.g. for Posts) can be added here as that need
+comes up.
+-}
+type DeleteConfirmation
+    = ConfirmServerDelete AccountsPanel.Server
+    | ConfirmAccountDelete AccountsPanel.Account
+
+
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
@@ -58,6 +72,10 @@ type alias Model =
     -- onto any `Gen.Route.toHref` output so links/history stay under the
     -- right mount.
     , basePath : String
+
+    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
+    -- the time -- see `DeleteConfirmation`.
+    , confirmingDeleteFor : Maybe DeleteConfirmation
     }
 
 
@@ -67,6 +85,9 @@ type Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
+    | RequestDelete DeleteConfirmation
+    | CancelDelete
+    | ConfirmDelete
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -209,6 +230,7 @@ init basePath req flags =
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
+      , confirmingDeleteFor = Nothing
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -265,6 +287,39 @@ update req msg model =
         SystemPrefersDarkChanged prefersDark ->
             ( { model | systemPrefersDark = prefersDark }, Cmd.none )
 
+        RequestDelete confirmation ->
+            ( { model | confirmingDeleteFor = Just confirmation }, Cmd.none )
+
+        CancelDelete ->
+            ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
+
+        ConfirmDelete ->
+            let
+                removeMsg =
+                    model.confirmingDeleteFor
+                        |> Maybe.map
+                            (\confirmation ->
+                                case confirmation of
+                                    ConfirmAccountDelete account ->
+                                        AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)
+
+                                    ConfirmServerDelete server ->
+                                        AccountsPanel.RemoveServerClicked server.frontendHost
+                            )
+            in
+            case removeMsg of
+                Just subMsg ->
+                    let
+                        ( subModel, subCmd ) =
+                            AccountsPanel.update req subMsg model.accountsPanel
+                    in
+                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
 
 {-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
 only while the panel's actually open -- there's nothing to show for it
@@ -274,6 +329,7 @@ subscriptions : Request -> Model -> Sub Msg
 subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 

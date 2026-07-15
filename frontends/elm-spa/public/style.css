@@ -987,6 +987,38 @@ input[disabled] {
   color: white;
 }
 
+/* Up/down reorder controls, stacked vertically just left of .remove-btn --
+   see UI.reorderButtons. Circular (unlike .remove-btn's square) so the pair
+   reads as one distinct control cluster rather than two more square buttons
+   blending in with Delete. */
+.reorder-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.reorder-btn {
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.reorder-btn:hover:not(:disabled) {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.reorder-btn:disabled {
+  opacity: 0.3;
+}
+
 
 /* Login / create account form */
 
@@ -1020,14 +1052,16 @@ input[disabled] {
 }
 
 
-/* Create Account confirmation: a centered dialog (unlike the edge-anchored
-   Accounts/Starred Posts panels) shown after "Create Account" is clicked,
-   before the account is actually created -- see UI.elm's
-   `createAccountConfirmationModal`. Its own backdrop sits above
-   `.shared-backdrop`/`.navbar` since it can appear on top of the (already
-   open) Accounts Panel. */
+/* Generic centered dialog -- a fixed backdrop + header/body/buttons frame,
+   used by every Cancel/Confirm-style dialog (Create Account confirmation,
+   delete confirmation, and future ones) via UI/Modal.elm's `backdrop`/`view`.
+   A dialog's own `config.class` (e.g. `.create-account-modal`,
+   `.confirm-delete-modal`, added below `.modal` itself) is for that dialog's
+   own width/content overrides layered on top of these shared rules. Sits
+   above `.shared-backdrop`/`.navbar` since a dialog can appear on top of the
+   (already open) Accounts Panel. */
 
-.create-account-backdrop {
+.modal-backdrop {
   position: fixed;
   inset: 0;
   z-index: 30;
@@ -1038,25 +1072,25 @@ input[disabled] {
   transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
 }
 
-.create-account-backdrop.is-open {
+.modal-backdrop.is-open {
   background: rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   pointer-events: auto;
 }
 
-.create-account-modal {
+.modal {
   position: fixed;
   top: 50%;
   left: 50%;
   width: 360px;
   max-width: calc(100vw - 2rem);
   max-height: calc(100vh - 4rem);
-  /* Only .create-account-modal-body scrolls internally -- the header and
-     Cancel/Create Account buttons stay put -- both so they're never lost off
-     the bottom on a short screen, and so "scrolled to bottom" (see
+  /* Only .modal-body scrolls internally -- the header and buttons stay put --
+     both so they're never lost off the bottom on a short screen, and (for
+     Create Account specifically) so "scrolled to bottom" -- see
      UI.createAccountConfirmationModal, which disables Create Account until
-     then) refers to that one, unambiguous scroll container. */
+     then -- refers to that one, unambiguous scroll container. */
   overflow: hidden;
   background: var(--panel-bg);
   color: var(--fg);
@@ -1073,17 +1107,7 @@ input[disabled] {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
-/* Wider on desktop -- 360px (a good match for the compact login/add-server
-   fields it's triggered from) leaves the description/privacy/media policy
-   Markdown cramped and needlessly tall once there's the horizontal room to
-   spread out. */
-@media (min-width: 640px) {
-  .create-account-modal {
-    width: 560px;
-  }
-}
-
-.create-account-modal.is-closed {
+.modal.is-closed {
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.96);
   pointer-events: none;
@@ -1095,39 +1119,65 @@ input[disabled] {
   border: none;
 }
 
-.create-account-modal-header {
+.modal-header {
   display: flex;
   justify-content: center;
   flex: 0 0 auto;
 }
 
-.create-account-modal-header .server-name-and-logo.regular .server-logo-image,
-.create-account-modal-header .server-name-and-logo.regular .server-logo-emoji,
-.create-account-modal-header .server-name-and-logo.regular .server-logo-placeholder {
-  width: 56px;
-  height: 56px;
-}
-
-.create-account-modal-header .server-name-and-logo.regular .server-logo-emoji {
-  font-size: 2.4rem;
-}
-
-.create-account-modal-header .server-name-and-logo.regular .server-name-primary {
-  font-size: 1.05rem;
-}
-
-.create-account-modal-body {
+.modal-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
   overflow-y: auto;
-  /* The flexible item in .create-account-modal's column -- shrinks to
-     whatever's left after the header/buttons take their fixed space, then
-     scrolls its own overflow. `min-height: 0` overrides flexbox's default
-     content-based minimum, which would otherwise ignore the parent's
-     max-height and force the whole dialog to grow instead of this scrolling. */
+  /* The flexible item in .modal's column -- shrinks to whatever's left after
+     the header/buttons take their fixed space, then scrolls its own
+     overflow. `min-height: 0` overrides flexbox's default content-based
+     minimum, which would otherwise ignore the parent's max-height and force
+     the whole dialog to grow instead of this scrolling. */
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.modal-buttons button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+/* Create Account confirmation, shown after "Create Account" is clicked,
+   before the account is actually created -- see UI.elm's
+   `createAccountConfirmationModal`. */
+
+/* Wider on desktop -- 360px (a good match for the compact login/add-server
+   fields it's triggered from) leaves the description/privacy/media policy
+   Markdown cramped and needlessly tall once there's the horizontal room to
+   spread out. */
+@media (min-width: 640px) {
+  .create-account-modal {
+    width: 560px;
+  }
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-image,
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-emoji,
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-placeholder {
+  width: 56px;
+  height: 56px;
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 2.4rem;
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-name-primary {
+  font-size: 1.05rem;
 }
 
 .create-account-policy-heading {
@@ -1141,16 +1191,27 @@ input[disabled] {
   font-size: 0.85rem;
 }
 
-.create-account-modal-buttons {
-  display: flex;
-  gap: 0.5rem;
-  flex: 0 0 auto;
+/* Delete confirmation (Accounts/Servers today; reusable for any future
+   "are you sure?" prompt) -- see UI.elm's `deleteConfirmationModal` and
+   `Shared.DeleteConfirmation`. */
+
+.confirm-delete-modal {
+  width: 320px;
 }
 
-.create-account-modal-buttons button {
-  flex: 1;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
+.confirm-delete-modal .modal-header {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.confirm-delete-message {
+  font-size: 0.9rem;
+}
+
+.confirm-delete-button {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger) !important;
 }
 
 

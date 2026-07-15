@@ -11,6 +11,7 @@ module Shared.AccountsPanel exposing
     , ServerLogoSize(..)
     , accountAvatarUrl
     , accountId
+    , accountRowDomId
     , brandingFor
     , connectToServer
     , createAccountModalBodyId
@@ -35,6 +36,7 @@ module Shared.AccountsPanel exposing
     , serverThemeOf
     , serverUrl
     , shouldShowAddAccountForm
+    , subscriptions
     , unreachableAccountHosts
     , update
     )
@@ -45,8 +47,10 @@ CDN backend\_host discovery) that gets you from a typed-in hostname to a
 working connection.
 -}
 
+import Animation
 import Browser.Dom as Dom
 import Char
+import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, img, text)
 import Html.Attributes exposing (alt, class, src)
@@ -63,6 +67,7 @@ import Set
 import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
 import Task exposing (Task)
 import Time
+import UI.Flip
 import UI.ServerTheme
 import Url
 
@@ -226,6 +231,12 @@ type alias Model =
     -- from the Accounts Panel -- see `MainServerSelected` for how an admin
     -- can change it.
     , mainFrontendHost : String
+
+    -- In-flight/settling FLIP slide animations for accounts just reordered
+    -- via `MoveAccountUpClicked`/`MoveAccountDownClicked` (see
+    -- `UI.Flip.MoveState`), keyed by `accountId`. An account with no entry
+    -- here (the common case) just renders at rest.
+    , moveAnimations : Dict String UI.Flip.MoveState
     }
 
 
@@ -261,6 +272,10 @@ type Msg
     | FocusInput String
     | ServerConnected Server
     | AccountRefreshed Account
+    | MoveAccountUpClicked String
+    | MoveAccountDownClicked String
+    | GotPreMovePositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | AnimateMove Animation.Msg
     | NoOp
 
 
@@ -269,6 +284,97 @@ type Msg
 accountId : Account -> String
 accountId account =
     account.server ++ "|" ++ account.userId
+
+
+{-| The DOM `id` an account's row is rendered with (see `UI.accountRow`) --
+purely so `MoveAccountUpClicked`/`MoveAccountDownClicked` can measure its
+position before/after a reorder (`Browser.Dom.getElement`) to drive its
+`UI.Flip` slide.
+-}
+accountRowDomId : String -> String
+accountRowDomId id =
+    "account-row-" ++ id
+
+
+{-| `accounts`' own order is exactly what `UI.accountsList` renders, so
+reordering is just reordering this list. `offset` is always +-1 (adjacent
+swap, from the up/down buttons) -- a no-op if that would walk off either end.
+-}
+moveAccountBy : Int -> String -> List Account -> List Account
+moveAccountBy offset id accounts =
+    case indexOfAccount id accounts of
+        Nothing ->
+            accounts
+
+        Just i ->
+            let
+                j =
+                    i + offset
+
+                elementAt idx =
+                    List.drop idx accounts |> List.head
+            in
+            if j < 0 || j >= List.length accounts then
+                accounts
+
+            else
+                case ( elementAt i, elementAt j ) of
+                    ( Just ai, Just aj ) ->
+                        List.indexedMap
+                            (\idx account ->
+                                if idx == i then
+                                    aj
+
+                                else if idx == j then
+                                    ai
+
+                                else
+                                    account
+                            )
+                            accounts
+
+                    _ ->
+                        accounts
+
+
+indexOfAccount : String -> List Account -> Maybe Int
+indexOfAccount id accounts =
+    accounts
+        |> List.indexedMap Tuple.pair
+        |> List.filter (\( _, a ) -> accountId a == id)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+{-| Kicks off `MoveAccountUpClicked`/`MoveAccountDownClicked`: measures the
+current (pre-swap) position of the account at `id` and its `offset` neighbor
+(the "First" of FLIP) before touching `model.accounts` at all, so
+`GotPreMovePositions` has something to compare the post-swap position
+against. A no-op (no neighbor in that direction) just does nothing.
+-}
+startMoveAccount : Int -> String -> Model -> ( Model, Cmd Msg )
+startMoveAccount offset id model =
+    case indexOfAccount id model.accounts of
+        Nothing ->
+            ( model, Cmd.none )
+
+        Just i ->
+            case List.drop (i + offset) model.accounts |> List.head of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just neighbor ->
+                    let
+                        neighborId =
+                            accountId neighbor
+                    in
+                    ( model
+                    , Task.attempt (GotPreMovePositions id neighborId offset)
+                        (Task.map2 Tuple.pair
+                            (Dom.getElement (accountRowDomId id))
+                            (Dom.getElement (accountRowDomId neighborId))
+                        )
+                    )
 
 
 {-| Whether an account has the `ADMIN` permission.
@@ -693,6 +799,7 @@ init req flags =
       , createAccountConfirmation = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
+      , moveAnimations = Dict.empty
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1073,6 +1180,86 @@ update req msg model =
             in
             ( newModel, persist newModel )
 
+        MoveAccountUpClicked id ->
+            startMoveAccount -1 id model
+
+        MoveAccountDownClicked id ->
+            startMoveAccount 1 id model
+
+        GotPreMovePositions id _ offset (Err _) ->
+            -- Couldn't measure -- e.g. a row not actually mounted -- fall back to
+            -- swapping without a slide animation, same end state either way.
+            let
+                newModel =
+                    { model | accounts = moveAccountBy offset id model.accounts }
+            in
+            ( newModel, persist newModel )
+
+        GotPreMovePositions id neighborId offset (Ok ( rowEl, neighborEl )) ->
+            -- Both `id` and `neighborId` are adjacent, so their post-swap
+            -- positions are derivable from this one (pre-swap) measurement --
+            -- whichever was on top keeps that same top; the other lands right
+            -- below it. Computing it this way (rather than swapping first, then
+            -- measuring again after the next render) means the pinned "Invert"
+            -- transform is set in the very same update as the swap, so there's
+            -- no frame where the swapped list renders at rest before the
+            -- animation kicks in.
+            let
+                newModel =
+                    { model | accounts = moveAccountBy offset id model.accounts }
+
+                rowRect =
+                    rowEl.element
+
+                neighborRect =
+                    neighborEl.element
+
+                ( rowDelta, neighborDelta ) =
+                    if rowRect.y < neighborRect.y then
+                        let
+                            gap =
+                                neighborRect.y - rowRect.y - rowRect.height
+
+                            newNeighborTop =
+                                rowRect.y
+
+                            newRowTop =
+                                newNeighborTop + neighborRect.height + gap
+                        in
+                        ( rowRect.y - newRowTop, neighborRect.y - newNeighborTop )
+
+                    else
+                        let
+                            gap =
+                                rowRect.y - neighborRect.y - neighborRect.height
+
+                            newRowTop =
+                                neighborRect.y
+
+                            newNeighborTop =
+                                newRowTop + rowRect.height + gap
+                        in
+                        ( rowRect.y - newRowTop, neighborRect.y - newNeighborTop )
+
+                startOrRestart key deltaY animations =
+                    Dict.insert key
+                        (UI.Flip.startMove deltaY (Dict.get key animations |> Maybe.withDefault UI.Flip.atRest))
+                        animations
+            in
+            ( { newModel
+                | moveAnimations =
+                    newModel.moveAnimations
+                        |> startOrRestart id rowDelta
+                        |> startOrRestart neighborId neighborDelta
+              }
+            , persist newModel
+            )
+
+        AnimateMove animMsg ->
+            ( { model | moveAnimations = Dict.map (\_ moveState -> UI.Flip.moveAnimate animMsg moveState) model.moveAnimations }
+            , Cmd.none
+            )
+
         ToggleServerEnabled frontendHost ->
             let
                 wasEnabled =
@@ -1307,6 +1494,14 @@ update req msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+{-| Just the accounts' reorder-slide animations (see `moveAnimations`) --
+`Shared.subscriptions` batches this in with everything else.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
 
 
 {-| A server that has any associated accounts can't be removed (only disabled),

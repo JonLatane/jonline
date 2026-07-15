@@ -1,14 +1,13 @@
 module Pages.Home_ exposing (Model, Msg, fromShared, page)
 
 import Animation
-import Animation.Messenger
 import Components.Posts as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
 import Grpc
 import Html exposing (Html, div, h2, p, text)
-import Html.Attributes exposing (class, classList, style)
+import Html.Attributes exposing (class, style)
 import Html.Keyed
 import Page
 import Proto.Jonline exposing (Post)
@@ -19,6 +18,7 @@ import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
 import UI
+import UI.Flip
 import View exposing (View)
 
 
@@ -56,24 +56,14 @@ type alias ServerFeed =
 so it survives independently of `postsByServer` -- see that dict's own doc
 comment for why: a server being disabled (or re-fetched under a different
 account) drops/replaces its posts in `postsByServer` immediately, but a
-`removing` entry here keeps rendering its last-known `post`/`host` until its
-fade-out finishes, instead of the post just vanishing.
-
-`entering` is `True` for exactly one frame after a post first appears --
-just long enough for `.flip-collapsed` (see `style.css`'s `.flip-animated-column`)
-to be present for one render, then removed on the next `Animate` tick, which
-is what gives the browser something to transition *from* so it grows in
-rather than just popping to full height. `postAnimationView`'s `.flip-collapsed`
-class is present whenever `entering || removing` -- see there for how that
-combines with `style.css`'s collapsing-grid-row trick to make sibling posts
-slide as this one grows/shrinks, not just fade.
+`removing` `flip` entry here keeps rendering its last-known `post`/`host`
+until its fade-out finishes, instead of the post just vanishing. See
+`UI.Flip` for what `flip` itself drives.
 -}
 type alias PostAnimation =
     { host : String
     , post : Post
-    , removing : Bool
-    , entering : Bool
-    , style : Animation.Messenger.State Msg
+    , flip : UI.Flip.State Msg
     }
 
 
@@ -165,15 +155,7 @@ animates in to its natural opacity/scale.
 -}
 newPostAnimation : String -> Post -> PostAnimation
 newPostAnimation host post =
-    { host = host
-    , post = post
-    , removing = False
-    , entering = True
-    , style =
-        Animation.style [ Animation.opacity 0, Animation.scale 0.92 ]
-            |> Animation.interrupt
-                [ Animation.to [ Animation.opacity 1, Animation.scale 1 ] ]
-    }
+    { host = host, post = post, flip = UI.Flip.enter }
 
 
 {-| A post that was mid fade-out (its server got disabled, then re-enabled --
@@ -184,33 +166,17 @@ back in.
 -}
 reappearingPostAnimation : String -> Post -> PostAnimation -> PostAnimation
 reappearingPostAnimation host post anim =
-    { anim
-        | host = host
-        , post = post
-        , removing = False
-        , style =
-            Animation.interrupt
-                [ Animation.to [ Animation.opacity 1, Animation.scale 1 ] ]
-                anim.style
-    }
+    { anim | host = host, post = post, flip = UI.Flip.reappear anim.flip }
 
 
 {-| A post no longer present in `postsByServer` (its server was disabled, or
 its feed is being re-fetched under a different account): animates out, then
 sends `RemovePost` to actually drop it from `postAnimations` once the fade
-finishes -- see `Animation.Messenger`.
+finishes.
 -}
 removingPostAnimation : String -> PostAnimation -> PostAnimation
 removingPostAnimation key anim =
-    { anim
-        | removing = True
-        , style =
-            Animation.interrupt
-                [ Animation.to [ Animation.opacity 0, Animation.scale 0.92 ]
-                , Animation.Messenger.send (RemovePost key)
-                ]
-                anim.style
-    }
+    { anim | flip = UI.Flip.remove (RemovePost key) anim.flip }
 
 
 {-| Reconciles `postAnimations` with the posts currently `Loaded` in
@@ -244,7 +210,7 @@ syncAnimations model =
                     Dict.insert key (newPostAnimation host post) animations
 
                 Just anim ->
-                    if anim.removing then
+                    if anim.flip.removing then
                         Dict.insert key (reappearingPostAnimation host post anim) animations
 
                     else
@@ -254,7 +220,7 @@ syncAnimations model =
             Dict.foldl addOrRefresh model.postAnimations currentPosts
 
         startRemovingIfGone key anim animations =
-            if anim.removing || Dict.member key currentPosts then
+            if anim.flip.removing || Dict.member key currentPosts then
                 animations
 
             else
@@ -321,10 +287,10 @@ update shared msg model =
             let
                 step key anim ( animations, accCmds ) =
                     let
-                        ( newStyle, cmd ) =
-                            Animation.Messenger.update animMsg anim.style
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
                     in
-                    ( Dict.insert key { anim | style = newStyle, entering = False } animations, cmd :: accCmds )
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
 
                 ( newAnimations, cmds ) =
                     Dict.foldl step ( Dict.empty, [] ) model.postAnimations
@@ -351,7 +317,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Time.every 30000 (\_ -> Poll)
-        , Animation.subscription Animate (List.map .style (Dict.values model.postAnimations))
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.postAnimations))
         ]
 
 
@@ -409,20 +375,14 @@ postAnimationView : Shared.Model -> ( String, PostAnimation ) -> ( String, Html 
 postAnimationView shared ( key, anim ) =
     let
         pointerEventsAttr =
-            if anim.removing then
+            if anim.flip.removing then
                 [ style "pointer-events" "none" ]
 
             else
                 []
     in
     ( key
-    , div
-        (classList
-            [ ( "flip-animated-item", True )
-            , ( "flip-collapsed", anim.entering || anim.removing )
-            ]
-            :: Animation.render anim.style
-        )
+    , div (UI.Flip.itemAttributes anim.flip)
         [ div pointerEventsAttr [ postCardView shared ( anim.host, anim.post ) ] ]
     )
 

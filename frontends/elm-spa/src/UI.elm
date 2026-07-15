@@ -3,11 +3,13 @@ module UI exposing (imageOrInitial, layout, page, pageTitle)
 import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Components.Users as Users
+import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
-import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
+import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
 import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
+import Html.Keyed
 import Json.Decode as Decode
 import Page
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -19,6 +21,8 @@ import Shared.AdminPanel as AdminPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
+import UI.Flip
+import UI.Modal
 import View exposing (View)
 
 
@@ -62,6 +66,8 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (headerNav shared currentRoute)
     , Html.map toMsg (createAccountConfirmationBackdrop shared)
     , Html.map toMsg (createAccountConfirmationModal shared)
+    , Html.map toMsg (deleteConfirmationBackdrop shared)
+    , Html.map toMsg (deleteConfirmationModal shared)
     , div [ class "container" ] [ main_ [] children ]
     ]
 
@@ -162,21 +168,6 @@ sharedBackdrop shared =
                 |> Maybe.map .closeMsg
                 |> Maybe.withDefault (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
             )
-        ]
-        []
-
-
-{-| A full-viewport-covering `div`, always rendered (even "closed") so opening/
-closing can be a plain CSS transition rather than the element itself
-appearing/disappearing outright -- used by `createAccountConfirmationBackdrop`
-(`sharedBackdrop` needs its own click-priority logic, so it builds its `div`
-directly rather than going through this).
--}
-overlayBackdrop : String -> Bool -> Shared.Msg -> Html Shared.Msg
-overlayBackdrop backdropClass isOpen closeMsg =
-    div
-        [ classes [ backdropClass, openClosedClass isOpen ]
-        , onClick closeMsg
         ]
         []
 
@@ -765,7 +756,7 @@ serverChip shared server =
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
-                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveServerClicked server.frontendHost))
+                , onClick (Shared.RequestDelete (Shared.ConfirmServerDelete server))
                 , disabled (not removable)
                 , title
                     (if isMainServer then
@@ -832,11 +823,23 @@ unreachableServersWarning shared =
 
 accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
-    if List.isEmpty shared.accountsPanel.accounts then
+    let
+        accounts =
+            shared.accountsPanel.accounts
+
+        count =
+            List.length accounts
+    in
+    if List.isEmpty accounts then
         div [ class "accounts-empty" ] [ text "No accounts yet." ]
 
     else
-        div [ class "accounts-list" ] (List.map (accountRow shared) shared.accountsPanel.accounts)
+        Html.Keyed.node "div"
+            [ class "accounts-list" ]
+            (List.indexedMap
+                (\index account -> ( AccountsPanel.accountId account, accountRow shared count index account ))
+                accounts
+            )
 
 
 {-| The whole row is tinted with the account's server's `background-color-primary`
@@ -844,18 +847,34 @@ accountsList shared =
 username); the "host | server name" badge underneath it uses
 `background-color-nav` instead, layered on top as a normal (not
 absolutely-positioned) element now that the row isn't split into bands.
+
+`moveAttrs` is an inline `transform` -- present only while this account is
+mid-slide after `reorderButtons` moved it (see `UI.Flip.MoveState`,
+`AccountsPanel.moveAnimations`), empty (identity) otherwise. The row's own DOM
+`id` (`AccountsPanel.accountRowDomId`) is what lets `AccountsPanel.update`
+measure its position before/after a reorder to drive that slide.
 -}
-accountRow : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
-accountRow shared account =
+accountRow : Shared.Model -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRow shared count index account =
     let
-        id =
+        accId =
             AccountsPanel.accountId account
 
         branding =
             AccountsPanel.brandingFor shared.accountsPanel.servers account.server
+
+        moveAttrs =
+            shared.accountsPanel.moveAnimations
+                |> Dict.get accId
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
     in
-    div [ classes [ "account-row", account.server, "background-color-primary" ] ]
-        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
+    div
+        (id (AccountsPanel.accountRowDomId accId)
+            :: classes [ "account-row", account.server, "background-color-primary" ]
+            :: moveAttrs
+        )
+        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
         , a
             [ class "account-row-profile-link"
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
@@ -874,11 +893,40 @@ accountRow shared account =
                     [ text (account.server ++ " | " ++ branding.name) ]
                 ]
             ]
+        , reorderButtons
+            { moveUp = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId)
+            , moveDown = Shared.AccountsPanelMsg (AccountsPanel.MoveAccountDownClicked accId)
+            , canMoveUp = index > 0
+            , canMoveDown = index < count - 1
+            }
         , button
             [ class "remove-btn"
-            , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveAccountClicked id))
+            , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
             ]
             [ text "×" ]
+        ]
+
+
+{-| Circular up/down buttons, stacked vertically -- reusable wherever a list
+gets reorder controls (currently just Accounts).
+-}
+reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg
+reorderButtons { moveUp, moveDown, canMoveUp, canMoveDown } =
+    div [ class "reorder-buttons" ]
+        [ button
+            [ class "reorder-btn"
+            , onClick moveUp
+            , disabled (not canMoveUp)
+            , title "Move up"
+            ]
+            [ text "▲" ]
+        , button
+            [ class "reorder-btn"
+            , onClick moveDown
+            , disabled (not canMoveDown)
+            , title "Move down"
+            ]
+            [ text "▼" ]
         ]
 
 
@@ -1075,7 +1123,7 @@ rendered, like the other backdrops, so opening/closing is a CSS transition.
 -}
 createAccountConfirmationBackdrop : Shared.Model -> Html Shared.Msg
 createAccountConfirmationBackdrop shared =
-    overlayBackdrop "create-account-backdrop"
+    UI.Modal.backdrop
         (shared.accountsPanel.createAccountConfirmation /= Nothing)
         (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
 
@@ -1098,7 +1146,8 @@ createAccountConfirmationModal : Shared.Model -> Html Shared.Msg
 createAccountConfirmationModal shared =
     case shared.accountsPanel.createAccountConfirmation of
         Nothing ->
-            div [ classes [ "create-account-modal", "is-closed" ] ] []
+            UI.Modal.view
+                { class = "create-account-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
 
         Just pending ->
             let
@@ -1108,19 +1157,20 @@ createAccountConfirmationModal shared =
                 submitting =
                     shared.accountsPanel.accountForm.status == AccountsPanel.Submitting
             in
-            div [ classes [ "create-account-modal", "is-open" ] ]
-                [ div [ class "create-account-modal-header" ]
-                    [ AccountsPanel.serverNameAndLogo pending.server AccountsPanel.RegularServerLogo ]
-                , div
-                    [ class "create-account-modal-body"
-                    , id AccountsPanel.createAccountModalBodyId
+            UI.Modal.view
+                { class = "create-account-modal"
+                , isOpen = True
+                , header = AccountsPanel.serverNameAndLogo pending.server AccountsPanel.RegularServerLogo
+                , bodyAttrs =
+                    [ id AccountsPanel.createAccountModalBodyId
                     , on "scroll" (Decode.map (AccountsPanel.CreateAccountModalScrolled >> Shared.AccountsPanelMsg) scrolledToBottomDecoder)
                     ]
+                , body =
                     [ policyMarkdown "" info.description
                     , policyMarkdown "Privacy Policy" info.privacyPolicy
                     , policyMarkdown "Media Policy" info.mediaPolicy
                     ]
-                , div [ class "create-account-modal-buttons" ]
+                , buttons =
                     [ button
                         [ onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
                         , disabled submitting
@@ -1147,7 +1197,65 @@ createAccountConfirmationModal shared =
                             )
                         ]
                     ]
-                ]
+                }
+
+
+
+-- DELETE CONFIRMATION
+
+
+{-| Covers the whole page while a delete confirmation is up -- same reasoning
+as `createAccountConfirmationBackdrop`, and the two never appear at once (both
+only ever come from actions inside the Accounts Panel, which can only have one
+such step in flight).
+-}
+deleteConfirmationBackdrop : Shared.Model -> Html Shared.Msg
+deleteConfirmationBackdrop shared =
+    UI.Modal.backdrop (shared.confirmingDeleteFor /= Nothing) Shared.CancelDelete
+
+
+{-| The shared "are you sure you want to delete this?" dialog for every kind
+of delete in the app (currently Accounts and Servers -- see
+`Shared.DeleteConfirmation`) -- built on `UI.Modal` the same way
+`createAccountConfirmationModal` is, so a future Post delete (etc.) needs only
+a new `DeleteConfirmation` constructor and a case here, not a whole new dialog.
+-}
+deleteConfirmationModal : Shared.Model -> Html Shared.Msg
+deleteConfirmationModal shared =
+    case shared.confirmingDeleteFor of
+        Nothing ->
+            UI.Modal.view
+                { class = "confirm-delete-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
+
+        Just confirmation ->
+            let
+                ( heading, message ) =
+                    case confirmation of
+                        Shared.ConfirmAccountDelete account ->
+                            ( "Remove Account?"
+                            , "Remove "
+                                ++ AccountsPanel.displayName account
+                                ++ " ("
+                                ++ account.server
+                                ++ ")? You'll need to log in again to use it."
+                            )
+
+                        Shared.ConfirmServerDelete server ->
+                            ( "Remove Server?"
+                            , "Remove " ++ server.frontendHost ++ " from your server list?"
+                            )
+            in
+            UI.Modal.view
+                { class = "confirm-delete-modal"
+                , isOpen = True
+                , header = text heading
+                , bodyAttrs = []
+                , body = [ p [ class "confirm-delete-message" ] [ text message ] ]
+                , buttons =
+                    [ button [ onClick Shared.CancelDelete ] [ text "Cancel" ]
+                    , button [ onClick Shared.ConfirmDelete, class "confirm-delete-button" ] [ text "Delete" ]
+                    ]
+                }
 
 
 {-| Reads a `scroll` event's target `scrollTop`/`clientHeight`/`scrollHeight`
