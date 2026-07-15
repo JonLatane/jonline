@@ -67,6 +67,44 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 ┗┛ ┗┛ ┛┗ ┗┛ ┻ ┛┗ ┗┛
  (Jonline Server)
 A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
+(providing a \"Twitter-like with events\" experience with no feeds and a
+privacy-conscious design).
+
+Serves up its React FE by default at \"/\" (configurable) and always at \"/tamagui\";
+its Elm FE at \"/elm\" (also configurable to run from \"/\"), and
+its Flutter FE at \"/flutter\" (deprecated/experimental and not really suitable to run from \"/\").
+
+Serves up media and accepts Media uploads from users on its HTTP ports from \"/media\".
+
+The gRPC API supports reflection/self-documentation, and is extremely friendly for AI clients.
+
+Prompt your favorite AI (tested with Claude) with something like:
+
+  \"I want to test your ability to use a gRPC client for Jonline, a social networking
+    protocol with highly documented gRPC APIs. Use the tool grpcurl.
+
+    You can use `grpcurl -plaintext localhost:27707 list jonline.Jonline` to list the 
+    RPCs available for the Jonline service at localhost:27707.
+
+    Take a look at the grpcurl docs for more info - there should be details docs on these APIs.
+
+    When you feel you understand it, give me a list of the usernames for the users on this host.
+   \"
+
+And it should be able to understand the API. If you have grpcurl installed, you can ask it
+questions about users, etc.
+
+Supported environment variables (and examples):
+
+    DATABASE_URL=postgres://localhost/jonline_dev
+
+    MINIO_ENDPOINT=http://localhost:9000
+    MINIO_REGION=
+    MINIO_BUCKET=jonline-dev
+    MINIO_ACCESS_KEY=ROOTNAME
+    MINIO_SECRET_KEY=CHANGEME123
+
+    TLS_CERT_PATH=/path/to/cert.pem
 "
     );
 
@@ -94,6 +132,8 @@ A Rust HTTP (80/443/8000) and gRPC (27707) server for Jonline services
             })
             .expect("Failed to load or regenerate server configuration");
     let server_configuration: protos::ServerConfiguration = server_configuration_model.to_proto();
+
+    log::info!("Loaded server configuration: {:?}", &server_configuration);
 
     let external_cdn_config = server_configuration.external_cdn_config;
     let cdn_grpc = match external_cdn_config {

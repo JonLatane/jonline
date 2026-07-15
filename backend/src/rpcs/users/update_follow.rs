@@ -22,10 +22,12 @@ pub fn update_follow(
             "only_target_user_can_update_follow",
         ));
     }
+    let user_id = request.user_id.to_db_id_or_err("user_id")?;
+    let target_user_id = request.target_user_id.to_db_id_or_err("target_user_id")?;
     let mut existing_follow = follows::table
         .select(follows::all_columns)
-        .filter(follows::user_id.eq(request.user_id.to_db_id().unwrap()))
-        .filter(follows::target_user_id.eq(request.target_user_id.to_db_id().unwrap()))
+        .filter(follows::user_id.eq(user_id))
+        .filter(follows::target_user_id.eq(target_user_id))
         .first::<models::Follow>(conn)
         .map_err(|_| Status::new(Code::NotFound, "follow_not_found"))?;
 
@@ -34,8 +36,8 @@ pub fn update_follow(
     existing_follow.updated_at = SystemTime::now().into();
 
     match diesel::update(follows::table)
-        .filter(follows::user_id.eq(request.user_id.to_db_id().unwrap()))
-        .filter(follows::target_user_id.eq(request.target_user_id.to_db_id().unwrap()))
+        .filter(follows::user_id.eq(user_id))
+        .filter(follows::target_user_id.eq(target_user_id))
         .set(&existing_follow)
         .execute(conn)
     {

@@ -16,16 +16,18 @@ pub fn update_membership(
     conn: &mut PgPooledConnection,
 ) -> Result<Membership, Status> {
     validate_membership(&request, OperationType::Create)?;
+    let group_id = request.group_id.to_db_id_or_err("group_id")?;
+    let user_id = request.user_id.to_db_id_or_err("user_id")?;
     let group = groups::table
         .select(groups::all_columns)
-        .filter(groups::id.eq(request.group_id.to_db_id_or_err("group_id")?))
+        .filter(groups::id.eq(group_id))
         .first::<models::Group>(conn)
         .map_err(|_| Status::new(Code::NotFound, "group_not_found"))?;
 
     let user_membership = match memberships::table
         .select(memberships::all_columns)
         .filter(memberships::user_id.eq(current_user.id))
-        .filter(memberships::group_id.eq(request.group_id.to_db_id_or_err("group_id")?))
+        .filter(memberships::group_id.eq(group_id))
         .first::<models::Membership>(conn)
     {
         Ok(membership) => Some(membership),
@@ -55,8 +57,8 @@ pub fn update_membership(
     };
     let mut existing_membership = memberships::table
         .select(memberships::all_columns)
-        .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))
-        .filter(memberships::group_id.eq(request.group_id.to_db_id().unwrap()))
+        .filter(memberships::user_id.eq(user_id))
+        .filter(memberships::group_id.eq(group_id))
         .first::<models::Membership>(conn)
         .map_err(|_| Status::new(Code::NotFound, "membership_not_found"))?;
 
@@ -72,8 +74,8 @@ pub fn update_membership(
     existing_membership.updated_at = SystemTime::now().into();
 
     match diesel::update(memberships::table)
-        .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))
-        .filter(memberships::group_id.eq(request.group_id.to_db_id().unwrap()))
+        .filter(memberships::user_id.eq(user_id))
+        .filter(memberships::group_id.eq(group_id))
         .set(&existing_membership)
         .execute(conn)
     {

@@ -18,16 +18,18 @@ pub fn delete_follow(
     {
         validate_permission(&Some(current_user), Permission::Admin)?;
     }
+    let user_id = request.user_id.to_db_id_or_err("user_id")?;
+    let target_user_id = request.target_user_id.to_db_id_or_err("target_user_id")?;
     let existing_follow = follows::table
         .select(follows::all_columns)
-        .filter(follows::user_id.eq(request.user_id.to_db_id().unwrap()))
-        .filter(follows::target_user_id.eq(request.target_user_id.to_db_id().unwrap()))
+        .filter(follows::user_id.eq(user_id))
+        .filter(follows::target_user_id.eq(target_user_id))
         .first::<models::Follow>(conn)
         .map_err(|_| Status::new(Code::NotFound, "follow_not_found"))?;
 
     match diesel::delete(follows::table)
-        .filter(follows::target_user_id.eq(request.target_user_id.to_db_id().unwrap()))
-        .filter(follows::user_id.eq(request.user_id.to_db_id().unwrap()))
+        .filter(follows::target_user_id.eq(target_user_id))
+        .filter(follows::user_id.eq(user_id))
         .execute(conn)
     {
         Ok(_) => {

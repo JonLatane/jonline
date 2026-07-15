@@ -28,7 +28,7 @@ pub fn create_follow(
             let follow = insert_into(follows::table)
                 .values(&models::NewFollow {
                     user_id: user.id,
-                    target_user_id: request.target_user_id.to_db_id().unwrap(),
+                    target_user_id: target_user.id,
                     target_user_moderation: target_user.default_follow_moderation,
                 })
                 .get_result::<models::Follow>(conn)?;

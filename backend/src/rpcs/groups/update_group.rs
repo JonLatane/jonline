@@ -53,7 +53,7 @@ pub fn update_group(
     group.updated_at = SystemTime::now().into();
 
     match diesel::update(groups::table)
-        .filter(groups::id.eq(request.id.to_db_id().unwrap()))
+        .filter(groups::id.eq(group.id))
         .set(&group)
         .execute(conn)
     {
