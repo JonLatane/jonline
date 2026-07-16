@@ -30,6 +30,7 @@ module Shared.AccountsPanel exposing
     , initialLetter
     , isAdmin
     , isKnownServer
+    , isMainServer
     , isSecure
     , mainServerTheme
     , mediaUrl
@@ -1853,6 +1854,23 @@ Account should be enabled, or whether "Add Server" should be offered instead
 isKnownServer : Model -> String -> Bool
 isKnownServer model frontendHost =
     List.any (\s -> s.frontendHost == String.trim frontendHost) model.servers
+
+
+{-| Whether `frontendHost` (trimmed) is this app's own "home" server --
+`browsingHost` (the host actually being viewed from) or `mainFrontendHost`
+(what that resolves to, once negotiated -- see `mainFrontendHost`'s own doc).
+Username/password auth (Login/Create Account) is only ever offered for one of
+these -- everywhere else, `signInFromButton`'s cross-server SSO hand-off is
+the only way in, unless an admin has flipped
+`AdminPanel.allowUsernamePasswordForOtherHosts`.
+-}
+isMainServer : Model -> String -> Bool
+isMainServer model frontendHost =
+    let
+        trimmed =
+            String.trim frontendHost
+    in
+    trimmed == model.browsingHost || trimmed == model.mainFrontendHost
 
 
 {-| Whether the Add Account/Server form (Server/Username/Password/etc.)

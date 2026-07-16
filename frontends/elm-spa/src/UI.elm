@@ -682,15 +682,16 @@ accountsPanelTab shared tab label isNarrow =
         [ text label ]
 
 
-{-| How many Settings the Settings tab currently holds -- just the "switch
-main server by tapping servers" toggle (admin-only) for now, but tracked as a
-count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
-settings later without changing how its visibility is decided.
+{-| How many Settings the Settings tab currently holds -- the "switch main
+server by tapping servers" and "Sign into other hosts with username/password"
+toggles (both admin-only) for now, but tracked as a count rather than a bare
+`Bool` so the tab can grow more (non-admin-gated) settings later without
+changing how its visibility is decided.
 -}
 settingsCount : Shared.Model -> Int
 settingsCount shared =
     if AccountsPanel.hasAdminAccount shared.accountsPanel then
-        1
+        2
 
     else
         0
@@ -738,9 +739,9 @@ accountsAndServersTab shared =
         ]
 
 
-{-| Just the "switch main server by tapping servers" toggle (see `serverChip`)
-for now -- only shown (via `settingsCount`) while an admin account is signed
-in.
+{-| The "switch main server by tapping servers" (see `serverChip`) and "Sign
+into other hosts with username/password" (see `addAccountForm`) toggles --
+only shown (via `settingsCount`) while an admin account is signed in.
 -}
 settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
@@ -748,6 +749,10 @@ settingsTab shared =
         [ label [ class "admin-switch-row" ]
             [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
+            ]
+        , label [ class "admin-switch-row" ]
+            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            , span [] [ text "Sign into other hosts with username/password" ]
             ]
         ]
 
@@ -1252,12 +1257,23 @@ addAccountForm shared =
         themeHost =
             formThemeHost accountsPanelModel
 
+        -- Username/password auth is only ever offered for our own main
+        -- server, unless an admin has flipped
+        -- `AdminPanel.allowUsernamePasswordForOtherHosts` -- see
+        -- `AccountsPanel.isMainServer`.
+        showUsernamePasswordFields =
+            AccountsPanel.isMainServer accountsPanelModel form.server
+                || shared.adminPanel.allowUsernamePasswordForOtherHosts
+
         serverEnterMsg =
-            if knownServer then
+            if not knownServer then
+                AccountsPanel.AddServerClicked
+
+            else if showUsernamePasswordFields then
                 AccountsPanel.FocusInput "account-form-username"
 
             else
-                AccountsPanel.AddServerClicked
+                AccountsPanel.NoOp
     in
     div [ class "account-form" ]
         [ input
@@ -1289,44 +1305,56 @@ addAccountForm shared =
                         "Add Server"
                     )
                 ]
-        , input
-            [ id "account-form-username"
-            , type_ "text"
-            , attribute "autocapitalize" "none"
-            , attribute "autocorrect" "off"
-            , attribute "autocomplete" "username"
-            , spellcheck False
-            , placeholder "Username"
-            , value form.username
-            , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
-            , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
-            , disabled accountFieldsDisabled
-            ]
-            []
-        , input
-            [ id "account-form-password"
-            , type_ "password"
-            , placeholder "Password"
-            , value form.password
-            , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
-            , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-            , disabled accountFieldsDisabled
-            ]
-            []
-        , div [ class "account-form-buttons" ]
-            [ button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+        , if showUsernamePasswordFields then
+            input
+                [ id "account-form-username"
+                , type_ "text"
+                , attribute "autocapitalize" "none"
+                , attribute "autocorrect" "off"
+                , attribute "autocomplete" "username"
+                , spellcheck False
+                , placeholder "Username"
+                , value form.username
+                , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
+                , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
                 , disabled accountFieldsDisabled
-                , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                 ]
-                [ text "Login" ]
-            , button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
+                []
+
+          else
+            text ""
+        , if showUsernamePasswordFields then
+            input
+                [ id "account-form-password"
+                , type_ "password"
+                , placeholder "Password"
+                , value form.password
+                , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+                , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                 , disabled accountFieldsDisabled
-                , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
                 ]
-                [ text "Create Account" ]
-            ]
+                []
+
+          else
+            text ""
+        , if showUsernamePasswordFields then
+            div [ class "account-form-buttons" ]
+                [ button
+                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+                    , disabled accountFieldsDisabled
+                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                    ]
+                    [ text "Login" ]
+                , button
+                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
+                    , disabled accountFieldsDisabled
+                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
+                    ]
+                    [ text "Create Account" ]
+                ]
+
+          else
+            text ""
         , signInFromButton shared accountFieldsDisabled
         , case ( form.status, addForm.status ) of
             ( AccountsPanel.Errored err, _ ) ->
@@ -1348,10 +1376,13 @@ key (once generated -- near-instant after app load) to
 `Pages.Auth.To.Key_` on that host -- a plain cross-origin `<a>` is enough,
 `Main.elm`'s `onUrlRequest` already falls through to a full page load for it.
 
-TEMPORARY (initial testing): always shown once the Server field is non-empty,
-rather than the real gate -- `form.server` actually differing from
-`browsingHost`/`mainFrontendHost` -- which is trivial to switch back on.
-
+Only shown once the Server field names a host other than our own
+(`AccountsPanel.isMainServer`) -- username/password auth (see
+`addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
+server, and this SSO hand-off is (ordinarily) the only way into anywhere
+else. `AdminPanel.allowUsernamePasswordForOtherHosts` can additionally enable
+username/password for other hosts too, but never suppresses this button for
+`browsingHost`/`mainFrontendHost` themselves.
 -}
 signInFromButton : Shared.Model -> Bool -> Html Shared.Msg
 signInFromButton shared accountFieldsDisabled =
@@ -1362,8 +1393,8 @@ signInFromButton shared accountFieldsDisabled =
         server =
             String.trim accountsPanelModel.accountForm.server
     in
-    case ( shared.federatedAuth.publicKey, String.isEmpty server ) of
-        ( Just publicKey, False ) ->
+    case ( shared.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
+        ( Just publicKey, True ) ->
             button
                 [ onClick
                     (Shared.NavigateExternal
