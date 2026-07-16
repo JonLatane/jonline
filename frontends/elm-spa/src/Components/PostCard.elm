@@ -1,4 +1,4 @@
-module Components.Posts exposing
+module Components.PostCard exposing
     ( fetchPost
     , fetchRecentPosts
     , fetchReplies
@@ -30,7 +30,7 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Users as Users
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, img, span, text)
+import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, attribute, class, href, src)
 import Html.Events
 import Json.Decode as Decode
@@ -369,6 +369,26 @@ commentCountText post =
     " · 💬 " ++ String.fromInt (postCommentCount post)
 
 
+{-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
+author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own (the enabled
+account for the post's server, same one used for `postAuthorAvatarUrl`), not
+necessarily `post.author` itself. Opens the shared Markdown editor panel via
+`onEditClicked`, supplied by the caller (`Pages.Post.PostId_`).
+-}
+editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+editButton maybeAccount onEditClicked post =
+    case maybeAccount of
+        Just account ->
+            if isAuthor account post then
+                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit" ]
+
+            else
+                text ""
+
+        Nothing ->
+            text ""
+
+
 {-| A small avatar/placeholder for a post's author, matching the size of the
 Accounts Panel toggle's own avatars (`.post-author-avatar`, see `posts.css`).
 Falls back to an initial-letter placeholder the same way `UI.imageOrInitial`
@@ -469,6 +489,12 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
             ]
             []
         , div [ class "post-card-title" ] [ text (postTitleText post) ]
+        , case maybeServer of
+            Just server ->
+                MultiMediaRenderer.preview server maybeAccount post.media
+
+            Nothing ->
+                text ""
         , div [ class "post-card-meta" ]
             [ span [ class "post-meta-left" ]
                 [ authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
@@ -490,12 +516,19 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
 {-| Full rendering for a single post (see the Post page) -- no server badge,
 since that's already the page you're on, but still tinted with `postServerHost`'s
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
-since this one isn't a link).
+since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
+meta line's `post-meta-right` group only to the post's own author.
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Maybe msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount starred onStarClicked post =
+postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Maybe msg -> msg -> Post -> Html msg
+postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount starred onStarClicked onEditClicked post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        , case maybeServer of
+            Just server ->
+                MultiMediaRenderer.view server maybeAccount post.media
+
+            Nothing ->
+                text ""
         , div [ class "post-detail-meta" ]
             [ span [ class "post-meta-left" ]
                 [ text "by "
@@ -503,16 +536,11 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount st
                 , text (" · " ++ postVisibilityText post)
                 ]
             , span [ class "post-meta-right" ]
-                [ starButton postServerHost starred onStarClicked post
+                [ editButton maybeAccount onEditClicked post
+                , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
             ]
-        , case maybeServer of
-            Just server ->
-                MultiMediaRenderer.view server maybeAccount post.media
-
-            Nothing ->
-                text ""
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content

@@ -1,7 +1,7 @@
 module Pages.Home_ exposing (Model, Msg, fromShared, page)
 
 import Animation
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
@@ -92,6 +92,7 @@ startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
 messages into whichever page is active). `subscriptions`' poll is just a
 distrustful fallback in case some future state change doesn't route through
 `SharedMsg`, so it can be slow.
+
 -}
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
@@ -361,7 +362,7 @@ recentPostsView shared model =
 {-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`
 (see `syncAnimations`) -- the `.flip-collapsed` class (present while
 `entering` or `removing`) is what makes `flip.css`'s `.flip-animated-item`
-rules grow/shrink this wrapper's own height, which is what makes the *other*
+rules grow/shrink this wrapper's own height, which is what makes the _other_
 posts slide smoothly into the space this one leaves/needs, on top of its own
 fade -- see that rule's doc comment for how. The inner `div` is purely a clip
 layer (`.flip-animated-item > *` in `flip.css`, invisible/borderless) so the

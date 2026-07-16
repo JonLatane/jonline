@@ -1,7 +1,7 @@
 module Pages.Post.PostId_ exposing (Model, Msg, fromShared, page)
 
 import Components.Markdown as Markdown
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Components.ServerDependentView as ServerDependentView
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
@@ -343,32 +343,24 @@ postDetailView shared model post =
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
     in
-    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount starred onStarClicked displayPost
+    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount starred onStarClicked (EditClicked post) displayPost
 
 
-{-| An Edit button, shown only to `post`'s own author (see `Posts.isAuthor`),
-and a Reply button, shown to any signed-in account with `REPLYTOPOSTS` -- both
-open the shared Markdown editor panel (see `Shared.MarkdownPanel`), targeting
-this Post either way (`EditClicked`/`ReplyClicked`).
+{-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS` --
+opens the shared Markdown editor panel (see `Shared.MarkdownPanel`), targeting
+this Post (`ReplyClicked`). The Edit button lives in `Posts.postDetail` itself
+now (see `postDetailView`), since it's part of that view's own meta line.
 -}
 postActionsView : Shared.Model -> Model -> Post -> Html Msg
 postActionsView shared model post =
     case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost of
         Just account ->
-            div [ class "post-actions" ]
-                ((if Posts.isAuthor account post then
-                    [ button [ class "post-edit-button", onClick (EditClicked post) ] [ text "Edit" ] ]
+            if List.member REPLYTOPOSTS account.permissions then
+                div [ class "post-actions" ]
+                    [ button [ class "post-reply-button", onClick (ReplyClicked post) ] [ text "Reply" ] ]
 
-                  else
-                    []
-                 )
-                    ++ (if List.member REPLYTOPOSTS account.permissions then
-                            [ button [ class "post-reply-button", onClick (ReplyClicked post) ] [ text "Reply" ] ]
-
-                        else
-                            []
-                       )
-                )
+            else
+                text ""
 
         Nothing ->
             text ""

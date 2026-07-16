@@ -30,7 +30,7 @@ round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 
 import Animation
 import Browser.Dom as Dom
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
 import Grpc

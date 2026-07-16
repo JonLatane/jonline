@@ -91,3 +91,47 @@
     height: 320px;
   }
 }
+
+/* Components.MultiMediaRenderer.preview -- the same .multi-media-single/
+   .multi-media-strip layout as .view above, just shorter, layered onto
+   those classes' own selectors as a `.multi-media-preview` modifier rather
+   than duplicating them. Used in the middle of Components.PostCard.postCard's
+   compact rendering, where a post's full-size "focus" media would dominate
+   the card.
+
+   Unlike .post-card-meta/.post-card-title, this stays pointer-events: auto
+   (the default -- no rule needed) -- a video preview needs its own native
+   `controls` to be directly clickable (play/pause, scrubbing) rather than
+   falling through to .post-card-link-overlay. That alone isn't enough,
+   though: .post-card-link-overlay is `position: absolute`, which (per the
+   CSS2.1 painting-order algorithm -- positioned descendants at stack level 0
+   paint above in-flow, non-positioned ones regardless of DOM order) would
+   otherwise always paint -- and so hit-test -- above a plain, non-positioned
+   div like this one, swallowing its clicks no matter what `pointer-events`
+   says. `position: relative` here lifts it to that same "positioned,
+   z-index: auto" stacking level as the overlay, same trick .post-card-meta
+   uses -- and since this sits later than the overlay in postCard's own
+   markup, tree order then wins it the tie, letting its content (and
+   therefore the video inside it) actually receive the click instead. Since
+   the overlay is a sibling here, not an ancestor, clicks landing on this
+   element's own content never reach the overlay's click listener regardless,
+   so no stopPropagation/preventDefault is needed the way
+   .post-star/.post-author-link use it. */
+.multi-media-single.multi-media-preview {
+  position: relative;
+  margin: 0.4rem 0;
+}
+
+.multi-media-single-item.multi-media-preview {
+  width: 100%;
+  height: 238px;
+}
+
+.multi-media-strip.multi-media-preview {
+  position: relative;
+  margin: 0.4rem 0;
+}
+
+.multi-media-item.multi-media-preview {
+  height: 238px;
+}

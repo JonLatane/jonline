@@ -19,7 +19,7 @@ callers that only care about Posts.
 -}
 
 import Components.Markdown as Markdown
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)
 import Html.Attributes exposing (alt, class, disabled, placeholder, spellcheck, src, value)

@@ -1,7 +1,7 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Components.Users as Users
 import Dict
 import Effect exposing (Effect)
@@ -127,7 +127,7 @@ Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Markdown
-panel first (see its own z-index in markdown_panel.css -- it sits above the
+panel first (see its own z-index in markdown\_panel.css -- it sits above the
 other two, visually in front), then the Starred Posts panel, then (on a third
 tap) the Accounts Panel behind it -- swap their order here to change that
 priority. Only blurs/tints the page while a panel with `blurs = True` is open
@@ -269,13 +269,14 @@ mainServer shared =
 
 {-| Every page's browser tab title, built from `segments` (most-specific
 first, e.g. a post's title, or -- once posts/profiles can belong to one --
-that title *and* its Group's name) followed by `mainFrontendHost`'s own
+that title _and_ its Group's name) followed by `mainFrontendHost`'s own
 branding name, e.g. `"My Post | My Server"`. An empty `segments` (the Home
 page) is just the server name on its own, with no leading `" | "`.
 
 Centralizing this means every page's title updates together if the format
 ever changes, and a future segment (like that Group name) is just another
 list entry for the page to prepend -- not a new format to invent.
+
 -}
 pageTitle : Shared.Model -> List String -> String
 pageTitle shared segments =
@@ -950,7 +951,7 @@ accountsList shared =
 `AccountsPanel.accountAnimations`/`UI.Flip`), mirroring `Pages.Home_`'s
 `postAnimationView`. The inner clip-layer `div` (same reasoning as there)
 holds the FLIP-collapse's own `padding-bottom` spacing; `accountRow` itself --
-with its *own*, independent reorder-slide `moveAttrs` -- lives one layer
+with its _own_, independent reorder-slide `moveAttrs` -- lives one layer
 further in, so the two animations (fade/collapse vs. reorder-slide) apply to
 different elements and never fight over the same `transform`.
 -}
@@ -994,6 +995,7 @@ main server -- `canMoveUp`/`canMoveDown` use it to hide (see
 `AccountsPanel.sortMainServerAccountsFirst`'s doc) whichever arrow would
 otherwise move an account across the main/non-main boundary, rather than
 just checking this account's own position against the list's two ends.
+
 -}
 accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
 accountRow shared count mainCount index account =
@@ -1451,7 +1453,7 @@ policyMarkdown heading maybeText =
 something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
 `.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
-can hug the actual screen edge (see `.starred-posts-panel` in starred_posts_panel.css).
+can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
