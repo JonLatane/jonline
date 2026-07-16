@@ -190,24 +190,46 @@
         });
     }
 
+    // `window.crypto.subtle` only exists in "secure contexts" -- HTTPS, or
+    // plain HTTP on `localhost`/`127.0.0.1` specifically (browsers don't
+    // extend that leniency to other hostnames, e.g. a `.local` mDNS alias,
+    // even on the same machine). Accessing `.subtle`/its methods when it's
+    // undefined throws *synchronously*, before any `.then`/`.catch` chain
+    // exists to catch it -- left unguarded, that exception escapes into
+    // Elm's scheduler and permanently wedges it (every port handler below
+    // runs inside the same synchronous effects-dispatch loop), silently
+    // breaking the entire app rather than just this feature. So every entry
+    // point here checks up front and fails soft instead.
+    function subtleCryptoAvailable() {
+      return !!(window.crypto && window.crypto.subtle);
+    }
+
     app.ports.federatedAuthGenerateKeyPair.subscribe(function () {
-      window.crypto.subtle
-        .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
-        .then(function (keyPair) {
-          return Promise.all([
-            window.crypto.subtle.exportKey("raw", keyPair.publicKey),
-            window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
-          ]);
-        })
-        .then(function (exported) {
-          app.ports.federatedAuthKeyPairGenerated.send({
-            publicKey: base64UrlEncode(exported[0]),
-            privateKey: base64UrlEncode(exported[1])
+      if (!subtleCryptoAvailable()) {
+        console.warn("Cross-host auth unavailable: WebCrypto requires a secure context (HTTPS, or http://localhost).");
+        return;
+      }
+      try {
+        window.crypto.subtle
+          .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
+          .then(function (keyPair) {
+            return Promise.all([
+              window.crypto.subtle.exportKey("raw", keyPair.publicKey),
+              window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
+            ]);
+          })
+          .then(function (exported) {
+            app.ports.federatedAuthKeyPairGenerated.send({
+              publicKey: base64UrlEncode(exported[0]),
+              privateKey: base64UrlEncode(exported[1])
+            });
+          })
+          .catch(function (e) {
+            console.error("Failed to generate federated auth keypair", e);
           });
-        })
-        .catch(function (e) {
-          console.error("Failed to generate federated auth keypair", e);
-        });
+      } catch (e) {
+        console.error("Failed to generate federated auth keypair", e);
+      }
     });
 
     app.ports.persistFederatedAuthKeyPair.subscribe(function (keyPair) {
@@ -224,40 +246,52 @@
     // base64url, dot-joined (`@` is reserved for the `/auth/to` route's own
     // `key@host` split).
     app.ports.federatedAuthEncrypt.subscribe(function (request) {
+      if (!subtleCryptoAvailable()) {
+        app.ports.federatedAuthEncrypted.send({ ok: false, value: "Cross-host auth requires a secure context (HTTPS, or http://localhost)." });
+        return;
+      }
       var ephemeralKeyPair;
       var iv;
-      window.crypto.subtle
-        .importKey("raw", base64UrlDecode(request.publicKey), { name: "ECDH", namedCurve: "P-256" }, false, [])
-        .then(function (recipientPublicKey) {
-          return window.crypto.subtle
-            .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
-            .then(function (kp) {
-              ephemeralKeyPair = kp;
-              return deriveAesKey(kp.privateKey, recipientPublicKey);
-            });
-        })
-        .then(function (aesKey) {
-          iv = window.crypto.getRandomValues(new Uint8Array(12));
-          var plaintextBytes = new TextEncoder().encode(request.plaintext);
-          return Promise.all([
-            window.crypto.subtle.exportKey("raw", ephemeralKeyPair.publicKey),
-            window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, aesKey, plaintextBytes)
-          ]);
-        })
-        .then(function (results) {
-          var encoded =
-            base64UrlEncode(results[0]) + "." + base64UrlEncode(iv) + "." + base64UrlEncode(results[1]);
-          app.ports.federatedAuthEncrypted.send({ ok: true, value: encoded });
-        })
-        .catch(function (e) {
-          app.ports.federatedAuthEncrypted.send({ ok: false, value: String((e && e.message) || e) });
-        });
+      try {
+        window.crypto.subtle
+          .importKey("raw", base64UrlDecode(request.publicKey), { name: "ECDH", namedCurve: "P-256" }, false, [])
+          .then(function (recipientPublicKey) {
+            return window.crypto.subtle
+              .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
+              .then(function (kp) {
+                ephemeralKeyPair = kp;
+                return deriveAesKey(kp.privateKey, recipientPublicKey);
+              });
+          })
+          .then(function (aesKey) {
+            iv = window.crypto.getRandomValues(new Uint8Array(12));
+            var plaintextBytes = new TextEncoder().encode(request.plaintext);
+            return Promise.all([
+              window.crypto.subtle.exportKey("raw", ephemeralKeyPair.publicKey),
+              window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, aesKey, plaintextBytes)
+            ]);
+          })
+          .then(function (results) {
+            var encoded =
+              base64UrlEncode(results[0]) + "." + base64UrlEncode(iv) + "." + base64UrlEncode(results[1]);
+            app.ports.federatedAuthEncrypted.send({ ok: true, value: encoded });
+          })
+          .catch(function (e) {
+            app.ports.federatedAuthEncrypted.send({ ok: false, value: String((e && e.message) || e) });
+          });
+      } catch (e) {
+        app.ports.federatedAuthEncrypted.send({ ok: false, value: String((e && e.message) || e) });
+      }
     });
 
     // Inverse of the above: `request.encoded` was produced by some other
     // origin's `federatedAuthEncrypt` against this origin's own public key,
     // so decrypting it just needs this origin's matching private key.
     app.ports.federatedAuthDecrypt.subscribe(function (request) {
+      if (!subtleCryptoAvailable()) {
+        app.ports.federatedAuthDecrypted.send({ ok: false, value: "Cross-host auth requires a secure context (HTTPS, or http://localhost)." });
+        return;
+      }
       var ephemeralPublicKeyBytes, iv, ciphertext;
       try {
         var parts = request.encoded.split(".");
@@ -272,12 +306,13 @@
         return;
       }
 
-      Promise.all([
-        window.crypto.subtle.importKey(
-          "pkcs8", base64UrlDecode(request.privateKey), { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]
-        ),
-        window.crypto.subtle.importKey("raw", ephemeralPublicKeyBytes, { name: "ECDH", namedCurve: "P-256" }, false, [])
-      ])
+      try {
+        Promise.all([
+          window.crypto.subtle.importKey(
+            "pkcs8", base64UrlDecode(request.privateKey), { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]
+          ),
+          window.crypto.subtle.importKey("raw", ephemeralPublicKeyBytes, { name: "ECDH", namedCurve: "P-256" }, false, [])
+        ])
         .then(function (keys) {
           return deriveAesKey(keys[0], keys[1]);
         })
@@ -290,6 +325,9 @@
         .catch(function (e) {
           app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
         });
+      } catch (e) {
+        app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
+      }
     });
   </script>
 </body>
