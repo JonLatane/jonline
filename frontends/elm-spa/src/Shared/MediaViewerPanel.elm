@@ -20,7 +20,7 @@ import Components.MediaRenderer as MediaRenderer
 import Components.PostCard as Posts
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class)
-import Html.Events exposing (onClick, stopPropagationOn)
+import Html.Events exposing (on, onClick, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Proto.Jonline exposing (MediaReference, Post)
@@ -49,6 +49,13 @@ type alias Model =
     -- than sliding in from whatever direction the previous post's viewing
     -- happened to leave behind.
     , direction : Direction
+
+    -- Where an in-progress swipe (see `TouchStart`) began, in viewport
+    -- coordinates -- `Nothing` when no touch is currently down on the media.
+    -- Consumed by `TouchEnd`, which diffs it against the touch's ending point
+    -- to decide whether the gesture was a swipe at all and, if so, which one
+    -- (see `applySwipe`).
+    , touchStart : Maybe ( Float, Float )
     }
 
 
@@ -62,7 +69,7 @@ type Direction
 
 init : Model
 init =
-    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering }
+    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering, touchStart = Nothing }
 
 
 type Msg
@@ -71,6 +78,9 @@ type Msg
     | Next
     | Prev
     | CloseClicked
+    | TouchStart Float Float
+    | TouchMove
+    | TouchEnd Float Float
 
 
 {-| Whether the panel is currently open -- driving `openClosedClass` and
@@ -104,6 +114,7 @@ update msg model =
             , maybePost = Just post
             , targetHost = host
             , direction = Entering
+            , touchStart = Nothing
             }
 
         SetCurrent id ->
@@ -132,6 +143,65 @@ update msg model =
 
         CloseClicked ->
             init
+
+        TouchStart x y ->
+            { model | touchStart = Just ( x, y ) }
+
+        -- No-op on the model -- exists only so `view` has a `Msg` to attach
+        -- `preventDefaultOn` to (see there), stopping iOS Safari from
+        -- treating an in-progress swipe as a page scroll/bounce or an
+        -- edge-swipe-back gesture before `TouchEnd` gets a chance to fire.
+        TouchMove ->
+            model
+
+        TouchEnd x y ->
+            case model.touchStart of
+                Just start ->
+                    applySwipe start ( x, y ) { model | touchStart = Nothing }
+
+                Nothing ->
+                    model
+
+
+{-| Below this many pixels of travel on both axes, a completed touch is just
+a tap (left to `MediaRenderer`'s own `onClick`/`SetCurrent`), not a swipe.
+-}
+swipeThreshold : Float
+swipeThreshold =
+    50
+
+
+{-| What a completed swipe gesture (see `TouchStart`/`TouchEnd`) amounts to,
+based on whichever axis moved further between the touch's start and end
+points -- horizontal swipes page `Next`/`Prev` (left mirrors the toolbar's
+`›`, right its `‹`, i.e. swiping toward where the next/previous image is
+about to slide in from), vertical swipes close the panel, same as tapping
+the backdrop. Below `swipeThreshold` in both axes, nothing happens.
+-}
+applySwipe : ( Float, Float ) -> ( Float, Float ) -> Model -> Model
+applySwipe ( startX, startY ) ( endX, endY ) model =
+    let
+        dx =
+            endX - startX
+
+        dy =
+            endY - startY
+    in
+    if abs dx >= abs dy then
+        if dx <= -swipeThreshold then
+            update Next model
+
+        else if dx >= swipeThreshold then
+            update Prev model
+
+        else
+            model
+
+    else if abs dy >= swipeThreshold then
+        init
+
+    else
+        model
 
 
 indexOf : String -> List MediaReference -> Maybe Int
@@ -200,6 +270,15 @@ view accountsPanelModel model =
         stopClick msg =
             stopPropagationOn "click" (Decode.succeed ( msg, True ))
 
+        -- `changedTouches` (not `touches`) for `touchend`: by the time it
+        -- fires, the lifted finger is no longer in `touches`, only in
+        -- `changedTouches` -- see MDN's TouchEvent docs.
+        touchPoint : String -> (Float -> Float -> Msg) -> Decode.Decoder Msg
+        touchPoint touchList toMsg =
+            Decode.map2 toMsg
+                (Decode.at [ touchList, "0", "clientX" ] Decode.float)
+                (Decode.at [ touchList, "0", "clientY" ] Decode.float)
+
         navButton classNames msg label =
             button [ classes ("media-viewer-panel-nav" :: classNames), stopClick msg ] [ text label ]
     in
@@ -224,6 +303,9 @@ view accountsPanelModel model =
                           , div
                                 [ classes [ "media-viewer-panel-media", directionClass model.direction ]
                                 , stopClick (SetCurrent media.id)
+                                , on "touchstart" (touchPoint "touches" TouchStart)
+                                , preventDefaultOn "touchmove" (Decode.succeed ( TouchMove, model.touchStart /= Nothing ))
+                                , on "touchend" (touchPoint "changedTouches" TouchEnd)
                                 ]
                                 [ MediaRenderer.view MediaRenderer.Natural server maybeAccount SetCurrent media ]
                           )
