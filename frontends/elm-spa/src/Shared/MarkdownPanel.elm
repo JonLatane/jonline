@@ -1,17 +1,21 @@
-module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), init, update, view)
+module Shared.MarkdownPanel exposing (Model, Msg(..), TargetType(..), ViewMode(..), init, update, view)
 
-{-| A single, app-wide Markdown editor: a 50/50 split of a plain monospace
-`<textarea>` on the left and a live `Components.Markdown.view` preview of the
-same text on the right, with "Save"/"Cancel" actions below. Wired into
-`Shared.Model`/`UI.elm` the same way `Shared.AccountsPanel`/`Shared.StarredPostsPanel`
-are -- one shared instance, opened from wherever it's needed (see `TargetType`)
-rather than each caller owning its own editor state.
+{-| A single, app-wide Markdown editor: a plain monospace `<textarea>` and a
+live `Components.Markdown.view` preview of the same text, with "Save"/
+"Cancel" actions below. Shown side by side, or either alone, per `ViewMode`
+(a 3-position slider in the header lets the user pick -- see `modeSlider`),
+since a 50/50 split doesn't leave enough room for either half on a
+phone-width screen. Wired into `Shared.Model`/`UI.elm` the same way
+`Shared.AccountsPanel`/`Shared.StarredPostsPanel` are -- one shared instance,
+opened from wherever it's needed (see `TargetType`) rather than each caller
+owning its own editor state.
 
 Only knows how to edit/submit a `Proto.Jonline.Post`'s `content` for now (via
 `TargetType`) -- editing a `Post` already in hand (`PostContent`), or composing
 a brand new reply to one (`NewReply`). Editing other Markdown fields (e.g. a
 future User bio) can add more `TargetType` constructors later without touching
 callers that only care about Posts.
+
 -}
 
 import Components.Markdown as Markdown
@@ -49,6 +53,17 @@ type SubmitStatus
     | SubmitFailed String
 
 
+{-| Which half(s) of `markdown-panel-split` to actually render -- `Split`
+(the default) is the original editor+preview side by side; `TextOnly`/
+`MarkdownOnly` give the full width to just one, which is what actually makes
+this panel usable on a phone-width screen (see the mode slider in `view`).
+-}
+type ViewMode
+    = TextOnly
+    | Split
+    | MarkdownOnly
+
+
 type alias Model =
     { target : Maybe TargetType
 
@@ -59,6 +74,12 @@ type alias Model =
     , targetHost : String
     , content : String
     , status : SubmitStatus
+
+    -- Deliberately *not* reset back to `Split` by `CancelClicked`/a
+    -- successful save (see `update`) -- it's a standing display preference,
+    -- not part of the in-progress edit, so it should carry over the next
+    -- time this panel's opened.
+    , viewMode : ViewMode
     }
 
 
@@ -68,12 +89,14 @@ init =
     , targetHost = ""
     , content = ""
     , status = Idle
+    , viewMode = Split
     }
 
 
 type Msg
     = Open TargetType String
     | ContentChanged String
+    | ViewModeSelected ViewMode
     | CancelClicked
     | SaveClicked
     | GotSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Account, Post ))
@@ -91,10 +114,11 @@ update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe Accounts
 update accountsPanelModel msg model =
     case msg of
         Open target host ->
-            ( { target = Just target
-              , targetHost = host
-              , content = initialContent target
-              , status = Idle
+            ( { model
+                | target = Just target
+                , targetHost = host
+                , content = initialContent target
+                , status = Idle
               }
             , Cmd.none
             , Nothing
@@ -103,8 +127,11 @@ update accountsPanelModel msg model =
         ContentChanged content ->
             ( { model | content = content }, Cmd.none, Nothing )
 
+        ViewModeSelected viewMode ->
+            ( { model | viewMode = viewMode }, Cmd.none, Nothing )
+
         CancelClicked ->
-            ( init, Cmd.none, Nothing )
+            ( { init | viewMode = model.viewMode }, Cmd.none, Nothing )
 
         SaveClicked ->
             case model.target of
@@ -123,7 +150,7 @@ update accountsPanelModel msg model =
                     ( model, Cmd.none, Nothing )
 
         GotSaveResult (Ok ( maybeAccount, _ )) ->
-            ( init, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
+            ( { init | viewMode = model.viewMode }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
 
         GotSaveResult (Err err) ->
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, Nothing )
@@ -284,20 +311,20 @@ view accountsPanelModel model =
     in
     div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing) ] ]
         [ div [ class "markdown-panel-header" ]
-            [ text (titleFor model.target)
+            [ modeSlider model.targetHost model.viewMode
             , accountRow accountsPanelModel model
             ]
-        , div [ class "markdown-panel-split" ]
-            [ textarea
-                [ class "markdown-panel-editor"
-                , value model.content
-                , onInput ContentChanged
-                , spellcheck False
-                , placeholder "Write some Markdown…"
-                ]
-                []
-            , Markdown.view [ class "markdown-panel-preview" ] model.content
-            ]
+        , div [ classes [ "markdown-panel-split", viewModeClass model.viewMode ] ]
+            (case model.viewMode of
+                TextOnly ->
+                    [ editorView model ]
+
+                Split ->
+                    [ editorView model, previewView model ]
+
+                MarkdownOnly ->
+                    [ previewView model ]
+            )
         , case errorMessage of
             Just err ->
                 div [ class "markdown-panel-error" ] [ text err ]
@@ -326,6 +353,70 @@ view accountsPanelModel model =
                 ]
             ]
         ]
+
+
+editorView : Model -> Html Msg
+editorView model =
+    textarea
+        [ class "markdown-panel-editor"
+        , value model.content
+        , onInput ContentChanged
+        , spellcheck False
+        , placeholder "Write some Markdown…"
+        ]
+        []
+
+
+previewView : Model -> Html Msg
+previewView model =
+    Markdown.view [ class "markdown-panel-preview" ] model.content
+
+
+viewModeClass : ViewMode -> String
+viewModeClass mode =
+    case mode of
+        TextOnly ->
+            "mode-text"
+
+        Split ->
+            "mode-split"
+
+        MarkdownOnly ->
+            "mode-markdown"
+
+
+{-| A single sliding 3-position control -- Text / Split / Markdown -- rather
+than three separate buttons, so the "which one's active" state reads as one
+moving thumb (`markdown-panel-mode-thumb`, positioned purely in CSS off
+`viewModeClass`) instead of three independently-highlighted pills. Small
+enough to sit centered under the title/account row on a phone-width screen
+(see markdown\_panel.css).
+-}
+modeSlider : String -> ViewMode -> Html Msg
+modeSlider targetHost mode =
+    div [ classes [ "markdown-panel-mode-slider", viewModeClass mode ] ]
+        [ div [ classes [ "markdown-panel-mode-thumb", targetHost, "background-color-primary" ] ] []
+        , modeOption mode TextOnly "Text"
+        , modeOption mode Split "Split"
+        , modeOption mode MarkdownOnly "Preview"
+        ]
+
+
+modeOption : ViewMode -> ViewMode -> String -> Html Msg
+modeOption current target label =
+    button
+        [ classes
+            ("markdown-panel-mode-option"
+                :: (if current == target then
+                        [ "selected" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick (ViewModeSelected target)
+        ]
+        [ text label ]
 
 
 {-| "Editing as <avatar> username" / "Posting as <avatar> username" -- no
@@ -366,16 +457,3 @@ accountAvatar servers account =
 
         Nothing ->
             div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
-
-
-titleFor : Maybe TargetType -> String
-titleFor target =
-    case target of
-        Just (PostContent _) ->
-            "Edit Post"
-
-        Just (NewReply _) ->
-            "Reply"
-
-        Nothing ->
-            ""
