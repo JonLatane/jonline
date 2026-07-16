@@ -233,3 +233,46 @@
 .post-error {
   color: var(--muted);
 }
+
+/* Edit/Reply buttons -- see Pages/Post/PostId_.elm's `postActionsView`, which
+   opens the shared Markdown editor panel (Shared/MarkdownPanel.elm). */
+.post-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.post-actions button {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+/* A basic list of a post's direct replies -- see `repliesView`. */
+.post-replies {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.post-replies-header {
+  font-weight: 700;
+}
+
+.post-reply-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+}
+
+.post-reply-author {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.replies-loading {
+  color: var(--muted);
+  margin-top: 0.8rem;
+}

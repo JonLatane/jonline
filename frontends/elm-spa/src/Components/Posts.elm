@@ -1,6 +1,8 @@
 module Components.Posts exposing
     ( fetchPost
     , fetchRecentPosts
+    , fetchReplies
+    , isAuthor
     , parsePostRouteId
     , postAuthorHref
     , postAuthorName
@@ -84,6 +86,38 @@ fetchRecentPosts server maybeAccount =
                 |> withAuth maybeToken
                 |> Grpc.toTask
         )
+
+
+{-| Fetches the direct replies to `postId` from `server` (`reply_depth: 1` --
+see `GetPostsRequest`'s doc comment: with `post_id` and `reply_depth` both set,
+`GetPosts` returns the replies themselves, not `postId`'s own Post), authenticated
+as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
+`fetchPost`.
+-}
+fetchReplies :
+    AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
+fetchReplies server maybeAccount postId =
+    MaybeAccountRequest.perform
+        (connectionOf server)
+        maybeAccount
+        (\maybeToken ->
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just 1 }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAuth maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Whether `account` is `post`'s own author -- e.g. to show an Edit button
+only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
+no `author` at all (shouldn't normally happen, but `Post.author` is optional).
+-}
+isAuthor : AccountsPanel.Account -> Post -> Bool
+isAuthor account post =
+    Maybe.map .userId post.author == Just account.userId
 
 
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }

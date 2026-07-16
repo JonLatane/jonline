@@ -944,7 +944,7 @@ init req flags =
     in
     ( { accounts = persisted.accounts
       , servers = []
-      , accountForm = emptyForm
+      , accountForm = { emptyForm | server = browsingHost }
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
       , addAccountFormExpanded = False

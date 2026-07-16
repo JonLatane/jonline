@@ -1,0 +1,127 @@
+/* The app-wide Markdown editor (see Shared/MarkdownPanel.elm) -- unlike the
+   Accounts/Starred Posts panels (small dropdowns anchored below their own nav
+   toggle), this one is a large, centered overlay -- there's a real editor and
+   live preview to fit side by side, not just a short list/form. Reuses the
+   `.nav-panel` base rule (position/opacity/pointer-events transition, see
+   accounts_panel.css) for the same "always rendered, open/closed is a plain
+   CSS transition" convention every panel here follows, overriding its
+   positioning/sizing to suit. */
+.markdown-panel.nav-panel {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 900px);
+  height: 75vh;
+  max-height: 75vh;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+
+  /* Above `.navbar` (25, see nav.css) -- the Accounts/Starred Posts panels
+     (20/25) are themselves DOM children of `.navbar`, which forms one
+     stacking context at that navbar's own z-index; there's no way to sit
+     below just their *open* dropdowns while staying above the navbar's own
+     plain links (Home, the toggles themselves), which is what a lower
+     z-index here used to do -- those links would render right over this
+     panel any time it visually reached as high as the navbar (e.g. a short
+     viewport, or the panel's own editor scrolled/resized). Sitting above the
+     whole navbar instead matches `.modal`'s own precedent (see modal.css) of
+     appearing over an already-open Accounts Panel -- a focus-stealing editor
+     reasonably wins over a glanced-at dropdown. Still below `.modal`'s own
+     30/31 (a Cancel/Confirm dialog opened *from* this panel, if one's ever
+     added, should still win). */
+  z-index: 26;
+}
+
+.markdown-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(100%);
+}
+
+.markdown-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.markdown-panel-account {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.markdown-panel-account-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.markdown-panel-account-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chip-bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.markdown-panel-split {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+.markdown-panel-editor,
+.markdown-panel-preview {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.markdown-panel-editor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  resize: none;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.markdown-panel-preview {
+  background: var(--chip-bg);
+}
+
+.markdown-panel-error {
+  color: var(--danger);
+  flex: 0 0 auto;
+}
+
+.markdown-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.markdown-panel-actions button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+/* `.markdown-panel-save`'s actual color comes from the emitted per-server
+   `background-color-primary` utility class (see UI/EmittedStylesheet.elm) --
+   added alongside it in Shared/MarkdownPanel.elm's `view`, keyed by
+   `model.targetHost`, so Save is tinted with the Post's own server's color
+   rather than one fixed color for every server. */

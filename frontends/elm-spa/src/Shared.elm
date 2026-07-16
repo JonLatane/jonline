@@ -25,6 +25,7 @@ import Ports
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.MarkdownPanel as MarkdownPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Time
 import Url exposing (Url)
@@ -60,6 +61,7 @@ type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
     , starredPostsPanel : StarredPostsPanel.Model
+    , markdownPanel : MarkdownPanel.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
 
@@ -83,6 +85,7 @@ type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
+    | MarkdownPanelMsg MarkdownPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
     | RequestDelete DeleteConfirmation
@@ -227,6 +230,7 @@ init basePath req flags =
     ( { accountsPanel = accountsPanelModel
       , adminPanel = AdminPanel.init
       , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+      , markdownPanel = MarkdownPanel.init
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
@@ -279,6 +283,26 @@ update req msg model =
             ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel }
             , Cmd.batch
                 [ Cmd.map StarredPostsPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
+        MarkdownPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                    MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel }
+            , Cmd.batch
+                [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 ]
             )

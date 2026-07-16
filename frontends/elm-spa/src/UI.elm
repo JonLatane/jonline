@@ -18,6 +18,7 @@ import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.MarkdownPanel as MarkdownPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
@@ -68,6 +69,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (createAccountConfirmationModal shared)
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
+    , Html.map toMsg (markdownPanel shared)
     , div [ class "container" ] [ main_ [] children ]
     ]
 
@@ -102,9 +104,9 @@ headerNav shared currentRoute =
 
 {-| One entry in `sharedBackdrop`'s priority list: whether this panel is
 currently open, the message that closes just this panel, and whether its
-being open should blur/tint the shared backdrop (only the Accounts Panel
-blocks interaction with the rest of the page like that -- see
-`sharedBackdrop`).
+being open should blur/tint the shared backdrop (the Accounts Panel and the
+Markdown panel both block interaction with the rest of the page like that --
+see `sharedBackdrop`).
 -}
 type alias BackdropPanel =
     { isOpen : Bool
@@ -124,14 +126,15 @@ receives clicks (`pointer-events`) while at least one listed panel is open.
 Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
-at once. Right now that means tapping the background closes the Starred Posts
-panel first, then (on a second tap) the Accounts Panel behind it -- swap their
-order here to change that priority. Only blurs/tints the page while a panel
-with `blurs = True` is open (currently just the Accounts Panel, which blocks
-interaction with the rest of the page while its login/server-management forms
-are open); the Starred Posts panel doesn't, since starring/unstarring posts
-while it's open is an expected, encouraged interaction rather than something
-to block.
+at once. Right now that means tapping the background closes the Markdown
+panel first (see its own z-index in markdown_panel.css -- it sits above the
+other two, visually in front), then the Starred Posts panel, then (on a third
+tap) the Accounts Panel behind it -- swap their order here to change that
+priority. Only blurs/tints the page while a panel with `blurs = True` is open
+(currently the Accounts Panel and the Markdown panel, both of which block
+interaction with the rest of the page while open); the Starred Posts panel
+doesn't, since starring/unstarring posts while it's open is an expected,
+encouraged interaction rather than something to block.
 
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
@@ -139,7 +142,11 @@ sharedBackdrop shared =
     let
         panels : List BackdropPanel
         panels =
-            [ { isOpen = shared.starredPostsPanel.showStarredPostsPanel
+            [ { isOpen = shared.markdownPanel.target /= Nothing
+              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
+              , blurs = True
+              }
+            , { isOpen = shared.starredPostsPanel.showStarredPostsPanel
               , closeMsg = Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel
               , blurs = False
               }
@@ -1550,6 +1557,20 @@ adminAccountPanel shared account =
           else
             text ""
         ]
+
+
+{-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
+Accounts/Starred Posts panels, it isn't toggled from a nav icon of its own;
+it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons) via
+`Shared.MarkdownPanelMsg (MarkdownPanel.Open ...)`, so it's mounted directly in
+`layout` rather than inside `headerNav`. Given the lowest z-index of the three
+panels (see `markdown_panel.css`) -- if a post's Edit button is used while the
+Accounts/Starred Posts panel also happens to be open, those still layer above
+it rather than being hidden behind it.
+-}
+markdownPanel : Shared.Model -> Html Shared.Msg
+markdownPanel shared =
+    Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
 
 
 {-| Flutter is included for parity with the other two, but permanently
