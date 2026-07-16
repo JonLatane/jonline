@@ -633,10 +633,14 @@
 }
 
 .remove-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   width: 1.6rem;
   height: 1.6rem;
-  line-height: 1;
+  padding: 0;
+  line-height: 0.6;
   border: 1px solid var(--border);
   background: var(--bg);
   color: var(--danger);

@@ -7,8 +7,8 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, placeholder, spellcheck, src, style, title, type_, value)
-import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, title, type_, value)
+import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Page
@@ -986,7 +986,7 @@ serverChip shared count index server =
                         "Remove server"
                     )
                 ]
-                [ text "×" ]
+                [ text "╳" ]
             ]
         ]
 
@@ -1191,7 +1191,7 @@ accountRow shared count mainCount index account =
             [ class "remove-btn"
             , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
             ]
-            [ text "×" ]
+            [ text "╳" ]
         ]
 
 
@@ -1308,7 +1308,18 @@ addAccountForm shared =
             else
                 AccountsPanel.NoOp
     in
-    div [ class "account-form" ]
+    Html.form
+        [ class "account-form"
+
+        -- Real `<form>` (rather than `div`) so Safari/Chrome/password
+        -- managers recognize `account-form-username`/`account-form-password`
+        -- as a credential pair worth offering to fill/save. Every button
+        -- below is explicitly `type_ "button"`, so this never natively
+        -- submits (which would reload the page); `onSubmit` just guards
+        -- against a stray implicit submission (e.g. Enter in a field) ever
+        -- doing that, without duplicating any button's own `onClick`.
+        , onSubmit (Shared.AccountsPanelMsg AccountsPanel.NoOp)
+        ]
         [ input
             [ id "account-form-server"
             , type_ "url"
@@ -1326,7 +1337,8 @@ addAccountForm shared =
 
           else
             button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
+                [ type_ "button"
+                , onClick (Shared.AccountsPanelMsg AccountsPanel.AddServerClicked)
                 , disabled (addingServer || String.isEmpty (String.trim form.server))
                 , classes [ "add-server-button", accountsPanelModel.mainFrontendHost, "background-color-nav" ]
                 ]
@@ -1342,6 +1354,7 @@ addAccountForm shared =
             input
                 [ id "account-form-username"
                 , type_ "text"
+                , name "username"
                 , attribute "autocapitalize" "none"
                 , attribute "autocorrect" "off"
                 , attribute "autocomplete" "username"
@@ -1360,6 +1373,16 @@ addAccountForm shared =
             input
                 [ id "account-form-password"
                 , type_ "password"
+                , name "current-password"
+
+                -- "current-password" (not "new-password") even though this
+                -- field also doubles as Create Account's password: it's the
+                -- more common case (logging into an existing account), and
+                -- it's the token that lets a password manager offer to fill
+                -- a saved password here at all. "new-password" would only
+                -- gain a generated-password suggestion for the signup path,
+                -- at the cost of breaking autofill for the login path.
+                , attribute "autocomplete" "current-password"
                 , placeholder "Password"
                 , value form.password
                 , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
@@ -1373,13 +1396,15 @@ addAccountForm shared =
         , if showUsernamePasswordFields then
             div [ class "account-form-buttons" ]
                 [ button
-                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+                    [ type_ "button"
+                    , onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                     , disabled accountFieldsDisabled
                     , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                     ]
                     [ text "Login" ]
                 , button
-                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
+                    [ type_ "button"
+                    , onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
                     , disabled accountFieldsDisabled
                     , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
                     ]
@@ -1430,7 +1455,8 @@ signInFromButton shared accountFieldsDisabled =
     case ( shared.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
         ( Just publicKey, True ) ->
             button
-                [ onClick
+                [ type_ "button"
+                , onClick
                     (Shared.NavigateExternal
                         ("https://"
                             ++ server
