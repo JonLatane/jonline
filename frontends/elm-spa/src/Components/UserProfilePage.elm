@@ -43,6 +43,7 @@ import Task
 import Time
 import UI
 import UI.Classes exposing (classes)
+import UI.EmittedStylesheet exposing (hostnameToCSSClass)
 
 
 {-| Which `GetUsersRequest` field to search by -- an id (`Pages.User.UserId_`)
@@ -957,7 +958,7 @@ federatedProfileLink shared model server user account =
         colorClasses =
             case maybeFederatedServer of
                 Just federatedServer ->
-                    [ federatedServer.frontendHost, "background-color-primary" ]
+                    [ hostnameToCSSClass federatedServer.frontendHost, "background-color-primary" ]
 
                 Nothing ->
                     []

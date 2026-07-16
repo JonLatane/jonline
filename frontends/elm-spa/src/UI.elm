@@ -24,7 +24,7 @@ import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
-import UI.EmittedStylesheet as EmittedStylesheet
+import UI.EmittedStylesheet as EmittedStylesheet exposing (hostnameToCSSClass)
 import UI.Flip
 import UI.Modal
 import View exposing (View)
@@ -93,9 +93,24 @@ scrollPreserver shared =
     div [ classes [ "scroll-preserver", openClosedClass shared.scrollPreserverVisible ] ] []
 
 
+{-| Tapping the navbar anywhere outside the Home link, the Starred Posts
+toggle/panel, or the Accounts menu/panel scrolls the page to top -- same
+`Shared.ScrollToTop` that re-tapping Home while already on it fires (see
+`navLink`'s doc). Those three carve themselves out of this via
+`stopPropagationOn "click"` on their own root elements (`navLink`,
+`starredPostsToggle`, `accountsMenu`'s `.accounts-menu` div) rather than
+`onClick`, so a tap on any of them (or their own dropdowns/menus) never
+bubbles up to this handler; `starredPostsPanel` isn't itself one of those
+three roots (it's rendered as its own `.navbar` child, not nested under
+`starredPostsToggle` -- see the comment below), so it gets its own wrapper
+here instead.
+-}
 headerNav : Shared.Model -> Route -> Html Shared.Msg
 headerNav shared currentRoute =
-    header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
+    header
+        [ classes [ "navbar", hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-primary" ]
+        , onClick Shared.ScrollToTop
+        ]
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
@@ -113,11 +128,19 @@ headerNav shared currentRoute =
         -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
         -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
         -- the toggle's left edge. See `starredPostsPanel`.
+        --
+        -- Wrapped in its own `stopPropagationOn`-bearing `div` (a plain,
+        -- unpositioned element, so it doesn't disturb the `left`/`top` math
+        -- above -- that's all resolved against `.navbar` itself, the nearest
+        -- *positioned* ancestor, not the immediate parent) so taps inside the
+        -- open panel don't also bubble up to this `Shared.ScrollToTop`
+        -- tap-anywhere handler.
         , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
             text ""
 
           else
-            starredPostsPanel shared currentRoute
+            div [ stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True )) ]
+                [ starredPostsPanel shared currentRoute ]
 
         -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
         -- -- see `breadcrumbsBar`.
@@ -265,7 +288,10 @@ comment on why that one closes on a destination page's `init` instead),
 there's no dedicated "just navigated Home" hook to close it or scroll from,
 since `Pages.Home_` keeps its own `Model` alive across a same-route re-click
 that no `init`/`ChangedUrl` would rerun for -- so this is the only place
-that reliably still fires every time.
+that reliably still fires every time. Uses `stopPropagationOn`, not plain
+`onClick`, so this doesn't also trigger `headerNav`'s own tap-anywhere
+`Shared.ScrollToTop` (redundant when `isCurrent` already fires it above, and
+undesired when navigating away instead).
 -}
 navLink : Shared.Model -> Route -> Html Shared.Msg -> Route -> Html Shared.Msg
 navLink shared currentRoute content linkRoute =
@@ -287,7 +313,7 @@ navLink shared currentRoute content linkRoute =
                         []
                    )
                 ++ (if isCurrent then
-                        [ shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
@@ -295,7 +321,7 @@ navLink shared currentRoute content linkRoute =
             )
          ]
             ++ (if isHome then
-                    [ onClick (Shared.HomeLinkClicked isCurrent) ]
+                    [ stopPropagationOn "click" (Decode.succeed ( Shared.HomeLinkClicked isCurrent, True )) ]
 
                 else
                     []
@@ -442,7 +468,14 @@ accountsMenu shared =
                         []
                    )
     in
-    div [ class "accounts-menu" ]
+    div
+        [ class "accounts-menu"
+
+        -- Stops both the toggle and everything in the dropdown it wraps
+        -- (`accountsPanel`, below) from also bubbling up into `headerNav`'s
+        -- own tap-anywhere `Shared.ScrollToTop`.
+        , stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True ))
+        ]
         [ div [ class "accounts-menu-row" ]
             [ button
                 [ classes toggleClasses
@@ -1128,7 +1161,7 @@ accountRow shared count mainCount index account =
     in
     div
         (id (AccountsPanel.accountRowDomId accId)
-            :: classes [ "account-row", account.server, "background-color-primary" ]
+            :: classes [ "account-row", hostnameToCSSClass account.server, "background-color-primary" ]
             :: moveAttrs
         )
         [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
@@ -1383,6 +1416,7 @@ server, and this SSO hand-off is (ordinarily) the only way into anywhere
 else. `AdminPanel.allowUsernamePasswordForOtherHosts` can additionally enable
 username/password for other hosts too, but never suppresses this button for
 `browsingHost`/`mainFrontendHost` themselves.
+
 -}
 signInFromButton : Shared.Model -> Bool -> Html Shared.Msg
 signInFromButton shared accountFieldsDisabled =
@@ -1614,20 +1648,22 @@ something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
 `.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
 can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
+Uses `stopPropagationOn`, not plain `onClick`, so tapping it doesn't also
+trigger `headerNav`'s own tap-anywhere `Shared.ScrollToTop`.
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
             [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPostsPanel.showStarredPostsPanel ]
-            , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+            , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel, True ))
             , title "Starred Posts"
             ]
             [ text "⭐"
             , span
                 [ classes
                     [ "starred-posts-count-badge"
-                    , shared.accountsPanel.mainFrontendHost
+                    , hostnameToCSSClass shared.accountsPanel.mainFrontendHost
                     , "background-color-nav"
                     ]
                 ]
