@@ -35,6 +35,7 @@ import Html.Attributes exposing (attribute, class, href, style)
 import Html.Events exposing (onClick)
 import Html.Keyed
 import Proto.Jonline exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
+import Proto.Jonline.Permission exposing (Permission(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -459,7 +460,16 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
             Nothing ->
                 text ""
         , div [ class "post-reply-actions" ]
-            [ button [ class "post-reply-button", onClick onReplyClicked ] [ text "Reply" ]
+            [ case maybeAccount of
+                Just account ->
+                    if List.member REPLYTOPOSTS account.permissions then
+                        button [ class "post-reply-button", onClick onReplyClicked ] [ text "Reply" ]
+
+                    else
+                        text ""
+
+                Nothing ->
+                    text ""
             , replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post
             ]
         ]

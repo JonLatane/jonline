@@ -5,8 +5,11 @@ module Shared.Breadcrumbs exposing (BreadcrumbRoot(..), Model, Msg(..), bar, ini
 eventually, Event/Event Instance discussions) rather than directly: the root
 thing's own title/name, then one avatar+username chip per reply on the way to
 whichever Post is currently being viewed. Tapping any chip opens `replyPanel`,
-a centered popup showing that chip's own Post -- so jumping back to an
-ancestor reply doesn't require actually navigating to its own page.
+a popup anchored just under the trail itself showing that chip's own Post --
+so jumping back to an ancestor reply doesn't require actually navigating to
+its own page. The open chip is tinted with `model.host`'s own
+`background-color-primary` (see `UI.EmittedStylesheet`), so it's clear which
+segment `replyPanel` is currently showing.
 
 Wired into `Shared.Model`/`UI.elm` the same way `Shared.MarkdownPanel` is: one
 shared instance, populated contextually by whichever page has a chain to show
@@ -23,7 +26,7 @@ callers/`Model` don't need to change shape again once it's wired up, but its
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.PostCard as Posts
-import Html exposing (Html, a, button, div, img, span, text)
+import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, class, href, src)
 import Html.Events exposing (onClick)
 import Proto.Jonline exposing (Event, EventInstance, Post)
@@ -85,7 +88,11 @@ update msg model =
             init
 
         SegmentClicked postId ->
-            { model | viewing = Just postId }
+            if model.viewing == Just postId then
+                { model | viewing = Nothing }
+
+            else
+                { model | viewing = Just postId }
 
         CloseViewer ->
             { model | viewing = Nothing }
@@ -131,7 +138,7 @@ bar accountsPanelModel model =
         Just root ->
             div [ class "breadcrumbs-bar" ]
                 (List.intersperse separator
-                    (rootSegment root :: List.map (replySegment accountsPanelModel model) model.replies)
+                    (rootSegment model root :: List.map (replySegment accountsPanelModel model) model.replies)
                 )
 
 
@@ -140,15 +147,15 @@ separator =
     span [ class "breadcrumb-separator" ] [ text "›" ]
 
 
-rootSegment : BreadcrumbRoot -> Html Msg
-rootSegment root =
+rootSegment : Model -> BreadcrumbRoot -> Html Msg
+rootSegment model root =
     case root of
         FromPost post ->
             button
-                [ classes [ "breadcrumb-segment", "breadcrumb-root" ]
+                [ classes (segmentClasses model "breadcrumb-root" post.id)
                 , onClick (SegmentClicked post.id)
                 ]
-                [ text (Posts.postTitleText post) ]
+                [ span [ class "breadcrumb-root-title" ] [ text (Posts.postTitleText post) ] ]
 
         FromEvent _ _ ->
             div [ classes [ "breadcrumb-segment", "breadcrumb-root" ] ]
@@ -168,12 +175,30 @@ replySegment accountsPanelModel model post =
             Posts.postAuthorName post
     in
     button
-        [ classes [ "breadcrumb-segment", "breadcrumb-reply" ]
+        [ classes (segmentClasses model "breadcrumb-reply" post.id)
         , onClick (SegmentClicked post.id)
         ]
         [ segmentAvatar name (Posts.postAuthorAvatarUrl maybeServer maybeAccount post)
         , span [ class "breadcrumb-reply-username" ] [ text name ]
         ]
+
+
+{-| The classes for a segment button: always `"breadcrumb-segment"` plus its
+own kind (`"breadcrumb-root"`/`"breadcrumb-reply"`); additionally
+`[ model.host, "background-color-primary" ]` (see `UI.EmittedStylesheet`) when
+this segment's Post is the one `replyPanel` currently has open, tinting it
+with that server's own primary color to mark it as the open one.
+-}
+segmentClasses : Model -> String -> String -> List String
+segmentClasses model kindClass postId =
+    "breadcrumb-segment"
+        :: kindClass
+        :: (if model.viewing == Just postId then
+                [ model.host, "background-color-primary" ]
+
+            else
+                []
+           )
 
 
 {-| Mirrors `Components.PostCard.authorAvatar`/`UI.imageOrInitial` -- not
@@ -191,13 +216,18 @@ segmentAvatar name maybeUrl =
             div [ classes [ "breadcrumb-reply-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
 
 
-{-| A centered popup showing whichever segment's Post was last tapped (see
-`viewing`) -- a smaller, read-only relative of `Components.PostReplies.replyCard`
-(author, media, content, permalink; no Reply/load-more/collapse actions, which
-don't make sense for a single already-in-hand Post shown out of its thread).
-Always rendered, even closed, same "opening/closing is a CSS transition"
-convention as every other panel here -- see `UI.Classes.openClosedClass`.
-`basePath` is `Shared.Model.basePath`, needed for the author/permalink links.
+{-| A popup, anchored just under `bar`'s own trail (see nav.css's
+`.breadcrumb-reply-panel`), showing whichever segment's Post was last tapped
+(see `viewing`) -- a smaller, read-only relative of
+`Components.PostReplies.replyCard` (title if it's the root -- see `isRoot`,
+author, media, content via `Components.Markdown` same as everywhere else Post
+content renders, permalink; no Reply/load-more/collapse actions, which don't
+make sense for a single already-in-hand Post shown out of its thread, and no
+close button of its own -- tapping the open segment again, another segment, or
+the shared backdrop all already close it, see `UI.sharedBackdrop`). Always
+rendered, even closed, same "opening/closing is a CSS transition" convention
+as every other panel here -- see `UI.Classes.openClosedClass`. `basePath` is
+`Shared.Model.basePath`, needed for the author/permalink links.
 -}
 replyPanel : String -> AccountsPanel.Model -> Model -> Html Msg
 replyPanel basePath accountsPanelModel model =
@@ -211,6 +241,21 @@ replyPanel basePath accountsPanelModel model =
         )
 
 
+{-| Whether `post` is `model`'s own root (as opposed to one of its `replies`)
+-- the root is the only segment with a real title shown on its `replyCardView`;
+a reply never has one worth showing on its own card, same as
+`Components.PostReplies` never shows one for its own cards.
+-}
+isRoot : Model -> Post -> Bool
+isRoot model post =
+    case model.root of
+        Just (FromPost rootPost) ->
+            rootPost.id == post.id
+
+        _ ->
+            False
+
+
 replyCardView : String -> AccountsPanel.Model -> Model -> Post -> Html Msg
 replyCardView basePath accountsPanelModel model post =
     let
@@ -221,7 +266,11 @@ replyCardView basePath accountsPanelModel model post =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
     in
     div [ class "breadcrumb-reply-card" ]
-        [ button [ class "breadcrumb-reply-panel-close", onClick CloseViewer ] [ text "×" ]
+        [ if isRoot model post then
+            h1 [ class "breadcrumb-reply-card-title" ] [ text (Posts.postTitleText post) ]
+
+          else
+            text ""
         , div [ class "breadcrumb-reply-card-meta" ]
             [ Posts.authorLink basePath accountsPanelModel.mainFrontendHost model.host maybeServer maybeAccount post
             , a

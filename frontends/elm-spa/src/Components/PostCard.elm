@@ -585,11 +585,32 @@ since that's already the page you're on, but still tinted with `postServerHost`'
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
 since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
 meta line's `post-meta-right` group only to the post's own author.
+
+Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
+title of its own (`postTitleText`'s fallback to a truncated `content` exists
+for contexts, like `postCard`'s feed entries, where *something* short is
+needed regardless; here, with the full `content` rendered right below anyway,
+that fallback would just be a redundant near-duplicate of it). It gets
+`postContextLabel`'s small context chip in its place instead (mirroring
+`Shared.StarredPostsPanel`'s own `starred-post-context`) -- since a Post
+reached this way is, on `Pages.Post.PostId_`, already headed by
+`Shared.Breadcrumbs`' own trail showing exactly *which* reply this is, this
+chip only needs to mark plainly *that* it's one, not repeat any of that
+context.
 -}
 postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Post -> Html msg
 postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
-        [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        [ if post.context == POST then
+            h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+
+          else
+            case postContextLabel post.context of
+                Just contextLabel ->
+                    div [ class "post-detail-context" ] [ text contextLabel ]
+
+                Nothing ->
+                    text ""
         , case maybeServer of
             Just server ->
                 MultiMediaRenderer.view server maybeAccount onMediaClicked post.media

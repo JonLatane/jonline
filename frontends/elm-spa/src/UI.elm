@@ -72,7 +72,6 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
-    , Html.map toMsg (breadcrumbsReplyPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
     , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
@@ -122,6 +121,13 @@ headerNav shared currentRoute =
         -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
         -- -- see `breadcrumbsBar`.
         , breadcrumbsBar shared
+
+        -- A direct child of `.navbar` too (not just `breadcrumbsBar`'s own
+        -- wrapper), same reasoning as `starredPostsPanel` above -- so it's
+        -- anchored to the full-width `.navbar`'s own bottom edge (which
+        -- includes `breadcrumbsBar`'s row) rather than just some narrower
+        -- element's. See `breadcrumbsReplyPanel`.
+        , breadcrumbsReplyPanel shared
         ]
 
 
@@ -163,17 +169,18 @@ panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Starred Posts
 panel first, then the Accounts Panel, then the Breadcrumbs reply viewer, then
 (on a fourth tap) the Markdown panel behind all three -- matching the actual
-paint order (`.navbar`'s own z-index sits above both `.breadcrumb-reply-panel`
-and `.markdown-panel`, so its descendants -- the Accounts/Starred Posts panels
--- render above it regardless of their own, lower z-indices; the Breadcrumbs
-reply viewer's own z-index in turn sits above `.markdown-panel`'s but below
-`.navbar`'s; see nav.css and markdown\_panel.css) -- swap their order here to
-change that priority. Only blurs/tints the page while a panel with
-`blurs = True` is open (currently the Accounts Panel, the Breadcrumbs reply
-viewer and the Markdown panel, all of which block interaction with the rest
-of the page while open); the Starred Posts panel doesn't, since starring/
-unstarring posts while it's open is an expected, encouraged interaction
-rather than something to block.
+paint order. `.breadcrumb-reply-panel` is (like the Accounts/Starred Posts
+panels) a `.navbar` descendant, so all three render above `.markdown-panel`
+(a `.navbar` *sibling*) regardless of their own individual z-indices, purely
+because `.navbar`'s own z-index (28) beats `.markdown-panel`'s (26) as whole
+stacking contexts; *within* `.navbar`, `.breadcrumb-reply-panel`'s lower
+z-index (see nav.css) is what then keeps it under the Accounts/Starred Posts
+panels specifically. Swap their order here to change that priority. Only
+blurs/tints the page while a panel with `blurs = True` is open (currently the
+Accounts Panel, the Breadcrumbs reply viewer and the Markdown panel, all of
+which block interaction with the rest of the page while open); the Starred
+Posts panel doesn't, since starring/unstarring posts while it's open is an
+expected, encouraged interaction rather than something to block.
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -248,19 +255,30 @@ navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them. The Home link also gets its own `nav-link-home`
 class (regardless of `isCurrent`) so `nav.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
-negative-margin overflow treatment as the Accounts Panel toggle.
+negative-margin overflow treatment as the Accounts Panel toggle, and its own
+`onClick` (`Shared.HomeLinkClicked`) closing the Starred Posts panel and,
+when `isCurrent` (tapping Home while already on it), firing
+`Shared.ScrollToTop` -- unlike the Accounts Panel (see `UI.page`'s doc
+comment on why that one closes on a destination page's `init` instead),
+there's no dedicated "just navigated Home" hook to close it or scroll from,
+since `Pages.Home_` keeps its own `Model` alive across a same-route re-click
+that no `init`/`ChangedUrl` would rerun for -- so this is the only place
+that reliably still fires every time.
 -}
-navLink : Shared.Model -> Route -> Html msg -> Route -> Html msg
+navLink : Shared.Model -> Route -> Html Shared.Msg -> Route -> Html Shared.Msg
 navLink shared currentRoute content linkRoute =
     let
         isCurrent =
             linkRoute == currentRoute
+
+        isHome =
+            linkRoute == Route.Home_
     in
     a
-        [ href (shared.basePath ++ Route.toHref linkRoute)
-        , classes
+        ([ href (shared.basePath ++ Route.toHref linkRoute)
+         , classes
             ("nav-link"
-                :: (if linkRoute == Route.Home_ && mainServer shared /= Nothing then
+                :: (if isHome && mainServer shared /= Nothing then
                         [ "nav-link-home" ]
 
                     else
@@ -273,7 +291,14 @@ navLink shared currentRoute content linkRoute =
                         []
                    )
             )
-        ]
+         ]
+            ++ (if isHome then
+                    [ onClick (Shared.HomeLinkClicked isCurrent) ]
+
+                else
+                    []
+               )
+        )
         [ content ]
 
 
@@ -385,24 +410,34 @@ accountsMenu shared =
         enabledAccounts =
             AccountsPanel.enabledAccounts shared.accountsPanel
 
+        -- Signed into exactly one account on exactly one enabled server --
+        -- since only one account per server can be enabled at a time (see
+        -- `AccountsPanel.ToggleAccountEnabled`), this is the "single user"
+        -- case: there's no second avatar to stack and no server count worth
+        -- a subtitle, so the toggle becomes one larger avatar circle instead
+        -- of the usual pill (see `.accounts-menu-toggle.single-avatar`).
+        singleAccountSingleServer =
+            case ( AccountsPanel.enabledServers shared.accountsPanel, enabledAccounts ) of
+                ( [ _ ], [ _ ] ) ->
+                    True
+
+                _ ->
+                    False
+
         toggleClasses =
             "accounts-menu-toggle"
+                :: openClosedClass shared.accountsPanel.showAccountsPanel
                 :: (if List.isEmpty enabledAccounts then
                         []
 
                     else
                         [ "has-avatars" ]
                    )
-                ++ (case AccountsPanel.enabledServers shared.accountsPanel of
-                        [ singleServer ] ->
-                            if singleServer.frontendHost == shared.accountsPanel.mainFrontendHost then
-                                []
+                ++ (if singleAccountSingleServer then
+                        [ "single-avatar" ]
 
-                            else
-                                [ "has-summary" ]
-
-                        _ ->
-                            [ "has-summary" ]
+                    else
+                        []
                    )
     in
     div [ class "accounts-menu" ]
@@ -411,9 +446,14 @@ accountsMenu shared =
                 [ classes toggleClasses
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
                 ]
-                [ accountsMenuButtonContent shared enabledAccounts
-                , accountsMenuServerSummary shared.accountsPanel
-                ]
+                (if singleAccountSingleServer then
+                    [ accountsMenuButtonContent shared enabledAccounts ]
+
+                 else
+                    [ accountsMenuButtonContent shared enabledAccounts
+                    , accountsMenuServerSummary shared.accountsPanel
+                    ]
+                )
             , hostMismatchWarning shared
             ]
         , accountsPanel shared
@@ -1501,7 +1541,7 @@ starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
-            [ classes [ "nav-menu-toggle", "circular" ]
+            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPostsPanel.showStarredPostsPanel ]
             , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
             , title "Starred Posts"
             ]
@@ -1629,9 +1669,11 @@ breadcrumbsBar shared =
     Html.map Shared.BreadcrumbsMsg (Breadcrumbs.bar shared.accountsPanel shared.breadcrumbs)
 
 
-{-| The centered popup opened by tapping a breadcrumb segment (see
-`Shared.Breadcrumbs.replyPanel`) -- opened contextually, same as `markdownPanel`
-above, so it's mounted directly in `layout` rather than inside `headerNav`.
+{-| The popup opened by tapping a breadcrumb segment (see
+`Shared.Breadcrumbs.replyPanel`), anchored just under `breadcrumbsBar`'s own
+row -- mounted as a `.navbar` descendant (see `headerNav`), not directly in
+`layout` like `markdownPanel` above, so its positioning (`position: absolute`,
+see nav.css) resolves against `.navbar` itself.
 -}
 breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
 breadcrumbsReplyPanel shared =

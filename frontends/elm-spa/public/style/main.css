@@ -6,6 +6,16 @@
   --panel-bg: #ffffff;
   --danger: #c0392b;
   --chip-bg: #f4f5f7;
+
+  /* The nav's Login/Accounts toggle button is always this tall (and thus
+     this wide when it's a circle -- see accounts_panel.css's
+     `.accounts-menu-toggle`), whether it's showing "Login" text, a "Login" +
+     server-count subtitle, a row of avatars, or a single larger avatar --
+     signing in/out or gaining a second enabled server used to visibly resize
+     it. Not theme-dependent, so it's only defined here (not repeated in the
+     dark-mode overrides below). Also reused by `.nav-link-home` (nav.css) to
+     size its own negative-margin overflow against. */
+  --nav-toggle-height: 44px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -54,6 +64,13 @@ html {
   touch-action: manipulation;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Animates `Shared.ScrollToTop`'s `Browser.Dom.setViewport 0 0` (a direct
+     scrollTop/scrollLeft assignment, which the CSSOM View spec still runs
+     through this scroll-behavior) instead of jumping instantly. Only the
+     root/document scrolling box is affected -- nested `overflow-y: auto`
+     panels (Accounts Panel, Markdown Panel, modals) need their own
+     scroll-behavior to animate and don't have one, so they're untouched. */
+  scroll-behavior: smooth;
 }
 
 body {

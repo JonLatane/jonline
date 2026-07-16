@@ -111,9 +111,14 @@ that they're actually usable) and can itself surface an `AccountsPanel.Msg` it
 needs forwarded on its behalf -- a refreshed `Account`, from
 `Shared.MaybeAccountRequest`, persisted via `AccountsPanel.AccountRefreshed`
 -- for `Shared.update` to actually dispatch, same convention as
-`Shared.StarredPostsPanel.update`.
+`Shared.StarredPostsPanel.update` -- paired, in that same third-tuple-slot
+convention, with a `Bool` that's `True` only right after a successful save:
+`Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
+Post's re-fetched content (see `saveTask`) can change its rendered height
+once this panel closes and the page under it catches up, same yank
+`Shared.ShowScrollPreserver` already guards against on back navigation.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Bool ) )
 update accountsPanelModel msg model =
     case msg of
         Open target host ->
@@ -124,17 +129,17 @@ update accountsPanelModel msg model =
                 , status = Idle
               }
             , Cmd.none
-            , Nothing
+            , ( Nothing, False )
             )
 
         ContentChanged content ->
-            ( { model | content = content }, Cmd.none, Nothing )
+            ( { model | content = content }, Cmd.none, ( Nothing, False ) )
 
         ViewModeSelected viewMode ->
-            ( { model | viewMode = viewMode }, Cmd.none, Nothing )
+            ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False ) )
 
         CancelClicked ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, Nothing )
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
 
         SaveClicked ->
             case model.target of
@@ -143,20 +148,20 @@ update accountsPanelModel msg model =
                         Ok resolved ->
                             ( { model | status = Submitting }
                             , saveTask resolved.server resolved.account target model.content |> Task.attempt GotSaveResult
-                            , Nothing
+                            , ( Nothing, False )
                             )
 
                         Err err ->
-                            ( { model | status = SubmitFailed err }, Cmd.none, Nothing )
+                            ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False ) )
 
                 Nothing ->
-                    ( model, Cmd.none, Nothing )
+                    ( model, Cmd.none, ( Nothing, False ) )
 
         GotSaveResult (Ok maybeAccount) ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( Maybe.map AccountsPanel.AccountRefreshed maybeAccount, True ) )
 
         GotSaveResult (Err err) ->
-            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, Nothing )
+            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False ) )
 
 
 initialContent : TargetType -> String

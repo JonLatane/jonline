@@ -37,29 +37,35 @@
   right: auto;
   left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
 
-  /* The base `.nav-panel` rule's `top: calc(100% + 0.5rem)` means
-     something different here than it does for the Accounts Panel: that one's
-     relative to its own toggle's own (short) box, but this one's
-     relative to the full `.navbar` (see the `left` comment above for why),
-     which is taller since it's centered around the Home link's bigger logo.
-     The `22.6px` correction is that height difference (plus a further ~10px
-     nudge up) -- it's what actually lines this panel's top up with the
-     Accounts Panel's, rather than sitting visibly lower. */
-  top: calc(100% + 0.5rem - 17.6px);
+  /* The base `.nav-panel` rule's `top: 100%` means something different here
+     than it does for the Accounts Panel: that one's relative to its own
+     toggle's own (already button-height-tall) box, but this one's relative
+     to the full `.navbar` (see the `left` comment above for why) -- so
+     `100%` would sit below `.navbar`'s whole content, breadcrumbs bar
+     included, rather than flush against just the toggle. Computed directly
+     from the two constants that actually place the toggle's bottom edge
+     within `.navbar` instead -- `.navbar-inner`'s own top padding (nav.css)
+     plus the fixed toggle height (--nav-toggle-height, main.css) -- so this
+     stays correct regardless of whether a breadcrumbs bar is also present
+     below the toggle row. */
+  top: calc(0.75rem + var(--nav-toggle-height));
 }
 
 /* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
    hairline 2px above, so the panel's left edge needs its own tighter offset
-   (3px, not the full 16px) to stay close to the Home link's new position
-   instead of sitting well right of it. `(100vw - 800px) / 2` is always 0 in
-   this breakpoint (max 639px is nowhere near the 800px it'd need to go
-   positive), so the base rule's full `calc()` collapses to this flat value
-   here. Placed after the base rule (rather than alongside `.navbar-inner`'s
-   own narrow-screen override above) so it wins the cascade on source order
-   alone, without needing `!important`. */
+   (2px, matching that padding, not the full 16px) to stay flush with the Home
+   link's new position instead of sitting well right of it. `(100vw - 800px) /
+   2` is always 0 in this breakpoint (max 639px is nowhere near the 800px it'd
+   need to go positive), so the base rule's full `calc()` collapses to this
+   flat value here. Repeats the base rule's own compound selector (rather than
+   just `.starred-posts-panel`) so this actually wins on specificity -- the
+   element always carries both classes at once, so a plain single-class
+   override here would lose the cascade to the base rule's higher-specificity
+   `.nav-panel.starred-posts-panel`, media query or not. */
 @media (max-width: 639px) {
-  .starred-posts-panel {
-    left: 3px;
+  .starred-posts-panel,
+  .nav-panel.starred-posts-panel {
+    left: 2px;
   }
 }
 

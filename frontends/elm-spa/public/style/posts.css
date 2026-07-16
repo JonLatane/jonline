@@ -164,6 +164,23 @@
   margin: 0 0 0.3rem;
 }
 
+/* Shown in `.post-detail-title`'s place instead (see
+   `Components.PostCard.postDetail`) for a Post reached via a reply chain
+   (etc.) rather than directly -- mirrors `Shared.StarredPostsPanel`'s own
+   `.starred-post-context`. */
+.post-detail-context {
+  display: inline-block;
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  background: var(--chip-bg);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+}
+
 .post-detail-meta {
   color: var(--muted);
   font-size: 0.9rem;

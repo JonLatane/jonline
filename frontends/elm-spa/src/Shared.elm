@@ -19,6 +19,7 @@ Server Admin Panel, shown when any signed-in account has `ADMIN`), plus the
 appearance (dark/light/auto) setting that doesn't belong to either.
 -}
 
+import Browser.Dom as Dom
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
@@ -109,6 +110,9 @@ type Msg
     | ConfirmDelete
     | ShowScrollPreserver
     | HideScrollPreserver
+    | HomeLinkClicked Bool
+    | ScrollToTop
+    | NoOp
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -324,7 +328,7 @@ update req msg model =
 
         MarkdownPanelMsg subMsg ->
             let
-                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
                     MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
@@ -334,11 +338,19 @@ update req msg model =
 
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
+
+                scrollPreserverCmd =
+                    if showScrollPreserver then
+                        Task.perform (\() -> ShowScrollPreserver) (Task.succeed ())
+
+                    else
+                        Cmd.none
             in
             ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , scrollPreserverCmd
                 ]
             )
 
@@ -392,11 +404,35 @@ update req msg model =
 
         ShowScrollPreserver ->
             ( { model | scrollPreserverVisible = True }
-            , Process.sleep 2000 |> Task.perform (\() -> HideScrollPreserver)
+            , Process.sleep 3000 |> Task.perform (\() -> HideScrollPreserver)
             )
 
         HideScrollPreserver ->
             ( { model | scrollPreserverVisible = False }, Cmd.none )
+
+        HomeLinkClicked alreadyHome ->
+            let
+                ( closedModel, closeCmd ) =
+                    update req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
+
+                -- Re-clicking Home while already on it doesn't rerun
+                -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
+                -- never fires either -- this is the only reliable "just tapped
+                -- Home" hook (see `UI.navLink`), hence scrolling to top here.
+                ( scrolledModel, scrollCmd ) =
+                    if alreadyHome then
+                        update req ScrollToTop closedModel
+
+                    else
+                        ( closedModel, Cmd.none )
+            in
+            ( scrolledModel, Cmd.batch [ closeCmd, scrollCmd ] )
+
+        ScrollToTop ->
+            ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
+
+        NoOp ->
+            ( model, Cmd.none )
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`

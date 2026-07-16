@@ -105,6 +105,7 @@ type Msg
     = ToggleStar AccountsPanel.Server Post
     | GotStarResult String Bool (Result Grpc.Error Post)
     | ToggleStarredPostsPanel
+    | CloseStarredPostsPanel
     | EnableServerClicked String
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
     | PollStarredPosts
@@ -395,6 +396,13 @@ updateHelp accountsPanelModel msg model =
 
             else
                 ( toggledModel, Cmd.none, Nothing )
+
+        -- Unlike `ToggleStarredPostsPanel`, always closes rather than
+        -- flipping -- dispatched by the Home link (`UI.navLink`) on every
+        -- click, so navigating Home also dismisses this panel if it happened
+        -- to be open, same as `AccountsPanel.CloseAccountsPanel`'s `i`-button.
+        CloseStarredPostsPanel ->
+            ( { model | showStarredPostsPanel = False }, Cmd.none, Nothing )
 
         EnableServerClicked host ->
             -- Just forwards to `AccountsPanel.ToggleServerEnabled` -- once
