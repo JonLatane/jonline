@@ -963,11 +963,11 @@ serverChip shared count index server =
                 , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
                 ]
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
-            , if isMainServer then
-                div [ class "server-chip-main-badge" ] [ text "★ Main" ]
 
-              else
-                text ""
+            -- , if isMainServer then
+            --     div [ class "server-chip-main-badge" ] [ text "★ Main" ]
+            --   else
+            --     text ""
             ]
         , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))

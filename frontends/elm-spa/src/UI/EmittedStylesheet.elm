@@ -137,10 +137,10 @@ serverRules darkMode mainTheme mainFrontendHost server =
         , borderColorRule (withDescendants selector ".border-color-primary-anchor") theme.primaryAnchorColor
         , borderColorRule (withDescendants selector ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
         , borderColorRule (withDescendants selector ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
-        , textColorRule (withDescendants selector ".post-star.starred") theme.primaryAnchorColor
+        , textColorRule (selector ++ ".post-star.starred") theme.primaryAnchorColor
         , backgroundOnlyColorRule (selector ++ ".post-card-current .post-star") (theme.backgroundColor ++ "80")
         , ".server-chip-bottom" ++ selector ++ " .switch input:checked + .slider { background: " ++ switchOnColor ++ "; }\n"
-        , textColorRule ("a" ++ selector ++ ", " ++ selector ++ " a") theme.primaryAnchorColor
+        , textColorRule ("a" ++ selector) theme.primaryAnchorColor
         , accountRowSwitchRule
         ]
 

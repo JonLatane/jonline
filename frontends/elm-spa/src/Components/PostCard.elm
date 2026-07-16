@@ -732,7 +732,13 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMe
         , div [ class "post-card-title" ] [ text (postTitleText post) ]
         , case postLinkText post of
             Just link ->
-                a [ href link, target "_blank", rel "noopener noreferrer", class "post-card-link" ] [ text (stripLinkScheme link) ]
+                a
+                    [ href link
+                    , target "_blank"
+                    , rel "noopener noreferrer"
+                    , classes [ hostnameToCSSClass postServerHost, "post-card-link" ]
+                    ]
+                    [ text (stripLinkScheme link) ]
 
             Nothing ->
                 text ""
@@ -805,7 +811,13 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
                     text ""
         , case postLinkText post of
             Just link ->
-                a [ href link, target "_blank", rel "noopener noreferrer", class "post-detail-link" ] [ text (stripLinkScheme link) ]
+                a
+                    [ href link
+                    , target "_blank"
+                    , rel "noopener noreferrer"
+                    , classes [ hostnameToCSSClass postServerHost, "post-detail-link" ]
+                    ]
+                    [ text (stripLinkScheme link) ]
 
             Nothing ->
                 text ""
