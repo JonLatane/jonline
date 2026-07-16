@@ -208,8 +208,6 @@
 
 .markdown-panel-actions button {
   flex: 1;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
 }
 
 /* `.markdown-panel-save`'s actual color comes from the emitted per-server

@@ -49,8 +49,59 @@
   color: var(--muted);
 }
 
+.profile-real-name-display {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .profile-real-name {
   color: var(--muted);
+}
+
+.profile-real-name-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.profile-real-name-input {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.9rem;
+}
+
+/* Edit/Save/Cancel controls shared by the Real Name, bio, and permissions
+   editors -- see Components/UserProfilePage.elm's `realNameView`/`bioSection`/
+   `permissionsSection`. Mirrors posts.css's `.post-edit-button`. */
+.profile-edit-button,
+.profile-edit-save,
+.profile-edit-cancel,
+.profile-permission-add-button {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+
+.profile-edit-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+.profile-bio-section {
+  margin: 0.8rem 0;
+}
+
+.profile-bio-section .profile-edit-button {
+  margin-bottom: 0.4rem;
 }
 
 .profile-meta {
@@ -149,6 +200,54 @@
   border-radius: 999px;
   background: var(--chip-bg);
   font-size: 0.8rem;
+}
+
+.profile-permissions-view,
+.profile-permissions-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.profile-permission-badge.editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.profile-permission-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.profile-permissions-add {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.profile-permissions-add select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.profile-permissions-actions {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
 }
 
 .profile-federated-link {

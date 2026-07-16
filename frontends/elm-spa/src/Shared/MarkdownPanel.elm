@@ -10,21 +10,22 @@ phone-width screen. Wired into `Shared.Model`/`UI.elm` the same way
 opened from wherever it's needed (see `TargetType`) rather than each caller
 owning its own editor state.
 
-Only knows how to edit/submit a `Proto.Jonline.Post`'s `content` for now (via
-`TargetType`) -- editing a `Post` already in hand (`PostContent`), or composing
-a brand new reply to one (`NewReply`). Editing other Markdown fields (e.g. a
-future User bio) can add more `TargetType` constructors later without touching
-callers that only care about Posts.
+Knows how to edit/submit a `Proto.Jonline.Post`'s `content` (via `TargetType`)
+-- editing a `Post` already in hand (`PostContent`), or composing a brand new
+reply to one (`NewReply`) -- or a `Proto.Jonline.User`'s `bio` (`UserBio`, see
+`Components.UserProfilePage`). More `TargetType` constructors can be added
+later without touching callers that only care about the ones they use.
 
 -}
 
 import Components.Markdown as Markdown
 import Components.PostCard as Posts
+import Components.Users as Users
 import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)
 import Html.Attributes exposing (alt, class, disabled, placeholder, spellcheck, src, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (Post, defaultGetPostsRequest, defaultPost)
+import Proto.Jonline exposing (Post, User, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -40,11 +41,13 @@ first -- see `saveTask` -- so a stale in-hand copy can't clobber any of its
 other fields, e.g. `visibility`, that changed server-side since this panel was
 opened); `NewReply post` creates a brand new reply to `post` (via `CreatePost`,
 `reply_to_post_id = post.id`), copying `post`'s own `visibility` for the new
-reply.
+reply; `UserBio user` overwrites `user`'s own `bio` (via `Users.updateUser`,
+which does the same re-fetch-then-overwrite dance as `PostContent`).
 -}
 type TargetType
     = PostContent Post
     | NewReply Post
+    | UserBio User
 
 
 type SubmitStatus
@@ -99,7 +102,7 @@ type Msg
     | ViewModeSelected ViewMode
     | CancelClicked
     | SaveClicked
-    | GotSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Account, Post ))
+    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Account))
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
@@ -108,9 +111,14 @@ that they're actually usable) and can itself surface an `AccountsPanel.Msg` it
 needs forwarded on its behalf -- a refreshed `Account`, from
 `Shared.MaybeAccountRequest`, persisted via `AccountsPanel.AccountRefreshed`
 -- for `Shared.update` to actually dispatch, same convention as
-`Shared.StarredPostsPanel.update`.
+`Shared.StarredPostsPanel.update` -- paired, in that same third-tuple-slot
+convention, with a `Bool` that's `True` only right after a successful save:
+`Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
+Post's re-fetched content (see `saveTask`) can change its rendered height
+once this panel closes and the page under it catches up, same yank
+`Shared.ShowScrollPreserver` already guards against on back navigation.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Bool ) )
 update accountsPanelModel msg model =
     case msg of
         Open target host ->
@@ -121,17 +129,17 @@ update accountsPanelModel msg model =
                 , status = Idle
               }
             , Cmd.none
-            , Nothing
+            , ( Nothing, False )
             )
 
         ContentChanged content ->
-            ( { model | content = content }, Cmd.none, Nothing )
+            ( { model | content = content }, Cmd.none, ( Nothing, False ) )
 
         ViewModeSelected viewMode ->
-            ( { model | viewMode = viewMode }, Cmd.none, Nothing )
+            ( { model | viewMode = viewMode }, Cmd.none, ( Nothing, False ) )
 
         CancelClicked ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, Nothing )
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
 
         SaveClicked ->
             case model.target of
@@ -140,20 +148,20 @@ update accountsPanelModel msg model =
                         Ok resolved ->
                             ( { model | status = Submitting }
                             , saveTask resolved.server resolved.account target model.content |> Task.attempt GotSaveResult
-                            , Nothing
+                            , ( Nothing, False )
                             )
 
                         Err err ->
-                            ( { model | status = SubmitFailed err }, Cmd.none, Nothing )
+                            ( { model | status = SubmitFailed err }, Cmd.none, ( Nothing, False ) )
 
                 Nothing ->
-                    ( model, Cmd.none, Nothing )
+                    ( model, Cmd.none, ( Nothing, False ) )
 
-        GotSaveResult (Ok ( maybeAccount, _ )) ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
+        GotSaveResult (Ok maybeAccount) ->
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( Maybe.map AccountsPanel.AccountRefreshed maybeAccount, True ) )
 
         GotSaveResult (Err err) ->
-            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, Nothing )
+            ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False ) )
 
 
 initialContent : TargetType -> String
@@ -164,6 +172,9 @@ initialContent target =
 
         NewReply _ ->
             ""
+
+        UserBio user ->
+            user.bio
 
 
 type alias Resolved =
@@ -178,9 +189,11 @@ disabled server shouldn't be posted/edited to just because this panel was
 opened before it was disabled), and (2) the account signed into that server
 has the relevant permission for `target` -- the post's own author for
 `PostContent` (matching `backend/src/rpcs/posts/update_post.rs`'s
-`self_update` check), or `REPLYTOPOSTS` for `NewReply`. Used both by
-`SaveClicked` (to actually gate the RPC) and by `view` (to show the same
-problem inline, and disable Save, before the user even tries).
+`self_update` check), `REPLYTOPOSTS` for `NewReply`, or the user themself/an
+`ADMIN` for `UserBio` (matching `backend/src/rpcs/users/update_user.rs`'s own
+`self_update || admin` check). Used both by `SaveClicked` (to actually gate
+the RPC) and by `view` (to show the same problem inline, and disable Save,
+before the user even tries).
 -}
 resolve : AccountsPanel.Model -> TargetType -> String -> Result String Resolved
 resolve accountsPanelModel target host =
@@ -213,6 +226,13 @@ resolve accountsPanelModel target host =
                                 else
                                     Err "You don't have permission to reply."
 
+                            UserBio user ->
+                                if account.userId == user.id || List.member ADMIN account.permissions then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You can only edit your own bio."
+
 
 {-| `PostContent` re-fetches its Post fresh (via `GetPosts`) before submitting
 `UpdatePost` -- only `content` from `model.content` is overlaid onto that fresh
@@ -221,9 +241,14 @@ server-side since this panel opened aren't clobbered by a stale in-hand
 snapshot (`UpdatePost` takes -- and unconditionally applies -- a whole `Post`,
 see `backend/src/rpcs/posts/update_post.rs`). `NewReply` has no such race to
 guard against -- it's creating a brand new Post, not overwriting an existing
-one -- so it submits straight from the `post` it was opened with.
+one -- so it submits straight from the `post` it was opened with. `UserBio`
+does the same re-fetch-then-overwrite dance as `PostContent`, via
+`Users.updateUser`. Only the (possibly-refreshed) `Account` is returned --
+none of these three cases' updated entities are used by any caller (see
+`Pages.Post.PostId_`/`Components.UserProfilePage`'s `GotSaveResult` handling,
+which just refetches their own copy on success).
 -}
-saveTask : AccountsPanel.Server -> AccountsPanel.Account -> TargetType -> String -> Task Grpc.Error ( Maybe AccountsPanel.Account, Post )
+saveTask : AccountsPanel.Server -> AccountsPanel.Account -> TargetType -> String -> Task Grpc.Error (Maybe AccountsPanel.Account)
 saveTask server account target content =
     case target of
         PostContent post ->
@@ -243,7 +268,7 @@ saveTask server account target content =
                                     |> Grpc.setHost (AccountsPanel.serverUrl server)
                                     |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
                                     |> Grpc.toTask
-                                    |> Task.map (\updated -> ( Just refreshedAccount, updated ))
+                                    |> Task.map (\_ -> Just refreshedAccount)
 
                             Nothing ->
                                 Task.fail Grpc.NetworkError
@@ -264,7 +289,11 @@ saveTask server account target content =
                         |> Grpc.addHeader "authorization" token
                         |> Grpc.toTask
                 )
-                |> Task.map (\( refreshedAccount, created ) -> ( Just refreshedAccount, created ))
+                |> Task.map (\( refreshedAccount, _ ) -> Just refreshedAccount)
+
+        UserBio user ->
+            Users.updateUser server account user.id (\freshUser -> { freshUser | bio = content })
+                |> Task.map (\( refreshedAccount, _ ) -> Just refreshedAccount)
 
 
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }

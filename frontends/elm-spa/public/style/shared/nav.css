@@ -83,7 +83,7 @@
 
 .nav-links {
   display: flex;
-  gap: 0.5rem;
+  gap: 0.25rem;
   /* Without this, a flex item's default auto min-width is its content size,
      which -- since .nav-link-home's name is `white-space: nowrap` -- is the
      full un-truncated name, blocking it from ever actually shrinking/
@@ -115,10 +115,11 @@
    glyph-above-name/fixed glyph size, which is why the width/height rules
    below override .server-name-and-logo.regular's defaults from
    AccountsPanel.elm's CSS instead of just reusing them) with the
-   left-aligned name stack to its right, plus
-   .accounts-menu-toggle.has-summary's negative-margin hack (here -18px, vs.
-   that button's -5px, since this content is taller) so the taller button
-   overflows the navbar row instead of stretching it. `border-radius` is
+   left-aligned name stack to its right, plus a negative top/bottom margin so
+   the taller button overflows the navbar row instead of stretching it -- the
+   row's own height is otherwise fixed at --nav-toggle-height (main.css, see
+   accounts_panel.css's `.accounts-menu-toggle`), which this button's 64px
+   min-height nets down to exactly via -10px/-10px. `border-radius` is
    dialed back from .nav-link's pill shape -- a stadium radius on a shape this
    much taller than it is wide reads as an odd rounded-off oval rather than a
    button, so a fixed radius is used instead. */
@@ -190,4 +191,153 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Breadcrumbs -- Shared/Breadcrumbs.elm's `bar`, a horizontally-scrolling
+   strip at the very bottom of `.navbar` (a sibling row below `.navbar-inner`,
+   see UI.elm's `headerNav`), showing the root Post's title followed by one
+   avatar+username chip per reply in the chain leading to whichever Post is
+   currently being viewed. Empty (renders nothing) until a page sets a root,
+   so it takes up no space on pages that never do. */
+.breadcrumbs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0 1rem 0.35rem;
+}
+
+.breadcrumb-separator {
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+
+.breadcrumb-segment {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.breadcrumb-root {
+  font-weight: 600;
+  max-width: 200px;
+  min-width: 0;
+}
+
+/* The actual ellipsizing element -- `.breadcrumb-root` (the button itself, a
+   flex container per `.breadcrumb-segment`) can't reliably ellipsize its own
+   text directly (text-overflow only applies within a normal inline formatting
+   context, which a flex container's box doesn't establish); this inner span,
+   blockified as the button's sole flex item, does establish one, so `min-width:
+   0` here (overriding a flex item's default content-based auto minimum) lets
+   it actually shrink down to `.breadcrumb-root`'s capped width instead of
+   overflowing past it. */
+.breadcrumb-root-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.breadcrumb-reply-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.breadcrumb-reply-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.6rem;
+}
+
+.breadcrumb-reply-username {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Narrow screens: drop the username text from reply segments, leaving just
+   the avatar -- the trail can otherwise run out of horizontal room fast once
+   several replies are chained, and the avatar alone is still enough to tap
+   through to that reply's own card (see Shared/Breadcrumbs.elm's `replyPanel`)
+   for the name. Shares its 639px breakpoint with `.navbar-inner`/
+   `.starred-posts-panel`'s own narrow-screen overrides above. */
+@media (max-width: 639px) {
+  .breadcrumb-reply-username {
+    display: none;
+  }
+}
+
+/* Reply Card viewer -- Shared/Breadcrumbs.elm's `replyPanel`, opened by
+   tapping a breadcrumb segment above. Anchored to `.navbar`'s own bottom edge
+   (`position: absolute` -- `.navbar`'s `position: sticky` still establishes a
+   containing block for this) so it appears just under `.breadcrumbs-bar`'s
+   row, rather than a centered dialog like `.modal`. Mounted as a `.navbar`
+   descendant (see UI.elm's `headerNav`), so it shares `.navbar`'s own
+   stacking context (28) -- always above `.markdown-panel` (26, a `.navbar`
+   *sibling*, so it's `.navbar`'s z-index, not this rule's own, that wins
+   there) -- and only needs a z-index lower than the Accounts/Starred Posts
+   panels' own (20/25) to sit underneath *them* specifically, per
+   `Shared.Breadcrumbs`' own doc comment. */
+.breadcrumb-reply-panel.nav-panel {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 500px);
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 15;
+
+  /* Flush against `.navbar`'s own bottom edge (which this is anchored
+     directly under, see above) -- rounded top corners would leave a visible
+     gap/notch at that seam instead of reading as one continuous edge. */
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.breadcrumb-reply-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.breadcrumb-reply-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breadcrumb-reply-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.breadcrumb-reply-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.breadcrumb-reply-card-permalink {
+  text-decoration: none;
+}
+
+.breadcrumb-reply-card-content {
+  font-size: 0.9rem;
 }

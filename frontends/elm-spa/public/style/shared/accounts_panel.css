@@ -93,9 +93,21 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.1rem;
-  padding: 0.4rem 0.9rem;
+  /* Fixed (see --nav-toggle-height, main.css) rather than left to grow with
+     however many lines of content the button has -- previously its height
+     came from vertical padding around plain "Login" text, "Login" + a
+     server-count subtitle, or a row of avatars, so logging in/out or gaining
+     a second enabled server visibly resized it. */
+  height: var(--nav-toggle-height);
+  padding: 0 0.9rem;
   border-radius: 999px;
+  /* Animates the bottom corners squaring off/rounding back (see `.is-open`
+     below) in step with its panel's own 0.15s opacity/transform transition
+     (`.nav-panel`) -- shorthand so it covers whichever corners a given state
+     (pill, circular, single-avatar) actually changes. */
+  transition: border-radius 0.15s ease;
   border: 1px solid var(--border);
   background: var(--chip-bg);
   color: var(--fg);
@@ -104,12 +116,29 @@
 }
 
 .accounts-menu-toggle.has-avatars {
-  padding: 0.25rem 0.6rem;
+  padding: 0 0.6rem;
 }
 
-.accounts-menu-toggle.has-summary {
-  margin-top: -5px;
-  margin-bottom: -5px;
+/* Signed into exactly one account on exactly one enabled server (see
+   `accountsMenu`'s `singleAccountSingleServer`) -- with only one avatar to
+   show and no server-count subtitle worth rendering, a pill with one small
+   avatar and blank space below it reads worse than just filling the whole
+   fixed-height toggle with a bigger circular avatar. */
+.accounts-menu-toggle.single-avatar {
+  flex-direction: row;
+  width: var(--nav-toggle-height);
+  padding: 0;
+  border-radius: 50%;
+}
+
+.accounts-menu-toggle.single-avatar .accounts-menu-avatars,
+.accounts-menu-toggle.single-avatar .accounts-menu-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.accounts-menu-toggle.single-avatar .accounts-menu-avatar.placeholder {
+  font-size: 1.3rem;
 }
 
 /* Used by the Admin Panel and Starred Posts toggles -- both single-emoji
@@ -120,10 +149,26 @@
 .accounts-menu-toggle.circular {
   flex-direction: row;
   justify-content: center;
-  width: 2.2rem;
-  height: 2.2rem;
+  /* Same fixed size as the Login/Accounts toggle's own circular state (see
+     --nav-toggle-height, main.css, and `.accounts-menu-toggle.single-avatar`
+     above) -- every nav toggle button reads as one consistent size, whether
+     it's a pill, an avatar circle, or an icon circle. */
+  width: var(--nav-toggle-height);
+  height: var(--nav-toggle-height);
   padding: 0;
   border-radius: 50%;
+}
+
+/* While its panel is open (see `openClosedClass`), a toggle's bottom corners
+   go square -- the panel now sits flush against its bottom edge (`.nav-panel`
+   above), so a rounded corner there would leave a gap between the button and
+   the panel's own squared-off top corners instead of the two reading as one
+   continuous shape. Top corners are untouched, so pill/circle buttons keep
+   their usual rounded top. */
+.accounts-menu-toggle.is-open,
+.nav-menu-toggle.is-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .accounts-menu-server-summary {
@@ -245,7 +290,12 @@
 
 .nav-panel {
   position: absolute;
-  top: calc(100% + 0.5rem);
+  /* Flush against its toggle's own bottom edge -- safe to hardcode as
+     exactly `100%` (no gap) now that every nav toggle button (Accounts,
+     Starred Posts) is a fixed `--nav-toggle-height` (main.css), so this
+     panel's positioned ancestor is always that same height regardless of
+     which state the toggle is in. */
+  top: 100%;
   right: 0;
   width: 320px;
   max-width: calc(100vw - 2rem);
@@ -279,6 +329,17 @@
   opacity: 0;
   transform: translateY(-8px);
   pointer-events: none;
+}
+
+/* Squared off to match the Accounts Panel toggle's own bottom-right corner
+   (`.accounts-menu-toggle.is-open`, above) -- this panel's `right: 0` lines
+   its right edge up exactly with the button's (see `.nav-panel`'s own `top`
+   comment for why that's true), so the two corners sit flush against each
+   other rather than leaving a rounded notch between them. Left alone on the
+   left: the panel (320px) is wider than the button, so its top-left corner
+   sits below open space, not the button, and reads fine rounded. */
+.accounts-panel {
+  border-top-right-radius: 0;
 }
 
 .panel-divider {
@@ -602,15 +663,11 @@
 
 .account-form-buttons button {
   flex: 1;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
 }
 
 .add-server-button,
 .show-add-account-form-button {
   width: 100%;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
 }
 
 .auth-error {

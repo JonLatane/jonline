@@ -30,16 +30,20 @@ import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, div, h1, h2, p, span, text)
-import Html.Attributes exposing (class, href, title)
+import Html exposing (Html, a, button, div, h1, h2, input, option, p, select, span, text)
+import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, value)
+import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (FederatedAccount, User)
+import Proto.Jonline.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task
 import Time
 import UI
 import UI.Classes exposing (classes)
+import UI.EmittedStylesheet exposing (hostnameToCSSClass)
 
 
 {-| Which `GetUsersRequest` field to search by -- an id (`Pages.User.UserId_`)
@@ -68,6 +72,40 @@ type FederatedProfileStatus
     | FederatedProfileFailed
 
 
+{-| Shared by `RealNameEdit`/`PermissionsEdit` -- mirrors `Shared.MarkdownPanel`'s
+own `SubmitStatus`, kept separate since these two edits are local to this page
+rather than routed through that shared panel.
+-}
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
+
+
+{-| Live only while the Real Name field (see `Model.realNameEdit`) is being
+edited -- `input` is the in-progress value, independent of `status.user.realName`
+until `RealNameSaveClicked` succeeds.
+-}
+type alias RealNameEdit =
+    { input : String
+    , status : SubmitStatus
+    }
+
+
+{-| Live only while the permissions list (see `Model.permissionsEdit`) is
+being edited by an admin -- `pending` is the in-progress set (already
+reflecting any `PermissionRemoveClicked`/`PermissionAddClicked` since editing
+started), `addSelection` is whatever the "Add Permission" `<select>` currently
+has chosen (always one of `Components.Users.allPermissions` not already in
+`pending`, see `resolveAddSelection`).
+-}
+type alias PermissionsEdit =
+    { pending : List Permission
+    , addSelection : Maybe Permission
+    , status : SubmitStatus
+    }
+
+
 type alias Model =
     { targetHost : String
     , lookup : Lookup
@@ -76,6 +114,8 @@ type alias Model =
     , fetchStarted : Bool
     , pageIsSecure : Bool
     , federatedProfiles : Dict String FederatedProfileStatus
+    , realNameEdit : Maybe RealNameEdit
+    , permissionsEdit : Maybe PermissionsEdit
     }
 
 
@@ -93,7 +133,32 @@ init shared pageIsSecure targetHost lookup =
         , fetchStarted = False
         , pageIsSecure = pageIsSecure
         , federatedProfiles = Dict.empty
+        , realNameEdit = Nothing
+        , permissionsEdit = Nothing
         }
+
+
+{-| The `GetUsers` fetch task for `model.lookup`/`model.targetHost`, if that
+host is currently a known, connected server -- shared by `fetchIfReady` (only
+kicked off once) and `refetch` (kicked off unconditionally, after a Real
+Name/bio/permissions save succeeds).
+-}
+fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
+fetchTask shared model =
+    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+        |> Maybe.map
+            (\server ->
+                let
+                    maybeAccount =
+                        AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                in
+                case model.lookup of
+                    ById userId ->
+                        Users.fetchUserById server maybeAccount userId
+
+                    ByUsername username ->
+                        Users.fetchUserByUsername server maybeAccount username
+            )
 
 
 {-| Kicks off the actual `GetUsers` fetch the first time `targetHost` is a
@@ -106,26 +171,29 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
-            Just server ->
-                let
-                    maybeAccount =
-                        AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
-
-                    fetch =
-                        case model.lookup of
-                            ById userId ->
-                                Users.fetchUserById server maybeAccount userId
-
-                            ByUsername username ->
-                                Users.fetchUserByUsername server maybeAccount username
-                in
+        case fetchTask shared model of
+            Just fetch ->
                 ( { model | fetchStarted = True }
                 , fetch |> Task.attempt GotUser |> Effect.fromCmd
                 )
 
             Nothing ->
                 ( model, Effect.none )
+
+
+{-| Re-fetches the user unconditionally (unlike `fetchIfReady`, not gated on
+`fetchStarted`, which is already `True` by the time this is ever called) --
+called once the shared Markdown panel (see `Shared.MarkdownPanel`) reports a
+successful bio save, mirroring `Pages.Post.PostId_.refetch`.
+-}
+refetch : Shared.Model -> Model -> ( Model, Effect Msg )
+refetch shared model =
+    case fetchTask shared model of
+        Just fetch ->
+            ( model, fetch |> Task.attempt GotUser |> Effect.fromCmd )
+
+        Nothing ->
+            ( model, Effect.none )
 
 
 
@@ -141,6 +209,19 @@ type Msg
     | SharedMsg Shared.Msg
     | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
     | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
+    | RealNameEditClicked
+    | RealNameInputChanged String
+    | RealNameCancelClicked
+    | RealNameSaveClicked
+    | GotRealNameSaveResult (Result Grpc.Error ( AccountsPanel.Account, User ))
+    | BioEditClicked
+    | PermissionsEditClicked
+    | PermissionRemoveClicked Permission
+    | PermissionAddSelectionChanged String
+    | PermissionAddClicked
+    | PermissionsCancelClicked
+    | PermissionsSaveClicked
+    | GotPermissionsSaveResult (Result Grpc.Error ( AccountsPanel.Account, User ))
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -218,10 +299,143 @@ update shared msg model =
                         Shared.AccountsPanelMsg _ ->
                             fetchIfReady shared model
 
+                        Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
+                            refetch shared model
+
                         _ ->
                             ( model, Effect.none )
             in
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+        RealNameEditClicked ->
+            case model.status of
+                UserLoaded user ->
+                    ( { model | realNameEdit = Just { input = user.realName, status = Idle } }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        RealNameInputChanged input ->
+            ( { model | realNameEdit = model.realNameEdit |> Maybe.map (\edit -> { edit | input = input }) }
+            , Effect.none
+            )
+
+        RealNameCancelClicked ->
+            ( { model | realNameEdit = Nothing }, Effect.none )
+
+        RealNameSaveClicked ->
+            case ( model.status, model.realNameEdit, serverAndAccount shared model ) of
+                ( UserLoaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | realNameEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser server account user.id (\freshUser -> { freshUser | realName = edit.input })
+                        |> Task.attempt GotRealNameSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotRealNameSaveResult (Ok ( refreshedAccount, updatedUser )) ->
+            ( { model | status = UserLoaded updatedUser, realNameEdit = Nothing }
+            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            )
+
+        GotRealNameSaveResult (Err err) ->
+            ( { model
+                | realNameEdit =
+                    model.realNameEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        BioEditClicked ->
+            case model.status of
+                UserLoaded user ->
+                    ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.UserBio user) model.targetHost)) )
+
+                _ ->
+                    ( model, Effect.none )
+
+        PermissionsEditClicked ->
+            case model.status of
+                UserLoaded user ->
+                    ( { model | permissionsEdit = Just (newPermissionsEdit user.permissions) }, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        PermissionRemoveClicked permission ->
+            ( { model
+                | permissionsEdit =
+                    model.permissionsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    pending =
+                                        List.filter ((/=) permission) edit.pending
+                                in
+                                { edit | pending = pending, addSelection = resolveAddSelection edit.addSelection pending }
+                            )
+              }
+            , Effect.none
+            )
+
+        PermissionAddSelectionChanged text ->
+            ( { model
+                | permissionsEdit =
+                    model.permissionsEdit |> Maybe.map (\edit -> { edit | addSelection = Users.permissionFromText text })
+              }
+            , Effect.none
+            )
+
+        PermissionAddClicked ->
+            ( { model
+                | permissionsEdit =
+                    model.permissionsEdit
+                        |> Maybe.map
+                            (\edit ->
+                                case edit.addSelection of
+                                    Just permission ->
+                                        let
+                                            pending =
+                                                edit.pending ++ [ permission ]
+                                        in
+                                        { edit | pending = pending, addSelection = resolveAddSelection Nothing pending }
+
+                                    Nothing ->
+                                        edit
+                            )
+              }
+            , Effect.none
+            )
+
+        PermissionsCancelClicked ->
+            ( { model | permissionsEdit = Nothing }, Effect.none )
+
+        PermissionsSaveClicked ->
+            case ( model.status, model.permissionsEdit, serverAndAccount shared model ) of
+                ( UserLoaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | permissionsEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser server account user.id (\freshUser -> { freshUser | permissions = edit.pending })
+                        |> Task.attempt GotPermissionsSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotPermissionsSaveResult (Ok ( refreshedAccount, updatedUser )) ->
+            ( { model | status = UserLoaded updatedUser, permissionsEdit = Nothing }
+            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            )
+
+        GotPermissionsSaveResult (Err err) ->
+            ( { model
+                | permissionsEdit =
+                    model.permissionsEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
 
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accountsPanel.servers`
@@ -259,6 +473,58 @@ update shared msg model =
             ( { model | federatedProfiles = Dict.insert key FederatedProfileFailed model.federatedProfiles }
             , Effect.none
             )
+
+
+{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
+both exist -- what `RealNameSaveClicked`/`PermissionsSaveClicked` need to
+actually submit their `Users.updateUser` task.
+-}
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount shared model =
+    Maybe.map2 Tuple.pair
+        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+
+
+{-| Starts a `PermissionsEdit` off `currentPermissions` (the user's own, as
+loaded) -- `addSelection` defaults to the first grantable permission not
+already in that list, same as `resolveAddSelection` picks after every
+add/remove.
+-}
+newPermissionsEdit : List Permission -> PermissionsEdit
+newPermissionsEdit currentPermissions =
+    { pending = currentPermissions
+    , addSelection = resolveAddSelection Nothing currentPermissions
+    , status = Idle
+    }
+
+
+{-| Keeps the "Add Permission" `<select>`'s selection valid as `pending`
+changes: keeps `current` if it's still addable (not already in `pending`),
+otherwise falls back to the first still-addable permission (`Nothing` if
+every permission's already been added).
+-}
+resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
+resolveAddSelection current pending =
+    let
+        available =
+            addablePermissions pending
+    in
+    case current of
+        Just permission ->
+            if List.member permission available then
+                Just permission
+
+            else
+                List.head available
+
+        Nothing ->
+            List.head available
+
+
+addablePermissions : List Permission -> List Permission
+addablePermissions pending =
+    Users.allPermissions |> List.filter (\permission -> not (List.member permission pending))
 
 
 {-| Kicks off a fetch for every entry in `user.federatedProfiles` that isn't
@@ -397,6 +663,13 @@ view shared model =
 
 profileDetail : Shared.Model -> Model -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html Msg
 profileDetail shared model server maybeAccount user =
+    let
+        canEdit =
+            canEditProfile maybeAccount user
+
+        isAdmin =
+            isAdminAccount maybeAccount
+    in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header" ]
             [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
@@ -409,11 +682,7 @@ profileDetail shared model server maybeAccount user =
                       else
                         text ""
                     ]
-                , if String.isEmpty (String.trim user.realName) then
-                    text ""
-
-                  else
-                    div [ class "profile-real-name" ] [ text user.realName ]
+                , realNameView canEdit model.realNameEdit user
                 ]
             ]
         , federatedProfilesSection shared model server user
@@ -429,13 +698,135 @@ profileDetail shared model server maybeAccount user =
                 )
             ]
         , profileCounts user
-        , if String.isEmpty (String.trim user.bio) then
-            text ""
-
-          else
-            Markdown.view [ class "profile-bio" ] user.bio
-        , permissionsSection user
+        , bioSection canEdit user
+        , permissionsSection isAdmin model.permissionsEdit user
         ]
+
+
+{-| Whether the currently signed-in account on `user`'s own server (`maybeAccount`,
+`profileDetail`'s own -- the enabled account for the target host, not
+necessarily `user` itself) may edit `user`'s Real Name/bio: `user` themself,
+or an `ADMIN` -- matches `backend/src/rpcs/users/update_user.rs`'s own
+`self_update || admin` check (see `Shared.MarkdownPanel.resolve`'s `UserBio`
+case, which re-verifies this server-side gate right before a bio save).
+-}
+canEditProfile : Maybe AccountsPanel.Account -> User -> Bool
+canEditProfile maybeAccount user =
+    case maybeAccount of
+        Just account ->
+            account.userId == user.id || List.member ADMIN account.permissions
+
+        Nothing ->
+            False
+
+
+{-| Whether the currently signed-in account on this profile's server is an
+`ADMIN` -- gates the permissions editor (`permissionsSection`), which only
+`update_user.rs`'s own `admin` branch is ever allowed to change.
+-}
+isAdminAccount : Maybe AccountsPanel.Account -> Bool
+isAdminAccount maybeAccount =
+    case maybeAccount of
+        Just account ->
+            List.member ADMIN account.permissions
+
+        Nothing ->
+            False
+
+
+{-| The Real Name line -- plain text (plus an Edit button, if `canEdit`) when
+`model.realNameEdit == Nothing`, or an inline input/Save/Cancel form while
+being edited. Shown (with just the Edit button, no text) even when `user`
+has no Real Name yet, so `canEdit` viewers can add one.
+-}
+realNameView : Bool -> Maybe RealNameEdit -> User -> Html Msg
+realNameView canEdit maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            div [ class "profile-real-name-edit" ]
+                [ input
+                    [ class "profile-real-name-input"
+                    , value edit.input
+                    , onInput RealNameInputChanged
+                    , placeholder "Real Name"
+                    ]
+                    []
+                , editSaveButton RealNameSaveClicked edit.status
+                , editCancelButton RealNameCancelClicked edit.status
+                , editErrorView edit.status
+                ]
+
+        Nothing ->
+            if String.isEmpty (String.trim user.realName) && not canEdit then
+                text ""
+
+            else
+                div [ class "profile-real-name-display" ]
+                    [ if String.isEmpty (String.trim user.realName) then
+                        text ""
+
+                      else
+                        span [ class "profile-real-name" ] [ text user.realName ]
+                    , if canEdit then
+                        button [ class "profile-edit-button", onClick RealNameEditClicked ] [ text "Edit" ]
+
+                      else
+                        text ""
+                    ]
+
+
+{-| The bio, rendered as Markdown, with an Edit button (opening the shared
+`Shared.MarkdownPanel` panel via `BioEditClicked`, targeting `MarkdownPanel.UserBio`)
+if `canEdit` -- shown (with just the Edit button) even with no bio yet, so
+`canEdit` viewers can add one.
+-}
+bioSection : Bool -> User -> Html Msg
+bioSection canEdit user =
+    if String.isEmpty (String.trim user.bio) && not canEdit then
+        text ""
+
+    else
+        div [ class "profile-bio-section" ]
+            [ if canEdit then
+                button [ class "profile-edit-button", onClick BioEditClicked ] [ text "Edit" ]
+
+              else
+                text ""
+            , if String.isEmpty (String.trim user.bio) then
+                text ""
+
+              else
+                Markdown.view [ class "profile-bio" ] user.bio
+            ]
+
+
+editSaveButton : Msg -> SubmitStatus -> Html Msg
+editSaveButton onSave status =
+    button
+        [ class "profile-edit-save", onClick onSave, disabled (status == Submitting) ]
+        [ text
+            (if status == Submitting then
+                "Saving…"
+
+             else
+                "Save"
+            )
+        ]
+
+
+editCancelButton : Msg -> SubmitStatus -> Html Msg
+editCancelButton onCancel status =
+    button [ class "profile-edit-cancel", onClick onCancel, disabled (status == Submitting) ] [ text "Cancel" ]
+
+
+editErrorView : SubmitStatus -> Html msg
+editErrorView status =
+    case status of
+        SubmitFailed err ->
+            div [ class "profile-edit-error" ] [ text err ]
+
+        _ ->
+            text ""
 
 
 profileCounts : User -> Html Msg
@@ -467,18 +858,74 @@ profileCounts user =
             )
 
 
-permissionsSection : User -> Html Msg
-permissionsSection user =
-    if List.isEmpty user.permissions then
-        text ""
+{-| The Permissions list -- plain badges (plus an Edit button, if `isAdmin`)
+when `permissionsEdit == Nothing`, or the removable-badges + Add Permission +
+Save/Cancel editor while being edited by an admin. Shown (with just the Edit
+button) even with no permissions yet, so an admin can grant the first one.
+-}
+permissionsSection : Bool -> Maybe PermissionsEdit -> User -> Html Msg
+permissionsSection isAdmin maybeEdit user =
+    case maybeEdit of
+        Just edit ->
+            div [ class "profile-permissions-edit" ]
+                [ h2 [ class "profile-section-title" ] [ text "Permissions" ]
+                , div [ class "profile-permissions" ] (edit.pending |> List.map permissionEditBadge)
+                , div [ class "profile-permissions-add" ]
+                    [ select [ onInput PermissionAddSelectionChanged ]
+                        (addablePermissions edit.pending
+                            |> List.map
+                                (\permission ->
+                                    option
+                                        [ value (Users.permissionText permission)
+                                        , selected (edit.addSelection == Just permission)
+                                        ]
+                                        [ text (Users.permissionText permission) ]
+                                )
+                        )
+                    , button
+                        [ class "profile-permission-add-button"
+                        , onClick PermissionAddClicked
+                        , disabled (edit.addSelection == Nothing)
+                        ]
+                        [ text "Add Permission" ]
+                    ]
+                , div [ class "profile-permissions-actions" ]
+                    [ editSaveButton PermissionsSaveClicked edit.status
+                    , editCancelButton PermissionsCancelClicked edit.status
+                    ]
+                , editErrorView edit.status
+                ]
 
-    else
-        div [ class "profile-permissions" ]
-            (h2 [ class "profile-section-title" ] [ text "Permissions" ]
-                :: (user.permissions
-                        |> List.map (\permission -> span [ class "profile-permission-badge" ] [ text (Users.permissionText permission) ])
-                   )
-            )
+        Nothing ->
+            if List.isEmpty user.permissions && not isAdmin then
+                text ""
+
+            else
+                div [ class "profile-permissions-view" ]
+                    [ h2 [ class "profile-section-title" ] [ text "Permissions" ]
+                    , div [ class "profile-permissions" ]
+                        (user.permissions
+                            |> List.map (\permission -> span [ class "profile-permission-badge" ] [ text (Users.permissionText permission) ])
+                        )
+                    , if isAdmin then
+                        button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit" ]
+
+                      else
+                        text ""
+                    ]
+
+
+permissionEditBadge : Permission -> Html Msg
+permissionEditBadge permission =
+    span [ class "profile-permission-badge editable" ]
+        [ text (Users.permissionText permission)
+        , button
+            [ class "profile-permission-remove"
+            , onClick (PermissionRemoveClicked permission)
+            , title ("Remove " ++ Users.permissionText permission)
+            ]
+            [ text "×" ]
+        ]
 
 
 federatedProfilesSection : Shared.Model -> Model -> AccountsPanel.Server -> User -> Html Msg
@@ -511,7 +958,7 @@ federatedProfileLink shared model server user account =
         colorClasses =
             case maybeFederatedServer of
                 Just federatedServer ->
-                    [ federatedServer.frontendHost, "background-color-primary" ]
+                    [ hostnameToCSSClass federatedServer.frontendHost, "background-color-primary" ]
 
                 Nothing ->
                     []

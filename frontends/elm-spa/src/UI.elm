@@ -18,11 +18,13 @@ import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.Breadcrumbs as Breadcrumbs
+import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
-import UI.EmittedStylesheet
+import UI.EmittedStylesheet as EmittedStylesheet exposing (hostnameToCSSClass)
 import UI.Flip
 import UI.Modal
 import View exposing (View)
@@ -63,7 +65,7 @@ too, mapping its `Shared.Msg` clicks into their own `Msg` type. See
 -}
 layout : Shared.Model -> Route -> (Shared.Msg -> msg) -> List (Html msg) -> List (Html msg)
 layout shared currentRoute toMsg children =
-    [ Html.map toMsg (UI.EmittedStylesheet.view shared)
+    [ Html.map toMsg (EmittedStylesheet.view shared)
     , Html.map toMsg (sharedBackdrop shared)
     , Html.map toMsg (headerNav shared currentRoute)
     , Html.map toMsg (createAccountConfirmationBackdrop shared)
@@ -72,13 +74,43 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
-    , div [ class "container" ] [ main_ [] children ]
+    , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
 
 
+{-| A tall, empty spacer at the bottom of `main_`'s content -- shown (see
+`Shared.Model.scrollPreserverVisible`) for the first 2s after navigating back
+to a page (browser back button only, not a fresh link click -- see change 4 in
+`Main.elm`'s module doc), so that page's content, which can still be shorter
+than it was when the browser recorded the scroll offset it's now restoring,
+doesn't get its scroll position yanked around while it fills back in. Always
+rendered, like `sharedBackdrop`'s `is-open`/`is-closed` -- see
+`UI.Classes.openClosedClass` -- rather than added/removed outright, so the
+`height` change (see `main.css`) is a plain CSS transition.
+-}
+scrollPreserver : Shared.Model -> Html msg
+scrollPreserver shared =
+    div [ classes [ "scroll-preserver", openClosedClass shared.scrollPreserverVisible ] ] []
+
+
+{-| Tapping the navbar anywhere outside the Home link, the Starred Posts
+toggle/panel, or the Accounts menu/panel scrolls the page to top -- same
+`Shared.ScrollToTop` that re-tapping Home while already on it fires (see
+`navLink`'s doc). Those three carve themselves out of this via
+`stopPropagationOn "click"` on their own root elements (`navLink`,
+`starredPostsToggle`, `accountsMenu`'s `.accounts-menu` div) rather than
+`onClick`, so a tap on any of them (or their own dropdowns/menus) never
+bubbles up to this handler; `starredPostsPanel` isn't itself one of those
+three roots (it's rendered as its own `.navbar` child, not nested under
+`starredPostsToggle` -- see the comment below), so it gets its own wrapper
+here instead.
+-}
 headerNav : Shared.Model -> Route -> Html Shared.Msg
 headerNav shared currentRoute =
-    header [ classes [ "navbar", shared.accountsPanel.mainFrontendHost, "background-color-primary" ] ]
+    header
+        [ classes [ "navbar", hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-primary" ]
+        , onClick Shared.ScrollToTop
+        ]
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
@@ -96,11 +128,30 @@ headerNav shared currentRoute =
         -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
         -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
         -- the toggle's left edge. See `starredPostsPanel`.
+        --
+        -- Wrapped in its own `stopPropagationOn`-bearing `div` (a plain,
+        -- unpositioned element, so it doesn't disturb the `left`/`top` math
+        -- above -- that's all resolved against `.navbar` itself, the nearest
+        -- *positioned* ancestor, not the immediate parent) so taps inside the
+        -- open panel don't also bubble up to this `Shared.ScrollToTop`
+        -- tap-anywhere handler.
         , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
             text ""
 
           else
-            starredPostsPanel shared currentRoute
+            div [ stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True )) ]
+                [ starredPostsPanel shared currentRoute ]
+
+        -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
+        -- -- see `breadcrumbsBar`.
+        , breadcrumbsBar shared
+
+        -- A direct child of `.navbar` too (not just `breadcrumbsBar`'s own
+        -- wrapper), same reasoning as `starredPostsPanel` above -- so it's
+        -- anchored to the full-width `.navbar`'s own bottom edge (which
+        -- includes `breadcrumbsBar`'s row) rather than just some narrower
+        -- element's. See `breadcrumbsReplyPanel`.
+        , breadcrumbsReplyPanel shared
         ]
 
 
@@ -120,18 +171,18 @@ type alias BackdropPanel =
 {-| Covers everything except the top nav (which sits in its own, higher
 stacking context -- see `.navbar` in nav.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel, the Accounts
-Panel and the Markdown panel, with more expected to join this list later.
-Always rendered, like the panels themselves, so opening/closing (and the
-blur) is a plain CSS transition rather than the element appearing/
-disappearing outright, and only receives clicks (`pointer-events`) while at
-least one listed panel is open.
+Panel, the Breadcrumbs reply viewer and the Markdown panel, with more
+expected to join this list later. Always rendered, like the panels
+themselves, so opening/closing (and the blur) is a plain CSS transition
+rather than the element appearing/disappearing outright, and only receives
+clicks (`pointer-events`) while at least one listed panel is open.
 
 The Media Viewer panel is deliberately not one of these -- unlike the others,
 its own box already spans the whole viewport rather than a small, anchored
 dropdown, and it sits above `.navbar` itself (see media\_viewer\_panel.css), so
 it can't rely on this backdrop (below `.navbar`, see nav.css) for its own
 dimming/click-to-close anyway. It owns both outright instead: its own
-background *is* the dimmed/blurred overlay, and its own root `onClick` is
+background _is_ the dimmed/blurred overlay, and its own root `onClick` is
 the background-tap-to-close, both self-contained in
 `Shared.MediaViewerPanel`/media\_viewer\_panel.css -- see their own doc
 comments.
@@ -140,16 +191,21 @@ Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Starred Posts
-panel first, then the Accounts Panel, then (on a third tap) the Markdown panel
-behind both -- matching the actual paint order (`.navbar`'s own z-index sits
-above `.markdown-panel`, so its descendants -- the Accounts/Starred Posts
-panels -- render above it regardless of their own, lower z-indices; see
-nav.css and markdown\_panel.css) -- swap their order here to change that
-priority. Only blurs/tints the page while a panel with `blurs = True` is open
-(currently the Accounts Panel and the Markdown panel, both of which block
-interaction with the rest of the page while open); the Starred Posts panel
-doesn't, since starring/unstarring posts while it's open is an expected,
-encouraged interaction rather than something to block.
+panel first, then the Accounts Panel, then the Breadcrumbs reply viewer, then
+(on a fourth tap) the Markdown panel behind all three -- matching the actual
+paint order. `.breadcrumb-reply-panel` is (like the Accounts/Starred Posts
+panels) a `.navbar` descendant, so all three render above `.markdown-panel`
+(a `.navbar` _sibling_) regardless of their own individual z-indices, purely
+because `.navbar`'s own z-index (28) beats `.markdown-panel`'s (26) as whole
+stacking contexts; _within_ `.navbar`, `.breadcrumb-reply-panel`'s lower
+z-index (see nav.css) is what then keeps it under the Accounts/Starred Posts
+panels specifically. Swap their order here to change that priority. Only
+blurs/tints the page while a panel with `blurs = True` is open (currently the
+Accounts Panel, the Breadcrumbs reply viewer and the Markdown panel, all of
+which block interaction with the rest of the page while open); the Starred
+Posts panel doesn't, since starring/unstarring posts while it's open is an
+expected, encouraged interaction rather than something to block.
+
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -162,6 +218,10 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
+              , blurs = True
+              }
+            , { isOpen = shared.breadcrumbs.viewing /= Nothing
+              , closeMsg = Shared.BreadcrumbsMsg Breadcrumbs.CloseViewer
               , blurs = True
               }
             , { isOpen = shared.markdownPanel.target /= Nothing
@@ -220,32 +280,53 @@ navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them. The Home link also gets its own `nav-link-home`
 class (regardless of `isCurrent`) so `nav.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
-negative-margin overflow treatment as the Accounts Panel toggle.
+negative-margin overflow treatment as the Accounts Panel toggle, and its own
+`onClick` (`Shared.HomeLinkClicked`) closing the Starred Posts panel and,
+when `isCurrent` (tapping Home while already on it), firing
+`Shared.ScrollToTop` -- unlike the Accounts Panel (see `UI.page`'s doc
+comment on why that one closes on a destination page's `init` instead),
+there's no dedicated "just navigated Home" hook to close it or scroll from,
+since `Pages.Home_` keeps its own `Model` alive across a same-route re-click
+that no `init`/`ChangedUrl` would rerun for -- so this is the only place
+that reliably still fires every time. Uses `stopPropagationOn`, not plain
+`onClick`, so this doesn't also trigger `headerNav`'s own tap-anywhere
+`Shared.ScrollToTop` (redundant when `isCurrent` already fires it above, and
+undesired when navigating away instead).
 -}
-navLink : Shared.Model -> Route -> Html msg -> Route -> Html msg
+navLink : Shared.Model -> Route -> Html Shared.Msg -> Route -> Html Shared.Msg
 navLink shared currentRoute content linkRoute =
     let
         isCurrent =
             linkRoute == currentRoute
+
+        isHome =
+            linkRoute == Route.Home_
     in
     a
-        [ href (shared.basePath ++ Route.toHref linkRoute)
-        , classes
+        ([ href (shared.basePath ++ Route.toHref linkRoute)
+         , classes
             ("nav-link"
-                :: (if linkRoute == Route.Home_ && mainServer shared /= Nothing then
+                :: (if isHome && mainServer shared /= Nothing then
                         [ "nav-link-home" ]
 
                     else
                         []
                    )
                 ++ (if isCurrent then
-                        [ shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
 
                     else
                         []
                    )
             )
-        ]
+         ]
+            ++ (if isHome then
+                    [ stopPropagationOn "click" (Decode.succeed ( Shared.HomeLinkClicked isCurrent, True )) ]
+
+                else
+                    []
+               )
+        )
         [ content ]
 
 
@@ -357,35 +438,57 @@ accountsMenu shared =
         enabledAccounts =
             AccountsPanel.enabledAccounts shared.accountsPanel
 
+        -- Signed into exactly one account on exactly one enabled server --
+        -- since only one account per server can be enabled at a time (see
+        -- `AccountsPanel.ToggleAccountEnabled`), this is the "single user"
+        -- case: there's no second avatar to stack and no server count worth
+        -- a subtitle, so the toggle becomes one larger avatar circle instead
+        -- of the usual pill (see `.accounts-menu-toggle.single-avatar`).
+        singleAccountSingleServer =
+            case ( AccountsPanel.enabledServers shared.accountsPanel, enabledAccounts ) of
+                ( [ _ ], [ _ ] ) ->
+                    True
+
+                _ ->
+                    False
+
         toggleClasses =
             "accounts-menu-toggle"
+                :: openClosedClass shared.accountsPanel.showAccountsPanel
                 :: (if List.isEmpty enabledAccounts then
                         []
 
                     else
                         [ "has-avatars" ]
                    )
-                ++ (case AccountsPanel.enabledServers shared.accountsPanel of
-                        [ singleServer ] ->
-                            if singleServer.frontendHost == shared.accountsPanel.mainFrontendHost then
-                                []
+                ++ (if singleAccountSingleServer then
+                        [ "single-avatar" ]
 
-                            else
-                                [ "has-summary" ]
-
-                        _ ->
-                            [ "has-summary" ]
+                    else
+                        []
                    )
     in
-    div [ class "accounts-menu" ]
+    div
+        [ class "accounts-menu"
+
+        -- Stops both the toggle and everything in the dropdown it wraps
+        -- (`accountsPanel`, below) from also bubbling up into `headerNav`'s
+        -- own tap-anywhere `Shared.ScrollToTop`.
+        , stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True ))
+        ]
         [ div [ class "accounts-menu-row" ]
             [ button
                 [ classes toggleClasses
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
                 ]
-                [ accountsMenuButtonContent shared enabledAccounts
-                , accountsMenuServerSummary shared.accountsPanel
-                ]
+                (if singleAccountSingleServer then
+                    [ accountsMenuButtonContent shared enabledAccounts ]
+
+                 else
+                    [ accountsMenuButtonContent shared enabledAccounts
+                    , accountsMenuServerSummary shared.accountsPanel
+                    ]
+                )
             , hostMismatchWarning shared
             ]
         , accountsPanel shared
@@ -612,15 +715,16 @@ accountsPanelTab shared tab label isNarrow =
         [ text label ]
 
 
-{-| How many Settings the Settings tab currently holds -- just the "switch
-main server by tapping servers" toggle (admin-only) for now, but tracked as a
-count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
-settings later without changing how its visibility is decided.
+{-| How many Settings the Settings tab currently holds -- the "switch main
+server by tapping servers" and "Sign into other hosts with username/password"
+toggles (both admin-only) for now, but tracked as a count rather than a bare
+`Bool` so the tab can grow more (non-admin-gated) settings later without
+changing how its visibility is decided.
 -}
 settingsCount : Shared.Model -> Int
 settingsCount shared =
     if AccountsPanel.hasAdminAccount shared.accountsPanel then
-        1
+        2
 
     else
         0
@@ -668,9 +772,9 @@ accountsAndServersTab shared =
         ]
 
 
-{-| Just the "switch main server by tapping servers" toggle (see `serverChip`)
-for now -- only shown (via `settingsCount`) while an admin account is signed
-in.
+{-| The "switch main server by tapping servers" (see `serverChip`) and "Sign
+into other hosts with username/password" (see `addAccountForm`) toggles --
+only shown (via `settingsCount`) while an admin account is signed in.
 -}
 settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
@@ -678,6 +782,10 @@ settingsTab shared =
         [ label [ class "admin-switch-row" ]
             [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
+            ]
+        , label [ class "admin-switch-row" ]
+            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            , span [] [ text "Sign into other hosts with username/password" ]
             ]
         ]
 
@@ -783,7 +891,7 @@ serverChip shared count index server =
             shared.adminPanel.allowMainServerSwitch
 
         topClasses =
-            [ "server-chip-top", "selectable", server.frontendHost, "background-color-primary" ]
+            [ "server-chip-top", "selectable", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-primary" ]
 
         topAttrs =
             [ classes topClasses
@@ -861,7 +969,7 @@ serverChip shared count index server =
               else
                 text ""
             ]
-        , div [ classes [ "server-chip-bottom", server.frontendHost, "background-color-nav" ] ]
+        , div [ classes [ "server-chip-bottom", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
@@ -1053,7 +1161,7 @@ accountRow shared count mainCount index account =
     in
     div
         (id (AccountsPanel.accountRowDomId accId)
-            :: classes [ "account-row", account.server, "background-color-primary" ]
+            :: classes [ "account-row", hostnameToCSSClass account.server, "background-color-primary" ]
             :: moveAttrs
         )
         [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
@@ -1129,7 +1237,7 @@ formView shared =
     else
         div [ class "account-form" ]
             [ button
-                [ classes [ "show-add-account-form-button", formThemeHost shared.accountsPanel, "background-color-primary" ]
+                [ classes [ "show-add-account-form-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
                 ]
                 [ text "Add Account/Server..." ]
@@ -1182,12 +1290,23 @@ addAccountForm shared =
         themeHost =
             formThemeHost accountsPanelModel
 
+        -- Username/password auth is only ever offered for our own main
+        -- server, unless an admin has flipped
+        -- `AdminPanel.allowUsernamePasswordForOtherHosts` -- see
+        -- `AccountsPanel.isMainServer`.
+        showUsernamePasswordFields =
+            AccountsPanel.isMainServer accountsPanelModel form.server
+                || shared.adminPanel.allowUsernamePasswordForOtherHosts
+
         serverEnterMsg =
-            if knownServer then
+            if not knownServer then
+                AccountsPanel.AddServerClicked
+
+            else if showUsernamePasswordFields then
                 AccountsPanel.FocusInput "account-form-username"
 
             else
-                AccountsPanel.AddServerClicked
+                AccountsPanel.NoOp
     in
     div [ class "account-form" ]
         [ input
@@ -1219,44 +1338,57 @@ addAccountForm shared =
                         "Add Server"
                     )
                 ]
-        , input
-            [ id "account-form-username"
-            , type_ "text"
-            , attribute "autocapitalize" "none"
-            , attribute "autocorrect" "off"
-            , attribute "autocomplete" "username"
-            , spellcheck False
-            , placeholder "Username"
-            , value form.username
-            , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
-            , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
-            , disabled accountFieldsDisabled
-            ]
-            []
-        , input
-            [ id "account-form-password"
-            , type_ "password"
-            , placeholder "Password"
-            , value form.password
-            , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
-            , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-            , disabled accountFieldsDisabled
-            ]
-            []
-        , div [ class "account-form-buttons" ]
-            [ button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+        , if showUsernamePasswordFields then
+            input
+                [ id "account-form-username"
+                , type_ "text"
+                , attribute "autocapitalize" "none"
+                , attribute "autocorrect" "off"
+                , attribute "autocomplete" "username"
+                , spellcheck False
+                , placeholder "Username"
+                , value form.username
+                , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
+                , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
                 , disabled accountFieldsDisabled
-                , classes [ themeHost, "background-color-primary" ]
                 ]
-                [ text "Login" ]
-            , button
-                [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
+                []
+
+          else
+            text ""
+        , if showUsernamePasswordFields then
+            input
+                [ id "account-form-password"
+                , type_ "password"
+                , placeholder "Password"
+                , value form.password
+                , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+                , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                 , disabled accountFieldsDisabled
-                , classes [ themeHost, "background-color-nav" ]
                 ]
-                [ text "Create Account" ]
-            ]
+                []
+
+          else
+            text ""
+        , if showUsernamePasswordFields then
+            div [ class "account-form-buttons" ]
+                [ button
+                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+                    , disabled accountFieldsDisabled
+                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                    ]
+                    [ text "Login" ]
+                , button
+                    [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
+                    , disabled accountFieldsDisabled
+                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
+                    ]
+                    [ text "Create Account" ]
+                ]
+
+          else
+            text ""
+        , signInFromButton shared accountFieldsDisabled
         , case ( form.status, addForm.status ) of
             ( AccountsPanel.Errored err, _ ) ->
                 div [ class "auth-error" ] [ text err ]
@@ -1267,6 +1399,54 @@ addAccountForm shared =
             _ ->
                 text ""
         ]
+
+
+{-| Cross-server SSO hand-off (see `Shared.FederatedAuth`): lets someone who's
+already signed into the Server field's host, elsewhere, sign in here without
+retyping that host's password into this origin. Sends this origin's public
+key (once generated -- near-instant after app load) to
+`https://{form.server}/elm/auth/to/{publicKey}@{browsingHost}`, which is
+`Pages.Auth.To.Key_` on that host -- a plain cross-origin `<a>` is enough,
+`Main.elm`'s `onUrlRequest` already falls through to a full page load for it.
+
+Only shown once the Server field names a host other than our own
+(`AccountsPanel.isMainServer`) -- username/password auth (see
+`addAccountForm`'s `showUsernamePasswordFields`) is the only way into our own
+server, and this SSO hand-off is (ordinarily) the only way into anywhere
+else. `AdminPanel.allowUsernamePasswordForOtherHosts` can additionally enable
+username/password for other hosts too, but never suppresses this button for
+`browsingHost`/`mainFrontendHost` themselves.
+
+-}
+signInFromButton : Shared.Model -> Bool -> Html Shared.Msg
+signInFromButton shared accountFieldsDisabled =
+    let
+        accountsPanelModel =
+            shared.accountsPanel
+
+        server =
+            String.trim accountsPanelModel.accountForm.server
+    in
+    case ( shared.federatedAuth.publicKey, not (String.isEmpty server) && not (AccountsPanel.isMainServer accountsPanelModel server) ) of
+        ( Just publicKey, True ) ->
+            button
+                [ onClick
+                    (Shared.NavigateExternal
+                        ("https://"
+                            ++ server
+                            ++ "/elm/auth/to/"
+                            ++ FederatedAuth.publicKeyToUrlString publicKey
+                            ++ "@"
+                            ++ accountsPanelModel.browsingHost
+                        )
+                    )
+                , disabled accountFieldsDisabled
+                , classes [ "sign-in-from-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
+                ]
+                [ text ("Sign in from " ++ server) ]
+
+        _ ->
+            text ""
 
 
 
@@ -1468,20 +1648,22 @@ something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
 `.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
 can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
+Uses `stopPropagationOn`, not plain `onClick`, so tapping it doesn't also
+trigger `headerNav`'s own tap-anywhere `Shared.ScrollToTop`.
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
     div [ class "admin-menu" ]
         [ button
-            [ classes [ "nav-menu-toggle", "circular" ]
-            , onClick (Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel)
+            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPostsPanel.showStarredPostsPanel ]
+            , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel, True ))
             , title "Starred Posts"
             ]
             [ text "⭐"
             , span
                 [ classes
                     [ "starred-posts-count-badge"
-                    , shared.accountsPanel.mainFrontendHost
+                    , hostnameToCSSClass shared.accountsPanel.mainFrontendHost
                     , "background-color-nav"
                     ]
                 ]
@@ -1588,6 +1770,28 @@ behind it.
 markdownPanel : Shared.Model -> Html Shared.Msg
 markdownPanel shared =
     Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+
+
+{-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`
+-- unlike the Starred Posts toggle/panel, there's no nav icon of its own;
+whichever page has a chain to show (currently just `Pages.Post.PostId_`) sets
+it directly via `Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot ...)`, so this just
+renders whatever's currently there (empty if nothing is).
+-}
+breadcrumbsBar : Shared.Model -> Html Shared.Msg
+breadcrumbsBar shared =
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.bar shared.accountsPanel shared.breadcrumbs)
+
+
+{-| The popup opened by tapping a breadcrumb segment (see
+`Shared.Breadcrumbs.replyPanel`), anchored just under `breadcrumbsBar`'s own
+row -- mounted as a `.navbar` descendant (see `headerNav`), not directly in
+`layout` like `markdownPanel` above, so its positioning (`position: absolute`,
+see nav.css) resolves against `.navbar` itself.
+-}
+breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
+breadcrumbsReplyPanel shared =
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.replyPanel shared.basePath shared.accountsPanel shared.breadcrumbs)
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)

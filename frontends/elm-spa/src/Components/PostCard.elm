@@ -1,9 +1,15 @@
 module Components.PostCard exposing
-    ( fetchPost
+    ( allVisibilities
+    , allowedVisibilities
+    , authorLink
+    , commentCountText
+    , fetchAncestors
+    , fetchPost
     , fetchRecentPosts
     , fetchReplies
     , isAuthor
     , parsePostRouteId
+    , postAuthorAvatarUrl
     , postAuthorHref
     , postAuthorName
     , postCard
@@ -14,6 +20,10 @@ module Components.PostCard exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
+    , repliesCountText
+    , updatePost
+    , visibilityFromText
+    , visibilityText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Post`s -- the compact
@@ -36,6 +46,7 @@ import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel
@@ -88,7 +99,7 @@ fetchRecentPosts server maybeAccount =
         )
 
 
-{-| Fetches the direct replies to `postId` from `server` (`reply_depth: 1` --
+{-| Fetches the replies to `postId` from `server`, `replyDepth` levels deep --
 see `GetPostsRequest`'s doc comment: with `post_id` and `reply_depth` both set,
 `GetPosts` returns the replies themselves, not `postId`'s own Post), authenticated
 as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
@@ -97,14 +108,15 @@ as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
 fetchReplies :
     AccountsPanel.Server
     -> Maybe AccountsPanel.Account
+    -> Int
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
-fetchReplies server maybeAccount postId =
+fetchReplies server maybeAccount replyDepth postId =
     MaybeAccountRequest.perform
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just 1 }
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAuth maybeToken
                 |> Grpc.toTask
@@ -118,6 +130,80 @@ no `author` at all (shouldn't normally happen, but `Post.author` is optional).
 isAuthor : AccountsPanel.Account -> Post -> Bool
 isAuthor account post =
     Maybe.map .userId post.author == Just account.userId
+
+
+{-| Walks `post`'s own `replyToPostId` chain all the way up to (and including)
+its root ancestor, fetching each one individually via `fetchPost` -- `Post`
+only carries its *children* (`replies`), not its parent, so there's no way to
+get this in one request. Returned root-first, *not* including `post` itself
+(the caller already has that) -- e.g. for a reply-to-a-reply, `[root, parent]`.
+Empty if `post` has no `replyToPostId` at all (it's already the root).
+
+Used by `Pages.Post.PostId_` to populate `Shared.Breadcrumbs` for a Post
+reached via a reply chain rather than directly. Returns `maybeAccount` back
+(refreshed, if it needed to be, across however many hops it took), same
+convention as `fetchPost`.
+-}
+fetchAncestors :
+    AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> Post
+    -> Task Grpc.Error ( Maybe AccountsPanel.Account, List Post )
+fetchAncestors server maybeAccount post =
+    case post.replyToPostId of
+        Nothing ->
+            Task.succeed ( maybeAccount, [] )
+
+        Just parentId ->
+            fetchPost server maybeAccount parentId
+                |> Task.andThen
+                    (\( refreshedAccount, response ) ->
+                        case List.head response.posts of
+                            Just parentPost ->
+                                fetchAncestors server refreshedAccount parentPost
+                                    |> Task.map (\( account, ancestors ) -> ( account, ancestors ++ [ parentPost ] ))
+
+                            Nothing ->
+                                Task.succeed ( refreshedAccount, [] )
+                    )
+
+
+{-| Re-fetches `postId` fresh (via `GetPosts`) before submitting `UpdatePost`
+with `updateFn` applied to that fresh copy -- so a stale in-hand `Post` (e.g.
+one rendered a while ago) can't clobber any field that changed server-side
+since, other than the one(s) `updateFn` itself means to change. Mirrors
+`Components.Users.updateUser` exactly (same re-fetch-then-overlay dance,
+`GetPosts`/`UpdatePost` in place of `GetUsers`/`UpdateUser`) -- used by
+`Pages.Post.PostId_`'s visibility editor.
+-}
+updatePost :
+    AccountsPanel.Server
+    -> AccountsPanel.Account
+    -> String
+    -> (Post -> Post)
+    -> Task Grpc.Error ( AccountsPanel.Account, Post )
+updatePost server account postId updateFn =
+    MaybeAccountRequest.performWithAccount (connectionOf server)
+        account
+        (\token ->
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAuth (Just token)
+                |> Grpc.toTask
+        )
+        |> Task.andThen
+            (\( refreshedAccount, response ) ->
+                case List.head response.posts of
+                    Just freshPost ->
+                        Grpc.new Jonline.updatePost (updateFn freshPost)
+                            |> Grpc.setHost (AccountsPanel.serverUrl server)
+                            |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
+                            |> Grpc.toTask
+                            |> Task.map (\updated -> ( refreshedAccount, updated ))
+
+                    Nothing ->
+                        Task.fail Grpc.NetworkError
+            )
 
 
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
@@ -256,7 +342,17 @@ badge on its preview.
 -}
 postVisibilityText : Post -> String
 postVisibilityText post =
-    case post.visibility of
+    visibilityText post.visibility
+
+
+{-| Display text for a bare `Visibility` value -- same mapping
+`postVisibilityText` uses for a `Post`'s own, but also needed on its own for
+`Pages.Post.PostId_`'s visibility-editing `<select>`, whose options are
+`allVisibilities` rather than any particular Post's current value.
+-}
+visibilityText : Visibility -> String
+visibilityText visibility =
+    case visibility of
         PRIVATE ->
             "Private"
 
@@ -277,6 +373,83 @@ postVisibilityText post =
 
         VisibilityUnrecognized_ _ ->
             "Unknown"
+
+
+{-| The visibility options offered by a visibility-editing `<select>` (see
+`Pages.Post.PostId_`) -- excludes `DIRECT`, which the proto itself marks
+`[TODO]`/unimplemented (see `protos/visibility_moderation.proto`), and
+`VISIBILITYUNKNOWN`, which is never a valid value to *set*. Order matches
+`visibilityText`/the proto's own declaration order.
+-}
+allVisibilities : List Visibility
+allVisibilities =
+    [ PRIVATE, LIMITED, SERVERPUBLIC, GLOBALPUBLIC ]
+
+
+{-| The reverse of `visibilityText` -- looks up a `Visibility` by its display
+label, the same round-trip `Components.Users.permissionFromText` does for
+`Permission` -- needed because a plain HTML `<select>`'s value/`onInput` are
+just strings. `Nothing` for any text that isn't one of `allVisibilities`'
+labels (shouldn't happen, since the `<select>`'s own options are always built
+from `allVisibilities` in the first place).
+-}
+visibilityFromText : String -> Maybe Visibility
+visibilityFromText text =
+    allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
+
+
+{-| Which of `allVisibilities` `account` may pick for a Post/Event/etc. of
+`context` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own permission
+check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
+`PUBLISHPOSTSGLOBALLY` for a plain `POST`/`REPLY`, or `PUBLISHEVENTSLOCALLY`/
+`PUBLISHEVENTSGLOBALLY` for an `EVENT`/`EVENTINSTANCE` -- `ADMIN` always
+passes either. `currentVisibility` is always included even if it wouldn't
+otherwise be pickable, so an account whose permission was revoked after the
+post was already elevated still sees its own current value in the list
+(just can't newly pick it for some *other* post) -- see
+`Pages.Post.PostId_`'s visibility editor, which seeds its pending value from
+the post's already-current one.
+-}
+allowedVisibilities : List Permission -> PostContext -> Visibility -> List Visibility
+allowedVisibilities permissions context currentVisibility =
+    let
+        isEventContext =
+            context == EVENT || context == EVENTINSTANCE
+
+        has permission =
+            List.member permission permissions || List.member ADMIN permissions
+
+        canPublishLocally =
+            has
+                (if isEventContext then
+                    PUBLISHEVENTSLOCALLY
+
+                 else
+                    PUBLISHPOSTSLOCALLY
+                )
+
+        canPublishGlobally =
+            has
+                (if isEventContext then
+                    PUBLISHEVENTSGLOBALLY
+
+                 else
+                    PUBLISHPOSTSGLOBALLY
+                )
+    in
+    allVisibilities
+        |> List.filter
+            (\visibility ->
+                case visibility of
+                    SERVERPUBLIC ->
+                        canPublishLocally || visibility == currentVisibility
+
+                    GLOBALPUBLIC ->
+                        canPublishGlobally || visibility == currentVisibility
+
+                    _ ->
+                        True
+            )
 
 
 {-| A human-facing label for a Post's `context` when it's something other than
@@ -362,11 +535,28 @@ starButton postServerHost starred onStarClicked post =
         [ text ("★ " ++ String.fromInt (postStarCount post)) ]
 
 
+{-| A post's reply-count display: just `responseCount` when `replyCount`
+(direct replies only) and `responseCount` (all nested replies) agree -- the
+common case, a post with no replies-to-replies -- otherwise
+`"replyCount/responseCount"` (e.g. `"20/25"`) so a thread with actual
+sub-discussion shows both numbers at a glance. Shared by `commentCountText`
+(below, for `postCard`/`postDetail`) and `Components.PostReplies.replyCard`,
+so a reply card's own count matches a post card's exactly.
+-}
+repliesCountText : Post -> String
+repliesCountText post =
+    if post.replyCount == post.responseCount then
+        String.fromInt post.responseCount
+
+    else
+        String.fromInt post.replyCount ++ "/" ++ String.fromInt post.responseCount
+
+
 {-| "· 💬 12"-style suffix for a post's meta line, following `starButton`.
 -}
 commentCountText : Post -> String
 commentCountText post =
-    " · 💬 " ++ String.fromInt (postCommentCount post)
+    " · 💬 " ++ repliesCountText post
 
 
 {-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
@@ -526,11 +716,39 @@ since that's already the page you're on, but still tinted with `postServerHost`'
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
 since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
 meta line's `post-meta-right` group only to the post's own author.
+
+Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
+title of its own (`postTitleText`'s fallback to a truncated `content` exists
+for contexts, like `postCard`'s feed entries, where *something* short is
+needed regardless; here, with the full `content` rendered right below anyway,
+that fallback would just be a redundant near-duplicate of it). It gets
+`postContextLabel`'s small context chip in its place instead (mirroring
+`Shared.StarredPostsPanel`'s own `starred-post-context`) -- since a Post
+reached this way is, on `Pages.Post.PostId_`, already headed by
+`Shared.Breadcrumbs`' own trail showing exactly *which* reply this is, this
+chip only needs to mark plainly *that* it's one, not repeat any of that
+context.
+
+`visibilityView` is the whole visibility segment of the meta line -- plain
+text (the common case) or an in-progress `<select>` editor, entirely up to
+the caller (`Pages.Post.PostId_`, which owns the editing state/permission
+gating for it, the same way it owns `onEditClicked`) -- this just slots
+whatever `Html` it's given in after the author link, in place of what used to
+be a bare `postVisibilityText post` text node.
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked post =
+postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
+postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
-        [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        [ if post.context == POST then
+            h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+
+          else
+            case postContextLabel post.context of
+                Just contextLabel ->
+                    div [ class "post-detail-context" ] [ text contextLabel ]
+
+                Nothing ->
+                    text ""
         , case maybeServer of
             Just server ->
                 MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
@@ -541,7 +759,8 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
             [ span [ class "post-meta-left" ]
                 [ text "by "
                 , authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
-                , text (" · " ++ postVisibilityText post)
+                , text " · "
+                , visibilityView
                 ]
             , span [ class "post-meta-right" ]
                 [ editButton maybeAccount onEditClicked post

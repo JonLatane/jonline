@@ -1,4 +1,4 @@
-module UI.EmittedStylesheet exposing (view)
+module UI.EmittedStylesheet exposing (hostnameToCSSClass, view)
 
 {-| A `<style>` tag, computed fresh from the current `Shared.Model` on every
 render (so it updates automatically any time a server is added/removed, or
@@ -74,7 +74,7 @@ mainFrontendServerRules : UI.ServerTheme.ServerTheme -> AccountsPanel.Model -> S
 mainFrontendServerRules theme accountsPanel =
     let
         mainHostSelector =
-            "." ++ escapeClass accountsPanel.mainFrontendHost
+            "." ++ hostnameToCSSClass accountsPanel.mainFrontendHost
     in
     String.concat
         [ "a { color: " ++ theme.primaryAnchorColor ++ "; }\n"
@@ -90,7 +90,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
             AccountsPanel.serverThemeOf darkMode server
 
         selector =
-            "." ++ escapeClass server.frontendHost
+            "." ++ hostnameToCSSClass server.frontendHost
 
         -- The server chip's enable switch sits on a `background-color-nav`
         -- (this server's own navColor) tile, so its "on" color needs to
@@ -169,18 +169,18 @@ selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
 separate class selectors (`.jonline.io` means "has both class `jonline` and
 class `io`", not "has class `jonline.io`").
 -}
-escapeClass : String -> String
-escapeClass hostname =
+hostnameToCSSClass : String -> String
+hostnameToCSSClass hostname =
+    let
+        escapeChar : Char -> String
+        escapeChar c =
+            if Char.isAlphaNum c || c == '-' || c == '_' then
+                String.fromChar c
+
+            else
+                "-"
+    in
     hostname
         |> String.toList
         |> List.map escapeChar
         |> String.concat
-
-
-escapeChar : Char -> String
-escapeChar c =
-    if Char.isAlphaNum c || c == '-' || c == '_' then
-        String.fromChar c
-
-    else
-        "\\" ++ String.fromChar c
