@@ -3,6 +3,7 @@ module Shared.AccountsPanel exposing
     , AccountForm
     , AddServerForm
     , Branding
+    , Connection
     , FormStatus(..)
     , Model
     , Msg(..)
@@ -10,15 +11,19 @@ module Shared.AccountsPanel exposing
     , Server
     , ServerLogoSize(..)
     , accountAvatarUrl
+    , accountDecoder
     , accountId
     , accountRowDomId
     , brandingFor
     , connectToServer
+    , connectionOf
+    , connectionUrl
     , createAccountModalBodyId
     , displayName
     , enabledAccountForServer
     , enabledAccounts
     , enabledServers
+    , encodeAccount
     , grpcErrorToString
     , hasAdminAccount
     , init
@@ -281,6 +286,7 @@ type Msg
     | ConfirmCreateAccountClicked
     | CancelCreateAccountClicked
     | GotAuthResult (Result Grpc.Error ( Connection, ServerConfiguration, RefreshTokenResponse ))
+    | FederatedAccountReceived Account
     | GotReconnectResult Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | ToggleAccountEnabled String
@@ -1204,6 +1210,36 @@ updateHelp req msg model =
             ( updateForm (\f -> { f | status = Errored (grpcErrorToString err) }) model
             , Cmd.none
             )
+
+        FederatedAccountReceived account ->
+            -- Same upsert as `GotAuthResult`, but the account arrived already
+            -- signed-in (via `Pages.Auth.From.EncodedAccount_`'s SSO hand-off)
+            -- rather than through this form's own `LoginClicked` -- always
+            -- enabled once accepted, regardless of what `enabled` it carried
+            -- across the wire.
+            let
+                enabledAccount =
+                    { account | enabled = True }
+
+                newModel =
+                    { model
+                        | accounts =
+                            upsertAccount enabledAccount model.accounts
+                                |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
+                    }
+
+                -- The account's server may not be known on this origin yet --
+                -- same situation `init`'s `missingServerHosts` handles for
+                -- accounts surviving from stale/corrupted localStorage.
+                reconnectCmd =
+                    if List.any (\s -> s.frontendHost == enabledAccount.server) model.servers then
+                        Cmd.none
+
+                    else
+                        negotiateServerConfig (isSecure req) enabledAccount.server
+                            |> Task.attempt (GotReconnectResult True)
+            in
+            ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
 
         GotReconnectResult enabled result ->
             case result of

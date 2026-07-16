@@ -109,6 +109,8 @@ button {
   font: inherit;
   cursor: pointer;
   border-radius: 6px;
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.5rem;
 }
 
 button:disabled {
@@ -144,10 +146,138 @@ input[disabled] {
 
 .server-dependent-prompt button {
   padding: 0.4rem 0.8rem;
-  border: 1px solid var(--border);
 }
 
 .server-dependent-error {
   color: var(--danger);
   font-size: 0.85rem;
+}
+
+
+/* Pages/Auth/From/EncodedAccount_.elm's cross-server sign-in hand-off
+   confirmation page -- `.auth-from-header` splits into a left span (greeting
+   + avatar + name) and a right span (Cancel/Add Account), `flex-wrap`ping the
+   right span onto its own line -- still right-aligned -- once the left span
+   no longer leaves it room. `.profile-detail`/`.profile-header`/etc. below
+   are shared with Components/UserProfilePage.elm (see profiles.css); this
+   page has no fetched `User` to feed it, only an `AccountsPanel.Account`, so
+   it's populated by hand rather than reusing that component. */
+
+.auth-from-page {
+  max-width: 640px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
+}
+
+.auth-from-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+
+.auth-from-header-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.auth-from-greeting {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.auth-from-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.auth-from-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.auth-from-name {
+  overflow-wrap: anywhere;
+}
+
+.auth-from-header-right {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.auth-from-header-right button {
+  padding: 0.4rem 0.8rem;
+}
+
+@media (max-width: 639px) {
+  .auth-from-header-right {
+    justify-content: flex-end;
+    width: 100%;
+  }
+}
+
+.auth-from-profile {
+  margin-top: 1.2rem;
+}
+
+
+/* Pages/Auth/To/Key_.elm's cross-server sign-in hand-off page -- centered
+   column: title, then account info, then password field, then sign-in
+   button. */
+
+.auth-to-page {
+  max-width: 360px;
+  margin: 2.5rem auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  text-align: center;
+}
+
+.auth-to-page h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.auth-to-account {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.auth-to-account-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.auth-to-page input[type="password"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-to-signin-button {
+  width: 100%;
 }

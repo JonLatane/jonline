@@ -19,11 +19,12 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
-import UI.EmittedStylesheet
+import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
 import UI.Modal
 import View exposing (View)
@@ -64,7 +65,7 @@ too, mapping its `Shared.Msg` clicks into their own `Msg` type. See
 -}
 layout : Shared.Model -> Route -> (Shared.Msg -> msg) -> List (Html msg) -> List (Html msg)
 layout shared currentRoute toMsg children =
-    [ Html.map toMsg (UI.EmittedStylesheet.view shared)
+    [ Html.map toMsg (EmittedStylesheet.view shared)
     , Html.map toMsg (sharedBackdrop shared)
     , Html.map toMsg (headerNav shared currentRoute)
     , Html.map toMsg (createAccountConfirmationBackdrop shared)
@@ -158,7 +159,7 @@ its own box already spans the whole viewport rather than a small, anchored
 dropdown, and it sits above `.navbar` itself (see media\_viewer\_panel.css), so
 it can't rely on this backdrop (below `.navbar`, see nav.css) for its own
 dimming/click-to-close anyway. It owns both outright instead: its own
-background *is* the dimmed/blurred overlay, and its own root `onClick` is
+background _is_ the dimmed/blurred overlay, and its own root `onClick` is
 the background-tap-to-close, both self-contained in
 `Shared.MediaViewerPanel`/media\_viewer\_panel.css -- see their own doc
 comments.
@@ -171,9 +172,9 @@ panel first, then the Accounts Panel, then the Breadcrumbs reply viewer, then
 (on a fourth tap) the Markdown panel behind all three -- matching the actual
 paint order. `.breadcrumb-reply-panel` is (like the Accounts/Starred Posts
 panels) a `.navbar` descendant, so all three render above `.markdown-panel`
-(a `.navbar` *sibling*) regardless of their own individual z-indices, purely
+(a `.navbar` _sibling_) regardless of their own individual z-indices, purely
 because `.navbar`'s own z-index (28) beats `.markdown-panel`'s (26) as whole
-stacking contexts; *within* `.navbar`, `.breadcrumb-reply-panel`'s lower
+stacking contexts; _within_ `.navbar`, `.breadcrumb-reply-panel`'s lower
 z-index (see nav.css) is what then keeps it under the Accounts/Starred Posts
 panels specifically. Swap their order here to change that priority. Only
 blurs/tints the page while a panel with `blurs = True` is open (currently the
@@ -181,6 +182,7 @@ Accounts Panel, the Breadcrumbs reply viewer and the Markdown panel, all of
 which block interaction with the rest of the page while open); the Starred
 Posts panel doesn't, since starring/unstarring posts while it's open is an
 expected, encouraged interaction rather than something to block.
+
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -851,7 +853,7 @@ serverChip shared count index server =
             shared.adminPanel.allowMainServerSwitch
 
         topClasses =
-            [ "server-chip-top", "selectable", server.frontendHost, "background-color-primary" ]
+            [ "server-chip-top", "selectable", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-primary" ]
 
         topAttrs =
             [ classes topClasses
@@ -929,7 +931,7 @@ serverChip shared count index server =
               else
                 text ""
             ]
-        , div [ classes [ "server-chip-bottom", server.frontendHost, "background-color-nav" ] ]
+        , div [ classes [ "server-chip-bottom", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
@@ -1197,7 +1199,7 @@ formView shared =
     else
         div [ class "account-form" ]
             [ button
-                [ classes [ "show-add-account-form-button", formThemeHost shared.accountsPanel, "background-color-primary" ]
+                [ classes [ "show-add-account-form-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
                 ]
                 [ text "Add Account/Server..." ]
@@ -1315,16 +1317,17 @@ addAccountForm shared =
             [ button
                 [ onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                 , disabled accountFieldsDisabled
-                , classes [ themeHost, "background-color-primary" ]
+                , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                 ]
                 [ text "Login" ]
             , button
                 [ onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
                 , disabled accountFieldsDisabled
-                , classes [ themeHost, "background-color-nav" ]
+                , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
                 ]
                 [ text "Create Account" ]
             ]
+        , signInFromButton shared accountFieldsDisabled
         , case ( form.status, addForm.status ) of
             ( AccountsPanel.Errored err, _ ) ->
                 div [ class "auth-error" ] [ text err ]
@@ -1335,6 +1338,50 @@ addAccountForm shared =
             _ ->
                 text ""
         ]
+
+
+{-| Cross-server SSO hand-off (see `Shared.FederatedAuth`): lets someone who's
+already signed into the Server field's host, elsewhere, sign in here without
+retyping that host's password into this origin. Sends this origin's public
+key (once generated -- near-instant after app load) to
+`https://{form.server}/elm/auth/to/{publicKey}@{browsingHost}`, which is
+`Pages.Auth.To.Key_` on that host -- a plain cross-origin `<a>` is enough,
+`Main.elm`'s `onUrlRequest` already falls through to a full page load for it.
+
+TEMPORARY (initial testing): always shown once the Server field is non-empty,
+rather than the real gate -- `form.server` actually differing from
+`browsingHost`/`mainFrontendHost` -- which is trivial to switch back on.
+
+-}
+signInFromButton : Shared.Model -> Bool -> Html Shared.Msg
+signInFromButton shared accountFieldsDisabled =
+    let
+        accountsPanelModel =
+            shared.accountsPanel
+
+        server =
+            String.trim accountsPanelModel.accountForm.server
+    in
+    case ( shared.federatedAuth.publicKey, String.isEmpty server ) of
+        ( Just publicKey, False ) ->
+            button
+                [ onClick
+                    (Shared.NavigateExternal
+                        ("https://"
+                            ++ server
+                            ++ "/elm/auth/to/"
+                            ++ FederatedAuth.publicKeyToUrlString publicKey
+                            ++ "@"
+                            ++ accountsPanelModel.browsingHost
+                        )
+                    )
+                , disabled accountFieldsDisabled
+                , classes [ "sign-in-from-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
+                ]
+                [ text ("Sign in from " ++ server) ]
+
+        _ ->
+            text ""
 
 
 

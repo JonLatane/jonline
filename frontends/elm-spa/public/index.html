@@ -92,12 +92,21 @@
       console.error("Failed to read stored starred posts", e);
     }
 
+    var storedFederatedAuthKeyPair = null;
+    try {
+      var rawFederatedAuthKeyPair = localStorage.getItem("jonlineFederatedAuthKeyPair");
+      storedFederatedAuthKeyPair = rawFederatedAuthKeyPair ? JSON.parse(rawFederatedAuthKeyPair) : null;
+    } catch (e) {
+      console.error("Failed to read stored federated auth keypair", e);
+    }
+
     var app = Elm.Main.init({
       flags: {
         state: storedState,
         systemPrefersDark: darkMediaQuery.matches,
         themePreference: storedThemePreference,
-        starredPosts: storedStarredPosts
+        starredPosts: storedStarredPosts,
+        federatedAuthKeyPair: storedFederatedAuthKeyPair
       }
     });
 
@@ -130,6 +139,157 @@
       if (currentThemePreference === "auto") {
         window.jonlineUpdateCodeTheme(e.matches);
       }
+    });
+
+    // FEDERATED AUTH -- SSO-style cross-server account hand-off (see
+    // `Shared.FederatedAuth` and `Ports.elm`). Real ECIES-style hybrid
+    // encryption -- ephemeral ECDH (P-256) + HKDF-SHA256 + AES-256-GCM --
+    // via the browser's WebCrypto `SubtleCrypto` API, since Elm has no
+    // crypto/bigint support of its own.
+
+    function base64UrlEncode(bytes) {
+      var binary = "";
+      var arr = new Uint8Array(bytes);
+      for (var i = 0; i < arr.length; i++) {
+        binary += String.fromCharCode(arr[i]);
+      }
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    function base64UrlDecode(str) {
+      var padded = str.replace(/-/g, "+").replace(/_/g, "/");
+      while (padded.length % 4 !== 0) {
+        padded += "=";
+      }
+      var binary = atob(padded);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      return bytes;
+    }
+
+    // Both sides of an ECDH exchange derive the same shared secret from
+    // their own private key and the other side's public key; HKDF turns
+    // that into a proper AES-256-GCM key rather than using the raw shared
+    // secret directly.
+    function deriveAesKey(privateKey, publicKey) {
+      return window.crypto.subtle
+        .deriveBits({ name: "ECDH", public: publicKey }, privateKey, 256)
+        .then(function (sharedSecret) {
+          return window.crypto.subtle.importKey("raw", sharedSecret, "HKDF", false, ["deriveKey"]);
+        })
+        .then(function (hkdfKey) {
+          return window.crypto.subtle.deriveKey(
+            { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: new Uint8Array(0) },
+            hkdfKey,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["encrypt", "decrypt"]
+          );
+        });
+    }
+
+    app.ports.federatedAuthGenerateKeyPair.subscribe(function () {
+      window.crypto.subtle
+        .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
+        .then(function (keyPair) {
+          return Promise.all([
+            window.crypto.subtle.exportKey("raw", keyPair.publicKey),
+            window.crypto.subtle.exportKey("pkcs8", keyPair.privateKey)
+          ]);
+        })
+        .then(function (exported) {
+          app.ports.federatedAuthKeyPairGenerated.send({
+            publicKey: base64UrlEncode(exported[0]),
+            privateKey: base64UrlEncode(exported[1])
+          });
+        })
+        .catch(function (e) {
+          console.error("Failed to generate federated auth keypair", e);
+        });
+    });
+
+    app.ports.persistFederatedAuthKeyPair.subscribe(function (keyPair) {
+      localStorage.setItem("jonlineFederatedAuthKeyPair", JSON.stringify(keyPair));
+    });
+
+    app.ports.clearFederatedAuthKeyPair.subscribe(function () {
+      localStorage.removeItem("jonlineFederatedAuthKeyPair");
+    });
+
+    // Encrypts `request.plaintext` to `request.publicKey` (the recipient's
+    // public key) using a fresh, one-time ephemeral ECDH keypair -- the
+    // encoded result is `ephemeralPublicKey.iv.ciphertext`, each part
+    // base64url, dot-joined (`@` is reserved for the `/auth/to` route's own
+    // `key@host` split).
+    app.ports.federatedAuthEncrypt.subscribe(function (request) {
+      var ephemeralKeyPair;
+      var iv;
+      window.crypto.subtle
+        .importKey("raw", base64UrlDecode(request.publicKey), { name: "ECDH", namedCurve: "P-256" }, false, [])
+        .then(function (recipientPublicKey) {
+          return window.crypto.subtle
+            .generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"])
+            .then(function (kp) {
+              ephemeralKeyPair = kp;
+              return deriveAesKey(kp.privateKey, recipientPublicKey);
+            });
+        })
+        .then(function (aesKey) {
+          iv = window.crypto.getRandomValues(new Uint8Array(12));
+          var plaintextBytes = new TextEncoder().encode(request.plaintext);
+          return Promise.all([
+            window.crypto.subtle.exportKey("raw", ephemeralKeyPair.publicKey),
+            window.crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, aesKey, plaintextBytes)
+          ]);
+        })
+        .then(function (results) {
+          var encoded =
+            base64UrlEncode(results[0]) + "." + base64UrlEncode(iv) + "." + base64UrlEncode(results[1]);
+          app.ports.federatedAuthEncrypted.send({ ok: true, value: encoded });
+        })
+        .catch(function (e) {
+          app.ports.federatedAuthEncrypted.send({ ok: false, value: String((e && e.message) || e) });
+        });
+    });
+
+    // Inverse of the above: `request.encoded` was produced by some other
+    // origin's `federatedAuthEncrypt` against this origin's own public key,
+    // so decrypting it just needs this origin's matching private key.
+    app.ports.federatedAuthDecrypt.subscribe(function (request) {
+      var ephemeralPublicKeyBytes, iv, ciphertext;
+      try {
+        var parts = request.encoded.split(".");
+        if (parts.length !== 3) {
+          throw new Error("Malformed encrypted account data.");
+        }
+        ephemeralPublicKeyBytes = base64UrlDecode(parts[0]);
+        iv = base64UrlDecode(parts[1]);
+        ciphertext = base64UrlDecode(parts[2]);
+      } catch (e) {
+        app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
+        return;
+      }
+
+      Promise.all([
+        window.crypto.subtle.importKey(
+          "pkcs8", base64UrlDecode(request.privateKey), { name: "ECDH", namedCurve: "P-256" }, false, ["deriveBits"]
+        ),
+        window.crypto.subtle.importKey("raw", ephemeralPublicKeyBytes, { name: "ECDH", namedCurve: "P-256" }, false, [])
+      ])
+        .then(function (keys) {
+          return deriveAesKey(keys[0], keys[1]);
+        })
+        .then(function (aesKey) {
+          return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, aesKey, ciphertext);
+        })
+        .then(function (plaintextBytes) {
+          app.ports.federatedAuthDecrypted.send({ ok: true, value: new TextDecoder().decode(plaintextBytes) });
+        })
+        .catch(function (e) {
+          app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
+        });
     });
   </script>
 </body>

@@ -663,15 +663,11 @@
 
 .account-form-buttons button {
   flex: 1;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
 }
 
 .add-server-button,
 .show-add-account-form-button {
   width: 100%;
-  padding: 0.4rem 0.5rem;
-  border: 1px solid var(--border);
 }
 
 .auth-error {

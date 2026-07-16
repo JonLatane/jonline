@@ -20,6 +20,7 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 -}
 
 import Browser.Dom as Dom
+import Browser.Navigation as Nav
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
@@ -28,6 +29,7 @@ import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
@@ -65,6 +67,7 @@ type DeleteConfirmation
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
+    , federatedAuth : FederatedAuth.Model
     , starredPostsPanel : StarredPostsPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
@@ -99,6 +102,7 @@ type alias Model =
 type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
+    | FederatedAuthMsg FederatedAuth.Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
@@ -112,6 +116,7 @@ type Msg
     | HideScrollPreserver
     | HomeLinkClicked Bool
     | ScrollToTop
+    | NavigateExternal String
     | NoOp
 
 
@@ -237,6 +242,10 @@ init basePath req flags =
             Decode.decodeValue (Decode.field "starredPosts" Decode.value) flags
                 |> Result.withDefault Encode.null
 
+        federatedAuthFlags =
+            Decode.decodeValue (Decode.field "federatedAuthKeyPair" Decode.value) flags
+                |> Result.withDefault Encode.null
+
         systemPrefersDark =
             Decode.decodeValue (Decode.field "systemPrefersDark" Decode.bool) flags
                 |> Result.withDefault False
@@ -248,9 +257,13 @@ init basePath req flags =
 
         ( accountsPanelModel, accountsPanelCmd ) =
             AccountsPanel.init req accountsPanelFlags
+
+        ( federatedAuthModel, federatedAuthCmd ) =
+            FederatedAuth.init federatedAuthFlags
     in
     ( { accountsPanel = accountsPanelModel
       , adminPanel = AdminPanel.init
+      , federatedAuth = federatedAuthModel
       , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
       , markdownPanel = MarkdownPanel.init
       , mediaViewerPanel = MediaViewerPanel.init
@@ -263,6 +276,7 @@ init basePath req flags =
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
+        , Cmd.map FederatedAuthMsg federatedAuthCmd
         , Ports.setTheme (themePreferenceToString themePreference)
         ]
     )
@@ -291,6 +305,13 @@ update req msg model =
 
         AdminPanelMsg subMsg ->
             ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
+
+        FederatedAuthMsg subMsg ->
+            let
+                ( subModel, subCmd ) =
+                    FederatedAuth.update subMsg model.federatedAuth
+            in
+            ( { model | federatedAuth = subModel }, Cmd.map FederatedAuthMsg subCmd )
 
         StarredPostsPanelMsg subMsg ->
             let
@@ -431,6 +452,9 @@ update req msg model =
         ScrollToTop ->
             ( model, Task.perform (\_ -> NoOp) (Dom.setViewport 0 0) )
 
+        NavigateExternal url ->
+            ( model, Nav.load url )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -489,6 +513,7 @@ subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
+        , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
         , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
