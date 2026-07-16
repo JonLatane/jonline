@@ -72,6 +72,19 @@ main {
   padding: 1rem;
 }
 
+/* Reserves scroll room while a just-navigated-to page's content is still
+   loading in (and so shorter than its final height) -- see UI.scrollPreserver
+   and Shared.Model.scrollPreserverVisible. Collapsed by default; expanded for
+   the first 2s after every route change. */
+.scroll-preserver {
+  height: 0;
+  overflow: hidden;
+}
+
+.scroll-preserver.is-open {
+  height: 10000px;
+}
+
 /* Every link's color (nav links, About-page content links, ...) comes from
    the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
 

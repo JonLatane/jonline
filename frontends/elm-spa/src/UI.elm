@@ -72,8 +72,23 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
-    , div [ class "container" ] [ main_ [] children ]
+    , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
+
+
+{-| A tall, empty spacer at the bottom of `main_`'s content -- shown (see
+`Shared.Model.scrollPreserverVisible`) for the first 2s after navigating back
+to a page (browser back button only, not a fresh link click -- see change 4 in
+`Main.elm`'s module doc), so that page's content, which can still be shorter
+than it was when the browser recorded the scroll offset it's now restoring,
+doesn't get its scroll position yanked around while it fills back in. Always
+rendered, like `sharedBackdrop`'s `is-open`/`is-closed` -- see
+`UI.Classes.openClosedClass` -- rather than added/removed outright, so the
+`height` change (see `main.css`) is a plain CSS transition.
+-}
+scrollPreserver : Shared.Model -> Html msg
+scrollPreserver shared =
+    div [ classes [ "scroll-preserver", openClosedClass shared.scrollPreserverVisible ] ] []
 
 
 headerNav : Shared.Model -> Route -> Html Shared.Msg

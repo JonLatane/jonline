@@ -4,7 +4,7 @@ module Main exposing (main)
 which this was copied from and now overrides -- `.elm-spa/` itself is
 gitignored/regenerated, so this is the only place changes here persist).
 
-Three changes from the default:
+Four changes from the default:
 
 1. This app can be served from `/` or from `/elm` (see
 `backend/src/web/elm_web.rs`), so every `Url` gotten from the browser is
@@ -34,6 +34,19 @@ The default only ever routes messages page -> shared (via `Page pageMsg`,
 change 2 above); without this, a page has no way to notice state that changes
 outside of its own `update` -- e.g. a persisted server finishing its
 reconnect at startup -- short of polling for it.
+
+4. `ChangedUrl` fires `Shared.ShowScrollPreserver` (see `UI.scrollPreserver`)
+when, and only when, the navigation was the browser's own back button rather
+than an in-app link click, redirect, or typed/bookmarked url -- those always
+land on a fresh page starting at scroll top, but stepping back restores the
+browser's remembered scroll offset against a page whose content may still be
+loading (and so shorter than it was when that offset was recorded), which
+would otherwise visibly yank the scroll position while it fills back in. Elm
+has no built-in way to ask "was this `ChangedUrl` a back-button nav", so
+`Model.backStack` shadows the browser's own back-stack by hand: every
+`ClickedLink (Browser.Internal url)` pushes the url being left onto it, and
+`ChangedUrl` treats landing back on its top entry as a back-nav (popping it),
+leaving any other url change untouched.
 -}
 
 import Browser
@@ -78,6 +91,10 @@ type alias Model =
 
     -- Detected once from the raw URL `init` was given -- see the module doc.
     , basePath : String
+
+    -- Urls navigated away from via an in-app link click, most-recently-left
+    -- first -- see change 4 in the module doc.
+    , backStack : List Url
     }
 
 
@@ -96,7 +113,7 @@ init flags url key =
         ( page, effect ) =
             Pages.init (Route.fromUrl normalizedUrl) shared normalizedUrl key
     in
-    ( Model normalizedUrl key shared page basePath
+    ( Model normalizedUrl key shared page basePath []
     , Cmd.batch
         [ Cmd.map Shared sharedCmd
         , Effect.toCmd ( Shared, Page ) effect
@@ -119,7 +136,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ClickedLink (Browser.Internal url) ->
-            ( model
+            ( { model | backStack = model.url :: model.backStack }
             , Nav.pushUrl model.key (Url.toString url)
             )
 
@@ -137,9 +154,29 @@ update msg model =
                 let
                     ( page, effect ) =
                         Pages.init (Route.fromUrl url) model.shared url model.key
+
+                    isBackNav =
+                        List.head model.backStack == Just url
+
+                    backStack =
+                        if isBackNav then
+                            List.drop 1 model.backStack
+
+                        else
+                            model.backStack
+
+                    ( shared, sharedCmd ) =
+                        if isBackNav then
+                            Shared.update (Request.create () url model.key) Shared.ShowScrollPreserver model.shared
+
+                        else
+                            ( model.shared, Cmd.none )
                 in
-                ( { model | url = url, page = page }
-                , Effect.toCmd ( Shared, Page ) effect
+                ( { model | url = url, page = page, shared = shared, backStack = backStack }
+                , Cmd.batch
+                    [ Effect.toCmd ( Shared, Page ) effect
+                    , Cmd.map Shared sharedCmd
+                    ]
                 )
 
             else

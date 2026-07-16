@@ -22,12 +22,14 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
+import Process
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
+import Task
 import Time
 import Url exposing (Url)
 
@@ -80,6 +82,14 @@ type alias Model =
     -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
     -- the time -- see `DeleteConfirmation`.
     , confirmingDeleteFor : Maybe DeleteConfirmation
+
+    -- Drives `UI.scrollPreserver`: a tall spacer at the bottom of `main_`,
+    -- shown for the first 2s after navigating *back* to a page (never a
+    -- fresh link click) so its restored-but-possibly-still-loading content
+    -- can't yank the scroll position around while it fills back in. See
+    -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
+    -- navigations it recognizes as the browser's back button.
+    , scrollPreserverVisible : Bool
     }
 
 
@@ -94,6 +104,8 @@ type Msg
     | RequestDelete DeleteConfirmation
     | CancelDelete
     | ConfirmDelete
+    | ShowScrollPreserver
+    | HideScrollPreserver
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -239,6 +251,7 @@ init basePath req flags =
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
       , confirmingDeleteFor = Nothing
+      , scrollPreserverVisible = False
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -369,6 +382,14 @@ update req msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        ShowScrollPreserver ->
+            ( { model | scrollPreserverVisible = True }
+            , Process.sleep 2000 |> Task.perform (\() -> HideScrollPreserver)
+            )
+
+        HideScrollPreserver ->
+            ( { model | scrollPreserverVisible = False }, Cmd.none )
 
 
 {-| Hosts whose "usable right now" state differs between `before` and `after`
