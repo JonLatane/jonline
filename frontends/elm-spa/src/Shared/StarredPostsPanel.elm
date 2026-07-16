@@ -764,7 +764,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount current starred onStarClicked post
+                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount True current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

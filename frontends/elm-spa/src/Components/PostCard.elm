@@ -464,9 +464,13 @@ making its plain text transparent to clicks, which fall through to the overlay
 below -- while `authorLink`/`starButton`, both opted back in via
 `pointer-events: auto`, catch clicks themselves before they ever reach it.
 
+`extraSmallMedia` shrinks the media preview's height further still (see
+`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPostsPanel`'s
+post rows, tighter on vertical space than the Home page's own feed of these
+same cards.
 -}
-postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost maybeServer maybeAccount current starred onStarClicked post =
+postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost maybeServer maybeAccount extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -491,7 +495,11 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
         , div [ class "post-card-title" ] [ text (postTitleText post) ]
         , case maybeServer of
             Just server ->
-                MultiMediaRenderer.preview server maybeAccount post.media
+                if extraSmallMedia then
+                    MultiMediaRenderer.previewExtraSmall server maybeAccount post.media
+
+                else
+                    MultiMediaRenderer.preview server maybeAccount post.media
 
             Nothing ->
                 text ""

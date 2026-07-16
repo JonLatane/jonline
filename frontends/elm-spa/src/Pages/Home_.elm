@@ -407,4 +407,4 @@ postCardView shared ( host, post ) =
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount False starred onStarClicked displayPost
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount False False starred onStarClicked displayPost

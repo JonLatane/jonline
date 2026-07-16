@@ -4,15 +4,21 @@ module Components.MediaRenderer exposing (Sizing(..), view)
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
 download-link fallback for content types the browser can't render inline.
 
-Takes a `Sizing` telling it how to fit itself into its container (see
-`.media-renderer-*` in `media.css`):
+Takes a `Sizing` telling it how big to allow itself to get (see
+`.media-renderer-*` in `media.css`) -- either way the media keeps its own
+intrinsic aspect ratio (portrait, landscape, square, whatever); nothing here
+ever stretches or crops it into a fixed box:
 
-  - `Fill` stretches to `width`/`height: 100%` of the container, which is
-    expected to already have the desired box dimensions (e.g. a fixed-size
-    thumbnail in `Components.MultiMediaRenderer`'s scrolling strip).
-  - `Natural` instead lets the media keep its own intrinsic aspect ratio,
-    capped by `max-width`/`max-height` (used for a post's single "focus"
-    media item, which shouldn't be squashed into a fixed box).
+  - `Natural` caps it by the container's own width and a generous viewport-relative
+    height (used for a post's single "focus" media item).
+  - `Compact` instead caps both width and height to the same small square,
+    so it ends up as narrow or as short as its own ratio calls for (used for
+    every thumbnail in `Components.MultiMediaRenderer`'s scrolling strip and
+    its `preview`).
+  - `ExtraSmall` is the same width cap as `Compact`, just half its height --
+    for contexts even tighter on vertical space than an ordinary preview
+    (used by `Shared.StarredPostsPanel`'s post rows, see
+    `Components.MultiMediaRenderer.previewExtraSmall`).
 
 Mirrors the Tamagui app's `media_renderer.tsx`, minus its social embed
 providers (Twitter/Instagram/etc. -- those key off `Post.link`, not
@@ -30,18 +36,22 @@ import Shared.AccountsPanel as AccountsPanel
 
 
 type Sizing
-    = Fill
-    | Natural
+    = Natural
+    | Small
+    | ExtraSmall
 
 
 sizingClass : Sizing -> String
 sizingClass sizing =
     case sizing of
-        Fill ->
-            "media-renderer-fill"
-
         Natural ->
             "media-renderer-natural"
+
+        Small ->
+            "media-renderer-compact"
+
+        ExtraSmall ->
+            "media-renderer-extra-small"
 
 
 view : Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> Html msg

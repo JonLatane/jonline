@@ -1,8 +1,3 @@
-.media-renderer-fill {
-  width: 100%;
-  height: 100%;
-}
-
 .media-renderer-image {
   object-fit: contain;
 }
@@ -34,6 +29,43 @@
   height: 60vh;
 }
 
+/* Same idea as .media-renderer-natural above, just capped to a small square
+   instead of the container's full width/a generous viewport-relative
+   height -- narrower if portrait, shorter if landscape, never stretched or
+   cropped to fill a fixed box. Used for every thumbnail (see
+   Components.MultiMediaRenderer's scrolling strip and its `preview`). */
+.media-renderer-compact.media-renderer-image,
+.media-renderer-compact.media-renderer-video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 238px;
+  max-height: 238px;
+}
+
+.media-renderer-compact.media-renderer-object {
+  width: 238px;
+  height: 238px;
+}
+
+/* Same as .media-renderer-compact above, just capped to half the height --
+   for contexts even tighter on vertical space than an ordinary preview (see
+   Components.MultiMediaRenderer's `previewExtraSmall`, used by
+   Shared.StarredPostsPanel's post rows). */
+.media-renderer-extra-small.media-renderer-image,
+.media-renderer-extra-small.media-renderer-video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 238px;
+  max-height: 88px;
+}
+
+.media-renderer-extra-small.media-renderer-object {
+  width: 238px;
+  height: 88px;
+}
+
 .media-renderer-fallback {
   display: flex;
   align-items: center;
@@ -48,8 +80,10 @@
 /* Components.MultiMediaRenderer -- a single media item is a post's "focus",
    so it's shown big at its own aspect ratio (see .media-renderer-natural
    above) rather than being squashed into a fixed box; multiple items
-   instead fall back to a horizontally-scrolling strip of fixed-size
-   thumbnails, same pattern as the Accounts Panel's .servers-strip. */
+   instead fall back to a horizontally-scrolling strip of thumbnails (see
+   .media-renderer-compact), same pattern as the Accounts Panel's
+   .servers-strip. Neither wrapper below sizes its media itself -- both just
+   frame whatever size `Components.MediaRenderer` already settled on. */
 
 .multi-media-single {
   display: flex;
@@ -57,12 +91,16 @@
   margin-bottom: 0.8rem;
 }
 
-.multi-media-single-item {
-  max-width: 100%;
+.multi-media-single-item,
+.multi-media-item {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
   background: var(--chip-bg);
+}
+
+.multi-media-single-item {
+  max-width: 100%;
 }
 
 .multi-media-strip {
@@ -77,27 +115,14 @@
 
 .multi-media-item {
   flex: 0 0 auto;
-  width: 260px;
-  height: 220px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--chip-bg);
-}
-
-@media (min-width: 640px) {
-  .multi-media-item {
-    width: 400px;
-    height: 320px;
-  }
 }
 
 /* Components.MultiMediaRenderer.preview -- the same .multi-media-single/
-   .multi-media-strip layout as .view above, just shorter, layered onto
-   those classes' own selectors as a `.multi-media-preview` modifier rather
-   than duplicating them. Used in the middle of Components.PostCard.postCard's
-   compact rendering, where a post's full-size "focus" media would dominate
-   the card.
+   .multi-media-strip layout as .view above, just tighter margins to fit
+   Components.PostCard.postCard's compact card, and lifted to
+   `position: relative` so it paints above `.post-card-link-overlay` (see
+   below) rather than the invisible overlay swallowing clicks meant for a
+   video's native `controls`.
 
    Unlike .post-card-meta/.post-card-title, this stays pointer-events: auto
    (the default -- no rule needed) -- a video preview needs its own native
@@ -117,21 +142,8 @@
    element's own content never reach the overlay's click listener regardless,
    so no stopPropagation/preventDefault is needed the way
    .post-star/.post-author-link use it. */
-.multi-media-single.multi-media-preview {
-  position: relative;
-  margin: 0.4rem 0;
-}
-
-.multi-media-single-item.multi-media-preview {
-  width: 100%;
-  height: 238px;
-}
-
+.multi-media-single.multi-media-preview,
 .multi-media-strip.multi-media-preview {
   position: relative;
   margin: 0.4rem 0;
-}
-
-.multi-media-item.multi-media-preview {
-  height: 238px;
 }
