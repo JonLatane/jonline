@@ -117,6 +117,17 @@
   align-items: center;
   justify-content: center;
   padding: 0 1rem;
+
+  /* Explicitly `none` (rather than left to inherit the root's own `auto`,
+     see media_viewer_panel.css's top comment) so a tap that lands in this
+     box's own empty space -- its `padding`, or the letterboxed gutter around
+     a portrait image/video that doesn't fill it -- isn't hit-tested against
+     *this* element at all, and instead falls straight through to the root
+     behind it, closing the panel exactly like tapping any other background
+     area does. `.media-viewer-panel-media-stage`/`-media` below need the
+     same override, for the same reason; only the actual rendered media
+     (`.media-renderer-natural...` below) re-enables `auto`. */
+  pointer-events: none;
 }
 
 /* `Components.MediaRenderer`'s `Natural` sizing already caps the media at a
@@ -131,12 +142,16 @@
    out of sync with the header/toolbar's actual rendered heights (padding
    changes, safe-area insets, text wrapping, etc.) and, on iOS Safari, the
    address bar's show/hide state. `auto` pointer-events makes the media
-   itself -- as opposed to the empty space around it, which stays
-   click-through-able down to this panel's own root (see this file's own top
-   comment) -- the one part of `.media-viewer-panel-content` a tap doesn't
-   close the panel on; its own `stopPropagationOn` (see
-   `Shared.MediaViewerPanel.view`) is what keeps that tap's bubble from
-   reaching the root regardless. */
+   itself -- as opposed to the empty letterboxed space around it, which
+   falls straight through to the root and closes the panel (see
+   `.media-viewer-panel-content`'s own comment) -- the one part of this box
+   that's actually tappable. Its own tap still needs stopping from *also*
+   closing the panel once it's dispatched, though: `pointer-events` only
+   decides which element an event starts on, not whether it bubbles through
+   `none` ancestors afterward, so a click here still bubbles up through
+   `.media-viewer-panel-media` (`-stage`, `-content`) toward the root same as
+   any other -- `.media-viewer-panel-media`'s own `stopPropagationOn` (see
+   `Shared.MediaViewerPanel.view`) is what actually stops it there. */
 .media-viewer-panel-content .media-renderer-natural.media-renderer-image,
 .media-viewer-panel-content .media-renderer-natural.media-renderer-video,
 .media-viewer-panel-content .media-renderer-natural.media-renderer-object {
@@ -162,8 +177,17 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  pointer-events: none;
 }
 
+/* `stopPropagationOn` in `Shared.MediaViewerPanel.view` is attached to this
+   same class -- it's the one thing standing between the actual media's own
+   click (which needs to reach `MediaRenderer`'s `onClick` to page/re-select
+   it, not close the panel) and this box's `none` pointer-events (which, on
+   its own, only keeps the *letterboxed* space around that media from
+   swallowing a tap meant for the root behind it, per `.media-viewer-panel-
+   content`'s own comment -- it doesn't stop a click already dispatched on
+   the media itself from bubbling through this element on its way up). */
 .media-viewer-panel-media {
   display: flex;
   width: 100%;
@@ -173,6 +197,7 @@
   animation-duration: 0.32s;
   animation-timing-function: ease;
   animation-fill-mode: both;
+  pointer-events: none;
 }
 
 .media-viewer-panel-media-entering {
