@@ -1,5 +1,7 @@
 module Components.PostCard exposing
-    ( fetchPost
+    ( authorLink
+    , commentCountText
+    , fetchPost
     , fetchRecentPosts
     , fetchReplies
     , isAuthor
@@ -14,6 +16,7 @@ module Components.PostCard exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
+    , repliesCountText
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Post`s -- the compact
@@ -88,7 +91,7 @@ fetchRecentPosts server maybeAccount =
         )
 
 
-{-| Fetches the direct replies to `postId` from `server` (`reply_depth: 1` --
+{-| Fetches the replies to `postId` from `server`, `replyDepth` levels deep --
 see `GetPostsRequest`'s doc comment: with `post_id` and `reply_depth` both set,
 `GetPosts` returns the replies themselves, not `postId`'s own Post), authenticated
 as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
@@ -97,14 +100,15 @@ as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
 fetchReplies :
     AccountsPanel.Server
     -> Maybe AccountsPanel.Account
+    -> Int
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
-fetchReplies server maybeAccount postId =
+fetchReplies server maybeAccount replyDepth postId =
     MaybeAccountRequest.perform
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just 1 }
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAuth maybeToken
                 |> Grpc.toTask
@@ -362,11 +366,28 @@ starButton postServerHost starred onStarClicked post =
         [ text ("★ " ++ String.fromInt (postStarCount post)) ]
 
 
+{-| A post's reply-count display: just `responseCount` when `replyCount`
+(direct replies only) and `responseCount` (all nested replies) agree -- the
+common case, a post with no replies-to-replies -- otherwise
+`"replyCount/responseCount"` (e.g. `"20/25"`) so a thread with actual
+sub-discussion shows both numbers at a glance. Shared by `commentCountText`
+(below, for `postCard`/`postDetail`) and `Components.PostReplies.replyCard`,
+so a reply card's own count matches a post card's exactly.
+-}
+repliesCountText : Post -> String
+repliesCountText post =
+    if post.replyCount == post.responseCount then
+        String.fromInt post.responseCount
+
+    else
+        String.fromInt post.replyCount ++ "/" ++ String.fromInt post.responseCount
+
+
 {-| "· 💬 12"-style suffix for a post's meta line, following `starButton`.
 -}
 commentCountText : Post -> String
 commentCountText post =
-    " · 💬 " ++ String.fromInt (postCommentCount post)
+    " · 💬 " ++ repliesCountText post
 
 
 {-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own

@@ -1,12 +1,12 @@
 module Pages.Post.PostId_ exposing (Model, Msg, fromShared, page)
 
-import Components.Markdown as Markdown
 import Components.PostCard as Posts
+import Components.PostReplies as PostReplies
 import Components.ServerDependentView as ServerDependentView
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
 import Grpc
-import Html exposing (Html, a, button, div, p, span, text)
+import Html exposing (Html, a, button, div, p, text)
 import Html.Attributes exposing (class, href, target)
 import Html.Events exposing (onClick)
 import Page
@@ -44,18 +44,11 @@ type PostStatus
     | PostFailed
 
 
-type RepliesStatus
-    = RepliesNotLoaded
-    | RepliesLoading
-    | RepliesLoaded (List Post)
-    | RepliesFailed
-
-
 type alias Model =
     { targetHost : String
     , postId : String
     , postStatus : PostStatus
-    , repliesStatus : RepliesStatus
+    , repliesModel : Maybe PostReplies.Model
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
     }
@@ -71,7 +64,7 @@ init shared params =
         { targetHost = targetHost
         , postId = postId
         , postStatus = LoadingPost
-        , repliesStatus = RepliesNotLoaded
+        , repliesModel = Nothing
         , connectStatus = ServerDependentView.NotConnected
         , fetchStarted = False
         }
@@ -103,29 +96,25 @@ fetchIfReady shared model =
                     maybeAccount =
                         AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
                 in
-                ( { model | fetchStarted = True, repliesStatus = RepliesLoading }
-                , Effect.batch
-                    [ Posts.fetchPost server maybeAccount model.postId
-                        |> Task.attempt GotPost
-                        |> Effect.fromCmd
-                    , Posts.fetchReplies server maybeAccount model.postId
-                        |> Task.attempt GotReplies
-                        |> Effect.fromCmd
-                    ]
+                ( { model | fetchStarted = True }
+                , Posts.fetchPost server maybeAccount model.postId
+                    |> Task.attempt GotPost
+                    |> Effect.fromCmd
                 )
 
             Nothing ->
                 ( model, Effect.none )
 
 
-{-| Re-fetches the post and its replies unconditionally (unlike `fetchIfReady`,
-not gated on `fetchStarted`, which is already `True` by the time this is ever
-called) -- for `update`'s `SharedMsg` branch to call once the Markdown panel
-(see `Shared.MarkdownPanel`) reports a successful save: either this post's
-content just changed (`MarkdownPanel.PostContent`) or a new reply to it was
-just posted (`MarkdownPanel.NewReply`) -- either way, both are worth
-refreshing, and refetching both unconditionally is simpler than threading
-through which of the two it was.
+{-| Re-fetches the post unconditionally (unlike `fetchIfReady`, not gated on
+`fetchStarted`, which is already `True` by the time this is ever called) --
+for `update`'s `SharedMsg` branch to call once the Markdown panel (see
+`Shared.MarkdownPanel`) reports a successful save: either this post's content
+just changed (`MarkdownPanel.PostContent`) or a new reply to it was just
+posted (`MarkdownPanel.NewReply`) -- either way, `GotPost`'s own handler
+re-syncs `repliesModel` too (via `PostReplies.refresh`, since it's already
+`Just` by the time any save could have happened), so there's nothing else to
+trigger here.
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
@@ -136,14 +125,9 @@ refetch shared model =
                     AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
             in
             ( model
-            , Effect.batch
-                [ Posts.fetchPost server maybeAccount model.postId
-                    |> Task.attempt GotPost
-                    |> Effect.fromCmd
-                , Posts.fetchReplies server maybeAccount model.postId
-                    |> Task.attempt GotReplies
-                    |> Effect.fromCmd
-                ]
+            , Posts.fetchPost server maybeAccount model.postId
+                |> Task.attempt GotPost
+                |> Effect.fromCmd
             )
 
         Nothing ->
@@ -156,7 +140,7 @@ refetch shared model =
 
 type Msg
     = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
-    | GotReplies (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
+    | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
@@ -180,12 +164,33 @@ fromShared =
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
 update shared req msg model =
     case msg of
-        GotPost (Ok ( maybeAccount, response )) ->
+        GotPost (Ok ( maybeRefreshedAccount, response )) ->
             let
                 accountEffect =
-                    maybeAccount
+                    maybeRefreshedAccount
                         |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
+
+                maybeServer =
+                    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+
+                maybeAccount =
+                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+
+                ( repliesModel, repliesEffect ) =
+                    case ( List.head response.posts, model.repliesModel ) of
+                        ( Just post, Nothing ) ->
+                            PostReplies.init maybeServer maybeAccount model.targetHost post
+                                |> Tuple.mapFirst Just
+                                |> Tuple.mapSecond (Effect.map PostRepliesMsg)
+
+                        ( Just post, Just existing ) ->
+                            PostReplies.refresh maybeServer maybeAccount post existing
+                                |> Tuple.mapFirst Just
+                                |> Tuple.mapSecond (Effect.map PostRepliesMsg)
+
+                        ( Nothing, existing ) ->
+                            ( existing, Effect.none )
             in
             ( { model
                 | postStatus =
@@ -193,24 +198,31 @@ update shared req msg model =
                         |> List.head
                         |> Maybe.map PostLoaded
                         |> Maybe.withDefault PostFailed
+                , repliesModel = repliesModel
               }
-            , accountEffect
+            , Effect.batch [ accountEffect, repliesEffect ]
             )
 
         GotPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
 
-        GotReplies (Ok ( maybeAccount, response )) ->
-            let
-                accountEffect =
-                    maybeAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
-            in
-            ( { model | repliesStatus = RepliesLoaded response.posts }, accountEffect )
+        PostRepliesMsg subMsg ->
+            case model.repliesModel of
+                Just repliesModel ->
+                    let
+                        maybeServer =
+                            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
 
-        GotReplies (Err _) ->
-            ( { model | repliesStatus = RepliesFailed }, Effect.none )
+                        maybeAccount =
+                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+
+                        ( newRepliesModel, effect ) =
+                            PostReplies.update maybeServer maybeAccount subMsg repliesModel
+                    in
+                    ( { model | repliesModel = Just newRepliesModel }, Effect.map PostRepliesMsg effect )
+
+                Nothing ->
+                    ( model, Effect.none )
 
         EditClicked post ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.PostContent post) model.targetHost)) )
@@ -269,11 +281,16 @@ update shared req msg model =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.fetchStarted then
-        Sub.none
+    Sub.batch
+        [ if model.fetchStarted then
+            Sub.none
 
-    else
-        Time.every 30000 (\_ -> Poll)
+          else
+            Time.every 30000 (\_ -> Poll)
+        , model.repliesModel
+            |> Maybe.map (PostReplies.subscriptions >> Sub.map PostRepliesMsg)
+            |> Maybe.withDefault Sub.none
+        ]
 
 
 
@@ -323,7 +340,7 @@ bodyView shared req model =
                     div []
                         [ postDetailView shared model post
                         , postActionsView shared model post
-                        , repliesView model
+                        , repliesView shared model
                         , commentsLinkView shared req post
                         ]
         )
@@ -374,42 +391,28 @@ postActionsView shared model post =
             text ""
 
 
-{-| A basic list of this post's direct replies (see `GotReplies`) -- updates
-whenever a new reply is posted through the Reply button here (see `refetch`).
+{-| This post's whole threaded-replies tree (see `Components.PostReplies`) --
+updates whenever a new reply is posted through the Reply button here (see
+`refetch`) or a reply's own subtree is expanded.
 -}
-repliesView : Model -> Html Msg
-repliesView model =
-    case model.repliesStatus of
-        RepliesNotLoaded ->
+repliesView : Shared.Model -> Model -> Html Msg
+repliesView shared model =
+    case model.repliesModel of
+        Just repliesModel ->
+            PostReplies.view
+                { basePath = shared.basePath
+                , viewingServerHost = shared.accountsPanel.mainFrontendHost
+                , postServerHost = model.targetHost
+                , maybeServer = AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+                , maybeAccount = AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                , onMediaClicked = MediaClicked
+                , onReplyClicked = ReplyClicked
+                , toMsg = PostRepliesMsg
+                }
+                repliesModel
+
+        Nothing ->
             text ""
-
-        RepliesLoading ->
-            p [ class "replies-loading" ] [ text "Loading replies…" ]
-
-        RepliesFailed ->
-            text ""
-
-        RepliesLoaded [] ->
-            text ""
-
-        RepliesLoaded replies ->
-            div [ class "post-replies" ]
-                (div [ class "post-replies-header" ] [ text "Replies" ]
-                    :: List.map replyItemView replies
-                )
-
-
-replyItemView : Post -> Html Msg
-replyItemView reply =
-    div [ class "post-reply-item" ]
-        [ span [ class "post-reply-author" ] [ text (Posts.postAuthorName reply) ]
-        , case reply.content of
-            Just content ->
-                Markdown.view [ class "post-reply-content" ] content
-
-            Nothing ->
-                text ""
-        ]
 
 
 {-| A link out to the same post's comments on the React (Tamagui) app, which
