@@ -39,6 +39,29 @@
   font-weight: 700;
 }
 
+/* The post's own `link` field (see `Components.PostCard.postLinkText`), shown
+   below the title when set. `position: relative` lifts it into the same
+   paint tier as `.post-card-link-overlay` (both `position`ed, so ordered by
+   DOM position rather than the usual positioned-over-static rule) -- coming
+   later in the DOM, it wins and stays independently clickable, same effect
+   `.post-card-meta` gets via its own `position: relative` for `authorLink`/
+   `starButton`. See `postCard`'s doc comment for the full paint-order story. */
+.post-card-link {
+  position: relative;
+  display: block;
+  max-width: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.post-card-link:hover {
+  text-decoration: underline;
+}
+
 .post-card-meta {
   position: relative;
   color: var(--muted);
@@ -162,6 +185,25 @@
 
 .post-detail-title {
   margin: 0 0 0.3rem;
+}
+
+/* The post's own `link` field, shown below the title -- see
+   `.post-card-link`'s doc comment; `postDetail` has no enclosing overlay to
+   escape, so this needs none of that trick, just the matching look. */
+.post-detail-link {
+  display: block;
+  max-width: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.3rem;
+  text-decoration: none;
+}
+
+.post-detail-link:hover {
+  text-decoration: underline;
 }
 
 /* Shown in `.post-detail-title`'s place instead (see
@@ -373,11 +415,11 @@
   overflow-wrap: break-word;
 }
 
-.post-reply-content > *:first-child {
+.post-reply-content>*:first-child {
   margin-top: 0;
 }
 
-.post-reply-content > *:last-child {
+.post-reply-content>*:last-child {
   margin-bottom: 0;
 }
 

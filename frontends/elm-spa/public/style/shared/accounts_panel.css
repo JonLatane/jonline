@@ -102,7 +102,7 @@
      a second enabled server visibly resized it. */
   height: var(--nav-toggle-height);
   padding: 0 0.9rem;
-  border-radius: 999px;
+  border-radius: 25px;
   /* Animates the bottom corners squaring off/rounding back (see `.is-open`
      below) in step with its panel's own 0.15s opacity/transform transition
      (`.nav-panel`) -- shorthand so it covers whichever corners a given state

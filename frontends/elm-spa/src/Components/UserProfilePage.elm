@@ -42,8 +42,7 @@ import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task
 import Time
 import UI
-import UI.Classes exposing (classes)
-import UI.EmittedStylesheet exposing (hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Which `GetUsersRequest` field to search by -- an id (`Pages.User.UserId_`)

@@ -29,8 +29,7 @@ import Shared.FederatedAuth as FederatedAuth
 import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task
 import UI
-import UI.Classes exposing (classes)
-import UI.EmittedStylesheet exposing (hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 import View exposing (View)
 
 

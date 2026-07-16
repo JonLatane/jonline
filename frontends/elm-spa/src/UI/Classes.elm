@@ -1,4 +1,4 @@
-module UI.Classes exposing (classes, openClosedClass)
+module UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 {-| Just `UI.classes`, split into its own leaf module so `Components.Posts`
 can use it without importing `UI` itself -- `UI` imports
@@ -7,6 +7,7 @@ needs `Components.Posts` (`postCard`) for its own panel view, and that would
 otherwise be a cycle.
 -}
 
+import Char
 import Html exposing (Attribute)
 import Html.Attributes exposing (class)
 
@@ -32,3 +33,25 @@ openClosedClass isOpen =
 
     else
         "is-closed"
+
+
+{-| Escapes a hostname for literal use as one segment of a CSS class
+selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
+separate class selectors (`.jonline.io` means "has both class `jonline` and
+class `io`", not "has class `jonline.io`").
+-}
+hostnameToCSSClass : String -> String
+hostnameToCSSClass hostname =
+    let
+        escapeChar : Char -> String
+        escapeChar c =
+            if Char.isAlphaNum c || c == '-' || c == '_' then
+                String.fromChar c
+
+            else
+                "-"
+    in
+    hostname
+        |> String.toList
+        |> List.map escapeChar
+        |> String.concat
