@@ -23,8 +23,8 @@ import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
-import UI.Classes exposing (classes, openClosedClass)
-import UI.EmittedStylesheet as EmittedStylesheet exposing (hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
 import UI.Modal
 import View exposing (View)
@@ -891,7 +891,7 @@ serverChip shared count index server =
             shared.adminPanel.allowMainServerSwitch
 
         topClasses =
-            [ "server-chip-top", "selectable", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-primary" ]
+            [ "server-chip-top", "selectable", hostnameToCSSClass server.frontendHost, "background-color-primary" ]
 
         topAttrs =
             [ classes topClasses
@@ -969,7 +969,7 @@ serverChip shared count index server =
               else
                 text ""
             ]
-        , div [ classes [ "server-chip-bottom", EmittedStylesheet.hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
+        , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
@@ -1237,7 +1237,7 @@ formView shared =
     else
         div [ class "account-form" ]
             [ button
-                [ classes [ "show-add-account-form-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                [ classes [ "show-add-account-form-button", hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                 , onClick (Shared.AccountsPanelMsg AccountsPanel.ShowAddAccountFormClicked)
                 ]
                 [ text "Add Account/Server..." ]
@@ -1399,14 +1399,14 @@ addAccountForm shared =
                     [ type_ "button"
                     , onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
                     , disabled accountFieldsDisabled
-                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                    , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
                     ]
                     [ text "Login" ]
                 , button
                     [ type_ "button"
                     , onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
                     , disabled accountFieldsDisabled
-                    , classes [ EmittedStylesheet.hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
+                    , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
                     ]
                     [ text "Create Account" ]
                 ]
@@ -1467,7 +1467,7 @@ signInFromButton shared accountFieldsDisabled =
                         )
                     )
                 , disabled accountFieldsDisabled
-                , classes [ "sign-in-from-button", EmittedStylesheet.hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
+                , classes [ "sign-in-from-button", hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
                 ]
                 [ text ("Sign in from " ++ server) ]
 

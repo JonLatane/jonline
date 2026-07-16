@@ -1,4 +1,4 @@
-module UI.EmittedStylesheet exposing (hostnameToCSSClass, view)
+module UI.EmittedStylesheet exposing (view)
 
 {-| A `<style>` tag, computed fresh from the current `Shared.Model` on every
 render (so it updates automatically any time a server is added/removed, or
@@ -25,10 +25,10 @@ color math is already cached in `Shared.Branding`.
 
 -}
 
-import Char
 import Html exposing (Html, node, text)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import UI.Classes exposing (hostnameToCSSClass)
 import UI.ServerTheme
 
 
@@ -126,22 +126,28 @@ serverRules darkMode mainTheme mainFrontendHost server =
                 ".account-row" ++ selector ++ " .switch input:checked + .slider { background: " ++ accountSwitchOnColor ++ "; }\n"
     in
     String.concat
-        [ colorRule (selector ++ ".background-color-primary") theme.primaryColor theme.primaryTextColor
-        , colorRule (selector ++ ".background-color-primary-5") (theme.primaryColor ++ "05") theme.textColor
-        , colorRule (selector ++ ".background-color-primary-10") (theme.primaryColor ++ "10") theme.textColor
-        , colorRule (selector ++ ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
-        , colorRule (selector ++ ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
-        , colorRule (selector ++ ".background-color-nav") theme.navColor theme.navTextColor
-        , colorRule (selector ++ ".background-color-primary-background") theme.primaryBgColor theme.textColor
-        , borderColorRule (selector ++ ".border-color-primary") theme.primaryColor
-        , borderColorRule (selector ++ ".border-color-primary-anchor") theme.primaryAnchorColor
-        , borderColorRule (selector ++ ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
-        , borderColorRule (selector ++ ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
-        , textColorRule (selector ++ ".post-star.starred") theme.primaryAnchorColor
+        [ colorRule (withDescendants selector ".background-color-primary") theme.primaryColor theme.primaryTextColor
+        , colorRule (withDescendants selector ".background-color-primary-5") (theme.primaryColor ++ "05") theme.textColor
+        , colorRule (withDescendants selector ".background-color-primary-10") (theme.primaryColor ++ "10") theme.textColor
+        , colorRule (withDescendants selector ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
+        , colorRule (withDescendants selector ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
+        , colorRule (withDescendants selector ".background-color-nav") theme.navColor theme.navTextColor
+        , colorRule (withDescendants selector ".background-color-primary-background") theme.primaryBgColor theme.textColor
+        , borderColorRule (withDescendants selector ".border-color-primary") theme.primaryColor
+        , borderColorRule (withDescendants selector ".border-color-primary-anchor") theme.primaryAnchorColor
+        , borderColorRule (withDescendants selector ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
+        , borderColorRule (withDescendants selector ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
+        , textColorRule (withDescendants selector ".post-star.starred") theme.primaryAnchorColor
         , backgroundOnlyColorRule (selector ++ ".post-card-current .post-star") (theme.backgroundColor ++ "80")
         , ".server-chip-bottom" ++ selector ++ " .switch input:checked + .slider { background: " ++ switchOnColor ++ "; }\n"
+        , textColorRule ("a" ++ selector ++ ", " ++ selector ++ " a") theme.primaryAnchorColor
         , accountRowSwitchRule
         ]
+
+
+withDescendants : String -> String -> String
+withDescendants selector subselector =
+    selector ++ subselector ++ ", " ++ selector ++ " " ++ subselector
 
 
 colorRule : String -> String -> String -> String
@@ -162,25 +168,3 @@ borderColorRule selector borderColor =
 textColorRule : String -> String -> String
 textColorRule selector color =
     selector ++ " { color: " ++ color ++ "; }\n"
-
-
-{-| Escapes a hostname for literal use as one segment of a CSS class
-selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
-separate class selectors (`.jonline.io` means "has both class `jonline` and
-class `io`", not "has class `jonline.io`").
--}
-hostnameToCSSClass : String -> String
-hostnameToCSSClass hostname =
-    let
-        escapeChar : Char -> String
-        escapeChar c =
-            if Char.isAlphaNum c || c == '-' || c == '_' then
-                String.fromChar c
-
-            else
-                "-"
-    in
-    hostname
-        |> String.toList
-        |> List.map escapeChar
-        |> String.concat

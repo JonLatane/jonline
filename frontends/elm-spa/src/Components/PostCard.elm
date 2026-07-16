@@ -17,6 +17,7 @@ module Components.PostCard exposing
     , postContextLabel
     , postDetail
     , postHref
+    , postLinkText
     , postTimestamp
     , postTitleText
     , postVisibilityText
@@ -41,7 +42,7 @@ import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, img, span, text)
-import Html.Attributes exposing (alt, attribute, class, href, src)
+import Html.Attributes exposing (alt, attribute, class, href, rel, src, target)
 import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
@@ -53,7 +54,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task exposing (Task)
 import Time
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Fetches a single post (including reply/preview data) from `server`,
@@ -134,8 +135,8 @@ isAuthor account post =
 
 {-| Walks `post`'s own `replyToPostId` chain all the way up to (and including)
 its root ancestor, fetching each one individually via `fetchPost` -- `Post`
-only carries its *children* (`replies`), not its parent, so there's no way to
-get this in one request. Returned root-first, *not* including `post` itself
+only carries its _children_ (`replies`), not its parent, so there's no way to
+get this in one request. Returned root-first, _not_ including `post` itself
 (the caller already has that) -- e.g. for a reply-to-a-reply, `[root, parent]`.
 Empty if `post` has no `replyToPostId` at all (it's already the root).
 
@@ -143,6 +144,7 @@ Used by `Pages.Post.PostId_` to populate `Shared.Breadcrumbs` for a Post
 reached via a reply chain rather than directly. Returns `maybeAccount` back
 (refreshed, if it needed to be, across however many hops it took), same
 convention as `fetchPost`.
+
 -}
 fetchAncestors :
     AccountsPanel.Server
@@ -275,6 +277,42 @@ postTitleText post =
             fallbackTitle post
 
 
+{-| The post's `link` field, trimmed -- `Nothing` if unset or blank, same
+convention as `postTitleText`'s own trimming (just without a fallback, since
+unlike a title, a post with no link simply shows no link row at all).
+-}
+postLinkText : Post -> Maybe String
+postLinkText post =
+    post.link
+        |> Maybe.map String.trim
+        |> Maybe.andThen
+            (\link ->
+                if String.isEmpty link then
+                    Nothing
+
+                else
+                    Just link
+            )
+
+
+{-| `link` with a leading `http://`/`https://` dropped, for display only --
+callers still `href` the untouched `postLinkText` value, this is just to
+avoid stating the obvious (every post link is one or the other) and buy back
+a few more characters before `.post-card-link`/`.post-detail-link`'s
+`text-overflow: ellipsis` kicks in.
+-}
+stripLinkScheme : String -> String
+stripLinkScheme link =
+    if String.startsWith "https://" link then
+        String.dropLeft 8 link
+
+    else if String.startsWith "http://" link then
+        String.dropLeft 7 link
+
+    else
+        link
+
+
 fallbackTitle : Post -> String
 fallbackTitle post =
     post.content
@@ -378,7 +416,7 @@ visibilityText visibility =
 {-| The visibility options offered by a visibility-editing `<select>` (see
 `Pages.Post.PostId_`) -- excludes `DIRECT`, which the proto itself marks
 `[TODO]`/unimplemented (see `protos/visibility_moderation.proto`), and
-`VISIBILITYUNKNOWN`, which is never a valid value to *set*. Order matches
+`VISIBILITYUNKNOWN`, which is never a valid value to _set_. Order matches
 `visibilityText`/the proto's own declaration order.
 -}
 allVisibilities : List Visibility
@@ -406,7 +444,7 @@ check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
 passes either. `currentVisibility` is always included even if it wouldn't
 otherwise be pickable, so an account whose permission was revoked after the
 post was already elevated still sees its own current value in the list
-(just can't newly pick it for some *other* post) -- see
+(just can't newly pick it for some _other_ post) -- see
 `Pages.Post.PostId_`'s visibility editor, which seeds its pending value from
 the post's already-current one.
 -}
@@ -654,17 +692,26 @@ making its plain text transparent to clicks, which fall through to the overlay
 below -- while `authorLink`/`starButton`, both opted back in via
 `pointer-events: auto`, catch clicks themselves before they ever reach it.
 
+`.post-card-link` (the post's own `link` field, shown below the title via
+`postLinkText` when set -- see `posts.css`) needs the same independent-click
+treatment as `authorLink`/`starButton`, just via `position: relative` directly
+on the anchor rather than the `pointer-events` dance: unlike the title (inert,
+so it's fine to just fall through to the overlay behind it and open the post
+either way), this one navigates somewhere else entirely, so it needs to win
+the overlay's paint order itself.
+
 `extraSmallMedia` shrinks the media preview's height further still (see
 `MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPostsPanel`'s
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
+
 -}
 postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
 postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
-             , postServerHost
+             , hostnameToCSSClass postServerHost
              , "border-color-primary-anchor-50"
              , "hover-border-color-primary-anchor"
              ]
@@ -683,6 +730,12 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMe
             ]
             []
         , div [ class "post-card-title" ] [ text (postTitleText post) ]
+        , case postLinkText post of
+            Just link ->
+                a [ href link, target "_blank", rel "noopener noreferrer", class "post-card-link" ] [ text (stripLinkScheme link) ]
+
+            Nothing ->
+                text ""
         , case maybeServer of
             Just server ->
                 if extraSmallMedia then
@@ -719,14 +772,14 @@ meta line's `post-meta-right` group only to the post's own author.
 
 Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
 title of its own (`postTitleText`'s fallback to a truncated `content` exists
-for contexts, like `postCard`'s feed entries, where *something* short is
+for contexts, like `postCard`'s feed entries, where _something_ short is
 needed regardless; here, with the full `content` rendered right below anyway,
 that fallback would just be a redundant near-duplicate of it). It gets
 `postContextLabel`'s small context chip in its place instead (mirroring
 `Shared.StarredPostsPanel`'s own `starred-post-context`) -- since a Post
 reached this way is, on `Pages.Post.PostId_`, already headed by
-`Shared.Breadcrumbs`' own trail showing exactly *which* reply this is, this
-chip only needs to mark plainly *that* it's one, not repeat any of that
+`Shared.Breadcrumbs`' own trail showing exactly _which_ reply this is, this
+chip only needs to mark plainly _that_ it's one, not repeat any of that
 context.
 
 `visibilityView` is the whole visibility segment of the meta line -- plain
@@ -735,6 +788,7 @@ the caller (`Pages.Post.PostId_`, which owns the editing state/permission
 gating for it, the same way it owns `onEditClicked`) -- this just slots
 whatever `Html` it's given in after the author link, in place of what used to
 be a bare `postVisibilityText post` text node.
+
 -}
 postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
 postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
@@ -749,6 +803,12 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
 
                 Nothing ->
                     text ""
+        , case postLinkText post of
+            Just link ->
+                a [ href link, target "_blank", rel "noopener noreferrer", class "post-detail-link" ] [ text (stripLinkScheme link) ]
+
+            Nothing ->
+                text ""
         , case maybeServer of
             Just server ->
                 MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
