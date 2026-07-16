@@ -122,6 +122,89 @@
   pointer-events: auto;
 }
 
+/* The nav buttons page `Shared.MediaViewerPanel`'s `currentMediaReference`
+   to a different `MediaReference`, which (see `view`'s `Html.Keyed.node`)
+   swaps in a whole new `.media-viewer-panel-media` DOM node keyed on that
+   item's id, rather than patching the old `<img>`/`<video>` in place -- a
+   plain `transition` can only animate a property change on one persistent
+   element, so this needs a `@keyframes` animation instead, which plays
+   automatically on insertion of a *new* element, no explicit trigger needed.
+   `-stage` just centers whichever `-media` child is currently mounted;
+   `overflow: hidden` on it clips the incoming slide so it doesn't flash
+   past the edge of the screen mid-animation. */
+.media-viewer-panel-media-stage {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.media-viewer-panel-media {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  animation-duration: 0.32s;
+  animation-timing-function: ease;
+  animation-fill-mode: both;
+}
+
+.media-viewer-panel-media-entering {
+  animation-name: media-viewer-fade-in;
+}
+
+.media-viewer-panel-media-forward {
+  animation-name: media-viewer-slide-in-forward;
+}
+
+.media-viewer-panel-media-backward {
+  animation-name: media-viewer-slide-in-backward;
+}
+
+@keyframes media-viewer-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+/* `Prev`/`Next` slide in from the direction the user just paged toward --
+   `-forward` (next, "‹" points left so content should feel like it's coming
+   from the right) starts offset to the right, `-backward` (prev) from the
+   left -- plus a small scale-up, so the incoming image reads as arriving
+   rather than just fading in place. The outgoing image isn't animated (it's
+   simply replaced, see above), so this is a one-sided "crossfade" rather
+   than a true two-element slide. */
+@keyframes media-viewer-slide-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(3%) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes media-viewer-slide-in-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-3%) scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
 /* Left arrow, the Post's title (flexible, ellipsizing), right arrow, close --
    in that order -- one row pinned to the bottom, rather than the arrows
    floating over the media itself, so they never overlap/obscure it (a tall
@@ -152,6 +235,7 @@
   color: white;
   font-size: 0.95rem;
   text-align: center;
+  cursor: pointer;
 }
 
 .media-viewer-panel-nav,

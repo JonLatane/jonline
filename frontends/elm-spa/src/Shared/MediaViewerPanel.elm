@@ -21,6 +21,7 @@ import Components.PostCard as Posts
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Html.Keyed
 import Proto.Jonline exposing (MediaReference, Post)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, openClosedClass)
@@ -39,17 +40,35 @@ type alias Model =
     -- `Server`/`Account` the tapped Post's media belongs to -- same
     -- `targetHost` convention `Shared.MarkdownPanel` uses.
     , targetHost : String
+
+    -- Which way the *last* `Next`/`Prev` paged, purely to pick a slide
+    -- direction in `view` (see `directionClass`) -- has no bearing on
+    -- `currentMediaReference` itself. Reset to `Entering` on every fresh
+    -- `Open`, so the first image of a newly-opened post just fades in rather
+    -- than sliding in from whatever direction the previous post's viewing
+    -- happened to leave behind.
+    , direction : Direction
     }
+
+
+{-| See `Model.direction`'s doc.
+-}
+type Direction
+    = Entering
+    | Forward
+    | Backward
 
 
 init : Model
 init =
-    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "" }
+    { media = [], currentMediaReference = Nothing, maybePost = Nothing, targetHost = "", direction = Entering }
 
 
 type Msg
     = Open Post String String
     | SetCurrent String
+    | Next
+    | Prev
     | CloseClicked
 
 
@@ -83,12 +102,29 @@ update msg model =
             , currentMediaReference = validCurrent post.media initialId
             , maybePost = Just post
             , targetHost = host
+            , direction = Entering
             }
 
         SetCurrent id ->
             case validCurrent model.media id of
                 Just validId ->
                     { model | currentMediaReference = Just validId }
+
+                Nothing ->
+                    model
+
+        Next ->
+            case adjacent 1 model of
+                Just nextMedia ->
+                    { model | currentMediaReference = Just nextMedia.id, direction = Forward }
+
+                Nothing ->
+                    model
+
+        Prev ->
+            case adjacent -1 model of
+                Just prevMedia ->
+                    { model | currentMediaReference = Just prevMedia.id, direction = Backward }
 
                 Nothing ->
                     model
@@ -162,26 +198,56 @@ view accountsPanelModel model =
         , div [ class "media-viewer-panel-content" ]
             [ case ( currentMedia, maybeServer ) of
                 ( Just media, Just server ) ->
-                    MediaRenderer.view MediaRenderer.Natural server maybeAccount SetCurrent media
+                    -- Keyed on `media.id` so paging to a different item swaps
+                    -- in a brand-new DOM node rather than patching the old
+                    -- `<img>`/`<video>`'s attributes in place -- that fresh
+                    -- insertion is what lets `directionClass`'s CSS animation
+                    -- (media_viewer_panel.css) actually play on every page,
+                    -- the same trick `Shared.StarredPostsPanel`'s
+                    -- `Html.Keyed` list uses for its own enter animation.
+                    Html.Keyed.node "div"
+                        [ class "media-viewer-panel-media-stage" ]
+                        [ ( media.id
+                          , div [ classes [ "media-viewer-panel-media", directionClass model.direction ] ]
+                                [ MediaRenderer.view MediaRenderer.Natural server maybeAccount SetCurrent media ]
+                          )
+                        ]
 
                 _ ->
                     text ""
             ]
         , div [ class "media-viewer-panel-toolbar" ]
             [ case adjacent -1 model of
-                Just prevMedia ->
-                    navButton [ "media-viewer-panel-prev" ] (SetCurrent prevMedia.id) "‹"
+                Just _ ->
+                    navButton [ "media-viewer-panel-prev" ] Prev "‹"
 
                 Nothing ->
                     text ""
-            , div [ class "media-viewer-panel-post-title" ]
+            , div [ class "media-viewer-panel-post-title", onClick CloseClicked ]
                 [ text (model.maybePost |> Maybe.map Posts.postTitleText |> Maybe.withDefault "") ]
             , case adjacent 1 model of
-                Just nextMedia ->
-                    navButton [ "media-viewer-panel-next" ] (SetCurrent nextMedia.id) "›"
+                Just _ ->
+                    navButton [ "media-viewer-panel-next" ] Next "›"
 
                 Nothing ->
                     text ""
             , button [ class "media-viewer-panel-close", onClick CloseClicked ] [ text "✕" ]
             ]
         ]
+
+
+{-| CSS animation to play for the media stage's freshly-keyed node (see
+`view`) -- a directional slide for `Next`/`Prev`, a plain fade for a fresh
+`Open`. Matched to `.media-viewer-panel-media-*` in media_viewer_panel.css.
+-}
+directionClass : Direction -> String
+directionClass direction =
+    case direction of
+        Entering ->
+            "media-viewer-panel-media-entering"
+
+        Forward ->
+            "media-viewer-panel-media-forward"
+
+        Backward ->
+            "media-viewer-panel-media-backward"
