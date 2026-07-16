@@ -16,6 +16,8 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
             "flutter",
             "tamagui",
             "elm",
+            "elm_debug",
+            "debug",
             "home",
             "web",
             "events",

@@ -6,13 +6,14 @@ import Components.ServerDependentView as ServerDependentView
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
 import Grpc
-import Html exposing (Html, a, button, div, p, text)
-import Html.Attributes exposing (class, href, target)
-import Html.Events exposing (onClick)
+import Html exposing (Html, a, button, div, option, p, select, span, text)
+import Html.Attributes exposing (class, disabled, href, selected, target, value)
+import Html.Events exposing (onClick, onInput)
 import Page
 import Proto.Jonline exposing (Post)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Jonline.Visibility exposing (Visibility)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -46,6 +47,28 @@ type PostStatus
     | PostFailed
 
 
+{-| Mirrors `Components.UserProfilePage.SubmitStatus` -- kept separate since
+this page's visibility edit is local to it rather than routed through
+`Shared.MarkdownPanel`.
+-}
+type SubmitStatus
+    = Idle
+    | Submitting
+    | SubmitFailed String
+
+
+{-| Live only while the visibility picker (see `Model.visibilityEdit`) is
+being edited by the post's own author -- `pending` is the in-progress
+`<select>` value, independent of the loaded Post's own `visibility` until
+`VisibilitySaveClicked` succeeds. Mirrors `Components.UserProfilePage`'s
+`RealNameEdit`.
+-}
+type alias VisibilityEdit =
+    { pending : Visibility
+    , status : SubmitStatus
+    }
+
+
 type alias Model =
     { targetHost : String
     , postId : String
@@ -53,6 +76,7 @@ type alias Model =
     , repliesModel : Maybe PostReplies.Model
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
+    , visibilityEdit : Maybe VisibilityEdit
     }
 
 
@@ -70,6 +94,7 @@ init shared params =
                 , repliesModel = Nothing
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
+                , visibilityEdit = Nothing
                 }
     in
     ( fetchedModel
@@ -145,6 +170,17 @@ refetch shared model =
             ( model, Effect.none )
 
 
+{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
+both exist -- what `VisibilitySaveClicked` needs to actually submit its
+`Posts.updatePost` task. Mirrors `Components.UserProfilePage.serverAndAccount`.
+-}
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount shared model =
+    Maybe.map2 Tuple.pair
+        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+
+
 
 -- UPDATE
 
@@ -159,6 +195,11 @@ type Msg
     | EditClicked Post
     | ReplyClicked Post
     | MediaClicked Post String
+    | VisibilityEditClicked Post
+    | VisibilityChanged String
+    | VisibilityCancelClicked
+    | VisibilitySaveClicked Post
+    | GotVisibilitySaveResult (Result Grpc.Error ( AccountsPanel.Account, Post ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -294,6 +335,47 @@ update shared req msg model =
         MediaClicked post mediaId ->
             ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
 
+        VisibilityEditClicked post ->
+            ( { model | visibilityEdit = Just { pending = post.visibility, status = Idle } }, Effect.none )
+
+        VisibilityChanged text ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit
+                        |> Maybe.map
+                            (\edit -> { edit | pending = Posts.visibilityFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        VisibilityCancelClicked ->
+            ( { model | visibilityEdit = Nothing }, Effect.none )
+
+        VisibilitySaveClicked post ->
+            case ( model.visibilityEdit, serverAndAccount shared model ) of
+                ( Just edit, Just ( server, account ) ) ->
+                    ( { model | visibilityEdit = Just { edit | status = Submitting } }
+                    , Posts.updatePost server account post.id (\freshPost -> { freshPost | visibility = edit.pending })
+                        |> Task.attempt GotVisibilitySaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotVisibilitySaveResult (Ok ( refreshedAccount, updatedPost )) ->
+            ( { model | postStatus = PostLoaded updatedPost, visibilityEdit = Nothing }
+            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            )
+
+        GotVisibilitySaveResult (Err err) ->
+            ( { model
+                | visibilityEdit =
+                    model.visibilityEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
             , AccountsPanel.connectToServer (AccountsPanel.isSecure req) model.targetHost
@@ -402,7 +484,7 @@ bodyView shared req model =
                         [ postDetailView shared model post
                         , postActionsView shared model post
                         , repliesView shared model
-                        , commentsLinkView shared req post
+                        , reactLinkView shared req
                         ]
         )
 
@@ -429,7 +511,89 @@ postDetailView shared model post =
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
     in
-    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount onMediaClicked starred onStarClicked (EditClicked post) displayPost
+    Posts.postDetail shared.basePath
+        shared.accountsPanel.mainFrontendHost
+        model.targetHost
+        maybeServer
+        maybeAccount
+        onMediaClicked
+        starred
+        onStarClicked
+        (EditClicked post)
+        (visibilityView maybeAccount model.visibilityEdit displayPost)
+        displayPost
+
+
+{-| The visibility segment of `postDetail`'s meta line (see `postDetail`'s own
+`visibilityView` parameter) -- plain text (`Posts.postVisibilityText`) plus an
+Edit button when `model.visibilityEdit == Nothing`, shown only to `post`'s own
+author (mirrors `Posts.editButton`'s own `isAuthor` gate, matching
+`backend/src/rpcs/posts/update_post.rs`'s `self_update` check); an inline
+`<select>` + Save/Cancel once editing, with its options narrowed to whatever
+`maybeAccount` is actually allowed to pick (`Posts.allowedVisibilities`,
+mirroring that same file's `PUBLISHPOSTS*`/`PUBLISHEVENTS*` permission check).
+-}
+visibilityView : Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> Post -> Html Msg
+visibilityView maybeAccount maybeEdit post =
+    case ( maybeEdit, maybeAccount ) of
+        ( Just edit, Just account ) ->
+            let
+                options =
+                    Posts.allowedVisibilities account.permissions post.context post.visibility
+            in
+            span [ class "post-visibility-edit" ]
+                [ select [ onInput VisibilityChanged ]
+                    (options
+                        |> List.map
+                            (\visibility ->
+                                option
+                                    [ value (Posts.visibilityText visibility)
+                                    , selected (edit.pending == visibility)
+                                    ]
+                                    [ text (Posts.visibilityText visibility) ]
+                            )
+                    )
+                , button
+                    [ class "post-visibility-save"
+                    , onClick (VisibilitySaveClicked post)
+                    , disabled (edit.status == Submitting)
+                    ]
+                    [ text
+                        (if edit.status == Submitting then
+                            "Saving…"
+
+                         else
+                            "Save"
+                        )
+                    ]
+                , button
+                    [ class "post-visibility-cancel"
+                    , onClick VisibilityCancelClicked
+                    , disabled (edit.status == Submitting)
+                    ]
+                    [ text "Cancel" ]
+                , case edit.status of
+                    SubmitFailed err ->
+                        span [ class "post-visibility-error" ] [ text err ]
+
+                    _ ->
+                        text ""
+                ]
+
+        _ ->
+            span [ class "post-visibility-display" ]
+                [ text (Posts.postVisibilityText post)
+                , case maybeAccount of
+                    Just account ->
+                        if Posts.isAuthor account post then
+                            button [ class "post-visibility-edit-button", onClick (VisibilityEditClicked post) ] [ text "Edit" ]
+
+                        else
+                            text ""
+
+                    Nothing ->
+                        text ""
+                ]
 
 
 {-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS` --
@@ -485,41 +649,8 @@ server (port 1234), which has no Rust backend of its own to serve `/tamagui`
 from at all, so that case links to the local backend's default port (8000)
 instead.
 -}
-commentsLinkView : Shared.Model -> Request.With Params -> Post -> Html Msg
-commentsLinkView shared req post =
-    let
-        commentCount =
-            Posts.postCommentCount post
-    in
-    if commentCount <= 0 then
-        p [ class "post-comments-link" ]
-            [ a [ href (reactCommentsHref shared req), target "_self" ]
-                [ text
-                    "View from the React app"
-                ]
-            ]
-
-    else
-        p [ class "post-comments-link" ]
-            [ a [ href (reactCommentsHref shared req), target "_self" ]
-                [ text
-                    ("View "
-                        ++ String.fromInt commentCount
-                        ++ " comment"
-                        ++ (if commentCount == 1 then
-                                ""
-
-                            else
-                                "s"
-                           )
-                        ++ " from the React app"
-                    )
-                ]
-            ]
-
-
-reactCommentsHref : Shared.Model -> Request.With Params -> String
-reactCommentsHref shared req =
+reactLinkView : Shared.Model -> Request.With Params -> Html Msg
+reactLinkView shared req =
     let
         isDevServer =
             req.url.port_ == Just 1234
@@ -542,13 +673,17 @@ reactCommentsHref shared req =
             port_
                 |> Maybe.map (\p -> ":" ++ String.fromInt p)
                 |> Maybe.withDefault ""
+
+        reactCommentsHref =
+            scheme
+                ++ shared.accountsPanel.browsingHost
+                ++ portSuffix
+                ++ "/tamagui/post/"
+                ++ req.params.postId
     in
-    scheme
-        ++ shared.accountsPanel.browsingHost
-        ++ portSuffix
-        ++ "/tamagui/post/"
-        ++ req.params.postId
-
-
-
--- ++ "#discussion"
+    p [ class "post-comments-link" ]
+        [ a [ href reactCommentsHref, target "_self" ]
+            [ text
+                "View from the React app"
+            ]
+        ]

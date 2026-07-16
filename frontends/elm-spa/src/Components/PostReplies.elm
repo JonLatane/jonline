@@ -36,6 +36,7 @@ import Html.Events exposing (onClick)
 import Html.Keyed
 import Proto.Jonline exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -437,7 +438,14 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
         ]
         [ div [ class "post-reply-meta" ]
             [ span [ class "post-meta-left" ]
-                [ Posts.authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post ]
+                (Posts.authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                    :: (if post.visibility == GLOBALPUBLIC then
+                            []
+
+                        else
+                            [ text (" · " ++ Posts.postVisibilityText post) ]
+                       )
+                )
             , span [ class "post-meta-right" ]
                 [ a
                     [ href (Posts.postHref basePath viewingServerHost postServerHost post)

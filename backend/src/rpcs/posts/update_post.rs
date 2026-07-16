@@ -54,6 +54,33 @@ pub fn update_post(
             vec![Permission::Admin, Permission::ModeratePosts],
         )?;
     }
+
+    if admin || self_update {
+        let is_event_context = vec![PostContext::Event, PostContext::EventInstance]
+            .iter()
+            .map(|c| c.to_string_post_context())
+            .any(|s| s == existing_post.context);
+        match request.visibility() {
+            Visibility::GlobalPublic => validate_permission(
+                &Some(user),
+                if is_event_context {
+                    Permission::PublishEventsGlobally
+                } else {
+                    Permission::PublishPostsGlobally
+                },
+            )?,
+            Visibility::ServerPublic => validate_permission(
+                &Some(user),
+                if is_event_context {
+                    Permission::PublishEventsLocally
+                } else {
+                    Permission::PublishPostsLocally
+                },
+            )?,
+            _ => {}
+        };
+    }
+
     let transaction_result: Result<models::Post, diesel::result::Error> = conn
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
             if admin || self_update {
