@@ -12,9 +12,11 @@ import Html.Events exposing (onClick)
 import Page
 import Proto.Jonline exposing (Post)
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
@@ -59,15 +61,24 @@ init shared params =
     let
         ( postId, targetHost ) =
             Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
+
+        ( fetchedModel, fetchEffect ) =
+            fetchIfReady shared
+                { targetHost = targetHost
+                , postId = postId
+                , postStatus = LoadingPost
+                , repliesModel = Nothing
+                , connectStatus = ServerDependentView.NotConnected
+                , fetchStarted = False
+                }
     in
-    fetchIfReady shared
-        { targetHost = targetHost
-        , postId = postId
-        , postStatus = LoadingPost
-        , repliesModel = Nothing
-        , connectStatus = ServerDependentView.NotConnected
-        , fetchStarted = False
-        }
+    ( fetchedModel
+      -- Clears any breadcrumb trail left over from whichever Post was
+      -- viewed before this one -- `GotPost` below repopulates it once this
+      -- Post's own data (and, if it's a reply, its ancestor chain) is back,
+      -- so there's no stale trail shown in the meantime.
+    , Effect.batch [ fetchEffect, Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear) ]
+    )
 
 
 {-| Kicks off the actual `GetPosts` fetch the first time `targetHost` is a
@@ -140,6 +151,7 @@ refetch shared model =
 
 type Msg
     = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
+    | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Account, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
@@ -191,6 +203,25 @@ update shared req msg model =
 
                         ( Nothing, existing ) ->
                             ( existing, Effect.none )
+
+                -- Only a Post reached via a reply chain (`REPLY` context) has
+                -- any breadcrumb trail to show -- see `GotBreadcrumbAncestors`
+                -- for where `Shared.Breadcrumbs` actually gets set once this
+                -- resolves. A plain top-level Post just clears whatever trail
+                -- an earlier reply page here might have left behind.
+                breadcrumbsEffect =
+                    case ( List.head response.posts, maybeServer ) of
+                        ( Just post, Just server ) ->
+                            if post.context == REPLY then
+                                Posts.fetchAncestors server maybeAccount post
+                                    |> Task.attempt (GotBreadcrumbAncestors post)
+                                    |> Effect.fromCmd
+
+                            else
+                                Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear)
+
+                        _ ->
+                            Effect.none
             in
             ( { model
                 | postStatus =
@@ -200,11 +231,41 @@ update shared req msg model =
                         |> Maybe.withDefault PostFailed
                 , repliesModel = repliesModel
               }
-            , Effect.batch [ accountEffect, repliesEffect ]
+            , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect ]
             )
 
         GotPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
+
+        GotBreadcrumbAncestors post (Ok ( maybeRefreshedAccount, ancestors )) ->
+            let
+                accountEffect =
+                    maybeRefreshedAccount
+                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
+                        |> Maybe.withDefault Effect.none
+
+                -- `ancestors` is root-first and excludes `post` itself (see
+                -- `Posts.fetchAncestors`) -- its first entry is the root
+                -- (this Post's own reply chain can't be empty, since this is
+                -- only ever kicked off for a `REPLY`-context Post), and
+                -- everything after it, plus `post` itself, is the rest of the
+                -- chain shown as reply segments.
+                root =
+                    List.head ancestors |> Maybe.withDefault post
+
+                replies =
+                    List.drop 1 ancestors ++ [ post ]
+            in
+            ( model
+            , Effect.batch
+                [ accountEffect
+                , Effect.fromShared
+                    (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromPost root) model.targetHost replies))
+                ]
+            )
+
+        GotBreadcrumbAncestors _ (Err _) ->
+            ( model, Effect.none )
 
         PostRepliesMsg subMsg ->
             case model.repliesModel of

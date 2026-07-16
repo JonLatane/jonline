@@ -191,3 +191,122 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Breadcrumbs -- Shared/Breadcrumbs.elm's `bar`, a horizontally-scrolling
+   strip at the very bottom of `.navbar` (a sibling row below `.navbar-inner`,
+   see UI.elm's `headerNav`), showing the root Post's title followed by one
+   avatar+username chip per reply in the chain leading to whichever Post is
+   currently being viewed. Empty (renders nothing) until a page sets a root,
+   so it takes up no space on pages that never do. */
+.breadcrumbs-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  overflow-x: auto;
+  padding: 0.3rem 1rem 0.5rem;
+}
+
+.breadcrumb-separator {
+  flex: 0 0 auto;
+  opacity: 0.6;
+}
+
+.breadcrumb-segment {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.breadcrumb-root {
+  font-weight: 600;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.breadcrumb-reply-avatar {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.breadcrumb-reply-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.6rem;
+}
+
+.breadcrumb-reply-username {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Reply Card viewer -- Shared/Breadcrumbs.elm's `replyPanel`, opened by
+   tapping a breadcrumb segment above. A centered dialog, like `.modal`, but
+   built on the shared `.nav-panel` open/closed transition (accounts_panel.css)
+   instead, and mounted as its own sibling of `.navbar` in UI.elm's `layout`
+   (rather than a `.navbar` descendant) so its z-index (27) can sit strictly
+   between `.markdown-panel` (26) and `.navbar`'s own (28, which the Accounts/
+   Starred Posts panels inherit by being its descendants) -- above a glanced-
+   at Markdown edit left open behind it, below the Accounts/Starred Posts
+   panels if those are opened over it. */
+.breadcrumb-reply-panel.nav-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, -50%);
+  width: min(90vw, 500px);
+  max-height: 80vh;
+  overflow-y: auto;
+  z-index: 27;
+}
+
+.breadcrumb-reply-panel.nav-panel.is-closed {
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.breadcrumb-reply-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breadcrumb-reply-panel-close {
+  align-self: flex-end;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+.breadcrumb-reply-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.breadcrumb-reply-card-permalink {
+  text-decoration: none;
+}
+
+.breadcrumb-reply-card-content {
+  font-size: 0.9rem;
+}

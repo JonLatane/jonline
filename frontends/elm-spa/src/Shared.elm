@@ -26,6 +26,7 @@ import Process
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
@@ -66,6 +67,7 @@ type alias Model =
     , starredPostsPanel : StarredPostsPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
+    , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
 
@@ -99,6 +101,7 @@ type Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
+    | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
     | RequestDelete DeleteConfirmation
@@ -247,6 +250,7 @@ init basePath req flags =
       , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
       , markdownPanel = MarkdownPanel.init
       , mediaViewerPanel = MediaViewerPanel.init
+      , breadcrumbs = Breadcrumbs.init
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
@@ -314,6 +318,9 @@ update req msg model =
 
         MediaViewerPanelMsg subMsg ->
             ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
+
+        BreadcrumbsMsg subMsg ->
+            ( { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }, Cmd.none )
 
         MarkdownPanelMsg subMsg ->
             let

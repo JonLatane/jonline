@@ -18,6 +18,7 @@ import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
@@ -71,6 +72,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
+    , Html.map toMsg (breadcrumbsReplyPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
     , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
@@ -116,6 +118,10 @@ headerNav shared currentRoute =
 
           else
             starredPostsPanel shared currentRoute
+
+        -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
+        -- -- see `breadcrumbsBar`.
+        , breadcrumbsBar shared
         ]
 
 
@@ -135,11 +141,11 @@ type alias BackdropPanel =
 {-| Covers everything except the top nav (which sits in its own, higher
 stacking context -- see `.navbar` in nav.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel, the Accounts
-Panel and the Markdown panel, with more expected to join this list later.
-Always rendered, like the panels themselves, so opening/closing (and the
-blur) is a plain CSS transition rather than the element appearing/
-disappearing outright, and only receives clicks (`pointer-events`) while at
-least one listed panel is open.
+Panel, the Breadcrumbs reply viewer and the Markdown panel, with more
+expected to join this list later. Always rendered, like the panels
+themselves, so opening/closing (and the blur) is a plain CSS transition
+rather than the element appearing/disappearing outright, and only receives
+clicks (`pointer-events`) while at least one listed panel is open.
 
 The Media Viewer panel is deliberately not one of these -- unlike the others,
 its own box already spans the whole viewport rather than a small, anchored
@@ -155,16 +161,19 @@ Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Starred Posts
-panel first, then the Accounts Panel, then (on a third tap) the Markdown panel
-behind both -- matching the actual paint order (`.navbar`'s own z-index sits
-above `.markdown-panel`, so its descendants -- the Accounts/Starred Posts
-panels -- render above it regardless of their own, lower z-indices; see
-nav.css and markdown\_panel.css) -- swap their order here to change that
-priority. Only blurs/tints the page while a panel with `blurs = True` is open
-(currently the Accounts Panel and the Markdown panel, both of which block
-interaction with the rest of the page while open); the Starred Posts panel
-doesn't, since starring/unstarring posts while it's open is an expected,
-encouraged interaction rather than something to block.
+panel first, then the Accounts Panel, then the Breadcrumbs reply viewer, then
+(on a fourth tap) the Markdown panel behind all three -- matching the actual
+paint order (`.navbar`'s own z-index sits above both `.breadcrumb-reply-panel`
+and `.markdown-panel`, so its descendants -- the Accounts/Starred Posts panels
+-- render above it regardless of their own, lower z-indices; the Breadcrumbs
+reply viewer's own z-index in turn sits above `.markdown-panel`'s but below
+`.navbar`'s; see nav.css and markdown\_panel.css) -- swap their order here to
+change that priority. Only blurs/tints the page while a panel with
+`blurs = True` is open (currently the Accounts Panel, the Breadcrumbs reply
+viewer and the Markdown panel, all of which block interaction with the rest
+of the page while open); the Starred Posts panel doesn't, since starring/
+unstarring posts while it's open is an expected, encouraged interaction
+rather than something to block.
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -177,6 +186,10 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
+              , blurs = True
+              }
+            , { isOpen = shared.breadcrumbs.viewing /= Nothing
+              , closeMsg = Shared.BreadcrumbsMsg Breadcrumbs.CloseViewer
               , blurs = True
               }
             , { isOpen = shared.markdownPanel.target /= Nothing
@@ -1603,6 +1616,26 @@ behind it.
 markdownPanel : Shared.Model -> Html Shared.Msg
 markdownPanel shared =
     Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+
+
+{-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`
+-- unlike the Starred Posts toggle/panel, there's no nav icon of its own;
+whichever page has a chain to show (currently just `Pages.Post.PostId_`) sets
+it directly via `Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot ...)`, so this just
+renders whatever's currently there (empty if nothing is).
+-}
+breadcrumbsBar : Shared.Model -> Html Shared.Msg
+breadcrumbsBar shared =
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.bar shared.accountsPanel shared.breadcrumbs)
+
+
+{-| The centered popup opened by tapping a breadcrumb segment (see
+`Shared.Breadcrumbs.replyPanel`) -- opened contextually, same as `markdownPanel`
+above, so it's mounted directly in `layout` rather than inside `headerNav`.
+-}
+breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
+breadcrumbsReplyPanel shared =
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.replyPanel shared.basePath shared.accountsPanel shared.breadcrumbs)
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)

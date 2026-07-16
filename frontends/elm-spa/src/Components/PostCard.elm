@@ -1,11 +1,13 @@
 module Components.PostCard exposing
     ( authorLink
     , commentCountText
+    , fetchAncestors
     , fetchPost
     , fetchRecentPosts
     , fetchReplies
     , isAuthor
     , parsePostRouteId
+    , postAuthorAvatarUrl
     , postAuthorHref
     , postAuthorName
     , postCard
@@ -122,6 +124,42 @@ no `author` at all (shouldn't normally happen, but `Post.author` is optional).
 isAuthor : AccountsPanel.Account -> Post -> Bool
 isAuthor account post =
     Maybe.map .userId post.author == Just account.userId
+
+
+{-| Walks `post`'s own `replyToPostId` chain all the way up to (and including)
+its root ancestor, fetching each one individually via `fetchPost` -- `Post`
+only carries its *children* (`replies`), not its parent, so there's no way to
+get this in one request. Returned root-first, *not* including `post` itself
+(the caller already has that) -- e.g. for a reply-to-a-reply, `[root, parent]`.
+Empty if `post` has no `replyToPostId` at all (it's already the root).
+
+Used by `Pages.Post.PostId_` to populate `Shared.Breadcrumbs` for a Post
+reached via a reply chain rather than directly. Returns `maybeAccount` back
+(refreshed, if it needed to be, across however many hops it took), same
+convention as `fetchPost`.
+-}
+fetchAncestors :
+    AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> Post
+    -> Task Grpc.Error ( Maybe AccountsPanel.Account, List Post )
+fetchAncestors server maybeAccount post =
+    case post.replyToPostId of
+        Nothing ->
+            Task.succeed ( maybeAccount, [] )
+
+        Just parentId ->
+            fetchPost server maybeAccount parentId
+                |> Task.andThen
+                    (\( refreshedAccount, response ) ->
+                        case List.head response.posts of
+                            Just parentPost ->
+                                fetchAncestors server refreshedAccount parentPost
+                                    |> Task.map (\( account, ancestors ) -> ( account, ancestors ++ [ parentPost ] ))
+
+                            Nothing ->
+                                Task.succeed ( refreshedAccount, [] )
+                    )
 
 
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }

@@ -20,6 +20,7 @@ via each item's own `depth` (see `replyCard`'s indentation) rather than
 nested HTML, which is what lets the whole thing render as one flat,
 FLIP-animated list (`UI.Flip`) the same way `Pages.Home_`'s recent-posts feed
 and the Starred Posts panel already do for their own (non-nested) post lists.
+
 -}
 
 import Animation
@@ -29,11 +30,12 @@ import Components.PostCard as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, button, div, span, text)
-import Html.Attributes exposing (class, style)
+import Html exposing (Html, a, button, div, span, text)
+import Html.Attributes exposing (attribute, class, href, style)
 import Html.Events exposing (onClick)
 import Html.Keyed
 import Proto.Jonline exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
+import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task
@@ -76,6 +78,7 @@ type alias Model =
     , host : String
     , statuses : Dict String ReplyLoadStatus
     , replyAnimations : Dict String ReplyAnimation
+    , collapsedReplies : Set String
     }
 
 
@@ -94,6 +97,7 @@ init maybeServer maybeAccount host post =
                 , host = host
                 , statuses = Dict.empty
                 , replyAnimations = Dict.empty
+                , collapsedReplies = Set.empty
                 }
     in
     if List.isEmpty post.replies && (post.replyCount > 0 || post.responseCount > 0) then
@@ -122,6 +126,7 @@ type Msg
     | GotReplies String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
     | Animate Animation.Msg
     | RemoveReply String
+    | ToggleCollapsed String
 
 
 loadReplies : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Int -> String -> Model -> ( Model, Effect Msg )
@@ -180,6 +185,17 @@ update maybeServer maybeAccount msg model =
         RemoveReply key ->
             ( { model | replyAnimations = Dict.remove key model.replyAnimations }, Effect.none )
 
+        ToggleCollapsed postId ->
+            let
+                collapsedReplies =
+                    if Set.member postId model.collapsedReplies then
+                        Set.remove postId model.collapsedReplies
+
+                    else
+                        Set.insert postId model.collapsedReplies
+            in
+            ( syncAnimations { model | collapsedReplies = collapsedReplies }, Effect.none )
+
 
 {-| Replaces the node matching `targetId` anywhere in `post`'s own tree with
 `newReplies` as its `replies` -- used to merge a `GetPosts` response for one
@@ -205,17 +221,34 @@ including `post` itself -- the page already shows that via its own
 `postDetail`) -- direct replies at depth 1, their own replies at depth 2, etc.
 This (not `Dict` iteration order, which is alphabetical by id) is what decides
 the on-screen order every list/animation below actually renders in.
+
+A reply whose id is in `collapsedReplies` (see `Model.collapsedReplies`,
+toggled by its own `replyStatusButton`) still appears itself, but its
+descendants are skipped -- `syncAnimations` then sees them drop out of the
+flattened tree and fades them out via `Flip.remove` exactly like it would for
+a reply that stopped coming back from the server, giving the collapse/expand
+toggle its animation for free.
+
 -}
-flattenReplies : Post -> List ( Int, Post )
-flattenReplies post =
-    flattenAt 1 post
+flattenReplies : Set String -> Post -> List ( Int, Post )
+flattenReplies collapsedReplies post =
+    flattenAt 1 collapsedReplies post
 
 
-flattenAt : Int -> Post -> List ( Int, Post )
-flattenAt depth post =
+flattenAt : Int -> Set String -> Post -> List ( Int, Post )
+flattenAt depth collapsedReplies post =
     post.replies
         |> List.map unwrapPost
-        |> List.concatMap (\reply -> ( depth, reply ) :: flattenAt (depth + 1) reply)
+        |> List.concatMap
+            (\reply ->
+                ( depth, reply )
+                    :: (if Set.member reply.id collapsedReplies then
+                            []
+
+                        else
+                            flattenAt (depth + 1) collapsedReplies reply
+                       )
+            )
 
 
 {-| Reconciles `replyAnimations` with `model.root`'s current flattened tree --
@@ -231,7 +264,7 @@ syncAnimations model =
     let
         current : Dict String ( Int, Post )
         current =
-            flattenReplies model.root
+            flattenReplies model.collapsedReplies model.root
                 |> List.map (\( depth, post ) -> ( post.id, ( depth, post ) ))
                 |> Dict.fromList
 
@@ -291,7 +324,7 @@ view :
 view config model =
     let
         items =
-            flattenReplies model.root
+            flattenReplies model.collapsedReplies model.root
                 |> List.filterMap
                     (\( depth, post ) ->
                         Dict.get post.id model.replyAnimations
@@ -339,6 +372,9 @@ replyAnimationView config model ( depth, post, flip ) =
         loading =
             Dict.get post.id model.statuses == Just ReplyLoading
 
+        collapsed =
+            Set.member post.id model.collapsedReplies
+
         pointerEventsAttr =
             if flip.removing then
                 [ style "pointer-events" "none" ]
@@ -359,23 +395,23 @@ replyAnimationView config model ( depth, post, flip ) =
                 depth
                 loaded
                 loading
+                collapsed
                 (config.onReplyClicked post)
                 (config.toMsg (LoadRepliesClicked post.id))
+                (config.toMsg (ToggleCollapsed post.id))
                 post
             ]
         ]
     )
 
 
-{-| A single reply's card -- author, content, reply/response counts (see
-`Posts.commentCountText`, so this matches `postCard`/`postDetail`'s own
-formatting exactly), a Reply button, and (if `post.replyCount` disagrees with
-`post.replies`'s actual size, and this reply's own subtree hasn't already been
-`ReplyLoaded`) a "Load replies" button. `depth` (1 for a direct reply, 2 for a
-reply to a reply, etc.) drives its left-indentation, so the flattened list
-`view` renders still reads as a nested thread. Exposed (not just used by
-`view`) so any other place wanting to show a single reply -- e.g. a future
-notification/mention view -- can reuse the exact same card.
+{-| A single reply's card -- author, content, a Reply button, and (bottom
+right of the actions row) a merged load-more/collapse-expand button carrying
+`post`'s own reply/response counts (see `replyStatusButton`). `depth` (1 for a
+direct reply, 2 for a reply to a reply, etc.) drives its left-indentation, so
+the flattened list `view` renders still reads as a nested thread. Exposed (not
+just used by `view`) so any other place wanting to show a single reply --
+e.g. a future notification/mention view -- can reuse the exact same card.
 -}
 replyCard :
     String
@@ -387,11 +423,13 @@ replyCard :
     -> Int
     -> Bool
     -> Bool
+    -> Bool
+    -> msg
     -> msg
     -> msg
     -> Post
     -> Html msg
-replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked depth loaded loading onReplyClicked onLoadRepliesClicked post =
+replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked depth loaded loading collapsed onReplyClicked onLoadRepliesClicked onToggleCollapsedClicked post =
     div
         [ class "post-reply-item"
         , style "margin-left" (String.fromInt (min depth 8 * 20) ++ "px")
@@ -399,7 +437,14 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
         [ div [ class "post-reply-meta" ]
             [ span [ class "post-meta-left" ]
                 [ Posts.authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post ]
-            , span [ class "post-meta-right" ] [ text (Posts.commentCountText post) ]
+            , span [ class "post-meta-right" ]
+                [ a
+                    [ href (Posts.postHref basePath viewingServerHost postServerHost post)
+                    , class "post-reply-permalink"
+                    , attribute "aria-label" "Permalink"
+                    ]
+                    [ text "🔗" ]
+                ]
             ]
         , case maybeServer of
             Just server ->
@@ -415,21 +460,60 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
                 text ""
         , div [ class "post-reply-actions" ]
             [ button [ class "post-reply-button", onClick onReplyClicked ] [ text "Reply" ]
-            , loadRepliesButton loaded loading onLoadRepliesClicked post
+            , replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post
             ]
         ]
 
 
-loadRepliesButton : Bool -> Bool -> msg -> Post -> Html msg
-loadRepliesButton loaded loading onLoadRepliesClicked post =
-    if List.length post.replies == post.replyCount then
-        text ""
+{-| The merged "load more"/"collapse"/"expand" button in a reply card's
+bottom-right corner (`.post-reply-status-button`, pinned right via
+`margin-left: auto` same as `.post-meta-right`), carrying `post`'s own
+reply/response counts (`Posts.repliesCountText`, matching `commentCountText`'s
+own formatting) in each of its three states:
 
-    else if loaded then
-        text ""
+  - still more to fetch (`post.replies`'s length doesn't yet match
+    `post.replyCount`, and this node hasn't been explicitly `ReplyLoaded`):
+    "Load 💬 X/Y More" (or a "Loading replies…" placeholder while `loading`),
+    firing `onLoadRepliesClicked`
+  - fully loaded and has any replies: an Expand/Collapse toggle (driven by
+    `collapsed`, which mirrors `Model.collapsedReplies`) firing
+    `onToggleCollapsedClicked` -- see `flattenAt`, which is what actually
+    hides a collapsed node's descendants
+  - fully loaded with no replies at all: nothing
+
+-}
+replyStatusButton : Bool -> Bool -> Bool -> msg -> msg -> Post -> Html msg
+replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post =
+    let
+        fullyLoaded =
+            loaded || List.length post.replies == post.replyCount
+
+        countText =
+            "💬 " ++ Posts.repliesCountText post
+    in
+    if fullyLoaded then
+        if List.isEmpty post.replies then
+            text ""
+
+        else
+            button
+                [ class "post-reply-status-button", onClick onToggleCollapsedClicked ]
+                [ text
+                    -- ▲/▼ ◀/▶
+                    ((if collapsed then
+                        "▶ "
+
+                      else
+                        "▼ "
+                     )
+                        ++ countText
+                    )
+                ]
 
     else if loading then
         span [ class "post-reply-loading" ] [ text "Loading replies…" ]
 
     else
-        button [ class "post-reply-load-more", onClick onLoadRepliesClicked ] [ text "Load replies" ]
+        button
+            [ class "post-reply-status-button", onClick onLoadRepliesClicked ]
+            [ text ("Load " ++ countText ++ " More") ]

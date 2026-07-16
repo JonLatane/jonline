@@ -1,5 +1,6 @@
 module Components.Users exposing
-    ( authorAvatarUrl
+    ( allPermissions
+    , authorAvatarUrl
     , avatarUrl
     , displayName
     , fetchUserById
@@ -9,9 +10,11 @@ module Components.Users exposing
     , isReservedUsername
     , moderationText
     , parseUserRouteId
+    , permissionFromText
     , permissionText
     , profileHref
     , titleName
+    , updateUser
     , userIdHref
     , usernameHref
     , visibilityText
@@ -85,6 +88,44 @@ fetchUsers server maybeAccount request =
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
 connectionOf server =
     { host = server.backendHost, port_ = server.port_, tls = server.tls }
+
+
+{-| Reloads `userId` fresh via `GetUsers` (so any fields that changed
+server-side since the caller's own copy isn't clobbered), applies `updateFn`
+to that fresh copy, then submits the result via `UpdateUser` -- the "reload,
+then write, then update" dance `Components.UserProfilePage`'s Real Name and
+permissions editors both need, mirroring `Shared.MarkdownPanel.saveTask`'s
+`PostContent` case (`GetPosts`+`UpdatePost`). Returns the (possibly-refreshed)
+`Account` alongside the updated `User`, same convention as `fetchUserById`.
+-}
+updateUser :
+    AccountsPanel.Server
+    -> AccountsPanel.Account
+    -> String
+    -> (User -> User)
+    -> Task Grpc.Error ( AccountsPanel.Account, User )
+updateUser server account userId updateFn =
+    MaybeAccountRequest.performWithAccount (connectionOf server)
+        account
+        (\token ->
+            Grpc.new Jonline.getUsers { defaultGetUsersRequest | userId = Just userId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAuth (Just token)
+                |> Grpc.toTask
+        )
+        |> Task.andThen
+            (\( refreshedAccount, response ) ->
+                case List.head response.users of
+                    Just freshUser ->
+                        Grpc.new Jonline.updateUser (updateFn freshUser)
+                            |> Grpc.setHost (AccountsPanel.serverUrl server)
+                            |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
+                            |> Grpc.toTask
+                            |> Task.map (\updated -> ( refreshedAccount, updated ))
+
+                    Nothing ->
+                        Task.fail Grpc.NetworkError
+            )
 
 
 withAuth : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
@@ -406,6 +447,64 @@ permissionText permission =
 
         PermissionUnrecognized_ _ ->
             "Unknown"
+
+
+{-| Every real `Permission` a user could actually be granted (excludes
+`PERMISSIONUNKNOWN`/`PermissionUnrecognized_`, which aren't grantable) -- the
+full set an admin picks from in `Components.UserProfilePage`'s permissions
+editor's "Add Permission" `<select>`. Order matches `permissionText`/
+`permissions.proto`.
+-}
+allPermissions : List Permission
+allPermissions =
+    [ VIEWUSERS
+    , PUBLISHUSERSLOCALLY
+    , PUBLISHUSERSGLOBALLY
+    , MODERATEUSERS
+    , FOLLOWUSERS
+    , GRANTBASICPERMISSIONS
+    , VIEWGROUPS
+    , CREATEGROUPS
+    , PUBLISHGROUPSLOCALLY
+    , PUBLISHGROUPSGLOBALLY
+    , MODERATEGROUPS
+    , JOINGROUPS
+    , INVITEGROUPMEMBERS
+    , VIEWPOSTS
+    , CREATEPOSTS
+    , PUBLISHPOSTSLOCALLY
+    , PUBLISHPOSTSGLOBALLY
+    , MODERATEPOSTS
+    , REPLYTOPOSTS
+    , VIEWEVENTS
+    , CREATEEVENTS
+    , PUBLISHEVENTSLOCALLY
+    , PUBLISHEVENTSGLOBALLY
+    , MODERATEEVENTS
+    , RSVPTOEVENTS
+    , VIEWMEDIA
+    , CREATEMEDIA
+    , PUBLISHMEDIALOCALLY
+    , PUBLISHMEDIAGLOBALLY
+    , MODERATEMEDIA
+    , BUSINESS
+    , RUNBOTS
+    , ADMIN
+    , VIEWPRIVATECONTACTMETHODS
+    ]
+
+
+{-| The reverse of `permissionText` -- looks up a `Permission` by its display
+label. Needed because a plain HTML `<select>`'s value/`onInput` are just
+strings; `Components.UserProfilePage`'s "Add Permission" picker uses
+`permissionText` for each `<option>`'s label and reads this back on change.
+`Nothing` for any text that isn't one of `allPermissions`' labels (shouldn't
+happen, since the `<select>`'s own options are always built from
+`allPermissions` in the first place).
+-}
+permissionFromText : String -> Maybe Permission
+permissionFromText text =
+    allPermissions |> List.filter (\permission -> permissionText permission == text) |> List.head
 
 
 {-| A plain `YYYY-MM-DD` rendering (UTC) of a timestamp -- e.g. a profile's

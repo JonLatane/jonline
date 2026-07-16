@@ -89,6 +89,20 @@
   pointer-events: none;
 }
 
+/* `.media-viewer-panel-toolbar` sets its own `pointer-events: auto` below
+   (needed while this panel's open, since the base `.nav-panel` rule this
+   panel otherwise overrides doesn't set `pointer-events` on descendants) --
+   that would otherwise win over the parent's `none` above even while closed,
+   since `pointer-events` only inherits, it doesn't cascade-block a
+   descendant's own explicit value. Left unset, the toolbar's fixed
+   bottom-of-viewport strip (this panel spans `inset: 0`) sits there
+   swallowing clicks meant for whatever's actually at the bottom of the page
+   underneath -- e.g. `Shared.MarkdownPanel`'s Save button on a short
+   viewport -- even though this panel was never opened. */
+.media-viewer-panel.nav-panel.is-closed .media-viewer-panel-toolbar {
+  pointer-events: none;
+}
+
 .media-viewer-panel-header {
   display: flex;
   align-items: center;
