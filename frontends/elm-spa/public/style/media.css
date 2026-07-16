@@ -1,5 +1,12 @@
+/* Every image is clickable -- tapping one opens it fullscreen in
+   `Shared.MediaViewerPanel` (see `Components.MediaRenderer`'s
+   `onImageClicked`). Videos aren't given this cursor -- their native
+   `controls` already make clickability obvious, and tapping one plays/pauses
+   it in place rather than opening the viewer (see that module's own doc
+   comment for why). */
 .media-renderer-image {
   object-fit: contain;
+  cursor: pointer;
 }
 
 .media-renderer-video {

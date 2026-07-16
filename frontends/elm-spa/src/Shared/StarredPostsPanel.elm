@@ -45,6 +45,7 @@ import Proto.Jonline exposing (GetPostsResponse, Post)
 import Proto.Jonline.Jonline as Jonline
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
 import UI.Classes exposing (classes, openClosedClass)
 import UI.Flip
@@ -114,6 +115,7 @@ type Msg
     | MoveSettled String
     | FinishUnstar String
     | AnimateItemFlip Animation.Msg
+    | MediaClicked String Post String
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -198,14 +200,32 @@ token needed renewing first, see `Shared.MaybeAccountRequest`), persisted via
 for `Shared.update` to actually dispatch. This module can't dispatch either
 itself without importing `Shared` (a cycle, since `Shared` imports this
 module).
+
+Same reasoning covers the trailing `Maybe MediaViewerPanel.Msg` (paired with
+the `Maybe AccountsPanel.Msg` above -- Elm tuples top out at three items, so
+the two forwards share the last slot rather than this being a 4-tuple):
+`MediaClicked` (a starred post's media tapped, see `starredPostView`) doesn't
+change this module's own `Model` at all (see `updateHelp`'s no-op branch for
+it) -- it just needs `Shared.update` to open `Shared.MediaViewerPanel` on its
+behalf, same forwarding convention as the `AccountsPanel.Msg` case, just
+computed directly from `msg` here rather than from `updateHelp`'s result,
+since there's no `Model` state involved.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MediaViewerPanel.Msg ) )
 update accountsPanelModel msg model =
     let
         ( newModel, cmd, maybeAccountsPanelMsg ) =
             updateHelp accountsPanelModel msg model
+
+        maybeMediaViewerPanelMsg =
+            case msg of
+                MediaClicked host post mediaId ->
+                    Just (MediaViewerPanel.Open post mediaId host)
+
+                _ ->
+                    Nothing
     in
-    ( syncItemAnimations newModel, cmd, maybeAccountsPanelMsg )
+    ( syncItemAnimations newModel, cmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) )
 
 
 {-| Inserts a fresh `UI.Flip.enter` into `starAnimations` for any starred
@@ -466,6 +486,11 @@ updateHelp accountsPanelModel msg model =
             , Cmd.none
             , Nothing
             )
+
+        MediaClicked _ _ _ ->
+            -- Handled by `update`, above -- see its own doc comment. Doesn't
+            -- touch this module's `Model`, so nothing to do here.
+            ( model, Cmd.none, Nothing )
 
 
 {-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
@@ -756,6 +781,9 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                 maybeAccount =
                     AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+
+                onMediaClicked mediaId =
+                    MediaClicked host post mediaId
             in
             div [ class "starred-post-entry" ]
                 [ case Posts.postContextLabel post.context of
@@ -764,7 +792,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount True current starred onStarClicked post
+                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

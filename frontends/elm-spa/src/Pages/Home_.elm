@@ -14,6 +14,7 @@ import Proto.Jonline exposing (Post)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
@@ -406,5 +407,8 @@ postCardView shared ( host, post ) =
 
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+
+        onMediaClicked mediaId =
+            SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount False False starred onStarClicked displayPost
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost

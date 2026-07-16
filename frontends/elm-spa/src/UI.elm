@@ -19,6 +19,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
@@ -70,6 +71,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
+    , Html.map toMsg (mediaViewerPanel shared)
     , div [ class "container" ] [ main_ [] children ]
     ]
 
@@ -126,15 +128,26 @@ receives clicks (`pointer-events`) while at least one listed panel is open.
 Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
-at once. Right now that means tapping the background closes the Markdown
-panel first (see its own z-index in markdown\_panel.css -- it sits above the
-other two, visually in front), then the Starred Posts panel, then (on a third
-tap) the Accounts Panel behind it -- swap their order here to change that
-priority. Only blurs/tints the page while a panel with `blurs = True` is open
-(currently the Accounts Panel and the Markdown panel, both of which block
-interaction with the rest of the page while open); the Starred Posts panel
-doesn't, since starring/unstarring posts while it's open is an expected,
-encouraged interaction rather than something to block.
+at once. Right now that means tapping the background closes the Starred Posts
+panel first, then the Accounts Panel, then the Media Viewer panel, then (on a
+fourth tap) the Markdown panel behind all three -- matching the actual paint
+order (`.navbar`'s own z-index sits above both `.media-viewer-panel` and
+`.markdown-panel`, so its descendants -- the Accounts/Starred Posts panels --
+render above them regardless of their own, lower z-indices; see nav.css,
+media\_viewer\_panel.css and markdown\_panel.css) -- swap their order here to
+change that priority. Only blurs/tints the page while a panel with `blurs =
+True` is open (currently the Accounts Panel, the Media Viewer panel, and the
+Markdown panel, all of which block interaction with the rest of the page
+while open); the Starred Posts panel doesn't, since starring/unstarring posts
+while it's open is an expected, encouraged interaction rather than something
+to block.
+
+The Media Viewer panel is the one entry here whose own box spans the whole
+viewport rather than a small, anchored dropdown -- see
+media\_viewer\_panel.css's own doc comment for how it still lets clicks in its
+own empty space (everything but the header/media/nav buttons) fall through to
+this backdrop, rather than swallowing every click itself the way a fullscreen,
+opaque element normally would.
 
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
@@ -142,16 +155,20 @@ sharedBackdrop shared =
     let
         panels : List BackdropPanel
         panels =
-            [ { isOpen = shared.markdownPanel.target /= Nothing
-              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
-              , blurs = True
-              }
-            , { isOpen = shared.starredPostsPanel.showStarredPostsPanel
+            [ { isOpen = shared.starredPostsPanel.showStarredPostsPanel
               , closeMsg = Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel
               , blurs = False
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
+              , blurs = True
+              }
+            , { isOpen = MediaViewerPanel.isOpen shared.mediaViewerPanel
+              , closeMsg = Shared.MediaViewerPanelMsg MediaViewerPanel.CloseClicked
+              , blurs = True
+              }
+            , { isOpen = shared.markdownPanel.target /= Nothing
+              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
               , blurs = True
               }
             ]
@@ -1565,14 +1582,28 @@ adminAccountPanel shared account =
 Accounts/Starred Posts panels, it isn't toggled from a nav icon of its own;
 it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons) via
 `Shared.MarkdownPanelMsg (MarkdownPanel.Open ...)`, so it's mounted directly in
-`layout` rather than inside `headerNav`. Given the lowest z-index of the three
-panels (see `markdown_panel.css`) -- if a post's Edit button is used while the
-Accounts/Starred Posts panel also happens to be open, those still layer above
-it rather than being hidden behind it.
+`layout` rather than inside `headerNav`. Given the lowest z-index of the
+panels mounted here (see `markdown_panel.css`) -- if a post's Edit button is
+used while the Accounts/Starred Posts panel, or the Media Viewer panel, also
+happens to be open, those still layer above it rather than being hidden
+behind it.
 -}
 markdownPanel : Shared.Model -> Html Shared.Msg
 markdownPanel shared =
     Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+
+
+{-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
+-- opened contextually, same as `markdownPanel` above, by tapping a Post's
+media (`Components.PostCard`'s `onMediaClicked`), not from a nav icon, so it's
+mounted directly in `layout` too. Sits above the Markdown panel but below the
+Accounts/Starred Posts panels (see `media_viewer_panel.css`'s z-index) -- a
+fullscreen image reasonably wins over a stale editor left open behind it, but
+still yields to the nav's own dropdowns if one of those is opened on top of it.
+-}
+mediaViewerPanel : Shared.Model -> Html Shared.Msg
+mediaViewerPanel shared =
+    Html.map Shared.MediaViewerPanelMsg (MediaViewerPanel.view shared.accountsPanel shared.mediaViewerPanel)
 
 
 {-| Flutter is included for parity with the other two, but permanently

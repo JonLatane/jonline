@@ -26,6 +26,7 @@ import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Time
 import Url exposing (Url)
@@ -62,6 +63,7 @@ type alias Model =
     , adminPanel : AdminPanel.Model
     , starredPostsPanel : StarredPostsPanel.Model
     , markdownPanel : MarkdownPanel.Model
+    , mediaViewerPanel : MediaViewerPanel.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
 
@@ -86,6 +88,7 @@ type Msg
     | AdminPanelMsg AdminPanel.Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
+    | MediaViewerPanelMsg MediaViewerPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
     | RequestDelete DeleteConfirmation
@@ -231,6 +234,7 @@ init basePath req flags =
       , adminPanel = AdminPanel.init
       , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
       , markdownPanel = MarkdownPanel.init
+      , mediaViewerPanel = MediaViewerPanel.init
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
@@ -269,7 +273,7 @@ update req msg model =
 
         StarredPostsPanelMsg subMsg ->
             let
-                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
                     StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
@@ -279,13 +283,24 @@ update req msg model =
 
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
+
+                mediaViewerPanelModel =
+                    case maybeMediaViewerPanelMsg of
+                        Just mediaViewerPanelMsg ->
+                            MediaViewerPanel.update mediaViewerPanelMsg model.mediaViewerPanel
+
+                        Nothing ->
+                            model.mediaViewerPanel
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel }
+            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
             , Cmd.batch
                 [ Cmd.map StarredPostsPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 ]
             )
+
+        MediaViewerPanelMsg subMsg ->
+            ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
 
         MarkdownPanelMsg subMsg ->
             let

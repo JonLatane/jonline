@@ -23,9 +23,9 @@ import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes)
 
 
-view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> List MediaReference -> Html msg
-view server maybeAccount media =
-    render Nothing server maybeAccount media
+view : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+view server maybeAccount onImageClicked media =
+    render Nothing server maybeAccount onImageClicked media
 
 
 {-| Same single-item-vs-scrolling-strip layout as `view`, just tighter
@@ -42,26 +42,29 @@ than falling through to `postCard`'s `.post-card-link-overlay` like
 `.post-card-meta`'s plain text does.
 
 -}
-preview : AccountsPanel.Server -> Maybe AccountsPanel.Account -> List MediaReference -> Html msg
-preview server maybeAccount media =
-    render (Just MediaRenderer.Small) server maybeAccount media
+preview : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+preview server maybeAccount onImageClicked media =
+    render (Just MediaRenderer.Small) server maybeAccount onImageClicked media
 
 
 {-| Same as `preview`, just with `MediaRenderer.ExtraSmall` sizing (half the
 height of `preview`'s usual `Small`) -- for contexts even tighter on vertical
 space than an ordinary post card, e.g. `Shared.StarredPostsPanel`'s post rows.
 -}
-previewExtraSmall : AccountsPanel.Server -> Maybe AccountsPanel.Account -> List MediaReference -> Html msg
-previewExtraSmall server maybeAccount media =
-    render (Just MediaRenderer.ExtraSmall) server maybeAccount media
+previewExtraSmall : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+previewExtraSmall server maybeAccount onImageClicked media =
+    render (Just MediaRenderer.ExtraSmall) server maybeAccount onImageClicked media
 
 
 {-| `Nothing` renders full-size (`view`); `Just sizing` renders as a preview
 (`.multi-media-preview` layout) at `sizing`, used for both the single-item
-case and every thumbnail in the scrolling strip.
+case and every thumbnail in the scrolling strip. `onImageClicked` (fired with
+a tapped image's `media.id`, see `Components.MediaRenderer`) is threaded
+through unconditionally -- opening `Shared.MediaViewerPanel` on tap is the
+same behavior everywhere a `Post`'s media renders, single item or strip.
 -}
-render : Maybe MediaRenderer.Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> List MediaReference -> Html msg
-render previewSizing server maybeAccount media =
+render : Maybe MediaRenderer.Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
+render previewSizing server maybeAccount onImageClicked media =
     let
         previewClasses =
             case previewSizing of
@@ -84,7 +87,7 @@ render previewSizing server maybeAccount media =
         [ single ] ->
             div [ classes ("multi-media-single" :: previewClasses) ]
                 [ div [ class "multi-media-single-item" ]
-                    [ MediaRenderer.view singleSizing server maybeAccount single ]
+                    [ MediaRenderer.view singleSizing server maybeAccount onImageClicked single ]
                 ]
 
         _ ->
@@ -93,6 +96,6 @@ render previewSizing server maybeAccount media =
                     |> List.map
                         (\mediaRef ->
                             div [ class "multi-media-item" ]
-                                [ MediaRenderer.view stripSizing server maybeAccount mediaRef ]
+                                [ MediaRenderer.view stripSizing server maybeAccount onImageClicked mediaRef ]
                         )
                 )

@@ -1,0 +1,175 @@
+/* The app-wide fullscreen image/video viewer (see Shared/MediaViewerPanel.elm)
+   -- a full-viewport lightbox rather than a small anchored dropdown, so it
+   overrides most of the shared `.nav-panel` base rule (position/opacity
+   transition, see accounts_panel.css) rather than just adding to it.
+
+   Dimming/blurring the rest of the page and closing on a background tap both
+   reuse `UI.elm`'s `sharedBackdrop` -- the same mechanism the Accounts/
+   Starred Posts/Markdown panels use -- rather than this panel rolling its
+   own. `.shared-backdrop` sits right behind this one (z-index 10 vs. 27) and
+   already has this panel wired into its click-to-close list (see
+   `sharedBackdrop` in UI.elm, `blurs = True`); the only thing needed here is
+   to actually let clicks reach it. Since this panel's own box spans the
+   whole viewport (unlike the smaller, anchored Accounts/Starred dropdowns,
+   which naturally leave the backdrop exposed around them), its own
+   background is transparent and `pointer-events: none`, with `auto`
+   re-enabled only on its actual content below (the index label, the media
+   itself, the bottom toolbar) -- a tap anywhere else (the empty space around
+   a portrait image, say) falls straight through to the backdrop beneath,
+   dismissing the panel exactly like tapping outside any other panel does. */
+.media-viewer-panel.nav-panel {
+  position: fixed;
+
+  /* `inset: 0` with `width`/`height` left to `auto` (no explicit `vw`/`vh`)
+     is deliberate -- on iOS Safari, `100vh`/`100vw` are sized against the
+     *largest* possible viewport (address bar collapsed), not the actual
+     visible one, so a `position: fixed` box with an explicit `height: 100vh`
+     can extend below what's really on screen whenever the address bar is
+     showing, cutting off this panel's last flex child
+     (`.media-viewer-panel-toolbar`) below the fold. A plain `inset: 0`
+     instead lets the browser size this box against the real, current visual
+     viewport, which tracks the address bar showing/hiding correctly --
+     `width`/`height` must stay `auto` for that to actually stretch the box
+     edge to edge, though: the base `.nav-panel` rule (accounts_panel.css)
+     sets a fixed `width: 320px` (sized for its own small Accounts/Starred
+     dropdowns), and an explicit width alongside `left`/`right` both pinned
+     to 0 is over-constrained -- CSS resolves that by dropping `right`
+     instead, leaving a 320px-wide column stuck to the left edge rather than
+     stretching to fill. `max-width`/`max-height` need the same override, for
+     the same reason (that base rule's own `calc(100vw - 2rem)`/
+     `calc(100vh - 6rem)` caps, sized for a small dropdown, not a fullscreen
+     lightbox). */
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  pointer-events: none;
+
+  /* Above `.markdown-panel` (26, see markdown_panel.css) -- a fullscreen
+     image reasonably wins over a stale editor left open behind it. Below
+     `.navbar` (28, see nav.css), so the Accounts/Starred Posts panels
+     (its descendants) still layer above this if opened on top of it. */
+  z-index: 27;
+
+  /* Fullscreen fade in/out reads better than the base rule's slide-up
+     `translateY` (built for a small dropdown/bottom-sheet, not a full-page
+     lightbox) -- overridden here and in `.is-closed` below. */
+  transform: none;
+}
+
+.media-viewer-panel.nav-panel.is-closed {
+  opacity: 0;
+  transform: none;
+  pointer-events: none;
+}
+
+.media-viewer-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  /* Clears the notch/Dynamic Island on an iPhone in landscape, same
+     `env(safe-area-inset-*)` reasoning as the toolbar's own bottom padding
+     below (see its comment, and `viewport-fit=cover` in index.html, which is
+     what makes these resolve to nonzero values at all instead of 0). */
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+  color: white;
+  pointer-events: auto;
+}
+
+.media-viewer-panel-index {
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.media-viewer-panel-content {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1rem;
+}
+
+/* `Components.MediaRenderer`'s `Natural` sizing already caps the media at a
+   sane width/height (see media.css) -- this just raises that cap to fill
+   `.media-viewer-panel-content`'s own box instead of a compact post's own
+   layout. `max-height: 100%` (not a `vh`-based calc()) is deliberate, same
+   reasoning as the panel root's own `inset: 0` above -- this flex item
+   already has a definite, correctly-sized height (the real space left over
+   after the header/toolbar's own flex-basis, within a box already sized
+   against the true visual viewport), so percentage-based sizing here tracks
+   that exactly, instead of a separate `vh` arithmetic guess that can drift
+   out of sync with the header/toolbar's actual rendered heights (padding
+   changes, safe-area insets, text wrapping, etc.) and, on iOS Safari, the
+   address bar's show/hide state. `auto` pointer-events (see this file's own
+   top comment) makes the media itself -- as opposed to the empty space
+   around it -- the one part of `.media-viewer-panel-content` that doesn't
+   fall through to `.shared-backdrop` on tap. */
+.media-viewer-panel-content .media-renderer-natural.media-renderer-image,
+.media-viewer-panel-content .media-renderer-natural.media-renderer-video,
+.media-viewer-panel-content .media-renderer-natural.media-renderer-object {
+  max-width: 100%;
+  max-height: 100%;
+  pointer-events: auto;
+}
+
+/* Left arrow, the Post's title (flexible, ellipsizing), right arrow, close --
+   in that order -- one row pinned to the bottom, rather than the arrows
+   floating over the media itself, so they never overlap/obscure it (a tall
+   portrait image in particular would otherwise sit right behind them). */
+.media-viewer-panel-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+  padding: 0.75rem 1rem;
+  /* The iPhone home-indicator gesture bar sits right in this row's own
+     corner of the screen (this panel reaches all the way to `inset: 0`,
+     unlike ordinary page content, which never gets this close to the bottom
+     edge) -- without this, the indicator can overlap/obscure the close
+     button. `env(safe-area-inset-bottom)` is 0 on anything without a home
+     indicator (or without `viewport-fit=cover`, see index.html), so this is
+     a no-op everywhere else. */
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+  pointer-events: auto;
+}
+
+.media-viewer-panel-post-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: white;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.media-viewer-panel-nav,
+.media-viewer-panel-close {
+  flex: 0 0 auto;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  line-height: 1;
+}
+
+.media-viewer-panel-nav {
+  font-size: 1.3rem;
+}
+
+.media-viewer-panel-close {
+  font-size: 1.1rem;
+}

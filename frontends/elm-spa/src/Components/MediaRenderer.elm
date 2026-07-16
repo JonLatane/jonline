@@ -27,10 +27,17 @@ providers (Twitter/Instagram/etc. -- those key off `Post.link`, not
 video -- a plain HTML5 `<video controls>` covers the same MIME types Jonline
 actually serves media as.
 
+`onImageClicked` fires (with `media.id`) only for images -- videos keep their
+existing native-`controls` click behavior untouched (see `Shared.MediaViewerPanel`,
+the only caller today: tapping an image opens it fullscreen there; tapping a
+video just plays/pauses/scrubs it in place, same as before that panel
+existed).
+
 -}
 
 import Html exposing (Html, a, div, img, object, text, video)
 import Html.Attributes exposing (alt, attribute, class, controls, href, src, target, type_)
+import Html.Events exposing (onClick)
 import Proto.Jonline exposing (MediaReference)
 import Shared.AccountsPanel as AccountsPanel
 
@@ -54,8 +61,8 @@ sizingClass sizing =
             "media-renderer-extra-small"
 
 
-view : Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> Html msg
-view sizing server maybeAccount media =
+view : Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+view sizing server maybeAccount onImageClicked media =
     let
         mediaUrl =
             url server maybeAccount media
@@ -65,7 +72,13 @@ view sizing server maybeAccount media =
     in
     case String.split "/" media.contentType |> List.head |> Maybe.withDefault "" of
         "image" ->
-            img [ class ("media-renderer-image " ++ sizeClass), src mediaUrl, alt (Maybe.withDefault "" media.name) ] []
+            img
+                [ class ("media-renderer-image " ++ sizeClass)
+                , src mediaUrl
+                , alt (Maybe.withDefault "" media.name)
+                , onClick (onImageClicked media.id)
+                ]
+                []
 
         "video" ->
             video [ class ("media-renderer-video " ++ sizeClass), controls True, src mediaUrl ]

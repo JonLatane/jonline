@@ -469,8 +469,8 @@ below -- while `authorLink`/`starButton`, both opted back in via
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 -}
-postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost maybeServer maybeAccount extraSmallMedia current starred onStarClicked post =
+postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -496,10 +496,10 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount extr
         , case maybeServer of
             Just server ->
                 if extraSmallMedia then
-                    MultiMediaRenderer.previewExtraSmall server maybeAccount post.media
+                    MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked post.media
 
                 else
-                    MultiMediaRenderer.preview server maybeAccount post.media
+                    MultiMediaRenderer.preview server maybeAccount onMediaClicked post.media
 
             Nothing ->
                 text ""
@@ -527,13 +527,13 @@ since that's already the page you're on, but still tinted with `postServerHost`'
 since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
 meta line's `post-meta-right` group only to the post's own author.
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Maybe msg -> msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount starred onStarClicked onEditClicked post =
+postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Post -> Html msg
+postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
         , case maybeServer of
             Just server ->
-                MultiMediaRenderer.view server maybeAccount post.media
+                MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
 
             Nothing ->
                 text ""

@@ -16,6 +16,7 @@ import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
@@ -161,6 +162,7 @@ type Msg
     | EnableClicked
     | EditClicked Post
     | ReplyClicked Post
+    | MediaClicked Post String
     | Poll
     | SharedMsg Shared.Msg
 
@@ -215,6 +217,9 @@ update shared req msg model =
 
         ReplyClicked post ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.NewReply post) model.targetHost)) )
+
+        MediaClicked post mediaId ->
+            ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
@@ -342,8 +347,11 @@ postDetailView shared model post =
 
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+
+        onMediaClicked mediaId =
+            MediaClicked displayPost mediaId
     in
-    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount starred onStarClicked (EditClicked post) displayPost
+    Posts.postDetail shared.basePath shared.accountsPanel.mainFrontendHost model.targetHost maybeServer maybeAccount onMediaClicked starred onStarClicked (EditClicked post) displayPost
 
 
 {-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS` --
