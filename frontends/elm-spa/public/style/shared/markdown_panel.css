@@ -19,7 +19,7 @@
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 
-  /* Below `.navbar` (28, see nav.css) and `.media-viewer-panel` (27, see
+  /* Below `.navbar` (28, see nav.css) and `.media-viewer-panel` (29, see
      media_viewer_panel.css) -- the Accounts/Starred Posts panels (`.navbar`'s
      descendants, forming one stacking context at *its* z-index, not their
      own lower ones) and a fullscreen image/video both reasonably win over a

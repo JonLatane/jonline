@@ -119,36 +119,37 @@ type alias BackdropPanel =
 
 {-| Covers everything except the top nav (which sits in its own, higher
 stacking context -- see `.navbar` in nav.css) for every panel that closes
-via a background tap -- currently the Starred Posts panel and the Accounts
-Panel, with more expected to join this list later. Always rendered, like the
-panels themselves, so opening/closing (and the blur) is a plain CSS
-transition rather than the element appearing/disappearing outright, and only
-receives clicks (`pointer-events`) while at least one listed panel is open.
+via a background tap -- currently the Starred Posts panel, the Accounts
+Panel and the Markdown panel, with more expected to join this list later.
+Always rendered, like the panels themselves, so opening/closing (and the
+blur) is a plain CSS transition rather than the element appearing/
+disappearing outright, and only receives clicks (`pointer-events`) while at
+least one listed panel is open.
+
+The Media Viewer panel is deliberately not one of these -- unlike the others,
+its own box already spans the whole viewport rather than a small, anchored
+dropdown, and it sits above `.navbar` itself (see media\_viewer\_panel.css), so
+it can't rely on this backdrop (below `.navbar`, see nav.css) for its own
+dimming/click-to-close anyway. It owns both outright instead: its own
+background *is* the dimmed/blurred overlay, and its own root `onClick` is
+the background-tap-to-close, both self-contained in
+`Shared.MediaViewerPanel`/media\_viewer\_panel.css -- see their own doc
+comments.
 
 Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Starred Posts
-panel first, then the Accounts Panel, then the Media Viewer panel, then (on a
-fourth tap) the Markdown panel behind all three -- matching the actual paint
-order (`.navbar`'s own z-index sits above both `.media-viewer-panel` and
-`.markdown-panel`, so its descendants -- the Accounts/Starred Posts panels --
-render above them regardless of their own, lower z-indices; see nav.css,
-media\_viewer\_panel.css and markdown\_panel.css) -- swap their order here to
-change that priority. Only blurs/tints the page while a panel with `blurs =
-True` is open (currently the Accounts Panel, the Media Viewer panel, and the
-Markdown panel, all of which block interaction with the rest of the page
-while open); the Starred Posts panel doesn't, since starring/unstarring posts
-while it's open is an expected, encouraged interaction rather than something
-to block.
-
-The Media Viewer panel is the one entry here whose own box spans the whole
-viewport rather than a small, anchored dropdown -- see
-media\_viewer\_panel.css's own doc comment for how it still lets clicks in its
-own empty space (everything but the header/media/nav buttons) fall through to
-this backdrop, rather than swallowing every click itself the way a fullscreen,
-opaque element normally would.
-
+panel first, then the Accounts Panel, then (on a third tap) the Markdown panel
+behind both -- matching the actual paint order (`.navbar`'s own z-index sits
+above `.markdown-panel`, so its descendants -- the Accounts/Starred Posts
+panels -- render above it regardless of their own, lower z-indices; see
+nav.css and markdown\_panel.css) -- swap their order here to change that
+priority. Only blurs/tints the page while a panel with `blurs = True` is open
+(currently the Accounts Panel and the Markdown panel, both of which block
+interaction with the rest of the page while open); the Starred Posts panel
+doesn't, since starring/unstarring posts while it's open is an expected,
+encouraged interaction rather than something to block.
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
 sharedBackdrop shared =
@@ -161,10 +162,6 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
-              , blurs = True
-              }
-            , { isOpen = MediaViewerPanel.isOpen shared.mediaViewerPanel
-              , closeMsg = Shared.MediaViewerPanelMsg MediaViewerPanel.CloseClicked
               , blurs = True
               }
             , { isOpen = shared.markdownPanel.target /= Nothing
@@ -1596,10 +1593,10 @@ markdownPanel shared =
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
 -- opened contextually, same as `markdownPanel` above, by tapping a Post's
 media (`Components.PostCard`'s `onMediaClicked`), not from a nav icon, so it's
-mounted directly in `layout` too. Sits above the Markdown panel but below the
+mounted directly in `layout` too. Sits above both the Markdown panel and the
 Accounts/Starred Posts panels (see `media_viewer_panel.css`'s z-index) -- a
-fullscreen image reasonably wins over a stale editor left open behind it, but
-still yields to the nav's own dropdowns if one of those is opened on top of it.
+fullscreen image reasonably wins over a stale editor left open behind it, and
+stays on top even if the nav's own dropdowns are then opened over it.
 -}
 mediaViewerPanel : Shared.Model -> Html Shared.Msg
 mediaViewerPanel shared =

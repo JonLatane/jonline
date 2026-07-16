@@ -12,12 +12,13 @@
   border-bottom: 1px solid var(--border);
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
      descendant .nav-panel elements -- Accounts, Starred Posts) is never
-     blurred/covered/click-intercepted by the backdrop. Also above both
-     .markdown-panel (26, see markdown_panel.css) and .media-viewer-panel (27,
-     see media_viewer_panel.css) -- those are siblings of .navbar, not
-     descendants, so it's *this* z-index (not their own, lower ones) that
+     blurred/covered/click-intercepted by the backdrop. Also above
+     .markdown-panel (26, see markdown_panel.css) -- a sibling of .navbar, not
+     a descendant, so it's *this* z-index (not its own, lower one) that
      decides whether Accounts/Starred Posts, opened on top of an already-open
-     Markdown/Media Viewer panel, actually render above them. */
+     Markdown panel, actually render above it. Below .media-viewer-panel (29,
+     see media_viewer_panel.css) though -- a fullscreen lightbox should stay
+     on top even if Accounts/Starred Posts is then opened over it. */
   z-index: 28;
 }
 

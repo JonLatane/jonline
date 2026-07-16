@@ -3,20 +3,22 @@
    overrides most of the shared `.nav-panel` base rule (position/opacity
    transition, see accounts_panel.css) rather than just adding to it.
 
-   Dimming/blurring the rest of the page and closing on a background tap both
-   reuse `UI.elm`'s `sharedBackdrop` -- the same mechanism the Accounts/
-   Starred Posts/Markdown panels use -- rather than this panel rolling its
-   own. `.shared-backdrop` sits right behind this one (z-index 10 vs. 27) and
-   already has this panel wired into its click-to-close list (see
-   `sharedBackdrop` in UI.elm, `blurs = True`); the only thing needed here is
-   to actually let clicks reach it. Since this panel's own box spans the
-   whole viewport (unlike the smaller, anchored Accounts/Starred dropdowns,
-   which naturally leave the backdrop exposed around them), its own
-   background is transparent and `pointer-events: none`, with `auto`
-   re-enabled only on its actual content below (the index label, the media
-   itself, the bottom toolbar) -- a tap anywhere else (the empty space around
-   a portrait image, say) falls straight through to the backdrop beneath,
-   dismissing the panel exactly like tapping outside any other panel does. */
+   Unlike the Accounts/Starred Posts/Markdown panels, this one doesn't share
+   `UI.elm`'s `sharedBackdrop` for its dimming/click-to-close -- that backdrop
+   sits at z-index 10 (see nav.css), well below both `.navbar` (28) and this
+   panel's own 29 (below), so it couldn't reach up that far even if it wanted
+   to. It doesn't need to, though: its own box already spans the whole viewport
+   (`inset: 0`, unlike those smaller, anchored dropdowns), so it just *is*
+   its own backdrop -- its own `background`/`backdrop-filter` below supply the
+   dimming/blur directly, and its own root `onClick` (see
+   `Shared.MediaViewerPanel.view`) supplies the background-tap-to-close,
+   entirely self-contained. `pointer-events: auto` here (unlike the base
+   `.nav-panel` rule) is what lets that root `onClick` actually receive a tap
+   in the first place; a tap that lands on real content instead (the index
+   label, the media itself, the nav buttons) is instead handled -- and its
+   bubbling up to this root stopped -- by that content's own listener (see
+   `Shared.MediaViewerPanel.view`'s `stopPropagationOn` uses), so paging/
+   closing via a button never also triggers this root's own close. */
 .media-viewer-panel.nav-panel {
   position: fixed;
 
@@ -47,15 +49,33 @@
   border: none;
   border-radius: 0;
   padding: 0;
-  background: transparent;
   box-shadow: none;
-  pointer-events: none;
+  pointer-events: auto;
+
+  /* This panel's own dimmed/blurred "backdrop", rather than a separate
+     element -- see this file's own top comment. Faded in/out together with
+     the rest of the panel's content by the base `.nav-panel` rule's own
+     `opacity` transition (accounts_panel.css) -- no separate `.is-open`
+     variant needed, since backdrop and content here always share one
+     lifecycle (unlike `.shared-backdrop`, a distinct element with its own
+     independent open state, which needs one). Noticeably darker/blurrier
+     than `.shared-backdrop.is-open.blurred` (nav.css) -- there, page content
+     is still meant to read as present-but-dimmed behind a small anchored
+     dropdown; here, a fullscreen lightbox is meant to read as replacing the
+     page outright. */
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 
   /* Above `.markdown-panel` (26, see markdown_panel.css) -- a fullscreen
-     image reasonably wins over a stale editor left open behind it. Below
-     `.navbar` (28, see nav.css), so the Accounts/Starred Posts panels
-     (its descendants) still layer above this if opened on top of it. */
-  z-index: 27;
+     image reasonably wins over a stale editor left open behind it. Also
+     above `.navbar` (28, see nav.css) and, with it, the Accounts/Starred
+     Posts panels (its descendants, forming one stacking context at *its*
+     z-index, not their own lower ones) -- a fullscreen lightbox opened from
+     a post should stay on top even if one of those is then opened over it,
+     rather than getting buried behind a small dropdown. Still below
+     `.modal`'s own 30/31 (a Cancel/Confirm dialog should always win). */
+  z-index: 29;
 
   /* Fullscreen fade in/out reads better than the base rule's slide-up
      `translateY` (built for a small dropdown/bottom-sheet, not a full-page
@@ -110,10 +130,13 @@
    that exactly, instead of a separate `vh` arithmetic guess that can drift
    out of sync with the header/toolbar's actual rendered heights (padding
    changes, safe-area insets, text wrapping, etc.) and, on iOS Safari, the
-   address bar's show/hide state. `auto` pointer-events (see this file's own
-   top comment) makes the media itself -- as opposed to the empty space
-   around it -- the one part of `.media-viewer-panel-content` that doesn't
-   fall through to `.shared-backdrop` on tap. */
+   address bar's show/hide state. `auto` pointer-events makes the media
+   itself -- as opposed to the empty space around it, which stays
+   click-through-able down to this panel's own root (see this file's own top
+   comment) -- the one part of `.media-viewer-panel-content` a tap doesn't
+   close the panel on; its own `stopPropagationOn` (see
+   `Shared.MediaViewerPanel.view`) is what keeps that tap's bubble from
+   reaching the root regardless. */
 .media-viewer-panel-content .media-renderer-natural.media-renderer-image,
 .media-viewer-panel-content .media-renderer-natural.media-renderer-video,
 .media-viewer-panel-content .media-renderer-natural.media-renderer-object {

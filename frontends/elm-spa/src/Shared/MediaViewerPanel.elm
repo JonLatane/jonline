@@ -20,8 +20,9 @@ import Components.MediaRenderer as MediaRenderer
 import Components.PostCard as Posts
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, stopPropagationOn)
 import Html.Keyed
+import Json.Decode as Decode
 import Proto.Jonline exposing (MediaReference, Post)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, openClosedClass)
@@ -190,10 +191,22 @@ view accountsPanelModel model =
                 _ ->
                     []
 
+        -- This panel's own root below carries the background-tap-to-close
+        -- `onClick` (it's its own backdrop -- see media_viewer_panel.css's
+        -- doc comment), so every *real* control needs to stop a click from
+        -- bubbling back up to it -- otherwise paging/closing via a button, or
+        -- just tapping the media itself, would also immediately re-close the
+        -- whole panel. `stopClick` is `onClick` plus that guard.
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
         navButton classNames msg label =
-            button [ classes ("media-viewer-panel-nav" :: classNames), onClick msg ] [ text label ]
+            button [ classes ("media-viewer-panel-nav" :: classNames), stopClick msg ] [ text label ]
     in
-    div [ classes [ "media-viewer-panel", "nav-panel", openClosedClass (isOpen model) ] ]
+    div
+        [ classes [ "media-viewer-panel", "nav-panel", openClosedClass (isOpen model) ]
+        , onClick CloseClicked
+        ]
         [ div [ class "media-viewer-panel-header" ] indexLabel
         , div [ class "media-viewer-panel-content" ]
             [ case ( currentMedia, maybeServer ) of
@@ -208,7 +221,10 @@ view accountsPanelModel model =
                     Html.Keyed.node "div"
                         [ class "media-viewer-panel-media-stage" ]
                         [ ( media.id
-                          , div [ classes [ "media-viewer-panel-media", directionClass model.direction ] ]
+                          , div
+                                [ classes [ "media-viewer-panel-media", directionClass model.direction ]
+                                , stopClick (SetCurrent media.id)
+                                ]
                                 [ MediaRenderer.view MediaRenderer.Natural server maybeAccount SetCurrent media ]
                           )
                         ]
@@ -223,7 +239,7 @@ view accountsPanelModel model =
 
                 Nothing ->
                     text ""
-            , div [ class "media-viewer-panel-post-title", onClick CloseClicked ]
+            , div [ class "media-viewer-panel-post-title", stopClick CloseClicked ]
                 [ text (model.maybePost |> Maybe.map Posts.postTitleText |> Maybe.withDefault "") ]
             , case adjacent 1 model of
                 Just _ ->
@@ -231,7 +247,7 @@ view accountsPanelModel model =
 
                 Nothing ->
                     text ""
-            , button [ class "media-viewer-panel-close", onClick CloseClicked ] [ text "✕" ]
+            , button [ class "media-viewer-panel-close", stopClick CloseClicked ] [ text "✕" ]
             ]
         ]
 
