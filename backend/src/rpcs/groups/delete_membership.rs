@@ -15,11 +15,10 @@ pub fn delete_membership(
 ) -> Result<(), Status> {
     validate_membership(&request, OperationType::Create)?;
 
-    let (group, membership) = models::get_group_and_membership(
-        request.group_id.to_db_id_or_err("group_id")?,
-        Some(current_user.id),
-        conn,
-    )?;
+    let group_id = request.group_id.to_db_id_or_err("group_id")?;
+    let user_id = request.user_id.to_db_id_or_err("user_id")?;
+    let (group, membership) =
+        models::get_group_and_membership(group_id, Some(current_user.id), conn)?;
 
     let self_update = request.user_id == current_user.id.to_proto_id();
     if !self_update {
@@ -38,8 +37,8 @@ pub fn delete_membership(
     }
 
     match diesel::delete(memberships::table)
-        .filter(memberships::group_id.eq(request.group_id.to_db_id().unwrap()))
-        .filter(memberships::user_id.eq(request.user_id.to_db_id().unwrap()))
+        .filter(memberships::group_id.eq(group_id))
+        .filter(memberships::user_id.eq(user_id))
         .execute(conn)
     {
         Ok(_) => {

@@ -7,6 +7,9 @@ run: server
 server:
 	npx elm-spa server
 
+stop_background_servers:
+	lsof -ti:1234 | xargs -r kill; sleep 1; lsof -ti:1234 || echo "port 1234 free"
+
 build:
 	npx elm-spa build
 

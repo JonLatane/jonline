@@ -85,7 +85,7 @@ pub async fn elm_index(
 
 /// A server can serve the Elm SPA at its *root* too (`main_index.rs`'s
 /// `WebUserInterface::ElmSpa` branch) -- but `index.html` there references its
-/// assets at plain `/style.css`, `/dist/elm.js`, `/vendor/*`, and
+/// assets at plain `/style/*`, `/dist/elm.js`, `/vendor/*`, and
 /// `/markdown.js` (see `index.html`'s base-path bootstrap script), which would
 /// otherwise only ever reach `tamagui_file_or_username`'s `/<file..>`
 /// catch-all (there is no other root route for them). These routes claim
@@ -95,9 +95,12 @@ pub async fn elm_index(
 /// `ElmSpaAtRoot` actually succeeds; otherwise they forward, and Rocket falls
 /// through to that same catch-all, so this can't intercept these paths for
 /// any other frontend.
-#[rocket::get("/style.css")]
-async fn elm_root_style(_gate: ElmSpaAtRoot) -> CacheResponse<Result<NamedFile, Status>> {
-    let result = elm_asset(Path::new("style.css")).await;
+#[rocket::get("/style/<file..>")]
+async fn elm_root_style(
+    _gate: ElmSpaAtRoot,
+    file: PathBuf,
+) -> CacheResponse<Result<NamedFile, Status>> {
+    let result = elm_asset(&Path::new("style").join(file)).await;
     CacheResponse::Public {
         responder: result,
         max_age: 60,

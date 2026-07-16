@@ -1,21 +1,25 @@
 module Pages.Home_ exposing (Model, Msg, fromShared, page)
 
-import Components.Posts as Posts
+import Animation
+import Components.PostCard as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
 import Grpc
 import Html exposing (Html, div, h2, p, text)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, style)
+import Html.Keyed
 import Page
 import Proto.Jonline exposing (Post)
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
 import UI
+import UI.Flip
 import View exposing (View)
 
 
@@ -49,14 +53,30 @@ type alias ServerFeed =
     }
 
 
+{-| A post's fade in/out state, keyed in `postAnimations` by `postAnimationKey`
+so it survives independently of `postsByServer` -- see that dict's own doc
+comment for why: a server being disabled (or re-fetched under a different
+account) drops/replaces its posts in `postsByServer` immediately, but a
+`removing` `flip` entry here keeps rendering its last-known `post`/`host`
+until its fade-out finishes, instead of the post just vanishing. See
+`UI.Flip` for what `flip` itself drives.
+-}
+type alias PostAnimation =
+    { host : String
+    , post : Post
+    , flip : UI.Flip.State Msg
+    }
+
+
 type alias Model =
     { postsByServer : Dict String ServerFeed
+    , postAnimations : Dict String PostAnimation
     }
 
 
 init : Shared.Model -> ( Model, Effect Msg )
 init shared =
-    fetchNewServers shared { postsByServer = Dict.empty }
+    fetchNewServers shared { postsByServer = Dict.empty, postAnimations = Dict.empty }
 
 
 {-| Drops posts for servers that are no longer enabled (so disabling a server
@@ -73,6 +93,7 @@ startup (`Main.notifyPageOfSharedMsg` forwards those top-level `Shared`
 messages into whichever page is active). `subscriptions`' poll is just a
 distrustful fallback in case some future state change doesn't route through
 `SharedMsg`, so it can be slow.
+
 -}
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
@@ -115,6 +136,99 @@ fetchNewServers shared model =
       }
     , Effect.batch (List.map fetchEffect serversToFetch)
     )
+        |> Tuple.mapFirst syncAnimations
+
+
+
+-- ANIMATION
+
+
+{-| Identifies a post independently of which server/account fetched it, for
+`postAnimations` -- `postHref`'s `id@host` convention is reused here purely as
+a unique dict key, not as a route.
+-}
+postAnimationKey : String -> Post -> String
+postAnimationKey host post =
+    host ++ "@" ++ post.id
+
+
+{-| A freshly-seen post: starts invisible/slightly shrunk and immediately
+animates in to its natural opacity/scale.
+-}
+newPostAnimation : String -> Post -> PostAnimation
+newPostAnimation host post =
+    { host = host, post = post, flip = UI.Flip.enter }
+
+
+{-| A post that was mid fade-out (its server got disabled, then re-enabled --
+or its feed got re-fetched -- before the fade-out finished) reappearing:
+interrupts whatever fade-out step was queued (including its trailing
+`RemovePost` send, so that message never fires for this key) and animates
+back in.
+-}
+reappearingPostAnimation : String -> Post -> PostAnimation -> PostAnimation
+reappearingPostAnimation host post anim =
+    { anim | host = host, post = post, flip = UI.Flip.reappear anim.flip }
+
+
+{-| A post no longer present in `postsByServer` (its server was disabled, or
+its feed is being re-fetched under a different account): animates out, then
+sends `RemovePost` to actually drop it from `postAnimations` once the fade
+finishes.
+-}
+removingPostAnimation : String -> PostAnimation -> PostAnimation
+removingPostAnimation key anim =
+    { anim | flip = UI.Flip.remove (RemovePost key) anim.flip }
+
+
+{-| Reconciles `postAnimations` with the posts currently `Loaded` in
+`postsByServer`: starts a fade-in for newly-seen posts, a fade-out for posts
+that dropped out (rather than deleting them outright), and un-interrupts a
+still-fading-out post that reappeared. Safe/cheap to call after every
+`postsByServer` change, so `update` just calls it unconditionally wherever
+that dict might have changed.
+-}
+syncAnimations : Model -> Model
+syncAnimations model =
+    let
+        currentPosts : Dict String ( String, Post )
+        currentPosts =
+            model.postsByServer
+                |> Dict.toList
+                |> List.concatMap
+                    (\( host, feed ) ->
+                        case feed.status of
+                            Loaded posts ->
+                                List.map (\post -> ( postAnimationKey host post, ( host, post ) )) posts
+
+                            _ ->
+                                []
+                    )
+                |> Dict.fromList
+
+        addOrRefresh key ( host, post ) animations =
+            case Dict.get key animations of
+                Nothing ->
+                    Dict.insert key (newPostAnimation host post) animations
+
+                Just anim ->
+                    if anim.flip.removing then
+                        Dict.insert key (reappearingPostAnimation host post anim) animations
+
+                    else
+                        Dict.insert key { anim | host = host, post = post } animations
+
+        withCurrent =
+            Dict.foldl addOrRefresh model.postAnimations currentPosts
+
+        startRemovingIfGone key anim animations =
+            if anim.flip.removing || Dict.member key currentPosts then
+                animations
+
+            else
+                Dict.insert key (removingPostAnimation key anim) animations
+    in
+    { model | postAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
 
 
 
@@ -124,6 +238,8 @@ fetchNewServers shared model =
 type Msg
     = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
     | Poll
+    | Animate Animation.Msg
+    | RemovePost String
     | SharedMsg Shared.Msg
 
 
@@ -153,6 +269,7 @@ update shared msg model =
                         (Maybe.map (\feed -> { feed | status = Loaded response.posts }))
                         model.postsByServer
               }
+                |> syncAnimations
             , accountEffect
             )
 
@@ -161,11 +278,29 @@ update shared msg model =
                 | postsByServer =
                     Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.postsByServer
               }
+                |> syncAnimations
             , Effect.none
             )
 
         Poll ->
             fetchNewServers shared model
+
+        Animate animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.postAnimations
+            in
+            ( { model | postAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        RemovePost key ->
+            ( { model | postAnimations = Dict.remove key model.postAnimations }, Effect.none )
 
         SharedMsg subMsg ->
             let
@@ -181,8 +316,11 @@ update shared msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Time.every 30000 (\_ -> Poll)
+subscriptions model =
+    Sub.batch
+        [ Time.every 30000 (\_ -> Poll)
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.postAnimations))
+        ]
 
 
 
@@ -205,29 +343,50 @@ view shared req model =
 recentPostsView : Shared.Model -> Model -> Html Msg
 recentPostsView shared model =
     let
-        allPosts =
-            model.postsByServer
+        sortedAnimations =
+            model.postAnimations
                 |> Dict.toList
-                |> List.concatMap
-                    (\( host, feed ) ->
-                        case feed.status of
-                            Loaded posts ->
-                                List.map (Tuple.pair host) posts
-
-                            _ ->
-                                []
-                    )
-                |> List.sortBy (\( _, post ) -> -(Time.posixToMillis (Posts.postTimestamp post)))
+                |> List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
     in
     if Dict.isEmpty model.postsByServer then
         p [ class "posts-empty" ] [ text "Connect to a server to see recent posts." ]
 
-    else if List.isEmpty allPosts then
+    else if List.isEmpty sortedAnimations then
         p [ class "posts-empty" ] [ text "No posts yet." ]
 
     else
-        div [ class "posts-list" ]
-            (List.map (postCardView shared) allPosts)
+        Html.Keyed.node "div"
+            [ class "posts-list flip-animated-column" ]
+            (List.map (postAnimationView shared) sortedAnimations)
+
+
+{-| Wraps `Posts.postCard` in a fading/scaling/collapsing animated `<div>`
+(see `syncAnimations`) -- the `.flip-collapsed` class (present while
+`entering` or `removing`) is what makes `flip.css`'s `.flip-animated-item`
+rules grow/shrink this wrapper's own height, which is what makes the _other_
+posts slide smoothly into the space this one leaves/needs, on top of its own
+fade -- see that rule's doc comment for how. The inner `div` is purely a clip
+layer (`.flip-animated-item > *` in `flip.css`, invisible/borderless) so the
+inter-post spacing it holds as `padding-bottom` can shrink away smoothly
+along with everything else, rather than showing up inside `.post-card`'s own
+border; it also carries `pointer-events: none` while `removing` so a
+fading-out card (e.g. from a just-disabled server) can't be clicked/starred
+while it's on its way out.
+-}
+postAnimationView : Shared.Model -> ( String, PostAnimation ) -> ( String, Html Msg )
+postAnimationView shared ( key, anim ) =
+    let
+        pointerEventsAttr =
+            if anim.flip.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    ( key
+    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
+        [ div pointerEventsAttr [ postCardView shared ( anim.host, anim.post ) ] ]
+    )
 
 
 postCardView : Shared.Model -> ( String, Post ) -> Html Msg
@@ -248,5 +407,8 @@ postCardView shared ( host, post ) =
 
         maybeAccount =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+
+        onMediaClicked mediaId =
+            SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount False starred onStarClicked displayPost
+    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost

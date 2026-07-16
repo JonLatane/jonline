@@ -23,6 +23,13 @@ pub fn update_user(
 ) -> Result<User, Status> {
     validate_user(&request)?;
 
+    let user_db_id = request.id.to_db_id_or_err("id")?;
+    let avatar_media_id = request
+        .avatar
+        .as_ref()
+        .map(|a| &a.id)
+        .to_db_opt_id_or_err("avatar")?;
+
     let self_update = request.id == current_user.id.to_proto_id();
     let mut admin = false;
     let mut moderator = false;
@@ -51,18 +58,13 @@ pub fn update_user(
         .transaction::<models::User, diesel::result::Error, _>(|conn| {
             let mut existing_user = users::table
                 .select(users::all_columns)
-                .filter(users::id.eq(request.id.to_db_id().unwrap()))
+                .filter(users::id.eq(user_db_id))
                 .first::<models::User>(conn)?;
             if admin || self_update {
                 existing_user.username = request.username.to_owned();
                 existing_user.real_name = request.real_name.to_owned();
                 existing_user.bio = request.bio.to_owned();
-                existing_user.avatar_media_id = request
-                    .avatar
-                    .as_ref()
-                    .map(|a| &a.id)
-                    .to_db_opt_id()
-                    .unwrap();
+                existing_user.avatar_media_id = avatar_media_id;
                 if request.visibility == Visibility::GlobalPublic as i32
                     && existing_user.visibility.to_proto_visibility().unwrap()
                         != Visibility::GlobalPublic

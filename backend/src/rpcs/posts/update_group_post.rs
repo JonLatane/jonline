@@ -39,8 +39,8 @@ pub fn update_group_post(
         conn,
     );
     match diesel::update(group_posts::table)
-        .filter(group_posts::group_id.eq(request.group_id.to_db_id().unwrap()))
-        .filter(group_posts::post_id.eq(request.post_id.to_db_id().unwrap()))
+        .filter(group_posts::group_id.eq(group_id))
+        .filter(group_posts::post_id.eq(post_id))
         .set(&existing_group_post)
         .execute(conn)
     {

@@ -11,6 +11,7 @@ module Shared.AccountsPanel exposing
     , ServerLogoSize(..)
     , accountAvatarUrl
     , accountId
+    , accountRowDomId
     , brandingFor
     , connectToServer
     , createAccountModalBodyId
@@ -27,6 +28,7 @@ module Shared.AccountsPanel exposing
     , isSecure
     , mainServerTheme
     , mediaUrl
+    , serverChipDomId
     , serverForHost
     , serverHasAccounts
     , serverInfoOf
@@ -35,6 +37,7 @@ module Shared.AccountsPanel exposing
     , serverThemeOf
     , serverUrl
     , shouldShowAddAccountForm
+    , subscriptions
     , unreachableAccountHosts
     , update
     )
@@ -45,8 +48,10 @@ CDN backend\_host discovery) that gets you from a typed-in hostname to a
 working connection.
 -}
 
+import Animation
 import Browser.Dom as Dom
 import Char
+import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, div, img, text)
 import Html.Attributes exposing (alt, class, src)
@@ -63,6 +68,7 @@ import Set
 import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
 import Task exposing (Task)
 import Time
+import UI.Flip
 import UI.ServerTheme
 import Url
 
@@ -226,6 +232,40 @@ type alias Model =
     -- from the Accounts Panel -- see `MainServerSelected` for how an admin
     -- can change it.
     , mainFrontendHost : String
+
+    -- In-flight/settling FLIP slide animations for accounts just reordered
+    -- via `MoveAccountUpClicked`/`MoveAccountDownClicked` (see
+    -- `UI.Flip.MoveState`), keyed by `accountId`. An account with no entry
+    -- here (the common case) just renders at rest.
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
+
+    -- Same as `moveAnimations`, but for servers reordered via
+    -- `MoveServerLeftClicked`/`MoveServerRightClicked`, keyed by
+    -- `frontendHost`. Kept separate from `moveAnimations` (rather than one
+    -- dict shared by both lists) since they're two independent keyed lists --
+    -- an account id and a server host happening to collide as plain strings
+    -- would otherwise cross-wire their animations.
+    , serverMoveAnimations : Dict String (UI.Flip.MoveState Msg)
+
+    -- Each account's enter/leave `UI.Flip.State`, keyed by `accountId` --
+    -- `update`'s very last step (see `syncItemAnimations`) is always
+    -- `UI.Flip.syncEnter accountId model.accounts`, which inserts a fresh
+    -- `UI.Flip.enter` for any account that doesn't have an entry yet, so a
+    -- newly-added account animates in with no need to hunt down every single
+    -- "this added an account" code path by hand. An account mid fade-out
+    -- after `RemoveAccountClicked` (confirmed via `UI.deleteConfirmationModal`)
+    -- stays in `accounts` -- and its entry here keeps `removing = True` --
+    -- until its fade actually finishes (`FinishRemoveAccount`), so it keeps
+    -- rendering (fading/collapsing) instead of just vanishing. `init` seeds
+    -- this with a plain `UI.Flip.restingState` (not `enter`) for every
+    -- persisted account, so reloading the app doesn't replay their entrances.
+    , accountAnimations : Dict String (UI.Flip.State Msg)
+
+    -- Same as `accountAnimations`, but for servers (keyed by `frontendHost`)
+    -- via `MoveServerLeftClicked`/`RemoveServerClicked`/`syncEnter .frontendHost
+    -- model.servers` -- see `accountAnimations`'s own doc for why these stay
+    -- separate dicts.
+    , serverAnimations : Dict String (UI.Flip.State Msg)
     }
 
 
@@ -261,6 +301,18 @@ type Msg
     | FocusInput String
     | ServerConnected Server
     | AccountRefreshed Account
+    | MoveAccountUpClicked String
+    | MoveAccountDownClicked String
+    | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
+    | MoveServerLeftClicked String
+    | MoveServerRightClicked String
+    | GotPreMoveServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | AnimateMove Animation.Msg
+    | MoveSettled String
+    | ServerMoveSettled String
+    | FinishRemoveAccount String
+    | FinishRemoveServer String
+    | AnimateItemFlip Animation.Msg
     | NoOp
 
 
@@ -269,6 +321,212 @@ type Msg
 accountId : Account -> String
 accountId account =
     account.server ++ "|" ++ account.userId
+
+
+{-| The DOM `id` an account's row is rendered with (see `UI.accountRow`) --
+purely so `MoveAccountUpClicked`/`MoveAccountDownClicked` can measure its
+position before/after a reorder (`Browser.Dom.getElement`) to drive its
+`UI.Flip` slide.
+-}
+accountRowDomId : String -> String
+accountRowDomId id =
+    "account-row-" ++ id
+
+
+{-| The DOM `id` a server chip is rendered with -- the `UI.Flip.Horizontal`
+counterpart of `accountRowDomId`, for `MoveServerLeftClicked`/
+`MoveServerRightClicked`.
+-}
+serverChipDomId : String -> String
+serverChipDomId frontendHost =
+    "server-chip-" ++ frontendHost
+
+
+accountAt : Int -> List Account -> Maybe Account
+accountAt idx accounts =
+    List.drop idx accounts |> List.head
+
+
+accountIndex : String -> List Account -> Maybe Int
+accountIndex id accounts =
+    accounts
+        |> List.indexedMap Tuple.pair
+        |> List.filter (\( _, a ) -> accountId a == id)
+        |> List.head
+        |> Maybe.map Tuple.first
+
+
+slice : Int -> Int -> List a -> List a
+slice lo hi items =
+    items |> List.drop lo |> List.take (hi - lo + 1)
+
+
+{-| What `id` moving by `offset` (always +-1, from a move button) actually
+swaps: normally just `id`'s own Account trading places with its single
+`offset` neighbor -- but if that neighbor is on a _different_ server, `id`
+sits at the edge of its own same-server group nearest that neighbor (top
+edge moving up, bottom edge moving down), so every other Account on `id`'s
+server on the _other_ side (below it moving up, above it moving down) comes
+along too. That group is found by scanning _only_ away from the neighbor,
+back across `id`'s own side -- same-server Accounts are already kept
+contiguous elsewhere (see `sortMainServerAccountsFirst`/
+`insertAfterSameServer`).
+
+The neighbor's own same-server group has to come along too, though: it's
+just as contiguous as `id`'s, so swapping `id`'s group past only the single
+adjacent neighbor Account would split the neighbor's group in two (its far
+side ending up on the wrong side of the moved group). So the neighbor side
+is expanded the same way -- scanning _forward_, away from `id`, from
+`neighborIdx`.
+
+Returns the moved Accounts' index range `( lo, hi )` and the neighbor
+group's own index range, or `Nothing` if `id` isn't found or there's no
+neighbor in that direction.
+
+-}
+accountSwapRange : Int -> String -> List Account -> Maybe ( ( Int, Int ), ( Int, Int ) )
+accountSwapRange offset id accounts =
+    accountIndex id accounts
+        |> Maybe.andThen
+            (\i ->
+                let
+                    neighborIdx =
+                        i + offset
+                in
+                case ( accountAt i accounts, accountAt neighborIdx accounts ) of
+                    ( Just clicked, Just neighbor ) ->
+                        if clicked.server == neighbor.server then
+                            Just ( ( i, i ), ( neighborIdx, neighborIdx ) )
+
+                        else
+                            let
+                                walk step server idx =
+                                    if (accountAt (idx + step) accounts |> Maybe.map .server) == Just server then
+                                        walk step server (idx + step)
+
+                                    else
+                                        idx
+
+                                movedEdge =
+                                    walk -offset clicked.server i
+
+                                neighborEdge =
+                                    walk offset neighbor.server neighborIdx
+                            in
+                            Just
+                                ( ( min i movedEdge, max i movedEdge )
+                                , ( min neighborIdx neighborEdge, max neighborIdx neighborEdge )
+                                )
+
+                    _ ->
+                        Nothing
+            )
+
+
+{-| `accounts`' own order is exactly what `UI.accountsList` renders, so
+reordering is just reordering this list (see `accountSwapRange`).
+-}
+moveAccountBy : Int -> String -> List Account -> List Account
+moveAccountBy offset id accounts =
+    case accountSwapRange offset id accounts of
+        Nothing ->
+            accounts
+
+        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
+            if nhi < lo then
+                List.take nlo accounts
+                    ++ slice lo hi accounts
+                    ++ slice nlo nhi accounts
+                    ++ List.drop (hi + 1) accounts
+
+            else
+                List.take lo accounts
+                    ++ slice nlo nhi accounts
+                    ++ slice lo hi accounts
+                    ++ List.drop (nhi + 1) accounts
+
+
+{-| Kicks off a reorder move (see `accountSwapRange`): measures the pre-swap
+position of the moved Account(s)' first/last row and the neighbor group's
+first/last row it's swapping past (the "First" of FLIP), via
+`GotPreMovePositions` -- so the resulting message has something to compare
+the post-swap position against. A no-op (no neighbor in that direction) just
+does nothing.
+-}
+beginAccountMove : Int -> String -> List Account -> Cmd Msg
+beginAccountMove offset id accounts =
+    case accountSwapRange offset id accounts of
+        Nothing ->
+            Cmd.none
+
+        Just ( ( lo, hi ), ( nlo, nhi ) ) ->
+            let
+                movedIds =
+                    slice lo hi accounts |> List.map accountId
+
+                neighborIds =
+                    slice nlo nhi accounts |> List.map accountId
+
+                movedFirstId =
+                    List.head movedIds |> Maybe.withDefault id
+
+                movedLastId =
+                    List.reverse movedIds |> List.head |> Maybe.withDefault id
+
+                neighborFirstId =
+                    List.head neighborIds |> Maybe.withDefault id
+
+                neighborLastId =
+                    List.reverse neighborIds |> List.head |> Maybe.withDefault id
+            in
+            Task.attempt (GotPreMovePositions id movedIds neighborIds offset)
+                (Task.map2 Tuple.pair
+                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId movedFirstId)) (Dom.getElement (accountRowDomId movedLastId)))
+                    (Task.map2 Tuple.pair (Dom.getElement (accountRowDomId neighborFirstId)) (Dom.getElement (accountRowDomId neighborLastId)))
+                )
+
+
+{-| `servers`' own order is exactly what `UI.serversStrip` renders.
+-}
+moveServerBy : Int -> String -> List Server -> List Server
+moveServerBy =
+    UI.Flip.moveListItemBy .frontendHost
+
+
+{-| Pins the `mainFrontendHost` server (if known yet) at the front of
+`servers`, preserving the relative order of everything else -- run
+unconditionally after every `update` (see its doc) so this holds both right
+after app startup resolves `mainFrontendHost` from `browsingHost`
+(`GotMainServerResult`) and whenever it's changed afterward
+(`MainServerSelected`/`ResetMainFrontendHost`), without needing to fix up
+`servers` by hand at each of those call sites. `UI.serverChip` relies on this
+to special-case index `0` as the one, unmovable main server.
+-}
+sortMainServerFirst : Model -> Model
+sortMainServerFirst model =
+    let
+        ( mainServers, otherServers ) =
+            List.partition (\s -> s.frontendHost == model.mainFrontendHost) model.servers
+    in
+    { model | servers = mainServers ++ otherServers }
+
+
+{-| Same idea as `sortMainServerFirst`, for `accounts` -- pins every account
+on the `mainFrontendHost` server at the front, preserving the relative order
+of everything else. Run at the same two points (see `sortMainServerFirst`'s
+doc), this keeps the main server's account(s) contiguous at the front, which
+is what lets `UI.accountRow` hide (rather than merely disable) an arrow that
+would otherwise cross the main/non-main boundary -- moving a main-server
+account below the group, or a non-main one above it -- instead of just
+tracking each account's own up/down bounds.
+-}
+sortMainServerAccountsFirst : Model -> Model
+sortMainServerAccountsFirst model =
+    let
+        ( mainAccounts, otherAccounts ) =
+            List.partition (\a -> a.server == model.mainFrontendHost) model.accounts
+    in
+    { model | accounts = mainAccounts ++ otherAccounts }
 
 
 {-| Whether an account has the `ADMIN` permission.
@@ -686,13 +944,24 @@ init req flags =
     in
     ( { accounts = persisted.accounts
       , servers = []
-      , accountForm = emptyForm
+      , accountForm = { emptyForm | server = browsingHost }
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
       , addAccountFormExpanded = False
       , createAccountConfirmation = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
+      , moveAnimations = Dict.empty
+      , serverMoveAnimations = Dict.empty
+
+      -- Seeded with a *resting* (not `enter`) state for everything already
+      -- persisted, so `syncItemAnimations` -- which would otherwise treat any
+      -- id with no entry as "just appeared" -- doesn't replay every account's/
+      -- server's entrance on every reload. Only genuinely new ones (signed in,
+      -- or added, after this) start from `Dict.empty`-implied absence and so
+      -- actually animate in.
+      , accountAnimations = persisted.accounts |> List.map (\account -> ( accountId account, UI.Flip.restingState )) |> Dict.fromList
+      , serverAnimations = persisted.servers |> List.map (\server -> ( server.frontendHost, UI.Flip.restingState )) |> Dict.fromList
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -727,8 +996,35 @@ emptyAddServerForm =
     { status = Idle }
 
 
+{-| `updateHelp`'s actual per-`Msg` logic, plus `syncItemAnimations`,
+`sortMainServerFirst`, and `sortMainServerAccountsFirst` run unconditionally
+afterward -- so every code path that can add an account/server, or change
+`mainFrontendHost`, gets its enter animation/correct ordering for free,
+without auditing each one by hand. Cheap enough (`accounts`/`servers` are
+small) to run after every single message.
+-}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
+    updateHelp req msg model
+        |> Tuple.mapFirst syncItemAnimations
+        |> Tuple.mapFirst sortMainServerFirst
+        |> Tuple.mapFirst sortMainServerAccountsFirst
+
+
+{-| Inserts a fresh `UI.Flip.enter` into `accountAnimations`/`serverAnimations`
+for any account/server that doesn't have an entry yet -- see those fields'
+own docs, and `UI.Flip.syncEnter`.
+-}
+syncItemAnimations : Model -> Model
+syncItemAnimations model =
+    { model
+        | accountAnimations = UI.Flip.syncEnter accountId model.accounts model.accountAnimations
+        , serverAnimations = UI.Flip.syncEnter .frontendHost model.servers model.serverAnimations
+    }
+
+
+updateHelp : Request -> Msg -> Model -> ( Model, Cmd Msg )
+updateHelp req msg model =
     case msg of
         ServerChanged server ->
             ( setServerField server model, Cmd.none )
@@ -885,7 +1181,10 @@ update req msg model =
                                         model.servers
 
                                     else
-                                        model.servers ++ [ serverFrom connection True config ]
+                                        -- TODO: temporarily prepending (not appending) so newly-added
+                                        -- servers are visible without scrolling, to see their FLIP
+                                        -- entrance animation -- revisit ordering later.
+                                        serverFrom connection True config :: model.servers
                                 , accountForm =
                                     let
                                         form =
@@ -968,7 +1267,9 @@ update req msg model =
                                         model.servers
 
                                     else
-                                        model.servers ++ [ server ]
+                                        -- TODO: temporarily prepending -- see the identical note in
+                                        -- `GotAuthResult`.
+                                        server :: model.servers
                             }
 
                         -- The base host may recommend other servers to federate with (see
@@ -1067,11 +1368,155 @@ update req msg model =
             ( newModel, Cmd.batch [ persist newModel, refreshCmd ] )
 
         RemoveAccountClicked id ->
+            -- Doesn't actually remove the account yet -- starts its fade-out
+            -- (see `accountAnimations`), which sends `FinishRemoveAccount` once
+            -- that finishes to do the real removal.
+            let
+                currentState =
+                    Dict.get id model.accountAnimations |> Maybe.withDefault UI.Flip.restingState
+            in
+            ( { model | accountAnimations = Dict.insert id (UI.Flip.remove (FinishRemoveAccount id) currentState) model.accountAnimations }
+            , Cmd.none
+            )
+
+        FinishRemoveAccount id ->
             let
                 newModel =
-                    { model | accounts = List.filter (\account -> accountId account /= id) model.accounts }
+                    { model
+                        | accounts = List.filter (\account -> accountId account /= id) model.accounts
+                        , accountAnimations = Dict.remove id model.accountAnimations
+                    }
             in
             ( newModel, persist newModel )
+
+        MoveAccountUpClicked id ->
+            ( model, beginAccountMove -1 id model.accounts )
+
+        MoveAccountDownClicked id ->
+            ( model, beginAccountMove 1 id model.accounts )
+
+        GotPreMovePositions id _ _ offset (Err _) ->
+            -- Couldn't measure -- e.g. a row not actually mounted -- fall back to
+            -- swapping without a slide animation, same end state either way.
+            let
+                newModel =
+                    { model | accounts = moveAccountBy offset id model.accounts }
+            in
+            ( newModel, persist newModel )
+
+        GotPreMovePositions id movedIds neighborIds offset (Ok ( ( movedFirstEl, movedLastEl ), ( neighborFirstEl, neighborLastEl ) )) ->
+            -- `movedIds`' post-swap position is derivable from this one
+            -- (pre-swap) measurement of its first/last row and the
+            -- neighbor group's first/last row it's swapping past (see
+            -- `accountSwapRange`). Computing it this way (rather than
+            -- swapping first, then measuring again after the next render)
+            -- means the pinned "Invert" transform is set in the very same
+            -- update as the swap, so there's no frame where the swapped
+            -- list renders at rest before the animation kicks in.
+            let
+                newModel =
+                    { model | accounts = moveAccountBy offset id model.accounts }
+
+                -- Both groups span from their first row's top to their last
+                -- row's bottom -- a single synthetic rect standing in for
+                -- each whole group, so `UI.Flip.swapDeltas` (built for a
+                -- plain two-item swap) can compute one shared slide delta
+                -- for each side.
+                span firstEl lastEl =
+                    { firstEl
+                        | element =
+                            { x = firstEl.element.x
+                            , y = firstEl.element.y
+                            , width = firstEl.element.width
+                            , height = lastEl.element.y + lastEl.element.height - firstEl.element.y
+                            }
+                    }
+
+                ( movedDelta, neighborDelta ) =
+                    UI.Flip.swapDeltas UI.Flip.Vertical (span movedFirstEl movedLastEl) (span neighborFirstEl neighborLastEl)
+
+                startOrRestart delta key anims =
+                    Dict.insert key (UI.Flip.startMove (MoveSettled key) delta (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)) anims
+
+                newMoveAnimations =
+                    newModel.moveAnimations
+                        |> (\anims -> List.foldl (startOrRestart movedDelta) anims movedIds)
+                        |> (\anims -> List.foldl (startOrRestart neighborDelta) anims neighborIds)
+            in
+            ( { newModel | moveAnimations = newMoveAnimations }, persist newModel )
+
+        MoveServerLeftClicked id ->
+            ( model, UI.Flip.beginReorder .frontendHost serverChipDomId GotPreMoveServerPositions -1 id model.servers )
+
+        MoveServerRightClicked id ->
+            ( model, UI.Flip.beginReorder .frontendHost serverChipDomId GotPreMoveServerPositions 1 id model.servers )
+
+        GotPreMoveServerPositions id _ offset (Err _) ->
+            let
+                newModel =
+                    { model | servers = moveServerBy offset id model.servers }
+            in
+            ( newModel, persist newModel )
+
+        GotPreMoveServerPositions id neighborId offset (Ok ( chipEl, neighborEl )) ->
+            let
+                newModel =
+                    { model | servers = moveServerBy offset id model.servers }
+            in
+            ( { newModel
+                | serverMoveAnimations =
+                    UI.Flip.applyReorder UI.Flip.Horizontal ServerMoveSettled id neighborId chipEl neighborEl newModel.serverMoveAnimations
+              }
+            , persist newModel
+            )
+
+        AnimateMove animMsg ->
+            let
+                step key state ( states, cmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.moveAnimate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: cmds )
+
+                ( newMoveAnimations, moveCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.moveAnimations
+
+                ( newServerMoveAnimations, serverMoveCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.serverMoveAnimations
+            in
+            ( { model | moveAnimations = newMoveAnimations, serverMoveAnimations = newServerMoveAnimations }
+            , Cmd.batch (moveCmds ++ serverMoveCmds)
+            )
+
+        MoveSettled id ->
+            ( { model | moveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.moveAnimations }
+            , Cmd.none
+            )
+
+        ServerMoveSettled id ->
+            ( { model | serverMoveAnimations = Dict.update id (Maybe.map (\state -> { state | moving = False })) model.serverMoveAnimations }
+            , Cmd.none
+            )
+
+        AnimateItemFlip animMsg ->
+            let
+                step key state ( states, cmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.animate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: cmds )
+
+                ( newAccountAnimations, accountCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.accountAnimations
+
+                ( newServerAnimations, serverCmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.serverAnimations
+            in
+            ( { model | accountAnimations = newAccountAnimations, serverAnimations = newServerAnimations }
+            , Cmd.batch (accountCmds ++ serverCmds)
+            )
 
         ToggleServerEnabled frontendHost ->
             let
@@ -1146,7 +1591,9 @@ update req msg model =
                     let
                         newModel =
                             { model
-                                | servers = model.servers ++ [ serverFrom connection True config ]
+                                -- TODO: temporarily prepending -- see the identical note in
+                                -- `GotAuthResult`.
+                                | servers = serverFrom connection True config :: model.servers
                                 , addServerForm = emptyAddServerForm
                             }
                     in
@@ -1163,15 +1610,29 @@ update req msg model =
                     )
 
         RemoveServerClicked frontendHost ->
+            -- Same "fade first, actually remove once that finishes" deferral as
+            -- `RemoveAccountClicked` -- see `serverAnimations`.
             if serverHasAccounts model.accounts frontendHost || frontendHost == model.mainFrontendHost then
                 ( model, Cmd.none )
 
             else
                 let
-                    newModel =
-                        { model | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers }
+                    currentState =
+                        Dict.get frontendHost model.serverAnimations |> Maybe.withDefault UI.Flip.restingState
                 in
-                ( newModel, persist newModel )
+                ( { model | serverAnimations = Dict.insert frontendHost (UI.Flip.remove (FinishRemoveServer frontendHost) currentState) model.serverAnimations }
+                , Cmd.none
+                )
+
+        FinishRemoveServer frontendHost ->
+            let
+                newModel =
+                    { model
+                        | servers = List.filter (\s -> s.frontendHost /= frontendHost) model.servers
+                        , serverAnimations = Dict.remove frontendHost model.serverAnimations
+                    }
+            in
+            ( newModel, persist newModel )
 
         ToggleAccountsPanel ->
             let
@@ -1294,7 +1755,9 @@ update req msg model =
             else
                 let
                     newModel =
-                        { model | servers = model.servers ++ [ server ] }
+                        -- TODO: temporarily prepending -- see the identical note in
+                        -- `GotAuthResult`.
+                        { model | servers = server :: model.servers }
                 in
                 ( newModel, persist newModel )
 
@@ -1307,6 +1770,19 @@ update req msg model =
 
         NoOp ->
             ( model, Cmd.none )
+
+
+{-| Just the accounts' reorder-slide animations (see `moveAnimations`) --
+`Shared.subscriptions` batches this in with everything else.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.batch
+        [ UI.Flip.moveSubscription AnimateMove
+            (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
+        , UI.Flip.subscription AnimateItemFlip
+            (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
+        ]
 
 
 {-| A server that has any associated accounts can't be removed (only disabled),
@@ -1531,7 +2007,10 @@ upsertAccount account accounts =
             accounts
 
     else
-        insertAfterSameServer account accounts
+        -- TODO: temporarily prepending (bypassing insertAfterSameServer) so a
+        -- newly-added account is visible without scrolling, to see its FLIP
+        -- entrance animation -- revisit ordering later.
+        account :: accounts
 
 
 {-| Inserts a newly-seen account (fresh login/create-account) directly after

@@ -1,6 +1,8 @@
-module Components.Posts exposing
+module Components.PostCard exposing
     ( fetchPost
     , fetchRecentPosts
+    , fetchReplies
+    , isAuthor
     , parsePostRouteId
     , postAuthorHref
     , postAuthorName
@@ -24,11 +26,11 @@ route's `id` or `id@host` segment.
 -}
 
 import Components.Markdown as Markdown
-import Components.PostMediaRenderer as PostMediaRenderer
+import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Users as Users
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, div, h1, img, span, text)
+import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, attribute, class, href, src)
 import Html.Events
 import Json.Decode as Decode
@@ -84,6 +86,38 @@ fetchRecentPosts server maybeAccount =
                 |> withAuth maybeToken
                 |> Grpc.toTask
         )
+
+
+{-| Fetches the direct replies to `postId` from `server` (`reply_depth: 1` --
+see `GetPostsRequest`'s doc comment: with `post_id` and `reply_depth` both set,
+`GetPosts` returns the replies themselves, not `postId`'s own Post), authenticated
+as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
+`fetchPost`.
+-}
+fetchReplies :
+    AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
+fetchReplies server maybeAccount postId =
+    MaybeAccountRequest.perform
+        (connectionOf server)
+        maybeAccount
+        (\maybeToken ->
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just 1 }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAuth maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Whether `account` is `post`'s own author -- e.g. to show an Edit button
+only to the post's author (see `Pages.Post.PostId_`). `False` if the post has
+no `author` at all (shouldn't normally happen, but `Post.author` is optional).
+-}
+isAuthor : AccountsPanel.Account -> Post -> Bool
+isAuthor account post =
+    Maybe.map .userId post.author == Just account.userId
 
 
 connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
@@ -298,7 +332,7 @@ postCommentCount post =
 `onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
 the post (see `Shared.StarredPostsPanel`), filling with `postServerHost`'s
 `primaryAnchorColor` (`.post-star.starred`, see `UI.EmittedStylesheet`) and
-animating the fill via `transition` in `style.css` when `starred` flips.
+animating the fill via `transition` in `posts.css` when `starred` flips.
 `stopPropagation`/`preventDefault` keep a click here from also following
 `postCard`'s enclosing link.
 -}
@@ -335,8 +369,28 @@ commentCountText post =
     " · 💬 " ++ String.fromInt (postCommentCount post)
 
 
+{-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
+author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own (the enabled
+account for the post's server, same one used for `postAuthorAvatarUrl`), not
+necessarily `post.author` itself. Opens the shared Markdown editor panel via
+`onEditClicked`, supplied by the caller (`Pages.Post.PostId_`).
+-}
+editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+editButton maybeAccount onEditClicked post =
+    case maybeAccount of
+        Just account ->
+            if isAuthor account post then
+                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit" ]
+
+            else
+                text ""
+
+        Nothing ->
+            text ""
+
+
 {-| A small avatar/placeholder for a post's author, matching the size of the
-Accounts Panel toggle's own avatars (`.post-author-avatar`, see `style.css`).
+Accounts Panel toggle's own avatars (`.post-author-avatar`, see `posts.css`).
 Falls back to an initial-letter placeholder the same way `UI.imageOrInitial`
 does elsewhere in the app; duplicated here rather than reusing that function
 since `UI` itself imports `Components.Posts` (for `postCard`), so the reverse
@@ -405,14 +459,18 @@ below is an invisible `<a>` (`.post-card-link-overlay`) absolutely filling the
 whole `.post-card`, sitting _behind_ the title/meta content (`position:
 relative` on `.post-card-meta` -- title needs none, see its own lack of
 interactive descendants -- stacks it above the overlay per normal CSS painting
-order) with `.post-card-meta`'s own `pointer-events: none` (see `style.css`)
+order) with `.post-card-meta`'s own `pointer-events: none` (see `posts.css`)
 making its plain text transparent to clicks, which fall through to the overlay
 below -- while `authorLink`/`starButton`, both opted back in via
 `pointer-events: auto`, catch clicks themselves before they ever reach it.
 
+`extraSmallMedia` shrinks the media preview's height further still (see
+`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPostsPanel`'s
+post rows, tighter on vertical space than the Home page's own feed of these
+same cards.
 -}
-postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost maybeServer maybeAccount current starred onStarClicked post =
+postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -424,7 +482,7 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
                         [ "post-card-current", "background-color-primary" ]
 
                     else
-                        []
+                        [ "background-color-primary-5" ]
                    )
             )
         ]
@@ -435,6 +493,16 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
             ]
             []
         , div [ class "post-card-title" ] [ text (postTitleText post) ]
+        , case maybeServer of
+            Just server ->
+                if extraSmallMedia then
+                    MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked post.media
+
+                else
+                    MultiMediaRenderer.preview server maybeAccount onMediaClicked post.media
+
+            Nothing ->
+                text ""
         , div [ class "post-card-meta" ]
             [ span [ class "post-meta-left" ]
                 [ authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
@@ -456,12 +524,19 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount curr
 {-| Full rendering for a single post (see the Post page) -- no server badge,
 since that's already the page you're on, but still tinted with `postServerHost`'s
 `primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
-since this one isn't a link).
+since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
+meta line's `post-meta-right` group only to the post's own author.
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Bool -> Maybe msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount starred onStarClicked post =
+postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Post -> Html msg
+postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        , case maybeServer of
+            Just server ->
+                MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
+
+            Nothing ->
+                text ""
         , div [ class "post-detail-meta" ]
             [ span [ class "post-meta-left" ]
                 [ text "by "
@@ -469,16 +544,11 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount st
                 , text (" · " ++ postVisibilityText post)
                 ]
             , span [ class "post-meta-right" ]
-                [ starButton postServerHost starred onStarClicked post
+                [ editButton maybeAccount onEditClicked post
+                , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
             ]
-        , case maybeServer of
-            Just server ->
-                PostMediaRenderer.view server maybeAccount post.media
-
-            Nothing ->
-                text ""
         , case post.content of
             Just content ->
                 Markdown.view [ class "post-detail-content" ] content

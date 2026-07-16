@@ -1,0 +1,219 @@
+/* The app-wide Markdown editor (see Shared/MarkdownPanel.elm) -- unlike the
+   Accounts/Starred Posts panels (small dropdowns anchored below their own nav
+   toggle), this one is a large, centered overlay -- there's a real editor and
+   live preview to fit side by side, not just a short list/form. Reuses the
+   `.nav-panel` base rule (position/opacity/pointer-events transition, see
+   accounts_panel.css) for the same "always rendered, open/closed is a plain
+   CSS transition" convention every panel here follows, overriding its
+   positioning/sizing to suit. */
+.markdown-panel.nav-panel {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 900px);
+  height: 75vh;
+  max-height: 75vh;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+
+  /* Below `.navbar` (28, see nav.css) and `.media-viewer-panel` (27, see
+     media_viewer_panel.css) -- the Accounts/Starred Posts panels (`.navbar`'s
+     descendants, forming one stacking context at *its* z-index, not their
+     own lower ones) and a fullscreen image/video both reasonably win over a
+     glanced-at editor left open behind them. Still above plain page content,
+     so a post's Edit/Reply button reliably brings this to the front of
+     everything else, and below `.modal`'s own 30/31 (a Cancel/Confirm dialog
+     opened *from* this panel, if one's ever added, should still win). */
+  z-index: 26;
+}
+
+.markdown-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(100%);
+}
+
+/* Phone-width screens: edge to edge, no floating margins/rounded top corners
+   -- there's no spare width to give up on a small screen, and the panel
+   already reads as a full "screen" of its own there rather than a floating
+   dialog. `.is-closed`'s own `translateY(100%)` still works unchanged since
+   it never touched `translateX`. */
+@media (max-width: 639px) {
+  .markdown-panel.nav-panel {
+    left: 0;
+    right: 0;
+    width: 100vw;
+    /* The shared `.nav-panel` base rule (accounts_panel.css) caps every
+       panel at `calc(100vw - 2rem)` -- fine for the Accounts/Starred Posts
+       dropdowns, which want a margin either side, but it silently overrode
+       `width: 100vw` above (a `max-width` still wins over a wider `width`),
+       leaving a stray 2rem gap on the right. This one's meant to go fully
+       edge to edge, so undo that cap here. */
+    max-width: 100vw;
+    transform: none;
+    border-radius: 0;
+  }
+
+  .markdown-panel.nav-panel.is-closed {
+    transform: translateY(100%);
+  }
+}
+
+/* Mode slider first (the tabs), account row after -- no title text anymore
+   (see `Shared.MarkdownPanel`'s `view`), so a single row fits both without
+   needing the old stacked title-row/slider-row layout. */
+.markdown-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.markdown-panel-account {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.markdown-panel-account-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.markdown-panel-account-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chip-bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.markdown-panel-split {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0.75rem;
+}
+
+/* `.mode-text`/`.mode-markdown` each render just one child (see
+   `Shared.MarkdownPanel`'s `view`) -- `gap` above is harmless with a single
+   child, so no override needed there, just letting that lone editor/preview
+   claim the full width via its own `flex: 1 1 50%` already doing so. */
+
+/* Segmented Text/Split/Markdown control -- one sliding pill
+   (`markdown-panel-mode-thumb`) behind three equal-width buttons, rather
+   than three independently-highlighted ones, so the active mode reads as a
+   single moving position. First thing in `.markdown-panel-header`, the
+   account row after -- `flex: 0 1 150px` (not `0 0`) lets it shrink further
+   still on a narrow phone screen instead of overlapping/pushing out that
+   account row, since the two now share one header row. */
+.markdown-panel-mode-slider {
+  position: relative;
+  display: flex;
+  flex: 0 1 150px;
+  min-width: 0;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+}
+
+.markdown-panel-mode-thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(100% / 3 - 2px);
+  border-radius: 999px;
+  transition: transform 0.15s ease;
+}
+
+/* Tinted with the Post's own server color -- the same per-server
+   `background-color-primary` utility class the Save button uses (see
+   UI/EmittedStylesheet.elm), added alongside it here in
+   Shared/MarkdownPanel.elm's `modeSlider`. */
+.markdown-panel-mode-thumb.background-color-primary {
+  opacity: 0.3;
+}
+
+.markdown-panel-mode-slider.mode-split .markdown-panel-mode-thumb {
+  transform: translateX(100%);
+}
+
+.markdown-panel-mode-slider.mode-markdown .markdown-panel-mode-thumb {
+  transform: translateX(200%);
+}
+
+.markdown-panel-mode-option {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--fg);
+  font-size: 0.65rem;
+  font-weight: 600;
+  opacity: 0.6;
+  padding: 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.markdown-panel-mode-option.selected {
+  opacity: 1;
+}
+
+.markdown-panel-editor,
+.markdown-panel-preview {
+  flex: 1 1 50%;
+  min-width: 0;
+  height: 100%;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+}
+
+.markdown-panel-editor {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 0.85rem;
+  resize: none;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.markdown-panel-preview {
+  background: var(--chip-bg);
+}
+
+.markdown-panel-error {
+  color: var(--danger);
+  flex: 0 0 auto;
+}
+
+.markdown-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.markdown-panel-actions button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+/* `.markdown-panel-save`'s actual color comes from the emitted per-server
+   `background-color-primary` utility class (see UI/EmittedStylesheet.elm) --
+   added alongside it in Shared/MarkdownPanel.elm's `view`, keyed by
+   `model.targetHost`, so Save is tinted with the Post's own server's color
+   rather than one fixed color for every server. */

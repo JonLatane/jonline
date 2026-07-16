@@ -1,13 +1,15 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
-import Components.Posts as Posts
+import Components.PostCard as Posts
 import Components.Users as Users
+import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
-import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, disabled, href, id, placeholder, spellcheck, src, title, type_, value)
-import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
+import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, placeholder, spellcheck, src, style, title, type_, value)
+import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
+import Html.Keyed
 import Json.Decode as Decode
 import Page
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -16,9 +18,13 @@ import Set
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, openClosedClass)
 import UI.EmittedStylesheet
+import UI.Flip
+import UI.Modal
 import View exposing (View)
 
 
@@ -62,6 +68,10 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (headerNav shared currentRoute)
     , Html.map toMsg (createAccountConfirmationBackdrop shared)
     , Html.map toMsg (createAccountConfirmationModal shared)
+    , Html.map toMsg (deleteConfirmationBackdrop shared)
+    , Html.map toMsg (deleteConfirmationModal shared)
+    , Html.map toMsg (markdownPanel shared)
+    , Html.map toMsg (mediaViewerPanel shared)
     , div [ class "container" ] [ main_ [] children ]
     ]
 
@@ -84,7 +94,7 @@ headerNav shared currentRoute =
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
         -- the full viewport width), not of `.admin-menu` (the toggle's own
         -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
-        -- `left: 0` in style.css hugs the actual screen edge instead of just
+        -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
         -- the toggle's left edge. See `starredPostsPanel`.
         , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
             text ""
@@ -96,9 +106,9 @@ headerNav shared currentRoute =
 
 {-| One entry in `sharedBackdrop`'s priority list: whether this panel is
 currently open, the message that closes just this panel, and whether its
-being open should blur/tint the shared backdrop (only the Accounts Panel
-blocks interaction with the rest of the page like that -- see
-`sharedBackdrop`).
+being open should blur/tint the shared backdrop (the Accounts Panel and the
+Markdown panel both block interaction with the rest of the page like that --
+see `sharedBackdrop`).
 -}
 type alias BackdropPanel =
     { isOpen : Bool
@@ -108,7 +118,7 @@ type alias BackdropPanel =
 
 
 {-| Covers everything except the top nav (which sits in its own, higher
-stacking context -- see `.navbar` in style.css) for every panel that closes
+stacking context -- see `.navbar` in nav.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel and the Accounts
 Panel, with more expected to join this list later. Always rendered, like the
 panels themselves, so opening/closing (and the blur) is a plain CSS
@@ -119,13 +129,25 @@ Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the Starred Posts
-panel first, then (on a second tap) the Accounts Panel behind it -- swap their
-order here to change that priority. Only blurs/tints the page while a panel
-with `blurs = True` is open (currently just the Accounts Panel, which blocks
-interaction with the rest of the page while its login/server-management forms
-are open); the Starred Posts panel doesn't, since starring/unstarring posts
+panel first, then the Accounts Panel, then the Media Viewer panel, then (on a
+fourth tap) the Markdown panel behind all three -- matching the actual paint
+order (`.navbar`'s own z-index sits above both `.media-viewer-panel` and
+`.markdown-panel`, so its descendants -- the Accounts/Starred Posts panels --
+render above them regardless of their own, lower z-indices; see nav.css,
+media\_viewer\_panel.css and markdown\_panel.css) -- swap their order here to
+change that priority. Only blurs/tints the page while a panel with `blurs =
+True` is open (currently the Accounts Panel, the Media Viewer panel, and the
+Markdown panel, all of which block interaction with the rest of the page
+while open); the Starred Posts panel doesn't, since starring/unstarring posts
 while it's open is an expected, encouraged interaction rather than something
 to block.
+
+The Media Viewer panel is the one entry here whose own box spans the whole
+viewport rather than a small, anchored dropdown -- see
+media\_viewer\_panel.css's own doc comment for how it still lets clicks in its
+own empty space (everything but the header/media/nav buttons) fall through to
+this backdrop, rather than swallowing every click itself the way a fullscreen,
+opaque element normally would.
 
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
@@ -139,6 +161,14 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
+              , blurs = True
+              }
+            , { isOpen = MediaViewerPanel.isOpen shared.mediaViewerPanel
+              , closeMsg = Shared.MediaViewerPanelMsg MediaViewerPanel.CloseClicked
+              , blurs = True
+              }
+            , { isOpen = shared.markdownPanel.target /= Nothing
+              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
               , blurs = True
               }
             ]
@@ -162,21 +192,6 @@ sharedBackdrop shared =
                 |> Maybe.map .closeMsg
                 |> Maybe.withDefault (Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel)
             )
-        ]
-        []
-
-
-{-| A full-viewport-covering `div`, always rendered (even "closed") so opening/
-closing can be a plain CSS transition rather than the element itself
-appearing/disappearing outright -- used by `createAccountConfirmationBackdrop`
-(`sharedBackdrop` needs its own click-priority logic, so it builds its `div`
-directly rather than going through this).
--}
-overlayBackdrop : String -> Bool -> Shared.Msg -> Html Shared.Msg
-overlayBackdrop backdropClass isOpen closeMsg =
-    div
-        [ classes [ backdropClass, openClosedClass isOpen ]
-        , onClick closeMsg
         ]
         []
 
@@ -206,7 +221,7 @@ onEnter msg =
 `navColor`/`navTextColor` so it stands out against the `primaryColor`-tinted
 navbar around it; other links just inherit that surrounding primary color/text
 color by not overriding them. The Home link also gets its own `nav-link-home`
-class (regardless of `isCurrent`) so `style.css` can give its bigger,
+class (regardless of `isCurrent`) so `nav.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
 negative-margin overflow treatment as the Accounts Panel toggle.
 -}
@@ -240,7 +255,7 @@ navLink shared currentRoute content linkRoute =
 {-| The Home link's content is normally the browsing server's own
 logo/name (via `AccountsPanel.serverNameAndLogo`), same `RegularServerLogo`
 (stacked glyph-above-multi-line-name) style as the server chips in the
-Accounts Panel -- just bigger, per `.nav-link-home` in `style.css` -- falling
+Accounts Panel -- just bigger, per `.nav-link-home` in `nav.css` -- falling
 back to the literal text "Home" only for the brief window before
 `mainFrontendHost` has actually finished connecting (see
 `AccountsPanel.init`/`GotMainServerResult`), when it isn't in `servers` yet.
@@ -271,13 +286,14 @@ mainServer shared =
 
 {-| Every page's browser tab title, built from `segments` (most-specific
 first, e.g. a post's title, or -- once posts/profiles can belong to one --
-that title *and* its Group's name) followed by `mainFrontendHost`'s own
+that title _and_ its Group's name) followed by `mainFrontendHost`'s own
 branding name, e.g. `"My Post | My Server"`. An empty `segments` (the Home
 page) is just the server name on its own, with no leading `" | "`.
 
 Centralizing this means every page's title updates together if the format
 ever changes, and a future segment (like that Group name) is just another
 list entry for the page to prepend -- not a new format to invent.
+
 -}
 pageTitle : Shared.Model -> List String -> String
 pageTitle shared segments =
@@ -527,7 +543,7 @@ you'll accumulate the most of.
 
 Always rendered (even "closed"), so opening/closing can be a plain CSS
 transition (fade + slide) rather than the panel just appearing/disappearing
-outright -- see `.nav-panel`/`.nav-panel.is-closed` in style.css.
+outright -- see `.nav-panel`/`.nav-panel.is-closed` in main.css.
 
 -}
 accountsPanel : Shared.Model -> Html Shared.Msg
@@ -693,8 +709,49 @@ adminTab shared =
 
 serversStrip : Shared.Model -> Html Shared.Msg
 serversStrip shared =
-    div [ class "servers-strip" ]
-        (List.map (serverChip shared) shared.accountsPanel.servers)
+    let
+        servers =
+            shared.accountsPanel.servers
+
+        count =
+            List.length servers
+    in
+    Html.Keyed.node "div"
+        [ classes [ "servers-strip", "flip-animated-row" ] ]
+        (List.indexedMap
+            (\index server -> ( server.frontendHost, serverChipFlip shared count index server ))
+            servers
+        )
+
+
+{-| Wraps `serverChip` in a fading/scaling/collapsing animated outer `div`
+(entering when freshly added, removing when deleted -- see
+`AccountsPanel.serverAnimations`/`UI.Flip`) -- the `UI.Flip.Horizontal`
+counterpart of `accountRowFlip`, whose doc covers the two-layer reasoning
+(fade/collapse here vs. `serverChip`'s own, independent reorder-slide) in
+full.
+-}
+serverChipFlip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
+serverChipFlip shared count index server =
+    let
+        flipState =
+            Dict.get server.frontendHost shared.accountsPanel.serverAnimations
+                |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving =
+            Dict.get server.frontendHost shared.accountsPanel.serverMoveAnimations
+                |> Maybe.map .moving
+                |> Maybe.withDefault False
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
+        [ div pointerEventsAttr [ serverChip shared count index server ] ]
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
@@ -710,8 +767,8 @@ on (see `Shared.AdminPanel`), that tap additionally sets this server as
 see its handler in `Shared.AccountsPanel`) instead of just filling the field.
 
 -}
-serverChip : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
-serverChip shared server =
+serverChip : Shared.Model -> Int -> Int -> AccountsPanel.Server -> Html Shared.Msg
+serverChip shared count index server =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -750,10 +807,56 @@ serverChip shared server =
                     "Use this server in the login form"
                 )
             ]
+
+        moveAttrs =
+            accountsPanelModel.serverMoveAnimations
+                |> Dict.get server.frontendHost
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
+
+        -- `stopPropagationOn`, not `onClick` -- these two buttons sit inside
+        -- `topAttrs`'s own "select this server" click target (see
+        -- `reorderButtonPair`'s doc), so a plain `onClick` here would also
+        -- fire that.
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
+        -- The main server (always `index == 0` -- see
+        -- `AccountsPanel.sortMainServerFirst`) is pinned in place and isn't
+        -- reorderable at all, so neither of its arrows is interactive. The
+        -- server right after it can't move left into the main server's fixed
+        -- slot, so its left arrow isn't interactive either; the last server
+        -- can't move right past the end, so its right arrow isn't. Both
+        -- conditions naturally leave a lone non-main server (`count == 2`)
+        -- with neither arrow interactive. Non-interactive arrows still
+        -- render (`reorder-arrow-hidden` just fades/no-ops them) rather than
+        -- disappearing, so the chip's width/layout doesn't jump around
+        -- depending on position.
+        showBackward =
+            index > 1
+
+        showForward =
+            index > 0 && index < count - 1
+
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerLeftClicked server.frontendHost))
+                , moveForward = stopClick (Shared.AccountsPanelMsg (AccountsPanel.MoveServerRightClicked server.frontendHost))
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
+                }
     in
-    div [ class "server-chip" ]
+    div
+        (id (AccountsPanel.serverChipDomId server.frontendHost)
+            :: class "server-chip"
+            :: moveAttrs
+        )
         [ div topAttrs
-            [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
+            [ div [ class "server-chip-logo-row" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
+                , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
+                ]
             , div [ class "server-chip-host" ] [ text server.frontendHost ]
             , if isMainServer then
                 div [ class "server-chip-main-badge" ] [ text "★ Main" ]
@@ -765,7 +868,7 @@ serverChip shared server =
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , button
                 [ class "remove-btn"
-                , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveServerClicked server.frontendHost))
+                , onClick (Shared.RequestDelete (Shared.ConfirmServerDelete server))
                 , disabled (not removable)
                 , title
                     (if isMainServer then
@@ -832,11 +935,64 @@ unreachableServersWarning shared =
 
 accountsList : Shared.Model -> Html Shared.Msg
 accountsList shared =
-    if List.isEmpty shared.accountsPanel.accounts then
+    let
+        accounts =
+            shared.accountsPanel.accounts
+
+        count =
+            List.length accounts
+
+        -- Accounts on the main server always sort to the front (see
+        -- `AccountsPanel.sortMainServerAccountsFirst`), so they're exactly
+        -- the leading `mainCount` accounts here -- `accountRow` uses this to
+        -- hide any arrow that would cross that group boundary.
+        mainCount =
+            accounts
+                |> List.filter (\a -> a.server == shared.accountsPanel.mainFrontendHost)
+                |> List.length
+    in
+    if List.isEmpty accounts then
         div [ class "accounts-empty" ] [ text "No accounts yet." ]
 
     else
-        div [ class "accounts-list" ] (List.map (accountRow shared) shared.accountsPanel.accounts)
+        Html.Keyed.node "div"
+            [ classes [ "accounts-list", "flip-animated-column" ] ]
+            (List.indexedMap
+                (\index account -> ( AccountsPanel.accountId account, accountRowFlip shared count mainCount index account ))
+                accounts
+            )
+
+
+{-| Wraps `accountRow` in a fading/scaling/collapsing animated outer `div`
+(entering when freshly added, removing when deleted -- see
+`AccountsPanel.accountAnimations`/`UI.Flip`), mirroring `Pages.Home_`'s
+`postAnimationView`. The inner clip-layer `div` (same reasoning as there)
+holds the FLIP-collapse's own `padding-bottom` spacing; `accountRow` itself --
+with its _own_, independent reorder-slide `moveAttrs` -- lives one layer
+further in, so the two animations (fade/collapse vs. reorder-slide) apply to
+different elements and never fight over the same `transform`.
+-}
+accountRowFlip : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRowFlip shared count mainCount index account =
+    let
+        flipState =
+            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.accountAnimations
+                |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving =
+            Dict.get (AccountsPanel.accountId account) shared.accountsPanel.moveAnimations
+                |> Maybe.map .moving
+                |> Maybe.withDefault False
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
+        [ div pointerEventsAttr [ accountRow shared count mainCount index account ] ]
 
 
 {-| The whole row is tinted with the account's server's `background-color-primary`
@@ -844,18 +1000,66 @@ accountsList shared =
 username); the "host | server name" badge underneath it uses
 `background-color-nav` instead, layered on top as a normal (not
 absolutely-positioned) element now that the row isn't split into bands.
+
+`moveAttrs` is an inline `transform` -- present only while this account is
+mid-slide after `reorderButtons` moved it (see `UI.Flip.MoveState`,
+`AccountsPanel.moveAnimations`), empty (identity) otherwise. The row's own DOM
+`id` (`AccountsPanel.accountRowDomId`) is what lets `AccountsPanel.update`
+measure its position before/after a reorder to drive that slide.
+
+`mainCount` (see `accountsList`) is how many leading accounts belong to the
+main server -- `canMoveUp`/`canMoveDown` use it to hide (see
+`AccountsPanel.sortMainServerAccountsFirst`'s doc) whichever arrow would
+otherwise move an account across the main/non-main boundary, rather than
+just checking this account's own position against the list's two ends.
+
 -}
-accountRow : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
-accountRow shared account =
+accountRow : Shared.Model -> Int -> Int -> Int -> AccountsPanel.Account -> Html Shared.Msg
+accountRow shared count mainCount index account =
     let
-        id =
+        accId =
             AccountsPanel.accountId account
 
         branding =
             AccountsPanel.brandingFor shared.accountsPanel.servers account.server
+
+        moveAttrs =
+            shared.accountsPanel.moveAnimations
+                |> Dict.get accId
+                |> Maybe.map UI.Flip.moveAttributes
+                |> Maybe.withDefault []
+
+        isMainServerAccount =
+            account.server == shared.accountsPanel.mainFrontendHost
+
+        canMoveUp =
+            if isMainServerAccount then
+                index > 0
+
+            else
+                index > mainCount
+
+        canMoveDown =
+            if isMainServerAccount then
+                index < mainCount - 1
+
+            else
+                index < count - 1
+
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Vertical
+                { moveBackward = onClick (Shared.AccountsPanelMsg (AccountsPanel.MoveAccountUpClicked accId))
+                , moveForward = onClick (Shared.AccountsPanelMsg (AccountsPanel.MoveAccountDownClicked accId))
+                , canMoveBackward = canMoveUp
+                , canMoveForward = canMoveDown
+                }
     in
-    div [ classes [ "account-row", account.server, "background-color-primary" ] ]
-        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled id))
+    div
+        (id (AccountsPanel.accountRowDomId accId)
+            :: classes [ "account-row", account.server, "background-color-primary" ]
+            :: moveAttrs
+        )
+        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
         , a
             [ class "account-row-profile-link"
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
@@ -874,9 +1078,13 @@ accountRow shared account =
                     [ text (account.server ++ " | " ++ branding.name) ]
                 ]
             ]
+        , div [ class "reorder-buttons" ]
+            [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveUp ) ] ] [ reorderPair.backward ]
+            , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveDown ) ] ] [ reorderPair.forward ]
+            ]
         , button
             [ class "remove-btn"
-            , onClick (Shared.AccountsPanelMsg (AccountsPanel.RemoveAccountClicked id))
+            , onClick (Shared.RequestDelete (Shared.ConfirmAccountDelete account))
             ]
             [ text "×" ]
         ]
@@ -1075,7 +1283,7 @@ rendered, like the other backdrops, so opening/closing is a CSS transition.
 -}
 createAccountConfirmationBackdrop : Shared.Model -> Html Shared.Msg
 createAccountConfirmationBackdrop shared =
-    overlayBackdrop "create-account-backdrop"
+    UI.Modal.backdrop
         (shared.accountsPanel.createAccountConfirmation /= Nothing)
         (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
 
@@ -1098,7 +1306,8 @@ createAccountConfirmationModal : Shared.Model -> Html Shared.Msg
 createAccountConfirmationModal shared =
     case shared.accountsPanel.createAccountConfirmation of
         Nothing ->
-            div [ classes [ "create-account-modal", "is-closed" ] ] []
+            UI.Modal.view
+                { class = "create-account-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
 
         Just pending ->
             let
@@ -1108,19 +1317,20 @@ createAccountConfirmationModal shared =
                 submitting =
                     shared.accountsPanel.accountForm.status == AccountsPanel.Submitting
             in
-            div [ classes [ "create-account-modal", "is-open" ] ]
-                [ div [ class "create-account-modal-header" ]
-                    [ AccountsPanel.serverNameAndLogo pending.server AccountsPanel.RegularServerLogo ]
-                , div
-                    [ class "create-account-modal-body"
-                    , id AccountsPanel.createAccountModalBodyId
+            UI.Modal.view
+                { class = "create-account-modal"
+                , isOpen = True
+                , header = AccountsPanel.serverNameAndLogo pending.server AccountsPanel.RegularServerLogo
+                , bodyAttrs =
+                    [ id AccountsPanel.createAccountModalBodyId
                     , on "scroll" (Decode.map (AccountsPanel.CreateAccountModalScrolled >> Shared.AccountsPanelMsg) scrolledToBottomDecoder)
                     ]
+                , body =
                     [ policyMarkdown "" info.description
                     , policyMarkdown "Privacy Policy" info.privacyPolicy
                     , policyMarkdown "Media Policy" info.mediaPolicy
                     ]
-                , div [ class "create-account-modal-buttons" ]
+                , buttons =
                     [ button
                         [ onClick (Shared.AccountsPanelMsg AccountsPanel.CancelCreateAccountClicked)
                         , disabled submitting
@@ -1147,7 +1357,65 @@ createAccountConfirmationModal shared =
                             )
                         ]
                     ]
-                ]
+                }
+
+
+
+-- DELETE CONFIRMATION
+
+
+{-| Covers the whole page while a delete confirmation is up -- same reasoning
+as `createAccountConfirmationBackdrop`, and the two never appear at once (both
+only ever come from actions inside the Accounts Panel, which can only have one
+such step in flight).
+-}
+deleteConfirmationBackdrop : Shared.Model -> Html Shared.Msg
+deleteConfirmationBackdrop shared =
+    UI.Modal.backdrop (shared.confirmingDeleteFor /= Nothing) Shared.CancelDelete
+
+
+{-| The shared "are you sure you want to delete this?" dialog for every kind
+of delete in the app (currently Accounts and Servers -- see
+`Shared.DeleteConfirmation`) -- built on `UI.Modal` the same way
+`createAccountConfirmationModal` is, so a future Post delete (etc.) needs only
+a new `DeleteConfirmation` constructor and a case here, not a whole new dialog.
+-}
+deleteConfirmationModal : Shared.Model -> Html Shared.Msg
+deleteConfirmationModal shared =
+    case shared.confirmingDeleteFor of
+        Nothing ->
+            UI.Modal.view
+                { class = "confirm-delete-modal", isOpen = False, header = text "", bodyAttrs = [], body = [], buttons = [] }
+
+        Just confirmation ->
+            let
+                ( heading, message ) =
+                    case confirmation of
+                        Shared.ConfirmAccountDelete account ->
+                            ( "Remove Account?"
+                            , "Remove "
+                                ++ AccountsPanel.displayName account
+                                ++ " ("
+                                ++ account.server
+                                ++ ")? You'll need to log in again to use it."
+                            )
+
+                        Shared.ConfirmServerDelete server ->
+                            ( "Remove Server?"
+                            , "Remove " ++ server.frontendHost ++ " from your server list?"
+                            )
+            in
+            UI.Modal.view
+                { class = "confirm-delete-modal"
+                , isOpen = True
+                , header = text heading
+                , bodyAttrs = []
+                , body = [ p [ class "confirm-delete-message" ] [ text message ] ]
+                , buttons =
+                    [ button [ onClick Shared.CancelDelete ] [ text "Cancel" ]
+                    , button [ onClick Shared.ConfirmDelete, class "confirm-delete-button" ] [ text "Delete" ]
+                    ]
+                }
 
 
 {-| Reads a `scroll` event's target `scrollTop`/`clientHeight`/`scrollHeight`
@@ -1202,7 +1470,7 @@ policyMarkdown heading maybeText =
 something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
 `.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
-can hug the actual screen edge (see `.starred-posts-panel` in style.css).
+can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
@@ -1303,33 +1571,65 @@ adminAccountPanel shared account =
                 [ text "▾" ]
             ]
         , if isOpen then
-            webUiToggleRow id currentUi
+            webUiToggleRow id account.server currentUi
 
           else
             text ""
         ]
 
 
+{-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
+Accounts/Starred Posts panels, it isn't toggled from a nav icon of its own;
+it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons) via
+`Shared.MarkdownPanelMsg (MarkdownPanel.Open ...)`, so it's mounted directly in
+`layout` rather than inside `headerNav`. Given the lowest z-index of the
+panels mounted here (see `markdown_panel.css`) -- if a post's Edit button is
+used while the Accounts/Starred Posts panel, or the Media Viewer panel, also
+happens to be open, those still layer above it rather than being hidden
+behind it.
+-}
+markdownPanel : Shared.Model -> Html Shared.Msg
+markdownPanel shared =
+    Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+
+
+{-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
+-- opened contextually, same as `markdownPanel` above, by tapping a Post's
+media (`Components.PostCard`'s `onMediaClicked`), not from a nav icon, so it's
+mounted directly in `layout` too. Sits above the Markdown panel but below the
+Accounts/Starred Posts panels (see `media_viewer_panel.css`'s z-index) -- a
+fullscreen image reasonably wins over a stale editor left open behind it, but
+still yields to the nav's own dropdowns if one of those is opened on top of it.
+-}
+mediaViewerPanel : Shared.Model -> Html Shared.Msg
+mediaViewerPanel shared =
+    Html.map Shared.MediaViewerPanelMsg (MediaViewerPanel.view shared.accountsPanel shared.mediaViewerPanel)
+
+
 {-| Flutter is included for parity with the other two, but permanently
 disabled -- see `WebUserInterface`'s doc comment: it's badly behind React/Elm
 and not meant to be chosen going forward.
 -}
-webUiToggleRow : String -> WebUserInterface -> Html Shared.Msg
-webUiToggleRow id currentUi =
+webUiToggleRow : String -> String -> WebUserInterface -> Html Shared.Msg
+webUiToggleRow id serverHost currentUi =
     div [ class "web-ui-toggle-row" ]
-        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
-        , webUiButton "React" False (currentUi == REACTTAMAGUI) (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
-        , webUiButton "Elm" False (currentUi == ELMSPA) (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
+        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) serverHost (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
+        , webUiButton "React" False (currentUi == REACTTAMAGUI) serverHost (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
+        , webUiButton "Elm" False (currentUi == ELMSPA) serverHost (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
         ]
 
 
-webUiButton : String -> Bool -> Bool -> AccountsPanel.Msg -> Html Shared.Msg
-webUiButton label_ isDisabled isSelected msg =
+{-| When selected, tinted with `serverHost`'s own `background-color-primary`
+(see `UI.EmittedStylesheet`) -- this button is per-account, so it should
+reflect that account's server, not `mainFrontendHost`.
+-}
+webUiButton : String -> Bool -> Bool -> String -> AccountsPanel.Msg -> Html Shared.Msg
+webUiButton label_ isDisabled isSelected serverHost msg =
     button
         [ classes
             ("web-ui-button"
                 :: (if isSelected then
-                        [ "selected" ]
+                        [ serverHost, "background-color-primary" ]
 
                     else
                         []

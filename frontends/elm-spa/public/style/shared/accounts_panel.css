@@ -1,0 +1,697 @@
+/* Nav-right: accounts menu (+ starred posts/admin menus) */
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* The Accounts Panel's tab bar: tabs (Accounts and Servers/Settings/Admin, see
+   UI.elm's `accountsPanelTab`) on the left, info ("i")/theme toggle buttons
+   -- horizontal here, unlike their old stacked-in-the-corner layout -- pinned
+   to the far right. */
+.accounts-panel-tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.accounts-panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.accounts-panel-tab {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.accounts-panel-tab.selected {
+  opacity: 1;
+  background: var(--panel-bg);
+  border-color: var(--fg);
+}
+
+/* The Settings/Admin tabs -- a single cog/shield emoji each, so they don't
+   need the wider padding a text label like "Accounts and Servers" does. */
+.accounts-panel-tab.narrow {
+  padding: 0.3rem 0.55rem;
+}
+
+.panel-icon-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.panel-icon-button {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.info-button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-style: italic;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.accounts-menu,
+.admin-menu {
+  position: relative;
+  display: flex;
+}
+
+.accounts-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.nav-menu-toggle,
+.accounts-menu-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+.accounts-menu-toggle.has-avatars {
+  padding: 0.25rem 0.6rem;
+}
+
+.accounts-menu-toggle.has-summary {
+  margin-top: -5px;
+  margin-bottom: -5px;
+}
+
+/* Used by the Admin Panel and Starred Posts toggles -- both single-emoji
+   buttons with no avatars/summary, so round them into plain circles rather
+   than the wider pill shape `.accounts-menu-toggle` uses for the main
+   Accounts Panel toggle. */
+.nav-menu-toggle.circular,
+.accounts-menu-toggle.circular {
+  flex-direction: row;
+  justify-content: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
+.accounts-menu-server-summary {
+  font-size: 0.6rem;
+  line-height: 1;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+
+.accounts-menu-avatars {
+  display: flex;
+  align-items: center;
+}
+
+.accounts-menu-avatar {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+}
+
+.accounts-menu-avatar:not(:first-child) {
+  margin-left: -8px;
+}
+
+.accounts-menu-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+
+.admin-switch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* One collapsible panel per admin-capable signed-in account -- see
+   UI.elm's adminAccountPanel. */
+
+.admin-accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.admin-account-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.admin-account-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem;
+  background: none;
+  border: none;
+  text-align: left;
+  color: var(--fg);
+}
+
+.admin-account-username {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account-server {
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-account-chevron {
+  transition: transform 0.15s ease;
+}
+
+.admin-account-chevron.open {
+  transform: rotate(180deg);
+}
+
+.web-ui-toggle-row {
+  display: flex;
+  gap: 0.4rem;
+  padding: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.web-ui-button {
+  flex: 1;
+  padding: 0.3rem 0.4rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+
+.host-mismatch-warning {
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.nav-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: 320px;
+  max-width: calc(100vw - 2rem);
+  /* On a short/small screen, the servers strip + accounts list + form can
+     together be taller than the viewport itself -- cap the whole panel to
+     what's actually available below the navbar and let it scroll as one,
+     rather than overflowing off-screen with no way to reach the rest. */
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  background: var(--panel-bg);
+  /* Without this, text here would inherit the navbar's primaryTextColor
+     (set on .navbar via the background-color-primary utility class), which
+     is chosen for contrast against a server's brand color and doesn't track
+     the app's own light/dark mode -- see the admin panel's "switch main
+     server" label. */
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  padding: 0.75rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.nav-panel.is-closed {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.panel-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.25rem 0;
+}
+
+
+/* Servers: a short horizontally-scrolling strip, distinct from the taller,
+   vertically-scrolling account list below it. */
+
+/* `.flip-animated-row` (see UI.elm's `serversStrip`) supplies `display: flex;
+   flex-direction: row;` -- deliberately no `gap` here, same "let
+   .flip-animated-item.horizontal's own padding-right hold the spacing
+   instead" reasoning as `.accounts-list`. */
+.servers-strip {
+  /* Otherwise flex's default `stretch` forces every chip to the height of
+     the tallest one in the row, leaving blank space below the shorter ones'
+     content (their border/background still fills the stretched box). */
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  /* This strip sets `overflow-x`/`overflow-y`, which makes its automatic
+     minimum size (as a flex item in .nav-panel's column) 0 instead of
+     content-based -- without flex-shrink: 0, that lets it get squashed
+     whenever .nav-panel's own max-height/overflow-y (added for short
+     screens) needs the vertical space, instead of the panel scrolling. */
+  flex-shrink: 0;
+}
+
+.server-chip {
+  flex: 0 0 auto;
+  width: 108px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.server-chip-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.5rem 0.4rem;
+}
+
+/* Always clickable -- fills the Account form's Server field; also sets the
+   main server while the Server Admin Panel's "switch main server" toggle is
+   on -- see UI.elm's `serverChip`. */
+.server-chip-top.selectable {
+  cursor: pointer;
+}
+
+.server-chip-top.selectable:hover {
+  outline: 2px solid rgba(0, 0, 0, 0.3);
+  outline-offset: -2px;
+}
+
+.server-chip-main-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.85;
+}
+
+.server-chip-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.server-chip-logo.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.25);
+  font-weight: 700;
+}
+
+/* A server's logo + (possibly emoji/pipe-split) name -- see
+   `AccountsPanel.serverNameAndLogo`. `.compact` lays the glyph and name out in
+   a single horizontal line (nav bar); `.regular` stacks a larger glyph above
+   a name that can itself be two lines (server chips in the Accounts Panel). */
+.server-name-and-logo {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.server-name-and-logo.compact {
+  flex-direction: row;
+  gap: 0.4rem;
+}
+
+.server-name-and-logo.regular {
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.server-logo-image {
+  flex: 0 0 auto;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.server-name-and-logo.compact .server-logo-image {
+  width: 20px;
+  height: 20px;
+}
+
+.server-name-and-logo.regular .server-logo-image {
+  width: 32px;
+  height: 32px;
+}
+
+.server-logo-emoji,
+.server-logo-placeholder {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.server-name-and-logo.compact .server-logo-emoji,
+.server-name-and-logo.compact .server-logo-placeholder {
+  width: 20px;
+  height: 20px;
+  font-size: 1rem;
+}
+
+.server-name-and-logo.regular .server-logo-emoji,
+.server-name-and-logo.regular .server-logo-placeholder {
+  width: 32px;
+  height: 32px;
+  font-size: 1.6rem;
+}
+
+.server-logo-placeholder {
+  border-radius: 6px;
+  background: rgba(127, 127, 127, 0.25);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.server-name-and-logo.regular .server-logo-placeholder {
+  font-size: 1.1rem;
+}
+
+.server-name-breakdown {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.server-name-and-logo.regular .server-name-breakdown {
+  align-items: center;
+}
+
+.server-name-primary {
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.server-name-and-logo.regular .server-name-primary {
+  text-align: center;
+}
+
+.server-name-primary.large {
+  font-size: 1.1rem;
+}
+
+.server-name-secondary {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
+.server-name-and-logo.regular .server-name-secondary {
+  text-align: center;
+}
+
+.server-chip-host {
+  font-size: 0.75rem;
+  text-align: center;
+  overflow-wrap: anywhere;
+  opacity: 0.85;
+}
+
+.server-chip-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0.35rem 0.5rem;
+}
+
+/* Accounts: a vertically-scrolling list (this is the one that grows). */
+
+/* `.flip-animated-column` (see UI.elm's `accountsList`) supplies `display:
+   flex; flex-direction: column;` -- deliberately no `gap` here, same
+   reasoning as `.posts-list`: inter-row spacing instead lives as each row's
+   own `.flip-animated-item` `padding-bottom`, so it can shrink away smoothly
+   when a row's removed instead of holding its full width until the row
+   itself is gone, then snapping shut all at once. */
+.accounts-list {
+  max-height: 240px;
+  overflow-y: auto;
+  /* Same reasoning as .servers-strip's flex-shrink: 0 -- this already has its
+     own scroll for "many accounts"; it shouldn't also get squashed below
+     that by .nav-panel's outer overflow-y on short screens. */
+  flex-shrink: 0;
+}
+
+.accounts-list .flip-animated-item.flip-moving>* {
+  /* TODO*/
+  max-width: 292px;
+}
+
+
+.accounts-empty {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.servers-unreachable-warning {
+  color: var(--muted);
+  font-size: 0.8rem;
+  padding: 0.2rem 0;
+}
+
+.account-row {
+  /* max-width: 100%;
+  width: 100%; */
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.account-avatar {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.account-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.account-row-label {
+  flex: 1;
+  min-width: 0;
+}
+
+.account-row-username {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-admin-badge {
+  margin-left: 0.3rem;
+}
+
+/* The "host | server name" badge, tinted with the account's server's nav
+   color -- distinct from the row's own (primary-colored) background. */
+.account-row-server-badge {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-btn {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  line-height: 1;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--danger);
+}
+
+.remove-btn:hover:not(:disabled) {
+  background: var(--danger);
+  color: white;
+}
+
+
+/* Login / create account form */
+
+.account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.account-form-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.account-form-buttons button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.add-server-button,
+.show-add-account-form-button {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.auth-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+/* Create Account confirmation, shown after "Create Account" is clicked,
+   before the account is actually created -- see UI.elm's
+   `createAccountConfirmationModal`. */
+
+/* Wider on desktop -- 360px (a good match for the compact login/add-server
+   fields it's triggered from) leaves the description/privacy/media policy
+   Markdown cramped and needlessly tall once there's the horizontal room to
+   spread out. */
+@media (min-width: 640px) {
+  .create-account-modal {
+    width: 560px;
+  }
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-image,
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-emoji,
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-placeholder {
+  width: 56px;
+  height: 56px;
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-logo-emoji {
+  font-size: 2.4rem;
+}
+
+.create-account-modal .modal-header .server-name-and-logo.regular .server-name-primary {
+  font-size: 1.05rem;
+}
+
+.create-account-policy-heading {
+  font-size: 0.8rem;
+  font-weight: 700;
+  opacity: 0.85;
+  margin-bottom: 0.2rem;
+}
+
+.create-account-policy-body {
+  font-size: 0.85rem;
+}
+
+/* Delete confirmation (Accounts/Servers today; reusable for any future
+   "are you sure?" prompt) -- see UI.elm's `deleteConfirmationModal` and
+   `Shared.DeleteConfirmation`. */
+
+.confirm-delete-modal {
+  width: 320px;
+}
+
+.confirm-delete-modal .modal-header {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.confirm-delete-message {
+  font-size: 0.9rem;
+}
+
+.confirm-delete-button {
+  background: var(--danger);
+  color: white;
+  border-color: var(--danger) !important;
+}
+
+
+/* AccountsPanel's account rows link out to that account's profile (see
+   UI.elm's accountRow) -- the link wraps the avatar + label, not the whole
+   row, so the switch/remove-button controls stay their own separate clicks. */
+
+.account-row-profile-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}

@@ -17,8 +17,8 @@ server's `ServerTheme` threaded in as a view-function argument.
   - `<host> border-color-primary-anchor` -- `primaryAnchorColor` (border-color only; unused so far, but establishes the naming convention below)
   - `<host> border-color-primary-anchor-50` -- `primaryAnchorColor` at 50% opacity (border-color only)
   - `<host> hover-border-color-primary-anchor` -- `primaryAnchorColor` (border-color only), applied only on `:hover` -- pair with `border-color-primary-anchor-50` (or similar) for a border that "fills in" on hover; add `transition: border-color` yourself if you want that to animate, since this class alone is just the `:hover` color rule.
-  - `<host> post-star.starred` -- `primaryAnchorColor` (text color only), used by `Components.Posts`' star button to fill in once a Post is starred (see `Shared.StarredPostsPanel`); `.post-star`'s own `transition` (in `style.css`) is what animates it.
-  - `<host> post-card-current .post-star` -- `backgroundColor` at 50% opacity (background-color only) -- backs the star button of a `Components.Posts.postCard` marked `current` (see `Shared.StarredPostsPanel.view`) with the app's own light/dark background, since its usual `primaryAnchorColor` text doesn't reliably contrast against that same card's `primaryColor` fill; semi-transparent (same "-50" convention as `border-color-primary-anchor-50`) so it reads as a tint rather than a flat patch. The pill shape itself is `style.css`'s `.post-card-current .post-star`.
+  - `<host> post-star.starred` -- `primaryAnchorColor` (text color only), used by `Components.Posts`' star button to fill in once a Post is starred (see `Shared.StarredPostsPanel`); `.post-star`'s own `transition` (in `posts.css`) is what animates it.
+  - `<host> post-card-current .post-star` -- `backgroundColor` at 50% opacity (background-color only) -- backs the star button of a `Components.Posts.postCard` marked `current` (see `Shared.StarredPostsPanel.view`) with the app's own light/dark background, since its usual `primaryAnchorColor` text doesn't reliably contrast against that same card's `primaryColor` fill; semi-transparent (same "-50" convention as `border-color-primary-anchor-50`) so it reads as a tint rather than a flat patch. The pill shape itself is `posts.css`'s `.post-card-current .post-star`.
 
 This is cheap to regenerate (it's just string-building); the actual expensive
 color math is already cached in `Shared.Branding`.
@@ -56,7 +56,9 @@ css shared =
 {-| Root-element rules driven by `mainFrontendHost`'s theme -- these apply
 app-wide (not scoped to a per-server class) since they stand in for what used
 to be the single, static `--accent` CSS var: every link's color, and the
-"on" color of every toggle switch and every selected `web-ui-button`.
+"on" color of every toggle switch. (A selected `web-ui-button` is tinted with
+its own account's server, via the per-server `background-color-primary`
+utility class below -- see `UI.elm`'s `webUiButton`.)
 
 The one exception is contrast against a switch's own row: an `account-row`
 for an account on `mainFrontendHost` itself is already tinted with that
@@ -66,6 +68,7 @@ host's `primaryColor` (see `UI.elm`'s `accountRow`), so `primaryAnchorColor`
 than the plain switch rule above, so it wins there regardless of rule
 order. Other accounts' rows aren't tinted with `mainFrontendHost`'s colors
 at all, so they don't need (or get) this override.
+
 -}
 mainFrontendServerRules : UI.ServerTheme.ServerTheme -> AccountsPanel.Model -> String
 mainFrontendServerRules theme accountsPanel =
@@ -76,7 +79,6 @@ mainFrontendServerRules theme accountsPanel =
     String.concat
         [ "a { color: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".switch input:checked + .slider { background: " ++ theme.primaryAnchorColor ++ "; }\n"
-        , ".web-ui-button.selected { background: " ++ theme.primaryAnchorColor ++ "; border-color: " ++ theme.primaryAnchorColor ++ "; }\n"
         , ".account-row" ++ mainHostSelector ++ " .switch input:checked + .slider { background: " ++ theme.navAnchorColor ++ "; }\n"
         ]
 
@@ -125,6 +127,10 @@ serverRules darkMode mainTheme mainFrontendHost server =
     in
     String.concat
         [ colorRule (selector ++ ".background-color-primary") theme.primaryColor theme.primaryTextColor
+        , colorRule (selector ++ ".background-color-primary-5") (theme.primaryColor ++ "05") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-10") (theme.primaryColor ++ "10") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor
+        , colorRule (selector ++ ".background-color-primary-50") (theme.primaryColor ++ "80") theme.textColor
         , colorRule (selector ++ ".background-color-nav") theme.navColor theme.navTextColor
         , colorRule (selector ++ ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (selector ++ ".border-color-primary") theme.primaryColor

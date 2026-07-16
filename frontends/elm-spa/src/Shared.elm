@@ -1,5 +1,6 @@
 module Shared exposing
-    ( Flags
+    ( DeleteConfirmation(..)
+    , Flags
     , Model
     , Msg(..)
     , ThemePreference(..)
@@ -24,6 +25,8 @@ import Ports
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
+import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Time
 import Url exposing (Url)
@@ -42,10 +45,25 @@ type ThemePreference
     | ThemeDark
 
 
+{-| Something the user has clicked "delete" on, awaiting confirmation --
+`UI.deleteConfirmationModal` is one shared dialog for all of these, rather
+than each having its own bespoke confirmation step (compare
+`AccountsPanel.PendingCreateAccount`, which stays separate since Create
+Account's confirmation isn't a plain "are you sure you want to delete this"
+prompt). More constructors (e.g. for Posts) can be added here as that need
+comes up.
+-}
+type DeleteConfirmation
+    = ConfirmServerDelete AccountsPanel.Server
+    | ConfirmAccountDelete AccountsPanel.Account
+
+
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
     , starredPostsPanel : StarredPostsPanel.Model
+    , markdownPanel : MarkdownPanel.Model
+    , mediaViewerPanel : MediaViewerPanel.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
 
@@ -58,6 +76,10 @@ type alias Model =
     -- onto any `Gen.Route.toHref` output so links/history stay under the
     -- right mount.
     , basePath : String
+
+    -- Set while `UI.deleteConfirmationModal` is up, `Nothing` the rest of
+    -- the time -- see `DeleteConfirmation`.
+    , confirmingDeleteFor : Maybe DeleteConfirmation
     }
 
 
@@ -65,8 +87,13 @@ type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
+    | MarkdownPanelMsg MarkdownPanel.Msg
+    | MediaViewerPanelMsg MediaViewerPanel.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
+    | RequestDelete DeleteConfirmation
+    | CancelDelete
+    | ConfirmDelete
 
 
 {-| Whether the app should currently render in dark mode, resolving `Auto`
@@ -206,9 +233,12 @@ init basePath req flags =
     ( { accountsPanel = accountsPanelModel
       , adminPanel = AdminPanel.init
       , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+      , markdownPanel = MarkdownPanel.init
+      , mediaViewerPanel = MediaViewerPanel.init
       , themePreference = themePreference
       , systemPrefersDark = systemPrefersDark
       , basePath = basePath
+      , confirmingDeleteFor = Nothing
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -224,28 +254,70 @@ update req msg model =
             let
                 ( subModel, subCmd ) =
                     AccountsPanel.update req subMsg model.accountsPanel
+
+                changedHosts =
+                    starredPostsRefreshHosts model.accountsPanel subModel
+
+                ( refreshedStarredPostsPanel, refreshCmd ) =
+                    StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
             in
-            ( { model | accountsPanel = subModel }, Cmd.map AccountsPanelMsg subCmd )
+            ( { model | accountsPanel = subModel, starredPostsPanel = refreshedStarredPostsPanel }
+            , Cmd.batch
+                [ Cmd.map AccountsPanelMsg subCmd
+                , Cmd.map StarredPostsPanelMsg refreshCmd
+                ]
+            )
 
         AdminPanelMsg subMsg ->
             ( { model | adminPanel = AdminPanel.update subMsg model.adminPanel }, Cmd.none )
 
         StarredPostsPanelMsg subMsg ->
             let
-                ( subModel, subCmd, maybeRefreshedAccount ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
                     StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
-                    case maybeRefreshedAccount of
-                        Just account ->
-                            AccountsPanel.update req (AccountsPanel.AccountRefreshed account) model.accountsPanel
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+
+                mediaViewerPanelModel =
+                    case maybeMediaViewerPanelMsg of
+                        Just mediaViewerPanelMsg ->
+                            MediaViewerPanel.update mediaViewerPanelMsg model.mediaViewerPanel
+
+                        Nothing ->
+                            model.mediaViewerPanel
+            in
+            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
+            , Cmd.batch
+                [ Cmd.map StarredPostsPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
+        MediaViewerPanelMsg subMsg ->
+            ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
+
+        MarkdownPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                    MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
 
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel }
+            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel }
             , Cmd.batch
-                [ Cmd.map StarredPostsPanelMsg subCmd
+                [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 ]
             )
@@ -265,6 +337,84 @@ update req msg model =
         SystemPrefersDarkChanged prefersDark ->
             ( { model | systemPrefersDark = prefersDark }, Cmd.none )
 
+        RequestDelete confirmation ->
+            ( { model | confirmingDeleteFor = Just confirmation }, Cmd.none )
+
+        CancelDelete ->
+            ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
+
+        ConfirmDelete ->
+            let
+                removeMsg =
+                    model.confirmingDeleteFor
+                        |> Maybe.map
+                            (\confirmation ->
+                                case confirmation of
+                                    ConfirmAccountDelete account ->
+                                        AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)
+
+                                    ConfirmServerDelete server ->
+                                        AccountsPanel.RemoveServerClicked server.frontendHost
+                            )
+            in
+            case removeMsg of
+                Just subMsg ->
+                    let
+                        ( subModel, subCmd ) =
+                            AccountsPanel.update req subMsg model.accountsPanel
+                    in
+                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+
+{-| Hosts whose "usable right now" state differs between `before` and `after`
+-- either their signed-in account (see `AccountsPanel.enabledAccountForServer`,
+e.g. logging into/switching accounts on a server, signing out) or whether
+their `Server` itself is enabled (`ToggleServerEnabled` -- which also disables
+its accounts, but not for a server with none signed into it, so that flip
+needs checking on its own). Tells `Shared.StarredPostsPanel.refreshHosts`
+which servers' cached starred `Post`s might now be wrong -- a starred post's
+visibility can depend on which account fetched it, and an unavailable
+server's shouldn't be fetched/shown at all (see
+`Components.ServerDependentView.availableServer`) -- and so need
+clearing/refetching.
+-}
+starredPostsRefreshHosts : AccountsPanel.Model -> AccountsPanel.Model -> List String
+starredPostsRefreshHosts before after =
+    let
+        dedupe list =
+            List.foldl
+                (\host acc ->
+                    if List.member host acc then
+                        acc
+
+                    else
+                        host :: acc
+                )
+                []
+                list
+
+        hosts =
+            dedupe
+                ((before.accounts |> List.map .server)
+                    ++ (after.accounts |> List.map .server)
+                    ++ (before.servers |> List.map .frontendHost)
+                    ++ (after.servers |> List.map .frontendHost)
+                )
+
+        identity model_ host =
+            ( AccountsPanel.enabledAccountForServer model_.accounts host
+                |> Maybe.map AccountsPanel.accountId
+            , AccountsPanel.serverForHost model_.servers host
+                |> Maybe.map .enabled
+            )
+    in
+    hosts |> List.filter (\host -> identity before host /= identity after host)
+
 
 {-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
 only while the panel's actually open -- there's nothing to show for it
@@ -274,6 +424,8 @@ subscriptions : Request -> Model -> Sub Msg
 subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
+        , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 

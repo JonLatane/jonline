@@ -26,7 +26,7 @@ pub fn delete_post(
 
     let mut existing_post = posts::table
         .select(posts::all_columns)
-        .filter(posts::id.eq(request.id.to_db_id().unwrap()))
+        .filter(posts::id.eq(request.id.to_db_id_or_err("id")?))
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
     let mut ancestor_post_ids: Vec<i64> = vec![];

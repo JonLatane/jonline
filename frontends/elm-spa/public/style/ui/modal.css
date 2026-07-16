@@ -1,0 +1,98 @@
+/* Generic centered dialog -- a fixed backdrop + header/body/buttons frame,
+   used by every Cancel/Confirm-style dialog (Create Account confirmation,
+   delete confirmation, and future ones) via UI/Modal.elm's `backdrop`/`view`.
+   A dialog's own `config.class` (e.g. `.create-account-modal`,
+   `.confirm-delete-modal`, added below `.modal` itself) is for that dialog's
+   own width/content overrides layered on top of these shared rules. Sits
+   above `.shared-backdrop`/`.navbar` since a dialog can appear on top of the
+   (already open) Accounts Panel. */
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(0, 0, 0, 0);
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background-color 0.2s ease, backdrop-filter 0.2s ease, -webkit-backdrop-filter 0.2s ease;
+}
+
+.modal-backdrop.is-open {
+  background: rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 360px;
+  max-width: calc(100vw - 2rem);
+  max-height: calc(100vh - 4rem);
+  /* Only .modal-body scrolls internally -- the header and buttons stay put --
+     both so they're never lost off the bottom on a short screen, and (for
+     Create Account specifically) so "scrolled to bottom" -- see
+     UI.createAccountConfirmationModal, which disables Create Account until
+     then -- refers to that one, unambiguous scroll container. */
+  overflow: hidden;
+  background: var(--panel-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 1rem;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.modal.is-closed {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.96);
+  pointer-events: none;
+  /* Zero size while closed -- otherwise this always-rendered (for the fade
+     transition), centered, empty dialog would still sit in the page's normal
+     flow-independent stacking, invisible but there, adding scroll-affecting
+     dead space isn't actually a risk (position: fixed), just tidiness. */
+  padding: 0;
+  border: none;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  overflow-y: auto;
+  /* The flexible item in .modal's column -- shrinks to whatever's left after
+     the header/buttons take their fixed space, then scrolls its own
+     overflow. `min-height: 0` overrides flexbox's default content-based
+     minimum, which would otherwise ignore the parent's max-height and force
+     the whole dialog to grow instead of this scrolling. */
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.modal-buttons button {
+  flex: 1;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+}

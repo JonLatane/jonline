@@ -1,0 +1,189 @@
+/* Components/UserProfilePage.elm's profile page (Pages/User/UserId_.elm,
+   Pages/Username_.elm) -- mirrors post-detail's look. */
+
+.profile-detail {
+  margin: 1rem 0;
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.profile-avatar {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.profile-header-names {
+  min-width: 0;
+}
+
+.profile-username {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.profile-admin-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.profile-real-name {
+  color: var(--muted);
+}
+
+.profile-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.5rem 0;
+}
+
+.profile-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin: 0.8rem 0;
+}
+
+.profile-count {
+  text-align: center;
+}
+
+.profile-count-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.profile-count-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.profile-bio {
+  display: block;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  margin: 0.8rem 0;
+}
+
+.profile-bio>*:first-child {
+  margin-top: 0;
+}
+
+.profile-bio>*:last-child {
+  margin-bottom: 0;
+}
+
+.profile-bio blockquote {
+  margin: 0.8rem 0;
+  padding: 0.2rem 0.8rem;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+.profile-bio :not(pre)>code {
+  background: var(--chip-bg);
+  border-radius: 4px;
+  padding: 0.15em 0.35em;
+  font-size: 0.9em;
+}
+
+.profile-bio pre {
+  background: var(--chip-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.8rem;
+  overflow-x: auto;
+}
+
+.profile-bio pre code {
+  background: none;
+  padding: 0;
+}
+
+.profile-bio img {
+  max-width: 100%;
+}
+
+.profile-section-title {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0.8rem 0 0.4rem;
+}
+
+.profile-permissions,
+.profile-federated {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.profile-permission-badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+}
+
+.profile-federated-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.profile-federated-avatar {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.profile-federated-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  font-weight: 700;
+  font-size: 0.7rem;
+}
+
+.profile-federated-badge {
+  font-size: 0.75rem;
+}
+
+.profile-loading,
+.profile-error {
+  color: var(--muted);
+}

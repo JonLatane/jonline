@@ -21,11 +21,12 @@ the page itself before ever constructing this module's `Model`).
 Mirrors `Pages.Post.PostId_`, generalized over the `Lookup` since (unlike
 Posts, which are only ever looked up by id) a `User` can be fetched by either
 id or username.
+
 -}
 
 import Components.Markdown as Markdown
-import Components.Users as Users
 import Components.ServerDependentView as ServerDependentView
+import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -135,6 +136,7 @@ type Msg
     = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
+    | EnableClicked
     | Poll
     | SharedMsg Shared.Msg
     | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
@@ -202,6 +204,9 @@ update shared msg model =
             ( { model | connectStatus = ServerDependentView.ConnectFailed (AccountsPanel.grpcErrorToString err) }
             , Effect.none
             )
+
+        EnableClicked ->
+            ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.targetHost)) )
 
         Poll ->
             fetchIfReady shared model
@@ -333,6 +338,20 @@ subscriptions model =
 -- VIEW
 
 
+{-| Renders a `Lookup` (plus the server it's being looked up on) the way it'd
+appear in a route: `username@server.com` for `ByUsername`, or
+`id:theUserId@server.com` for `ById`.
+-}
+lookupToString : String -> Lookup -> String
+lookupToString targetHost lookup =
+    case lookup of
+        ByUsername username ->
+            username ++ "@" ++ targetHost
+
+        ById userId ->
+            "id:" ++ userId ++ "@" ++ targetHost
+
+
 {-| Before the `User` has loaded, falls back to whatever the route itself
 already told us: the username for `ByUsername` (`Pages.Username_`), or else
 "User <id>" for `ById` (`Pages.User.UserId_`, which has no username to show
@@ -361,6 +380,7 @@ view shared model =
         , accounts = shared.accountsPanel.accounts
         , connectStatus = model.connectStatus
         , onConnectClicked = ConnectClicked
+        , onEnableClicked = EnableClicked
         }
         (\server maybeAccount ->
             case model.status of
@@ -368,7 +388,7 @@ view shared model =
                     p [ class "profile-loading" ] [ text "Loading…" ]
 
                 UserFailed ->
-                    p [ class "profile-error" ] [ text "Couldn't load this profile." ]
+                    p [ class "profile-error" ] [ text ("Couldn't load the profile for " ++ lookupToString model.targetHost model.lookup ++ ". Maybe they don't exist, or maybe you need to be logged in?") ]
 
                 UserLoaded user ->
                     profileDetail shared model server maybeAccount user
@@ -429,7 +449,7 @@ profileCounts user =
             , ( "Responses", user.responseCount )
             , ( "Events", user.eventCount )
             ]
-                |> List.filterMap (\( label, maybeCount) -> maybeCount |> Maybe.map (\c -> ( label, c )))
+                |> List.filterMap (\( label, maybeCount ) -> maybeCount |> Maybe.map (\c -> ( label, c )))
     in
     if List.isEmpty counts then
         text ""
@@ -524,7 +544,7 @@ federatedProfileLink shared model server user account =
 
 {-| ✅ if `federatedUser` (fetched from its own server) also lists `user`
 back -- one of its own `federatedProfiles` names `server.frontendHost`/
-`user.id` -- confirming the two profiles actually link to *each other*, not
+`user.id` -- confirming the two profiles actually link to _each other_, not
 just this one linking out. ⚠️ otherwise (e.g. still pending on the other
 side, or never confirmed).
 -}

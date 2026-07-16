@@ -233,6 +233,17 @@ pub fn create_instance(
     user: &models::User,
     conn: &mut PgPooledConnection,
 ) -> Result<(models::EventInstance, models::Post), Status> {
+    let media_ids = instance
+        .post
+        .as_ref()
+        .map(|p| {
+            p.media
+                .iter()
+                .map(|m| m.id.to_db_id_or_err("instance.post.media"))
+                .collect::<Result<Vec<i64>, Status>>()
+        })
+        .transpose()?
+        .unwrap_or_default();
     let new_post = instance.post.as_ref().map_or(
         models::NewPost {
             user_id: Some(user.id),
@@ -256,7 +267,7 @@ pub fn create_instance(
             embed_link: p.embed_link.to_owned(),
             context: PostContext::EventInstance.as_str_name().to_string(),
             moderation: "UNMODERATED".to_string(),
-            media: p.media.iter().map(|m| m.id.to_db_id().unwrap()).collect(),
+            media: media_ids,
         },
     );
     let instance_post: models::Post = insert_into(posts::table)

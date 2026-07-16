@@ -1,0 +1,123 @@
+:root {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d9dce1;
+  --panel-bg: #ffffff;
+  --danger: #c0392b;
+  --chip-bg: #f4f5f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181d;
+    --fg: #eaeaea;
+    --muted: #9aa1ab;
+    --border: #33363d;
+    --panel-bg: #21242b;
+    --danger: #e0685a;
+    --chip-bg: #2a2d34;
+  }
+}
+
+/* Explicit Light/Dark selections (see the theme toggle) override the system
+   preference above in both directions -- these win regardless of source
+   order since an attribute selector on :root is more specific than a bare
+   `:root` inside the media query. "Auto" clears the attribute entirely,
+   falling back to the media query. */
+
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --border: #d9dce1;
+  --panel-bg: #ffffff;
+  --danger: #c0392b;
+  --chip-bg: #f4f5f7;
+}
+
+:root[data-theme="dark"] {
+  --bg: #16181d;
+  --fg: #eaeaea;
+  --muted: #9aa1ab;
+  --border: #33363d;
+  --panel-bg: #21242b;
+  --danger: #e0685a;
+  --chip-bg: #2a2d34;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  touch-action: manipulation;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+main {
+  padding: 1rem;
+}
+
+/* Every link's color (nav links, About-page content links, ...) comes from
+   the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+input[type="text"],
+input:not([type]),
+input[type="password"],
+input[type="url"] {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+input[disabled] {
+  opacity: 0.6;
+}
+
+
+/* Components/ServerDependentView.elm's "connect to this server" prompt */
+
+.server-dependent-prompt {
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.server-dependent-prompt button {
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--border);
+}
+
+.server-dependent-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+}

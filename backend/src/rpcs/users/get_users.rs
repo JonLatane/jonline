@@ -26,13 +26,13 @@ pub fn get_users(
         request.to_owned().user_id,
     ) {
         (Some(user), Some(FollowRequests), _, _) => {
-            get_follow_requests(request.to_owned(), user, conn)
+            Ok(get_follow_requests(request.to_owned(), user, conn))
         }
-        (None, Some(FollowRequests), _, _) => GetUsersResponse::default(),
-        (_, _, Some(_), _) => get_by_username(request.to_owned(), user, conn),
+        (None, Some(FollowRequests), _, _) => Ok(GetUsersResponse::default()),
+        (_, _, Some(_), _) => Ok(get_by_username(request.to_owned(), user, conn)),
         (_, _, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
-        _ => get_all_users(request.to_owned(), user, conn),
-    };
+        _ => Ok(get_all_users(request.to_owned(), user, conn)),
+    }?;
     // let response = match request.to_owned().username {
     //     Some(_) => get_by_username(request.to_owned(), user, conn),
     //     None => match request.to_owned().user_id {
@@ -254,7 +254,8 @@ fn get_by_user_id(
     request: GetUsersRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
-) -> GetUsersResponse {
+) -> Result<GetUsersResponse, Status> {
+    let user_id = request.user_id.to_db_opt_id_or_err("user_id")?.unwrap();
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
         None => vec![Visibility::GlobalPublic],
@@ -292,7 +293,7 @@ fn get_by_user_id(
                 .eq_any(visibilities)
                 .or(users::id.nullable().eq(user.map(|u| u.id))),
         )
-        .filter(users::id.eq(request.user_id.unwrap().to_db_id().unwrap()))
+        .filter(users::id.eq(user_id))
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
@@ -314,8 +315,8 @@ fn get_by_user_id(
             )
         })
         .collect();
-    GetUsersResponse {
+    Ok(GetUsersResponse {
         users,
         has_next_page: false,
-    }
+    })
 }
