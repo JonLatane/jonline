@@ -295,7 +295,7 @@
      Starred Posts) is a fixed `--nav-toggle-height` (main.css), so this
      panel's positioned ancestor is always that same height regardless of
      which state the toggle is in. */
-  top: 100%;
+  top: calc(100% - 1px);
   right: 0;
   width: 320px;
   max-width: calc(100vw - 2rem);

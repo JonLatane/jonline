@@ -1528,7 +1528,7 @@ signInFromButton shared accountFieldsDisabled =
                 , disabled accountFieldsDisabled
                 , classes [ "sign-in-from-button", hostnameToCSSClass <| formThemeHost accountsPanelModel, "background-color-primary" ]
                 ]
-                [ text ("Sign in from " ++ server) ]
+                [ text ("Sign in from " ++ server ++ "…") ]
 
         _ ->
             text ""
