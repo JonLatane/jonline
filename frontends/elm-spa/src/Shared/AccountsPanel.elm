@@ -173,6 +173,11 @@ type alias AccountForm =
     , username : String
     , password : String
     , status : FormStatus
+
+    -- Whether the password field (see `UI.addAccountForm`) is currently
+    -- rendered as plain text rather than masked -- toggled by its "show
+    -- password" button (`PasswordVisibilityToggled`).
+    , passwordVisible : Bool
     }
 
 
@@ -295,6 +300,7 @@ type Msg
     = ServerChanged String
     | UsernameChanged String
     | PasswordChanged String
+    | PasswordVisibilityToggled
     | LoginClicked
     | CreateAccountClicked
     | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
@@ -1011,6 +1017,7 @@ emptyForm =
     , username = ""
     , password = ""
     , status = Idle
+    , passwordVisible = False
     }
 
 
@@ -1056,7 +1063,19 @@ updateHelp req msg model =
             ( updateForm (\form -> { form | username = username }) model, Cmd.none )
 
         PasswordChanged password ->
-            ( updateForm (\form -> { form | password = password }) model, Cmd.none )
+            ( updateForm
+                (\form ->
+                    { form
+                        | password = password
+                        , passwordVisible = form.passwordVisible && not (String.isEmpty password)
+                    }
+                )
+                model
+            , Cmd.none
+            )
+
+        PasswordVisibilityToggled ->
+            ( updateForm (\form -> { form | passwordVisible = not form.passwordVisible }) model, Cmd.none )
 
         LoginClicked ->
             let
@@ -1213,7 +1232,7 @@ updateHelp req msg model =
                                         form =
                                             model.accountForm
                                     in
-                                    { form | password = "", status = Idle }
+                                    { form | password = "", passwordVisible = False, status = Idle }
                             }
                     in
                     ( newModel, persist newModel )

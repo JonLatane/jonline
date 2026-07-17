@@ -1351,45 +1351,84 @@ addAccountForm shared =
                     )
                 ]
         , if showUsernamePasswordFields then
-            input
-                [ id "account-form-username"
-                , type_ "text"
-                , name "username"
-                , attribute "autocapitalize" "none"
-                , attribute "autocorrect" "off"
-                , attribute "autocomplete" "username"
-                , spellcheck False
-                , placeholder "Username"
-                , value form.username
-                , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
-                , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
-                , disabled accountFieldsDisabled
+            div [ class "account-form-field" ]
+                [ input
+                    [ id "account-form-username"
+                    , type_ "text"
+                    , name "username"
+                    , attribute "autocapitalize" "none"
+                    , attribute "autocorrect" "off"
+                    , attribute "autocomplete" "username"
+                    , spellcheck False
+                    , placeholder "Username"
+                    , value form.username
+                    , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
+                    , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
+                    , disabled accountFieldsDisabled
+                    ]
+                    []
+                , fieldClearButton accountFieldsDisabled
+                    (not (String.isEmpty form.username))
+                    (AccountsPanel.UsernameChanged "")
+                    "Clear username"
                 ]
-                []
 
           else
             text ""
         , if showUsernamePasswordFields then
-            input
-                [ id "account-form-password"
-                , type_ "password"
-                , name "current-password"
+            div [ class "account-form-field password-field" ]
+                [ input
+                    [ id "account-form-password"
+                    , type_
+                        (if form.passwordVisible then
+                            "text"
 
-                -- "current-password" (not "new-password") even though this
-                -- field also doubles as Create Account's password: it's the
-                -- more common case (logging into an existing account), and
-                -- it's the token that lets a password manager offer to fill
-                -- a saved password here at all. "new-password" would only
-                -- gain a generated-password suggestion for the signup path,
-                -- at the cost of breaking autofill for the login path.
-                , attribute "autocomplete" "current-password"
-                , placeholder "Password"
-                , value form.password
-                , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
-                , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-                , disabled accountFieldsDisabled
+                         else
+                            "password"
+                        )
+                    , name "current-password"
+
+                    -- "current-password" (not "new-password") even though this
+                    -- field also doubles as Create Account's password: it's the
+                    -- more common case (logging into an existing account), and
+                    -- it's the token that lets a password manager offer to fill
+                    -- a saved password here at all. "new-password" would only
+                    -- gain a generated-password suggestion for the signup path,
+                    -- at the cost of breaking autofill for the login path.
+                    , attribute "autocomplete" "current-password"
+                    , placeholder "Password"
+                    , value form.password
+                    , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+                    , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
+                    , disabled accountFieldsDisabled
+                    ]
+                    []
+                , if String.isEmpty form.password then
+                    text ""
+
+                  else
+                    button
+                        [ type_ "button"
+                        , classList
+                            [ ( "password-toggle-button", True )
+                            , ( "revealed", form.passwordVisible )
+                            ]
+                        , onClick (Shared.AccountsPanelMsg AccountsPanel.PasswordVisibilityToggled)
+                        , disabled accountFieldsDisabled
+                        , title
+                            (if form.passwordVisible then
+                                "Hide password"
+
+                             else
+                                "Show password"
+                            )
+                        ]
+                        [ text "👁" ]
+                , fieldClearButton accountFieldsDisabled
+                    (not (String.isEmpty form.password))
+                    (AccountsPanel.PasswordChanged "")
+                    "Clear password"
                 ]
-                []
 
           else
             text ""
@@ -1424,6 +1463,26 @@ addAccountForm shared =
             _ ->
                 text ""
         ]
+
+
+{-| A small circular "×" button overlaid on a field (see `addAccountForm`'s
+username/password fields) that clears it in one click -- shown only once
+there's something typed in to clear.
+-}
+fieldClearButton : Bool -> Bool -> AccountsPanel.Msg -> String -> Html Shared.Msg
+fieldClearButton fieldDisabled visible clearMsg titleText =
+    if visible then
+        button
+            [ type_ "button"
+            , class "field-clear-button"
+            , onClick (Shared.AccountsPanelMsg clearMsg)
+            , disabled fieldDisabled
+            , title titleText
+            ]
+            [ text "╳" ]
+
+    else
+        text ""
 
 
 {-| Cross-server SSO hand-off (see `Shared.FederatedAuth`): lets someone who's

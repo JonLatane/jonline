@@ -660,6 +660,65 @@
   gap: 0.4rem;
 }
 
+/* Username/password fields' clear ("╳") and show-password ("👁") buttons --
+   overlaid on the right edge of the field itself, rather than laid out
+   beside it, so the field doesn't visibly shift width when a button
+   appears/disappears (see UI.elm's `fieldClearButton`). */
+.account-form-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.account-form-field input {
+  flex: 1;
+  min-width: 0;
+  padding-right: 2rem;
+}
+
+.account-form-field.password-field input {
+  padding-right: 3.6rem;
+}
+
+.field-clear-button,
+.password-toggle-button {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.field-clear-button:hover:not(:disabled) {
+  background: var(--danger);
+  color: white;
+}
+
+.password-toggle-button {
+  right: 2.1rem;
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.password-toggle-button.revealed {
+  opacity: 1;
+}
+
+.password-toggle-button:hover:not(:disabled) {
+  opacity: 1;
+}
+
 .account-form-buttons {
   display: flex;
   gap: 0.5rem;
