@@ -38,6 +38,7 @@ lazy_static! {
         post,
         event,
         user,
+        user_posts,
         people,
         follow_requests,
         server,
@@ -72,9 +73,51 @@ macro_rules! webui {
             spa_web_path(app, $html_path, None, is_tamagui_prefixed).await
         }
     };
+    ($name:tt, $web_route:tt, $html_path:literal, rank = $rank:literal) => {
+        #[rocket::get($web_route, rank = $rank)]
+        pub async fn $name(
+            state: &State<RocketState>,
+            origin: &Origin<'_>,
+        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+            let mut connection = state.pool.get().unwrap();
+            let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
+            let server_info = configuration.server_info.unwrap_or_default();
+            let raw_path = origin.path();
+            let raw_path = raw_path.as_str();
+            let app = spa_prefix(raw_path).unwrap_or_else(|| root_app(&server_info));
+            let is_tamagui_prefixed = spa_prefix(raw_path) == Some(SpaApp::Tamagui);
+            spa_web_path(app, $html_path, None, is_tamagui_prefixed).await
+        }
+    };
     // (@inner $summary:stmt) => { $summary };
     ($name:tt, $web_route:tt, $html_path:literal, $summary:expr) => {
         #[rocket::get($web_route)]
+        pub async fn $name(
+            state: &State<RocketState>,
+            origin: &Origin<'_>,
+        ) -> CacheResponse<Result<JonlineResponder, Status>> {
+            let mut connection = state.pool.get().unwrap();
+            let configuration = rpcs::get_server_configuration_proto(&mut connection).unwrap();
+            let server_info = configuration.server_info.unwrap_or_default();
+            let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
+            let server_logo = server_info
+                .logo
+                .clone()
+                .unwrap_or_default()
+                .square_media_id
+                .map(|id| format!("/media/{}", id));
+            let raw_path = origin.path();
+            let raw_path = raw_path.as_str();
+            let app = spa_prefix(raw_path).unwrap_or_else(|| root_app(&server_info));
+            let is_tamagui_prefixed = spa_prefix(raw_path) == Some(SpaApp::Tamagui);
+            let path = strip_spa_prefix(raw_path);
+            let summary: Option<JonlineSummary> =
+                ($summary)(connection, server_name, server_logo, &path);
+            spa_web_path(app, $html_path, summary, is_tamagui_prefixed).await
+        }
+    };
+    ($name:tt, $web_route:tt, $html_path:literal, $summary:expr, rank = $rank:literal) => {
+        #[rocket::get($web_route, rank = $rank)]
         pub async fn $name(
             state: &State<RocketState>,
             origin: &Origin<'_>,
@@ -176,7 +219,7 @@ webui!(
             Some(FederatedId::Federated(_, _domain)) => {
                 // let _domain =
                 None
-            },
+            }
             None => return None,
         };
 
@@ -231,6 +274,53 @@ webui!(
         })
     }
 );
+
+webui!(
+    user_posts,
+    "/<_>/posts",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Posts | {}", group_name, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    // Lower priority (higher rank number) than `user`, `event`, `group_home`,
+    // `post`, and `server` (all default rank -5), so paths like "/user/posts"
+    // are still handled by those more specific routes first; this wildcard
+    // "/<username>/posts" route only catches requests they don't match.
+    rank = 10
+);
+
+webui!(
+    user_id_posts,
+    "/user/<_>/posts",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let group_name = group_name(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Posts | {}", group_name, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    // Lower priority (higher rank number) than `user`, `event`, `group_home`,
+    // `post`, and `server` (all default rank -5), so paths like "/user/posts"
+    // are still handled by those more specific routes first; this wildcard
+    // "/<username>/posts" route only catches requests they don't match.
+    rank = 10
+);
+
 webui!(
     follow_requests,
     "/people/follow_requests",
@@ -469,7 +559,10 @@ fn post_summary(
             };
 
             let mut title = ancestor_post.title.map_or(
-                format!("{} Details | {}", ancestor_entity_type, server_and_group_name),
+                format!(
+                    "{} Details | {}",
+                    ancestor_entity_type, server_and_group_name
+                ),
                 |title| {
                     format!(
                         "{} | {} Details | {}",
