@@ -547,7 +547,7 @@ starButton : String -> Bool -> Maybe msg -> Post -> Html msg
 starButton postServerHost starred onStarClicked post =
     span
         (classes
-            (postServerHost
+            (hostnameToCSSClass postServerHost
                 :: "post-star"
                 :: (if starred then
                         [ "starred" ]

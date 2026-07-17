@@ -581,7 +581,7 @@ accountsMenuAvatar shared account =
         avatarClasses =
             "accounts-menu-avatar"
                 :: (if account.server /= accountsPanelModel.mainFrontendHost then
-                        [ account.server, "border-color-primary" ]
+                        [ hostnameToCSSClass account.server, "border-color-primary" ]
 
                     else
                         []

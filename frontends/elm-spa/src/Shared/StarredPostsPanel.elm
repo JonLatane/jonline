@@ -47,7 +47,7 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
-import UI.Classes exposing (classes, openClosedClass)
+import UI.Classes exposing (classes, escapeCSSClass, openClosedClass)
 import UI.Flip
 
 
@@ -163,7 +163,7 @@ drive its `UI.Flip` slide.
 -}
 starEntryDomId : String -> String
 starEntryDomId key =
-    "starred-post-entry-" ++ key
+    "starred-post-entry-" ++ escapeCSSClass key
 
 
 isStarred : String -> Post -> Model -> Bool

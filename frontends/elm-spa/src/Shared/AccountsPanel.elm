@@ -80,6 +80,7 @@ import Set
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
+import UI.Classes exposing (hostnameToCSSClass)
 import UI.Flip
 import UI.ServerTheme
 import Url
@@ -369,7 +370,7 @@ counterpart of `accountRowDomId`, for `MoveServerLeftClicked`/
 -}
 serverChipDomId : String -> String
 serverChipDomId frontendHost =
-    "server-chip-" ++ frontendHost
+    "server-chip-" ++ hostnameToCSSClass frontendHost
 
 
 accountAt : Int -> List Account -> Maybe Account
