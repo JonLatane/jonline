@@ -234,15 +234,7 @@ signInView shared model =
                     div [ class "auth-to-page" ]
                         [ h2 [] [ text (model.requestingHost ++ " is asking to sign in") ]
                         , div [ class "auth-to-account" ]
-                            [ case AccountsPanel.accountAvatarUrl shared.accountsPanel.servers account of
-                                Just url ->
-                                    img [ class "auth-to-account-avatar", src url ] []
-
-                                Nothing ->
-                                    text ""
-
-                            -- , text ("Sign in as " ++ AccountsPanel.displayName account ++ "?")
-                            , span [ class "auth-from-greeting" ] [ text "Sign in as" ]
+                            [ span [ class "auth-from-greeting" ] [ text "Sign in as" ]
                             , UI.imageOrInitial [ "auth-from-avatar" ] account.username avatarUrl
                             , span [ class "auth-from-name" ] [ text nameAndHost ]
                             , span [ class "auth-from-greeting" ] [ text "?" ]

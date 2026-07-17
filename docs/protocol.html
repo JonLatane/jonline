@@ -2927,7 +2927,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <tr>
           <td>REPLY</td>
           <td>1</td>
-          <td>Reply to a <code>POST</code>, <code>REPLY</code>, <code>EVENT</code>, <code>EVENT_INSTANCE</code>, <code>FEDERATED_POST</code>, or <code>FEDERATED_EVENT_INSTANCE</code>. Does not suport a <code>link</code>.</td>
+          <td>Reply to a <code>POST</code>, <code>REPLY</code>, <code>EVENT</code>, or <code>EVENT_INSTANCE</code> Does not suport a <code>link</code>. Requires a <code>reply_to_post_id</code>.</td>
         </tr>
         <tr>
           <td>EVENT</td>
@@ -2940,14 +2940,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>An "Event Instance" Post. The EventInstances table should have a row for this Post. These Posts' <code>link</code> and <code>title</code> fields are modifiable.</td>
         </tr>
         <tr>
-          <td>FEDERATED_POST</td>
+          <td>FEDERATED_REPLY</td>
           <td>10</td>
-          <td>A "Federated" Post. This is a Post that was created on another server. Its <code>link</code> field <em>must</em> be a link to the original Post, i.e. <code>htttps://jonline.io/post/abcd1234</code>. This is enforced by the <code>CreatePost</code> PRC.</td>
-        </tr>
-        <tr>
-          <td>FEDERATED_EVENT_INSTANCE</td>
-          <td>13</td>
-          <td>A "Federated" EventInstance. This is an EventInstance that was created on another server. Its <code>link</code> field <em>must</em> be a link to the original EventInstance, i.e. <code>https://jonline.io/event/abcd1234</code>.</td>
+          <td>A reply to a post on another server. The post <em>must</em> have a link of the format <code>http[s]://&#x26;lt;server/post/&#x26;lt;post_id&#x26;gt;</code> in its <code>link</code> field. It will not have a <code>reply_to_post_id</code> value.</td>
         </tr>
       </tbody>
     </table>

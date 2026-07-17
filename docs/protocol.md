@@ -1269,11 +1269,10 @@ Differentiates the context of a Post, as in Jonline&#39;s data models, Post is t
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | POST | 0 | &#34;Standard&#34; Post. |
-| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`. Does not suport a `link`. |
+| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE` Does not suport a `link`. Requires a `reply_to_post_id`. |
 | EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
 | EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
-| FEDERATED_POST | 10 | A &#34;Federated&#34; Post. This is a Post that was created on another server. Its `link` field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`. This is enforced by the `CreatePost` PRC. |
-| FEDERATED_EVENT_INSTANCE | 13 | A &#34;Federated&#34; EventInstance. This is an EventInstance that was created on another server. Its `link` field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`. |
+| FEDERATED_REPLY | 10 | A reply to a post on another server. The post *must* have a link of the format `http[s]://&lt;server/post/&lt;post_id&gt;` in its `link` field. It will not have a `reply_to_post_id` value. |
 
 
 

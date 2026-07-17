@@ -73,26 +73,24 @@ enum PostListingType {
 
 // Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
 enum PostContext {
-  // "Standard" Post.
+  // "Standard" or "Top-Leevl" Post. Can have media, a link, a title, and/or content.
   POST = 0;
-  // Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`.
-  // Does not suport a `link`.
+
+  // Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
+  // Does not suport a `link`. Requires a `reply_to_post_id`.
   REPLY = 1;
+
   // An "Event" Post. The Events table should have a row for this Post.
   // These Posts' `link` and `title` fields are modifiable.
   EVENT = 2;
+
   // An "Event Instance" Post. The EventInstances table should have a row for this Post.
   // These Posts' `link` and `title` fields are modifiable.
   EVENT_INSTANCE = 3;
 
-  // A "Federated" Post. This is a Post that was created on another server. Its `link`
-  // field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`.
-  // This is enforced by the `CreatePost` PRC.
-  FEDERATED_POST = 10;
-
-  // A "Federated" EventInstance. This is an EventInstance that was created on another server. Its `link`
-  // field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`.
-  FEDERATED_EVENT_INSTANCE = 13;
+ // A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
+ // in its `link` field. It will not have a `reply_to_post_id` value.
+  FEDERATED_REPLY = 10;
 }
 
 // A `Post` is a message that can be posted to the server. Its `visibility`
