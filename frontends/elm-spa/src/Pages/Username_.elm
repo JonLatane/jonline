@@ -10,8 +10,9 @@ same as `Pages.User.UserId_`) is ever involved. Those usernames are still
 reachable via `/user/:id[@host]`.
 -}
 
-import Components.UserProfilePage as UserProfilePage
+import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
+import Components.Users.Resolver as Resolver
 import Effect exposing (Effect)
 import Gen.Params.Username_ exposing (Params)
 import Html exposing (p, text)
@@ -57,7 +58,7 @@ init shared req =
         ( Reserved username, Effect.none )
 
     else
-        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (UserProfilePage.ByUsername username)
+        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username)
             |> Tuple.mapFirst Profile
             |> Tuple.mapSecond (Effect.map ProfileMsg)
 

@@ -1768,7 +1768,7 @@ so it's mapped into `Shared.Msg` here instead.
 starredPostsPanel : Shared.Model -> Route -> Html Shared.Msg
 starredPostsPanel shared currentRoute =
     Html.map Shared.StarredPostsPanelMsg
-        (StarredPostsPanel.view shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPostsPanel)
+        (StarredPostsPanel.view shared.browserTimeZone shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPostsPanel)
 
 
 {-| The `starKey` of the Post currently being viewed (see

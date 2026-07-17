@@ -22,6 +22,7 @@ module Components.PostCard exposing
     , postTitleText
     , postVisibilityText
     , repliesCountText
+    , timestampsText
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -42,7 +43,7 @@ import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, img, span, text)
-import Html.Attributes exposing (alt, attribute, class, href, rel, src, target)
+import Html.Attributes exposing (alt, attribute, class, href, rel, src, target, title)
 import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
@@ -51,6 +52,7 @@ import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
+import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (int64ToInt, timestampToPosix)
 import Task exposing (Task)
 import Time
@@ -84,18 +86,21 @@ fetchPost accountsPanelModel maybeAccountServer postId =
 {-| Fetches the most recent publicly-accessible posts from
 `maybeAccountServer`'s server, authenticated as its account if any (so e.g.
 followed-user/group posts are included too) -- otherwise identical to
-`fetchPost`.
+`fetchPost`. `authorUserId`, if given, restricts the results to that user's
+posts (see `GetPostsRequest`'s `{listing_type: AuthorPosts, author_user_id:}`
+form), for `Components.Pages.PostsPage`'s use on a user's own posts page.
 -}
 fetchRecentPosts :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
+    -> Maybe String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchRecentPosts accountsPanelModel maybeAccountServer =
+fetchRecentPosts accountsPanelModel maybeAccountServer authorUserId =
     performWithOptionalAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts defaultGetPostsRequest
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | authorUserId = authorUserId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -593,11 +598,94 @@ commentCountText post =
     " · 💬 " ++ repliesCountText post
 
 
-{-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
-author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own (the enabled
-account for the post's server, same one used for `postAuthorAvatarUrl`), not
-necessarily `post.author` itself. Opens the shared Markdown editor panel via
-`onEditClicked`, supplied by the caller (`Pages.Post.PostId_`).
+{-| A post's created/updated/published times, as tersely as the data allows --
+just one of the three normally (whichever's most relevant: `Published` if the
+post has been published, else `Created`, else, in the one case a post could
+have only this, `Updated`), with a trailing `*` plus a tooltip (native `title`)
+covering the other one(s) whenever there's a genuinely _different_ edit
+time to call out. Redundant fields (e.g. `publishedAt` equal to `createdAt`,
+the common case for a post that was published immediately) are dropped
+entirely rather than stated twice. All times shown in `browserTimeZone`,
+`YYYY-MM-DD HH:mm Z` (`BrowserTimeZone.formatDateTime`, `Z` its trailing
+`abbreviation`).
+-}
+timestampsText : BrowserTimeZone -> Post -> Html msg
+timestampsText browserTimeZone post =
+    let
+        createdText =
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.createdAt
+
+        updatedText =
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.updatedAt
+
+        publishedText =
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.publishedAt
+
+        createdEqualsPublished =
+            createdText /= Nothing && createdText == publishedText
+
+        ( mainText, titleText ) =
+            case ( createdText, updatedText, publishedText ) of
+                ( Just created, Just updated, Just published ) ->
+                    if createdEqualsPublished then
+                        if updated == created then
+                            ( "Created " ++ created, "" )
+
+                        else
+                            ( "Created " ++ created ++ "*", "Updated " ++ updated )
+
+                    else if updated == published then
+                        ( "Published " ++ published, "Created " ++ created )
+
+                    else
+                        ( "Published " ++ published ++ "*", "Updated " ++ updated ++ ", Created " ++ created )
+
+                ( Just created, Just updated, Nothing ) ->
+                    if updated == created then
+                        ( "Created " ++ created, "" )
+
+                    else
+                        ( "Created " ++ created ++ "*", "Updated " ++ updated )
+
+                ( Just created, Nothing, Just published ) ->
+                    if createdEqualsPublished then
+                        ( "Created " ++ created, "" )
+
+                    else
+                        ( "Published " ++ published, "Created " ++ created )
+
+                ( Just created, Nothing, Nothing ) ->
+                    ( "Created " ++ created, "" )
+
+                ( Nothing, Just updated, Just published ) ->
+                    if updated == published then
+                        ( "Published " ++ published, "" )
+
+                    else
+                        ( "Published " ++ published ++ "*", "Updated " ++ updated )
+
+                ( Nothing, Just updated, Nothing ) ->
+                    ( "Updated " ++ updated, "" )
+
+                ( Nothing, Nothing, Just published ) ->
+                    ( "Published " ++ published, "" )
+
+                ( Nothing, Nothing, Nothing ) ->
+                    ( "", "" )
+    in
+    span
+        [ class "post-timestamps"
+        , title titleText
+        ]
+        [ text mainText ]
+
+
+{-| An Edit button below `postDetail`'s Markdown content, shown only to
+`post`'s own author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own
+(the enabled account for the post's server, same one used for
+`postAuthorAvatarUrl`), not necessarily `post.author` itself. Opens the shared
+Markdown editor panel via `onEditClicked`, supplied by the caller
+(`Pages.Post.PostId_`).
 -}
 editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
 editButton maybeAccount onEditClicked post =
@@ -702,8 +790,8 @@ post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
 -}
-postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCard : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -759,7 +847,8 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMe
                     )
                 ]
             , span [ class "post-meta-right" ]
-                [ starButton postServerHost starred onStarClicked post
+                [ timestampsText browserTimeZone post
+                , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
             ]
@@ -792,8 +881,8 @@ whatever `Html` it's given in after the author link, in place of what used to
 be a bare `postVisibilityText post` text node.
 
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
+postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
+postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ if post.context == POST then
             h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
@@ -831,7 +920,7 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
                 , visibilityView
                 ]
             , span [ class "post-meta-right" ]
-                [ editButton maybeAccount onEditClicked post
+                [ timestampsText browserTimeZone post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
@@ -842,4 +931,5 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
 
             Nothing ->
                 text ""
+        , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
         ]

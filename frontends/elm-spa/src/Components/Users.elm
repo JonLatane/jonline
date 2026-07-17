@@ -7,7 +7,6 @@ module Components.Users exposing
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
-    , formatDate
     , isAdminUser
     , isReservedUsername
     , moderationText
@@ -42,7 +41,6 @@ import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Task exposing (Task)
-import Time
 
 
 {-| Fetches the user with `userId` from `maybeAccountServer`'s server,
@@ -536,60 +534,3 @@ happen, since the `<select>`'s own options are always built from
 permissionFromText : String -> Maybe Permission
 permissionFromText text =
     allPermissions |> List.filter (\permission -> permissionText permission == text) |> List.head
-
-
-{-| A plain `YYYY-MM-DD` rendering (UTC) of a timestamp -- e.g. a profile's
-"Joined" date. No existing date-formatting helper/locale infrastructure exists
-in this app yet, so this keeps things simple rather than introducing one.
--}
-formatDate : Time.Posix -> String
-formatDate time =
-    let
-        pad2 n =
-            String.padLeft 2 '0' (String.fromInt n)
-    in
-    String.fromInt (Time.toYear Time.utc time)
-        ++ "-"
-        ++ pad2 (monthNumber (Time.toMonth Time.utc time))
-        ++ "-"
-        ++ pad2 (Time.toDay Time.utc time)
-
-
-monthNumber : Time.Month -> Int
-monthNumber month =
-    case month of
-        Time.Jan ->
-            1
-
-        Time.Feb ->
-            2
-
-        Time.Mar ->
-            3
-
-        Time.Apr ->
-            4
-
-        Time.May ->
-            5
-
-        Time.Jun ->
-            6
-
-        Time.Jul ->
-            7
-
-        Time.Aug ->
-            8
-
-        Time.Sep ->
-            9
-
-        Time.Oct ->
-            10
-
-        Time.Nov ->
-            11
-
-        Time.Dec ->
-            12

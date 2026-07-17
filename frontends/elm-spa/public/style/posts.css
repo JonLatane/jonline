@@ -6,6 +6,32 @@
   margin: 1rem 0;
 }
 
+/* "Posts | <name>" heading on a user's own posts page (see
+   Components/Pages/PostsPage.elm's `authorHeadingView`) -- the "Posts" label
+   and the reused profile `.profile-header-names` block (username/real name)
+   sit on one row, separated by a rule (`::before` on the second child, so it
+   only appears once the name has actually loaded in). */
+.posts-page-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  /* justify-content: ; */
+}
+
+.posts-page-heading a {
+  margin-left: auto;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.posts-page-heading .profile-real-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .posts-empty {
   color: var(--muted);
 }
@@ -74,6 +100,13 @@
   pointer-events: none;
 }
 
+.post-timestamps {
+  font-size: 0.6rem;
+  white-space: nowrap;
+  margin-left: 0.2rem;
+  margin-right: 0.2rem;
+}
+
 /* `.post-card-meta`/`.post-detail-meta` are both split into a `.post-meta-left`
    (author/host/visibility) and `.post-meta-right` (star + comment count)
    flex item -- `.post-meta-right`'s `margin-left: auto` pins it to the
@@ -105,8 +138,19 @@
 }
 
 .post-author-link,
-.post-card-meta .post-star {
+.post-card-meta .post-star,
+.post-card-meta .post-timestamps {
   pointer-events: auto;
+}
+
+/* A post's created/updated/published time (see
+   `Components.PostCard.timestampsText`) -- plain, non-interactive text (just
+   a native `title` tooltip on hover for the timestamp(s) not already shown),
+   so it needs `pointer-events: auto` (above) only so that tooltip still fires
+   through `.post-card-meta`'s own `pointer-events: none`, same reasoning as
+   `.post-star`/`.post-author-link`. */
+.post-timestamps {
+  white-space: nowrap;
 }
 
 .post-author-link {
@@ -308,10 +352,9 @@
   color: var(--fg);
 }
 
-/* Edit button -- inline in `postDetail`'s `.post-meta-right` group (see
-   `Components.PostCard.editButton`), shown only to the post's own author.
-   Smaller than `.post-actions button` since it sits in the meta line
-   alongside the star/comment count rather than its own row. */
+/* Edit button -- its own right-aligned row below `postDetail`'s Markdown
+   content (see `Components.PostCard.editButton`/`.post-detail-edit-row`),
+   shown only to the post's own author. */
 .post-edit-button {
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--border);
@@ -319,6 +362,12 @@
   background: var(--chip-bg);
   color: var(--fg);
   font-size: 0.8rem;
+}
+
+.post-detail-edit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
 }
 
 /* Visibility picker -- `Pages.Post.PostId_`'s `visibilityView`, shown in

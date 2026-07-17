@@ -45,6 +45,7 @@ import Proto.Jonline exposing (GetPostsResponse, Post)
 import Proto.Jonline.Jonline as Jonline
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
+import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
 import UI.Classes exposing (classes, escapeCSSClass, openClosedClass)
@@ -719,8 +720,8 @@ directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPostsPanel`, so the reverse import would be a cycle).
 -}
-view : String -> AccountsPanel.Model -> Maybe String -> Model -> Html Msg
-view basePath accountsPanelModel currentPostKey model =
+view : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> Html Msg
+view browserTimeZone basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
             openClosedClass model.showStarredPostsPanel
@@ -740,7 +741,7 @@ view basePath accountsPanelModel currentPostKey model =
                     [ Html.Keyed.node "div"
                         [ classes [ "starred-posts-list", "flip-animated-column" ] ]
                         (List.indexedMap
-                            (\index key -> ( key, starredPostRowFlip basePath accountsPanelModel currentPostKey model count index key ))
+                            (\index key -> ( key, starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey model count index key ))
                             model.starOrder
                         )
                     ]
@@ -753,8 +754,8 @@ view basePath accountsPanelModel currentPostKey model =
 `starAnimations`/`UI.Flip`), same two-layer reasoning as `UI.accountRowFlip`
 (fade/collapse here vs. `starredPostRow`'s own, independent reorder-slide).
 -}
-starredPostRowFlip : String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRowFlip basePath accountsPanelModel currentPostKey model count index key =
+starredPostRowFlip : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey model count index key =
     let
         flipState =
             Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
@@ -770,15 +771,15 @@ starredPostRowFlip basePath accountsPanelModel currentPostKey model count index 
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
-        [ div pointerEventsAttr [ starredPostRow basePath accountsPanelModel currentPostKey model count index key ] ]
+        [ div pointerEventsAttr [ starredPostRow browserTimeZone basePath accountsPanelModel currentPostKey model count index key ] ]
 
 
 {-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder
 transform and the up/down reorder buttons -- mirrors `UI.accountRow`'s
 equivalent for Accounts.
 -}
-starredPostRow : String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRow basePath accountsPanelModel currentPostKey model count index key =
+starredPostRow : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRow browserTimeZone basePath accountsPanelModel currentPostKey model count index key =
     let
         moveAttrs =
             model.moveAnimations
@@ -797,12 +798,12 @@ starredPostRow basePath accountsPanelModel currentPostKey model count index key 
             , canMoveUp = index > 0
             , canMoveDown = index < count - 1
             }
-        , starredPostView basePath accountsPanelModel currentPostKey model key
+        , starredPostView browserTimeZone basePath accountsPanelModel currentPostKey model key
         ]
 
 
-starredPostView : String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg
-starredPostView basePath accountsPanelModel currentPostKey model key =
+starredPostView : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> Html Msg
+starredPostView browserTimeZone basePath accountsPanelModel currentPostKey model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             let
@@ -831,7 +832,7 @@ starredPostView basePath accountsPanelModel currentPostKey model key =
 
                     Nothing ->
                         text ""
-                , Posts.postCard basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
+                , Posts.postCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
                 ]
 
         Just FetchingPost ->

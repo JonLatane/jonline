@@ -59,7 +59,9 @@ import Gen.Route as Route
 import Pages.Home_
 import Pages.Post.PostId_
 import Pages.User.UserId_
+import Pages.User.UserId_.Posts
 import Pages.Username_
+import Pages.Username_.Posts
 import Request
 import Shared
 import Url exposing (Url)
@@ -267,8 +269,14 @@ sharedMsgForPage sharedMsg page =
         Gen.Model.User__UserId_ _ _ ->
             Just (Gen.Msg.User__UserId_ (Pages.User.UserId_.fromShared sharedMsg))
 
+        Gen.Model.User__UserId___Posts _ _ ->
+            Just (Gen.Msg.User__UserId___Posts (Pages.User.UserId_.Posts.fromShared sharedMsg))
+
         Gen.Model.Username_ _ _ ->
             Just (Gen.Msg.Username_ (Pages.Username_.fromShared sharedMsg))
+
+        Gen.Model.Username___Posts _ _ ->
+            Just (Gen.Msg.Username___Posts (Pages.Username_.Posts.fromShared sharedMsg))
 
         _ ->
             Nothing
