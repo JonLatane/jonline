@@ -10,6 +10,7 @@ port module Ports exposing
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
+    , setNavBarColor
     , setTheme
     , systemPrefersDarkChanged
     )
@@ -43,6 +44,16 @@ port persistThemePreference : String -> Cmd msg
 (falling back to the `prefers-color-scheme` media query).
 -}
 port setTheme : String -> Cmd msg
+
+
+{-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s
+current `primaryColor` (a `#rrggbb` string -- see `UI.ServerTheme.ColorMeta`),
+so the browser/OS chrome (e.g. a mobile browser's tab bar) tints to match the
+server being browsed. Called from `Shared.navBarColorCmd` whenever that color
+actually changes -- `mainFrontendHost` switching, or its `Server`'s branding
+being (re)populated.
+-}
+port setNavBarColor : String -> Cmd msg
 
 
 {-| Fires when the OS-level dark/light preference changes while the app is

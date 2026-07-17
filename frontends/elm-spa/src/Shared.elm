@@ -272,29 +272,40 @@ init basePath req flags =
 
         ( federatedAuthModel, federatedAuthCmd ) =
             FederatedAuth.init federatedAuthFlags
-    in
-    ( { accountsPanel = accountsPanelModel
-      , adminPanel = AdminPanel.init
-      , federatedAuth = federatedAuthModel
-      , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
-      , markdownPanel = MarkdownPanel.init
-      , mediaViewerPanel = MediaViewerPanel.init
-      , breadcrumbs = Breadcrumbs.init
-      , themePreference = themePreference
-      , systemPrefersDark = systemPrefersDark
-      , basePath = basePath
-      , confirmingDeleteFor = Nothing
-      , scrollPreserverVisible = False
 
-      -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below --
-      -- arbitrary until then, but never consulted before that (both panels
-      -- start closed) so it doesn't matter what it is.
-      , windowSize = { width = 0, height = 0 }
-      }
+        model =
+            { accountsPanel = accountsPanelModel
+            , adminPanel = AdminPanel.init
+            , federatedAuth = federatedAuthModel
+            , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+            , markdownPanel = MarkdownPanel.init
+            , mediaViewerPanel = MediaViewerPanel.init
+            , breadcrumbs = Breadcrumbs.init
+            , themePreference = themePreference
+            , systemPrefersDark = systemPrefersDark
+            , basePath = basePath
+            , confirmingDeleteFor = Nothing
+            , scrollPreserverVisible = False
+
+            -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
+            -- -- arbitrary until then, but never consulted before that (both
+            -- panels start closed) so it doesn't matter what it is.
+            , windowSize = { width = 0, height = 0 }
+            }
+    in
+    ( model
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
         , Cmd.map FederatedAuthMsg federatedAuthCmd
         , Ports.setTheme (themePreferenceToString themePreference)
+
+        -- `mainFrontendHost`'s branding isn't fetched yet at this point, so
+        -- this is only ever the neutral placeholder (see
+        -- `UI.ServerTheme.neutralColorMeta`) -- matches `updateImpl`'s later
+        -- calls once real branding loads via `navBarColorCmd`, rather than
+        -- leaving the static light/dark `<meta>` values from `index.html` in
+        -- place until then.
+        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
         , getInitialWindowSizeCmd
         ]
     )
@@ -311,8 +322,45 @@ getInitialWindowSizeCmd =
         Dom.getViewport
 
 
+{-| Wraps `updateImpl` to also call out to `Ports.setNavBarColor` whenever
+`mainFrontendHost`'s theme actually changes as a result of the message --
+either `mainFrontendHost` itself changing (e.g. `AccountsPanel.SetMainFrontendHost`)
+or its `Server`'s cached branding being (re)populated (e.g. after a
+`ServerConfiguration` fetch). Comparing `primaryColor` before/after here,
+rather than threading a "did the theme change" flag out of every branch that
+touches `accountsPanel`, means every current and future such path gets this
+for free.
+-}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
+    let
+        ( newModel, cmd ) =
+            updateImpl req msg model
+    in
+    ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel ] )
+
+
+{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
+`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
+`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
+vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
+`SystemPrefersDarkChanged` alone.
+-}
+navBarColorCmd : Model -> Model -> Cmd Msg
+navBarColorCmd before after =
+    let
+        colorOf model_ =
+            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accountsPanel).primaryColor
+    in
+    if colorOf before /= colorOf after then
+        Ports.setNavBarColor (colorOf after)
+
+    else
+        Cmd.none
+
+
+updateImpl : Request -> Msg -> Model -> ( Model, Cmd Msg )
+updateImpl req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
@@ -504,7 +552,7 @@ update req msg model =
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    update req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
+                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -512,7 +560,7 @@ update req msg model =
                 -- Home" hook (see `UI.navLink`), hence scrolling to top here.
                 ( scrolledModel, scrollCmd ) =
                     if alreadyHome then
-                        update req ScrollToTop closedModel
+                        updateImpl req ScrollToTop closedModel
 
                     else
                         ( closedModel, Cmd.none )

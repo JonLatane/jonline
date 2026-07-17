@@ -9,6 +9,14 @@
 .navbar {
   position: sticky;
   top: 0;
+  /* Lets the navbar's own background (already tinted with mainFrontendHost's
+     primaryColor, above) extend up underneath the iOS status bar -- see
+     index.html's `apple-mobile-web-app-status-bar-style` comment, and
+     media_viewer_panel.css's toolbar padding for the same
+     `env(safe-area-inset-top)`/`viewport-fit=cover` reasoning. 0 on anything
+     without a notch/Dynamic Island (or without `viewport-fit=cover`), so this
+     is a no-op elsewhere. */
+  padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid var(--border);
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
      descendant .nav-panel elements -- Accounts, Starred Posts) is never
