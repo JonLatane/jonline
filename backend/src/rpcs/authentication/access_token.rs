@@ -12,6 +12,9 @@ use crate::db_connection::*;
 use crate::protos::*;
 use crate::schema::user_refresh_tokens;
 
+pub const LIFETIME_DAYS: u64 = 14;
+pub const RENEWAL_PERIOD_DAYS: u64 = 13;
+
 pub fn access_token(
     request: AccessTokenRequest,
     conn: &mut PgPooledConnection,

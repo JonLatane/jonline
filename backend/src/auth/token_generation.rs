@@ -1,17 +1,16 @@
 use std::option::Option;
 use std::time::SystemTime;
 
-use diesel::*;
-use prost_wkt_types::*;
-use ring::rand::*;
-
 use crate::db_connection::*;
 use crate::protos::*;
 use crate::schema::user_access_tokens::dsl as user_access_tokens;
 use crate::schema::user_refresh_tokens::dsl as user_refresh_tokens;
+use diesel::*;
+use prost_wkt_types::*;
+use ring::rand::*;
+use std::ops::Add;
 
-pub const LIFETIME_DAYS: u64 = 14;
-pub const RENEWAL_PERIOD_DAYS: u64 = 13;
+const ACCESS_TOKEN_EXPIRATION_MINS: u64 = 15;
 
 /// Generate a secure random token of the given length.
 #[macro_export]
@@ -73,10 +72,14 @@ pub fn generate_access_token(
     conn: &mut PgPooledConnection,
 ) -> ExpirableToken {
     let access_token = generate_token!(128);
+    let expiration = SystemTime::now().add(std::time::Duration::from_secs(
+        60 * ACCESS_TOKEN_EXPIRATION_MINS,
+    ));
     let expires_at: SystemTime = insert_into(user_access_tokens::user_access_tokens)
         .values((
             user_access_tokens::refresh_token_id.eq(refresh_token_id),
             user_access_tokens::token.eq(access_token.to_owned()),
+            user_access_tokens::expires_at.eq(expiration),
         ))
         .returning(user_access_tokens::expires_at)
         .get_result::<SystemTime>(conn)
