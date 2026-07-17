@@ -4,10 +4,10 @@ module Pages.Username_.Posts exposing (Model, Msg, fromShared, page)
 (impermanent) username. `GetPostsRequest.authorUserId` needs the user's
 actual id, which the route doesn't have directly (unlike
 `Pages.User.UserId_.Posts`), so this page first resolves the username to an
-id (a small `GetUsers` fetch, mirroring `Components.Pages.UserProfilePage`'s
-own `fetchIfReady`/`fetchTask`, but without that module's connect-to-server
-UI or profile-editing state, none of which this page needs) before handing
-that id to `Components.Pages.PostsPage`.
+id via `Components.Users.Resolver` (the same resolution machinery
+`Components.Pages.UserProfilePage` uses internally, minus that module's
+connect-to-server UI or profile-editing state, none of which this page needs)
+before handing that id to `Components.Pages.PostsPage`.
 
 Same reserved-username short-circuit as `Pages.Username_` -- see its module
 doc for why.
@@ -16,18 +16,14 @@ doc for why.
 
 import Components.Pages.PostsPage as PostsPage
 import Components.Users as Users
+import Components.Users.Resolver as Resolver
 import Effect exposing (Effect)
 import Gen.Params.Username_.Posts exposing (Params)
-import Grpc
 import Html exposing (p, text)
 import Html.Attributes exposing (class)
 import Page
-import Proto.Jonline
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
-import Task
-import Time
 import UI
 import View exposing (View)
 
@@ -46,22 +42,9 @@ page shared req =
 -- MODEL
 
 
-{-| `fetchStarted` is only ever `True` while the `GetUsers` fetch it guards is
-in flight -- a failure (or the target server not being connected yet) resets
-it to `False`, so `subscriptions`' poll (and any `AccountsPanelMsg`, via
-`update`'s `SharedMsg` branch) retries, mirroring
-`Components.Pages.UserProfilePage.fetchIfReady`.
--}
-type alias ResolveState =
-    { username : String
-    , targetHost : String
-    , fetchStarted : Bool
-    }
-
-
 type Model
     = Reserved String
-    | Resolving ResolveState
+    | Resolving Resolver.Model
     | Posts PostsPage.Model
 
 
@@ -75,43 +58,9 @@ init shared req =
         ( Reserved username, Effect.none )
 
     else
-        fetchIfReady shared { username = username, targetHost = targetHost, fetchStarted = False }
-
-
-{-| The `GetUsers` fetch task for `state.username`/`state.targetHost`, if that
-host is currently a known, connected server -- mirrors
-`Components.Pages.UserProfilePage.fetchTask`.
--}
-fetchTask : Shared.Model -> ResolveState -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
-fetchTask shared state =
-    AccountsPanel.serverForHost shared.accountsPanel.servers state.targetHost
-        |> Maybe.map
-            (\_ ->
-                Users.fetchUserByUsername
-                    shared.accountsPanel
-                    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts state.targetHost |> Maybe.map .userId
-                    , state.targetHost
-                    )
-                    state.username
-            )
-
-
-{-| Kicks off the username-resolving fetch the first time `state.targetHost`
-is a known, connected server -- mirrors
-`Components.Pages.UserProfilePage.fetchIfReady`.
--}
-fetchIfReady : Shared.Model -> ResolveState -> ( Model, Effect Msg )
-fetchIfReady shared state =
-    if state.fetchStarted then
-        ( Resolving state, Effect.none )
-
-    else
-        case fetchTask shared state of
-            Just fetch ->
-                ( Resolving { state | fetchStarted = True }, fetch |> Task.attempt GotUser |> Effect.fromCmd )
-
-            Nothing ->
-                ( Resolving state, Effect.none )
+        Resolver.init shared targetHost (Resolver.ByUsername username)
+            |> Tuple.mapFirst Resolving
+            |> Tuple.mapSecond (Effect.map ResolverMsg)
 
 
 
@@ -119,69 +68,55 @@ fetchIfReady shared state =
 
 
 type Msg
-    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
-    | Poll
+    = ResolverMsg Resolver.Msg
     | PostsMsg PostsPage.Msg
-    | SharedMsg Shared.Msg
 
 
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-into `update`'s `SharedMsg` branch -- see `Pages.Username_.fromShared`.
+{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --
+see `Components.Users.Resolver.fromShared`/`Components.Pages.PostsPage.fromShared`.
 -}
 fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
-
-
-accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
-accountsPanelEffect maybeAccountsPanelMsg =
-    maybeAccountsPanelMsg
-        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
-        |> Maybe.withDefault Effect.none
+fromShared sharedMsg =
+    ResolverMsg (Resolver.fromShared sharedMsg)
 
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case ( msg, model ) of
-        ( GotUser (Ok ( maybeAccountsPanelMsg, response )), Resolving state ) ->
-            case List.head response.users of
-                Just user ->
+        ( ResolverMsg subMsg, Resolving resolverModel ) ->
+            let
+                ( newResolver, resolverEffect ) =
+                    Resolver.update shared subMsg resolverModel
+            in
+            case newResolver.status of
+                Resolver.Loaded user ->
                     let
                         ( postsModel, postsEffect ) =
                             PostsPage.init shared (Just user.id)
                     in
-                    ( Posts postsModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, Effect.map PostsMsg postsEffect ] )
+                    ( Posts postsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map PostsMsg postsEffect ] )
 
-                Nothing ->
-                    ( Resolving { state | fetchStarted = False }, accountsPanelEffect maybeAccountsPanelMsg )
-
-        ( GotUser (Err _), Resolving state ) ->
-            ( Resolving { state | fetchStarted = False }, Effect.none )
-
-        ( Poll, Resolving state ) ->
-            fetchIfReady shared state
+                _ ->
+                    ( Resolving newResolver, Effect.map ResolverMsg resolverEffect )
 
         ( PostsMsg subMsg, Posts postsModel ) ->
             PostsPage.update shared subMsg postsModel
                 |> Tuple.mapFirst Posts
                 |> Tuple.mapSecond (Effect.map PostsMsg)
 
-        ( SharedMsg subMsg, Resolving state ) ->
-            let
-                ( fetchedModel, fetchEffect ) =
-                    case subMsg of
-                        Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared state
+        ( ResolverMsg subMsg, Posts postsModel ) ->
+            -- The resolver has already resolved (see above) -- any further
+            -- `SharedMsg` it's forwarded (via `fromShared`) still needs to
+            -- reach `PostsPage`, e.g. an `AccountsPanelMsg` it should
+            -- re-fetch on, same as `Pages.Home_` gets directly.
+            case subMsg of
+                Resolver.SharedMsg sharedMsg ->
+                    PostsPage.update shared (PostsPage.fromShared sharedMsg) postsModel
+                        |> Tuple.mapFirst Posts
+                        |> Tuple.mapSecond (Effect.map PostsMsg)
 
-                        _ ->
-                            ( Resolving state, Effect.none )
-            in
-            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
-
-        ( SharedMsg subMsg, Posts postsModel ) ->
-            PostsPage.update shared (PostsPage.fromShared subMsg) postsModel
-                |> Tuple.mapFirst Posts
-                |> Tuple.mapSecond (Effect.map PostsMsg)
+                _ ->
+                    ( model, Effect.none )
 
         _ ->
             ( model, Effect.none )
@@ -190,12 +125,8 @@ update shared msg model =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     case model of
-        Resolving state ->
-            if state.fetchStarted then
-                Sub.none
-
-            else
-                Time.every 30000 (\_ -> Poll)
+        Resolving resolverModel ->
+            Sub.map ResolverMsg (Resolver.subscriptions resolverModel)
 
         Posts postsModel ->
             Sub.map PostsMsg (PostsPage.subscriptions postsModel)

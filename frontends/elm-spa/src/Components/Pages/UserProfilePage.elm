@@ -1,6 +1,5 @@
 module Components.Pages.UserProfilePage exposing
-    ( Lookup(..)
-    , Model
+    ( Model
     , Msg
     , fromShared
     , init
@@ -22,11 +21,16 @@ Mirrors `Pages.Post.PostId_`, generalized over the `Lookup` since (unlike
 Posts, which are only ever looked up by id) a `User` can be fetched by either
 id or username.
 
+The actual "fetch a `User` once its server is connected, retry until it is"
+state machine lives in `Components.Users.Resolver` (`model.resolver`), shared
+with `Pages.Username_.Posts`, which needs the same username -> id resolution
+but none of this module's profile-editing machinery.
 -}
 
 import Components.Markdown as Markdown
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
+import Components.Users.Resolver as Resolver
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -42,23 +46,10 @@ import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.MarkdownPanel as MarkdownPanel
 import Task
-import Time
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
-{-| Which `GetUsersRequest` field to search by -- an id (`Pages.User.UserId_`)
-or a username (`Pages.Username_`).
--}
-type Lookup
-    = ById String
-    | ByUsername String
-
-
-type Status
-    = LoadingUser
-    | UserLoaded User
-    | UserFailed
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
@@ -123,11 +114,8 @@ type alias FederatedProfilesEdit =
 
 
 type alias Model =
-    { targetHost : String
-    , lookup : Lookup
-    , status : Status
+    { resolver : Resolver.Model
     , connectStatus : ServerDependentView.ConnectStatus
-    , fetchStarted : Bool
     , pageIsSecure : Bool
     , federatedProfiles : Dict String FederatedProfileStatus
     , realNameEdit : Maybe RealNameEdit
@@ -140,80 +128,42 @@ type alias Model =
 page's own `Request` -- needed for `ConnectClicked` (see `AccountsPanel.connectToServer`),
 but not otherwise derivable from `Shared.Model` alone.
 -}
-init : Shared.Model -> Bool -> String -> Lookup -> ( Model, Effect Msg )
+init : Shared.Model -> Bool -> String -> Resolver.Lookup -> ( Model, Effect Msg )
 init shared pageIsSecure targetHost lookup =
-    fetchIfReady shared
-        { targetHost = targetHost
-        , lookup = lookup
-        , status = LoadingUser
-        , connectStatus = ServerDependentView.NotConnected
-        , fetchStarted = False
-        , pageIsSecure = pageIsSecure
-        , federatedProfiles = Dict.empty
-        , realNameEdit = Nothing
-        , permissionsEdit = Nothing
-        , federatedProfilesEdit = Nothing
-        }
+    let
+        ( resolverModel, resolverEffect ) =
+            Resolver.init shared targetHost lookup
+    in
+    ( { resolver = resolverModel
+      , connectStatus = ServerDependentView.NotConnected
+      , pageIsSecure = pageIsSecure
+      , federatedProfiles = Dict.empty
+      , realNameEdit = Nothing
+      , permissionsEdit = Nothing
+      , federatedProfilesEdit = Nothing
+      }
+    , Effect.map ResolverMsg resolverEffect
+    )
 
 
-{-| The `GetUsers` fetch task for `model.lookup`/`model.targetHost`, if that
-host is currently a known, connected server -- shared by `fetchIfReady` (only
-kicked off once) and `refetch` (kicked off unconditionally, after a Real
-Name/bio/permissions save succeeds).
--}
-fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
-fetchTask shared model =
-    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
-        |> Maybe.map
-            (\_ ->
-                let
-                    maybeAccountServer =
-                        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
-                        , model.targetHost
-                        )
-                in
-                case model.lookup of
-                    ById userId ->
-                        Users.fetchUserById shared.accountsPanel maybeAccountServer userId
-
-                    ByUsername username ->
-                        Users.fetchUserByUsername shared.accountsPanel maybeAccountServer username
-            )
-
-
-{-| Kicks off the actual `GetUsers` fetch the first time `targetHost` is a
-known, connected server -- same event-driven approach as
-`Pages.Post.PostId_.fetchIfReady` (see its docs for the full rationale).
--}
-fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
-fetchIfReady shared model =
-    if model.fetchStarted then
-        ( model, Effect.none )
-
-    else
-        case fetchTask shared model of
-            Just fetch ->
-                ( { model | fetchStarted = True }
-                , fetch |> Task.attempt GotUser |> Effect.fromCmd
-                )
-
-            Nothing ->
-                ( model, Effect.none )
-
-
-{-| Re-fetches the user unconditionally (unlike `fetchIfReady`, not gated on
-`fetchStarted`, which is already `True` by the time this is ever called) --
-called once the shared Markdown panel (see `Shared.MarkdownPanel`) reports a
-successful bio save, mirroring `Pages.Post.PostId_.refetch`.
+{-| Re-fetches the user unconditionally -- called once the shared Markdown
+panel (see `Shared.MarkdownPanel`) reports a successful bio save, mirroring
+`Pages.Post.PostId_.refetch`.
 -}
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
-    case fetchTask shared model of
-        Just fetch ->
-            ( model, fetch |> Task.attempt GotUser |> Effect.fromCmd )
+    Resolver.refetch shared model.resolver
+        |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
+        |> Tuple.mapSecond (Effect.map ResolverMsg)
 
-        Nothing ->
-            ( model, Effect.none )
+
+{-| Optimistically applies a just-saved `User` (as returned by
+`Users.updateUser`) straight to `model.resolver.status`, without a round-trip
+refetch -- used by `GotRealNameSaveResult`/`GotPermissionsSaveResult`.
+-}
+withResolvedUser : User -> Resolver.Model -> Resolver.Model
+withResolvedUser user resolver =
+    { resolver | status = Resolver.Loaded user }
 
 
 
@@ -221,11 +171,10 @@ refetch shared model =
 
 
 type Msg
-    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
+    = ResolverMsg Resolver.Msg
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
-    | Poll
     | SharedMsg Shared.Msg
     | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
     | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
@@ -273,47 +222,41 @@ accountsPanelEffect maybeAccountsPanelMsg =
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
-        GotUser (Ok ( maybeAccountsPanelMsg, response )) ->
+        ResolverMsg subMsg ->
             let
-                accountEffect =
-                    accountsPanelEffect maybeAccountsPanelMsg
+                ( newResolver, resolverEffect ) =
+                    Resolver.update shared subMsg model.resolver
 
-                newStatus =
-                    response.users
-                        |> List.head
-                        |> Maybe.map UserLoaded
-                        |> Maybe.withDefault UserFailed
+                newModel =
+                    { model | resolver = newResolver }
             in
-            case newStatus of
-                UserLoaded user ->
+            case ( subMsg, newResolver.status ) of
+                ( Resolver.GotUser (Ok _), Resolver.Loaded user ) ->
                     let
                         ( federatedModel, federatedEffect ) =
-                            kickOffFederatedFetches shared user { model | status = newStatus }
+                            kickOffFederatedFetches shared user newModel
                     in
-                    ( federatedModel, Effect.batch [ accountEffect, federatedEffect ] )
+                    ( federatedModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, federatedEffect ] )
 
                 _ ->
-                    ( { model | status = newStatus }, accountEffect )
-
-        GotUser (Err _) ->
-            ( { model | status = UserFailed }, Effect.none )
+                    ( newModel, Effect.map ResolverMsg resolverEffect )
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
-            , AccountsPanel.connectToServer model.pageIsSecure model.targetHost
+            , AccountsPanel.connectToServer model.pageIsSecure model.resolver.targetHost
                 |> Task.attempt GotConnectResult
                 |> Effect.fromCmd
             )
 
         GotConnectResult (Ok server) ->
             let
-                ( newModel, fetchEffect ) =
-                    fetchIfReady shared { model | connectStatus = ServerDependentView.NotConnected }
+                ( newResolver, resolverEffect ) =
+                    Resolver.fetchIfReady shared model.resolver
             in
-            ( newModel
+            ( { model | connectStatus = ServerDependentView.NotConnected, resolver = newResolver }
             , Effect.batch
                 [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ServerConnected server))
-                , fetchEffect
+                , Effect.map ResolverMsg resolverEffect
                 ]
             )
 
@@ -323,29 +266,28 @@ update shared msg model =
             )
 
         EnableClicked ->
-            ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.targetHost)) )
-
-        Poll ->
-            fetchIfReady shared model
+            ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.resolver.targetHost)) )
 
         SharedMsg subMsg ->
             let
+                ( resolvedModel, resolverEffect ) =
+                    Resolver.update shared (Resolver.fromShared subMsg) model.resolver
+                        |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
+                        |> Tuple.mapSecond (Effect.map ResolverMsg)
+
                 ( fetchedModel, fetchEffect ) =
                     case subMsg of
-                        Shared.AccountsPanelMsg _ ->
-                            fetchIfReady shared model
-
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
-                            refetch shared model
+                            refetch shared resolvedModel
 
                         _ ->
-                            ( model, Effect.none )
+                            ( resolvedModel, Effect.none )
             in
-            ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+            ( fetchedModel, Effect.batch [ resolverEffect, fetchEffect ] )
 
         RealNameEditClicked ->
-            case model.status of
-                UserLoaded user ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
                     ( { model | realNameEdit = Just { input = user.realName, status = Idle } }, Effect.none )
 
                 _ ->
@@ -360,8 +302,8 @@ update shared msg model =
             ( { model | realNameEdit = Nothing }, Effect.none )
 
         RealNameSaveClicked ->
-            case ( model.status, model.realNameEdit, serverAndAccount shared model ) of
-                ( UserLoaded user, Just edit, Just ( server, account ) ) ->
+            case ( model.resolver.status, model.realNameEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | realNameEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | realName = edit.input })
                         |> Task.attempt GotRealNameSaveResult
@@ -372,7 +314,7 @@ update shared msg model =
                     ( model, Effect.none )
 
         GotRealNameSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
-            ( { model | status = UserLoaded updatedUser, realNameEdit = Nothing }
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, realNameEdit = Nothing }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
@@ -385,16 +327,16 @@ update shared msg model =
             )
 
         BioEditClicked ->
-            case model.status of
-                UserLoaded user ->
-                    ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.UserBio user) model.targetHost)) )
+            case model.resolver.status of
+                Resolver.Loaded user ->
+                    ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.UserBio user) model.resolver.targetHost)) )
 
                 _ ->
                     ( model, Effect.none )
 
         PermissionsEditClicked ->
-            case model.status of
-                UserLoaded user ->
+            case model.resolver.status of
+                Resolver.Loaded user ->
                     ( { model | permissionsEdit = Just (newPermissionsEdit user.permissions) }, Effect.none )
 
                 _ ->
@@ -449,8 +391,8 @@ update shared msg model =
             ( { model | permissionsEdit = Nothing }, Effect.none )
 
         PermissionsSaveClicked ->
-            case ( model.status, model.permissionsEdit, serverAndAccount shared model ) of
-                ( UserLoaded user, Just edit, Just ( server, account ) ) ->
+            case ( model.resolver.status, model.permissionsEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | permissionsEdit = Just { edit | status = Submitting } }
                     , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | permissions = edit.pending })
                         |> Task.attempt GotPermissionsSaveResult
@@ -461,7 +403,7 @@ update shared msg model =
                     ( model, Effect.none )
 
         GotPermissionsSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
-            ( { model | status = UserLoaded updatedUser, permissionsEdit = Nothing }
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, permissionsEdit = Nothing }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
@@ -620,15 +562,15 @@ update shared msg model =
             )
 
 
-{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
+{-| The connected `Server`/signed-in `Account` for `model.resolver.targetHost`, if
 both exist -- what `RealNameSaveClicked`/`PermissionsSaveClicked` need to
 actually submit their `Users.updateUser` task.
 -}
 serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
 serverAndAccount shared model =
     Maybe.map2 Tuple.pair
-        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
-        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+        (AccountsPanel.serverForHost shared.accountsPanel.servers model.resolver.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.resolver.targetHost)
 
 
 {-| Starts a `PermissionsEdit` off `currentPermissions` (the user's own, as
@@ -713,8 +655,8 @@ need.
 -}
 federableAccountsFor : Shared.Model -> Model -> List AccountsPanel.Account
 federableAccountsFor shared model =
-    case ( model.status, serverAndAccount shared model ) of
-        ( UserLoaded user, Just ( server, _ ) ) ->
+    case ( model.resolver.status, serverAndAccount shared model ) of
+        ( Resolver.Loaded user, Just ( server, _ ) ) ->
             federableAccounts shared server user
 
         _ ->
@@ -830,11 +772,7 @@ federatedKey account =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    if model.fetchStarted then
-        Sub.none
-
-    else
-        Time.every 30000 (\_ -> Poll)
+    Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
 
 
 
@@ -845,13 +783,13 @@ subscriptions model =
 appear in a route: `username@server.com` for `ByUsername`, or
 `id:theUserId@server.com` for `ById`.
 -}
-lookupToString : String -> Lookup -> String
+lookupToString : String -> Resolver.Lookup -> String
 lookupToString targetHost lookup =
     case lookup of
-        ByUsername username ->
+        Resolver.ByUsername username ->
             username ++ "@" ++ targetHost
 
-        ById userId ->
+        Resolver.ById userId ->
             "id:" ++ userId ++ "@" ++ targetHost
 
 
@@ -862,23 +800,23 @@ yet).
 -}
 titleFor : Model -> String
 titleFor model =
-    case model.status of
-        UserLoaded user ->
+    case model.resolver.status of
+        Resolver.Loaded user ->
             Users.titleName user
 
         _ ->
-            case model.lookup of
-                ByUsername username ->
+            case model.resolver.lookup of
+                Resolver.ByUsername username ->
                     username
 
-                ById userId ->
+                Resolver.ById userId ->
                     "User " ++ userId
 
 
 view : Shared.Model -> Model -> Html Msg
 view shared model =
     ServerDependentView.view
-        { hostname = model.targetHost
+        { hostname = model.resolver.targetHost
         , servers = shared.accountsPanel.servers
         , accounts = shared.accountsPanel.accounts
         , connectStatus = model.connectStatus
@@ -886,14 +824,14 @@ view shared model =
         , onEnableClicked = EnableClicked
         }
         (\server maybeAccount ->
-            case model.status of
-                LoadingUser ->
+            case model.resolver.status of
+                Resolver.Loading ->
                     p [ class "profile-loading" ] [ text "Loading…" ]
 
-                UserFailed ->
-                    p [ class "profile-error" ] [ text ("Couldn't load the profile for " ++ lookupToString model.targetHost model.lookup ++ ". Maybe they don't exist, or maybe you need to be logged in?") ]
+                Resolver.Failed ->
+                    p [ class "profile-error" ] [ text ("Couldn't load the profile for " ++ lookupToString model.resolver.targetHost model.resolver.lookup ++ ". Maybe they don't exist, or maybe you need to be logged in?") ]
 
-                UserLoaded user ->
+                Resolver.Loaded user ->
                     profileDetail shared model server maybeAccount user
         )
 

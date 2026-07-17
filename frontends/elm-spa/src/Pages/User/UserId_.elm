@@ -9,6 +9,7 @@ work -- mirrors `Pages.Post.PostId_`. See `Pages.Username_` for the
 
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
+import Components.Users.Resolver as Resolver
 import Effect exposing (Effect)
 import Gen.Params.User.UserId_ exposing (Params)
 import Page
@@ -43,7 +44,7 @@ init shared req =
         ( userId, targetHost ) =
             Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.userId
     in
-    UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (UserProfilePage.ById userId)
+    UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ById userId)
 
 
 
