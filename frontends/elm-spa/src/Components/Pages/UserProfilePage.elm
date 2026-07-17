@@ -1,4 +1,4 @@
-module Components.UserProfilePage exposing
+module Components.Pages.UserProfilePage exposing
     ( Lookup(..)
     , Model
     , Msg

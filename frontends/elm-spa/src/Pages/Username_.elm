@@ -10,7 +10,7 @@ same as `Pages.User.UserId_`) is ever involved. Those usernames are still
 reachable via `/user/:id[@host]`.
 -}
 
-import Components.UserProfilePage as UserProfilePage
+import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
 import Effect exposing (Effect)
 import Gen.Params.Username_ exposing (Params)

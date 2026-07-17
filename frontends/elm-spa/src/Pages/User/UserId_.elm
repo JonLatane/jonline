@@ -7,7 +7,7 @@ work -- mirrors `Pages.Post.PostId_`. See `Pages.Username_` for the
 `/:username[@host]` counterpart.
 -}
 
-import Components.UserProfilePage as UserProfilePage
+import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
 import Effect exposing (Effect)
 import Gen.Params.User.UserId_ exposing (Params)
