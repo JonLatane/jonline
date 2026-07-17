@@ -413,4 +413,4 @@ postCardView shared ( host, post ) =
         onMediaClicked mediaId =
             SharedMsg (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open displayPost mediaId host))
     in
-    Posts.postCard shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost
+    Posts.postCard shared.browserTimeZone shared.basePath shared.accountsPanel.mainFrontendHost host maybeServer maybeAccount onMediaClicked False False starred onStarClicked displayPost

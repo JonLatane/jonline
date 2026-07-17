@@ -94,6 +94,23 @@
     var storedThemePreference = localStorage.getItem("jonlineThemePreference") || "auto";
     var darkMediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
+    // Short display name for the browser's own local timezone (e.g. "EDT",
+    // "GMT+2") -- `elm/time`'s `Time.here` (see `Shared.elm`'s `init`) only
+    // gets Elm a raw UTC offset, not a human-readable name, so this fills
+    // that gap via `Intl`, the one thing that actually knows it. A plain
+    // flag (read once, like `systemPrefersDark`) rather than a port -- it's
+    // only ever read at the instant a timestamp renders (`Components.Users.formatDateTime`),
+    // so it doesn't need to stay live across a session the way dark-mode
+    // preference does.
+    var timeZoneAbbreviation = "";
+    try {
+      var timeZoneParts = new Intl.DateTimeFormat("en-US", { timeZoneName: "short" }).formatToParts(new Date());
+      var timeZonePart = timeZoneParts.find(function (part) { return part.type === "timeZoneName"; });
+      timeZoneAbbreviation = timeZonePart ? timeZonePart.value : "";
+    } catch (e) {
+      console.error("Failed to resolve local timezone abbreviation", e);
+    }
+
     var storedStarredPosts = [];
     try {
       var rawStarredPosts = localStorage.getItem("jonlineStarredPosts");
@@ -115,6 +132,7 @@
         state: storedState,
         systemPrefersDark: darkMediaQuery.matches,
         themePreference: storedThemePreference,
+        timeZoneAbbreviation: timeZoneAbbreviation,
         starredPosts: storedStarredPosts,
         federatedAuthKeyPair: storedFederatedAuthKeyPair
       }

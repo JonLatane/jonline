@@ -515,7 +515,8 @@ postDetailView shared model post =
         onMediaClicked mediaId =
             MediaClicked displayPost mediaId
     in
-    Posts.postDetail shared.basePath
+    Posts.postDetail shared.browserTimeZone
+        shared.basePath
         shared.accountsPanel.mainFrontendHost
         model.targetHost
         maybeServer

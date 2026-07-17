@@ -22,6 +22,7 @@ module Components.PostCard exposing
     , postTitleText
     , postVisibilityText
     , repliesCountText
+    , timestampsText
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -51,6 +52,7 @@ import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
+import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (int64ToInt, timestampToPosix)
 import Task exposing (Task)
 import Time
@@ -600,20 +602,21 @@ have only this, `Updated`), with a trailing `*` plus a tooltip (native `title`)
 covering the other one(s) whenever there's a genuinely _different_ edit
 time to call out. Redundant fields (e.g. `publishedAt` equal to `createdAt`,
 the common case for a post that was published immediately) are dropped
-entirely rather than stated twice. All times shown UTC, `YYYY-MM-DD HH:mm`
-(`Users.formatDateTime`).
+entirely rather than stated twice. All times shown in `browserTimeZone`,
+`YYYY-MM-DD HH:mm Z` (`BrowserTimeZone.formatDateTime`, `Z` its trailing
+`abbreviation`).
 -}
-timestampsText : Post -> Html msg
-timestampsText post =
+timestampsText : BrowserTimeZone -> Post -> Html msg
+timestampsText browserTimeZone post =
     let
         createdText =
-            Maybe.map (timestampToPosix >> Users.formatDateTime) post.createdAt
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.createdAt
 
         updatedText =
-            Maybe.map (timestampToPosix >> Users.formatDateTime) post.updatedAt
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.updatedAt
 
         publishedText =
-            Maybe.map (timestampToPosix >> Users.formatDateTime) post.publishedAt
+            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) post.publishedAt
 
         createdEqualsPublished =
             createdText /= Nothing && createdText == publishedText
@@ -784,8 +787,8 @@ post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
 -}
-postCard : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
-postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+postCard : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -841,7 +844,7 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMe
                     )
                 ]
             , span [ class "post-meta-right" ]
-                [ timestampsText post
+                [ timestampsText browserTimeZone post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
@@ -875,8 +878,8 @@ whatever `Html` it's given in after the author link, in place of what used to
 be a bare `postVisibilityText post` text node.
 
 -}
-postDetail : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
-postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
+postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
+postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ if post.context == POST then
             h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
@@ -914,7 +917,7 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
                 , visibilityView
                 ]
             , span [ class "post-meta-right" ]
-                [ timestampsText post
+                [ timestampsText browserTimeZone post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]

@@ -74,6 +74,13 @@
   pointer-events: none;
 }
 
+.post-timestamps {
+  font-size: 0.6rem;
+  white-space: nowrap;
+  margin-left: 0.2rem;
+  margin-right: 0.2rem;
+}
+
 /* `.post-card-meta`/`.post-detail-meta` are both split into a `.post-meta-left`
    (author/host/visibility) and `.post-meta-right` (star + comment count)
    flex item -- `.post-meta-right`'s `margin-left: auto` pins it to the

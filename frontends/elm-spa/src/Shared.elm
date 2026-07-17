@@ -32,6 +32,7 @@ import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
@@ -107,6 +108,12 @@ type alias Model =
     -- branches), since both are full-width slide-out panels on narrow screens
     -- and CSS alone can't reach into another panel's state.
     , windowSize : Responsive.WindowSize
+
+    -- See `Shared.BrowserTimeZone`. Used everywhere a `Post`/`User` timestamp
+    -- is displayed (see `Shared.BrowserTimeZone.formatDate`/`formatDateTime`)
+    -- so those render in the viewer's own local time rather than the
+    -- server's UTC.
+    , browserTimeZone : BrowserTimeZone
     }
 
 
@@ -129,6 +136,7 @@ type Msg
     | ScrollToTop
     | NavigateExternal String
     | WindowResized Int Int
+    | GotTimeZone Time.Zone
     | NoOp
 
 
@@ -235,13 +243,14 @@ normalizeUrl basePath url =
         url
 
 
-{-| `flags` is `{ state, systemPrefersDark, themePreference }` -- see
-`index.html`. `state` (the persisted accounts/servers blob) is handed to
-`AccountsPanel.init` un-decoded; appearance has its own, separate persisted
-key (`themePreference`) so changing it doesn't need to know anything about
-`AccountsPanel`'s persisted shape, or vice versa. `req.url` is assumed
-already-normalized (see `normalizeUrl`) -- `basePath` is passed alongside it
-only because view code (see `UI.navLink`) needs it back to build hrefs.
+{-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation }`
+-- see `index.html`. `state` (the persisted accounts/servers blob) is handed
+to `AccountsPanel.init` un-decoded; appearance has its own, separate
+persisted key (`themePreference`) so changing it doesn't need to know
+anything about `AccountsPanel`'s persisted shape, or vice versa. `req.url` is
+assumed already-normalized (see `normalizeUrl`) -- `basePath` is passed
+alongside it only because view code (see `UI.navLink`) needs it back to
+build hrefs.
 -}
 init : String -> Request -> Flags -> ( Model, Cmd Msg )
 init basePath req flags =
@@ -267,6 +276,10 @@ init basePath req flags =
                 |> Result.map themePreferenceFromString
                 |> Result.withDefault ThemeAuto
 
+        timeZoneAbbreviation =
+            Decode.decodeValue (Decode.field "timeZoneAbbreviation" Decode.string) flags
+                |> Result.withDefault ""
+
         ( accountsPanelModel, accountsPanelCmd ) =
             AccountsPanel.init req accountsPanelFlags
 
@@ -291,6 +304,9 @@ init basePath req flags =
             -- -- arbitrary until then, but never consulted before that (both
             -- panels start closed) so it doesn't matter what it is.
             , windowSize = { width = 0, height = 0 }
+
+            -- `zone` is corrected as soon as `Time.here`, below, resolves.
+            , browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation }
             }
     in
     ( model
@@ -307,6 +323,7 @@ init basePath req flags =
         -- place until then.
         , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
         , getInitialWindowSizeCmd
+        , Task.perform GotTimeZone Time.here
         ]
     )
 
@@ -575,6 +592,13 @@ updateImpl req msg model =
 
         WindowResized width height ->
             ( { model | windowSize = { width = width, height = height } }, Cmd.none )
+
+        GotTimeZone zone ->
+            let
+                browserTimeZone =
+                    model.browserTimeZone
+            in
+            ( { model | browserTimeZone = { browserTimeZone | zone = zone } }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
