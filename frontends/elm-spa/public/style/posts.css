@@ -6,6 +6,31 @@
   margin: 1rem 0;
 }
 
+/* "Posts | <name>" heading on a user's own posts page (see
+   Components/Pages/PostsPage.elm's `authorHeadingView`) -- the "Posts" label
+   and the reused profile `.profile-header-names` block (username/real name)
+   sit on one row, separated by a rule (`::before` on the second child, so it
+   only appears once the name has actually loaded in). */
+.posts-page-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  /* justify-content: ; */
+}
+
+.posts-page-heading .profile-header {
+  margin-left: auto;
+  overflow: hidden;
+}
+
+.posts-page-heading .profile-real-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .posts-empty {
   color: var(--muted);
 }

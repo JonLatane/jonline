@@ -92,7 +92,7 @@ update shared msg model =
                 Resolver.Loaded user ->
                     let
                         ( postsModel, postsEffect ) =
-                            PostsPage.init shared (Just user.id)
+                            PostsPage.init shared (Just ( newResolver.targetHost, user ))
                     in
                     ( Posts postsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map PostsMsg postsEffect ] )
 

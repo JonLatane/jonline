@@ -3,9 +3,11 @@ module Components.Pages.UserProfilePage exposing
     , Msg
     , fromShared
     , init
+    , nameHeader
     , subscriptions
     , titleFor
     , update
+    , usernameHeading
     , view
     )
 
@@ -25,6 +27,7 @@ The actual "fetch a `User` once its server is connected, retry until it is"
 state machine lives in `Components.Users.Resolver` (`model.resolver`), shared
 with `Pages.Username_.Posts`, which needs the same username -> id resolution
 but none of this module's profile-editing machinery.
+
 -}
 
 import Components.Markdown as Markdown
@@ -48,8 +51,6 @@ import Shared.MarkdownPanel as MarkdownPanel
 import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
-
-
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
@@ -856,14 +857,7 @@ profileDetail shared model server maybeAccount user =
         [ div [ class "profile-header" ]
             [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
             , div [ class "profile-header-names" ]
-                [ h1 [ class "profile-username" ]
-                    [ text user.username
-                    , if Users.isAdminUser user then
-                        span [ class "profile-admin-badge", title "Admin" ] [ text "🛡️ Admin" ]
-
-                      else
-                        text ""
-                    ]
+                [ usernameHeading user
                 , realNameView canEdit model.realNameEdit user
                 ]
             ]
@@ -914,6 +908,60 @@ isAdminAccount maybeAccount =
 
         Nothing ->
             False
+
+
+{-| A user's username (plus an admin badge, if applicable) exactly as it
+appears atop their profile page -- factored out of `profileDetail` since
+`nameHeader` (below) also needs it, unadorned by any edit affordance, so this
+itself stays `Html msg`-polymorphic. Also used directly by
+`Components.Pages.PostsPage` as a no-avatar fallback for its "Posts |
+&lt;name&gt;" heading when the author's server isn't currently known/enabled
+(so there's no `AccountsPanel.Server` to resolve an avatar against).
+-}
+usernameHeading : User -> Html msg
+usernameHeading user =
+    h1 [ class "profile-username" ]
+        [ text user.username
+        , if Users.isAdminUser user then
+            span [ class "profile-admin-badge", title "Admin" ] [ text "🛡️ Admin" ]
+
+          else
+            text ""
+        ]
+
+
+{-| The read-only "name area" atop a profile page -- `usernameHeading` plus
+the Real Name, if set, with none of `realNameView`'s edit affordance (there's
+no viewer/edit state to check outside of `Components.Pages.UserProfilePage`
+itself). Used by `Components.Pages.PostsPage` for its "Posts | &lt;name&gt;"
+heading on a user's own posts page (`Pages.Username_.Posts`/
+`Pages.User.UserId_.Posts`).
+-}
+nameHeader : AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg
+nameHeader server maybeAccount user =
+    div [ class "profile-header" ]
+        [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
+        , div [ class "profile-header-names" ]
+            [ usernameHeading user
+            , if String.isEmpty (String.trim user.realName) then
+                text ""
+
+              else
+                div [ class "profile-real-name-display" ]
+                    [ span [ class "profile-real-name" ] [ text user.realName ] ]
+            ]
+        ]
+
+
+
+-- div [ class "profile-header-names" ]
+--     [ usernameHeading user
+--     , if String.isEmpty (String.trim user.realName) then
+--         text ""
+--       else
+--         div [ class "profile-real-name-display" ]
+--             [ span [ class "profile-real-name" ] [ text user.realName ] ]
+--     ]
 
 
 {-| The Real Name line -- plain text (plus an Edit button, if `canEdit`) when

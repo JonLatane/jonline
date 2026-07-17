@@ -11,22 +11,24 @@ module Components.Pages.PostsPage exposing
 {-| The shared guts of a "recent posts" page: fetching recent posts from every
 enabled server and rendering them with fade in/out animations -- reused by
 `Pages.Home_` (which adds its own "Recent Posts" heading and passes
-`authorUserId = Nothing`), `Pages.Username_.Posts` and `Pages.User.UserId_.Posts`
-(which don't add a heading, and pass the profile's user id as `authorUserId`
-to restrict the feed to that user's own posts), mirroring how
+`author = Nothing`) and `Pages.Username_.Posts`/`Pages.User.UserId_.Posts`
+(which pass the already-resolved profile `User`, restricting the feed to
+that user's own posts and adding this module's own "Posts | &lt;name&gt;"
+heading, via `Components.Pages.UserProfilePage.nameHeader`), mirroring how
 `Components.Pages.UserProfilePage` is reused by `Pages.Username_` and
 `Pages.User.UserId_` themselves.
 -}
 
 import Animation
+import Components.Pages.UserProfilePage as UserProfilePage
 import Components.PostCard as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, div, p, text)
+import Html exposing (Html, div, h2, p, text)
 import Html.Attributes exposing (class, style)
 import Html.Keyed
-import Proto.Jonline exposing (Post)
+import Proto.Jonline exposing (Post, User)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -74,18 +76,23 @@ type alias PostAnimation =
 type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
-    , authorUserId : Maybe String
+    , author : Maybe ( String, User )
     }
 
 
-{-| `authorUserId`, if given, restricts the feed to that user's own posts
-(see `Components.PostCard.fetchRecentPosts`) -- `Pages.Home_` passes
-`Nothing`, `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` pass the
-profile's resolved user id.
+{-| `author`, if given, restricts the feed to that user's own posts (see
+`Components.PostCard.fetchRecentPosts`) and adds a "Posts | &lt;name&gt;"
+heading (see `view`) -- `Pages.Home_` passes `Nothing`,
+`Pages.Username_.Posts`/`Pages.User.UserId_.Posts` pass their
+already-resolved profile `User` paired with the host it was resolved from
+(`Components.Users.Resolver`'s own `targetHost`, resolved before ever calling
+this, so this module never needs to fetch the `User` itself -- it only needs
+the host alongside it to look up that server's `AccountsPanel.Server`/signed-in
+`Account` for `authorHeadingView`'s avatar).
 -}
-init : Shared.Model -> Maybe String -> ( Model, Effect Msg )
-init shared authorUserId =
-    fetchNewServers shared { postsByServer = Dict.empty, postAnimations = Dict.empty, authorUserId = authorUserId }
+init : Shared.Model -> Maybe ( String, User ) -> ( Model, Effect Msg )
+init shared author =
+    fetchNewServers shared { postsByServer = Dict.empty, postAnimations = Dict.empty, author = author }
 
 
 {-| Drops posts for servers that are no longer enabled (so disabling a server
@@ -132,7 +139,7 @@ fetchNewServers shared model =
                 ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
                 , server.frontendHost
                 )
-                model.authorUserId
+                (model.author |> Maybe.map (Tuple.second >> .id))
                 |> Task.attempt (GotServerPosts server.frontendHost)
                 |> Effect.fromCmd
 
@@ -341,6 +348,41 @@ subscriptions model =
 
 view : Shared.Model -> Model -> Html Msg
 view shared model =
+    div []
+        [ authorHeadingView shared model.author
+        , postsListView shared model
+        ]
+
+
+{-| "Posts" alone once there's an `author` to filter by (even before that
+`User` -- already resolved by the caller, see `init` -- has actually
+rendered), upgraded to "Posts | &lt;name&gt;" via
+`Components.Pages.UserProfilePage.nameHeader` (with that author's avatar, via
+its resolved-host `AccountsPanel.Server`/signed-in `Account`, if that host is
+still a known server -- falling back to `UserProfilePage.usernameHeading`,
+avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
+(`author == Nothing`), which supplies its own "Recent Posts" heading instead.
+-}
+authorHeadingView : Shared.Model -> Maybe ( String, User ) -> Html Msg
+authorHeadingView shared maybeAuthor =
+    case maybeAuthor of
+        Nothing ->
+            text ""
+
+        Just ( host, author ) ->
+            div [ class "posts-page-heading" ]
+                [ h2 [] [ text "Posts" ]
+                , case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+                    Just server ->
+                        UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+
+                    Nothing ->
+                        UserProfilePage.usernameHeading author
+                ]
+
+
+postsListView : Shared.Model -> Model -> Html Msg
+postsListView shared model =
     let
         sortedAnimations =
             model.postAnimations
