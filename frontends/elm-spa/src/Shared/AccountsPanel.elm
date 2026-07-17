@@ -5,6 +5,7 @@ module Shared.AccountsPanel exposing
     , Branding
     , Connection
     , FormStatus(..)
+    , MaybeAccountServer
     , Model
     , Msg(..)
     , PendingCreateAccount
@@ -35,8 +36,8 @@ module Shared.AccountsPanel exposing
     , isSecure
     , mainServerTheme
     , mediaUrl
-    , performWithAccount
-    , performWithOptionalAccount
+    , performWithAccountServer
+    , performWithOptionalAccountServer
     , serverChipDomId
     , serverForHost
     , serverHasAccounts
@@ -49,6 +50,7 @@ module Shared.AccountsPanel exposing
     , subscriptions
     , unreachableAccountHosts
     , update
+    , withAccessToken
     )
 
 {-| Everything behind the Accounts Panel: known servers, signed-into accounts,
@@ -68,7 +70,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -297,6 +299,7 @@ type Msg
     | CreateAccountClicked
     | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotCreateAccountModalViewport (Result Dom.Error Dom.Viewport)
+    | AccessTokenResponseReceived Account AccessTokenResponse
     | CreateAccountModalScrolled Bool
     | ConfirmCreateAccountClicked
     | CancelCreateAccountClicked
@@ -313,7 +316,6 @@ type Msg
     | ToggleAccountsPanel
     | CloseAccountsPanel
     | ShowAddAccountFormClicked
-      -- | AccessTokenResponseReceived String (Result Grpc.Error (Account, AccessTokenResponse))
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
     | ResetMainFrontendHost
@@ -322,7 +324,6 @@ type Msg
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | FocusInput String
     | ServerConnected Server
-    | AccountRefreshed Account
     | MoveAccountUpClicked String
     | MoveAccountDownClicked String
     | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
@@ -1257,6 +1258,38 @@ updateHelp req msg model =
             in
             ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
 
+        AccessTokenResponseReceived account accessTokenResponse ->
+            let
+                newModel =
+                    { model
+                        | accounts =
+                            List.map
+                                (\a ->
+                                    if a.userId == account.userId && a.server == account.server then
+                                        case ( accessTokenResponse.accessToken, accessTokenResponse.refreshToken ) of
+                                            ( Just accessToken, Just refreshToken ) ->
+                                                { a
+                                                    | accessToken = tokenFromExpirable accessToken
+                                                    , refreshToken = tokenFromExpirable refreshToken
+                                                }
+
+                                            ( Just accessToken, Nothing ) ->
+                                                { a | accessToken = tokenFromExpirable accessToken }
+
+                                            ( Nothing, Just refreshToken ) ->
+                                                { a | refreshToken = tokenFromExpirable refreshToken }
+
+                                            ( Nothing, Nothing ) ->
+                                                a
+
+                                    else
+                                        account
+                                )
+                                model.accounts
+                    }
+            in
+            ( newModel, persist newModel )
+
         GotReconnectResult enabled result ->
             case result of
                 Ok ( connection, config ) ->
@@ -1813,13 +1846,6 @@ updateHelp req msg model =
                 in
                 ( newModel, persist newModel )
 
-        AccountRefreshed account ->
-            let
-                newModel =
-                    { model | accounts = upsertAccount account model.accounts }
-            in
-            ( newModel, persist newModel )
-
         NoOp ->
             ( model, Cmd.none )
 
@@ -2142,7 +2168,7 @@ refreshPermissions server account =
         (\accessToken ->
             Grpc.new Jonline.getCurrentUser {}
                 |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> Grpc.addHeader "authorization" accessToken
+                |> withAccessToken (Just accessToken)
                 |> Grpc.toTask
         )
         |> Task.attempt (GotPermissionsRefresh (accountId account))
@@ -2188,7 +2214,7 @@ setWebUserInterface server account ui =
         (\accessToken ->
             Grpc.new Jonline.configureServer newConfig
                 |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> Grpc.addHeader "authorization" accessToken
+                |> withAccessToken (Just accessToken)
                 |> Grpc.toTask
         )
         |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
@@ -2735,10 +2761,14 @@ isExpired now token =
 
 {-| Ensures `account`'s access token is valid as of now (refreshing it first
 if needed), then performs `req` with it. `req` is given just the access token
-string, ready to pass to `Grpc.addHeader "authorization"`. Returns the account
+string, ready to pass to `withAccessToken`. Returns the account
 as it ended up (with refreshed tokens if a refresh happened, unchanged
 otherwise) alongside `req`'s result, so the caller can persist any refreshed
-tokens.
+tokens. Private -- `refreshPermissions`/`setWebUserInterface` below (this
+module's own callers, which already hold a live `Account`) use this
+directly; everyone else goes through `performWithAccountServer`/
+`performWithOptionalAccountServer`, which resolve a fresh `Account`/`Server`
+from a `MaybeAccountServer` instead of holding one of their own.
 -}
 performWithAccount :
     Connection
@@ -2746,44 +2776,120 @@ performWithAccount :
     -> (String -> Task Grpc.Error b)
     -> Task Grpc.Error ( Account, b )
 performWithAccount connection account req =
+    performWithAccountNotifying connection account req
+        |> Task.map (\( refreshedAccount, _, result ) -> ( refreshedAccount, result ))
+
+
+{-| Like `performWithAccount`, but also surfaces the raw `AccessTokenResponse`
+if a refresh happened (`Nothing` otherwise).
+-}
+performWithAccountNotifying :
+    Connection
+    -> Account
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Account, Maybe AccessTokenResponse, b )
+performWithAccountNotifying connection account req =
     Time.now
         |> Task.andThen (\now -> refreshIfNeeded connection now account)
         |> Task.andThen
-            (\refreshedAccount ->
+            (\( refreshedAccount, refreshResponse ) ->
                 req refreshedAccount.accessToken.token
-                    |> Task.map (Tuple.pair refreshedAccount)
+                    |> Task.map (\result -> ( refreshedAccount, refreshResponse, result ))
             )
 
 
-{-| Like `performWithAccount`, but the account is optional: with `Just` an
-account, authenticates (refreshing first if needed) exactly like
-`performWithAccount`; with `Nothing`, just performs `req` anonymously (no
-authorization header). Either way, `req` gets the access token string to use,
-if any.
+{-| Identifies "act as this account (if any) on this server" by identity --
+`( maybe userId, hostname )` -- rather than a live `Account`/`Server`
+snapshot: `( Nothing, host )` means anonymous on `host`; `( Just userId,
+host )` means that specific (must be enabled) account. Resolved fresh
+against the current `Model` inside `performWithAccountServer`/
+`performWithOptionalAccountServer`, so callers elsewhere in the app (see
+`Components.PostCard`, `Components.Users`, `Shared.MarkdownPanel`) can store
+just this pair -- e.g. across a page's own `Model` -- rather than a copy of
+`Account`/`Server` that can go stale, and never need to know how tokens get
+refreshed/persisted (`AccessTokenResponseReceived`) at all.
 -}
-performWithOptionalAccount :
-    Connection
-    -> Maybe Account
-    -> (Maybe String -> Task Grpc.Error b)
-    -> Task Grpc.Error ( Maybe Account, b )
-performWithOptionalAccount connection maybeAccount req =
-    case maybeAccount of
-        Just account ->
-            performWithAccount connection account (Just >> req)
-                |> Task.map (Tuple.mapFirst Just)
+type alias MaybeAccountServer =
+    ( Maybe String, String )
+
+
+resolveAccountServer : Model -> MaybeAccountServer -> Maybe ( Maybe Account, Server )
+resolveAccountServer model ( maybeUserId, host ) =
+    serverForHost model.servers host
+        |> Maybe.map
+            (\server ->
+                ( maybeUserId
+                    |> Maybe.andThen (\userId -> model.accounts |> List.filter (\a -> a.userId == userId && a.server == host) |> List.head)
+                , server
+                )
+            )
+
+
+{-| Like `performWithAccount`, but takes a `MaybeAccountServer` (resolved
+fresh against `model`) instead of a live `Account`, and requires that it
+resolve to one -- fails with `Grpc.NetworkError` if `host` isn't a known
+server, or if no matching account is found (both meaning the caller
+shouldn't have gotten this far; see e.g. `Shared.MarkdownPanel.resolve`'s
+own pre-flight, user-facing gating). `req` gets the resolved `Server` (for
+`Grpc.setHost`) and access token string. Returns an already-built `Msg` to
+dispatch (via whatever out-msg/`Effect` mechanism the caller already uses
+for e.g. `Shared.AccountsPanelMsg`) if a token refresh happened, `Nothing`
+otherwise -- callers never see the raw `AccessTokenResponse`.
+-}
+performWithAccountServer :
+    Model
+    -> MaybeAccountServer
+    -> (Server -> String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe Msg, b )
+performWithAccountServer model maybeAccountServer req =
+    case resolveAccountServer model maybeAccountServer of
+        Just ( Just account, server ) ->
+            performWithAccountNotifying (connectionOf server) account (req server)
+                |> Task.map
+                    (\( refreshedAccount, maybeResponse, result ) ->
+                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                    )
+
+        _ ->
+            Task.fail Grpc.NetworkError
+
+
+{-| Like `performWithAccountServer`, but the account is optional: with a
+`MaybeAccountServer` that resolves to a known account, authenticates
+(refreshing first if needed) exactly like `performWithAccountServer`; with
+`( Nothing, host )` (or a `userId` that doesn't resolve to an account),
+performs `req` anonymously (no authorization header). Fails with
+`Grpc.NetworkError` only if `host` itself isn't a known server.
+-}
+performWithOptionalAccountServer :
+    Model
+    -> MaybeAccountServer
+    -> (Server -> Maybe String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe Msg, b )
+performWithOptionalAccountServer model maybeAccountServer req =
+    case resolveAccountServer model maybeAccountServer of
+        Just ( Just account, server ) ->
+            performWithAccountNotifying (connectionOf server) account (Just >> req server)
+                |> Task.map
+                    (\( refreshedAccount, maybeResponse, result ) ->
+                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                    )
+
+        Just ( Nothing, server ) ->
+            req server Nothing |> Task.map (Tuple.pair Nothing)
 
         Nothing ->
-            req Nothing |> Task.map (Tuple.pair Nothing)
+            Task.fail Grpc.NetworkError
 
 
 refreshIfNeeded :
     Connection
     -> Time.Posix
     -> Account
-    -> Task Grpc.Error Account
+    -> Task Grpc.Error ( Account, Maybe AccessTokenResponse )
 refreshIfNeeded connection now account =
     if not (isExpired now account.accessToken) then
-        Task.succeed account
+        Task.succeed ( account, Nothing )
 
     else
         Grpc.new Jonline.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
@@ -2794,27 +2900,26 @@ refreshIfNeeded connection now account =
                     case resp.accessToken of
                         Just accessToken ->
                             Task.succeed
-                                { account
+                                ( { account
                                     | accessToken = tokenFromExpirable accessToken
                                     , refreshToken =
                                         resp.refreshToken
                                             |> Maybe.map tokenFromExpirable
                                             |> Maybe.withDefault account.refreshToken
-                                }
+                                  }
+                                , Just resp
+                                )
 
                         Nothing ->
                             Task.fail Grpc.NetworkError
                 )
 
 
+withAccessToken : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
+withAccessToken maybeToken req =
+    case maybeToken of
+        Just token ->
+            Grpc.addHeader "authorization" token req
 
--- connectionUrl : { host : String, port_ : Int, tls : Bool } -> String
--- connectionUrl connection =
---     (if connection.tls then
---         "https://"
---      else
---         "http://"
---     )
---         ++ connection.host
---         ++ ":"
---         ++ String.fromInt connection.port_
+        Nothing ->
+            req

@@ -50,76 +50,78 @@ import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
-import Shared.AccountsPanel as AccountsPanel exposing (connectionOf, performWithAccount, performWithOptionalAccount)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.Conversions exposing (int64ToInt, timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
-{-| Fetches a single post (including reply/preview data) from `server`,
-authenticated as `maybeAccount` if given, anonymous otherwise -- see
-`Shared.MaybeAccountRequest.perform`. Returns `maybeAccount` back (refreshed,
-if it needed to be) alongside the response, so the caller can persist that
-refresh -- see `Shared.AccountsPanel.AccountRefreshed`.
+{-| Fetches a single post (including reply/preview data) from
+`maybeAccountServer`'s server, authenticated as its account if any, anonymous
+otherwise. Returns a `Msg` to dispatch (via whatever out-msg/`Effect`
+mechanism the caller already uses) if a token refresh happened, so the
+caller never has to know an `Account`/`AccessTokenResponse` was even
+involved -- see `Shared.AccountsPanel.performWithOptionalAccountServer`.
 -}
 fetchPost :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
-fetchPost server maybeAccount postId =
-    performWithOptionalAccount
-        (connectionOf server)
-        maybeAccount
-        (\maybeToken ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
+fetchPost accountsPanelModel maybeAccountServer postId =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
             Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth maybeToken
+                |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
 
 
-{-| Fetches the most recent publicly-accessible posts from `server`,
-authenticated as `maybeAccount` if given (so e.g. followed-user/group posts
-are included too) -- otherwise identical to `fetchPost`.
--}
-fetchRecentPosts :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
-fetchRecentPosts server maybeAccount =
-    performWithOptionalAccount
-        (connectionOf server)
-        maybeAccount
-        (\maybeToken ->
-            Grpc.new Jonline.getPosts defaultGetPostsRequest
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth maybeToken
-                |> Grpc.toTask
-        )
-
-
-{-| Fetches the replies to `postId` from `server`, `replyDepth` levels deep --
-see `GetPostsRequest`'s doc comment: with `post_id` and `reply_depth` both set,
-`GetPosts` returns the replies themselves, not `postId`'s own Post), authenticated
-as `maybeAccount` if given, anonymous otherwise -- same auth/refresh handling as
+{-| Fetches the most recent publicly-accessible posts from
+`maybeAccountServer`'s server, authenticated as its account if any (so e.g.
+followed-user/group posts are included too) -- otherwise identical to
 `fetchPost`.
 -}
+fetchRecentPosts :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
+fetchRecentPosts accountsPanelModel maybeAccountServer =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
+            Grpc.new Jonline.getPosts defaultGetPostsRequest
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Fetches the replies to `postId` from `maybeAccountServer`'s server,
+`replyDepth` levels deep -- see `GetPostsRequest`'s doc comment: with
+`post_id` and `reply_depth` both set, `GetPosts` returns the replies
+themselves, not `postId`'s own Post), authenticated as its account if any,
+anonymous otherwise -- same auth/refresh handling as `fetchPost`.
+-}
 fetchReplies :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> Int
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
-fetchReplies server maybeAccount replyDepth postId =
-    performWithOptionalAccount
-        (connectionOf server)
-        maybeAccount
-        (\maybeToken ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
+fetchReplies accountsPanelModel maybeAccountServer replyDepth postId =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
             Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId, replyDepth = Just replyDepth }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth maybeToken
+                |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
 
@@ -134,39 +136,51 @@ isAuthor account post =
 
 
 {-| Walks `post`'s own `replyToPostId` chain all the way up to (and including)
-its root ancestor, fetching each one individually via `fetchPost` -- `Post`
-only carries its _children_ (`replies`), not its parent, so there's no way to
-get this in one request. Returned root-first, _not_ including `post` itself
-(the caller already has that) -- e.g. for a reply-to-a-reply, `[root, parent]`.
-Empty if `post` has no `replyToPostId` at all (it's already the root).
+its root ancestor -- `Post` only carries its _children_ (`replies`), not its
+parent, so there's no way to get this in one request. Returned root-first,
+_not_ including `post` itself (the caller already has that) -- e.g. for a
+reply-to-a-reply, `[root, parent]`. Empty if `post` has no `replyToPostId` at
+all (it's already the root).
 
 Used by `Pages.Post.PostId_` to populate `Shared.Breadcrumbs` for a Post
-reached via a reply chain rather than directly. Returns `maybeAccount` back
-(refreshed, if it needed to be, across however many hops it took), same
-convention as `fetchPost`.
+reached via a reply chain rather than directly. The whole walk (however many
+hops it takes) happens inside a single `performWithOptionalAccountServer`
+call -- see `fetchAncestorsHelp` -- so only one token-refresh check happens
+for the whole chain, not one per hop.
 
 -}
 fetchAncestors :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> Post
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, List Post )
-fetchAncestors server maybeAccount post =
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, List Post )
+fetchAncestors accountsPanelModel maybeAccountServer post =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken -> fetchAncestorsHelp server maybeToken post)
+
+
+fetchAncestorsHelp : AccountsPanel.Server -> Maybe String -> Post -> Task Grpc.Error (List Post)
+fetchAncestorsHelp server maybeToken post =
     case post.replyToPostId of
         Nothing ->
-            Task.succeed ( maybeAccount, [] )
+            Task.succeed []
 
         Just parentId ->
-            fetchPost server maybeAccount parentId
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just parentId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken maybeToken
+                |> Grpc.toTask
                 |> Task.andThen
-                    (\( refreshedAccount, response ) ->
+                    (\response ->
                         case List.head response.posts of
                             Just parentPost ->
-                                fetchAncestors server refreshedAccount parentPost
-                                    |> Task.map (\( account, ancestors ) -> ( account, ancestors ++ [ parentPost ] ))
+                                fetchAncestorsHelp server maybeToken parentPost
+                                    |> Task.map (\ancestors -> ancestors ++ [ parentPost ])
 
                             Nothing ->
-                                Task.succeed ( refreshedAccount, [] )
+                                Task.succeed []
                     )
 
 
@@ -179,43 +193,33 @@ since, other than the one(s) `updateFn` itself means to change. Mirrors
 `Pages.Post.PostId_`'s visibility editor.
 -}
 updatePost :
-    AccountsPanel.Server
-    -> AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> String
     -> (Post -> Post)
-    -> Task Grpc.Error ( AccountsPanel.Account, Post )
-updatePost server account postId updateFn =
-    performWithAccount (connectionOf server)
-        account
-        (\token ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Post )
+updatePost accountsPanelModel maybeAccountServer postId updateFn =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
             Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth (Just token)
+                |> withAccessToken (Just token)
                 |> Grpc.toTask
+                |> Task.andThen
+                    (\response ->
+                        case List.head response.posts of
+                            Just freshPost ->
+                                Grpc.new Jonline.updatePost (updateFn freshPost)
+                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                    |> withAccessToken (Just token)
+                                    |> Grpc.toTask
+
+                            Nothing ->
+                                Task.fail Grpc.NetworkError
+                    )
         )
-        |> Task.andThen
-            (\( refreshedAccount, response ) ->
-                case List.head response.posts of
-                    Just freshPost ->
-                        Grpc.new Jonline.updatePost (updateFn freshPost)
-                            |> Grpc.setHost (AccountsPanel.serverUrl server)
-                            |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
-                            |> Grpc.toTask
-                            |> Task.map (\updated -> ( refreshedAccount, updated ))
-
-                    Nothing ->
-                        Task.fail Grpc.NetworkError
-            )
-
-
-withAuth : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
-withAuth maybeToken req =
-    case maybeToken of
-        Just token ->
-            Grpc.addHeader "authorization" token req
-
-        Nothing ->
-            req
 
 
 

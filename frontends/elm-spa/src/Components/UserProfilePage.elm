@@ -160,21 +160,23 @@ host is currently a known, connected server -- shared by `fetchIfReady` (only
 kicked off once) and `refetch` (kicked off unconditionally, after a Real
 Name/bio/permissions save succeeds).
 -}
-fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
+fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
 fetchTask shared model =
     AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
         |> Maybe.map
-            (\server ->
+            (\_ ->
                 let
-                    maybeAccount =
-                        AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                    maybeAccountServer =
+                        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+                        , model.targetHost
+                        )
                 in
                 case model.lookup of
                     ById userId ->
-                        Users.fetchUserById server maybeAccount userId
+                        Users.fetchUserById shared.accountsPanel maybeAccountServer userId
 
                     ByUsername username ->
-                        Users.fetchUserByUsername server maybeAccount username
+                        Users.fetchUserByUsername shared.accountsPanel maybeAccountServer username
             )
 
 
@@ -218,19 +220,19 @@ refetch shared model =
 
 
 type Msg
-    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
+    = GotUser (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
     | Poll
     | SharedMsg Shared.Msg
     | GotFederatedServer FederatedAccount (Result Grpc.Error AccountsPanel.Server)
-    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetUsersResponse ))
+    | GotFederatedUser String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
     | RealNameEditClicked
     | RealNameInputChanged String
     | RealNameCancelClicked
     | RealNameSaveClicked
-    | GotRealNameSaveResult (Result Grpc.Error ( AccountsPanel.Account, User ))
+    | GotRealNameSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | BioEditClicked
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
@@ -238,14 +240,14 @@ type Msg
     | PermissionAddClicked
     | PermissionsCancelClicked
     | PermissionsSaveClicked
-    | GotPermissionsSaveResult (Result Grpc.Error ( AccountsPanel.Account, User ))
+    | GotPermissionsSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | FederatedProfilesEditClicked
     | FederatedProfilesDoneClicked
     | FederatedProfileAddSelectionChanged String
     | FederatedProfileAddClicked
-    | GotFederatedProfileAddResult (Result Grpc.Error ( AccountsPanel.Account, FederatedAccount ))
+    | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
     | FederatedProfileRemoveClicked FederatedAccount
-    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( AccountsPanel.Account, Proto.Google.Protobuf.Empty ))
+    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -256,15 +258,24 @@ fromShared =
     SharedMsg
 
 
+{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `Components.Users`'
+requests, if a token refresh happened) into an `Effect` to forward it,
+`Effect.none` otherwise.
+-}
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
-        GotUser (Ok ( maybeAccount, response )) ->
+        GotUser (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect =
-                    maybeAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
+                    accountsPanelEffect maybeAccountsPanelMsg
 
                 newStatus =
                     response.users
@@ -351,7 +362,7 @@ update shared msg model =
             case ( model.status, model.realNameEdit, serverAndAccount shared model ) of
                 ( UserLoaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | realNameEdit = Just { edit | status = Submitting } }
-                    , Users.updateUser server account user.id (\freshUser -> { freshUser | realName = edit.input })
+                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | realName = edit.input })
                         |> Task.attempt GotRealNameSaveResult
                         |> Effect.fromCmd
                     )
@@ -359,9 +370,9 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotRealNameSaveResult (Ok ( refreshedAccount, updatedUser )) ->
+        GotRealNameSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
             ( { model | status = UserLoaded updatedUser, realNameEdit = Nothing }
-            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            , accountsPanelEffect maybeAccountsPanelMsg
             )
 
         GotRealNameSaveResult (Err err) ->
@@ -440,7 +451,7 @@ update shared msg model =
             case ( model.status, model.permissionsEdit, serverAndAccount shared model ) of
                 ( UserLoaded user, Just edit, Just ( server, account ) ) ->
                     ( { model | permissionsEdit = Just { edit | status = Submitting } }
-                    , Users.updateUser server account user.id (\freshUser -> { freshUser | permissions = edit.pending })
+                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (\freshUser -> { freshUser | permissions = edit.pending })
                         |> Task.attempt GotPermissionsSaveResult
                         |> Effect.fromCmd
                     )
@@ -448,9 +459,9 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotPermissionsSaveResult (Ok ( refreshedAccount, updatedUser )) ->
+        GotPermissionsSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
             ( { model | status = UserLoaded updatedUser, permissionsEdit = Nothing }
-            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            , accountsPanelEffect maybeAccountsPanelMsg
             )
 
         GotPermissionsSaveResult (Err err) ->
@@ -495,7 +506,7 @@ update shared msg model =
                     case edit.addSelection of
                         Just selected ->
                             ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
-                            , Users.federateProfile server account { host = selected.server, userId = selected.userId }
+                            , Users.federateProfile shared.accountsPanel ( Just account.userId, server.frontendHost ) { host = selected.server, userId = selected.userId }
                                 |> Task.attempt GotFederatedProfileAddResult
                                 |> Effect.fromCmd
                             )
@@ -506,7 +517,7 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotFederatedProfileAddResult (Ok ( refreshedAccount, _ )) ->
+        GotFederatedProfileAddResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 clearedModel =
                     { model
@@ -520,7 +531,7 @@ update shared msg model =
             in
             ( refetchedModel
             , Effect.batch
-                [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+                [ accountsPanelEffect maybeAccountsPanelMsg
                 , refetchEffect
                 ]
             )
@@ -537,7 +548,7 @@ update shared msg model =
             case ( model.federatedProfilesEdit, serverAndAccount shared model ) of
                 ( Just edit, Just ( server, signedInAccount ) ) ->
                     ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
-                    , Users.defederateProfile server signedInAccount account
+                    , Users.defederateProfile shared.accountsPanel ( Just signedInAccount.userId, server.frontendHost ) account
                         |> Task.attempt (GotFederatedProfileRemoveResult account)
                         |> Effect.fromCmd
                     )
@@ -545,7 +556,7 @@ update shared msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotFederatedProfileRemoveResult _ (Ok ( refreshedAccount, _ )) ->
+        GotFederatedProfileRemoveResult _ (Ok ( maybeAccountsPanelMsg, _ )) ->
             let
                 clearedModel =
                     { model
@@ -559,7 +570,7 @@ update shared msg model =
             in
             ( refetchedModel
             , Effect.batch
-                [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+                [ accountsPanelEffect maybeAccountsPanelMsg
                 , refetchEffect
                 ]
             )
@@ -589,12 +600,10 @@ update shared msg model =
             , Effect.none
             )
 
-        GotFederatedUser key (Ok ( maybeAccount, response )) ->
+        GotFederatedUser key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect =
-                    maybeAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
+                    accountsPanelEffect maybeAccountsPanelMsg
 
                 newStatus =
                     response.users
@@ -799,8 +808,13 @@ fetchFederated shared pageIsSecure account ( statuses, effects ) =
 
 
 fetchFederatedUserEffect : Shared.Model -> AccountsPanel.Server -> FederatedAccount -> Effect Msg
-fetchFederatedUserEffect shared server account =
-    Users.fetchUserById server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts account.host) account.userId
+fetchFederatedUserEffect shared _ account =
+    Users.fetchUserById
+        shared.accountsPanel
+        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts account.host |> Maybe.map .userId
+        , account.host
+        )
+        account.userId
         |> Task.attempt (GotFederatedUser (federatedKey account))
         |> Effect.fromCmd
 

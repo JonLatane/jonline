@@ -107,7 +107,7 @@ type Msg
     | ToggleStarredPostsPanel
     | CloseStarredPostsPanel
     | EnableServerClicked String
-    | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
+    | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
     | PollStarredPosts
     | MoveStarUpClicked String
     | MoveStarDownClicked String
@@ -194,9 +194,10 @@ persistCmd starOrder =
 {-| `update` also needs `AccountsPanel.Model` (to resolve starred posts' hosts
 to actual connected `Server`s/signed-in `Account`s -- see `kickOffFetches`)
 and can itself surface an `AccountsPanel.Msg` it needs forwarded on its behalf
--- either a refreshed `Account` (from fetching a starred post whose access
-token needed renewing first, see `Shared.MaybeAccountRequest`), persisted via
-`AccountsPanel.AccountRefreshed`, or a disabled server's owner re-enabling it
+-- either an `AccessTokenResponseReceived` (from fetching a starred post
+whose access token needed renewing first -- see
+`Shared.AccountsPanel.performWithOptionalAccountServer`, which already
+builds it), or a disabled server's owner re-enabling it
 (`EnableServerClicked`), forwarded as `AccountsPanel.ToggleServerEnabled` --
 for `Shared.update` to actually dispatch. This module can't dispatch either
 itself without importing `Shared` (a cycle, since `Shared` imports this
@@ -418,7 +419,7 @@ updateHelp accountsPanelModel msg model =
             in
             ( fetchedModel, cmd, Nothing )
 
-        GotStarredPost key (Ok ( maybeAccount, response )) ->
+        GotStarredPost key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 newStatus =
                     case ( parseStarKey key, List.head response.posts ) of
@@ -428,7 +429,7 @@ updateHelp accountsPanelModel msg model =
                         _ ->
                             PostFetchFailed
             in
-            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
+            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, maybeAccountsPanelMsg )
 
         GotStarredPost key (Err _) ->
             ( { model | posts = Dict.insert key PostFetchFailed model.posts }, Cmd.none, Nothing )
@@ -600,15 +601,15 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
             , cmds
             )
 
-        Just server ->
+        Just _ ->
             let
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                maybeAccountServer =
+                    ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
                 fetchCmds =
                     List.map
                         (\postId ->
-                            Posts.fetchPost server maybeAccount postId
+                            Posts.fetchPost accountsPanelModel maybeAccountServer postId
                                 |> Task.attempt (GotStarredPost (rawKey postId host))
                         )
                         postIds

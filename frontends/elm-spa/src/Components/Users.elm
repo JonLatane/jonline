@@ -40,49 +40,49 @@ import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
-import Shared.AccountsPanel as AccountsPanel exposing (connectionOf, performWithAccount, performWithOptionalAccount)
+import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Task exposing (Task)
 import Time
 
 
-{-| Fetches the user with `userId` from `server`, authenticated as
-`maybeAccount` if given, anonymous otherwise -- see
-`Shared.MaybeAccountRequest.perform`. Returns `maybeAccount` back (refreshed,
-if it needed to be), same as `Components.Posts.fetchPost`.
+{-| Fetches the user with `userId` from `maybeAccountServer`'s server,
+authenticated as its account if any, anonymous otherwise. Returns a `Msg` to
+dispatch if a token refresh happened, same convention as
+`Components.PostCard.fetchPost`.
 -}
 fetchUserById :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetUsersResponse )
-fetchUserById server maybeAccount userId =
-    fetchUsers server maybeAccount { defaultGetUsersRequest | userId = Just userId }
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
+fetchUserById accountsPanelModel maybeAccountServer userId =
+    fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | userId = Just userId }
 
 
 {-| Like `fetchUserById`, but looks the user up by (exact) `username` instead.
 -}
 fetchUserByUsername :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> String
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetUsersResponse )
-fetchUserByUsername server maybeAccount username =
-    fetchUsers server maybeAccount { defaultGetUsersRequest | username = Just username }
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
+fetchUserByUsername accountsPanelModel maybeAccountServer username =
+    fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | username = Just username }
 
 
 fetchUsers :
-    AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> Proto.Jonline.GetUsersRequest
-    -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetUsersResponse )
-fetchUsers server maybeAccount request =
-    performWithOptionalAccount
-        (connectionOf server)
-        maybeAccount
-        (\maybeToken ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
+fetchUsers accountsPanelModel maybeAccountServer request =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
             Grpc.new Jonline.getUsers request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth maybeToken
+                |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
 
@@ -92,88 +92,81 @@ server-side since the caller's own copy isn't clobbered), applies `updateFn`
 to that fresh copy, then submits the result via `UpdateUser` -- the "reload,
 then write, then update" dance `Components.UserProfilePage`'s Real Name and
 permissions editors both need, mirroring `Shared.MarkdownPanel.saveTask`'s
-`PostContent` case (`GetPosts`+`UpdatePost`). Returns the (possibly-refreshed)
-`Account` alongside the updated `User`, same convention as `fetchUserById`.
+`PostContent` case (`GetPosts`+`UpdatePost`). Returns a `Msg` to dispatch if
+a token refresh happened, alongside the updated `User`, same convention as
+`fetchUserById`.
 -}
 updateUser :
-    AccountsPanel.Server
-    -> AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> String
     -> (User -> User)
-    -> Task Grpc.Error ( AccountsPanel.Account, User )
-updateUser server account userId updateFn =
-    performWithAccount (connectionOf server)
-        account
-        (\token ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, User )
+updateUser accountsPanelModel maybeAccountServer userId updateFn =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
             Grpc.new Jonline.getUsers { defaultGetUsersRequest | userId = Just userId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAuth (Just token)
+                |> withAccessToken (Just token)
                 |> Grpc.toTask
+                |> Task.andThen
+                    (\response ->
+                        case List.head response.users of
+                            Just freshUser ->
+                                Grpc.new Jonline.updateUser (updateFn freshUser)
+                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                    |> withAccessToken (Just token)
+                                    |> Grpc.toTask
+
+                            Nothing ->
+                                Task.fail Grpc.NetworkError
+                    )
         )
-        |> Task.andThen
-            (\( refreshedAccount, response ) ->
-                case List.head response.users of
-                    Just freshUser ->
-                        Grpc.new Jonline.updateUser (updateFn freshUser)
-                            |> Grpc.setHost (AccountsPanel.serverUrl server)
-                            |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
-                            |> Grpc.toTask
-                            |> Task.map (\updated -> ( refreshedAccount, updated ))
-
-                    Nothing ->
-                        Task.fail Grpc.NetworkError
-            )
 
 
-{-| Federates `account`'s own profile (identified by the caller's auth token,
-not any id in the request) with `target` -- unlike `updateUser`,
-`FederateProfile`/`DefederateProfile` always act on the signed-in caller
-themself, so there's no "self or admin" edit gate to check here (see
-`backend/src/rpcs/federation/federate_profile.rs`).
+{-| Federates `maybeAccountServer`'s account's own profile (identified by the
+caller's auth token, not any id in the request) with `target` -- unlike
+`updateUser`, `FederateProfile`/`DefederateProfile` always act on the
+signed-in caller themself, so there's no "self or admin" edit gate to check
+here (see `backend/src/rpcs/federation/federate_profile.rs`).
 -}
 federateProfile :
-    AccountsPanel.Server
-    -> AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> FederatedAccount
-    -> Task Grpc.Error ( AccountsPanel.Account, FederatedAccount )
-federateProfile server account target =
-    performWithAccount (connectionOf server)
-        account
-        (\token ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount )
+federateProfile accountsPanelModel maybeAccountServer target =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
             Grpc.new Jonline.federateProfile target
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> Grpc.addHeader "authorization" token
+                |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
 
-{-| The inverse of `federateProfile` -- removes `target` from `account`'s own
-`federatedProfiles`.
+{-| The inverse of `federateProfile` -- removes `target` from the account's
+own `federatedProfiles`.
 -}
 defederateProfile :
-    AccountsPanel.Server
-    -> AccountsPanel.Account
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
     -> FederatedAccount
-    -> Task Grpc.Error ( AccountsPanel.Account, Proto.Google.Protobuf.Empty )
-defederateProfile server account target =
-    performWithAccount (connectionOf server)
-        account
-        (\token ->
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty )
+defederateProfile accountsPanelModel maybeAccountServer target =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
             Grpc.new Jonline.defederateProfile target
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> Grpc.addHeader "authorization" token
+                |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
-
-
-withAuth : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
-withAuth maybeToken req =
-    case maybeToken of
-        Just token ->
-            Grpc.addHeader "authorization" token req
-
-        Nothing ->
-            req
 
 
 
