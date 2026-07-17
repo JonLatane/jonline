@@ -105,8 +105,19 @@
 }
 
 .post-author-link,
-.post-card-meta .post-star {
+.post-card-meta .post-star,
+.post-card-meta .post-timestamps {
   pointer-events: auto;
+}
+
+/* A post's created/updated/published time (see
+   `Components.PostCard.timestampsText`) -- plain, non-interactive text (just
+   a native `title` tooltip on hover for the timestamp(s) not already shown),
+   so it needs `pointer-events: auto` (above) only so that tooltip still fires
+   through `.post-card-meta`'s own `pointer-events: none`, same reasoning as
+   `.post-star`/`.post-author-link`. */
+.post-timestamps {
+  white-space: nowrap;
 }
 
 .post-author-link {
@@ -308,10 +319,9 @@
   color: var(--fg);
 }
 
-/* Edit button -- inline in `postDetail`'s `.post-meta-right` group (see
-   `Components.PostCard.editButton`), shown only to the post's own author.
-   Smaller than `.post-actions button` since it sits in the meta line
-   alongside the star/comment count rather than its own row. */
+/* Edit button -- its own right-aligned row below `postDetail`'s Markdown
+   content (see `Components.PostCard.editButton`/`.post-detail-edit-row`),
+   shown only to the post's own author. */
 .post-edit-button {
   padding: 0.05rem 0.4rem;
   border: 1px solid var(--border);
@@ -319,6 +329,12 @@
   background: var(--chip-bg);
   color: var(--fg);
   font-size: 0.8rem;
+}
+
+.post-detail-edit-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.4rem;
 }
 
 /* Visibility picker -- `Pages.Post.PostId_`'s `visibilityView`, shown in

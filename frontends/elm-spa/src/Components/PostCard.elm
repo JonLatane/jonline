@@ -593,34 +593,79 @@ commentCountText post =
     " · 💬 " ++ repliesCountText post
 
 
+{-| A post's created/updated/published times, as tersely as the data allows --
+just one of the three normally (whichever's most relevant: `Published` if the
+post has been published, else `Created`, else, in the one case a post could
+have only this, `Updated`), with a trailing `*` plus a tooltip (native `title`)
+covering the other one(s) whenever there's a genuinely _different_ edit
+time to call out. Redundant fields (e.g. `publishedAt` equal to `createdAt`,
+the common case for a post that was published immediately) are dropped
+entirely rather than stated twice. All times shown UTC, `YYYY-MM-DD HH:mm`
+(`Users.formatDateTime`).
+-}
 timestampsText : Post -> Html msg
 timestampsText post =
     let
+        createdText =
+            Maybe.map (timestampToPosix >> Users.formatDateTime) post.createdAt
+
+        updatedText =
+            Maybe.map (timestampToPosix >> Users.formatDateTime) post.updatedAt
+
+        publishedText =
+            Maybe.map (timestampToPosix >> Users.formatDateTime) post.publishedAt
+
+        createdEqualsPublished =
+            createdText /= Nothing && createdText == publishedText
+
         ( mainText, titleText ) =
-            case ( post.createdAt, post.updatedAt, post.publishedAt ) of
+            case ( createdText, updatedText, publishedText ) of
                 ( Just created, Just updated, Just published ) ->
-                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Updated / Published" )
+                    if createdEqualsPublished then
+                        if updated == created then
+                            ( "Created " ++ created, "" )
+
+                        else
+                            ( "Created " ++ created ++ "*", "Updated " ++ updated )
+
+                    else if updated == published then
+                        ( "Published " ++ published, "Created " ++ created )
+
+                    else
+                        ( "Published " ++ published ++ "*", "Updated " ++ updated ++ ", Created " ++ created )
 
                 ( Just created, Just updated, Nothing ) ->
-                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Updated" )
+                    if updated == created then
+                        ( "Created " ++ created, "" )
+
+                    else
+                        ( "Created " ++ created ++ "*", "Updated " ++ updated )
 
                 ( Just created, Nothing, Just published ) ->
-                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Published" )
+                    if createdEqualsPublished then
+                        ( "Created " ++ created, "" )
+
+                    else
+                        ( "Published " ++ published, "Created " ++ created )
 
                 ( Just created, Nothing, Nothing ) ->
-                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created" )
+                    ( "Created " ++ created, "" )
 
                 ( Nothing, Just updated, Just published ) ->
-                    ( timestampToPosix updated |> Time.posixToMillis |> String.fromInt, "Updated / Published" )
+                    if updated == published then
+                        ( "Published " ++ published, "" )
+
+                    else
+                        ( "Published " ++ published ++ "*", "Updated " ++ updated )
 
                 ( Nothing, Just updated, Nothing ) ->
-                    ( timestampToPosix updated |> Time.posixToMillis |> String.fromInt, "Updated" )
+                    ( "Updated " ++ updated, "" )
 
                 ( Nothing, Nothing, Just published ) ->
-                    ( timestampToPosix published |> Time.posixToMillis |> String.fromInt, "Published" )
+                    ( "Published " ++ published, "" )
 
                 ( Nothing, Nothing, Nothing ) ->
-                    ( "", "No timestamps available" )
+                    ( "", "" )
     in
     span
         [ class "post-timestamps"
@@ -629,11 +674,12 @@ timestampsText post =
         [ text mainText ]
 
 
-{-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
-author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own (the enabled
-account for the post's server, same one used for `postAuthorAvatarUrl`), not
-necessarily `post.author` itself. Opens the shared Markdown editor panel via
-`onEditClicked`, supplied by the caller (`Pages.Post.PostId_`).
+{-| An Edit button below `postDetail`'s Markdown content, shown only to
+`post`'s own author (see `isAuthor`) -- `maybeAccount` is `postDetail`'s own
+(the enabled account for the post's server, same one used for
+`postAuthorAvatarUrl`), not necessarily `post.author` itself. Opens the shared
+Markdown editor panel via `onEditClicked`, supplied by the caller
+(`Pages.Post.PostId_`).
 -}
 editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
 editButton maybeAccount onEditClicked post =
@@ -795,7 +841,8 @@ postCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMe
                     )
                 ]
             , span [ class "post-meta-right" ]
-                [ starButton postServerHost starred onStarClicked post
+                [ timestampsText post
+                , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
             ]
@@ -867,7 +914,7 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
                 , visibilityView
                 ]
             , span [ class "post-meta-right" ]
-                [ editButton maybeAccount onEditClicked post
+                [ timestampsText post
                 , starButton postServerHost starred onStarClicked post
                 , text (commentCountText post)
                 ]
@@ -878,4 +925,5 @@ postDetail basePath viewingServerHost postServerHost maybeServer maybeAccount on
 
             Nothing ->
                 text ""
+        , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
         ]

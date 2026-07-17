@@ -8,6 +8,7 @@ module Components.Users exposing
     , fetchUserById
     , fetchUserByUsername
     , formatDate
+    , formatDateTime
     , isAdminUser
     , isReservedUsername
     , moderationText
@@ -553,6 +554,23 @@ formatDate time =
         ++ pad2 (monthNumber (Time.toMonth Time.utc time))
         ++ "-"
         ++ pad2 (Time.toDay Time.utc time)
+
+
+{-| `formatDate` plus an `HH:mm` (UTC, 24-hour) suffix -- for timestamps where
+the time of day actually matters (e.g. `Components.PostCard.timestampsText`'s
+created/updated/published times), unlike a profile's plain "Joined" date.
+-}
+formatDateTime : Time.Posix -> String
+formatDateTime time =
+    let
+        pad2 n =
+            String.padLeft 2 '0' (String.fromInt n)
+    in
+    formatDate time
+        ++ " "
+        ++ pad2 (Time.toHour Time.utc time)
+        ++ ":"
+        ++ pad2 (Time.toMinute Time.utc time)
 
 
 monthNumber : Time.Month -> Int

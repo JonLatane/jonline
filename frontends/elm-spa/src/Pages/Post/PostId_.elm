@@ -603,7 +603,7 @@ visibilityView maybeAccount maybeEdit post =
 {-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS` --
 opens the shared Markdown editor panel (see `Shared.MarkdownPanel`), targeting
 this Post (`ReplyClicked`). The Edit button lives in `Posts.postDetail` itself
-now (see `postDetailView`), since it's part of that view's own meta line.
+now (see `postDetailView`), below its Markdown content.
 -}
 postActionsView : Shared.Model -> Model -> Post -> Html Msg
 postActionsView shared model post =
