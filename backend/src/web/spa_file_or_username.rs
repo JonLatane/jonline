@@ -18,14 +18,17 @@ use crate::{
 };
 
 use super::{
-    jonline_path, spa_prefix, spa_web_path, strip_spa_prefix, JonlineResponder, JonlineSummary,
-    SpaApp,
+    jonline_path, root_app, spa_prefix, spa_web_path, strip_spa_prefix, JonlineResponder,
+    JonlineSummary, SpaApp,
 };
 
 /// Fallback for arbitrary Tamagui build assets and username shortcut links
-/// (e.g. "/someuser") -- both Tamagui-specific concerns, so unlike the pages
-/// in `spa_pages.rs`, this always renders Tamagui regardless of the
-/// configured `WebUserInterface`. Only ever mounted at root (see rocket.rs).
+/// (e.g. "/someuser"). Reading the asset itself is always done from the
+/// Tamagui build directories (that's the only place these static exports
+/// live), but once we fall through to rendering a page (rather than a raw
+/// file), an unprefixed request defers to `root_app`/`WebUserInterface` like
+/// the rest of `spa_pages.rs`, so e.g. "/someuser" renders Elm when the
+/// server is configured for it. Only ever mounted at root (see rocket.rs).
 ///
 /// `rank = 20`: this route's own shape ("/<file..>", fully dynamic) gives it
 /// a better default Rocket rank than `elm_web::elm_file`'s ("/elm/<file..>",
@@ -73,17 +76,16 @@ pub async fn spa_file_or_username(
                         let mut connection = state.pool.get().unwrap();
                         let configuration =
                             rpcs::get_server_configuration_proto(&mut connection).unwrap();
-                        let server_name = configuration
-                            .server_info
-                            .map(|i| i.name)
-                            .flatten()
-                            .unwrap_or("Jonline".to_string());
+                        let server_info = configuration.server_info.unwrap_or_default();
+                        let app = spa_prefix(origin.path().as_str())
+                            .unwrap_or_else(|| root_app(&server_info));
+                        let server_name = server_info.name.clone().unwrap_or("Jonline".to_string());
                         let path = strip_spa_prefix(origin.path().as_str());
                         let path_components = path.split('/').collect_vec();
                         // FUck it let's see if this works
                         if path_components.len() != 2 {
                             return spa_web_path(
-                                SpaApp::Tamagui,
+                                app,
                                 relative_file.to_str().unwrap(),
                                 None,
                                 is_tamagui,
@@ -133,7 +135,7 @@ pub async fn spa_file_or_username(
                             description,
                             image: avatar,
                         });
-                        return spa_web_path(SpaApp::Tamagui, "[username].html", summary, is_tamagui).await;
+                        return spa_web_path(app, "[username].html", summary, is_tamagui).await;
                     }
                 }
             }
