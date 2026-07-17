@@ -906,6 +906,13 @@ profileDetail shared model server maybeAccount user =
 
         isAdmin =
             isAdminAccount maybeAccount
+
+        postsHref =
+            Users.profileHref shared.basePath
+                shared.accountsPanel.mainFrontendHost
+                server.frontendHost
+                { userId = user.id, username = user.username }
+                ++ "/posts"
     in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header" ]
@@ -934,7 +941,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts user
+        , profileCounts postsHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         ]
@@ -1066,33 +1073,44 @@ editErrorView status =
             text ""
 
 
-profileCounts : User -> Html Msg
-profileCounts user =
+{-| `postsHref` (see `profileDetail`) is only attached to the "Posts" count,
+linking it to `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` -- the other
+counts have no page of their own (yet) to link to.
+-}
+profileCounts : String -> User -> Html Msg
+profileCounts postsHref user =
     let
         counts =
-            [ ( "Followers", user.followerCount )
-            , ( "Following", user.followingCount )
-            , ( "Groups", user.groupCount )
-            , ( "Posts", user.postCount )
-            , ( "Responses", user.responseCount )
-            , ( "Events", user.eventCount )
+            [ ( "Followers", user.followerCount, Nothing )
+            , ( "Following", user.followingCount, Nothing )
+            , ( "Groups", user.groupCount, Nothing )
+            , ( "Posts", user.postCount, Just postsHref )
+            , ( "Responses", user.responseCount, Nothing )
+            , ( "Events", user.eventCount, Nothing )
             ]
-                |> List.filterMap (\( label, maybeCount ) -> maybeCount |> Maybe.map (\c -> ( label, c )))
+                |> List.filterMap (\( label, maybeCount, maybeHref ) -> maybeCount |> Maybe.map (\c -> ( label, c, maybeHref )))
     in
     if List.isEmpty counts then
         text ""
 
     else
-        div [ class "profile-counts" ]
-            (counts
-                |> List.map
-                    (\( label, count ) ->
-                        div [ class "profile-count" ]
-                            [ div [ class "profile-count-value" ] [ text (String.fromInt count) ]
-                            , div [ class "profile-count-label" ] [ text label ]
-                            ]
-                    )
-            )
+        div [ class "profile-counts" ] (counts |> List.map profileCountView)
+
+
+profileCountView : ( String, Int, Maybe String ) -> Html Msg
+profileCountView ( label, count, maybeHref ) =
+    let
+        content =
+            [ div [ class "profile-count-value" ] [ text (String.fromInt count) ]
+            , div [ class "profile-count-label" ] [ text label ]
+            ]
+    in
+    case maybeHref of
+        Just linkHref ->
+            a [ class "profile-count", href linkHref ] content
+
+        Nothing ->
+            div [ class "profile-count" ] content
 
 
 {-| The Permissions list -- plain badges (plus an Edit button, if `isAdmin`)

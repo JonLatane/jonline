@@ -86,18 +86,21 @@ fetchPost accountsPanelModel maybeAccountServer postId =
 {-| Fetches the most recent publicly-accessible posts from
 `maybeAccountServer`'s server, authenticated as its account if any (so e.g.
 followed-user/group posts are included too) -- otherwise identical to
-`fetchPost`.
+`fetchPost`. `authorUserId`, if given, restricts the results to that user's
+posts (see `GetPostsRequest`'s `{listing_type: AuthorPosts, author_user_id:}`
+form), for `Components.Pages.PostsPage`'s use on a user's own posts page.
 -}
 fetchRecentPosts :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
+    -> Maybe String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchRecentPosts accountsPanelModel maybeAccountServer =
+fetchRecentPosts accountsPanelModel maybeAccountServer authorUserId =
     performWithOptionalAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts defaultGetPostsRequest
+            Grpc.new Jonline.getPosts { defaultGetPostsRequest | authorUserId = authorUserId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
