@@ -50,8 +50,8 @@ import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
-import Shared.AccountsPanel as AccountsPanel
-import Shared.MaybeAccountRequest as MaybeAccountRequest
+import Shared.AccountsPanel as AccountsPanel exposing (connectionOf, performWithAccount, performWithOptionalAccount)
+import Shared.Conversions exposing (int64ToInt, timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -69,7 +69,7 @@ fetchPost :
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
 fetchPost server maybeAccount postId =
-    MaybeAccountRequest.perform
+    performWithOptionalAccount
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
@@ -89,7 +89,7 @@ fetchRecentPosts :
     -> Maybe AccountsPanel.Account
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
 fetchRecentPosts server maybeAccount =
-    MaybeAccountRequest.perform
+    performWithOptionalAccount
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
@@ -113,7 +113,7 @@ fetchReplies :
     -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse )
 fetchReplies server maybeAccount replyDepth postId =
-    MaybeAccountRequest.perform
+    performWithOptionalAccount
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
@@ -185,7 +185,7 @@ updatePost :
     -> (Post -> Post)
     -> Task Grpc.Error ( AccountsPanel.Account, Post )
 updatePost server account postId updateFn =
-    MaybeAccountRequest.performWithAccount (connectionOf server)
+    performWithAccount (connectionOf server)
         account
         (\token ->
             Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just postId }
@@ -206,11 +206,6 @@ updatePost server account postId updateFn =
                     Nothing ->
                         Task.fail Grpc.NetworkError
             )
-
-
-connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
-connectionOf server =
-    { host = server.backendHost, port_ = server.port_, tls = server.tls }
 
 
 withAuth : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
@@ -366,10 +361,10 @@ postTimestamp : Post -> Time.Posix
 postTimestamp post =
     case ( post.publishedAt, post.createdAt ) of
         ( Just ts, _ ) ->
-            MaybeAccountRequest.timestampToPosix ts
+            timestampToPosix ts
 
         ( Nothing, Just ts ) ->
-            MaybeAccountRequest.timestampToPosix ts
+            timestampToPosix ts
 
         ( Nothing, Nothing ) ->
             Time.millisToPosix 0
@@ -525,7 +520,7 @@ counts never will, so this is a safe, simple conversion for display.
 -}
 postStarCount : Post -> Int
 postStarCount post =
-    MaybeAccountRequest.int64ToInt post.unauthenticatedStarCount
+    int64ToInt post.unauthenticatedStarCount
 
 
 {-| A post's comment count -- `responseCount` (replies _and_ replies to

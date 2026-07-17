@@ -40,8 +40,7 @@ import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
-import Shared.AccountsPanel as AccountsPanel
-import Shared.MaybeAccountRequest as MaybeAccountRequest
+import Shared.AccountsPanel as AccountsPanel exposing (connectionOf, performWithAccount, performWithOptionalAccount)
 import Task exposing (Task)
 import Time
 
@@ -77,7 +76,7 @@ fetchUsers :
     -> Proto.Jonline.GetUsersRequest
     -> Task Grpc.Error ( Maybe AccountsPanel.Account, GetUsersResponse )
 fetchUsers server maybeAccount request =
-    MaybeAccountRequest.perform
+    performWithOptionalAccount
         (connectionOf server)
         maybeAccount
         (\maybeToken ->
@@ -86,11 +85,6 @@ fetchUsers server maybeAccount request =
                 |> withAuth maybeToken
                 |> Grpc.toTask
         )
-
-
-connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
-connectionOf server =
-    { host = server.backendHost, port_ = server.port_, tls = server.tls }
 
 
 {-| Reloads `userId` fresh via `GetUsers` (so any fields that changed
@@ -108,7 +102,7 @@ updateUser :
     -> (User -> User)
     -> Task Grpc.Error ( AccountsPanel.Account, User )
 updateUser server account userId updateFn =
-    MaybeAccountRequest.performWithAccount (connectionOf server)
+    performWithAccount (connectionOf server)
         account
         (\token ->
             Grpc.new Jonline.getUsers { defaultGetUsersRequest | userId = Just userId }
@@ -143,7 +137,7 @@ federateProfile :
     -> FederatedAccount
     -> Task Grpc.Error ( AccountsPanel.Account, FederatedAccount )
 federateProfile server account target =
-    MaybeAccountRequest.performWithAccount (connectionOf server)
+    performWithAccount (connectionOf server)
         account
         (\token ->
             Grpc.new Jonline.federateProfile target
@@ -162,7 +156,7 @@ defederateProfile :
     -> FederatedAccount
     -> Task Grpc.Error ( AccountsPanel.Account, Proto.Google.Protobuf.Empty )
 defederateProfile server account target =
-    MaybeAccountRequest.performWithAccount (connectionOf server)
+    performWithAccount (connectionOf server)
         account
         (\token ->
             Grpc.new Jonline.defederateProfile target

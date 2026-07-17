@@ -10,6 +10,7 @@ module Shared.AccountsPanel exposing
     , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
+    , Token
     , accountAvatarUrl
     , accountDecoder
     , accountId
@@ -34,6 +35,8 @@ module Shared.AccountsPanel exposing
     , isSecure
     , mainServerTheme
     , mediaUrl
+    , performWithAccount
+    , performWithOptionalAccount
     , serverChipDomId
     , serverForHost
     , serverHasAccounts
@@ -65,13 +68,14 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
+import Protobuf.Types.Int64 as Int64
 import Request exposing (Request)
 import Set
-import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
+import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Flip
@@ -203,6 +207,16 @@ type alias AddServerForm =
     }
 
 
+{-| Like `ExpirableToken`, but with a plain `Time.Posix` expiration instead of
+a protobuf `Timestamp` (whose seconds are an `Int64`) -- directly comparable
+to `Time.now`, and easy to persist as milliseconds.
+-}
+type alias Token =
+    { token : String
+    , expiresAt : Maybe Time.Posix
+    }
+
+
 type alias Model =
     { accounts : List Account
     , servers : List Server
@@ -299,6 +313,7 @@ type Msg
     | ToggleAccountsPanel
     | CloseAccountsPanel
     | ShowAddAccountFormClicked
+      -- | AccessTokenResponseReceived String (Result Grpc.Error (Account, AccessTokenResponse))
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
     | ResetMainFrontendHost
@@ -1167,8 +1182,8 @@ updateHelp req msg model =
                             { server = connection.frontendHost
                             , userId = user.id
                             , username = user.username
-                            , refreshToken = MaybeAccountRequest.tokenFromExpirable refreshToken
-                            , accessToken = MaybeAccountRequest.tokenFromExpirable accessToken
+                            , refreshToken = tokenFromExpirable refreshToken
+                            , accessToken = tokenFromExpirable accessToken
                             , enabled = True
                             , avatarMediaId = Maybe.map .id user.avatar
                             , permissions = user.permissions
@@ -1628,8 +1643,8 @@ updateHelp req msg model =
                     let
                         newModel =
                             { model
-                                -- TODO: temporarily prepending -- see the identical note in
-                                -- `GotAuthResult`.
+                              -- TODO: temporarily prepending -- see the identical note in
+                              -- `GotAuthResult`.
                                 | servers = serverFrom connection True config :: model.servers
                                 , addServerForm = emptyAddServerForm
                             }
@@ -2121,8 +2136,8 @@ granted/revoked elsewhere stay current without the user doing anything.
 -}
 refreshPermissions : Server -> Account -> Cmd Msg
 refreshPermissions server account =
-    MaybeAccountRequest.performWithAccount
-        { host = server.backendHost, port_ = server.port_, tls = server.tls }
+    performWithAccount
+        (connectionOf server)
         account
         (\accessToken ->
             Grpc.new Jonline.getCurrentUser {}
@@ -2167,8 +2182,8 @@ setWebUserInterface server account ui =
         newConfig =
             { config | serverInfo = Just { info | webUserInterface = Just ui } }
     in
-    MaybeAccountRequest.performWithAccount
-        { host = server.backendHost, port_ = server.port_, tls = server.tls }
+    performWithAccount
+        (connectionOf server)
         account
         (\accessToken ->
             Grpc.new Jonline.configureServer newConfig
@@ -2694,3 +2709,112 @@ optionalString : String -> Decoder (Maybe String)
 optionalString field =
     Decode.maybe (Decode.field field (Decode.nullable Decode.string))
         |> Decode.map (Maybe.andThen identity)
+
+
+tokenFromExpirable : ExpirableToken -> Token
+tokenFromExpirable expirable =
+    { token = expirable.token
+    , expiresAt = Maybe.map timestampToPosix expirable.expiresAt
+    }
+
+
+{-| Whether a token is expired, or expiring within the next minute (enough
+margin that it shouldn't expire mid-request). A token with no expiration
+(`expiresAt == Nothing`, the default unless a server was asked for one)
+never expires.
+-}
+isExpired : Time.Posix -> Token -> Bool
+isExpired now token =
+    case token.expiresAt of
+        Nothing ->
+            False
+
+        Just expiresAt ->
+            Time.posixToMillis now + 60000 >= Time.posixToMillis expiresAt
+
+
+{-| Ensures `account`'s access token is valid as of now (refreshing it first
+if needed), then performs `req` with it. `req` is given just the access token
+string, ready to pass to `Grpc.addHeader "authorization"`. Returns the account
+as it ended up (with refreshed tokens if a refresh happened, unchanged
+otherwise) alongside `req`'s result, so the caller can persist any refreshed
+tokens.
+-}
+performWithAccount :
+    Connection
+    -> Account
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Account, b )
+performWithAccount connection account req =
+    Time.now
+        |> Task.andThen (\now -> refreshIfNeeded connection now account)
+        |> Task.andThen
+            (\refreshedAccount ->
+                req refreshedAccount.accessToken.token
+                    |> Task.map (Tuple.pair refreshedAccount)
+            )
+
+
+{-| Like `performWithAccount`, but the account is optional: with `Just` an
+account, authenticates (refreshing first if needed) exactly like
+`performWithAccount`; with `Nothing`, just performs `req` anonymously (no
+authorization header). Either way, `req` gets the access token string to use,
+if any.
+-}
+performWithOptionalAccount :
+    Connection
+    -> Maybe Account
+    -> (Maybe String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe Account, b )
+performWithOptionalAccount connection maybeAccount req =
+    case maybeAccount of
+        Just account ->
+            performWithAccount connection account (Just >> req)
+                |> Task.map (Tuple.mapFirst Just)
+
+        Nothing ->
+            req Nothing |> Task.map (Tuple.pair Nothing)
+
+
+refreshIfNeeded :
+    Connection
+    -> Time.Posix
+    -> Account
+    -> Task Grpc.Error Account
+refreshIfNeeded connection now account =
+    if not (isExpired now account.accessToken) then
+        Task.succeed account
+
+    else
+        Grpc.new Jonline.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
+            |> Grpc.setHost (connectionUrl connection)
+            |> Grpc.toTask
+            |> Task.andThen
+                (\resp ->
+                    case resp.accessToken of
+                        Just accessToken ->
+                            Task.succeed
+                                { account
+                                    | accessToken = tokenFromExpirable accessToken
+                                    , refreshToken =
+                                        resp.refreshToken
+                                            |> Maybe.map tokenFromExpirable
+                                            |> Maybe.withDefault account.refreshToken
+                                }
+
+                        Nothing ->
+                            Task.fail Grpc.NetworkError
+                )
+
+
+
+-- connectionUrl : { host : String, port_ : Int, tls : Bool } -> String
+-- connectionUrl connection =
+--     (if connection.tls then
+--         "https://"
+--      else
+--         "http://"
+--     )
+--         ++ connection.host
+--         ++ ":"
+--         ++ String.fromInt connection.port_

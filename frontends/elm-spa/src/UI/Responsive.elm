@@ -21,7 +21,7 @@ so opening one closes the other.
 -}
 narrowBreakpoint : Int
 narrowBreakpoint =
-    500
+    600
 
 
 isNarrow : WindowSize -> Bool

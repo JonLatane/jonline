@@ -29,8 +29,7 @@ import Proto.Jonline exposing (Post, User, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
-import Shared.AccountsPanel as AccountsPanel
-import Shared.MaybeAccountRequest as MaybeAccountRequest
+import Shared.AccountsPanel as AccountsPanel exposing (connectionOf, performWithAccount)
 import Task exposing (Task)
 import UI.Classes exposing (classes, openClosedClass)
 
@@ -252,7 +251,7 @@ saveTask : AccountsPanel.Server -> AccountsPanel.Account -> TargetType -> String
 saveTask server account target content =
     case target of
         PostContent post ->
-            MaybeAccountRequest.performWithAccount (connectionOf server)
+            performWithAccount (connectionOf server)
                 account
                 (\token ->
                     Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just post.id }
@@ -275,7 +274,7 @@ saveTask server account target content =
                     )
 
         NewReply post ->
-            MaybeAccountRequest.performWithAccount (connectionOf server)
+            performWithAccount (connectionOf server)
                 account
                 (\token ->
                     Grpc.new Jonline.createPost
@@ -294,11 +293,6 @@ saveTask server account target content =
         UserBio user ->
             Users.updateUser server account user.id (\freshUser -> { freshUser | bio = content })
                 |> Task.map (\( refreshedAccount, _ ) -> Just refreshedAccount)
-
-
-connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
-connectionOf server =
-    { host = server.backendHost, port_ = server.port_, tls = server.tls }
 
 
 

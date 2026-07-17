@@ -20,6 +20,7 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 -}
 
 import Browser.Dom as Dom
+import Browser.Events
 import Browser.Navigation as Nav
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -35,6 +36,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
+import UI.Responsive as Responsive
 import Url exposing (Url)
 
 
@@ -96,6 +98,15 @@ type alias Model =
     -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
     -- navigations it recognizes as the browser's back button.
     , scrollPreserverVisible : Bool
+
+    -- The browser's current window size, kept live via `Browser.Events.onResize`
+    -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
+    -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
+    -- the Accounts Panel and Starred Posts Panel should close one another when
+    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPostsPanelMsg`
+    -- branches), since both are full-width slide-out panels on narrow screens
+    -- and CSS alone can't reach into another panel's state.
+    , windowSize : Responsive.WindowSize
     }
 
 
@@ -117,6 +128,7 @@ type Msg
     | HomeLinkClicked Bool
     | ScrollToTop
     | NavigateExternal String
+    | WindowResized Int Int
     | NoOp
 
 
@@ -273,13 +285,30 @@ init basePath req flags =
       , basePath = basePath
       , confirmingDeleteFor = Nothing
       , scrollPreserverVisible = False
+
+      -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below --
+      -- arbitrary until then, but never consulted before that (both panels
+      -- start closed) so it doesn't matter what it is.
+      , windowSize = { width = 0, height = 0 }
       }
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
         , Cmd.map FederatedAuthMsg federatedAuthCmd
         , Ports.setTheme (themePreferenceToString themePreference)
+        , getInitialWindowSizeCmd
         ]
     )
+
+
+{-| The window size isn't known until the DOM actually exists to measure --
+`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
+changes, so this is what gets `Model.windowSize` its real initial value.
+-}
+getInitialWindowSizeCmd : Cmd Msg
+getInitialWindowSizeCmd =
+    Task.perform
+        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
+        Dom.getViewport
 
 
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
@@ -295,11 +324,34 @@ update req msg model =
 
                 ( refreshedStarredPostsPanel, refreshCmd ) =
                     StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
+
+                -- The Accounts Panel and Starred Posts Panel are both
+                -- full-width slide-out panels on narrow screens (see
+                -- `UI.Responsive`), so opening one closes the other there.
+                shouldCloseStarredPostsPanel =
+                    case subMsg of
+                        AccountsPanel.ToggleAccountsPanel ->
+                            subModel.showAccountsPanel && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedStarredPostsPanel, closeCmd ) =
+                    if shouldCloseStarredPostsPanel then
+                        let
+                            ( closedModel, cmd, _ ) =
+                                StarredPostsPanel.update subModel StarredPostsPanel.CloseStarredPostsPanel refreshedStarredPostsPanel
+                        in
+                        ( closedModel, cmd )
+
+                    else
+                        ( refreshedStarredPostsPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPostsPanel = refreshedStarredPostsPanel }
+            ( { model | accountsPanel = subModel, starredPostsPanel = closedStarredPostsPanel }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPostsPanelMsg refreshCmd
+                , Cmd.map StarredPostsPanelMsg closeCmd
                 ]
             )
 
@@ -333,11 +385,29 @@ update req msg model =
 
                         Nothing ->
                             model.mediaViewerPanel
+
+                -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
+                -- branch, above -- see `UI.Responsive`.
+                shouldCloseAccountsPanel =
+                    case subMsg of
+                        StarredPostsPanel.ToggleStarredPostsPanel ->
+                            subModel.showStarredPostsPanel && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedAccountsPanelModel, closeCmd ) =
+                    if shouldCloseAccountsPanel then
+                        AccountsPanel.update req AccountsPanel.CloseAccountsPanel accountsPanelModel
+
+                    else
+                        ( accountsPanelModel, Cmd.none )
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
+            ( { model | starredPostsPanel = subModel, accountsPanel = closedAccountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
             , Cmd.batch
                 [ Cmd.map StarredPostsPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map AccountsPanelMsg closeCmd
                 ]
             )
 
@@ -455,6 +525,9 @@ update req msg model =
         NavigateExternal url ->
             ( model, Nav.load url )
 
+        WindowResized width height ->
+            ( { model | windowSize = { width = width, height = height } }, Cmd.none )
+
         NoOp ->
             ( model, Cmd.none )
 
@@ -512,6 +585,7 @@ subscriptions : Request -> Model -> Sub Msg
 subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Browser.Events.onResize WindowResized
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
         , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)

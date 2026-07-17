@@ -38,8 +38,8 @@ import Proto.Jonline exposing (FederatedAccount, User)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Conversions exposing (timestampToPosix)
 import Shared.MarkdownPanel as MarkdownPanel
-import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task
 import Time
 import UI
@@ -914,7 +914,7 @@ profileDetail shared model server maybeAccount user =
                     ++ " · "
                     ++ Users.moderationText user.moderation
                     ++ (user.createdAt
-                            |> Maybe.map (\ts -> " · Joined " ++ Users.formatDate (MaybeAccountRequest.timestampToPosix ts))
+                            |> Maybe.map (\ts -> " · Joined " ++ Users.formatDate (timestampToPosix ts))
                             |> Maybe.withDefault ""
                        )
                 )
