@@ -2922,7 +2922,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <tr>
           <td>POST</td>
           <td>0</td>
-          <td>"Standard" or "Top-Leevl" Post. Can have media, a link, a title, and/or content. If provided, its <code>link</code> and <code>title</code> are permanent.</td>
+          <td>"Standard" or "Top-Level" Post. Can have media, a link, a title, and/or content. If provided, its <code>link</code> and <code>title</code> are permanent.</td>
         </tr>
         <tr>
           <td>REPLY</td>
@@ -2932,12 +2932,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         <tr>
           <td>EVENT</td>
           <td>2</td>
-          <td>An "Event" Post. The Events table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts' <code>link</code> and <code>title</code> fields are modifiable.</td>
+          <td>Post behind an "Event" (which does not actually have a start/end time - it's a group of EventInstances, at least one, which each do). The Events table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts' <code>link</code> and <code>title</code> fields are modifiable.</td>
         </tr>
         <tr>
           <td>EVENT_INSTANCE</td>
           <td>3</td>
-          <td>An "Event Instance" Post. The EventInstances table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts' <code>link</code> and <code>title</code> fields are modifiable.</td>
+          <td>An "Event Instance" Post (which relates to an event with a start and end time). The EventInstances table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly. These Posts' <code>link</code> and <code>title</code> fields are modifiable.</td>
         </tr>
         <tr>
           <td>FEDERATED_REPLY</td>

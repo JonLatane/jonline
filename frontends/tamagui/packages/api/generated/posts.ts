@@ -100,7 +100,7 @@ export function postListingTypeToJSON(object: PostListingType): string {
 /** Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic. */
 export enum PostContext {
   /**
-   * POST - "Standard" or "Top-Leevl" Post. Can have media, a link, a title, and/or content.
+   * POST - "Standard" or "Top-Level" Post. Can have media, a link, a title, and/or content.
    * If provided, its `link` and `title` are permanent.
    */
   POST = 0,
@@ -110,14 +110,17 @@ export enum PostContext {
    */
   REPLY = 1,
   /**
-   * EVENT - An "Event" Post. The Events table should have a row for this Post.
+   * EVENT - Post behind an "Event" (which does not actually have a start/end time -
+   * it's a group of EventInstances, at least one, which each do).
+   * The Events table should have a row for this Post.
    * Never created by the CreatePost RPC (this is an error); use CreateEvent.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT = 2,
   /**
-   * EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post.
-   * Never created by the CreatePost RPC (this is an error); use CreateEvent.
+   * EVENT_INSTANCE - An "Event Instance" Post (which relates to an event with a start and end time).
+   * The EventInstances table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT_INSTANCE = 3,
