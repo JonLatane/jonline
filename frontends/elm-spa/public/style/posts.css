@@ -20,9 +20,10 @@
   /* justify-content: ; */
 }
 
-.posts-page-heading .profile-header {
+.posts-page-heading a {
   margin-left: auto;
   overflow: hidden;
+  text-decoration: none;
 }
 
 .posts-page-heading .profile-real-name {

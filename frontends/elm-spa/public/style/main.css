@@ -105,6 +105,11 @@ main {
 /* Every link's color (nav links, About-page content links, ...) comes from
    the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
 
+a {
+  /* color: var(--link-color); */
+  text-decoration: none;
+}
+
 button {
   font: inherit;
   cursor: pointer;

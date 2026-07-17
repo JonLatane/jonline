@@ -22,11 +22,12 @@ heading, via `Components.Pages.UserProfilePage.nameHeader`), mirroring how
 import Animation
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.PostCard as Posts
+import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, div, h2, p, text)
-import Html.Attributes exposing (class, style)
+import Html exposing (Html, a, div, h2, p, text)
+import Html.Attributes exposing (class, href, style)
 import Html.Keyed
 import Proto.Jonline exposing (Post, User)
 import Shared
@@ -35,6 +36,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
+import UI.Classes exposing (hostnameToCSSClass)
 import UI.Flip
 
 
@@ -370,14 +372,20 @@ authorHeadingView shared maybeAuthor =
             text ""
 
         Just ( host, author ) ->
+            let
+                profileUrl =
+                    usernameHref "" shared.accountsPanel.mainFrontendHost host author.username
+            in
             div [ class "posts-page-heading" ]
                 [ h2 [] [ text "Posts" ]
-                , case AccountsPanel.serverForHost shared.accountsPanel.servers host of
-                    Just server ->
-                        UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+                , a [ href profileUrl, class <| hostnameToCSSClass host ]
+                    [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
+                        Just server ->
+                            UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
 
-                    Nothing ->
-                        UserProfilePage.usernameHeading author
+                        Nothing ->
+                            UserProfilePage.usernameHeading author
+                    ]
                 ]
 
 
