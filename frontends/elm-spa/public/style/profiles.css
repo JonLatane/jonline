@@ -250,6 +250,12 @@
   margin-top: 0.4rem;
 }
 
+.profile-federated-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .profile-federated-link {
   display: inline-flex;
   align-items: center;
@@ -259,6 +265,38 @@
   background: var(--chip-bg);
   font-size: 0.8rem;
   text-decoration: none;
+}
+
+.profile-federated-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+}
+
+.profile-federated-add {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.profile-federated-add select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.profile-federated-add-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .profile-federated-avatar {

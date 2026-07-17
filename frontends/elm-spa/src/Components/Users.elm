@@ -2,7 +2,9 @@ module Components.Users exposing
     ( allPermissions
     , authorAvatarUrl
     , avatarUrl
+    , defederateProfile
     , displayName
+    , federateProfile
     , fetchUserById
     , fetchUserByUsername
     , formatDate
@@ -31,7 +33,8 @@ fields.
 
 import Gen.Route
 import Grpc
-import Proto.Jonline exposing (Author, GetUsersResponse, User, defaultGetUsersRequest)
+import Proto.Google.Protobuf
+import Proto.Jonline exposing (Author, FederatedAccount, GetUsersResponse, User, defaultGetUsersRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -126,6 +129,47 @@ updateUser server account userId updateFn =
                     Nothing ->
                         Task.fail Grpc.NetworkError
             )
+
+
+{-| Federates `account`'s own profile (identified by the caller's auth token,
+not any id in the request) with `target` -- unlike `updateUser`,
+`FederateProfile`/`DefederateProfile` always act on the signed-in caller
+themself, so there's no "self or admin" edit gate to check here (see
+`backend/src/rpcs/federation/federate_profile.rs`).
+-}
+federateProfile :
+    AccountsPanel.Server
+    -> AccountsPanel.Account
+    -> FederatedAccount
+    -> Task Grpc.Error ( AccountsPanel.Account, FederatedAccount )
+federateProfile server account target =
+    MaybeAccountRequest.performWithAccount (connectionOf server)
+        account
+        (\token ->
+            Grpc.new Jonline.federateProfile target
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.addHeader "authorization" token
+                |> Grpc.toTask
+        )
+
+
+{-| The inverse of `federateProfile` -- removes `target` from `account`'s own
+`federatedProfiles`.
+-}
+defederateProfile :
+    AccountsPanel.Server
+    -> AccountsPanel.Account
+    -> FederatedAccount
+    -> Task Grpc.Error ( AccountsPanel.Account, Proto.Google.Protobuf.Empty )
+defederateProfile server account target =
+    MaybeAccountRequest.performWithAccount (connectionOf server)
+        account
+        (\token ->
+            Grpc.new Jonline.defederateProfile target
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> Grpc.addHeader "authorization" token
+                |> Grpc.toTask
+        )
 
 
 withAuth : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res

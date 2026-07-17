@@ -1268,11 +1268,11 @@ Differentiates the context of a Post, as in Jonline&#39;s data models, Post is t
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| POST | 0 | &#34;Standard&#34; Post. |
-| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE` Does not suport a `link`. Requires a `reply_to_post_id`. |
-| EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
-| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. These Posts&#39; `link` and `title` fields are modifiable. |
-| FEDERATED_REPLY | 10 | A reply to a post on another server. The post *must* have a link of the format `http[s]://&lt;server/post/&lt;post_id&gt;` in its `link` field. It will not have a `reply_to_post_id` value. |
+| POST | 0 | &#34;Standard&#34; or &#34;Top-Leevl&#34; Post. Can have media, a link, a title, and/or content. If provided, its `link` and `title` are permanent. |
+| REPLY | 1 | Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE` Does not support a `link`. Requires a `reply_to_post_id`. |
+| EVENT | 2 | An &#34;Event&#34; Post. The Events table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts&#39; `link` and `title` fields are modifiable. |
+| EVENT_INSTANCE | 3 | An &#34;Event Instance&#34; Post. The EventInstances table should have a row for this Post. Never created by the CreatePost RPC (this is an error); use CreateEvent. These Posts&#39; `link` and `title` fields are modifiable. |
+| FEDERATED_REPLY | 10 | A reply to a Post on another server. The post *must* have a link of the format `http[s]://&lt;server/post/&lt;post_id&gt;` in its `link` field. It will not have a `reply_to_post_id` value. |
 
 
 

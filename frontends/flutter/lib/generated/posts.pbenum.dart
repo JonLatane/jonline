@@ -66,26 +66,29 @@ class PostListingType extends $pb.ProtobufEnum {
 
 /// Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic.
 class PostContext extends $pb.ProtobufEnum {
-  /// "Standard" Post.
+  /// "Standard" or "Top-Leevl" Post. Can have media, a link, a title, and/or content.
+  /// If provided, its `link` and `title` are permanent.
   static const PostContext POST =
       PostContext._(0, _omitEnumNames ? '' : 'POST');
 
   /// Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
-  /// Does not suport a `link`. Requires a `reply_to_post_id`.
+  /// Does not support a `link`. Requires a `reply_to_post_id`.
   static const PostContext REPLY =
       PostContext._(1, _omitEnumNames ? '' : 'REPLY');
 
   /// An "Event" Post. The Events table should have a row for this Post.
+  /// Never created by the CreatePost RPC (this is an error); use CreateEvent.
   /// These Posts' `link` and `title` fields are modifiable.
   static const PostContext EVENT =
       PostContext._(2, _omitEnumNames ? '' : 'EVENT');
 
   /// An "Event Instance" Post. The EventInstances table should have a row for this Post.
+  /// Never created by the CreatePost RPC (this is an error); use CreateEvent.
   /// These Posts' `link` and `title` fields are modifiable.
   static const PostContext EVENT_INSTANCE =
       PostContext._(3, _omitEnumNames ? '' : 'EVENT_INSTANCE');
 
-  /// A reply to a post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
+  /// A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
   /// in its `link` field. It will not have a `reply_to_post_id` value.
   static const PostContext FEDERATED_REPLY =
       PostContext._(10, _omitEnumNames ? '' : 'FEDERATED_REPLY');

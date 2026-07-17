@@ -33,6 +33,7 @@ import Grpc
 import Html exposing (Html, a, button, div, h1, h2, input, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, value)
 import Html.Events exposing (onClick, onInput)
+import Proto.Google.Protobuf
 import Proto.Jonline exposing (FederatedAccount, User)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Shared
@@ -105,6 +106,21 @@ type alias PermissionsEdit =
     }
 
 
+{-| Live only while the federated profiles list (see `Model.federatedProfilesEdit`)
+is being edited by the profile's own owner (see `isOwnProfile` -- unlike
+`PermissionsEdit`, there's no `pending`/Save step: `FederateProfile`/
+`DefederateProfile` (see `Components.Users.federateProfile`/`defederateProfile`)
+each commit immediately, one account at a time, so `user.federatedProfiles`
+itself stays the single source of truth throughout editing. `addSelection` is
+whichever of the viewer's own other-server accounts (see `federableAccounts`)
+the "Link Account" `<select>` currently has chosen.
+-}
+type alias FederatedProfilesEdit =
+    { addSelection : Maybe AccountsPanel.Account
+    , status : SubmitStatus
+    }
+
+
 type alias Model =
     { targetHost : String
     , lookup : Lookup
@@ -115,6 +131,7 @@ type alias Model =
     , federatedProfiles : Dict String FederatedProfileStatus
     , realNameEdit : Maybe RealNameEdit
     , permissionsEdit : Maybe PermissionsEdit
+    , federatedProfilesEdit : Maybe FederatedProfilesEdit
     }
 
 
@@ -134,6 +151,7 @@ init shared pageIsSecure targetHost lookup =
         , federatedProfiles = Dict.empty
         , realNameEdit = Nothing
         , permissionsEdit = Nothing
+        , federatedProfilesEdit = Nothing
         }
 
 
@@ -221,6 +239,13 @@ type Msg
     | PermissionsCancelClicked
     | PermissionsSaveClicked
     | GotPermissionsSaveResult (Result Grpc.Error ( AccountsPanel.Account, User ))
+    | FederatedProfilesEditClicked
+    | FederatedProfilesDoneClicked
+    | FederatedProfileAddSelectionChanged String
+    | FederatedProfileAddClicked
+    | GotFederatedProfileAddResult (Result Grpc.Error ( AccountsPanel.Account, FederatedAccount ))
+    | FederatedProfileRemoveClicked FederatedAccount
+    | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( AccountsPanel.Account, Proto.Google.Protobuf.Empty ))
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -436,6 +461,117 @@ update shared msg model =
             , Effect.none
             )
 
+        FederatedProfilesEditClicked ->
+            ( { model
+                | federatedProfilesEdit =
+                    Just { addSelection = resolveFederatedAddSelection Nothing (federableAccountsFor shared model), status = Idle }
+              }
+            , Effect.none
+            )
+
+        FederatedProfilesDoneClicked ->
+            ( { model | federatedProfilesEdit = Nothing }, Effect.none )
+
+        FederatedProfileAddSelectionChanged key ->
+            ( { model
+                | federatedProfilesEdit =
+                    model.federatedProfilesEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | addSelection =
+                                        federableAccountsFor shared model
+                                            |> List.filter (\account -> accountKey account == key)
+                                            |> List.head
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        FederatedProfileAddClicked ->
+            case ( model.federatedProfilesEdit, serverAndAccount shared model ) of
+                ( Just edit, Just ( server, account ) ) ->
+                    case edit.addSelection of
+                        Just selected ->
+                            ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
+                            , Users.federateProfile server account { host = selected.server, userId = selected.userId }
+                                |> Task.attempt GotFederatedProfileAddResult
+                                |> Effect.fromCmd
+                            )
+
+                        Nothing ->
+                            ( model, Effect.none )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFederatedProfileAddResult (Ok ( refreshedAccount, _ )) ->
+            let
+                clearedModel =
+                    { model
+                        | federatedProfilesEdit =
+                            model.federatedProfilesEdit
+                                |> Maybe.map (\edit -> { edit | status = Idle, addSelection = resolveFederatedAddSelection Nothing (federableAccountsFor shared model) })
+                    }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared clearedModel
+            in
+            ( refetchedModel
+            , Effect.batch
+                [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+                , refetchEffect
+                ]
+            )
+
+        GotFederatedProfileAddResult (Err err) ->
+            ( { model
+                | federatedProfilesEdit =
+                    model.federatedProfilesEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        FederatedProfileRemoveClicked account ->
+            case ( model.federatedProfilesEdit, serverAndAccount shared model ) of
+                ( Just edit, Just ( server, signedInAccount ) ) ->
+                    ( { model | federatedProfilesEdit = Just { edit | status = Submitting } }
+                    , Users.defederateProfile server signedInAccount account
+                        |> Task.attempt (GotFederatedProfileRemoveResult account)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFederatedProfileRemoveResult _ (Ok ( refreshedAccount, _ )) ->
+            let
+                clearedModel =
+                    { model
+                        | federatedProfilesEdit =
+                            model.federatedProfilesEdit
+                                |> Maybe.map (\edit -> { edit | status = Idle, addSelection = resolveFederatedAddSelection edit.addSelection (federableAccountsFor shared model) })
+                    }
+
+                ( refetchedModel, refetchEffect ) =
+                    refetch shared clearedModel
+            in
+            ( refetchedModel
+            , Effect.batch
+                [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+                , refetchEffect
+                ]
+            )
+
+        GotFederatedProfileRemoveResult _ (Err err) ->
+            ( { model
+                | federatedProfilesEdit =
+                    model.federatedProfilesEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accountsPanel.servers`
             -- (same as `ConnectClicked`'s own `GotConnectResult` does for
@@ -524,6 +660,93 @@ resolveAddSelection current pending =
 addablePermissions : List Permission -> List Permission
 addablePermissions pending =
     Users.allPermissions |> List.filter (\permission -> not (List.member permission pending))
+
+
+{-| Whether the currently signed-in account on `user`'s own server (`maybeAccount`)
+_is_ `user` -- unlike `canEditProfile`, admins don't get a pass here, since
+`FederateProfile`/`DefederateProfile` (see `Components.Users.federateProfile`/
+`defederateProfile`) always act on whichever account's auth token made the
+call, not any user id in the request (see
+`backend/src/rpcs/federation/federate_profile.rs`) -- an admin editing this
+list would only ever federate _their own_ profile, not `user`'s.
+-}
+isOwnProfile : Maybe AccountsPanel.Account -> User -> Bool
+isOwnProfile maybeAccount user =
+    case maybeAccount of
+        Just account ->
+            account.userId == user.id
+
+        Nothing ->
+            False
+
+
+{-| The signed-in `AccountsPanel.Account`s (across every connected server,
+see `Shared.AccountsPanel.Model.accounts`) that `user` could still federate
+with: not `user`'s own account on `server` (that'd be federating with itself),
+and not already listed in `user.federatedProfiles` -- mirrors the Tamagui
+app's `federableAccounts` computation in
+`frontends/tamagui/packages/app/features/user/federated_profiles.tsx`.
+-}
+federableAccounts : Shared.Model -> AccountsPanel.Server -> User -> List AccountsPanel.Account
+federableAccounts shared server user =
+    shared.accountsPanel.accounts
+        |> List.filter
+            (\account ->
+                not (account.userId == user.id && account.server == server.frontendHost)
+                    && not (List.any (\profile -> profile.host == account.server && profile.userId == account.userId) user.federatedProfiles)
+            )
+
+
+{-| `federableAccounts`, pulling `user`/`server` out of `model` itself --
+what the update branches (which don't have a `User`/`Server` in hand directly)
+need.
+-}
+federableAccountsFor : Shared.Model -> Model -> List AccountsPanel.Account
+federableAccountsFor shared model =
+    case ( model.status, serverAndAccount shared model ) of
+        ( UserLoaded user, Just ( server, _ ) ) ->
+            federableAccounts shared server user
+
+        _ ->
+            []
+
+
+{-| Keeps the "Link Account" `<select>`'s selection valid as the federated
+profiles list changes: keeps `current` if it's still federable, otherwise
+falls back to the first still-federable account (`Nothing` if there aren't
+any) -- mirrors `resolveAddSelection`.
+-}
+resolveFederatedAddSelection : Maybe AccountsPanel.Account -> List AccountsPanel.Account -> Maybe AccountsPanel.Account
+resolveFederatedAddSelection current available =
+    case current of
+        Just account ->
+            if List.member account available then
+                Just account
+
+            else
+                List.head available
+
+        Nothing ->
+            List.head available
+
+
+{-| The `<select>` option value (and its reverse-lookup key, see
+`FederatedProfileAddSelectionChanged`) for one federable `AccountsPanel.Account`
+-- same `userId@host` shape as `federatedKey`, just over the other record type.
+-}
+accountKey : AccountsPanel.Account -> String
+accountKey account =
+    account.userId ++ "@" ++ account.server
+
+
+{-| The "Link Account" `<select>`'s display label for one federable
+`AccountsPanel.Account` -- unlike `accountKey`, leads with the human-readable
+`username`, with the `userId` parenthesized for disambiguation (two accounts
+on the same server could theoretically share nothing else at a glance).
+-}
+accountLabel : AccountsPanel.Account -> String
+accountLabel account =
+    account.username ++ "@" ++ account.server ++ " (" ++ account.userId ++ ")"
 
 
 {-| Kicks off a fetch for every entry in `user.federatedProfiles` that isn't
@@ -684,7 +907,7 @@ profileDetail shared model server maybeAccount user =
                 , realNameView canEdit model.realNameEdit user
                 ]
             ]
-        , federatedProfilesSection shared model server user
+        , federatedProfilesSection shared model server (isOwnProfile maybeAccount user) user
         , div [ class "profile-meta" ]
             [ text
                 (Users.visibilityText user.visibility
@@ -927,18 +1150,107 @@ permissionEditBadge permission =
         ]
 
 
-federatedProfilesSection : Shared.Model -> Model -> AccountsPanel.Server -> User -> Html Msg
-federatedProfilesSection shared model server user =
-    if List.isEmpty user.federatedProfiles then
+{-| The Federated Profiles list -- read-only links (each upgraded with a
+`crossCheckBadge` once loaded, see `federatedProfileLink`) when
+`federatedProfilesEdit == Nothing`, plus (only for `canEdit`, i.e.
+`isOwnProfile`) an Edit button; while being edited, each entry additionally
+gets a remove (×) button, and a "Link Account" `<select>`+button lets the
+owner federate any of their other signed-in accounts (see
+`federableAccounts`) that isn't listed yet. Shown (with just the Edit button)
+even with no federated profiles yet, so the owner can add the first one.
+-}
+federatedProfilesSection : Shared.Model -> Model -> AccountsPanel.Server -> Bool -> User -> Html Msg
+federatedProfilesSection shared model server canEdit user =
+    if List.isEmpty user.federatedProfiles && not canEdit then
         text ""
 
     else
         div [ class "profile-federated" ]
             (h2 [ class "profile-section-title" ] [ text "Federated Profiles" ]
                 :: (user.federatedProfiles
-                        |> List.map (federatedProfileLink shared model server user)
+                        |> List.map (federatedProfileEntry shared model server user model.federatedProfilesEdit)
                    )
+                ++ federatedProfilesEditControls shared model server canEdit user
             )
+
+
+{-| One federated profile entry: its `federatedProfileLink`, plus (only while
+`maybeEdit` is `Just`, i.e. the owner is actively editing) a remove (×)
+button that fires `FederatedProfileRemoveClicked` -- mirrors
+`permissionEditBadge`, except the remove button sits alongside the link
+rather than inside a single badge, since the link itself needs to stay
+clickable.
+-}
+federatedProfileEntry : Shared.Model -> Model -> AccountsPanel.Server -> User -> Maybe FederatedProfilesEdit -> FederatedAccount -> Html Msg
+federatedProfileEntry shared model server user maybeEdit account =
+    div [ class "profile-federated-entry" ]
+        (federatedProfileLink shared model server user account
+            :: (case maybeEdit of
+                    Just edit ->
+                        [ button
+                            [ class "profile-federated-remove"
+                            , onClick (FederatedProfileRemoveClicked account)
+                            , title ("Unlink " ++ account.userId ++ "@" ++ account.host)
+                            , disabled (edit.status == Submitting)
+                            ]
+                            [ text "×" ]
+                        ]
+
+                    Nothing ->
+                        []
+               )
+        )
+
+
+{-| The Edit button (`federatedProfilesEdit == Nothing`) or the "Link
+Account" `<select>`+button/Done/error (while editing) -- `[]` entirely
+when `not canEdit`, same "no controls for a viewer who can't act" shape as
+`permissionsSection`'s admin gate.
+-}
+federatedProfilesEditControls : Shared.Model -> Model -> AccountsPanel.Server -> Bool -> User -> List (Html Msg)
+federatedProfilesEditControls shared model server canEdit user =
+    if not canEdit then
+        []
+
+    else
+        case model.federatedProfilesEdit of
+            Just edit ->
+                let
+                    available =
+                        federableAccounts shared server user
+                in
+                [ div [ class "profile-federated-add" ]
+                    (if List.isEmpty available then
+                        [ span [ class "profile-federated-add-empty" ] [ text "No other linkable accounts available." ] ]
+
+                     else
+                        [ select [ onInput FederatedProfileAddSelectionChanged ]
+                            (available
+                                |> List.map
+                                    (\account ->
+                                        option
+                                            [ value (accountKey account)
+                                            , selected (edit.addSelection == Just account)
+                                            ]
+                                            [ text (accountLabel account) ]
+                                    )
+                            )
+                        , button
+                            [ class "profile-permission-add-button"
+                            , onClick FederatedProfileAddClicked
+                            , disabled (edit.addSelection == Nothing || edit.status == Submitting)
+                            ]
+                            [ text "Link Account" ]
+                        ]
+                    )
+                , div [ class "profile-permissions-actions" ]
+                    [ button [ class "profile-edit-cancel", onClick FederatedProfilesDoneClicked ] [ text "Done" ]
+                    ]
+                , editErrorView edit.status
+                ]
+
+            Nothing ->
+                [ button [ class "profile-edit-button", onClick FederatedProfilesEditClicked ] [ text "Edit" ] ]
 
 
 {-| One federated profile's link/button -- always links out via

@@ -99,25 +99,30 @@ export function postListingTypeToJSON(object: PostListingType): string {
 
 /** Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic. */
 export enum PostContext {
-  /** POST - "Standard" Post. */
+  /**
+   * POST - "Standard" or "Top-Leevl" Post. Can have media, a link, a title, and/or content.
+   * If provided, its `link` and `title` are permanent.
+   */
   POST = 0,
   /**
    * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
-   * Does not suport a `link`. Requires a `reply_to_post_id`.
+   * Does not support a `link`. Requires a `reply_to_post_id`.
    */
   REPLY = 1,
   /**
    * EVENT - An "Event" Post. The Events table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT = 2,
   /**
    * EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT_INSTANCE = 3,
   /**
-   * FEDERATED_REPLY - A reply to a post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
+   * FEDERATED_REPLY - A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
    * in its `link` field. It will not have a `reply_to_post_id` value.
    */
   FEDERATED_REPLY = 10,
