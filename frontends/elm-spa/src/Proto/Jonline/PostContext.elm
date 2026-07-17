@@ -36,11 +36,8 @@ fieldNumbersPostContext n_ =
         EVENTINSTANCE ->
             3
 
-        FEDERATEDPOST ->
+        FEDERATEDREPLY ->
             10
-
-        FEDERATEDEVENTINSTANCE ->
-            13
 
         PostContextUnrecognized_ m_ ->
             m_
@@ -73,11 +70,8 @@ encodePostContext value =
             EVENTINSTANCE ->
                 3
 
-            FEDERATEDPOST ->
+            FEDERATEDREPLY ->
                 10
-
-            FEDERATEDEVENTINSTANCE ->
-                13
 
             PostContextUnrecognized_ i ->
                 i
@@ -105,10 +99,7 @@ decodePostContext =
                         EVENTINSTANCE
 
                     10 ->
-                        FEDERATEDPOST
-
-                    13 ->
-                        FEDERATEDEVENTINSTANCE
+                        FEDERATEDREPLY
 
                     _ ->
                         PostContextUnrecognized_ i
@@ -123,6 +114,5 @@ type PostContext
     | REPLY
     | EVENT
     | EVENTINSTANCE
-    | FEDERATEDPOST
-    | FEDERATEDEVENTINSTANCE
+    | FEDERATEDREPLY
     | PostContextUnrecognized_ Int

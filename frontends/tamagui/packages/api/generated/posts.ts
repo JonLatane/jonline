@@ -99,34 +99,36 @@ export function postListingTypeToJSON(object: PostListingType): string {
 
 /** Differentiates the context of a Post, as in Jonline's data models, Post is the "core" type where Jonline consolidates moderation and visibility data and logic. */
 export enum PostContext {
-  /** POST - "Standard" Post. */
+  /**
+   * POST - "Standard" or "Top-Level" Post. Can have media, a link, a title, and/or content.
+   * If provided, its `link` and `title` are permanent.
+   */
   POST = 0,
   /**
-   * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, `EVENT_INSTANCE`, `FEDERATED_POST`, or `FEDERATED_EVENT_INSTANCE`.
-   * Does not suport a `link`.
+   * REPLY - Reply to a `POST`, `REPLY`, `EVENT`, or `EVENT_INSTANCE`
+   * Does not support a `link`. Requires a `reply_to_post_id`.
    */
   REPLY = 1,
   /**
-   * EVENT - An "Event" Post. The Events table should have a row for this Post.
+   * EVENT - Post behind an "Event" (which does not actually have a start/end time -
+   * it's a group of EventInstances, at least one, which each do).
+   * The Events table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT = 2,
   /**
-   * EVENT_INSTANCE - An "Event Instance" Post. The EventInstances table should have a row for this Post.
+   * EVENT_INSTANCE - An "Event Instance" Post (which relates to an event with a start and end time).
+   * The EventInstances table should have a row for this Post.
+   * Never created by the CreatePost RPC (this is an error); use CreateEvent/UpdateEvent to manage EventInstances implicitly.
    * These Posts' `link` and `title` fields are modifiable.
    */
   EVENT_INSTANCE = 3,
   /**
-   * FEDERATED_POST - A "Federated" Post. This is a Post that was created on another server. Its `link`
-   * field *must* be a link to the original Post, i.e. `htttps://jonline.io/post/abcd1234`.
-   * This is enforced by the `CreatePost` PRC.
+   * FEDERATED_REPLY - A reply to a Post on another server. The post *must* have a link of the format `http[s]://<server/post/<post_id>`
+   * in its `link` field. It will not have a `reply_to_post_id` value.
    */
-  FEDERATED_POST = 10,
-  /**
-   * FEDERATED_EVENT_INSTANCE - A "Federated" EventInstance. This is an EventInstance that was created on another server. Its `link`
-   * field *must* be a link to the original EventInstance, i.e. `https://jonline.io/event/abcd1234`.
-   */
-  FEDERATED_EVENT_INSTANCE = 13,
+  FEDERATED_REPLY = 10,
   UNRECOGNIZED = -1,
 }
 
@@ -145,11 +147,8 @@ export function postContextFromJSON(object: any): PostContext {
     case "EVENT_INSTANCE":
       return PostContext.EVENT_INSTANCE;
     case 10:
-    case "FEDERATED_POST":
-      return PostContext.FEDERATED_POST;
-    case 13:
-    case "FEDERATED_EVENT_INSTANCE":
-      return PostContext.FEDERATED_EVENT_INSTANCE;
+    case "FEDERATED_REPLY":
+      return PostContext.FEDERATED_REPLY;
     case -1:
     case "UNRECOGNIZED":
     default:
@@ -167,10 +166,8 @@ export function postContextToJSON(object: PostContext): string {
       return "EVENT";
     case PostContext.EVENT_INSTANCE:
       return "EVENT_INSTANCE";
-    case PostContext.FEDERATED_POST:
-      return "FEDERATED_POST";
-    case PostContext.FEDERATED_EVENT_INSTANCE:
-      return "FEDERATED_EVENT_INSTANCE";
+    case PostContext.FEDERATED_REPLY:
+      return "FEDERATED_REPLY";
     case PostContext.UNRECOGNIZED:
     default:
       return "UNRECOGNIZED";

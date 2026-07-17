@@ -511,11 +511,8 @@ postContextLabel context =
         EVENTINSTANCE ->
             Just "Event Instance"
 
-        FEDERATEDPOST ->
-            Just "Federated Post"
-
-        FEDERATEDEVENTINSTANCE ->
-            Just "Federated Event Instance"
+        FEDERATEDREPLY ->
+            Just "Federated Reply"
 
         PostContextUnrecognized_ _ ->
             Nothing
