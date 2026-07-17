@@ -120,8 +120,24 @@
       }
     });
 
-    app.ports.persist.subscribe(function (state) {
+    // Lets multiple tabs on the same origin stay in sync (e.g. signing in on
+    // one tab shows the new account on all the others) -- every tab opens the
+    // same named channel, so posting to it reaches every *other* tab (a
+    // channel never receives its own posted messages) without any tab having
+    // to poll localStorage. Falls back to a same-tab-only no-op where
+    // `BroadcastChannel` doesn't exist (very old browsers).
+    var accountsAndServersChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineAccountsAndServers") : null;
+    if (accountsAndServersChannel) {
+      accountsAndServersChannel.onmessage = function (e) {
+        app.ports.accountsAndServersUpdated.send(e.data);
+      };
+    }
+
+    app.ports.persistAccountsAndServers.subscribe(function (state) {
       localStorage.setItem("jonlineState", JSON.stringify(state));
+      if (accountsAndServersChannel) {
+        accountsAndServersChannel.postMessage(state);
+      }
     });
 
     app.ports.persistThemePreference.subscribe(function (preference) {

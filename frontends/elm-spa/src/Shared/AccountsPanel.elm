@@ -313,6 +313,7 @@ type Msg
     | FederatedAccountReceived Account
     | GotReconnectResult Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | AccountsAndServersBroadcastReceived Decode.Value
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
@@ -1408,6 +1409,68 @@ updateHelp req msg model =
                 Err _ ->
                     ( model, Cmd.none )
 
+        AccountsAndServersBroadcastReceived value ->
+            case Decode.decodeValue persistedStateDecoder value of
+                Err _ ->
+                    ( model, Cmd.none )
+
+                Ok persisted ->
+                    let
+                        -- Servers this tab already has a live connection for -- just adopt
+                        -- the broadcasting tab's `enabled` flag for those; drop any this tab
+                        -- knows about that the broadcast no longer lists (removed there via
+                        -- `RemoveServerClicked`).
+                        keptServers =
+                            model.servers
+                                |> List.filterMap
+                                    (\server ->
+                                        persisted.servers
+                                            |> List.filter (\ps -> ps.frontendHost == server.frontendHost)
+                                            |> List.head
+                                            |> Maybe.map (\ps -> { server | enabled = ps.enabled })
+                                    )
+
+                        knownHosts =
+                            List.map .frontendHost keptServers
+
+                        -- Servers the broadcast knows about that this tab has no live
+                        -- connection for yet -- mirrors `init`'s `reconnectCmds`.
+                        newServerCmds =
+                            persisted.servers
+                                |> List.filter (\ps -> not (List.member ps.frontendHost knownHosts))
+                                |> List.map
+                                    (\ps ->
+                                        negotiateServerConfig (isSecure req) ps.frontendHost
+                                            |> Task.attempt (GotReconnectResult ps.enabled)
+                                    )
+
+                        -- Same as `init`'s `missingServerHosts`/`missingServerCmds`: accounts
+                        -- whose server host isn't in `persisted.servers` at all (stale/
+                        -- corrupted state in the broadcasting tab) still deserve a reconnect
+                        -- attempt here.
+                        missingServerHosts =
+                            persisted.accounts
+                                |> List.map .server
+                                |> List.filter (\host -> not (List.any (\ps -> ps.frontendHost == host) persisted.servers))
+                                |> Set.fromList
+                                |> Set.toList
+
+                        missingServerCmds =
+                            List.map
+                                (\host ->
+                                    negotiateServerConfig (isSecure req) host
+                                        |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                                )
+                                missingServerHosts
+
+                        newModel =
+                            { model
+                                | accounts = persisted.accounts
+                                , servers = keptServers
+                            }
+                    in
+                    ( newModel, Cmd.batch (newServerCmds ++ missingServerCmds) )
+
         ToggleAccountEnabled id ->
             let
                 toggledAccounts =
@@ -1879,6 +1942,7 @@ subscriptions model =
             (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
         , UI.Flip.subscription AnimateItemFlip
             (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
+        , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
         ]
 
 
@@ -2507,7 +2571,7 @@ type alias Flags =
 
 persist : Model -> Cmd Msg
 persist model =
-    Ports.persist (encodeState model)
+    Ports.persistAccountsAndServers (encodeState model)
 
 
 encodeState : Model -> Encode.Value

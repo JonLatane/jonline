@@ -1,12 +1,13 @@
 port module Ports exposing
-    ( clearFederatedAuthKeyPair
+    ( accountsAndServersUpdated
+    , clearFederatedAuthKeyPair
     , federatedAuthDecrypt
     , federatedAuthDecrypted
     , federatedAuthEncrypt
     , federatedAuthEncrypted
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
-    , persist
+    , persistAccountsAndServers
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
@@ -18,9 +19,22 @@ port module Ports exposing
 import Json.Encode as Encode
 
 
-{-| Persists the full account/server list (with their enabled flags) to localStorage.
+{-| Persists the full account/server list (with their enabled flags) to
+localStorage, and broadcasts it (see `public/index.html`'s `BroadcastChannel`)
+to any other tab open on the same origin, which applies it via
+`accountsAndServersUpdated` -- see `Shared.AccountsPanel.subscriptions`.
 -}
-port persist : Encode.Value -> Cmd msg
+port persistAccountsAndServers : Encode.Value -> Cmd msg
+
+
+{-| Fires in *other* tabs (never the tab that called `persistAccountsAndServers`
+itself) whenever one tab's accounts/servers change, carrying the same value
+`persistAccountsAndServers` was given -- decode with
+`Shared.AccountsPanel.persistedStateDecoder`. Lets multiple tabs on the same
+origin stay in sync (e.g. signing in on one tab shows the new account on all
+the others) without each tab polling localStorage.
+-}
+port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the set of starred Posts (as a list of `postId@frontendHost`
