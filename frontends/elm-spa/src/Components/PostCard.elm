@@ -42,7 +42,7 @@ import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, img, span, text)
-import Html.Attributes exposing (alt, attribute, class, href, rel, src, target)
+import Html.Attributes exposing (alt, attribute, class, href, rel, src, target, title)
 import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
@@ -591,6 +591,42 @@ repliesCountText post =
 commentCountText : Post -> String
 commentCountText post =
     " · 💬 " ++ repliesCountText post
+
+
+timestampsText : Post -> Html msg
+timestampsText post =
+    let
+        ( mainText, titleText ) =
+            case ( post.createdAt, post.updatedAt, post.publishedAt ) of
+                ( Just created, Just updated, Just published ) ->
+                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Updated / Published" )
+
+                ( Just created, Just updated, Nothing ) ->
+                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Updated" )
+
+                ( Just created, Nothing, Just published ) ->
+                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created / Published" )
+
+                ( Just created, Nothing, Nothing ) ->
+                    ( timestampToPosix created |> Time.posixToMillis |> String.fromInt, "Created" )
+
+                ( Nothing, Just updated, Just published ) ->
+                    ( timestampToPosix updated |> Time.posixToMillis |> String.fromInt, "Updated / Published" )
+
+                ( Nothing, Just updated, Nothing ) ->
+                    ( timestampToPosix updated |> Time.posixToMillis |> String.fromInt, "Updated" )
+
+                ( Nothing, Nothing, Just published ) ->
+                    ( timestampToPosix published |> Time.posixToMillis |> String.fromInt, "Published" )
+
+                ( Nothing, Nothing, Nothing ) ->
+                    ( "", "No timestamps available" )
+    in
+    span
+        [ class "post-timestamps"
+        , title titleText
+        ]
+        [ text mainText ]
 
 
 {-| An Edit button for `postDetail`'s meta line, shown only to `post`'s own
