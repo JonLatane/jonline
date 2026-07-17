@@ -1283,7 +1283,7 @@ updateHelp req msg model =
                                                 a
 
                                     else
-                                        account
+                                        a
                                 )
                                 model.accounts
                     }
