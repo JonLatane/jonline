@@ -39,8 +39,13 @@
   transition: grid-template-rows 0.25s ease, grid-template-columns 0.25s ease;
 }
 
-.flip-animated-item.flip-collapsed {
+.flip-animated-column .flip-animated-item.flip-collapsed {
   grid-template-rows: 0fr;
+  /* grid-template-columns: 0fr; */
+}
+
+.flip-animated-row .flip-animated-item.flip-collapsed {
+  /* grid-template-rows: 0fr; */
   grid-template-columns: 0fr;
 }
 
