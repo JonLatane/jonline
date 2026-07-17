@@ -35,7 +35,7 @@ import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (class, id, style)
 import Html.Events exposing (onClick)
 import Html.Keyed
 import Json.Decode as Decode
@@ -117,6 +117,7 @@ type Msg
     | FinishUnstar String
     | AnimateItemFlip Animation.Msg
     | MediaClicked String Post String
+    | StarredPostsBroadcastReceived Decode.Value
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -212,6 +213,7 @@ it) -- it just needs `Shared.update` to open `Shared.MediaViewerPanel` on its
 behalf, same forwarding convention as the `AccountsPanel.Msg` case, just
 computed directly from `msg` here rather than from `updateHelp`'s result,
 since there's no `Model` state involved.
+
 -}
 update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MediaViewerPanel.Msg ) )
 update accountsPanelModel msg model =
@@ -501,6 +503,33 @@ updateHelp accountsPanelModel msg model =
             -- touch this module's `Model`, so nothing to do here.
             ( model, Cmd.none, Nothing )
 
+        StarredPostsBroadcastReceived value ->
+            case Decode.decodeValue (Decode.list Decode.string) value of
+                Err _ ->
+                    ( model, Cmd.none, Nothing )
+
+                Ok newOrder ->
+                    let
+                        stillStarred key _ =
+                            List.member key newOrder
+
+                        ( fetchedModel, cmd ) =
+                            kickOffFetches accountsPanelModel
+                                { model
+                                    | starredPostIds = Set.fromList newOrder
+                                    , starOrder = newOrder
+
+                                    -- Drops any cached fetch/animation state for a post no
+                                    -- longer starred (removed in the broadcasting tab) -- this
+                                    -- tab never ran its own fade-out (`FinishUnstar`) for it, so
+                                    -- nothing else would otherwise clear these.
+                                    , posts = Dict.filter stillStarred model.posts
+                                    , starAnimations = Dict.filter stillStarred model.starAnimations
+                                    , moveAnimations = Dict.filter stillStarred model.moveAnimations
+                                }
+                    in
+                    ( fetchedModel, cmd, Nothing )
+
 
 {-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
 -- only while the panel's actually open, same reasoning as `Shared.subscriptions`'
@@ -521,6 +550,7 @@ subscriptions model =
         -- detail, ...), not just from here, so this needs to keep ticking
         -- regardless in order to ever actually fire.
         , UI.Flip.subscription AnimateItemFlip (Dict.values model.starAnimations)
+        , Ports.starredPostsUpdated StarredPostsBroadcastReceived
         ]
 
 
@@ -734,7 +764,7 @@ starredPostRowFlip basePath accountsPanelModel currentPostKey model count index 
 
         pointerEventsAttr =
             if flipState.removing then
-                [ Html.Attributes.style "pointer-events" "none" ]
+                [ style "pointer-events" "none" ]
 
             else
                 []

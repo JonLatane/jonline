@@ -144,8 +144,19 @@
       localStorage.setItem("jonlineThemePreference", preference);
     });
 
+    // Same cross-tab sync as `accountsAndServersChannel`, above.
+    var starredPostsChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineStarredPosts") : null;
+    if (starredPostsChannel) {
+      starredPostsChannel.onmessage = function (e) {
+        app.ports.starredPostsUpdated.send(e.data);
+      };
+    }
+
     app.ports.persistStarredPosts.subscribe(function (starredPosts) {
       localStorage.setItem("jonlineStarredPosts", JSON.stringify(starredPosts));
+      if (starredPostsChannel) {
+        starredPostsChannel.postMessage(starredPosts);
+      }
     });
 
     var currentThemePreference = storedThemePreference;

@@ -13,6 +13,7 @@ port module Ports exposing
     , persistThemePreference
     , setNavBarColor
     , setTheme
+    , starredPostsUpdated
     , systemPrefersDarkChanged
     )
 
@@ -41,9 +42,20 @@ port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 strings, see `Shared.StarredPostsPanel.starKey`) to its own localStorage key
 -- kept independent of `persist` for the same reason `persistThemePreference`
 is: `Shared.StarredPostsPanel` doesn't need to know `Shared.AccountsPanel`'s
-persisted shape, or vice versa.
+persisted shape, or vice versa. Also broadcasts it (see `public/index.html`'s
+`BroadcastChannel`) to any other tab open on the same origin, which applies it
+via `starredPostsUpdated` -- see `Shared.StarredPostsPanel.subscriptions`,
+mirroring `persistAccountsAndServers`/`accountsAndServersUpdated`.
 -}
 port persistStarredPosts : Encode.Value -> Cmd msg
+
+
+{-| Fires in *other* tabs (never the tab that called `persistStarredPosts`
+itself) whenever one tab's starred posts change, carrying the same value
+`persistStarredPosts` was given -- decode with `Decode.list Decode.string`,
+same as `Shared.StarredPostsPanel.init`'s flags.
+-}
+port starredPostsUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the appearance ("auto"/"light"/"dark") preference to its own

@@ -35,11 +35,13 @@
 .flip-animated-item {
   display: grid;
   grid-template-rows: 1fr;
-  transition: grid-template-rows 0.25s ease;
+  grid-template-columns: 1fr;
+  transition: grid-template-rows 0.25s ease, grid-template-columns 0.25s ease;
 }
 
 .flip-animated-item.flip-collapsed {
   grid-template-rows: 0fr;
+  grid-template-columns: 0fr;
 }
 
 .flip-animated-item>* {
@@ -72,8 +74,15 @@
    long server name in `.account-row-server-badge`) -- freeing `overflow-x`
    too would drop that clamp and balloon the row exactly as wide as its
    longest label whenever it slides. */
+
+.flip-animated-item.flip-moving {
+  display: flex;
+}
+
 .flip-animated-item.flip-moving>* {
   overflow: visible;
+  max-width: 100%;
+  max-height: 100%;
 }
 
 
