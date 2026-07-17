@@ -35,7 +35,7 @@ import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
 import Grpc
 import Html exposing (Html, button, div, text)
-import Html.Attributes exposing (class, id)
+import Html.Attributes exposing (class, id, style)
 import Html.Events exposing (onClick)
 import Html.Keyed
 import Json.Decode as Decode
@@ -47,7 +47,7 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
-import UI.Classes exposing (classes, openClosedClass)
+import UI.Classes exposing (classes, escapeCSSClass, openClosedClass)
 import UI.Flip
 
 
@@ -107,7 +107,7 @@ type Msg
     | ToggleStarredPostsPanel
     | CloseStarredPostsPanel
     | EnableServerClicked String
-    | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
+    | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
     | PollStarredPosts
     | MoveStarUpClicked String
     | MoveStarDownClicked String
@@ -117,6 +117,7 @@ type Msg
     | FinishUnstar String
     | AnimateItemFlip Animation.Msg
     | MediaClicked String Post String
+    | StarredPostsBroadcastReceived Decode.Value
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -162,7 +163,7 @@ drive its `UI.Flip` slide.
 -}
 starEntryDomId : String -> String
 starEntryDomId key =
-    "starred-post-entry-" ++ key
+    "starred-post-entry-" ++ escapeCSSClass key
 
 
 isStarred : String -> Post -> Model -> Bool
@@ -194,9 +195,10 @@ persistCmd starOrder =
 {-| `update` also needs `AccountsPanel.Model` (to resolve starred posts' hosts
 to actual connected `Server`s/signed-in `Account`s -- see `kickOffFetches`)
 and can itself surface an `AccountsPanel.Msg` it needs forwarded on its behalf
--- either a refreshed `Account` (from fetching a starred post whose access
-token needed renewing first, see `Shared.MaybeAccountRequest`), persisted via
-`AccountsPanel.AccountRefreshed`, or a disabled server's owner re-enabling it
+-- either an `AccessTokenResponseReceived` (from fetching a starred post
+whose access token needed renewing first -- see
+`Shared.AccountsPanel.performWithOptionalAccountServer`, which already
+builds it), or a disabled server's owner re-enabling it
 (`EnableServerClicked`), forwarded as `AccountsPanel.ToggleServerEnabled` --
 for `Shared.update` to actually dispatch. This module can't dispatch either
 itself without importing `Shared` (a cycle, since `Shared` imports this
@@ -211,6 +213,7 @@ it) -- it just needs `Shared.update` to open `Shared.MediaViewerPanel` on its
 behalf, same forwarding convention as the `AccountsPanel.Msg` case, just
 computed directly from `msg` here rather than from `updateHelp`'s result,
 since there's no `Model` state involved.
+
 -}
 update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MediaViewerPanel.Msg ) )
 update accountsPanelModel msg model =
@@ -418,7 +421,7 @@ updateHelp accountsPanelModel msg model =
             in
             ( fetchedModel, cmd, Nothing )
 
-        GotStarredPost key (Ok ( maybeAccount, response )) ->
+        GotStarredPost key (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 newStatus =
                     case ( parseStarKey key, List.head response.posts ) of
@@ -428,7 +431,7 @@ updateHelp accountsPanelModel msg model =
                         _ ->
                             PostFetchFailed
             in
-            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, Maybe.map AccountsPanel.AccountRefreshed maybeAccount )
+            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, maybeAccountsPanelMsg )
 
         GotStarredPost key (Err _) ->
             ( { model | posts = Dict.insert key PostFetchFailed model.posts }, Cmd.none, Nothing )
@@ -500,6 +503,33 @@ updateHelp accountsPanelModel msg model =
             -- touch this module's `Model`, so nothing to do here.
             ( model, Cmd.none, Nothing )
 
+        StarredPostsBroadcastReceived value ->
+            case Decode.decodeValue (Decode.list Decode.string) value of
+                Err _ ->
+                    ( model, Cmd.none, Nothing )
+
+                Ok newOrder ->
+                    let
+                        stillStarred key _ =
+                            List.member key newOrder
+
+                        ( fetchedModel, cmd ) =
+                            kickOffFetches accountsPanelModel
+                                { model
+                                    | starredPostIds = Set.fromList newOrder
+                                    , starOrder = newOrder
+
+                                    -- Drops any cached fetch/animation state for a post no
+                                    -- longer starred (removed in the broadcasting tab) -- this
+                                    -- tab never ran its own fade-out (`FinishUnstar`) for it, so
+                                    -- nothing else would otherwise clear these.
+                                    , posts = Dict.filter stillStarred model.posts
+                                    , starAnimations = Dict.filter stillStarred model.starAnimations
+                                    , moveAnimations = Dict.filter stillStarred model.moveAnimations
+                                }
+                    in
+                    ( fetchedModel, cmd, Nothing )
+
 
 {-| Just the starred posts' reorder-slide animations (see `moveAnimations`)
 -- only while the panel's actually open, same reasoning as `Shared.subscriptions`'
@@ -520,6 +550,7 @@ subscriptions model =
         -- detail, ...), not just from here, so this needs to keep ticking
         -- regardless in order to ever actually fire.
         , UI.Flip.subscription AnimateItemFlip (Dict.values model.starAnimations)
+        , Ports.starredPostsUpdated StarredPostsBroadcastReceived
         ]
 
 
@@ -600,15 +631,15 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
             , cmds
             )
 
-        Just server ->
+        Just _ ->
             let
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                maybeAccountServer =
+                    ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
 
                 fetchCmds =
                     List.map
                         (\postId ->
-                            Posts.fetchPost server maybeAccount postId
+                            Posts.fetchPost accountsPanelModel maybeAccountServer postId
                                 |> Task.attempt (GotStarredPost (rawKey postId host))
                         )
                         postIds
@@ -733,7 +764,7 @@ starredPostRowFlip basePath accountsPanelModel currentPostKey model count index 
 
         pointerEventsAttr =
             if flipState.removing then
-                [ Html.Attributes.style "pointer-events" "none" ]
+                [ style "pointer-events" "none" ]
 
             else
                 []

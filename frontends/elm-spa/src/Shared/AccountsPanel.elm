@@ -5,11 +5,13 @@ module Shared.AccountsPanel exposing
     , Branding
     , Connection
     , FormStatus(..)
+    , MaybeAccountServer
     , Model
     , Msg(..)
     , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
+    , Token
     , accountAvatarUrl
     , accountDecoder
     , accountId
@@ -34,6 +36,8 @@ module Shared.AccountsPanel exposing
     , isSecure
     , mainServerTheme
     , mediaUrl
+    , performWithAccountServer
+    , performWithOptionalAccountServer
     , serverChipDomId
     , serverForHost
     , serverHasAccounts
@@ -46,6 +50,7 @@ module Shared.AccountsPanel exposing
     , subscriptions
     , unreachableAccountHosts
     , update
+    , withAccessToken
     )
 
 {-| Everything behind the Accounts Panel: known servers, signed-into accounts,
@@ -65,15 +70,17 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
+import Protobuf.Types.Int64 as Int64
 import Request exposing (Request)
 import Set
-import Shared.MaybeAccountRequest as MaybeAccountRequest exposing (Token)
+import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
+import UI.Classes exposing (hostnameToCSSClass)
 import UI.Flip
 import UI.ServerTheme
 import Url
@@ -167,6 +174,11 @@ type alias AccountForm =
     , username : String
     , password : String
     , status : FormStatus
+
+    -- Whether the password field (see `UI.addAccountForm`) is currently
+    -- rendered as plain text rather than masked -- toggled by its "show
+    -- password" button (`PasswordVisibilityToggled`).
+    , passwordVisible : Bool
     }
 
 
@@ -200,6 +212,16 @@ shared between the two flows (see `AddServerClicked`).
 -}
 type alias AddServerForm =
     { status : FormStatus
+    }
+
+
+{-| Like `ExpirableToken`, but with a plain `Time.Posix` expiration instead of
+a protobuf `Timestamp` (whose seconds are an `Int64`) -- directly comparable
+to `Time.now`, and easy to persist as milliseconds.
+-}
+type alias Token =
+    { token : String
+    , expiresAt : Maybe Time.Posix
     }
 
 
@@ -279,10 +301,12 @@ type Msg
     = ServerChanged String
     | UsernameChanged String
     | PasswordChanged String
+    | PasswordVisibilityToggled
     | LoginClicked
     | CreateAccountClicked
     | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotCreateAccountModalViewport (Result Dom.Error Dom.Viewport)
+    | AccessTokenResponseReceived Account AccessTokenResponse
     | CreateAccountModalScrolled Bool
     | ConfirmCreateAccountClicked
     | CancelCreateAccountClicked
@@ -290,6 +314,7 @@ type Msg
     | FederatedAccountReceived Account
     | GotReconnectResult Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | AccountsAndServersBroadcastReceived Decode.Value
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
@@ -307,7 +332,6 @@ type Msg
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | FocusInput String
     | ServerConnected Server
-    | AccountRefreshed Account
     | MoveAccountUpClicked String
     | MoveAccountDownClicked String
     | GotPreMovePositions String (List String) (List String) Int (Result Dom.Error ( ( Dom.Element, Dom.Element ), ( Dom.Element, Dom.Element ) ))
@@ -346,7 +370,7 @@ counterpart of `accountRowDomId`, for `MoveServerLeftClicked`/
 -}
 serverChipDomId : String -> String
 serverChipDomId frontendHost =
-    "server-chip-" ++ frontendHost
+    "server-chip-" ++ hostnameToCSSClass frontendHost
 
 
 accountAt : Int -> List Account -> Maybe Account
@@ -995,6 +1019,7 @@ emptyForm =
     , username = ""
     , password = ""
     , status = Idle
+    , passwordVisible = False
     }
 
 
@@ -1040,7 +1065,19 @@ updateHelp req msg model =
             ( updateForm (\form -> { form | username = username }) model, Cmd.none )
 
         PasswordChanged password ->
-            ( updateForm (\form -> { form | password = password }) model, Cmd.none )
+            ( updateForm
+                (\form ->
+                    { form
+                        | password = password
+                        , passwordVisible = form.passwordVisible && not (String.isEmpty password)
+                    }
+                )
+                model
+            , Cmd.none
+            )
+
+        PasswordVisibilityToggled ->
+            ( updateForm (\form -> { form | passwordVisible = not form.passwordVisible }) model, Cmd.none )
 
         LoginClicked ->
             let
@@ -1167,8 +1204,8 @@ updateHelp req msg model =
                             { server = connection.frontendHost
                             , userId = user.id
                             , username = user.username
-                            , refreshToken = MaybeAccountRequest.tokenFromExpirable refreshToken
-                            , accessToken = MaybeAccountRequest.tokenFromExpirable accessToken
+                            , refreshToken = tokenFromExpirable refreshToken
+                            , accessToken = tokenFromExpirable accessToken
                             , enabled = True
                             , avatarMediaId = Maybe.map .id user.avatar
                             , permissions = user.permissions
@@ -1197,7 +1234,7 @@ updateHelp req msg model =
                                         form =
                                             model.accountForm
                                     in
-                                    { form | password = "", status = Idle }
+                                    { form | password = "", passwordVisible = False, status = Idle }
                             }
                     in
                     ( newModel, persist newModel )
@@ -1241,6 +1278,38 @@ updateHelp req msg model =
                             |> Task.attempt (GotReconnectResult True)
             in
             ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
+
+        AccessTokenResponseReceived account accessTokenResponse ->
+            let
+                newModel =
+                    { model
+                        | accounts =
+                            List.map
+                                (\a ->
+                                    if a.userId == account.userId && a.server == account.server then
+                                        case ( accessTokenResponse.accessToken, accessTokenResponse.refreshToken ) of
+                                            ( Just accessToken, Just refreshToken ) ->
+                                                { a
+                                                    | accessToken = tokenFromExpirable accessToken
+                                                    , refreshToken = tokenFromExpirable refreshToken
+                                                }
+
+                                            ( Just accessToken, Nothing ) ->
+                                                { a | accessToken = tokenFromExpirable accessToken }
+
+                                            ( Nothing, Just refreshToken ) ->
+                                                { a | refreshToken = tokenFromExpirable refreshToken }
+
+                                            ( Nothing, Nothing ) ->
+                                                a
+
+                                    else
+                                        a
+                                )
+                                model.accounts
+                    }
+            in
+            ( newModel, persist newModel )
 
         GotReconnectResult enabled result ->
             case result of
@@ -1340,6 +1409,68 @@ updateHelp req msg model =
 
                 Err _ ->
                     ( model, Cmd.none )
+
+        AccountsAndServersBroadcastReceived value ->
+            case Decode.decodeValue persistedStateDecoder value of
+                Err _ ->
+                    ( model, Cmd.none )
+
+                Ok persisted ->
+                    let
+                        -- Servers this tab already has a live connection for -- just adopt
+                        -- the broadcasting tab's `enabled` flag for those; drop any this tab
+                        -- knows about that the broadcast no longer lists (removed there via
+                        -- `RemoveServerClicked`).
+                        keptServers =
+                            model.servers
+                                |> List.filterMap
+                                    (\server ->
+                                        persisted.servers
+                                            |> List.filter (\ps -> ps.frontendHost == server.frontendHost)
+                                            |> List.head
+                                            |> Maybe.map (\ps -> { server | enabled = ps.enabled })
+                                    )
+
+                        knownHosts =
+                            List.map .frontendHost keptServers
+
+                        -- Servers the broadcast knows about that this tab has no live
+                        -- connection for yet -- mirrors `init`'s `reconnectCmds`.
+                        newServerCmds =
+                            persisted.servers
+                                |> List.filter (\ps -> not (List.member ps.frontendHost knownHosts))
+                                |> List.map
+                                    (\ps ->
+                                        negotiateServerConfig (isSecure req) ps.frontendHost
+                                            |> Task.attempt (GotReconnectResult ps.enabled)
+                                    )
+
+                        -- Same as `init`'s `missingServerHosts`/`missingServerCmds`: accounts
+                        -- whose server host isn't in `persisted.servers` at all (stale/
+                        -- corrupted state in the broadcasting tab) still deserve a reconnect
+                        -- attempt here.
+                        missingServerHosts =
+                            persisted.accounts
+                                |> List.map .server
+                                |> List.filter (\host -> not (List.any (\ps -> ps.frontendHost == host) persisted.servers))
+                                |> Set.fromList
+                                |> Set.toList
+
+                        missingServerCmds =
+                            List.map
+                                (\host ->
+                                    negotiateServerConfig (isSecure req) host
+                                        |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                                )
+                                missingServerHosts
+
+                        newModel =
+                            { model
+                                | accounts = persisted.accounts
+                                , servers = keptServers
+                            }
+                    in
+                    ( newModel, Cmd.batch (newServerCmds ++ missingServerCmds) )
 
         ToggleAccountEnabled id ->
             let
@@ -1628,8 +1759,8 @@ updateHelp req msg model =
                     let
                         newModel =
                             { model
-                                -- TODO: temporarily prepending -- see the identical note in
-                                -- `GotAuthResult`.
+                              -- TODO: temporarily prepending -- see the identical note in
+                              -- `GotAuthResult`.
                                 | servers = serverFrom connection True config :: model.servers
                                 , addServerForm = emptyAddServerForm
                             }
@@ -1798,13 +1929,6 @@ updateHelp req msg model =
                 in
                 ( newModel, persist newModel )
 
-        AccountRefreshed account ->
-            let
-                newModel =
-                    { model | accounts = upsertAccount account model.accounts }
-            in
-            ( newModel, persist newModel )
-
         NoOp ->
             ( model, Cmd.none )
 
@@ -1819,6 +1943,7 @@ subscriptions model =
             (Dict.values model.moveAnimations ++ Dict.values model.serverMoveAnimations)
         , UI.Flip.subscription AnimateItemFlip
             (Dict.values model.accountAnimations ++ Dict.values model.serverAnimations)
+        , Ports.accountsAndServersUpdated AccountsAndServersBroadcastReceived
         ]
 
 
@@ -2121,13 +2246,13 @@ granted/revoked elsewhere stay current without the user doing anything.
 -}
 refreshPermissions : Server -> Account -> Cmd Msg
 refreshPermissions server account =
-    MaybeAccountRequest.performWithAccount
-        { host = server.backendHost, port_ = server.port_, tls = server.tls }
+    performWithAccount
+        (connectionOf server)
         account
         (\accessToken ->
             Grpc.new Jonline.getCurrentUser {}
                 |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> Grpc.addHeader "authorization" accessToken
+                |> withAccessToken (Just accessToken)
                 |> Grpc.toTask
         )
         |> Task.attempt (GotPermissionsRefresh (accountId account))
@@ -2167,13 +2292,13 @@ setWebUserInterface server account ui =
         newConfig =
             { config | serverInfo = Just { info | webUserInterface = Just ui } }
     in
-    MaybeAccountRequest.performWithAccount
-        { host = server.backendHost, port_ = server.port_, tls = server.tls }
+    performWithAccount
+        (connectionOf server)
         account
         (\accessToken ->
             Grpc.new Jonline.configureServer newConfig
                 |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> Grpc.addHeader "authorization" accessToken
+                |> withAccessToken (Just accessToken)
                 |> Grpc.toTask
         )
         |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
@@ -2447,7 +2572,7 @@ type alias Flags =
 
 persist : Model -> Cmd Msg
 persist model =
-    Ports.persist (encodeState model)
+    Ports.persistAccountsAndServers (encodeState model)
 
 
 encodeState : Model -> Encode.Value
@@ -2694,3 +2819,191 @@ optionalString : String -> Decoder (Maybe String)
 optionalString field =
     Decode.maybe (Decode.field field (Decode.nullable Decode.string))
         |> Decode.map (Maybe.andThen identity)
+
+
+tokenFromExpirable : ExpirableToken -> Token
+tokenFromExpirable expirable =
+    { token = expirable.token
+    , expiresAt = Maybe.map timestampToPosix expirable.expiresAt
+    }
+
+
+{-| Whether a token is expired, or expiring within the next minute (enough
+margin that it shouldn't expire mid-request). A token with no expiration
+(`expiresAt == Nothing`, the default unless a server was asked for one)
+never expires.
+-}
+isExpired : Time.Posix -> Token -> Bool
+isExpired now token =
+    case token.expiresAt of
+        Nothing ->
+            False
+
+        Just expiresAt ->
+            Time.posixToMillis now + 60000 >= Time.posixToMillis expiresAt
+
+
+{-| Ensures `account`'s access token is valid as of now (refreshing it first
+if needed), then performs `req` with it. `req` is given just the access token
+string, ready to pass to `withAccessToken`. Returns the account
+as it ended up (with refreshed tokens if a refresh happened, unchanged
+otherwise) alongside `req`'s result, so the caller can persist any refreshed
+tokens. Private -- `refreshPermissions`/`setWebUserInterface` below (this
+module's own callers, which already hold a live `Account`) use this
+directly; everyone else goes through `performWithAccountServer`/
+`performWithOptionalAccountServer`, which resolve a fresh `Account`/`Server`
+from a `MaybeAccountServer` instead of holding one of their own.
+-}
+performWithAccount :
+    Connection
+    -> Account
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Account, b )
+performWithAccount connection account req =
+    performWithAccountNotifying connection account req
+        |> Task.map (\( refreshedAccount, _, result ) -> ( refreshedAccount, result ))
+
+
+{-| Like `performWithAccount`, but also surfaces the raw `AccessTokenResponse`
+if a refresh happened (`Nothing` otherwise).
+-}
+performWithAccountNotifying :
+    Connection
+    -> Account
+    -> (String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Account, Maybe AccessTokenResponse, b )
+performWithAccountNotifying connection account req =
+    Time.now
+        |> Task.andThen (\now -> refreshIfNeeded connection now account)
+        |> Task.andThen
+            (\( refreshedAccount, refreshResponse ) ->
+                req refreshedAccount.accessToken.token
+                    |> Task.map (\result -> ( refreshedAccount, refreshResponse, result ))
+            )
+
+
+{-| Identifies "act as this account (if any) on this server" by identity --
+`( maybe userId, hostname )` -- rather than a live `Account`/`Server`
+snapshot: `( Nothing, host )` means anonymous on `host`; `( Just userId,
+host )` means that specific (must be enabled) account. Resolved fresh
+against the current `Model` inside `performWithAccountServer`/
+`performWithOptionalAccountServer`, so callers elsewhere in the app (see
+`Components.PostCard`, `Components.Users`, `Shared.MarkdownPanel`) can store
+just this pair -- e.g. across a page's own `Model` -- rather than a copy of
+`Account`/`Server` that can go stale, and never need to know how tokens get
+refreshed/persisted (`AccessTokenResponseReceived`) at all.
+-}
+type alias MaybeAccountServer =
+    ( Maybe String, String )
+
+
+resolveAccountServer : Model -> MaybeAccountServer -> Maybe ( Maybe Account, Server )
+resolveAccountServer model ( maybeUserId, host ) =
+    serverForHost model.servers host
+        |> Maybe.map
+            (\server ->
+                ( maybeUserId
+                    |> Maybe.andThen (\userId -> model.accounts |> List.filter (\a -> a.userId == userId && a.server == host) |> List.head)
+                , server
+                )
+            )
+
+
+{-| Like `performWithAccount`, but takes a `MaybeAccountServer` (resolved
+fresh against `model`) instead of a live `Account`, and requires that it
+resolve to one -- fails with `Grpc.NetworkError` if `host` isn't a known
+server, or if no matching account is found (both meaning the caller
+shouldn't have gotten this far; see e.g. `Shared.MarkdownPanel.resolve`'s
+own pre-flight, user-facing gating). `req` gets the resolved `Server` (for
+`Grpc.setHost`) and access token string. Returns an already-built `Msg` to
+dispatch (via whatever out-msg/`Effect` mechanism the caller already uses
+for e.g. `Shared.AccountsPanelMsg`) if a token refresh happened, `Nothing`
+otherwise -- callers never see the raw `AccessTokenResponse`.
+-}
+performWithAccountServer :
+    Model
+    -> MaybeAccountServer
+    -> (Server -> String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe Msg, b )
+performWithAccountServer model maybeAccountServer req =
+    case resolveAccountServer model maybeAccountServer of
+        Just ( Just account, server ) ->
+            performWithAccountNotifying (connectionOf server) account (req server)
+                |> Task.map
+                    (\( refreshedAccount, maybeResponse, result ) ->
+                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                    )
+
+        _ ->
+            Task.fail Grpc.NetworkError
+
+
+{-| Like `performWithAccountServer`, but the account is optional: with a
+`MaybeAccountServer` that resolves to a known account, authenticates
+(refreshing first if needed) exactly like `performWithAccountServer`; with
+`( Nothing, host )` (or a `userId` that doesn't resolve to an account),
+performs `req` anonymously (no authorization header). Fails with
+`Grpc.NetworkError` only if `host` itself isn't a known server.
+-}
+performWithOptionalAccountServer :
+    Model
+    -> MaybeAccountServer
+    -> (Server -> Maybe String -> Task Grpc.Error b)
+    -> Task Grpc.Error ( Maybe Msg, b )
+performWithOptionalAccountServer model maybeAccountServer req =
+    case resolveAccountServer model maybeAccountServer of
+        Just ( Just account, server ) ->
+            performWithAccountNotifying (connectionOf server) account (Just >> req server)
+                |> Task.map
+                    (\( refreshedAccount, maybeResponse, result ) ->
+                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                    )
+
+        Just ( Nothing, server ) ->
+            req server Nothing |> Task.map (Tuple.pair Nothing)
+
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+
+refreshIfNeeded :
+    Connection
+    -> Time.Posix
+    -> Account
+    -> Task Grpc.Error ( Account, Maybe AccessTokenResponse )
+refreshIfNeeded connection now account =
+    if not (isExpired now account.accessToken) then
+        Task.succeed ( account, Nothing )
+
+    else
+        Grpc.new Jonline.accessToken { refreshToken = account.refreshToken.token, expiresAt = Nothing }
+            |> Grpc.setHost (connectionUrl connection)
+            |> Grpc.toTask
+            |> Task.andThen
+                (\resp ->
+                    case resp.accessToken of
+                        Just accessToken ->
+                            Task.succeed
+                                ( { account
+                                    | accessToken = tokenFromExpirable accessToken
+                                    , refreshToken =
+                                        resp.refreshToken
+                                            |> Maybe.map tokenFromExpirable
+                                            |> Maybe.withDefault account.refreshToken
+                                  }
+                                , Just resp
+                                )
+
+                        Nothing ->
+                            Task.fail Grpc.NetworkError
+                )
+
+
+withAccessToken : Maybe String -> Grpc.RpcRequest req res -> Grpc.RpcRequest req res
+withAccessToken maybeToken req =
+    case maybeToken of
+        Just token ->
+            Grpc.addHeader "authorization" token req
+
+        Nothing ->
+            req

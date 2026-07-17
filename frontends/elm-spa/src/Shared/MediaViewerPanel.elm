@@ -1,4 +1,4 @@
-module Shared.MediaViewerPanel exposing (Model, Msg(..), init, isOpen, update, view)
+module Shared.MediaViewerPanel exposing (Model, Msg(..), init, isOpen, subscriptions, update, view)
 
 {-| A single, app-wide fullscreen image/video viewer -- an alternate,
 "big"/fullscreen rendering of a `Post`'s `media` (compare
@@ -16,6 +16,7 @@ do.
 
 -}
 
+import Browser.Events
 import Components.MediaRenderer as MediaRenderer
 import Components.PostCard as Posts
 import Html exposing (Html, button, div, span, text)
@@ -218,6 +219,47 @@ getAt index media =
     media |> List.drop index |> List.head
 
 
+{-| Left/right arrow keys page `Prev`/`Next`, same as the toolbar's `‹`/`›`
+buttons -- only while the panel's actually open, so the keys behave normally
+(e.g. scrolling a `<select>`) everywhere else in the app.
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if isOpen model then
+        Browser.Events.onKeyDown keyDecoder
+
+    else
+        Sub.none
+
+
+keyDecoder : Decode.Decoder Msg
+keyDecoder =
+    Decode.field "key" Decode.string
+        |> Decode.andThen
+            (\key ->
+                case key of
+                    "ArrowLeft" ->
+                        Decode.succeed Prev
+
+                    "ArrowRight" ->
+                        Decode.succeed Next
+
+                    _ ->
+                        Decode.fail "not an arrow key"
+            )
+
+
+{-| Whether `media` is an image, by its MIME type's top-level part -- mirrors
+`Components.MediaRenderer.view`'s own `contentType` branch. Used by `view` to
+decide whether tapping the media itself should close the panel (images have
+no in-place interaction to preserve) or not (videos need the tap to reach
+their native `controls`, same as before this behavior existed).
+-}
+isImage : MediaReference -> Bool
+isImage media =
+    (String.split "/" media.contentType |> List.head) == Just "image"
+
+
 {-| The item before/after the current one in `media`, wrapping around --
 `Nothing` if `media` has one item or fewer (nothing to page to).
 -}
@@ -302,7 +344,19 @@ view accountsPanelModel model =
                         [ ( media.id
                           , div
                                 [ classes [ "media-viewer-panel-media", directionClass model.direction ]
-                                , stopClick (SetCurrent media.id)
+                                , -- Images have no in-place interaction worth
+                                  -- preserving, so tapping one closes the
+                                  -- panel like tapping the backdrop would --
+                                  -- videos still need the tap to reach their
+                                  -- native `controls` (play/pause/scrub), so
+                                  -- those keep the old stop-and-no-op.
+                                  stopClick
+                                    (if isImage media then
+                                        CloseClicked
+
+                                     else
+                                        SetCurrent media.id
+                                    )
                                 , on "touchstart" (touchPoint "touches" TouchStart)
                                 , preventDefaultOn "touchmove" (Decode.succeed ( TouchMove, model.touchStart /= Nothing ))
                                 , on "touchend" (touchPoint "changedTouches" TouchEnd)

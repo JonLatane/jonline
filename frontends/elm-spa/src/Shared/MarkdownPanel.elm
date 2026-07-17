@@ -29,8 +29,7 @@ import Proto.Jonline exposing (Post, User, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
-import Shared.AccountsPanel as AccountsPanel
-import Shared.MaybeAccountRequest as MaybeAccountRequest
+import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, openClosedClass)
 
@@ -102,15 +101,15 @@ type Msg
     | ViewModeSelected ViewMode
     | CancelClicked
     | SaveClicked
-    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Account))
+    | GotSaveResult (Result Grpc.Error (Maybe AccountsPanel.Msg))
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
 `Server`/signed-in `Account` to submit as, and to verify -- see `resolve` --
 that they're actually usable) and can itself surface an `AccountsPanel.Msg` it
-needs forwarded on its behalf -- a refreshed `Account`, from
-`Shared.MaybeAccountRequest`, persisted via `AccountsPanel.AccountRefreshed`
--- for `Shared.update` to actually dispatch, same convention as
+needs forwarded on its behalf -- an `AccessTokenResponseReceived`, if
+`saveTask` had to refresh the account's token, that `AccountsPanel.performWithAccountServer`
+already builds -- for `Shared.update` to actually dispatch, same convention as
 `Shared.StarredPostsPanel.update` -- paired, in that same third-tuple-slot
 convention, with a `Bool` that's `True` only right after a successful save:
 `Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
@@ -147,7 +146,8 @@ update accountsPanelModel msg model =
                     case resolve accountsPanelModel target model.targetHost of
                         Ok resolved ->
                             ( { model | status = Submitting }
-                            , saveTask resolved.server resolved.account target model.content |> Task.attempt GotSaveResult
+                            , saveTask accountsPanelModel ( Just resolved.account.userId, resolved.server.frontendHost ) target model.content
+                                |> Task.attempt GotSaveResult
                             , ( Nothing, False )
                             )
 
@@ -157,8 +157,8 @@ update accountsPanelModel msg model =
                 Nothing ->
                     ( model, Cmd.none, ( Nothing, False ) )
 
-        GotSaveResult (Ok maybeAccount) ->
-            ( { init | viewMode = model.viewMode }, Cmd.none, ( Maybe.map AccountsPanel.AccountRefreshed maybeAccount, True ) )
+        GotSaveResult (Ok maybeAccountsPanelMsg) ->
+            ( { init | viewMode = model.viewMode }, Cmd.none, ( maybeAccountsPanelMsg, True ) )
 
         GotSaveResult (Err err) ->
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, False ) )
@@ -243,41 +243,43 @@ see `backend/src/rpcs/posts/update_post.rs`). `NewReply` has no such race to
 guard against -- it's creating a brand new Post, not overwriting an existing
 one -- so it submits straight from the `post` it was opened with. `UserBio`
 does the same re-fetch-then-overwrite dance as `PostContent`, via
-`Users.updateUser`. Only the (possibly-refreshed) `Account` is returned --
-none of these three cases' updated entities are used by any caller (see
-`Pages.Post.PostId_`/`Components.UserProfilePage`'s `GotSaveResult` handling,
-which just refetches their own copy on success).
+`Users.updateUser`. Only a `Msg` to dispatch (if a token refresh happened) is
+returned -- none of these three cases' updated entities are used by any
+caller (see `Pages.Post.PostId_`/`Components.UserProfilePage`'s
+`GotSaveResult` handling, which just refetches their own copy on success).
 -}
-saveTask : AccountsPanel.Server -> AccountsPanel.Account -> TargetType -> String -> Task Grpc.Error (Maybe AccountsPanel.Account)
-saveTask server account target content =
+saveTask : AccountsPanel.Model -> AccountsPanel.MaybeAccountServer -> TargetType -> String -> Task Grpc.Error (Maybe AccountsPanel.Msg)
+saveTask accountsPanelModel maybeAccountServer target content =
     case target of
         PostContent post ->
-            MaybeAccountRequest.performWithAccount (connectionOf server)
-                account
-                (\token ->
+            AccountsPanel.performWithAccountServer
+                accountsPanelModel
+                maybeAccountServer
+                (\server token ->
                     Grpc.new Jonline.getPosts { defaultGetPostsRequest | postId = Just post.id }
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
-                        |> Grpc.addHeader "authorization" token
+                        |> withAccessToken (Just token)
                         |> Grpc.toTask
-                )
-                |> Task.andThen
-                    (\( refreshedAccount, response ) ->
-                        case List.head response.posts of
-                            Just freshPost ->
-                                Grpc.new Jonline.updatePost { freshPost | content = Just content }
-                                    |> Grpc.setHost (AccountsPanel.serverUrl server)
-                                    |> Grpc.addHeader "authorization" refreshedAccount.accessToken.token
-                                    |> Grpc.toTask
-                                    |> Task.map (\_ -> Just refreshedAccount)
+                        |> Task.andThen
+                            (\response ->
+                                case List.head response.posts of
+                                    Just freshPost ->
+                                        Grpc.new Jonline.updatePost { freshPost | content = Just content }
+                                            |> Grpc.setHost (AccountsPanel.serverUrl server)
+                                            |> withAccessToken (Just token)
+                                            |> Grpc.toTask
 
-                            Nothing ->
-                                Task.fail Grpc.NetworkError
-                    )
+                                    Nothing ->
+                                        Task.fail Grpc.NetworkError
+                            )
+                )
+                |> Task.map Tuple.first
 
         NewReply post ->
-            MaybeAccountRequest.performWithAccount (connectionOf server)
-                account
-                (\token ->
+            AccountsPanel.performWithAccountServer
+                accountsPanelModel
+                maybeAccountServer
+                (\server token ->
                     Grpc.new Jonline.createPost
                         { defaultPost
                             | replyToPostId = Just post.id
@@ -286,19 +288,14 @@ saveTask server account target content =
                             , visibility = post.visibility
                         }
                         |> Grpc.setHost (AccountsPanel.serverUrl server)
-                        |> Grpc.addHeader "authorization" token
+                        |> withAccessToken (Just token)
                         |> Grpc.toTask
                 )
-                |> Task.map (\( refreshedAccount, _ ) -> Just refreshedAccount)
+                |> Task.map Tuple.first
 
         UserBio user ->
-            Users.updateUser server account user.id (\freshUser -> { freshUser | bio = content })
-                |> Task.map (\( refreshedAccount, _ ) -> Just refreshedAccount)
-
-
-connectionOf : AccountsPanel.Server -> { host : String, port_ : Int, tls : Bool }
-connectionOf server =
-    { host = server.backendHost, port_ = server.port_, tls = server.tls }
+            Users.updateUser accountsPanelModel maybeAccountServer user.id (\freshUser -> { freshUser | bio = content })
+                |> Task.map Tuple.first
 
 
 

@@ -6,7 +6,17 @@
   <meta name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <!-- "black-translucent" (rather than "default") makes the status bar
+       transparent when this is running as a home-screen/standalone app on
+       iOS, letting .navbar's own background (see nav.css's
+       `padding-top: env(safe-area-inset-top)`) show through underneath it --
+       "default"/"black" are opaque, fixed OS colors that never reflect the
+       page. iOS never reads `theme-color` for a standalone app's status bar
+       (only for a regular Safari tab's toolbar, which the two tags below still
+       cover), so this is the only way to tint it, at the cost of the status
+       bar's icons/text always being light-colored (iOS's choice, not
+       adjustable per-color). -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#16181d" media="(prefers-color-scheme: dark)">
   <title>Jonline</title>
@@ -110,16 +120,43 @@
       }
     });
 
-    app.ports.persist.subscribe(function (state) {
+    // Lets multiple tabs on the same origin stay in sync (e.g. signing in on
+    // one tab shows the new account on all the others) -- every tab opens the
+    // same named channel, so posting to it reaches every *other* tab (a
+    // channel never receives its own posted messages) without any tab having
+    // to poll localStorage. Falls back to a same-tab-only no-op where
+    // `BroadcastChannel` doesn't exist (very old browsers).
+    var accountsAndServersChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineAccountsAndServers") : null;
+    if (accountsAndServersChannel) {
+      accountsAndServersChannel.onmessage = function (e) {
+        app.ports.accountsAndServersUpdated.send(e.data);
+      };
+    }
+
+    app.ports.persistAccountsAndServers.subscribe(function (state) {
       localStorage.setItem("jonlineState", JSON.stringify(state));
+      if (accountsAndServersChannel) {
+        accountsAndServersChannel.postMessage(state);
+      }
     });
 
     app.ports.persistThemePreference.subscribe(function (preference) {
       localStorage.setItem("jonlineThemePreference", preference);
     });
 
+    // Same cross-tab sync as `accountsAndServersChannel`, above.
+    var starredPostsChannel = window.BroadcastChannel ? new BroadcastChannel("jonlineStarredPosts") : null;
+    if (starredPostsChannel) {
+      starredPostsChannel.onmessage = function (e) {
+        app.ports.starredPostsUpdated.send(e.data);
+      };
+    }
+
     app.ports.persistStarredPosts.subscribe(function (starredPosts) {
       localStorage.setItem("jonlineStarredPosts", JSON.stringify(starredPosts));
+      if (starredPostsChannel) {
+        starredPostsChannel.postMessage(starredPosts);
+      }
     });
 
     var currentThemePreference = storedThemePreference;
@@ -132,6 +169,12 @@
         document.documentElement.setAttribute("data-theme", theme);
       }
       window.jonlineUpdateCodeTheme(theme === "dark" || (theme === "auto" && darkMediaQuery.matches));
+    });
+
+    app.ports.setNavBarColor.subscribe(function (color) {
+      document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
+        m.setAttribute("content", color);
+      });
     });
 
     darkMediaQuery.addEventListener("change", function (e) {
@@ -313,18 +356,18 @@
           ),
           window.crypto.subtle.importKey("raw", ephemeralPublicKeyBytes, { name: "ECDH", namedCurve: "P-256" }, false, [])
         ])
-        .then(function (keys) {
-          return deriveAesKey(keys[0], keys[1]);
-        })
-        .then(function (aesKey) {
-          return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, aesKey, ciphertext);
-        })
-        .then(function (plaintextBytes) {
-          app.ports.federatedAuthDecrypted.send({ ok: true, value: new TextDecoder().decode(plaintextBytes) });
-        })
-        .catch(function (e) {
-          app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
-        });
+          .then(function (keys) {
+            return deriveAesKey(keys[0], keys[1]);
+          })
+          .then(function (aesKey) {
+            return window.crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, aesKey, ciphertext);
+          })
+          .then(function (plaintextBytes) {
+            app.ports.federatedAuthDecrypted.send({ ok: true, value: new TextDecoder().decode(plaintextBytes) });
+          })
+          .catch(function (e) {
+            app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
+          });
       } catch (e) {
         app.ports.federatedAuthDecrypted.send({ ok: false, value: String((e && e.message) || e) });
       }

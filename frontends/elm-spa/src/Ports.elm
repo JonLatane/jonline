@@ -1,34 +1,61 @@
 port module Ports exposing
-    ( clearFederatedAuthKeyPair
+    ( accountsAndServersUpdated
+    , clearFederatedAuthKeyPair
     , federatedAuthDecrypt
     , federatedAuthDecrypted
     , federatedAuthEncrypt
     , federatedAuthEncrypted
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
-    , persist
+    , persistAccountsAndServers
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
+    , setNavBarColor
     , setTheme
+    , starredPostsUpdated
     , systemPrefersDarkChanged
     )
 
 import Json.Encode as Encode
 
 
-{-| Persists the full account/server list (with their enabled flags) to localStorage.
+{-| Persists the full account/server list (with their enabled flags) to
+localStorage, and broadcasts it (see `public/index.html`'s `BroadcastChannel`)
+to any other tab open on the same origin, which applies it via
+`accountsAndServersUpdated` -- see `Shared.AccountsPanel.subscriptions`.
 -}
-port persist : Encode.Value -> Cmd msg
+port persistAccountsAndServers : Encode.Value -> Cmd msg
+
+
+{-| Fires in *other* tabs (never the tab that called `persistAccountsAndServers`
+itself) whenever one tab's accounts/servers change, carrying the same value
+`persistAccountsAndServers` was given -- decode with
+`Shared.AccountsPanel.persistedStateDecoder`. Lets multiple tabs on the same
+origin stay in sync (e.g. signing in on one tab shows the new account on all
+the others) without each tab polling localStorage.
+-}
+port accountsAndServersUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the set of starred Posts (as a list of `postId@frontendHost`
 strings, see `Shared.StarredPostsPanel.starKey`) to its own localStorage key
 -- kept independent of `persist` for the same reason `persistThemePreference`
 is: `Shared.StarredPostsPanel` doesn't need to know `Shared.AccountsPanel`'s
-persisted shape, or vice versa.
+persisted shape, or vice versa. Also broadcasts it (see `public/index.html`'s
+`BroadcastChannel`) to any other tab open on the same origin, which applies it
+via `starredPostsUpdated` -- see `Shared.StarredPostsPanel.subscriptions`,
+mirroring `persistAccountsAndServers`/`accountsAndServersUpdated`.
 -}
 port persistStarredPosts : Encode.Value -> Cmd msg
+
+
+{-| Fires in *other* tabs (never the tab that called `persistStarredPosts`
+itself) whenever one tab's starred posts change, carrying the same value
+`persistStarredPosts` was given -- decode with `Decode.list Decode.string`,
+same as `Shared.StarredPostsPanel.init`'s flags.
+-}
+port starredPostsUpdated : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Persists the appearance ("auto"/"light"/"dark") preference to its own
@@ -43,6 +70,16 @@ port persistThemePreference : String -> Cmd msg
 (falling back to the `prefers-color-scheme` media query).
 -}
 port setTheme : String -> Cmd msg
+
+
+{-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s
+current `primaryColor` (a `#rrggbb` string -- see `UI.ServerTheme.ColorMeta`),
+so the browser/OS chrome (e.g. a mobile browser's tab bar) tints to match the
+server being browsed. Called from `Shared.navBarColorCmd` whenever that color
+actually changes -- `mainFrontendHost` switching, or its `Server`'s branding
+being (re)populated.
+-}
+port setNavBarColor : String -> Cmd msg
 
 
 {-| Fires when the OS-level dark/light preference changes while the app is

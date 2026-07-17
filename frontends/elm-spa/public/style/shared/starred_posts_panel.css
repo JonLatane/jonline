@@ -48,7 +48,7 @@
      plus the fixed toggle height (--nav-toggle-height, main.css) -- so this
      stays correct regardless of whether a breadcrumbs bar is also present
      below the toggle row. */
-  top: calc(0.75rem + var(--nav-toggle-height));
+  top: calc(0.75rem + var(--nav-toggle-height) - 1px);
 }
 
 /* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
@@ -63,6 +63,7 @@
    override here would lose the cascade to the base rule's higher-specificity
    `.nav-panel.starred-posts-panel`, media query or not. */
 @media (max-width: 639px) {
+
   .starred-posts-panel,
   .nav-panel.starred-posts-panel {
     left: 2px;

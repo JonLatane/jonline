@@ -1,4 +1,4 @@
-module UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+module UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
 
 {-| Just `UI.classes`, split into its own leaf module so `Components.Posts`
 can use it without importing `UI` itself -- `UI` imports
@@ -35,13 +35,10 @@ openClosedClass isOpen =
         "is-closed"
 
 
-{-| Escapes a hostname for literal use as one segment of a CSS class
-selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
-separate class selectors (`.jonline.io` means "has both class `jonline` and
-class `io`", not "has class `jonline.io`").
+{-| Escapes any invalid chars to make a valid CSS class.
 -}
-hostnameToCSSClass : String -> String
-hostnameToCSSClass hostname =
+escapeCSSClass : String -> String
+escapeCSSClass input =
     let
         escapeChar : Char -> String
         escapeChar c =
@@ -51,7 +48,17 @@ hostnameToCSSClass hostname =
             else
                 "-"
     in
-    hostname
+    input
         |> String.toList
         |> List.map escapeChar
         |> String.concat
+
+
+{-| Escapes a hostname for literal use as one segment of a CSS class
+selector -- e.g. the dots in "jonline.io", which would otherwise be parsed as
+separate class selectors (`.jonline.io` means "has both class `jonline` and
+class `io`", not "has class `jonline.io`").
+-}
+hostnameToCSSClass : String -> String
+hostnameToCSSClass hostname =
+    "server-" ++ escapeCSSClass hostname

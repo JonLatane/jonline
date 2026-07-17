@@ -119,8 +119,10 @@ fetchNewServers shared model =
 
         fetchEffect server =
             Posts.fetchRecentPosts
-                server
-                (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost)
+                shared.accountsPanel
+                ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+                , server.frontendHost
+                )
                 |> Task.attempt (GotServerPosts server.frontendHost)
                 |> Effect.fromCmd
 
@@ -236,7 +238,7 @@ syncAnimations model =
 
 
 type Msg
-    = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
+    = GotServerPosts String (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
     | Poll
     | Animate Animation.Msg
     | RemovePost String
@@ -256,11 +258,11 @@ fromShared =
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
-        GotServerPosts frontendHost (Ok ( maybeAccount, response )) ->
+        GotServerPosts frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect =
-                    maybeAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
             in
             ( { model

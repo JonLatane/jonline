@@ -90,8 +90,8 @@ with `replies` attached, those are used as-is; otherwise, if it has any
 replies at all (`replyCount`/`responseCount` > 0), kicks off a fetch
 `initialReplyDepth` levels deep.
 -}
-init : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> String -> Post -> ( Model, Effect Msg )
-init maybeServer maybeAccount host post =
+init : AccountsPanel.Model -> Maybe String -> String -> Post -> ( Model, Effect Msg )
+init accountsPanelModel maybeUserId host post =
     let
         model =
             syncAnimations
@@ -103,7 +103,7 @@ init maybeServer maybeAccount host post =
                 }
     in
     if List.isEmpty post.replies && (post.replyCount > 0 || post.responseCount > 0) then
-        loadReplies maybeServer maybeAccount initialReplyDepth post.id model
+        loadReplies accountsPanelModel maybeUserId initialReplyDepth post.id model
 
     else
         ( model, Effect.none )
@@ -118,44 +118,39 @@ deeper subtree a user had individually expanded past `initialReplyDepth` (via
 `PostId_`'s old flat `refetch` already made for the (until now, single-level)
 replies list.
 -}
-refresh : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Post -> Model -> ( Model, Effect Msg )
-refresh maybeServer maybeAccount post model =
-    loadReplies maybeServer maybeAccount initialReplyDepth post.id { model | root = post }
+refresh : AccountsPanel.Model -> Maybe String -> Post -> Model -> ( Model, Effect Msg )
+refresh accountsPanelModel maybeUserId post model =
+    loadReplies accountsPanelModel maybeUserId initialReplyDepth post.id { model | root = post }
 
 
 type Msg
     = LoadRepliesClicked String
-    | GotReplies String (Result Grpc.Error ( Maybe AccountsPanel.Account, GetPostsResponse ))
+    | GotReplies String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
     | Animate Animation.Msg
     | RemoveReply String
     | ToggleCollapsed String
 
 
-loadReplies : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Int -> String -> Model -> ( Model, Effect Msg )
-loadReplies maybeServer maybeAccount depth postId model =
-    case maybeServer of
-        Just server ->
-            ( { model | statuses = Dict.insert postId ReplyLoading model.statuses }
-            , Posts.fetchReplies server maybeAccount depth postId
-                |> Task.attempt (GotReplies postId)
-                |> Effect.fromCmd
-            )
-
-        Nothing ->
-            ( model, Effect.none )
+loadReplies : AccountsPanel.Model -> Maybe String -> Int -> String -> Model -> ( Model, Effect Msg )
+loadReplies accountsPanelModel maybeUserId depth postId model =
+    ( { model | statuses = Dict.insert postId ReplyLoading model.statuses }
+    , Posts.fetchReplies accountsPanelModel ( maybeUserId, model.host ) depth postId
+        |> Task.attempt (GotReplies postId)
+        |> Effect.fromCmd
+    )
 
 
-update : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Msg -> Model -> ( Model, Effect Msg )
-update maybeServer maybeAccount msg model =
+update : AccountsPanel.Model -> Maybe String -> Msg -> Model -> ( Model, Effect Msg )
+update accountsPanelModel maybeUserId msg model =
     case msg of
         LoadRepliesClicked postId ->
-            loadReplies maybeServer maybeAccount initialReplyDepth postId model
+            loadReplies accountsPanelModel maybeUserId initialReplyDepth postId model
 
-        GotReplies postId (Ok ( maybeRefreshedAccount, response )) ->
+        GotReplies postId (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect =
-                    maybeRefreshedAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
+                    maybeAccountsPanelMsg
+                        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
                         |> Maybe.withDefault Effect.none
 
                 newModel =

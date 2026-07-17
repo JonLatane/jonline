@@ -127,19 +127,26 @@ fetchIfReady shared model =
 
     else
         case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
-            Just server ->
-                let
-                    maybeAccount =
-                        AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
-                in
+            Just _ ->
                 ( { model | fetchStarted = True }
-                , Posts.fetchPost server maybeAccount model.postId
+                , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
                     |> Task.attempt GotPost
                     |> Effect.fromCmd
                 )
 
             Nothing ->
                 ( model, Effect.none )
+
+
+{-| `model.targetHost` paired with whatever account (if any) is currently
+signed in on it -- what `Components.PostCard`/`Components.PostReplies`'
+`Model`/`Msg`-free fetch helpers need instead of a live `Server`/`Account`.
+-}
+maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
+maybeAccountServerFor shared model =
+    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
+    , model.targetHost
+    )
 
 
 {-| Re-fetches the post unconditionally (unlike `fetchIfReady`, not gated on
@@ -155,13 +162,9 @@ trigger here.
 refetch : Shared.Model -> Model -> ( Model, Effect Msg )
 refetch shared model =
     case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
-        Just server ->
-            let
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
-            in
+        Just _ ->
             ( model
-            , Posts.fetchPost server maybeAccount model.postId
+            , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
                 |> Task.attempt GotPost
                 |> Effect.fromCmd
             )
@@ -186,8 +189,8 @@ serverAndAccount shared model =
 
 
 type Msg
-    = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Account, Proto.Jonline.GetPostsResponse ))
-    | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Account, List Post ))
+    = GotPost (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetPostsResponse ))
+    | GotBreadcrumbAncestors Post (Result Grpc.Error ( Maybe AccountsPanel.Msg, List Post ))
     | PostRepliesMsg PostReplies.Msg
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
@@ -199,7 +202,7 @@ type Msg
     | VisibilityChanged String
     | VisibilityCancelClicked
     | VisibilitySaveClicked Post
-    | GotVisibilitySaveResult (Result Grpc.Error ( AccountsPanel.Account, Post ))
+    | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | Poll
     | SharedMsg Shared.Msg
 
@@ -214,31 +217,37 @@ fromShared =
     SharedMsg
 
 
+{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `Components.PostCard`/
+`Components.PostReplies`' requests, if a token refresh happened) into an
+`Effect` to forward it, `Effect.none` otherwise.
+-}
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
+
+
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
 update shared req msg model =
     case msg of
-        GotPost (Ok ( maybeRefreshedAccount, response )) ->
+        GotPost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
                 accountEffect =
-                    maybeRefreshedAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
+                    accountsPanelEffect maybeAccountsPanelMsg
 
-                maybeServer =
-                    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
-
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                maybeUserId =
+                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
 
                 ( repliesModel, repliesEffect ) =
                     case ( List.head response.posts, model.repliesModel ) of
                         ( Just post, Nothing ) ->
-                            PostReplies.init maybeServer maybeAccount model.targetHost post
+                            PostReplies.init shared.accountsPanel maybeUserId model.targetHost post
                                 |> Tuple.mapFirst Just
                                 |> Tuple.mapSecond (Effect.map PostRepliesMsg)
 
                         ( Just post, Just existing ) ->
-                            PostReplies.refresh maybeServer maybeAccount post existing
+                            PostReplies.refresh shared.accountsPanel maybeUserId post existing
                                 |> Tuple.mapFirst Just
                                 |> Tuple.mapSecond (Effect.map PostRepliesMsg)
 
@@ -251,17 +260,17 @@ update shared req msg model =
                 -- resolves. A plain top-level Post just clears whatever trail
                 -- an earlier reply page here might have left behind.
                 breadcrumbsEffect =
-                    case ( List.head response.posts, maybeServer ) of
-                        ( Just post, Just server ) ->
+                    case List.head response.posts of
+                        Just post ->
                             if post.context == REPLY then
-                                Posts.fetchAncestors server maybeAccount post
+                                Posts.fetchAncestors shared.accountsPanel (maybeAccountServerFor shared model) post
                                     |> Task.attempt (GotBreadcrumbAncestors post)
                                     |> Effect.fromCmd
 
                             else
                                 Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear)
 
-                        _ ->
+                        Nothing ->
                             Effect.none
             in
             ( { model
@@ -278,12 +287,10 @@ update shared req msg model =
         GotPost (Err _) ->
             ( { model | postStatus = PostFailed }, Effect.none )
 
-        GotBreadcrumbAncestors post (Ok ( maybeRefreshedAccount, ancestors )) ->
+        GotBreadcrumbAncestors post (Ok ( maybeAccountsPanelMsg, ancestors )) ->
             let
                 accountEffect =
-                    maybeRefreshedAccount
-                        |> Maybe.map (AccountsPanel.AccountRefreshed >> Shared.AccountsPanelMsg >> Effect.fromShared)
-                        |> Maybe.withDefault Effect.none
+                    accountsPanelEffect maybeAccountsPanelMsg
 
                 -- `ancestors` is root-first and excludes `post` itself (see
                 -- `Posts.fetchAncestors`) -- its first entry is the root
@@ -312,14 +319,11 @@ update shared req msg model =
             case model.repliesModel of
                 Just repliesModel ->
                     let
-                        maybeServer =
-                            AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
-
-                        maybeAccount =
-                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
+                        maybeUserId =
+                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost |> Maybe.map .userId
 
                         ( newRepliesModel, effect ) =
-                            PostReplies.update maybeServer maybeAccount subMsg repliesModel
+                            PostReplies.update shared.accountsPanel maybeUserId subMsg repliesModel
                     in
                     ( { model | repliesModel = Just newRepliesModel }, Effect.map PostRepliesMsg effect )
 
@@ -355,7 +359,7 @@ update shared req msg model =
             case ( model.visibilityEdit, serverAndAccount shared model ) of
                 ( Just edit, Just ( server, account ) ) ->
                     ( { model | visibilityEdit = Just { edit | status = Submitting } }
-                    , Posts.updatePost server account post.id (\freshPost -> { freshPost | visibility = edit.pending })
+                    , Posts.updatePost shared.accountsPanel ( Just account.userId, server.frontendHost ) post.id (\freshPost -> { freshPost | visibility = edit.pending })
                         |> Task.attempt GotVisibilitySaveResult
                         |> Effect.fromCmd
                     )
@@ -363,9 +367,9 @@ update shared req msg model =
                 _ ->
                     ( model, Effect.none )
 
-        GotVisibilitySaveResult (Ok ( refreshedAccount, updatedPost )) ->
+        GotVisibilitySaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
             ( { model | postStatus = PostLoaded updatedPost, visibilityEdit = Nothing }
-            , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.AccountRefreshed refreshedAccount))
+            , accountsPanelEffect maybeAccountsPanelMsg
             )
 
         GotVisibilitySaveResult (Err err) ->

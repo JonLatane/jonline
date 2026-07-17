@@ -20,13 +20,13 @@ import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Page
 import Ports
-import Proto.Jonline exposing (RefreshTokenResponse)
+import Proto.Jonline exposing (ExpirableToken, RefreshTokenResponse)
 import Proto.Jonline.Jonline as Jonline
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel exposing (Account, FormStatus(..))
+import Shared.AccountsPanel as AccountsPanel exposing (Account, FormStatus(..), Token)
+import Shared.Conversions exposing (timestampToPosix)
 import Shared.FederatedAuth as FederatedAuth
-import Shared.MaybeAccountRequest as MaybeAccountRequest
 import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -165,8 +165,8 @@ accountFromLogin server resp =
                 { server = server
                 , userId = user.id
                 , username = user.username
-                , refreshToken = MaybeAccountRequest.tokenFromExpirable refreshToken
-                , accessToken = MaybeAccountRequest.tokenFromExpirable accessToken
+                , refreshToken = tokenFromExpirable refreshToken
+                , accessToken = tokenFromExpirable accessToken
                 , enabled = True
                 , avatarMediaId = Maybe.map .id user.avatar
                 , permissions = user.permissions
@@ -260,3 +260,10 @@ signInView shared model =
                             _ ->
                                 text ""
                         ]
+
+
+tokenFromExpirable : ExpirableToken -> Token
+tokenFromExpirable expirable =
+    { token = expirable.token
+    , expiresAt = Maybe.map timestampToPosix expirable.expiresAt
+    }

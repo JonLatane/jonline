@@ -20,6 +20,7 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 -}
 
 import Browser.Dom as Dom
+import Browser.Events
 import Browser.Navigation as Nav
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -35,6 +36,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
+import UI.Responsive as Responsive
 import Url exposing (Url)
 
 
@@ -96,6 +98,15 @@ type alias Model =
     -- `Main.elm`'s `ChangedUrl`, which fires `ShowScrollPreserver` only for
     -- navigations it recognizes as the browser's back button.
     , scrollPreserverVisible : Bool
+
+    -- The browser's current window size, kept live via `Browser.Events.onResize`
+    -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
+    -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
+    -- the Accounts Panel and Starred Posts Panel should close one another when
+    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPostsPanelMsg`
+    -- branches), since both are full-width slide-out panels on narrow screens
+    -- and CSS alone can't reach into another panel's state.
+    , windowSize : Responsive.WindowSize
     }
 
 
@@ -117,6 +128,7 @@ type Msg
     | HomeLinkClicked Bool
     | ScrollToTop
     | NavigateExternal String
+    | WindowResized Int Int
     | NoOp
 
 
@@ -260,30 +272,95 @@ init basePath req flags =
 
         ( federatedAuthModel, federatedAuthCmd ) =
             FederatedAuth.init federatedAuthFlags
+
+        model =
+            { accountsPanel = accountsPanelModel
+            , adminPanel = AdminPanel.init
+            , federatedAuth = federatedAuthModel
+            , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+            , markdownPanel = MarkdownPanel.init
+            , mediaViewerPanel = MediaViewerPanel.init
+            , breadcrumbs = Breadcrumbs.init
+            , themePreference = themePreference
+            , systemPrefersDark = systemPrefersDark
+            , basePath = basePath
+            , confirmingDeleteFor = Nothing
+            , scrollPreserverVisible = False
+
+            -- Corrected as soon as `getInitialWindowSizeCmd` resolves, below
+            -- -- arbitrary until then, but never consulted before that (both
+            -- panels start closed) so it doesn't matter what it is.
+            , windowSize = { width = 0, height = 0 }
+            }
     in
-    ( { accountsPanel = accountsPanelModel
-      , adminPanel = AdminPanel.init
-      , federatedAuth = federatedAuthModel
-      , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
-      , markdownPanel = MarkdownPanel.init
-      , mediaViewerPanel = MediaViewerPanel.init
-      , breadcrumbs = Breadcrumbs.init
-      , themePreference = themePreference
-      , systemPrefersDark = systemPrefersDark
-      , basePath = basePath
-      , confirmingDeleteFor = Nothing
-      , scrollPreserverVisible = False
-      }
+    ( model
     , Cmd.batch
         [ Cmd.map AccountsPanelMsg accountsPanelCmd
         , Cmd.map FederatedAuthMsg federatedAuthCmd
         , Ports.setTheme (themePreferenceToString themePreference)
+
+        -- `mainFrontendHost`'s branding isn't fetched yet at this point, so
+        -- this is only ever the neutral placeholder (see
+        -- `UI.ServerTheme.neutralColorMeta`) -- matches `updateImpl`'s later
+        -- calls once real branding loads via `navBarColorCmd`, rather than
+        -- leaving the static light/dark `<meta>` values from `index.html` in
+        -- place until then.
+        , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
+        , getInitialWindowSizeCmd
         ]
     )
 
 
+{-| The window size isn't known until the DOM actually exists to measure --
+`Browser.Events.onResize` (see `subscriptions`) only fires on subsequent
+changes, so this is what gets `Model.windowSize` its real initial value.
+-}
+getInitialWindowSizeCmd : Cmd Msg
+getInitialWindowSizeCmd =
+    Task.perform
+        (\viewport -> WindowResized (round viewport.viewport.width) (round viewport.viewport.height))
+        Dom.getViewport
+
+
+{-| Wraps `updateImpl` to also call out to `Ports.setNavBarColor` whenever
+`mainFrontendHost`'s theme actually changes as a result of the message --
+either `mainFrontendHost` itself changing (e.g. `AccountsPanel.SetMainFrontendHost`)
+or its `Server`'s cached branding being (re)populated (e.g. after a
+`ServerConfiguration` fetch). Comparing `primaryColor` before/after here,
+rather than threading a "did the theme change" flag out of every branch that
+touches `accountsPanel`, means every current and future such path gets this
+for free.
+-}
 update : Request -> Msg -> Model -> ( Model, Cmd Msg )
 update req msg model =
+    let
+        ( newModel, cmd ) =
+            updateImpl req msg model
+    in
+    ( newModel, Cmd.batch [ cmd, navBarColorCmd model newModel ] )
+
+
+{-| The `primaryColor` `Ports.setNavBarColor` should push to the page's
+`<meta name="theme-color">` tags -- see `mainServerTheme`'s note on why
+`primaryColor` itself (unlike `primaryBgColor`/`primaryAnchorColor`) doesn't
+vary with dark/light mode, so this never fires from a `ThemePreferenceClicked`/
+`SystemPrefersDarkChanged` alone.
+-}
+navBarColorCmd : Model -> Model -> Cmd Msg
+navBarColorCmd before after =
+    let
+        colorOf model_ =
+            (AccountsPanel.mainServerTheme (effectiveDarkMode model_) model_.accountsPanel).primaryColor
+    in
+    if colorOf before /= colorOf after then
+        Ports.setNavBarColor (colorOf after)
+
+    else
+        Cmd.none
+
+
+updateImpl : Request -> Msg -> Model -> ( Model, Cmd Msg )
+updateImpl req msg model =
     case msg of
         AccountsPanelMsg subMsg ->
             let
@@ -295,11 +372,34 @@ update req msg model =
 
                 ( refreshedStarredPostsPanel, refreshCmd ) =
                     StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
+
+                -- The Accounts Panel and Starred Posts Panel are both
+                -- full-width slide-out panels on narrow screens (see
+                -- `UI.Responsive`), so opening one closes the other there.
+                shouldCloseStarredPostsPanel =
+                    case subMsg of
+                        AccountsPanel.ToggleAccountsPanel ->
+                            subModel.showAccountsPanel && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedStarredPostsPanel, closeCmd ) =
+                    if shouldCloseStarredPostsPanel then
+                        let
+                            ( closedModel, cmd, _ ) =
+                                StarredPostsPanel.update subModel StarredPostsPanel.CloseStarredPostsPanel refreshedStarredPostsPanel
+                        in
+                        ( closedModel, cmd )
+
+                    else
+                        ( refreshedStarredPostsPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPostsPanel = refreshedStarredPostsPanel }
+            ( { model | accountsPanel = subModel, starredPostsPanel = closedStarredPostsPanel }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPostsPanelMsg refreshCmd
+                , Cmd.map StarredPostsPanelMsg closeCmd
                 ]
             )
 
@@ -333,11 +433,29 @@ update req msg model =
 
                         Nothing ->
                             model.mediaViewerPanel
+
+                -- Mirrors `AccountsPanelMsg`'s own close-the-other-panel
+                -- branch, above -- see `UI.Responsive`.
+                shouldCloseAccountsPanel =
+                    case subMsg of
+                        StarredPostsPanel.ToggleStarredPostsPanel ->
+                            subModel.showStarredPostsPanel && Responsive.isNarrow model.windowSize
+
+                        _ ->
+                            False
+
+                ( closedAccountsPanelModel, closeCmd ) =
+                    if shouldCloseAccountsPanel then
+                        AccountsPanel.update req AccountsPanel.CloseAccountsPanel accountsPanelModel
+
+                    else
+                        ( accountsPanelModel, Cmd.none )
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = accountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
+            ( { model | starredPostsPanel = subModel, accountsPanel = closedAccountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
             , Cmd.batch
                 [ Cmd.map StarredPostsPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map AccountsPanelMsg closeCmd
                 ]
             )
 
@@ -434,7 +552,7 @@ update req msg model =
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    update req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
+                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -442,7 +560,7 @@ update req msg model =
                 -- Home" hook (see `UI.navLink`), hence scrolling to top here.
                 ( scrolledModel, scrollCmd ) =
                     if alreadyHome then
-                        update req ScrollToTop closedModel
+                        updateImpl req ScrollToTop closedModel
 
                     else
                         ( closedModel, Cmd.none )
@@ -454,6 +572,9 @@ update req msg model =
 
         NavigateExternal url ->
             ( model, Nav.load url )
+
+        WindowResized width height ->
+            ( { model | windowSize = { width = width, height = height } }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )
@@ -512,9 +633,11 @@ subscriptions : Request -> Model -> Sub Msg
 subscriptions _ model =
     Sub.batch
         [ Ports.systemPrefersDarkChanged SystemPrefersDarkChanged
+        , Browser.Events.onResize WindowResized
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
         , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
+        , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 
