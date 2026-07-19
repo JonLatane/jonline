@@ -2,7 +2,9 @@ module Components.Users exposing
     ( allPermissions
     , authorAvatarUrl
     , avatarUrl
+    , createFollow
     , defederateProfile
+    , deleteFollow
     , displayName
     , federateProfile
     , fetchUserById
@@ -10,12 +12,16 @@ module Components.Users exposing
     , fetchUserListing
     , isAdminUser
     , isReservedUsername
+    , moderationPasses
+    , moderationPending
+    , moderationRejected
     , moderationText
     , parseUserRouteId
     , permissionFromText
     , permissionText
     , profileHref
     , titleName
+    , updateFollow
     , updateUser
     , userCard
     , userIdHref
@@ -37,7 +43,8 @@ import Grpc
 import Html exposing (Html, a, div, img, text)
 import Html.Attributes exposing (alt, href, src)
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Author, FederatedAccount, GetUsersResponse, User, defaultGetUsersRequest)
+import Proto.Google.Protobuf
+import Proto.Jonline exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -188,6 +195,69 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         maybeAccountServer
         (\server token ->
             Grpc.new Jonline.defederateProfile target
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Creates a `Follow` -- i.e. `follow.userId` requests to follow
+`follow.targetUserId`, subject to the target's own `defaultFollowModeration`
+(see `Components.Users.FollowStatusAndButton`, this RPC's only caller).
+-}
+createFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Follow )
+createFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.createFollow follow
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Updates a `Follow`'s `targetUserModeration` -- only the `targetUserId`
+side of a `Follow` may do this (i.e. approve/reject a follower), see
+`Components.Users.FollowStatusAndButton`.
+-}
+updateFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Follow )
+updateFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.updateFollow follow
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Deletes a `Follow` -- either `follow.userId` unfollowing/cancelling a
+follow request on `follow.targetUserId`, see
+`Components.Users.FollowStatusAndButton`.
+-}
+deleteFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty )
+deleteFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deleteFollow follow
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
@@ -443,6 +513,31 @@ moderationText moderation =
 
         ModerationUnrecognized_ _ ->
             "Unknown"
+
+
+{-| Whether a `Moderation` (e.g. a `Follow`'s `targetUserModeration`) counts
+as "in effect" -- the subject is visible/active. Mirrors the Tamagui app's
+`utils/moderation_utils.ts` `passes`.
+-}
+moderationPasses : Moderation -> Bool
+moderationPasses moderation =
+    moderation == UNMODERATED || moderation == APPROVED
+
+
+{-| Whether a `Moderation` is still awaiting a decision -- mirrors the
+Tamagui app's `utils/moderation_utils.ts` `pending`.
+-}
+moderationPending : Moderation -> Bool
+moderationPending moderation =
+    moderation == PENDING
+
+
+{-| Whether a `Moderation` has been explicitly declined -- mirrors the
+Tamagui app's `utils/moderation_utils.ts` `rejected`.
+-}
+moderationRejected : Moderation -> Bool
+moderationRejected moderation =
+    moderation == REJECTED
 
 
 {-| A plain-English label for a `Permission` -- e.g. for a profile's

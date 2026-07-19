@@ -33,6 +33,7 @@ but none of this module's profile-editing machinery.
 import Components.Markdown as Markdown
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
+import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Components.Users.Resolver as Resolver
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -122,6 +123,7 @@ type alias Model =
     , realNameEdit : Maybe RealNameEdit
     , permissionsEdit : Maybe PermissionsEdit
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
+    , followStatusAndButton : FollowStatusAndButton.Model
     }
 
 
@@ -142,6 +144,7 @@ init shared pageIsSecure targetHost lookup =
       , realNameEdit = Nothing
       , permissionsEdit = Nothing
       , federatedProfilesEdit = Nothing
+      , followStatusAndButton = FollowStatusAndButton.init
       }
     , Effect.map ResolverMsg resolverEffect
     )
@@ -199,6 +202,7 @@ type Msg
     | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
     | FederatedProfileRemoveClicked FederatedAccount
     | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
+    | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -526,6 +530,35 @@ update shared msg model =
               }
             , Effect.none
             )
+
+        FollowStatusAndButtonMsg subMsg ->
+            case ( model.resolver.status, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just ( server, account ) ) ->
+                    let
+                        ( newFollowStatusAndButton, followEffect ) =
+                            FollowStatusAndButton.update shared server account user subMsg model.followStatusAndButton
+
+                        newModel =
+                            { model | followStatusAndButton = newFollowStatusAndButton }
+
+                        mappedFollowEffect =
+                            Effect.map FollowStatusAndButtonMsg followEffect
+                    in
+                    case subMsg of
+                        FollowStatusAndButton.GotFollowResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        FollowStatusAndButton.GotUnfollowResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        FollowStatusAndButton.GotModerationResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        _ ->
+                            ( newModel, mappedFollowEffect )
+
+                _ ->
+                    ( model, Effect.none )
 
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accountsPanel.servers`
@@ -862,12 +895,15 @@ profileDetail shared model server maybeAccount user =
             baseHref ++ "/following"
     in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
-        [ div [ class "profile-header" ]
-            [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
-            , div [ class "profile-header-names" ]
-                [ usernameHeading user
-                , realNameView canEdit model.realNameEdit user
+        [ div [ class "profile-header-row" ]
+            [ div [ class "profile-header" ]
+                [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
+                , div [ class "profile-header-names" ]
+                    [ usernameHeading user
+                    , realNameView canEdit model.realNameEdit user
+                    ]
                 ]
+            , Html.map FollowStatusAndButtonMsg (FollowStatusAndButton.view model.followStatusAndButton maybeAccount user)
             ]
         , federatedProfilesSection shared model server (isOwnProfile maybeAccount user) user
         , div [ class "profile-meta" ]
