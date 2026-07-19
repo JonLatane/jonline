@@ -2,20 +2,28 @@ module Components.Users exposing
     ( allPermissions
     , authorAvatarUrl
     , avatarUrl
+    , createFollow
     , defederateProfile
+    , deleteFollow
     , displayName
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
+    , fetchUserListing
     , isAdminUser
     , isReservedUsername
+    , moderationPasses
+    , moderationPending
+    , moderationRejected
     , moderationText
     , parseUserRouteId
     , permissionFromText
     , permissionText
     , profileHref
     , titleName
+    , updateFollow
     , updateUser
+    , userCard
     , userIdHref
     , usernameHref
     , visibilityText
@@ -32,15 +40,20 @@ fields.
 
 import Gen.Route
 import Grpc
+import Html exposing (Html, a, div, img, text)
+import Html.Attributes exposing (alt, href, src)
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (Author, FederatedAccount, GetUsersResponse, User, defaultGetUsersRequest)
+import Proto.Google.Protobuf
+import Proto.Jonline exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.UserListingType exposing (UserListingType)
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Task exposing (Task)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Fetches the user with `userId` from `maybeAccountServer`'s server,
@@ -66,6 +79,27 @@ fetchUserByUsername :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
 fetchUserByUsername accountsPanelModel maybeAccountServer username =
     fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | username = Just username }
+
+
+{-| Fetches a `listingType` listing of users from `maybeAccountServer`'s
+server -- `EVERYONE` for `/people`, or `FOLLOWING`/`FOLLOWERS`/`FRIENDS`
+relative to `targetUserId` for a profile's own relationship pages (see
+`Components.Pages.UsersPage`). Note: as of this writing, the backend
+(`backend/src/rpcs/users/get_users.rs`) only special-cases `listingType` for
+`FOLLOWREQUESTS` targeting the _signed-in caller_; passing a `targetUserId`
+here takes priority server-side and just returns that one user regardless of
+`listingType`, so `FOLLOWING`/`FOLLOWERS`/`FRIENDS` don't yet return real
+relationship data for an arbitrary target user -- this is wired up to the
+request shape the backend is _meant_ to support once that's implemented.
+-}
+fetchUserListing :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Maybe String
+    -> UserListingType
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
+fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType =
+    fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
 
 
 fetchUsers :
@@ -167,20 +201,83 @@ defederateProfile accountsPanelModel maybeAccountServer target =
         )
 
 
+{-| Creates a `Follow` -- i.e. `follow.userId` requests to follow
+`follow.targetUserId`, subject to the target's own `defaultFollowModeration`
+(see `Components.Users.FollowStatusAndButton`, this RPC's only caller).
+-}
+createFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Follow )
+createFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.createFollow follow
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Updates a `Follow`'s `targetUserModeration` -- only the `targetUserId`
+side of a `Follow` may do this (i.e. approve/reject a follower), see
+`Components.Users.FollowStatusAndButton`.
+-}
+updateFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Follow )
+updateFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.updateFollow follow
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
+{-| Deletes a `Follow` -- either `follow.userId` unfollowing/cancelling a
+follow request on `follow.targetUserId`, see
+`Components.Users.FollowStatusAndButton`.
+-}
+deleteFollow :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Follow
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty )
+deleteFollow accountsPanelModel maybeAccountServer follow =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deleteFollow follow
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
 
 -- ROUTE / LINKS
 
 
 {-| Usernames that can't be routed to via `/:username[@host]` since they'd
-collide with this app's own top-level routes (`Pages.About`, elm-spa's builtin
-`not-found`) or the `/user`/`/post` prefixes themselves -- e.g. a user named
-"about" is only ever reachable via `/user/:id[@host]`, never `/about[@host]`.
-Compared case-insensitively, since the collision is with the URL segment, not
-the display name.
+collide with this app's own top-level routes (`Pages.About`, `Pages.People`,
+elm-spa's builtin `not-found`) or the `/user`/`/post` prefixes themselves --
+e.g. a user named "about" is only ever reachable via `/user/:id[@host]`, never
+`/about[@host]`. Compared case-insensitively, since the collision is with the
+URL segment, not the display name.
 -}
 reservedUsernames : Set String
 reservedUsernames =
-    Set.fromList [ "about", "not-found", "user", "post" ]
+    Set.fromList [ "about", "not-found", "user", "post", "people" ]
 
 
 isReservedUsername : String -> Bool
@@ -313,6 +410,72 @@ isAdminUser user =
     List.member ADMIN user.permissions
 
 
+{-| A compact card for a `user` in a list (`/people`, or a profile's own
+Following/Followers/Friends pages -- see `Components.Pages.UsersPage`) --
+links to their profile (`profileHref`), showing their avatar (or an
+initial-letter placeholder, see `userCardAvatar`), `displayName`, and
+follower/following counts, plus whatever `followStatusAndButton` renders at
+the card's far right (a `Components.Users.FollowStatusAndButton.view`, mapped
+into the caller's own `Msg` -- kept as a plain `Html msg` slot here rather
+than this module importing that one directly, which would cycle back through
+`FollowStatusAndButton`'s own dependency on `createFollow`/`updateFollow`/
+`deleteFollow`/`moderationPasses` etc. here).
+
+Unlike `Components.PostCard.postCard`, the whole card can just be one plain
+`<a>` -- `followStatusAndButton`'s own buttons use `stopPropagation`/
+`preventDefault` (see `FollowStatusAndButton.followActionButton`) rather than
+needing this function's callers to reach for that module's own "stretched
+link" treatment.
+-}
+userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Html msg -> User -> Html msg
+userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
+    a
+        [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })
+        , classes
+            [ "user-card"
+            , hostnameToCSSClass server.frontendHost
+            , "border-color-primary-anchor-50"
+            , "hover-border-color-primary-anchor"
+            , "background-color-primary-5"
+            ]
+        ]
+        [ userCardAvatar (displayName user) (avatarUrl server maybeAccount user)
+        , div [ Html.Attributes.class "user-card-details" ]
+            [ div [] [ text (displayName user) ]
+            , div [ Html.Attributes.class "user-card-meta" ] [ text (userCardMetaText user) ]
+            ]
+        , followStatusAndButton
+        ]
+
+
+{-| Duplicated (rather than reusing `UI.imageOrInitial`) since `UI` itself
+imports this module (for `userCard`, mirroring `avatarUrl`/`profileHref`
+elsewhere), so the reverse import would be a cycle -- same reasoning as
+`Components.PostCard`'s own private `authorAvatar`.
+-}
+userCardAvatar : String -> Maybe String -> Html msg
+userCardAvatar name maybeUrl =
+    case maybeUrl of
+        Just url ->
+            img [ Html.Attributes.class "user-card-avatar", src url, alt name ] []
+
+        Nothing ->
+            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+
+
+{-| "N followers · N following" for `userCard` -- either half is dropped
+entirely (rather than shown as "0") when that count isn't present at all
+(`User.followerCount`/`followingCount` are both optional).
+-}
+userCardMetaText : User -> String
+userCardMetaText user =
+    [ user.followerCount |> Maybe.map (\c -> String.fromInt c ++ " followers")
+    , user.followingCount |> Maybe.map (\c -> String.fromInt c ++ " following")
+    ]
+        |> List.filterMap identity
+        |> String.join " · "
+
+
 {-| Display text for a User's visibility -- mirrors
 `Components.Posts.postVisibilityText`, which is Post-specific.
 -}
@@ -361,6 +524,31 @@ moderationText moderation =
 
         ModerationUnrecognized_ _ ->
             "Unknown"
+
+
+{-| Whether a `Moderation` (e.g. a `Follow`'s `targetUserModeration`) counts
+as "in effect" -- the subject is visible/active. Mirrors the Tamagui app's
+`utils/moderation_utils.ts` `passes`.
+-}
+moderationPasses : Moderation -> Bool
+moderationPasses moderation =
+    moderation == UNMODERATED || moderation == APPROVED
+
+
+{-| Whether a `Moderation` is still awaiting a decision -- mirrors the
+Tamagui app's `utils/moderation_utils.ts` `pending`.
+-}
+moderationPending : Moderation -> Bool
+moderationPending moderation =
+    moderation == PENDING
+
+
+{-| Whether a `Moderation` has been explicitly declined -- mirrors the
+Tamagui app's `utils/moderation_utils.ts` `rejected`.
+-}
+moderationRejected : Moderation -> Bool
+moderationRejected moderation =
+    moderation == REJECTED
 
 
 {-| A plain-English label for a `Permission` -- e.g. for a profile's

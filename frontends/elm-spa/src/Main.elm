@@ -6,47 +6,48 @@ gitignored/regenerated, so this is the only place changes here persist).
 
 Four changes from the default:
 
-1. This app can be served from `/` or from `/elm` (see
-`backend/src/web/elm_web.rs`), so every `Url` gotten from the browser is
-normalized (`Shared.normalizeUrl`) before it's handed to
-`Gen.Route.fromUrl`/`Request.create`/`Pages.init`, stripping that mount's
-`basePath` so routing always sees an app-relative path. `basePath` itself is
-detected once, from the very first `Url` (immutable for the session, same as
-`Shared.AccountsPanel`'s `browsingHost`), and threaded into `Shared.init` so
-view code (`UI.navLink`) can prepend it back onto outgoing hrefs.
+1.  This app can be served from `/` or from `/elm` (see
+    `backend/src/web/elm_web.rs`), so every `Url` gotten from the browser is
+    normalized (`Shared.normalizeUrl`) before it's handed to
+    `Gen.Route.fromUrl`/`Request.create`/`Pages.init`, stripping that mount's
+    `basePath` so routing always sees an app-relative path. `basePath` itself is
+    detected once, from the very first `Url` (immutable for the session, same as
+    `Shared.AccountsPanel`'s `browsingHost`), and threaded into `Shared.init` so
+    view code (`UI.navLink`) can prepend it back onto outgoing hrefs.
 
-2. `Page pageMsg` applies any `Shared.Msg`s a page's `update` forwarded (via
-`Effect.fromShared`) to `Shared.update` immediately, in this same call --
-see `Effect.partitionShared`. The default routes them through `Effect.toCmd`
-instead, which defers them to a `Task.perform` on a later `update`/`view`
-cycle; that's invisible for most effects, but the Accounts Panel's login form
-lives in `Shared.Model` (it's shown from every page's header, via
-`UI.layout`), so every keystroke is a `Shared.Msg` forwarded this way. The
-deferred version meant `view` ran once per keystroke with the stale
-pre-keystroke model -- snapping a mid-edit cursor to the end of the old text
--- and then again with the correct model, snapping it again.
+2.  `Page pageMsg` applies any `Shared.Msg`s a page's `update` forwarded (via
+    `Effect.fromShared`) to `Shared.update` immediately, in this same call --
+    see `Effect.partitionShared`. The default routes them through `Effect.toCmd`
+    instead, which defers them to a `Task.perform` on a later `update`/`view`
+    cycle; that's invisible for most effects, but the Accounts Panel's login form
+    lives in `Shared.Model` (it's shown from every page's header, via
+    `UI.layout`), so every keystroke is a `Shared.Msg` forwarded this way. The
+    deferred version meant `view` ran once per keystroke with the stale
+    pre-keystroke model -- snapping a mid-edit cursor to the end of the old text
+    -- and then again with the correct model, snapping it again.
 
-3. `Shared sharedMsg` (a top-level `Shared.Msg`, e.g. `GotReconnectResult`
-firing from a `Cmd` kicked off in `Shared.init`) additionally forwards that
-same message into the currently active page via `notifyPageOfSharedMsg`, for
-pages that expose a `fromShared` hook (see `Pages.Home_`, `Pages.Post.PostId_`).
-The default only ever routes messages page -> shared (via `Page pageMsg`,
-change 2 above); without this, a page has no way to notice state that changes
-outside of its own `update` -- e.g. a persisted server finishing its
-reconnect at startup -- short of polling for it.
+3.  `Shared sharedMsg` (a top-level `Shared.Msg`, e.g. `GotReconnectResult`
+    firing from a `Cmd` kicked off in `Shared.init`) additionally forwards that
+    same message into the currently active page via `notifyPageOfSharedMsg`, for
+    pages that expose a `fromShared` hook (see `Pages.Home_`, `Pages.Post.PostId_`).
+    The default only ever routes messages page -> shared (via `Page pageMsg`,
+    change 2 above); without this, a page has no way to notice state that changes
+    outside of its own `update` -- e.g. a persisted server finishing its
+    reconnect at startup -- short of polling for it.
 
-4. `ChangedUrl` fires `Shared.ShowScrollPreserver` (see `UI.scrollPreserver`)
-when, and only when, the navigation was the browser's own back button rather
-than an in-app link click, redirect, or typed/bookmarked url -- those always
-land on a fresh page starting at scroll top, but stepping back restores the
-browser's remembered scroll offset against a page whose content may still be
-loading (and so shorter than it was when that offset was recorded), which
-would otherwise visibly yank the scroll position while it fills back in. Elm
-has no built-in way to ask "was this `ChangedUrl` a back-button nav", so
-`Model.backStack` shadows the browser's own back-stack by hand: every
-`ClickedLink (Browser.Internal url)` pushes the url being left onto it, and
-`ChangedUrl` treats landing back on its top entry as a back-nav (popping it),
-leaving any other url change untouched.
+4.  `ChangedUrl` fires `Shared.ShowScrollPreserver` (see `UI.scrollPreserver`)
+    when, and only when, the navigation was the browser's own back button rather
+    than an in-app link click, redirect, or typed/bookmarked url -- those always
+    land on a fresh page starting at scroll top, but stepping back restores the
+    browser's remembered scroll offset against a page whose content may still be
+    loading (and so shorter than it was when that offset was recorded), which
+    would otherwise visibly yank the scroll position while it fills back in. Elm
+    has no built-in way to ask "was this `ChangedUrl` a back-button nav", so
+    `Model.backStack` shadows the browser's own back-stack by hand: every
+    `ClickedLink (Browser.Internal url)` pushes the url being left onto it, and
+    `ChangedUrl` treats landing back on its top entry as a back-nav (popping it),
+    leaving any other url change untouched.
+
 -}
 
 import Browser
@@ -57,16 +58,22 @@ import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
 import Pages.Home_
+import Pages.People
 import Pages.Post.PostId_
 import Pages.User.UserId_
+import Pages.User.UserId_.Followers
+import Pages.User.UserId_.Following
+import Pages.User.UserId_.Friends
 import Pages.User.UserId_.Posts
 import Pages.Username_
+import Pages.Username_.Followers
+import Pages.Username_.Following
+import Pages.Username_.Friends
 import Pages.Username_.Posts
 import Request
 import Shared
 import Url exposing (Url)
 import View
-
 
 
 main : Program Shared.Flags Model Msg
@@ -272,11 +279,32 @@ sharedMsgForPage sharedMsg page =
         Gen.Model.User__UserId___Posts _ _ ->
             Just (Gen.Msg.User__UserId___Posts (Pages.User.UserId_.Posts.fromShared sharedMsg))
 
+        Gen.Model.User__UserId___Following _ _ ->
+            Just (Gen.Msg.User__UserId___Following (Pages.User.UserId_.Following.fromShared sharedMsg))
+
+        Gen.Model.User__UserId___Followers _ _ ->
+            Just (Gen.Msg.User__UserId___Followers (Pages.User.UserId_.Followers.fromShared sharedMsg))
+
+        Gen.Model.User__UserId___Friends _ _ ->
+            Just (Gen.Msg.User__UserId___Friends (Pages.User.UserId_.Friends.fromShared sharedMsg))
+
         Gen.Model.Username_ _ _ ->
             Just (Gen.Msg.Username_ (Pages.Username_.fromShared sharedMsg))
 
         Gen.Model.Username___Posts _ _ ->
             Just (Gen.Msg.Username___Posts (Pages.Username_.Posts.fromShared sharedMsg))
+
+        Gen.Model.Username___Following _ _ ->
+            Just (Gen.Msg.Username___Following (Pages.Username_.Following.fromShared sharedMsg))
+
+        Gen.Model.Username___Followers _ _ ->
+            Just (Gen.Msg.Username___Followers (Pages.Username_.Followers.fromShared sharedMsg))
+
+        Gen.Model.Username___Friends _ _ ->
+            Just (Gen.Msg.Username___Friends (Pages.Username_.Friends.fromShared sharedMsg))
+
+        Gen.Model.People _ _ ->
+            Just (Gen.Msg.People (Pages.People.fromShared sharedMsg))
 
         _ ->
             Nothing
@@ -294,6 +322,7 @@ Any `Shared.Msg`s the page's own `update` forwards back out in response (via
 a page's `SharedMsg` handler only ever echoes back the very message it was
 just given here, and `sharedMsg` has already been applied by the caller, so
 reapplying it would double up a state change that's already been made.
+
 -}
 notifyPageOfSharedMsg : Shared.Msg -> Shared.Model -> Gen.Model.Model -> Url -> Key -> ( Gen.Model.Model, Cmd Msg )
 notifyPageOfSharedMsg sharedMsg shared page url key =

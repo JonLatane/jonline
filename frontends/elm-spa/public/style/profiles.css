@@ -8,6 +8,13 @@
   border-radius: 8px;
 }
 
+.profile-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+}
+
 .profile-header {
   display: flex;
   align-items: center;

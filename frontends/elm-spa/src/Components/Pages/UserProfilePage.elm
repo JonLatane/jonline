@@ -33,6 +33,7 @@ but none of this module's profile-editing machinery.
 import Components.Markdown as Markdown
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
+import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Components.Users.Resolver as Resolver
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -122,6 +123,7 @@ type alias Model =
     , realNameEdit : Maybe RealNameEdit
     , permissionsEdit : Maybe PermissionsEdit
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
+    , followStatusAndButton : FollowStatusAndButton.Model
     }
 
 
@@ -142,6 +144,7 @@ init shared pageIsSecure targetHost lookup =
       , realNameEdit = Nothing
       , permissionsEdit = Nothing
       , federatedProfilesEdit = Nothing
+      , followStatusAndButton = FollowStatusAndButton.init
       }
     , Effect.map ResolverMsg resolverEffect
     )
@@ -199,6 +202,7 @@ type Msg
     | GotFederatedProfileAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, FederatedAccount ))
     | FederatedProfileRemoveClicked FederatedAccount
     | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
+    | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -527,6 +531,35 @@ update shared msg model =
             , Effect.none
             )
 
+        FollowStatusAndButtonMsg subMsg ->
+            case ( model.resolver.status, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just ( server, account ) ) ->
+                    let
+                        ( newFollowStatusAndButton, followEffect ) =
+                            FollowStatusAndButton.update shared server account user subMsg model.followStatusAndButton
+
+                        newModel =
+                            { model | followStatusAndButton = newFollowStatusAndButton }
+
+                        mappedFollowEffect =
+                            Effect.map FollowStatusAndButtonMsg followEffect
+                    in
+                    case subMsg of
+                        FollowStatusAndButton.GotFollowResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        FollowStatusAndButton.GotUnfollowResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        FollowStatusAndButton.GotModerationResult (Ok _) ->
+                            refetch shared newModel |> Tuple.mapSecond (\effect -> Effect.batch [ mappedFollowEffect, effect ])
+
+                        _ ->
+                            ( newModel, mappedFollowEffect )
+
+                _ ->
+                    ( model, Effect.none )
+
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accountsPanel.servers`
             -- (same as `ConnectClicked`'s own `GotConnectResult` does for
@@ -846,20 +879,31 @@ profileDetail shared model server maybeAccount user =
         isAdmin =
             isAdminAccount maybeAccount
 
-        postsHref =
+        baseHref =
             Users.profileHref shared.basePath
                 shared.accountsPanel.mainFrontendHost
                 server.frontendHost
                 { userId = user.id, username = user.username }
-                ++ "/posts"
+
+        postsHref =
+            baseHref ++ "/posts"
+
+        followersHref =
+            baseHref ++ "/followers"
+
+        followingHref =
+            baseHref ++ "/following"
     in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
-        [ div [ class "profile-header" ]
-            [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
-            , div [ class "profile-header-names" ]
-                [ usernameHeading user
-                , realNameView canEdit model.realNameEdit user
+        [ div [ class "profile-header-row" ]
+            [ div [ class "profile-header" ]
+                [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
+                , div [ class "profile-header-names" ]
+                    [ usernameHeading user
+                    , realNameView canEdit model.realNameEdit user
+                    ]
                 ]
+            , Html.map FollowStatusAndButtonMsg (FollowStatusAndButton.view model.followStatusAndButton maybeAccount user)
             ]
         , federatedProfilesSection shared model server (isOwnProfile maybeAccount user) user
         , div [ class "profile-meta" ]
@@ -873,7 +917,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts postsHref user
+        , profileCounts postsHref followersHref followingHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         ]
@@ -1059,16 +1103,18 @@ editErrorView status =
             text ""
 
 
-{-| `postsHref` (see `profileDetail`) is only attached to the "Posts" count,
-linking it to `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` -- the other
-counts have no page of their own (yet) to link to.
+{-| `postsHref`/`followersHref`/`followingHref` (see `profileDetail`) link the
+"Posts"/"Followers"/"Following" counts to `Pages.Username_.Posts`/
+`Pages.Username_.Followers`/`Pages.Username_.Following` (or their
+`Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
+own (yet) to link to.
 -}
-profileCounts : String -> User -> Html Msg
-profileCounts postsHref user =
+profileCounts : String -> String -> String -> User -> Html Msg
+profileCounts postsHref followersHref followingHref user =
     let
         counts =
-            [ ( "Followers", user.followerCount, Nothing )
-            , ( "Following", user.followingCount, Nothing )
+            [ ( "Followers", user.followerCount, Just followersHref )
+            , ( "Following", user.followingCount, Just followingHref )
             , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
             , ( "Responses", user.responseCount, Nothing )
