@@ -142,7 +142,7 @@ jobs:
           path: |
             frontends/tamagui/apps/next/out
             frontends/tamagui/apps/next/out-tamagui
-          key: tamagui-web-build-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**') }}
+          key: tamagui-web-build-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**', 'protos/**') }}
 
       - uses: actions/setup-node@v4
         if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
@@ -294,7 +294,7 @@ jobs:
         id: tamagui-test-cache
         with:
           path: frontends/tamagui/.test-passed
-          key: tamagui-web-test-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**') }}
+          key: tamagui-web-test-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**', 'protos/**') }}
 
       - uses: actions/setup-node@v4
         if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
