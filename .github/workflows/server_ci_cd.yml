@@ -30,6 +30,9 @@ on:
       CLOUDFLARE_ZONE_OAKCITY_SOCIAL:
         description: "Cloudflare Zone ID for Oak City Social"
         required: true
+      HOMEBREW_TAP_TOKEN:
+        description: "GitHub PAT with contents:write on JonLatane/homebrew-jonline, used to push Formula updates"
+        required: true
 
 jobs:
   test_consistency:
@@ -260,6 +263,49 @@ jobs:
         with:
           path: backend/target/release
           key: rust-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+  build_rust_binaries_macos:
+    name: Build Rust Binaries (macOS arm64)
+    runs-on: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: arduino/setup-protoc@v3
+        with:
+          version: "26.x"
+
+      # diesel's "postgres" feature links libpq at build time; Homebrew's libpq is
+      # keg-only (not symlinked into /opt/homebrew), so point pq-sys/pkg-config at it.
+      - name: Install libpq (Homebrew)
+        run: |
+          brew install libpq
+          echo "PQ_LIB_DIR=$(brew --prefix libpq)/lib" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix libpq)/lib/pkgconfig" >> $GITHUB_ENV
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-arm64-github-build
+          shared-key: jonline-build-${{ runner.OS }}-arm64-github-build
+
+      - working-directory: backend
+        run: cargo build --release
+
+      - uses: actions/cache/save@v4
+        id: rust-macos-app-cache
+        with:
+          path: backend/target/release
+          key: rust-macos-arm64-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
   test_rust_binaries:
     name: Test Rust Binaries
@@ -637,6 +683,12 @@ jobs:
 
             - *In testing/not yet ready for production use:* [DockerHub: JBL (Jonline Balancer of Loads/Load Balancer) (jonlatane/jbl:${{ steps.vars.outputs.full_version }})](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags?page=1&name=${{ steps.vars.outputs.full_version }})
 
+            A macOS (Apple Silicon) build is also available via Homebrew:
+
+            ```
+            brew install jonlatane/jonline/jonline
+            ```
+
             ## Deployments
 
             Deployments will be brought up-to-date at around the same time as this release is created.
@@ -658,6 +710,134 @@ jobs:
             This list's Markdown was generated with `git log -100 --pretty='- [%h / *%ch*] %B'` at release time:
 
             ${{ steps.changelog.outputs.ci_changelog }}
+
+  create_homebrew_release:
+    name: "Homebrew: Release"
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - create_github_release
+      - build_rust_binaries_macos
+      - build_tamagui_ui
+      - build_elm_ui
+      - test_consistency
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')"
+          sha_short="$(git rev-parse --short=7 HEAD)"
+          echo "be_version=${be_version}" >> $GITHUB_OUTPUT
+          echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
+          echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+      - uses: actions/cache/restore@v4
+        id: web-app-cache
+        with:
+          path: |
+            frontends/tamagui/apps/next/out
+            frontends/tamagui/apps/next/out-tamagui
+          key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: elm-app-cache
+        with:
+          path: frontends/elm-spa/public
+          key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: rust-macos-app-cache
+        with:
+          path: backend/target/release
+          key: rust-macos-arm64-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+      # Mirrors deploys/docker/server/Dockerfile's /opt layout, but rooted at a
+      # staging dir that becomes /opt/homebrew/etc/jonline on the installed Mac.
+      - name: Assemble /opt/homebrew/etc/jonline package layout
+        run: |
+          set -euo pipefail
+          PKG=jonline_pkg
+          rm -rf "$PKG"
+          mkdir -p "$PKG/docs"
+
+          for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
+                     generate_preview_images delete_preview_images set_permission to_db_id to_proto_id; do
+            cp "backend/target/release/${bin}" "$PKG/${bin}"
+            chmod +x "$PKG/${bin}"
+          done
+
+          cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
+          cp docs/protocol.html "$PKG/docs/protocol.html"
+
+          mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
+          cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
+          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/tamagui_web_tamagui/"
+          cp -R frontends/elm-spa/public/. "$PKG/elm_web/"
+
+          # grpcurl is useful to have on a jonline instance (see Dockerfile) --
+          # osx_arm64 build, matching the version pinned there.
+          curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_osx_arm64.tar.gz" | tar -xz -C "$PKG" grpcurl
+
+          tar czf "jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" -C "$PKG" .
+
+      - name: Compute sha256
+        id: sha
+        run: echo "sha256=$(sha256sum jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Upload release asset to v${{ steps.vars.outputs.full_version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload "v${{ steps.vars.outputs.full_version }}" "jonline-${{ steps.vars.outputs.full_version }}-macos-arm64.tar.gz" --repo jonlatane/jonline --clobber
+
+      - name: Push Formula/jonline.rb to JonLatane/homebrew-jonline
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/JonLatane/homebrew-jonline.git" tap
+          cat > tap/Formula/jonline.rb <<'JONLINE_FORMULA_EOF'
+          # This file is generated and pushed automatically by the Server CI/CD workflow
+          # (create_homebrew_release job) in https://github.com/jonlatane/jonline on every
+          # release to main. Don't hand-edit it -- changes will be overwritten.
+          class Jonline < Formula
+            desc "Jonline federated social server"
+            homepage "https://github.com/jonlatane/jonline"
+            url "https://github.com/jonlatane/jonline/releases/download/vFULL_VERSION_PLACEHOLDER/jonline-FULL_VERSION_PLACEHOLDER-macos-arm64.tar.gz"
+            sha256 "SHA256_PLACEHOLDER"
+            version "FULL_VERSION_PLACEHOLDER"
+            license "AGPL-3.0-only"
+
+            depends_on arch: :arm64
+            depends_on "libpq"
+
+            def install
+              (etc/"jonline").install Dir["*"]
+              (bin/"jonline").write <<~SCRIPT
+                #!/bin/bash
+                cd "#{etc}/jonline" && exec ./jonline "$@"
+              SCRIPT
+              chmod 0755, bin/"jonline"
+            end
+
+            test do
+              system "#{bin}/jonline", "--version"
+            end
+          end
+          JONLINE_FORMULA_EOF
+          sed -i "s|FULL_VERSION_PLACEHOLDER|${{ steps.vars.outputs.full_version }}|g" tap/Formula/jonline.rb
+          sed -i "s|SHA256_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" tap/Formula/jonline.rb
+
+          cd tap
+          git -c user.name="Jonline CI" -c user.email="ci@jonline.io" add Formula/jonline.rb
+          if git diff --cached --quiet; then
+            echo "No Formula changes to push"
+          else
+            git -c user.name="Jonline CI" -c user.email="ci@jonline.io" commit -m "jonline ${{ steps.vars.outputs.full_version }}"
+            git push origin main
+          fi
 
   deploy_bullcitysocial:
     name: Deploy Bull City Social

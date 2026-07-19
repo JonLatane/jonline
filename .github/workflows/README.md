@@ -9,6 +9,7 @@ The `server_ci_cd.yml` workflow a multi-phase CI/CD process:
 4. Deploy to Jonline.io in a canary run.
 5. Deploy to BullCity.Social and OakCity.Social.
 6. Deploy the Preview Generator everywhere.
+7. After the GitHub release is created, build a macOS (Apple Silicon) binary release and push an updated `Formula/jonline.rb` to the [jonlatane/homebrew-jonline](https://github.com/jonlatane/homebrew-jonline) tap (`create_homebrew_release`), so `brew install jonlatane/jonline/jonline` stays up to date.
 
 ## Flutter Apps
 Jonline also provides a single workflow for each Flutter native app (`flutter_android.yml`, `flutter_ios.yml`, `flutter_macos.yml`, and `flutter_wndws.yml`).
