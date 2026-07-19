@@ -39,6 +39,9 @@ lazy_static! {
         event,
         user,
         user_posts,
+        user_friends,
+        user_followers,
+        user_following,
         people,
         follow_requests,
         server,
@@ -283,18 +286,71 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: &str| {
-        let group_name = group_name(path, &mut connection);
+        let username = username_or_real_name(path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Posts | {}", group_name, server_name)),
+            title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
     },
-    // Lower priority (higher rank number) than `user`, `event`, `group_home`,
-    // `post`, and `server` (all default rank -5), so paths like "/user/posts"
-    // are still handled by those more specific routes first; this wildcard
-    // "/<username>/posts" route only catches requests they don't match.
+    rank = 10
+);
+
+webui!(
+    user_friends,
+    "/<_>/friends",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Friends | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    rank = 10
+);
+
+webui!(
+    user_followers,
+    "/<_>/followers",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Followers | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    rank = 10
+);
+
+webui!(
+    user_following,
+    "/<_>/following",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Following | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
     rank = 10
 );
 
@@ -306,18 +362,71 @@ webui!(
      server_name: String,
      server_logo: Option<String>,
      path: &str| {
-        let group_name = group_name(path, &mut connection);
+        let username = username_or_real_name_from_user_id(path, &mut connection);
 
         Some(JonlineSummary {
-            title: Some(format!("{}: Posts | {}", group_name, server_name)),
+            title: Some(format!("{}: Posts | {}", username, server_name)),
             description: None,
             image: server_logo.or(Some("/favicon.ico".to_string())),
         })
     },
-    // Lower priority (higher rank number) than `user`, `event`, `group_home`,
-    // `post`, and `server` (all default rank -5), so paths like "/user/posts"
-    // are still handled by those more specific routes first; this wildcard
-    // "/<username>/posts" route only catches requests they don't match.
+    rank = 10
+);
+
+webui!(
+    user_id_friends,
+    "/user/<_>/friends",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name_from_user_id(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Friends | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    rank = 10
+);
+
+webui!(
+    user_id_followers,
+    "/user/<_>/followers",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name_from_user_id(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Followers | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
+    rank = 10
+);
+
+webui!(
+    user_id_following,
+    "/user/<_>/following",
+    "", // This is actually not done in Tamagui yet, only Elm.
+    |mut connection: PgPooledConnection,
+     server_name: String,
+     server_logo: Option<String>,
+     path: &str| {
+        let username = username_or_real_name_from_user_id(path, &mut connection);
+
+        Some(JonlineSummary {
+            title: Some(format!("{}: Following | {}", username, server_name)),
+            description: None,
+            image: server_logo.or(Some("/favicon.ico".to_string())),
+        })
+    },
     rank = 10
 );
 
@@ -502,6 +611,45 @@ webui!(
         })
     }
 );
+
+fn username_or_real_name(path: &str, connection: &mut PgPooledConnection) -> String {
+    match federated_path_component(path, 1) {
+        Some(FederatedId::Local(username)) => rpcs::get_users(
+            crate::protos::GetUsersRequest {
+                username: Some(username.clone()),
+                ..Default::default()
+            },
+            &None,
+            connection,
+        )
+        .ok()
+        .and_then(|r| r.users.into_iter().next())
+        .map(|u| if u.real_name.is_empty() { u.username } else { u.real_name })
+        .unwrap_or(username),
+        Some(FederatedId::Federated(ref username, _)) => username.clone(),
+        None => "User".to_string(),
+    }
+}
+
+fn username_or_real_name_from_user_id(path: &str, connection: &mut PgPooledConnection) -> String {
+    match federated_path_component(path, 2) {
+        Some(FederatedId::Local(user_id)) => rpcs::get_users(
+            crate::protos::GetUsersRequest {
+                user_id: Some(user_id.clone()),
+                ..Default::default()
+            },
+            &None,
+            connection,
+        )
+        .ok()
+        .and_then(|r| r.users.into_iter().next())
+        .map(|u| if u.real_name.is_empty() { u.username } else { u.real_name })
+        .unwrap_or(user_id),
+        Some(FederatedId::Federated(ref user_id, _)) => user_id.clone(),
+        None => "User".to_string(),
+    }
+}
+
 fn group_name(path: &str, connection: &mut PgPooledConnection) -> String {
     match federated_path_component(path, 2) {
         Some(FederatedId::Local(shortname)) => rpcs::get_groups(
