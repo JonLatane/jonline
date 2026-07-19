@@ -35,7 +35,8 @@ import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, disabled)
-import Html.Events exposing (onClick)
+import Html.Events
+import Json.Decode as Decode
 import Proto.Google.Protobuf
 import Proto.Jonline exposing (Follow, User, defaultFollow)
 import Proto.Jonline.Moderation exposing (Moderation(..))
@@ -314,12 +315,18 @@ followButtonText requiresApproval =
         "Follow"
 
 
+{-| `stopPropagation`/`preventDefault` (rather than a plain `onClick`) so a
+click here doesn't also follow an enclosing link -- this view is embedded not
+just in `Components.Pages.UserProfilePage` (no enclosing link) but also in
+`Components.Users.userCard`, whose whole card is one big `<a>`. Mirrors
+`Components.PostCard.starButton`.
+-}
 followActionButton : SubmitStatus -> Msg -> String -> String -> Html Msg
 followActionButton status clickMsg buttonClass label =
     button
         [ class "follow-status-button"
         , class buttonClass
-        , onClick clickMsg
+        , Html.Events.custom "click" (Decode.succeed { message = clickMsg, stopPropagation = True, preventDefault = True })
         , disabled (status == Submitting)
         ]
         [ text label ]

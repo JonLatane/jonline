@@ -414,13 +414,21 @@ isAdminUser user =
 Following/Followers/Friends pages -- see `Components.Pages.UsersPage`) --
 links to their profile (`profileHref`), showing their avatar (or an
 initial-letter placeholder, see `userCardAvatar`), `displayName`, and
-follower/following counts. Unlike `Components.PostCard.postCard`, the whole
-card can just be one plain `<a>` -- there's nothing else inside it that needs
-to be independently clickable, so it doesn't need that function's "stretched
+follower/following counts, plus whatever `followStatusAndButton` renders at
+the card's far right (a `Components.Users.FollowStatusAndButton.view`, mapped
+into the caller's own `Msg` -- kept as a plain `Html msg` slot here rather
+than this module importing that one directly, which would cycle back through
+`FollowStatusAndButton`'s own dependency on `createFollow`/`updateFollow`/
+`deleteFollow`/`moderationPasses` etc. here).
+
+Unlike `Components.PostCard.postCard`, the whole card can just be one plain
+`<a>` -- `followStatusAndButton`'s own buttons use `stopPropagation`/
+`preventDefault` (see `FollowStatusAndButton.followActionButton`) rather than
+needing this function's callers to reach for that module's own "stretched
 link" treatment.
 -}
-userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg
-userCard basePath viewingServerHost server maybeAccount user =
+userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Html msg -> User -> Html msg
+userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
     a
         [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })
         , classes
@@ -432,8 +440,11 @@ userCard basePath viewingServerHost server maybeAccount user =
             ]
         ]
         [ userCardAvatar (displayName user) (avatarUrl server maybeAccount user)
-        , div [] [ text (displayName user) ]
-        , div [ Html.Attributes.class "user-card-meta" ] [ text (userCardMetaText user) ]
+        , div [ Html.Attributes.class "user-card-details" ]
+            [ div [] [ text (displayName user) ]
+            , div [ Html.Attributes.class "user-card-meta" ] [ text (userCardMetaText user) ]
+            ]
+        , followStatusAndButton
         ]
 
 

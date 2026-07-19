@@ -37,6 +37,11 @@
   font-weight: 700;
 }
 
+.user-card-details {
+  flex: 1;
+  min-width: 0;
+}
+
 .user-card-meta {
   color: var(--muted);
   font-size: 0.85rem;

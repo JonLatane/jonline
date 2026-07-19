@@ -30,6 +30,7 @@ around, so that complexity isn't needed here.
 
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
+import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -71,12 +72,18 @@ type alias Model =
     -- The user + host + listing type to restrict the listing to, if any --
     -- `Nothing` for `Pages.People`'s unfiltered `EVERYONE` listing.
     , target : Maybe ( String, User, UserListingType )
+
+    -- One `FollowStatusAndButton.Model` per card (see `followStatusAndButtonKey`)
+    -- -- missing entries (i.e. every card whose button hasn't been clicked
+    -- yet) are treated as `FollowStatusAndButton.init`, same "absent means
+    -- default" convention as `Components.Pages.PostsPage`'s per-post state.
+    , followStatusAndButtons : Dict String FollowStatusAndButton.Model
     }
 
 
 init : Shared.Model -> Maybe ( String, User, UserListingType ) -> ( Model, Effect Msg )
 init shared target =
-    fetchNewServers shared { usersByServer = Dict.empty, target = target }
+    fetchNewServers shared { usersByServer = Dict.empty, target = target, followStatusAndButtons = Dict.empty }
 
 
 {-| Which servers this listing should ever fetch from: every enabled server,
@@ -104,6 +111,25 @@ candidateServers shared model =
             AccountsPanel.serverForHost shared.accountsPanel.servers host
                 |> Maybe.map List.singleton
                 |> Maybe.withDefault []
+
+
+{-| The `GetUsers` fetch (as an `Effect`, ready to batch/return directly) for
+one `server` -- shared by `fetchNewServers` (kicked off for every server that
+needs a fresh fetch) and `update`'s own `FollowStatusAndButtonMsg` branch
+(kicked off unconditionally for just one server, once a `FollowStatusAndButton`
+action against one of its listed users succeeds).
+-}
+fetchServerEffect : Shared.Model -> Model -> AccountsPanel.Server -> Effect Msg
+fetchServerEffect shared model server =
+    Users.fetchUserListing
+        shared.accountsPanel
+        ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+        , server.frontendHost
+        )
+        (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
+        (model.target |> Maybe.map (\( _, _, listingType ) -> listingType) |> Maybe.withDefault EVERYONE)
+        |> Task.attempt (GotServerUsers server.frontendHost)
+        |> Effect.fromCmd
 
 
 {-| See `Components.Pages.PostsPage.fetchNewServers`'s doc comment -- same
@@ -134,15 +160,7 @@ fetchNewServers shared model =
                     )
 
         fetchEffect server =
-            Users.fetchUserListing
-                shared.accountsPanel
-                ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
-                , server.frontendHost
-                )
-                (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
-                (model.target |> Maybe.map (\( _, _, listingType ) -> listingType) |> Maybe.withDefault EVERYONE)
-                |> Task.attempt (GotServerUsers server.frontendHost)
-                |> Effect.fromCmd
+            fetchServerEffect shared model server
 
         prunedUsersByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
@@ -166,6 +184,7 @@ type Msg
     = GotServerUsers String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse ))
     | Poll
     | SharedMsg Shared.Msg
+    | FollowStatusAndButtonMsg String FollowStatusAndButton.Msg
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -219,6 +238,40 @@ update shared msg model =
                             ( model, Effect.none )
             in
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
+
+        FollowStatusAndButtonMsg key subMsg ->
+            case findUserForKey shared model key of
+                Just ( server, account, user ) ->
+                    let
+                        ( newFollowStatusAndButton, followEffect ) =
+                            FollowStatusAndButton.update shared
+                                server
+                                account
+                                user
+                                subMsg
+                                (Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init)
+
+                        newModel =
+                            { model | followStatusAndButtons = Dict.insert key newFollowStatusAndButton model.followStatusAndButtons }
+
+                        mappedFollowEffect =
+                            Effect.map (FollowStatusAndButtonMsg key) followEffect
+                    in
+                    case subMsg of
+                        FollowStatusAndButton.GotFollowResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        FollowStatusAndButton.GotUnfollowResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        FollowStatusAndButton.GotModerationResult (Ok _) ->
+                            ( newModel, Effect.batch [ mappedFollowEffect, fetchServerEffect shared newModel server ] )
+
+                        _ ->
+                            ( newModel, mappedFollowEffect )
+
+                Nothing ->
+                    ( model, Effect.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -310,18 +363,70 @@ usersListView shared model =
         p [ class "posts-empty" ] [ text "No people yet." ]
 
     else
-        div [ class "users-list" ] (List.map (userCardView shared) loadedUsers)
+        div [ class "users-list" ] (List.map (userCardView shared model) loadedUsers)
 
 
-userCardView : Shared.Model -> ( String, User ) -> Html Msg
-userCardView shared ( host, user ) =
+userCardView : Shared.Model -> Model -> ( String, User ) -> Html Msg
+userCardView shared model ( host, user ) =
     case AccountsPanel.serverForHost shared.accountsPanel.servers host of
         Just server ->
+            let
+                key =
+                    followStatusAndButtonKey host user
+
+                followStatusAndButtonModel =
+                    Dict.get key model.followStatusAndButtons |> Maybe.withDefault FollowStatusAndButton.init
+
+                maybeAccount =
+                    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host
+            in
             Users.userCard shared.basePath
                 shared.accountsPanel.mainFrontendHost
                 server
-                (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host)
+                maybeAccount
+                (Html.map (FollowStatusAndButtonMsg key) (FollowStatusAndButton.view followStatusAndButtonModel maybeAccount user))
                 user
 
         Nothing ->
             text ""
+
+
+{-| Identifies one card's `FollowStatusAndButton.Model` in
+`model.followStatusAndButtons` -- a `User.id` alone isn't unique across every
+listed server (see `Components.Users.Resolver`'s own by-id/by-username
+`Lookup`, federated ids aren't globally unique either), so `host` disambiguates,
+mirroring `Components.Pages.UserProfilePage.federatedKey`.
+-}
+followStatusAndButtonKey : String -> User -> String
+followStatusAndButtonKey host user =
+    user.id ++ "@" ++ host
+
+
+{-| The `AccountsPanel.Server`/signed-in `AccountsPanel.Account`/`User` a
+`FollowStatusAndButtonMsg key` refers to -- looked up fresh out of
+`model.usersByServer` each time (rather than carried in the `Msg` itself),
+since the `User` a `Follow` action needs is whatever's currently loaded, not
+a stale snapshot from whenever the button was rendered.
+-}
+findUserForKey : Shared.Model -> Model -> String -> Maybe ( AccountsPanel.Server, AccountsPanel.Account, User )
+findUserForKey shared model key =
+    model.usersByServer
+        |> Dict.toList
+        |> List.concatMap
+            (\( host, feed ) ->
+                case feed.status of
+                    Loaded users ->
+                        users
+                            |> List.filter (\user -> followStatusAndButtonKey host user == key)
+                            |> List.map (\user -> ( host, user ))
+
+                    _ ->
+                        []
+            )
+        |> List.head
+        |> Maybe.andThen
+            (\( host, user ) ->
+                Maybe.map2 (\server account -> ( server, account, user ))
+                    (AccountsPanel.serverForHost shared.accountsPanel.servers host)
+                    (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host)
+            )
