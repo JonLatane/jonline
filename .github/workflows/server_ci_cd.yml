@@ -135,18 +135,31 @@ jobs:
       - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
 
+      - name: Cache Tamagui web build output
+        uses: actions/cache@v4
+        id: tamagui-build-cache
+        with:
+          path: |
+            frontends/tamagui/apps/next/out
+            frontends/tamagui/apps/next/out-tamagui
+          key: tamagui-web-build-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**') }}
+
       - uses: actions/setup-node@v4
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         with:
           node-version: 22.x
 
       - run: npm install --global yarn
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
 
       - name: Get yarn cache directory path
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         working-directory: frontends/tamagui
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
       - uses: actions/cache@v4
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -155,12 +168,16 @@ jobs:
             jonline-tamagui-build-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         run: yarn install
       - working-directory: frontends/tamagui
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         run: yarn version:install
       - working-directory: frontends/tamagui
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         run: yarn tsc
       - working-directory: frontends/tamagui
+        if: steps.tamagui-build-cache.outputs.cache-hit != 'true'
         run: yarn web:prod:build
 
       - uses: actions/cache/save@v4
@@ -271,17 +288,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Cache Tamagui test result
+        uses: actions/cache@v4
+        id: tamagui-test-cache
+        with:
+          path: frontends/tamagui/.test-passed
+          key: tamagui-web-test-${{ runner.os }}-${{ hashFiles('frontends/tamagui/**') }}
+
       - uses: actions/setup-node@v4
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         with:
           node-version: 22.x
       - run: npm install --global yarn
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
 
       - name: Get yarn cache directory path
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         working-directory: frontends/tamagui
         id: yarn-cache-dir-path
         run: 'echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT'
 
       - uses: actions/cache@v4
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         # id: yarn-cache
         with:
           path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
@@ -290,13 +319,21 @@ jobs:
             jonline-tamagui-test-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
 
       - working-directory: frontends/tamagui
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: yarn install
       - working-directory: frontends/tamagui
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: yarn version:install
       - working-directory: frontends/tamagui
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: yarn build
       - working-directory: frontends/tamagui
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
         run: yarn tsc
+
+      - name: Mark Tamagui tests passed
+        if: steps.tamagui-test-cache.outputs.cache-hit != 'true'
+        run: touch frontends/tamagui/.test-passed
 
   # test_flutter_ui:
   #   name: Test Flutter Web UI
