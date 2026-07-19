@@ -7,6 +7,7 @@ module Components.Users exposing
     , federateProfile
     , fetchUserById
     , fetchUserByUsername
+    , fetchUserListing
     , isAdminUser
     , isReservedUsername
     , moderationText
@@ -16,6 +17,7 @@ module Components.Users exposing
     , profileHref
     , titleName
     , updateUser
+    , userCard
     , userIdHref
     , usernameHref
     , visibilityText
@@ -32,15 +34,19 @@ fields.
 
 import Gen.Route
 import Grpc
+import Html exposing (Html, a, div, img, text)
+import Html.Attributes exposing (alt, href, src)
 import Proto.Google.Protobuf
 import Proto.Jonline exposing (Author, FederatedAccount, GetUsersResponse, User, defaultGetUsersRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.UserListingType exposing (UserListingType)
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Task exposing (Task)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 {-| Fetches the user with `userId` from `maybeAccountServer`'s server,
@@ -66,6 +72,27 @@ fetchUserByUsername :
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
 fetchUserByUsername accountsPanelModel maybeAccountServer username =
     fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | username = Just username }
+
+
+{-| Fetches a `listingType` listing of users from `maybeAccountServer`'s
+server -- `EVERYONE` for `/people`, or `FOLLOWING`/`FOLLOWERS`/`FRIENDS`
+relative to `targetUserId` for a profile's own relationship pages (see
+`Components.Pages.UsersPage`). Note: as of this writing, the backend
+(`backend/src/rpcs/users/get_users.rs`) only special-cases `listingType` for
+`FOLLOWREQUESTS` targeting the _signed-in caller_; passing a `targetUserId`
+here takes priority server-side and just returns that one user regardless of
+`listingType`, so `FOLLOWING`/`FOLLOWERS`/`FRIENDS` don't yet return real
+relationship data for an arbitrary target user -- this is wired up to the
+request shape the backend is _meant_ to support once that's implemented.
+-}
+fetchUserListing :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Maybe String
+    -> UserListingType
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
+fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType =
+    fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
 
 
 fetchUsers :
@@ -172,15 +199,15 @@ defederateProfile accountsPanelModel maybeAccountServer target =
 
 
 {-| Usernames that can't be routed to via `/:username[@host]` since they'd
-collide with this app's own top-level routes (`Pages.About`, elm-spa's builtin
-`not-found`) or the `/user`/`/post` prefixes themselves -- e.g. a user named
-"about" is only ever reachable via `/user/:id[@host]`, never `/about[@host]`.
-Compared case-insensitively, since the collision is with the URL segment, not
-the display name.
+collide with this app's own top-level routes (`Pages.About`, `Pages.People`,
+elm-spa's builtin `not-found`) or the `/user`/`/post` prefixes themselves --
+e.g. a user named "about" is only ever reachable via `/user/:id[@host]`, never
+`/about[@host]`. Compared case-insensitively, since the collision is with the
+URL segment, not the display name.
 -}
 reservedUsernames : Set String
 reservedUsernames =
-    Set.fromList [ "about", "not-found", "user", "post" ]
+    Set.fromList [ "about", "not-found", "user", "post", "people" ]
 
 
 isReservedUsername : String -> Bool
@@ -311,6 +338,61 @@ mediaReferenceUrl server maybeAccount maybeMedia =
 isAdminUser : User -> Bool
 isAdminUser user =
     List.member ADMIN user.permissions
+
+
+{-| A compact card for a `user` in a list (`/people`, or a profile's own
+Following/Followers/Friends pages -- see `Components.Pages.UsersPage`) --
+links to their profile (`profileHref`), showing their avatar (or an
+initial-letter placeholder, see `userCardAvatar`), `displayName`, and
+follower/following counts. Unlike `Components.PostCard.postCard`, the whole
+card can just be one plain `<a>` -- there's nothing else inside it that needs
+to be independently clickable, so it doesn't need that function's "stretched
+link" treatment.
+-}
+userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg
+userCard basePath viewingServerHost server maybeAccount user =
+    a
+        [ href (profileHref basePath viewingServerHost server.frontendHost { userId = user.id, username = user.username })
+        , classes
+            [ "user-card"
+            , hostnameToCSSClass server.frontendHost
+            , "border-color-primary-anchor-50"
+            , "hover-border-color-primary-anchor"
+            , "background-color-primary-5"
+            ]
+        ]
+        [ userCardAvatar (displayName user) (avatarUrl server maybeAccount user)
+        , div [] [ text (displayName user) ]
+        , div [ Html.Attributes.class "user-card-meta" ] [ text (userCardMetaText user) ]
+        ]
+
+
+{-| Duplicated (rather than reusing `UI.imageOrInitial`) since `UI` itself
+imports this module (for `userCard`, mirroring `avatarUrl`/`profileHref`
+elsewhere), so the reverse import would be a cycle -- same reasoning as
+`Components.PostCard`'s own private `authorAvatar`.
+-}
+userCardAvatar : String -> Maybe String -> Html msg
+userCardAvatar name maybeUrl =
+    case maybeUrl of
+        Just url ->
+            img [ Html.Attributes.class "user-card-avatar", src url, alt name ] []
+
+        Nothing ->
+            div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
+
+
+{-| "N followers · N following" for `userCard` -- either half is dropped
+entirely (rather than shown as "0") when that count isn't present at all
+(`User.followerCount`/`followingCount` are both optional).
+-}
+userCardMetaText : User -> String
+userCardMetaText user =
+    [ user.followerCount |> Maybe.map (\c -> String.fromInt c ++ " followers")
+    , user.followingCount |> Maybe.map (\c -> String.fromInt c ++ " following")
+    ]
+        |> List.filterMap identity
+        |> String.join " · "
 
 
 {-| Display text for a User's visibility -- mirrors

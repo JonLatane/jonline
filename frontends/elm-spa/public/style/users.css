@@ -1,0 +1,43 @@
+/* People/Following/Followers/Friends listings -- see Components/Pages/UsersPage.elm,
+   Components/Users.elm's `userCard`. */
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.user-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease;
+}
+
+.user-card-avatar {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-card-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+}
+
+.user-card-meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}

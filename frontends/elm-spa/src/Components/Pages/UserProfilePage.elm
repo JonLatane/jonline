@@ -846,12 +846,20 @@ profileDetail shared model server maybeAccount user =
         isAdmin =
             isAdminAccount maybeAccount
 
-        postsHref =
+        baseHref =
             Users.profileHref shared.basePath
                 shared.accountsPanel.mainFrontendHost
                 server.frontendHost
                 { userId = user.id, username = user.username }
-                ++ "/posts"
+
+        postsHref =
+            baseHref ++ "/posts"
+
+        followersHref =
+            baseHref ++ "/followers"
+
+        followingHref =
+            baseHref ++ "/following"
     in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header" ]
@@ -873,7 +881,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts postsHref user
+        , profileCounts postsHref followersHref followingHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         ]
@@ -1059,16 +1067,18 @@ editErrorView status =
             text ""
 
 
-{-| `postsHref` (see `profileDetail`) is only attached to the "Posts" count,
-linking it to `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` -- the other
-counts have no page of their own (yet) to link to.
+{-| `postsHref`/`followersHref`/`followingHref` (see `profileDetail`) link the
+"Posts"/"Followers"/"Following" counts to `Pages.Username_.Posts`/
+`Pages.Username_.Followers`/`Pages.Username_.Following` (or their
+`Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
+own (yet) to link to.
 -}
-profileCounts : String -> User -> Html Msg
-profileCounts postsHref user =
+profileCounts : String -> String -> String -> User -> Html Msg
+profileCounts postsHref followersHref followingHref user =
     let
         counts =
-            [ ( "Followers", user.followerCount, Nothing )
-            , ( "Following", user.followingCount, Nothing )
+            [ ( "Followers", user.followerCount, Just followersHref )
+            , ( "Following", user.followingCount, Just followingHref )
             , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
             , ( "Responses", user.responseCount, Nothing )
