@@ -25,7 +25,7 @@ callers/`Model` don't need to change shape again once it's wired up, but its
 
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, class, href, src)
 import Html.Events exposing (onClick)

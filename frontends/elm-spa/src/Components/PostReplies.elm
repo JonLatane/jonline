@@ -26,7 +26,7 @@ and the Starred Posts panel already do for their own (non-nested) post lists.
 import Animation
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc

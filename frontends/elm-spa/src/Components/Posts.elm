@@ -1,4 +1,4 @@
-module Components.PostCard exposing
+module Components.Posts exposing
     ( allVisibilities
     , allowedVisibilities
     , authorLink

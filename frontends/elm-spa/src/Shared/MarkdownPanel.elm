@@ -19,7 +19,7 @@ later without touching callers that only care about the ones they use.
 -}
 
 import Components.Markdown as Markdown
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Components.Users as Users
 import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)

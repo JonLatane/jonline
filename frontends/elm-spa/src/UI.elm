@@ -1,7 +1,7 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Components.Users as Users
 import Dict
 import Effect exposing (Effect)
@@ -1826,9 +1826,10 @@ currentStarredPostKey shared currentRoute =
 {-| A collapsible panel, one per admin-capable signed-in account, for setting
 which frontend (Flutter/React/Elm) that account's server serves at its root
 (`ServerInfo.webUserInterface`, via `AccountsPanel.SetWebUserInterfaceClicked`).
-Shows that account's username/avatar/server so it's clear which admin
-identity a change would be made as, since the RPC is authenticated per-account
-rather than "whichever account is currently active".
+Shows that account's server (hostname + name) above its username/avatar so
+it's clear which admin identity a change would be made as, since the RPC is
+authenticated per-account rather than "whichever account is currently
+active".
 -}
 adminAccountPanel : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 adminAccountPanel shared account =
@@ -1839,20 +1840,35 @@ adminAccountPanel shared account =
         isOpen =
             AdminPanel.isAccountPanelOpen id shared.adminPanel
 
-        currentUi =
+        adminServer =
             findServer shared account.server
+
+        currentUi =
+            adminServer
                 |> Maybe.andThen (\s -> s.configuration.serverInfo)
                 |> Maybe.andThen .webUserInterface
                 |> Maybe.withDefault REACTTAMAGUI
+
+        adminServerName =
+            adminServer
+                |> Maybe.map (\s -> s.branding.name)
+                |> Maybe.withDefault ""
     in
     div [ class "admin-account-panel" ]
         [ button
             [ class "admin-account-toggle"
             , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
             ]
-            [ avatarOrPlaceholder shared.accountsPanel.servers account
-            , span [ class "admin-account-username" ] [ text (AccountsPanel.displayName account) ]
-            , span [ class "admin-account-server" ] [ text account.server ]
+            [ div [ class "admin-account-toggle-content" ]
+                [ div [ class "admin-account-server-row" ]
+                    [ span [ class "admin-account-server-host" ] [ text account.server ]
+                    , span [ class "admin-account-server-name" ] [ text adminServerName ]
+                    ]
+                , div [ class "admin-account-identity-row" ]
+                    [ accountsMenuAvatar shared account
+                    , span [ class "admin-account-username" ] [ text (AccountsPanel.displayName account) ]
+                    ]
+                ]
             , span
                 [ classes
                     ("admin-account-chevron"
