@@ -1940,7 +1940,7 @@ dependencies = [
 
 [[package]]
 name = "jonline"
-version = "0.5.541"
+version = "0.5.542"
 dependencies = [
  "anyhow",
  "async-compression",
