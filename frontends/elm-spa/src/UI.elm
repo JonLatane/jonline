@@ -7,7 +7,7 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, title, type_, value)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, target, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -860,8 +860,11 @@ serverChipFlip shared count index server =
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
-utility classes (see `UI.EmittedStylesheet`); the enable switch and delete
-button sit in a bottom portion using `background-color-nav` instead.
+utility classes (see `UI.EmittedStylesheet`); the enable switch, an external
+link (opening the server's own `https://` site in a new tab -- omitted for
+whichever server we're actually `browsingHost`-ing from, since that one's
+already open here), and the delete button sit in a bottom portion using
+`background-color-nav` instead.
 
 The top portion is always clickable: tapping it fills the Account form's
 Server field with this server's `frontendHost` (`ServerChipClicked`), so
@@ -971,6 +974,17 @@ serverChip shared count index server =
             ]
         , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
+            , if server.frontendHost /= accountsPanelModel.browsingHost then
+                a
+                    [ class "external-link-btn"
+                    , href ("https://" ++ server.frontendHost)
+                    , target "_blank"
+                    , title ("Open " ++ server.frontendHost ++ " in a new tab")
+                    ]
+                    [ text "↗" ]
+
+              else
+                text ""
             , button
                 [ class "remove-btn"
                 , onClick (Shared.RequestDelete (Shared.ConfirmServerDelete server))

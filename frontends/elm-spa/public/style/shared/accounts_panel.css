@@ -374,7 +374,7 @@
 
 .server-chip {
   flex: 0 0 auto;
-  width: 108px;
+  width: 120px;
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -668,6 +668,25 @@
 .remove-btn:hover:not(:disabled) {
   background: var(--danger);
   color: white;
+}
+
+.external-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  line-height: 0.6;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.external-link-btn:hover {
+  background: var(--fg);
+  color: var(--bg);
 }
 
 
