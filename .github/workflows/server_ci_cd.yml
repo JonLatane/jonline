@@ -322,6 +322,91 @@ jobs:
           path: backend/target/release
           key: rust-macos-arm64-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
 
+  build_rust_binaries_linux_amd64_static:
+    name: Build Rust Binaries (Linux amd64, static libpq)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc
+        run: |
+          PROTOC_VERSION=26.1
+          PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-x86_64.zip
+          curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"
+          sudo unzip -o "$PROTOC_ZIP" -d /usr/local bin/protoc 'include/*'
+          rm "$PROTOC_ZIP"
+          protoc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-amd64-static-github-build
+          shared-key: jonline-build-${{ runner.OS }}-amd64-static-github-build
+
+      # `static_pq` vendors & statically compiles libpq (via pq-sys's "bundled"
+      # feature -> pq-src), so the resulting binary doesn't depend on a system
+      # libpq install -- needed since the Linux release tarball (unlike the
+      # server Docker image, which apt-get installs libpq5 itself) can be
+      # extracted onto an arbitrary Linux machine.
+      - working-directory: backend
+        run: cargo build --release --features static_pq
+
+      - uses: actions/cache/save@v4
+        id: rust-linux-amd64-static-app-cache
+        with:
+          path: backend/target/release
+          key: rust-linux-amd64-static-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+  build_rust_binaries_linux_arm64_static:
+    name: Build Rust Binaries (Linux arm64, static libpq)
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install protoc
+        run: |
+          PROTOC_VERSION=26.1
+          PROTOC_ZIP=protoc-${PROTOC_VERSION}-linux-aarch_64.zip
+          curl -LO "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/${PROTOC_ZIP}"
+          sudo unzip -o "$PROTOC_ZIP" -d /usr/local bin/protoc 'include/*'
+          rm "$PROTOC_ZIP"
+          protoc --version
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-arm64-static-github-build
+          shared-key: jonline-build-${{ runner.OS }}-arm64-static-github-build
+
+      - working-directory: backend
+        run: cargo build --release --features static_pq
+
+      - uses: actions/cache/save@v4
+        id: rust-linux-arm64-static-app-cache
+        with:
+          path: backend/target/release
+          key: rust-linux-arm64-static-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
   test_rust_binaries:
     name: Test Rust Binaries
     runs-on: ubuntu-latest
@@ -708,6 +793,19 @@ jobs:
             brew install jonlatane/jonline/jonline
             ```
 
+            A self-updating Linux build (amd64/arm64) is available as a release tarball:
+
+            ```
+            curl -s https://api.github.com/repos/jonlatane/jonline/releases/latest \
+              | jq -r '.assets[] | select(.name | test("-linux\\.tar\\.bz2$")) | .browser_download_url' \
+              | xargs curl -L -o jonline.tar.bz2
+            mkdir jonline && tar xjf jonline.tar.bz2 -C jonline && rm jonline.tar.bz2
+            cd jonline
+            ./bin/jonline version
+            ```
+
+            Run `./bin/jonline help` for other commands, including `update` to self-update in place.
+
             ## Deployments
 
             Deployments will be brought up-to-date at around the same time as this release is created.
@@ -790,6 +888,7 @@ jobs:
 
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/docs/protocol.html"
+          mv jonline jonline-server
 
           mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
@@ -817,10 +916,12 @@ jobs:
         run: |
           set -euo pipefail
           git clone "https://x-access-token:${GH_TOKEN}@github.com/JonLatane/homebrew-jonline.git" tap
-          cat > tap/Formula/jonline.rb <<'JONLINE_FORMULA_EOF'
+
+          cat > tap/Formula/jonline.rb <<'JONLINE_FORMULA_HEADER_EOF'
           # This file is generated and pushed automatically by the Server CI/CD workflow
           # (create_homebrew_release job) in https://github.com/jonlatane/jonline on every
-          # release to main. Don't hand-edit it -- changes will be overwritten.
+          # release to main. Don't hand-edit it -- changes will be overwritten. The launcher
+          # script below is sourced from docs/homebrew_jonline.sh in that repo.
           class Jonline < Formula
             desc "Jonline federated social server"
             homepage "https://github.com/jonlatane/jonline"
@@ -835,17 +936,25 @@ jobs:
             def install
               (etc/"jonline").install Dir["*"]
               (bin/"jonline").write <<~SCRIPT
-                #!/bin/bash
-                cd "#{etc}/jonline" && exec ./jonline "$@"
+          JONLINE_FORMULA_HEADER_EOF
+
+          # docs/homebrew_jonline.sh is plain, standalone bash aside from the
+          # @@JONLINE_ETC@@ placeholder, which becomes Ruby's `#{etc}` interpolation
+          # here -- Homebrew resolves that to the real install prefix at `brew install`
+          # time, so it can't be a fixed value baked in at CI time.
+          sed -e 's/@@JONLINE_ETC@@/#{etc}/' -e 's/^/                /' docs/homebrew_jonline.sh >> tap/Formula/jonline.rb
+
+          cat >> tap/Formula/jonline.rb <<'JONLINE_FORMULA_FOOTER_EOF'
               SCRIPT
               chmod 0755, bin/"jonline"
             end
 
             test do
-              system "#{bin}/jonline", "--version"
+              system "#{bin}/jonline", "version"
             end
           end
-          JONLINE_FORMULA_EOF
+          JONLINE_FORMULA_FOOTER_EOF
+
           sed -i "s|FULL_VERSION_PLACEHOLDER|${{ steps.vars.outputs.full_version }}|g" tap/Formula/jonline.rb
           sed -i "s|SHA256_PLACEHOLDER|${{ steps.sha.outputs.sha256 }}|g" tap/Formula/jonline.rb
 
@@ -857,6 +966,124 @@ jobs:
             git -c user.name="Jonline CI" -c user.email="ci@jonline.io" commit -m "jonline ${{ steps.vars.outputs.full_version }}"
             git push origin main
           fi
+
+  create_linux_release:
+    name: "Linux: Release"
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs:
+      - create_github_release
+      - build_rust_binaries_linux_amd64_static
+      - build_rust_binaries_linux_arm64_static
+      - build_tamagui_ui
+      - build_elm_ui
+      - test_consistency
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          be_version="$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')"
+          sha_short="$(git rev-parse --short=7 HEAD)"
+          echo "be_version=${be_version}" >> $GITHUB_OUTPUT
+          echo "sha_short=${sha_short}" >> $GITHUB_OUTPUT
+          echo "full_version=${be_version}-${sha_short}" >> $GITHUB_OUTPUT
+      - name: Store Versioning Data for release ${{ steps.vars.outputs.full_version }}
+        run: echo ${{ steps.vars.outputs.sha_short }} > deploys/docker/continuous_delivery_hash
+
+      - uses: actions/cache/restore@v4
+        id: web-app-cache
+        with:
+          path: |
+            frontends/tamagui/apps/next/out
+            frontends/tamagui/apps/next/out-tamagui
+          key: web-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - uses: actions/cache/restore@v4
+        id: elm-app-cache
+        with:
+          path: frontends/elm-spa/public
+          key: elm-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+
+      # Both cached builds were saved from the same "backend/target/release"
+      # path, so they're restored one at a time and moved aside immediately --
+      # restoring both to that path in one job would have the second clobber
+      # the first.
+      - uses: actions/cache/restore@v4
+        id: rust-linux-amd64-static-app-cache
+        with:
+          path: backend/target/release
+          key: rust-linux-amd64-static-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - run: mv backend/target/release backend/target/release-amd64
+
+      - uses: actions/cache/restore@v4
+        id: rust-linux-arm64-static-app-cache
+        with:
+          path: backend/target/release
+          key: rust-linux-arm64-static-${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+      - run: mv backend/target/release backend/target/release-arm64
+
+      # Mirrors deploys/docker/server/Dockerfile's /opt layout (and the
+      # Homebrew package layout above), but with binaries for every built
+      # architecture side-by-side (arch-suffixed) instead of just one, since
+      # this tarball can be extracted onto any Linux machine.
+      - name: Assemble Linux release package layout
+        run: |
+          set -euo pipefail
+          PKG=jonline_linux_pkg
+          rm -rf "$PKG"
+          mkdir -p "$PKG/docs" "$PKG/bin"
+
+          for arch in amd64 arm64; do
+            src="backend/target/release-${arch}"
+            for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
+                       generate_preview_images delete_preview_images set_permission to_db_id to_proto_id; do
+              cp "${src}/${bin}" "$PKG/${bin}-${arch}"
+              chmod +x "$PKG/${bin}-${arch}"
+            done
+            mv "$PKG/jonline-${arch}" "$PKG/jonline-server-${arch}"
+          done
+
+          echo "${{ steps.vars.outputs.full_version }}" > "$PKG/version"
+          cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
+          cp docs/protocol.html "$PKG/docs/protocol.html"
+
+          mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
+          cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
+          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/tamagui_web_tamagui/"
+          cp -R frontends/elm-spa/public/. "$PKG/elm_web/"
+
+          # grpcurl is useful to have on a jonline instance (see Dockerfile) --
+          # one per architecture, matching the version pinned there.
+          curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_x86_64.tar.gz" | tar -xz -C "$PKG" grpcurl
+          mv "$PKG/grpcurl" "$PKG/grpcurl-amd64"
+          curl -sSL "https://github.com/fullstorydev/grpcurl/releases/download/v1.8.9/grpcurl_1.8.9_linux_arm64.tar.gz" | tar -xz -C "$PKG" grpcurl
+          mv "$PKG/grpcurl" "$PKG/grpcurl-arm64"
+
+          # docs/linux_jonline.sh is plain, standalone bash aside from the
+          # @@JONLINE_PACKAGE_BASE_DIR@@ placeholder -- unlike Homebrew's
+          # @@JONLINE_ETC@@ (Ruby-interpolated at `brew install` time), this
+          # tarball can be extracted anywhere, so a concrete default install
+          # dir is baked in here at CI time instead. It stays as unexpanded
+          # shell syntax so it resolves against whichever user's $HOME
+          # actually runs it.
+          sed 's|@@JONLINE_PACKAGE_BASE_DIR@@|$HOME/.jonline-linux|' docs/linux_jonline.sh > "$PKG/bin/jonline"
+          chmod +x "$PKG/bin/jonline"
+
+          tar cjf "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" -C "$PKG" .
+
+      - name: Compute sha256
+        run: sha256sum "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" > "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256"
+
+      - name: Upload release assets to v${{ steps.vars.outputs.full_version }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "v${{ steps.vars.outputs.full_version }}" \
+            "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2" \
+            "jonline-${{ steps.vars.outputs.full_version }}-linux.tar.bz2.sha256" \
+            --repo jonlatane/jonline --clobber
 
   deploy_bullcitysocial:
     name: Deploy Bull City Social
