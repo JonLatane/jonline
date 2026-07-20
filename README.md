@@ -16,9 +16,15 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 ## Packages, Images & Deployments
 
+Jonline can be run from source, via Homebrew, with a Linux binary package, or with Docker images.
+
+The Docker images are minimal Debian images with a `jonline` server binary, as well as binaries for various jobs, used for the live deployments currently at [jonline.io](https://jonline.io), [bullcity.social](https://bullcity.social), and [oakcity.social](https://oakcity.social).
+
+Both the Linux and macOS packages are designed around a `bash`-based "thin launcher" that runs the actual Rust binaries an "install directory" which also contains the frontends (`/#{etc}/jonline/` for Homebrew, `~/.jonline-linux/` for the Linux package). The Linux/macOS launchers store environment variables in `~/.jonline` and load them before starting the server or other services. Finally, the Linux launcher handles self-updating as well.
+
 ### macOS: Install and Run via Homebrew
 
-This is new and totally vibecoded, but works pretty well. It's just the Jonline server contents in `/#{etc}/jonline`, with a bash-based thin launcher for it at `#{bin}/jonline`. The launcher can setup your local Postgres DB with `createdb` and `dropdb` for you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
+The Homebrew distro puts the Jonline server contents in `/#{etc}/jonline`, with a `bash`-based thin launcher for it at `#{bin}/jonline`. The launcher can set up your local Postgres DB with `createdb` and `dropdb` for you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it.
 
 Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which *is literally the launcher script that will become your `#{bin}/jonline`*, if you wanna PR any changes).
 
@@ -35,6 +41,19 @@ jonline help # show subcommands for the bash launcher
 jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
 jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
 jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
+
+# Once the server is running (presumably in another tab, or the background, or a daemon),
+# You can set up an admin user.
+open http://localhost/
+
+# Once the server is running (presumably in another tab, or the background, or a daemon),
+# you can set up an admin user.
+open http://localhost/
+# Create a user account, username "my_admin_user" through the browser UI.
+# To give your first user admin permissions:
+jonline set_permission my_admin_user admin on
+
+brew upgrade jonlatane/jonline/jonline # Upgrade to the latest release.
 ```
 
 ### Linux: Self-updateable `.tar.bz2` with `arm64` and `amd64` binaries and launcher
@@ -69,6 +88,13 @@ jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, 
 jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
 
 jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
+
+# Once the server is running (presumably in another tab, or the background, or a daemon),
+# you can set up an admin user.
+xdg-open http://localhost/
+# In the browser UI, create a user account and remember your username.
+# To give them admin permissions:
+jonline set_permission my_admin_username admin on
 ```
 
 #### Install/self-update on Linux

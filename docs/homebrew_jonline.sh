@@ -16,8 +16,9 @@
 # and can differ per machine, so it can't be baked in here as a real value --
 # but aside from that one substitution, this file is plain, valid,
 # directly-runnable bash (e.g. `bash docs/homebrew_jonline.sh help` works
-# locally; `server` is the only subcommand that needs the real substitution
-# to find its install dir).
+# locally; `server` and the other package-binary subcommands, via
+# _jonline_exec_bin, are the only ones that need the real substitution to
+# find their install dir).
 #
 # NOTE: because this whole file is embedded via an interpolated Ruby heredoc,
 # any other literal Ruby interpolation syntax written below (a hash followed
@@ -63,23 +64,39 @@ Quick start:
   jonline local_db_create && jonline local_minio_create && jonline server
 
 Commands:
-  server                 Run the Jonline server (jonline-server)
-  version                Print the Jonline server version (jonline-server --version)
+  server                   Run the Jonline server (jonline-server)
+  version                  Print the Jonline server version (jonline-server --version)
 
-  environment            Print the current config (cat ~/.jonline)
-  edit_environment       Edit the config in $EDITOR (falls back to vi)
+  environment              Print the current config (cat ~/.jonline)
+  edit_environment         Edit the config in $EDITOR (falls back to vi)
 
-  local_db_create        Create the local Postgres database (createdb jonline_dev)
-  local_db_drop          Drop the local Postgres database (dropdb jonline_dev)
-  local_db_reset         Stop local instances, then drop and recreate the local database
-  local_db_connect       Connect to the local database with psql ($DATABASE_URL)
+  local_db_create          Create the local Postgres database (createdb jonline_dev)
+  local_db_drop            Drop the local Postgres database (dropdb jonline_dev)
+  local_db_reset           Stop local instances, then drop and recreate the local database
+  local_db_connect         Connect to the local database with psql ($DATABASE_URL)
 
-  local_minio_start      Start the existing local minio docker container
-  local_minio_create     Start local minio, creating its docker container first if needed
-  local_minio_delete     Stop and remove the local minio docker container
-  local_instances_stop   Stop any running jonline-server processes
-  
-  help                   Show this help text
+  local_minio_start        Start the existing local minio docker container
+  local_minio_create       Start local minio, creating its docker container first if needed
+  local_minio_delete       Stop and remove the local minio docker container
+  local_instances_stop     Stop any running jonline-server processes
+
+Background jobs:
+  delete_expired_tokens    Delete expired auth tokens from the database
+  delete_unowned_media     Delete media no longer referenced by any post/user/etc.
+  generate_preview_images  Generate media preview images -- requires a browser
+                           (installed automatically by the server binary on first use)
+
+Admin tools:
+  set_permission           Grant/revoke a global permission for a user
+  delete_preview_images    Delete generated preview images, e.g. to force regeneration
+  disable_cdn_grpc         Disable gRPC access to the CDN service
+
+Utilities:
+  to_db_id                 Convert a proto (external, string) ID to a database (internal) ID
+  to_proto_id              Convert a database (internal) ID to a proto (external, string) ID
+  grpcurl                  Run the bundled grpcurl
+
+  help                     Show this help text
 JONLINE_HELP_EOF
 }
 
@@ -123,12 +140,61 @@ local_instances_stop() {
   killall jonline-server || true
 }
 
+# Shared by every command below that execs one of the package's binaries
+# (jonline-server, delete_expired_tokens, grpcurl, ...) from @@JONLINE_ETC@@/jonline.
+_jonline_exec_bin() {
+  local bin="$1"
+  shift
+  cd "@@JONLINE_ETC@@/jonline" && exec "./${bin}" "$@"
+}
+
 server() {
-  cd "@@JONLINE_ETC@@/jonline" && exec ./jonline-server "$@"
+  _jonline_exec_bin jonline-server "$@"
 }
 
 version() {
   server --version
+}
+
+# Background jobs
+delete_expired_tokens() {
+  _jonline_exec_bin delete_expired_tokens "$@"
+}
+
+delete_unowned_media() {
+  _jonline_exec_bin delete_unowned_media "$@"
+}
+
+# Renders media preview images headlessly, so it requires a browser to be
+# installed/reachable on the machine running it (see docs/protocol.html).
+generate_preview_images() {
+  _jonline_exec_bin generate_preview_images "$@"
+}
+
+# Admin tools
+set_permission() {
+  _jonline_exec_bin set_permission "$@"
+}
+
+delete_preview_images() {
+  _jonline_exec_bin delete_preview_images "$@"
+}
+
+disable_cdn_grpc() {
+  _jonline_exec_bin disable_cdn_grpc "$@"
+}
+
+# Utilities
+to_db_id() {
+  _jonline_exec_bin to_db_id "$@"
+}
+
+to_proto_id() {
+  _jonline_exec_bin to_proto_id "$@"
+}
+
+grpcurl() {
+  _jonline_exec_bin grpcurl "$@"
 }
 
 environment() {
@@ -149,7 +215,7 @@ case "$cmd" in
   help|-h|--help)
     jonline_help
     ;;
-  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop)
+  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl)
     "$cmd" "$@"
     ;;
   *)
