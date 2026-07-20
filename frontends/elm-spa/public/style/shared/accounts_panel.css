@@ -241,18 +241,67 @@
   color: var(--fg);
 }
 
-.admin-account-username {
+.admin-account-toggle-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* The account's server, above its avatar/name -- see `admin-account-identity-row`
+   below -- so it's clear which server (and which admin identity on it) a
+   change would be made against before that identity is even shown. */
+.admin-account-server-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.admin-account-server-logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.admin-account-server-logo.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.25);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
+.admin-account-server-host {
+  flex: 0 0 auto;
   font-weight: 600;
+}
+
+.admin-account-server-name {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.admin-account-server {
-  flex: 1;
+.admin-account-identity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   min-width: 0;
-  color: var(--muted);
-  font-size: 0.8rem;
+}
+
+.admin-account-username {
+  min-width: 0;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -374,7 +423,7 @@
 
 .server-chip {
   flex: 0 0 auto;
-  width: 108px;
+  width: 120px;
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
@@ -618,6 +667,25 @@
   margin-left: 0.3rem;
 }
 
+.account-needs-password {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-needs-password:hover {
+  filter: brightness(1.1);
+}
+
 /* The "host | server name" badge, tinted with the account's server's nav
    color -- distinct from the row's own (primary-colored) background. */
 .account-row-server-badge {
@@ -649,6 +717,25 @@
 .remove-btn:hover:not(:disabled) {
   background: var(--danger);
   color: white;
+}
+
+.external-link-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  line-height: 0.6;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.external-link-btn:hover {
+  background: var(--fg);
+  color: var(--bg);
 }
 
 

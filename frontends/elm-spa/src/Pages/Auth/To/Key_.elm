@@ -171,6 +171,7 @@ accountFromLogin server resp =
                 , avatarMediaId = Maybe.map .id user.avatar
                 , permissions = user.permissions
                 , realName = user.realName
+                , needsPassword = False
                 }
 
         _ ->

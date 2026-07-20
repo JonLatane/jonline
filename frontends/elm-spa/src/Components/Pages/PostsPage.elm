@@ -21,7 +21,7 @@ heading, via `Components.Pages.UserProfilePage.nameHeader`), mirroring how
 
 import Animation
 import Components.Pages.UserProfilePage as UserProfilePage
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)

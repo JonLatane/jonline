@@ -1,13 +1,13 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle)
 
 import Components.Markdown as Markdown
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Components.Users as Users
 import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, title, type_, value)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, target, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -780,11 +780,11 @@ settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
     div [ class "accounts-panel-tab-content" ]
         [ label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            [ switchInput shared.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
             , span [] [ text "Sign into other hosts with username/password" ]
             ]
         ]
@@ -860,8 +860,11 @@ serverChipFlip shared count index server =
 
 
 {-| Top portion (logo/name/host) gets that server's `background-color-primary`
-utility classes (see `UI.EmittedStylesheet`); the enable switch and delete
-button sit in a bottom portion using `background-color-nav` instead.
+utility classes (see `UI.EmittedStylesheet`); the enable switch, an external
+link (opening the server's own `https://` site in a new tab -- omitted for
+whichever server we're actually `browsingHost`-ing from, since that one's
+already open here), and the delete button sit in a bottom portion using
+`background-color-nav` instead.
 
 The top portion is always clickable: tapping it fills the Account form's
 Server field with this server's `frontendHost` (`ServerChipClicked`), so
@@ -970,7 +973,18 @@ serverChip shared count index server =
             --     text ""
             ]
         , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
-            [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
+            [ switchInput server.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
+            , if server.frontendHost /= accountsPanelModel.browsingHost then
+                a
+                    [ class "external-link-btn"
+                    , href ("https://" ++ server.frontendHost)
+                    , target "_blank"
+                    , title ("Open " ++ server.frontendHost ++ " in a new tab")
+                    ]
+                    [ text "↗" ]
+
+              else
+                text ""
             , button
                 [ class "remove-btn"
                 , onClick (Shared.RequestDelete (Shared.ConfirmServerDelete server))
@@ -1164,7 +1178,7 @@ accountRow shared count mainCount index account =
             :: classes [ "account-row", hostnameToCSSClass account.server, "background-color-primary" ]
             :: moveAttrs
         )
-        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
+        [ switchInput account.enabled account.needsPassword (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
         , a
             [ class "account-row-profile-link"
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
@@ -1181,6 +1195,23 @@ accountRow shared count mainCount index account =
                     ]
                 , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                     [ text (account.server ++ " | " ++ branding.name) ]
+                , if account.needsPassword then
+                    -- `preventDefaultOn`, not `onClick` -- this button sits inside the
+                    -- profile-link `a` above, so a plain `onClick` here would still let
+                    -- the anchor's own default action (navigating to the profile) fire
+                    -- too, since it's a native browser default action tied to
+                    -- `preventDefault`, not to `stopPropagation` (unlike `serverChip`'s
+                    -- `stopClick`, whose enclosing "click target" is a plain `div`, with
+                    -- no default action of its own to prevent).
+                    button
+                        [ type_ "button"
+                        , class "account-needs-password"
+                        , preventDefaultOn "click" (Decode.succeed ( Shared.AccountsPanelMsg (AccountsPanel.PasswordNeededClicked account), True ))
+                        ]
+                        [ text "password required" ]
+
+                  else
+                    text ""
                 ]
             ]
         , div [ class "reorder-buttons" ]
@@ -1202,12 +1233,13 @@ avatarOrPlaceholder servers account =
 
 {-| A checkbox styled as a toggle switch.
 -}
-switchInput : Bool -> Shared.Msg -> Html Shared.Msg
-switchInput isChecked toggleMsg =
-    label [ class "switch" ]
+switchInput : Bool -> Bool -> Shared.Msg -> Html Shared.Msg
+switchInput isChecked isDisabled toggleMsg =
+    label [ classList [ ( "switch", True ), ( "disabled", isDisabled ) ] ]
         [ input
             [ type_ "checkbox"
             , checked isChecked
+            , disabled isDisabled
             , onClick toggleMsg
             ]
             []
@@ -1794,9 +1826,10 @@ currentStarredPostKey shared currentRoute =
 {-| A collapsible panel, one per admin-capable signed-in account, for setting
 which frontend (Flutter/React/Elm) that account's server serves at its root
 (`ServerInfo.webUserInterface`, via `AccountsPanel.SetWebUserInterfaceClicked`).
-Shows that account's username/avatar/server so it's clear which admin
-identity a change would be made as, since the RPC is authenticated per-account
-rather than "whichever account is currently active".
+Shows that account's server (hostname + name) above its username/avatar so
+it's clear which admin identity a change would be made as, since the RPC is
+authenticated per-account rather than "whichever account is currently
+active".
 -}
 adminAccountPanel : Shared.Model -> AccountsPanel.Account -> Html Shared.Msg
 adminAccountPanel shared account =
@@ -1807,20 +1840,44 @@ adminAccountPanel shared account =
         isOpen =
             AdminPanel.isAccountPanelOpen id shared.adminPanel
 
-        currentUi =
+        adminServer =
             findServer shared account.server
+
+        currentUi =
+            adminServer
                 |> Maybe.andThen (\s -> s.configuration.serverInfo)
                 |> Maybe.andThen .webUserInterface
                 |> Maybe.withDefault REACTTAMAGUI
+
+        adminServerName =
+            adminServer
+                |> Maybe.map (\s -> s.branding.name)
+                |> Maybe.withDefault ""
+
+        adminServerLogo =
+            case adminServer of
+                Just s ->
+                    imageOrInitial [ "admin-account-server-logo" ] s.branding.name s.branding.logoUrl
+
+                Nothing ->
+                    text ""
     in
     div [ class "admin-account-panel" ]
         [ button
             [ class "admin-account-toggle"
             , onClick (Shared.AdminPanelMsg (AdminPanel.ToggleAccountPanel id))
             ]
-            [ avatarOrPlaceholder shared.accountsPanel.servers account
-            , span [ class "admin-account-username" ] [ text (AccountsPanel.displayName account) ]
-            , span [ class "admin-account-server" ] [ text account.server ]
+            [ div [ class "admin-account-toggle-content" ]
+                [ div [ class "admin-account-server-row" ]
+                    [ adminServerLogo
+                    , span [ class "admin-account-server-host" ] [ text account.server ]
+                    , span [ class "admin-account-server-name" ] [ text adminServerName ]
+                    ]
+                , div [ class "admin-account-identity-row" ]
+                    [ accountsMenuAvatar shared account
+                    , span [ class "admin-account-username" ] [ text (AccountsPanel.displayName account) ]
+                    ]
+                ]
             , span
                 [ classes
                     ("admin-account-chevron"

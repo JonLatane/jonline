@@ -166,6 +166,16 @@
   text-decoration: underline;
 }
 
+/* Components/Authors.elm's compact Admin/Run Bots badges -- bare emoji (no
+   visible label, just a `title` tooltip), used inline next to an author's
+   name wherever there's no room for the verbose "🛡️ Admin" text (see
+   profiles.css's `.author-badge`, which this matches in font-size so the
+   emoji themselves render the same size in both places). */
+.author-badge-compact {
+  font-size: 0.8rem;
+  margin-left: 0.3rem;
+}
+
 /* Small avatar/placeholder next to a post's author name -- same size as the
    Accounts Panel toggle's own avatars (`.accounts-menu-avatar`). Used by both
    `postCard`'s `.post-card-meta` and `postDetail`'s `.post-detail-meta`. */

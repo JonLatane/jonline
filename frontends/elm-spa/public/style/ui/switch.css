@@ -41,3 +41,8 @@
 .switch input:checked+.slider::before {
   transform: translateX(14px);
 }
+
+.switch.disabled .slider {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

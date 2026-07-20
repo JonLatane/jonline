@@ -24,9 +24,10 @@ and the Starred Posts panel already do for their own (non-nested) post lists.
 -}
 
 import Animation
+import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -433,7 +434,7 @@ replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onM
         ]
         [ div [ class "post-reply-meta" ]
             [ span [ class "post-meta-left" ]
-                (Posts.authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                (Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                     :: (if post.visibility == GLOBALPUBLIC then
                             []
 

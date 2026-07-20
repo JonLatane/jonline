@@ -18,7 +18,7 @@ do.
 
 import Browser.Events
 import Components.MediaRenderer as MediaRenderer
-import Components.PostCard as Posts
+import Components.Posts as Posts
 import Html exposing (Html, button, div, span, text)
 import Html.Attributes exposing (class)
 import Html.Events exposing (on, onClick, preventDefaultOn, stopPropagationOn)
@@ -390,7 +390,7 @@ view accountsPanelModel model =
 
 {-| CSS animation to play for the media stage's freshly-keyed node (see
 `view`) -- a directional slide for `Next`/`Prev`, a plain fade for a fresh
-`Open`. Matched to `.media-viewer-panel-media-*` in media_viewer_panel.css.
+`Open`. Matched to `.media-viewer-panel-media-*` in media\_viewer\_panel.css.
 -}
 directionClass : Direction -> String
 directionClass direction =

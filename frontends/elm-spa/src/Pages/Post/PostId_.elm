@@ -1,7 +1,7 @@
 module Pages.Post.PostId_ exposing (Model, Msg, fromShared, page)
 
-import Components.PostCard as Posts
 import Components.PostReplies as PostReplies
+import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
