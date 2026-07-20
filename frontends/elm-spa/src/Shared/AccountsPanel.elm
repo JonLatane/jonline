@@ -95,7 +95,11 @@ be re-enabled without logging in again. Fully forgetting an account
 `permissions` is refreshed via `GetCurrentUser` whenever the account's server
 reconnects (app startup/reload, or the account being re-enabled) -- see
 `refreshPermissions` -- so it's usually current, though it can still lag
-between those refreshes if permissions change server-side.
+between those refreshes if permissions change server-side. That same refresh
+is what discovers a `refreshToken` no longer works (revoked, expired past its
+own grace period) -- see `GotPermissionsRefresh` -- setting `needsPassword`
+so the account shows as needing to be signed back into with a password rather
+than silently failing every request.
 
 -}
 type alias Account =
@@ -108,6 +112,7 @@ type alias Account =
     , avatarMediaId : Maybe String
     , permissions : List Permission
     , realName : String
+    , needsPassword : Bool
     }
 
 
@@ -324,6 +329,7 @@ type Msg
     | ToggleAccountsPanel
     | CloseAccountsPanel
     | ShowAddAccountFormClicked
+    | PasswordNeededClicked Account
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | MainServerSelected String
     | ResetMainFrontendHost
@@ -1210,6 +1216,7 @@ updateHelp req msg model =
                             , avatarMediaId = Maybe.map .id user.avatar
                             , permissions = user.permissions
                             , realName = user.realName
+                            , needsPassword = False
                             }
 
                         alreadyKnown =
@@ -1827,7 +1834,25 @@ updateHelp req msg model =
         ShowAddAccountFormClicked ->
             ( { model | addAccountFormExpanded = True }, Cmd.none )
 
-        GotPermissionsRefresh _ result ->
+        PasswordNeededClicked account ->
+            -- Reopens the (possibly-collapsed) Account form pre-filled with this
+            -- account's server/username, focused straight on Password -- the
+            -- quickest path back to a working access token once its refresh
+            -- token's been rejected (see `GotPermissionsRefresh`).
+            ( { model
+                | addAccountFormExpanded = True
+                , accountForm =
+                    { server = account.server
+                    , username = account.username
+                    , password = ""
+                    , status = Idle
+                    , passwordVisible = False
+                    }
+              }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")
+            )
+
+        GotPermissionsRefresh accId result ->
             case result of
                 Ok ( refreshedAccount, user ) ->
                     let
@@ -1837,6 +1862,7 @@ updateHelp req msg model =
                                 , permissions = user.permissions
                                 , avatarMediaId = Maybe.map .id user.avatar
                                 , realName = user.realName
+                                , needsPassword = False
                             }
 
                         newModel =
@@ -1844,9 +1870,38 @@ updateHelp req msg model =
                     in
                     ( newModel, persist newModel )
 
+                Err (Grpc.BadStatus { status }) ->
+                    if status == Grpc.Unauthenticated then
+                        -- The refresh token itself was rejected (revoked, expired past its own
+                        -- grace period) -- unlike a network blip, retrying later won't fix this;
+                        -- the account needs a fresh password (see `UI.accountRow`'s
+                        -- "password required" badge, and `PasswordNeededClicked`). Also disabled --
+                        -- it's not actually signed in anymore (every request as it would fail the
+                        -- same way), so it shouldn't keep counting as such for aggregated feeds/
+                        -- permissions until the user signs back in.
+                        let
+                            newModel =
+                                { model
+                                    | accounts =
+                                        List.map
+                                            (\a ->
+                                                if accountId a == accId then
+                                                    { a | needsPassword = True, enabled = False }
+
+                                                else
+                                                    a
+                                            )
+                                            model.accounts
+                                }
+                        in
+                        ( newModel, persist newModel )
+
+                    else
+                        ( model, Cmd.none )
+
                 Err _ ->
-                    -- Server unreachable, refresh token rejected, etc. -- leave the account as
-                    -- it was; it'll be retried on the next reconnect/enable.
+                    -- Server unreachable, etc. -- leave the account as it was; it'll be
+                    -- retried on the next reconnect/enable.
                     ( model, Cmd.none )
 
         MainServerSelected frontendHost ->
@@ -2258,12 +2313,15 @@ refreshPermissions server account =
         |> Task.attempt (GotPermissionsRefresh (accountId account))
 
 
-{-| `refreshPermissions` for every enabled account on the given server.
+{-| `refreshPermissions` for every account on the given server -- not just
+enabled (signed-in) ones, so a disabled account's access token is refreshed
+(and `needsPassword` discovered/cleared) right along with everyone else's,
+rather than only once the user re-enables it.
 -}
 refreshPermissionsForServer : Server -> List Account -> Cmd Msg
 refreshPermissionsForServer server accounts =
     accounts
-        |> List.filter (\a -> a.enabled && a.server == server.frontendHost)
+        |> List.filter (\a -> a.server == server.frontendHost)
         |> List.map (refreshPermissions server)
         |> Cmd.batch
 
@@ -2595,6 +2653,7 @@ encodeAccount account =
         , ( "avatarMediaId", account.avatarMediaId |> Maybe.map Encode.string |> Maybe.withDefault Encode.null )
         , ( "permissions", Encode.list (fieldNumbersPermission >> Encode.int) account.permissions )
         , ( "realName", Encode.string account.realName )
+        , ( "needsPassword", Encode.bool account.needsPassword )
         ]
 
 
@@ -2638,13 +2697,13 @@ persistedStateDecoder =
         (Decode.field "servers" (Decode.list persistedServerDecoder))
 
 
-{-| `elm/json` only provides `map8`, but `Account` now has 9 fields -- so this
+{-| `elm/json` only provides `map8`, but `Account` now has 10 fields -- so this
 decodes the first 8 into a partially-applied `Account` constructor, then
-applies `realName` on top of that.
+applies `realName` and `needsPassword` on top of that.
 -}
 accountDecoder : Decoder Account
 accountDecoder =
-    Decode.map2 (\partial realName -> partial realName)
+    Decode.map3 (\partial realName needsPassword -> partial realName needsPassword)
         (Decode.map8 Account
             (Decode.field "server" Decode.string)
             (Decode.field "userId" Decode.string)
@@ -2656,6 +2715,7 @@ accountDecoder =
             permissionsDecoder
         )
         realNameDecoder
+        needsPasswordDecoder
 
 
 {-| Defaults to "" if the key is missing entirely (older persisted state),
@@ -2666,6 +2726,18 @@ realNameDecoder =
     Decode.oneOf
         [ Decode.field "realName" Decode.string
         , Decode.succeed ""
+        ]
+
+
+{-| Defaults to `False` if the key is missing entirely (older persisted
+state, or a freshly-logged-in account -- see `GotAuthResult`), without
+failing the rest of the decode.
+-}
+needsPasswordDecoder : Decoder Bool
+needsPasswordDecoder =
+    Decode.oneOf
+        [ Decode.field "needsPassword" Decode.bool
+        , Decode.succeed False
         ]
 
 

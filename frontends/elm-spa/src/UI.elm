@@ -1181,6 +1181,23 @@ accountRow shared count mainCount index account =
                     ]
                 , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                     [ text (account.server ++ " | " ++ branding.name) ]
+                , if account.needsPassword then
+                    -- `preventDefaultOn`, not `onClick` -- this button sits inside the
+                    -- profile-link `a` above, so a plain `onClick` here would still let
+                    -- the anchor's own default action (navigating to the profile) fire
+                    -- too, since it's a native browser default action tied to
+                    -- `preventDefault`, not to `stopPropagation` (unlike `serverChip`'s
+                    -- `stopClick`, whose enclosing "click target" is a plain `div`, with
+                    -- no default action of its own to prevent).
+                    button
+                        [ type_ "button"
+                        , class "account-needs-password"
+                        , preventDefaultOn "click" (Decode.succeed ( Shared.AccountsPanelMsg (AccountsPanel.PasswordNeededClicked account), True ))
+                        ]
+                        [ text "password required" ]
+
+                  else
+                    text ""
                 ]
             ]
         , div [ class "reorder-buttons" ]

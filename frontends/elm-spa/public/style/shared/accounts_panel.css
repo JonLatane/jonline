@@ -618,6 +618,25 @@
   margin-left: 0.3rem;
 }
 
+.account-needs-password {
+  display: inline-block;
+  max-width: 100%;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--danger);
+  color: white;
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-needs-password:hover {
+  filter: brightness(1.1);
+}
+
 /* The "host | server name" badge, tinted with the account's server's nav
    color -- distinct from the row's own (primary-colored) background. */
 .account-row-server-badge {
