@@ -16,16 +16,21 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 ## Install and Run via Homebrew
 
-This is new and totally vibecoded, but works pretty well. It's got a bundled launcher that should make it easy to configure, and can setup your local Postgres DB with `createdb` and `dropdb` for  you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
+This is new and totally vibecoded, but works pretty well. It's just the Jonline server contents in `/#{etc}/jonline`, with a bash-based thin launcher for it at `#{bin}/jonline`. The launcher can setup your local Postgres DB with `createdb` and `dropdb` for you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
 
-Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which is literally the launcher script).
+Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which *is literally the launcher script that will become your `#{bin}/jonline`*, if you wanna PR any changes).
+
+### Two minute startup with Homebrew
 
 ```bash
 brew install jonlatane/jonline/jonline
-jonline local_db_create # literally just: createdb jonline_dev
+jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
 jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"
 jonline help # show subcommands for the bash launcher
-jonline server # launch the server
+jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
+jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
+jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
+
 ```
 
 ## Images & Deployments
@@ -42,6 +47,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
 
 - [Jonline  ](#jonline--)
   - [Install and Run via Homebrew](#install-and-run-via-homebrew)
+    - [Two minute startup with Homebrew](#two-minute-startup-with-homebrew)
   - [Images \& Deployments](#images--deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)

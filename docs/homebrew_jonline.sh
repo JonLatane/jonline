@@ -9,14 +9,20 @@
 # .github/workflows/server_ci_cd.yml -- don't hand-edit the generated
 # Formula, edit this file instead.
 #
-# The one placeholder below, @@JONLINE_ETC@@, is replaced by that CI step
-# with Ruby's `#{etc}` string interpolation, which Homebrew resolves to the
-# formula's installed etc/ prefix (e.g. /opt/homebrew/etc) when the user runs
-# `brew install`. That path isn't known until install time and can differ
-# per machine, so it can't be baked in here as a real value -- but aside from
-# that one substitution, this file is plain, valid, directly-runnable bash
-# (e.g. `bash docs/homebrew_jonline.sh help` works locally; `server` is the
-# only subcommand that needs the real substitution to find its install dir).
+# The one placeholder below, @@JONLINE_ETC@@, is replaced by that CI step with
+# a Ruby string interpolation of the formula's `etc` accessor, which Homebrew
+# resolves to the formula's installed etc/ prefix (e.g. /opt/homebrew/etc)
+# when the user runs `brew install`. That path isn't known until install time
+# and can differ per machine, so it can't be baked in here as a real value --
+# but aside from that one substitution, this file is plain, valid,
+# directly-runnable bash (e.g. `bash docs/homebrew_jonline.sh help` works
+# locally; `server` is the only subcommand that needs the real substitution
+# to find its install dir).
+#
+# NOTE: because this whole file is embedded via an interpolated Ruby heredoc,
+# any other literal Ruby interpolation syntax written below (a hash followed
+# immediately by a brace) would also get evaluated by Ruby at formula-write
+# time. Don't introduce one outside of the @@JONLINE_ETC@@ substitution step.
 #
 set -euo pipefail
 
@@ -59,6 +65,8 @@ Quick start:
 Commands:
   server                 Run the Jonline server (jonline-server)
   version                Print the Jonline server version (jonline-server --version)
+  environment            Print the current config (cat ~/.jonline)
+  edit_environment       Edit the config in $EDITOR (falls back to vi)
   local_db_create        Create the local Postgres database (createdb jonline_dev)
   local_db_drop          Drop the local Postgres database (dropdb jonline_dev)
   local_db_reset         Stop local instances, then drop and recreate the local database
@@ -119,6 +127,15 @@ version() {
   server --version
 }
 
+environment() {
+  cat "$JONLINE_ENV"
+}
+
+edit_environment() {
+  # Intentionally unquoted: $EDITOR may be multiple words (e.g. "code --wait").
+  ${EDITOR:-vi} "$JONLINE_ENV"
+}
+
 cmd="${1:-help}"
 if [ $# -gt 0 ]; then
   shift
@@ -128,7 +145,7 @@ case "$cmd" in
   help|-h|--help)
     jonline_help
     ;;
-  server|version|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop)
+  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop)
     "$cmd" "$@"
     ;;
   *)
