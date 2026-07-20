@@ -14,13 +14,15 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20coffee%20☕️-venmo-information?labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 [![Buy me a beer!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20beer%20🍺-paypal-information?labelColor={}&color={})](https://paypal.me/JLatane)
 
-## Install and Run via Homebrew
+## Packages, Images & Deployments
+
+### Install and Run via Homebrew
 
 This is new and totally vibecoded, but works pretty well. It's just the Jonline server contents in `/#{etc}/jonline`, with a bash-based thin launcher for it at `#{bin}/jonline`. The launcher can setup your local Postgres DB with `createdb` and `dropdb` for you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
 
 Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which *is literally the launcher script that will become your `#{bin}/jonline`*, if you wanna PR any changes).
 
-### Two minute startup with Homebrew
+#### Two minute startup with Homebrew
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -30,14 +32,17 @@ jonline help # show subcommands for the bash launcher
 jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
 jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
 jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
-
 ```
 
-## Images & Deployments
+### DockerHub: Server and Preview Generator images
+
+Jonline has an intuitive (helm-less) mechanism and conventions for templating Jonline server/Postgres/MinIO containers into Kubernetes namespaces. Helm-ification or other improvements, if "friendlily" documented, are very welcome.
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
-JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforward, pure Rust K8s-centric TCP/TLS load balancer in very early testing: [![JBL Images](https://img.shields.io/docker/v/jonlatane/jbl?label=dockerhub:jbl)](https://hub.docker.com/r/jonlatane/jbl/tags)
+### Live deployments
+
+The Jonline CI is setup to deploy the above Docker images as part of the build system (in fact, it won't cut a GitHub release or Homebrew version until it deploys to a test server).
 
 | Deployment                                                                                                    | Purpose                          | Federation Settings                                                                              | Links                                                                                                                                           | Deployment Version |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
@@ -46,9 +51,11 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
 | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
 
 - [Jonline  ](#jonline--)
-  - [Install and Run via Homebrew](#install-and-run-via-homebrew)
-    - [Two minute startup with Homebrew](#two-minute-startup-with-homebrew)
-  - [Images \& Deployments](#images--deployments)
+  - [Packages, Images \& Deployments](#packages-images--deployments)
+    - [Install and Run via Homebrew](#install-and-run-via-homebrew)
+      - [Two minute startup with Homebrew](#two-minute-startup-with-homebrew)
+    - [DockerHub: Server and Preview Generator images](#dockerhub-server-and-preview-generator-images)
+    - [Live deployments](#live-deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)

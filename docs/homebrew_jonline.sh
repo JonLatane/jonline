@@ -65,16 +65,20 @@ Quick start:
 Commands:
   server                 Run the Jonline server (jonline-server)
   version                Print the Jonline server version (jonline-server --version)
+
   environment            Print the current config (cat ~/.jonline)
   edit_environment       Edit the config in $EDITOR (falls back to vi)
+
   local_db_create        Create the local Postgres database (createdb jonline_dev)
   local_db_drop          Drop the local Postgres database (dropdb jonline_dev)
   local_db_reset         Stop local instances, then drop and recreate the local database
   local_db_connect       Connect to the local database with psql ($DATABASE_URL)
+
   local_minio_start      Start the existing local minio docker container
   local_minio_create     Start local minio, creating its docker container first if needed
   local_minio_delete     Stop and remove the local minio docker container
   local_instances_stop   Stop any running jonline-server processes
+  
   help                   Show this help text
 JONLINE_HELP_EOF
 }
