@@ -24,7 +24,7 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 
 #### 2 minute startup with Homebrew
 
-**Prerequisites:** Postgres: `createdb`, `dropdb`; Docker: `docker`
+**Prerequisites:** Installation: `brew`; Postgres autoconfiguration: `createdb`, `dropdb`; Docker/MinIO autoconfiguration: `docker`
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -47,7 +47,7 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 
 #### 3 minute startup on Linux
 
-**Prerequisites:** Postgres: `createdb`, `dropdb`; Docker: `docker`
+**Prerequisites:** Installation: `jq`, `curl`; Postgres autoconfiguration: `createdb`, `dropdb`; Docker/MinIO autoconfiguration: `docker`
 
 ```bash
 # Get the package with curl
