@@ -780,11 +780,11 @@ settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
     div [ class "accounts-panel-tab-content" ]
         [ label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowMainServerSwitch (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
+            [ switchInput shared.adminPanel.allowMainServerSwitch False (Shared.AdminPanelMsg AdminPanel.ToggleAllowMainServerSwitch)
             , span [] [ text "Switch main server by tapping servers" ]
             ]
         , label [ class "admin-switch-row" ]
-            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
+            [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
             , span [] [ text "Sign into other hosts with username/password" ]
             ]
         ]
@@ -973,7 +973,7 @@ serverChip shared count index server =
             --     text ""
             ]
         , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
-            [ switchInput server.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
+            [ switchInput server.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
             , if server.frontendHost /= accountsPanelModel.browsingHost then
                 a
                     [ class "external-link-btn"
@@ -1178,7 +1178,7 @@ accountRow shared count mainCount index account =
             :: classes [ "account-row", hostnameToCSSClass account.server, "background-color-primary" ]
             :: moveAttrs
         )
-        [ switchInput account.enabled (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
+        [ switchInput account.enabled account.needsPassword (Shared.AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled accId))
         , a
             [ class "account-row-profile-link"
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
@@ -1233,12 +1233,13 @@ avatarOrPlaceholder servers account =
 
 {-| A checkbox styled as a toggle switch.
 -}
-switchInput : Bool -> Shared.Msg -> Html Shared.Msg
-switchInput isChecked toggleMsg =
-    label [ class "switch" ]
+switchInput : Bool -> Bool -> Shared.Msg -> Html Shared.Msg
+switchInput isChecked isDisabled toggleMsg =
+    label [ classList [ ( "switch", True ), ( "disabled", isDisabled ) ] ]
         [ input
             [ type_ "checkbox"
             , checked isChecked
+            , disabled isDisabled
             , onClick toggleMsg
             ]
             []

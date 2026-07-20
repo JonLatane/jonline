@@ -299,6 +299,26 @@ type alias Model =
     -- model.servers` -- see `accountAnimations`'s own doc for why these stay
     -- separate dicts.
     , serverAnimations : Dict String (UI.Flip.State Msg)
+
+    -- Whether `init`'s startup sweep -- reconnecting to every persisted server
+    -- and checking/refreshing every one of its accounts' access tokens (see
+    -- `refreshPermissionsForServer`) -- has fully settled. `persist` no-ops
+    -- until this flips `True`, so a page load doesn't write (and broadcast to
+    -- every other open tab -- see `Ports.persistAccountsAndServers`) a rapid
+    -- burst of intermediate "0 servers, 1 server, 2 servers..." states as each
+    -- reconnect/refresh trickles in -- see `pendingServerChecks` and
+    -- `finishStartupUnit`.
+    , accessTokenRefreshChecked : Bool
+
+    -- How many of `init`'s startup reconnect attempts (one per persisted/
+    -- missing server, plus the browsing host's own if it's not already known)
+    -- haven't yet fully settled -- decremented by `finishStartupUnit` as each
+    -- one finishes (immediately, on a failed reconnect; once every one of its
+    -- accounts' access tokens has been checked, on a successful one -- see
+    -- `GotServerPermissionsRefresh`). `accessTokenRefreshChecked` flips `True`
+    -- (see `finishStartupUnit`) once this reaches zero. Meaningless (never
+    -- read) once `accessTokenRefreshChecked` is `True`.
+    , pendingServerChecks : Int
     }
 
 
@@ -331,6 +351,7 @@ type Msg
     | ShowAddAccountFormClicked
     | PasswordNeededClicked Account
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
+    | GotServerPermissionsRefresh String (List ( String, Result Grpc.Error ( Account, User ) ))
     | MainServerSelected String
     | ResetMainFrontendHost
     | ServerChipClicked String
@@ -978,6 +999,18 @@ init req flags =
                         |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
                 )
                 missingServerHosts
+
+        -- One "unit" per reconnect attempt just dispatched above -- see
+        -- `pendingServerChecks`/`finishStartupUnit`.
+        initialPendingServerChecks =
+            (if browsingHostAlreadyKnown then
+                0
+
+             else
+                1
+            )
+                + List.length persisted.servers
+                + List.length missingServerHosts
     in
     ( { accounts = persisted.accounts
       , servers = []
@@ -999,6 +1032,8 @@ init req flags =
       -- actually animate in.
       , accountAnimations = persisted.accounts |> List.map (\account -> ( accountId account, UI.Flip.restingState )) |> Dict.fromList
       , serverAnimations = persisted.servers |> List.map (\server -> ( server.frontendHost, UI.Flip.restingState )) |> Dict.fromList
+      , accessTokenRefreshChecked = initialPendingServerChecks <= 0
+      , pendingServerChecks = initialPendingServerChecks
       }
     , Cmd.batch (mainServerCmd :: reconnectCmds ++ missingServerCmds)
     )
@@ -1335,21 +1370,23 @@ updateHelp req msg model =
                     -- Replaces (rather than just skipping) any existing entry for this host --
                     -- this fires on every reconnect (app startup/reload, `init`'s
                     -- `reconnectCmds`), so an unconditional append here would otherwise
-                    -- duplicate the server on each successful reconnect. Persisting is a no-op
-                    -- for a server that was already known, but is how a freshly auto-detected
-                    -- "current host" server (see `init`) gets saved.
-                    -- Also refresh permissions for any of its enabled accounts now that we can
-                    -- actually reach it -- this is what makes permissions current on app
-                    -- startup/reload, not just after a fresh login.
+                    -- duplicate the server on each successful reconnect. Also refresh
+                    -- permissions for any of its accounts now that we can actually reach it --
+                    -- this is what makes permissions (and access tokens -- see `needsPassword`)
+                    -- current on app startup/reload, not just after a fresh login.
+                    -- `refreshPermissionsForServer` itself persists (this server's own addition
+                    -- included) once that settles -- see its own doc.
                     ( newModel
-                    , Cmd.batch [ persist newModel, refreshPermissionsForServer server newModel.accounts ]
+                    , refreshPermissionsForServer server newModel.accounts
                     )
 
                 Err _ ->
                     -- Couldn't reconnect (server's down, moved, etc.); leave it out of the
                     -- list rather than showing a permanently-broken entry. Its host/enabled
-                    -- flag is still safe in localStorage in case it comes back.
-                    ( model, Cmd.none )
+                    -- flag is still safe in localStorage in case it comes back. Still settles
+                    -- this server's startup-sweep unit, if one's pending -- see
+                    -- `settleStartupUnit`.
+                    settleStartupUnit model
 
         GotMainServerResult result ->
             case result of
@@ -1406,16 +1443,16 @@ updateHelp req msg model =
                                             |> Task.attempt (GotReconnectResult (Maybe.withDefault False fs.pinnedByDefault))
                                     )
                     in
+                    -- `refreshPermissionsForServer` persists (this server's own addition/
+                    -- `mainFrontendHost` change included) once it settles -- see its own doc.
                     ( newModel
-                    , Cmd.batch
-                        (persist newModel
-                            :: refreshPermissionsForServer server newModel.accounts
-                            :: federatedServerCmds
-                        )
+                    , Cmd.batch (refreshPermissionsForServer server newModel.accounts :: federatedServerCmds)
                     )
 
                 Err _ ->
-                    ( model, Cmd.none )
+                    -- Still settles this server's startup-sweep unit, if one's pending -- see
+                    -- `settleStartupUnit`.
+                    settleStartupUnit model
 
         AccountsAndServersBroadcastReceived value ->
             case Decode.decodeValue persistedStateDecoder value of
@@ -1853,56 +1890,30 @@ updateHelp req msg model =
             )
 
         GotPermissionsRefresh accId result ->
-            case result of
-                Ok ( refreshedAccount, user ) ->
-                    let
-                        mergedAccount =
-                            { refreshedAccount
-                                | username = user.username
-                                , permissions = user.permissions
-                                , avatarMediaId = Maybe.map .id user.avatar
-                                , realName = user.realName
-                                , needsPassword = False
-                            }
+            let
+                newModel =
+                    { model | accounts = applyPermissionsRefreshResult accId result model.accounts }
+            in
+            ( newModel, persist newModel )
 
-                        newModel =
-                            { model | accounts = upsertAccount mergedAccount model.accounts }
-                    in
-                    ( newModel, persist newModel )
-
-                Err (Grpc.BadStatus { status }) ->
-                    if status == Grpc.Unauthenticated then
-                        -- The refresh token itself was rejected (revoked, expired past its own
-                        -- grace period) -- unlike a network blip, retrying later won't fix this;
-                        -- the account needs a fresh password (see `UI.accountRow`'s
-                        -- "password required" badge, and `PasswordNeededClicked`). Also disabled --
-                        -- it's not actually signed in anymore (every request as it would fail the
-                        -- same way), so it shouldn't keep counting as such for aggregated feeds/
-                        -- permissions until the user signs back in.
-                        let
-                            newModel =
-                                { model
-                                    | accounts =
-                                        List.map
-                                            (\a ->
-                                                if accountId a == accId then
-                                                    { a | needsPassword = True, enabled = False }
-
-                                                else
-                                                    a
-                                            )
-                                            model.accounts
-                                }
-                        in
-                        ( newModel, persist newModel )
-
-                    else
-                        ( model, Cmd.none )
-
-                Err _ ->
-                    -- Server unreachable, etc. -- leave the account as it was; it'll be
-                    -- retried on the next reconnect/enable.
-                    ( model, Cmd.none )
+        GotServerPermissionsRefresh _ results ->
+            let
+                newModel =
+                    { model
+                        | accounts =
+                            List.foldl
+                                (\( accId, result ) accounts -> applyPermissionsRefreshResult accId result accounts)
+                                model.accounts
+                                results
+                    }
+            in
+            -- One `persist` for the whole server (every one of its accounts'
+            -- results folded in above) rather than one per account -- see
+            -- `refreshPermissionsForServer`'s own doc -- and, while `init`'s
+            -- startup sweep is still in progress, deferred further still, into
+            -- the single sweep-wide `persist` -- see `settleStartupUnit`/
+            -- `Model.accessTokenRefreshChecked`.
+            settleStartupUnit newModel
 
         MainServerSelected frontendHost ->
             if List.any (\s -> s.frontendHost == frontendHost) model.servers then
@@ -2293,14 +2304,13 @@ connectionOf server =
     { frontendHost = server.frontendHost, backendHost = server.backendHost, port_ = server.port_, tls = server.tls }
 
 
-{-| Refreshes an account's `permissions` (and `username`, in case it changed
+{-| The bare `Task` behind `refreshPermissions`/`refreshPermissionsForServer` --
+refreshes an account's `permissions` (and `username`, in case it changed
 server-side) via `GetCurrentUser`, refreshing its access token first if
-needed -- see `Shared.MaybeAccountRequest`. Fired whenever `account`'s server
-reconnects (app startup/reload) or the account is (re-)enabled, so permissions
-granted/revoked elsewhere stay current without the user doing anything.
+needed -- see `performWithAccount`.
 -}
-refreshPermissions : Server -> Account -> Cmd Msg
-refreshPermissions server account =
+refreshPermissionsTask : Server -> Account -> Task Grpc.Error ( Account, User )
+refreshPermissionsTask server account =
     performWithAccount
         (connectionOf server)
         account
@@ -2310,20 +2320,110 @@ refreshPermissions server account =
                 |> withAccessToken (Just accessToken)
                 |> Grpc.toTask
         )
+
+
+{-| Folds one account's `GetCurrentUser`/access-token-refresh result (see
+`refreshPermissionsTask`) into `accounts` -- shared by `GotPermissionsRefresh`
+(a single account, e.g. `ToggleAccountEnabled`) and `GotServerPermissionsRefresh`
+(a whole server's worth at once, see `refreshPermissionsForServer`) so both
+apply the exact same rules:
+
+  - On success, merges the refreshed `username`/`permissions`/`avatarMediaId`/
+    `realName` and clears `needsPassword`.
+  - On an `Unauthenticated` failure, the refresh token itself was rejected
+    (revoked, expired past its own grace period) -- unlike a network blip,
+    retrying later won't fix this; the account needs a fresh password (see
+    `UI.accountRow`'s "password required" badge, and `PasswordNeededClicked`).
+    Also disabled -- it's not actually signed in anymore (every request would
+    fail the same way), so it shouldn't keep counting as such for aggregated
+    feeds/permissions until the user signs back in.
+  - Any other failure (network blip, server unreachable, etc.) leaves the
+    account as it was; it'll be retried on the next reconnect/enable.
+
+-}
+applyPermissionsRefreshResult : String -> Result Grpc.Error ( Account, User ) -> List Account -> List Account
+applyPermissionsRefreshResult accId result accounts =
+    case result of
+        Ok ( refreshedAccount, user ) ->
+            upsertAccount
+                { refreshedAccount
+                    | username = user.username
+                    , permissions = user.permissions
+                    , avatarMediaId = Maybe.map .id user.avatar
+                    , realName = user.realName
+                    , needsPassword = False
+                }
+                accounts
+
+        Err (Grpc.BadStatus { status }) ->
+            if status == Grpc.Unauthenticated then
+                List.map
+                    (\a ->
+                        if accountId a == accId then
+                            { a | needsPassword = True, enabled = False }
+
+                        else
+                            a
+                    )
+                    accounts
+
+            else
+                accounts
+
+        Err _ ->
+            accounts
+
+
+{-| Refreshes a single account's permissions -- fired when it's individually
+(re-)enabled (`ToggleAccountEnabled`), so permissions granted/revoked
+elsewhere stay current without the user doing anything. See
+`refreshPermissionsForServer` for the whole-server, startup-time equivalent.
+-}
+refreshPermissions : Server -> Account -> Cmd Msg
+refreshPermissions server account =
+    refreshPermissionsTask server account
         |> Task.attempt (GotPermissionsRefresh (accountId account))
 
 
-{-| `refreshPermissions` for every account on the given server -- not just
-enabled (signed-in) ones, so a disabled account's access token is refreshed
-(and `needsPassword` discovered/cleared) right along with everyone else's,
-rather than only once the user re-enables it.
+{-| `refreshPermissionsTask` for every account on the given server that isn't
+already known to need a password -- not just enabled (signed-in) ones, so a
+disabled account's access token is refreshed (and `needsPassword` discovered)
+right along with everyone else's, rather than only once the user re-enables
+it.
+
+Skips accounts already flagged `needsPassword` -- their refresh token is
+already known to be dead, and retrying it on every single reconnect (app
+startup/reload, this same function's own other callers) would just fail the
+exact same way every time while persisting/broadcasting a no-op change --
+effectively a boot loop on every future load. The only way out of
+`needsPassword` is a fresh login (`PasswordNeededClicked` -> `GotAuthResult`),
+which doesn't go through here at all.
+
+Runs every account's refresh as one batch, settling into a single
+`GotServerPermissionsRefresh` once *all* of them finish, rather than each
+independently dispatching (and persisting the result of) its own
+`GotPermissionsRefresh` -- so a server with several accounts produces one
+`persist` (and cross-tab broadcast -- see `Ports.persistAccountsAndServers`)
+instead of one per account. Two tabs both reconnecting to the same servers at
+startup would otherwise each re-broadcast every single account's result as it
+trickles in, each broadcast in turn nudging the *other* tab's own
+`AccountsAndServersBroadcastReceived` -- see `Model.accessTokenRefreshChecked`,
+which defers this even further, into one `persist` for the whole startup
+sweep.
 -}
 refreshPermissionsForServer : Server -> List Account -> Cmd Msg
 refreshPermissionsForServer server accounts =
     accounts
-        |> List.filter (\a -> a.server == server.frontendHost)
-        |> List.map (refreshPermissions server)
-        |> Cmd.batch
+        |> List.filter (\a -> a.server == server.frontendHost && not a.needsPassword)
+        |> List.map
+            (\account ->
+                refreshPermissionsTask server account
+                    |> Task.map Ok
+                    |> Task.onError (Err >> Task.succeed)
+                    |> Task.map (Tuple.pair (accountId account))
+            )
+        |> Task.sequence
+        |> Task.perform (GotServerPermissionsRefresh server.frontendHost)
 
 
 {-| Sets which frontend (`/`, `/flutter`, or `/elm`) `server` serves at its
@@ -2628,9 +2728,71 @@ type alias Flags =
     Decode.Value
 
 
+{-| No-ops until `init`'s startup sweep has fully settled (see
+`accessTokenRefreshChecked`/`finishStartupUnit`) -- otherwise every
+individual reconnect/account-refresh that happens to land before then would
+each write (and broadcast to every other open tab) their own sliver of
+still-converging state, rather than the one coherent snapshot this waits for.
+Anything that changes in the meantime (a user actually doing something in the
+brief window before the sweep settles, vs. the sweep's own churn) still shows
+up on screen immediately either way -- `model` itself is never gated, only
+writing it out -- and gets swept up into that same first `persist` once
+`finishStartupUnit` fires it.
+-}
 persist : Model -> Cmd Msg
 persist model =
-    Ports.persistAccountsAndServers (encodeState model)
+    if model.accessTokenRefreshChecked then
+        Ports.persistAccountsAndServers (encodeState model)
+
+    else
+        Cmd.none
+
+
+{-| Marks one "unit" of `init`'s startup sweep as finished -- one server
+either failing to reconnect at all, or fully reconnecting and having every
+one of its accounts' access tokens checked/refreshed (see
+`refreshPermissionsForServer`/`GotServerPermissionsRefresh`). Once every unit
+from `pendingServerChecks` has finished, flips `accessTokenRefreshChecked`.
+Doesn't persist itself -- see `settleStartupUnit`, every call site's actual
+entry point, which pairs this with the one `persist` call that actually needs
+to happen. No-ops (returns `model` unchanged) once already checked.
+-}
+finishStartupUnit : Model -> Model
+finishStartupUnit model =
+    if model.accessTokenRefreshChecked then
+        model
+
+    else
+        let
+            stillPending =
+                model.pendingServerChecks - 1
+        in
+        { model | pendingServerChecks = stillPending, accessTokenRefreshChecked = stillPending <= 0 }
+
+
+{-| `finishStartupUnit`, then `persist`s -- but only when that'll actually
+write anything: either this unit is the one that just finished the *whole*
+sweep (flipping `accessTokenRefreshChecked` from `False` to `True`), so
+`persist` now finally goes through, capturing every server/account change
+accumulated during the sweep in one write (see `persist`'s own doc); or the
+sweep was already long done (ordinary steady-state operation -- e.g. a server
+added well after startup, via `AccountsAndServersBroadcastReceived` or the Add
+Server form), where `persist` behaves exactly as it always has, once per
+call. Only skips persisting in between those two: this unit finished, but
+others are still pending, so `persist` would just no-op anyway (see
+`persist`) -- no need to call it.
+-}
+settleStartupUnit : Model -> ( Model, Cmd Msg )
+settleStartupUnit model =
+    let
+        newModel =
+            finishStartupUnit model
+    in
+    if newModel.accessTokenRefreshChecked then
+        ( newModel, persist newModel )
+
+    else
+        ( newModel, Cmd.none )
 
 
 encodeState : Model -> Encode.Value
