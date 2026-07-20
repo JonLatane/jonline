@@ -22,7 +22,6 @@ extern crate env_logger;
 extern crate http;
 extern crate log;
 extern crate percent_encoding;
-extern crate reqwest;
 extern crate s3;
 extern crate tempfile;
 extern crate tokio_stream;
