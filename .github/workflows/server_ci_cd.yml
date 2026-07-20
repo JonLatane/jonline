@@ -888,7 +888,7 @@ jobs:
 
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/docs/protocol.html"
-          mv jonline jonline-server
+          mv "$PKG/jonline" "$PKG/jonline-server"
 
           mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
           cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
