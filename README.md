@@ -9,7 +9,7 @@ Jonline is an open-source, community-scale social network designed to be capable
 
 Meanwhile, in support of media creators/providers who might want to self-host Jonline for themselves or in a consortium (whether in lieu of or in addition to monolithic social media presence like YouTube or Twitch), Jonline's CORS support does still afford private media holders a basic way to control who can see their content. Further, better Media permission/visibility controls could definitely be added, should, say, video creators or streamers want to migrate to self-hosting using a Jonline instance as their decentralized video platform to charge for premium content.
 
-The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app being at [Jonline.io/flutter](https://jonline.io/flutter)). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind Cloudflare's free CDN.)
+The "dev" instance is up at [Jonline.io](https://jonline.io). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind Cloudflare's free CDN.)
 
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20coffee%20☕️-venmo-information?labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 [![Buy me a beer!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20beer%20🍺-paypal-information?labelColor={}&color={})](https://paypal.me/JLatane)
@@ -18,9 +18,18 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 Jonline can be run from source, via Homebrew, with a Linux binary package, or with Docker images.
 
-The Docker images are minimal Debian images with a `jonline` server binary, as well as binaries for various jobs, used for the live deployments currently at [jonline.io](https://jonline.io), [bullcity.social](https://bullcity.social), and [oakcity.social](https://oakcity.social).
+At a high level, Jonline's CI/CD ([example run](https://github.com/JonLatane/jonline/actions/runs/29740971903)) is setup to do the following, stopping if there are issues:
 
-Both the Linux and macOS packages are designed around a `bash`-based "thin launcher" that runs the actual Rust binaries an "install directory" which also contains the frontends (`/#{etc}/jonline/` for Homebrew, `~/.jonline-linux/` for the Linux package). The Linux/macOS launchers store environment variables in `~/.jonline` and load them before starting the server or other services. Finally, the Linux launcher handles self-updating as well.
+1. Build and test the Rust BE, Elm FE and Tamagui/React FE.
+2. Build a server Docker image and deploy it to [jonline.io](https://jonline.io).
+    * The Docker images are minimal Debian images with a `jonline` server binary, as well as binaries for various jobs, used for the live deployments currently at [jonline.io](https://jonline.io), [bullcity.social](https://bullcity.social), and [oakcity.social](https://oakcity.social). Environment variables allow fairly straightforward configuration with Kubernetes.
+3. Create a GitHub Release.
+4. Create Homebrew & Linux packages, and deploy to [bullcity.social](https://bullcity.social) and [oakcity.social](https://oakcity.social).
+    * The Homebrew/Linux `jonline` is actually a platform-specific, `bash`-based "thin launcher.
+      * The `bash`-based `jonline` launcher provides tools for running the server, jobs, and admin tasks.
+      * Homebrew/Linux rename the Rust `jonline` server binary to `jonline-server` (macOS) and `jonline-server-[arm64|amd64]` (Linux).
+      * The launcher runs everything from an "install directory" which also contains the frontends (`/#{etc}/jonline/` for Homebrew, your extracted test directory or `~/.jonline-linux/` for the Linux package).
+      * The Linux/macOS launchers store environment variables in `~/.jonline` and load them before starting the server or other services.
 
 ### macOS: Install and Run via Homebrew
 
@@ -30,7 +39,11 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 
 #### 2 minute startup with Homebrew
 
-**Prerequisites:** Installation: `brew`; Postgres autoconfiguration: `createdb`, `dropdb`; Docker/MinIO autoconfiguration: `docker`
+**Prerequisites for your `$PATH`:**
+
+* Installation: `brew`
+* Postgres autoconfiguration: `createdb`, `dropdb`
+* Docker/MinIO autoconfiguration: `docker`
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -43,15 +56,12 @@ jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those databa
 jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
 
 # Once the server is running (presumably in another tab, or the background, or a daemon),
-# You can set up an admin user.
-open http://localhost/
-
-# Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.
 open http://localhost/
-# Create a user account, username "my_admin_user" through the browser UI.
-# To give your first user admin permissions:
-jonline set_permission my_admin_user admin on
+
+# In your browser, create a user account and remember your username.
+# To give them admin permissions:
+jonline set_permission my_admin_username admin on
 
 brew upgrade jonlatane/jonline/jonline # Upgrade to the latest release.
 ```
@@ -66,10 +76,14 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 
 #### 3 minute startup on Linux
 
-**Prerequisites:** Installation: `jq`, `curl`; Postgres autoconfiguration: `createdb`, `dropdb`; Docker/MinIO autoconfiguration: `docker`
+**Prerequisites for your `$PATH`:** 
+
+* Installation/Updates: `jq`, `curl`, `xargs`
+* Postgres autoconfiguration: `createdb`, `dropdb`
+* Docker/MinIO autoconfiguration: `docker`
 
 ```bash
-# Get the package with curl
+# Get the package with curl/jq, and extract it. This is actually also what updater script does.
 curl -s https://api.github.com/repos/jonlatane/jonline/releases/latest \
   | jq -r '.assets[] | select(.name | test("-linux\\.tar\\.bz2$")) | .browser_download_url' \
   | xargs curl -L -o jonline.tar.bz2
@@ -77,8 +91,13 @@ mkdir jonline && tar xjf jonline.tar.bz2 -C jonline && rm jonline.tar.bz2
 cd jonline
 ./bin/jonline version
 
-# We'll just do this for test setup
-export PATH=$PATH:./bin
+# We'll just do this for test/demo setup.
+export PATH=$PATH:$(pwd)/bin
+
+# Alternatively, to install immediately, we could: 
+# ./bin/jonline install
+# This might be useful to add to your .profile/.zshrc/etc.:
+# export PATH=$PATH:$HOME/.jonline-linux/bin
 
 ### The rest of setup is the same as for macOS
 jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
@@ -92,13 +111,15 @@ jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 i
 # Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.
 xdg-open http://localhost/
-# In the browser UI, create a user account and remember your username.
+
+# In your browser, create a user account and remember your username.
 # To give them admin permissions:
 jonline set_permission my_admin_username admin on
 ```
 
 #### Install/self-update on Linux
-Whereas Homebrew gives you updates via `brew`, the Linux version ships with an update script, again, fully vibe-coded. Once you've gotten things running via the above, you may want to install. All these commands are [just a bash script you can/should look at before running them](https://github.com/JonLatane/jonline/blob/docs/linux_jonline.sh).
+
+Whereas Homebrew gives you updates via `brew`, the Linux version ships with an update script, again, a vibe-coded blend of `curl` and `jq`. Once you've gotten things running via the above guide, you may want to install. All these commands are [just a bash script you can/should look at before running them](https://github.com/JonLatane/jonline/blob/docs/linux_jonline.sh).
 
 ```bash
 # If you want to self-update, you may want to:
@@ -116,15 +137,17 @@ Jonline has an intuitive (helm-less) mechanism and conventions for templating Jo
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
 
-### Live deployments
+#### Live (DigitalOcean Kubernetes/DOKS) deployments
 
-The Jonline CI is setup to deploy the above Docker images as part of the build system (in fact, it won't cut a GitHub release or Homebrew version until it deploys to a test server).
+Jonline's CI is set up to deploy the above Docker images as part of its build system. (In fact, it won't cut its GitHub/Homebrew/Linux releases until it deploys a canary build to [jonline.io](https://jonline.io).)
+
+To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster).
 
 | Deployment                                                                                                    | Purpose                          | Federation Settings                                                                              | Links                                                                                                                                           | Deployment Version |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Flutter UI](https://jonline.io/flutter/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development        |
-| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Flutter UI](https://BullCity.Social/flutter/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
-| [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
+| [Jonline.io ![Favicon](https:/jonline.io/favicon.png) ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Elm UI](https://jonline.io/elm/), [Tamagui/React UI](https://jonline.io/tamagui/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development/Canary        |
+| [BullCity.Social ![Favicon](https:/BullCity.Social/favicon.png) ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Elm UI](https://BullCity.Social/elm/), [Tamagui/React UI](https://BullCity.Social/tamagui/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
+| [OakCity.Social ![Favicon](https:/OakCity.Social/favicon.png) ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
 
 - [Jonline  ](#jonline--)
   - [Packages, Images \& Deployments](#packages-images--deployments)
@@ -134,7 +157,7 @@ The Jonline CI is setup to deploy the above Docker images as part of the build s
       - [3 minute startup on Linux](#3-minute-startup-on-linux)
       - [Install/self-update on Linux](#installself-update-on-linux)
     - [DockerHub: Server and Preview Generator images](#dockerhub-server-and-preview-generator-images)
-    - [Live deployments](#live-deployments)
+      - [Live (DigitalOcean Kubernetes/DOKS) deployments](#live-digitalocean-kubernetesdoks-deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
@@ -149,7 +172,7 @@ The Jonline CI is setup to deploy the above Docker images as part of the build s
     - [Posts](#posts)
       - [GroupPost](#grouppost)
     - [Events](#events)
-    - [Future Feature Roadmap](#future-feature-roadmap)
+    - [Potential future features](#potential-future-features)
     - [Dumfederation](#dumfederation)
     - [Protocol Documentation](#protocol-documentation)
     - [Project Components](#project-components)
@@ -320,27 +343,10 @@ linking any unique `Group` to any unique `Post`, along with the `User` who creat
 
 `Event`s are a thin layer atop `Post`s. Any Event has a single Post, as well as at least one EventInstance. An EventInstance has a start time, end time, location, and RSVP/attendance data. Group Events work through the `GroupPost` mechanism.
 
-### Future Feature Roadmap
+### Potential future features
 
-Jonline is currently in the 0.2.x phase of development. Its phases are:
-
-- 0.1.x (old) - Basic gRPC social network with Users, Follows, Groups, Posts and Events, and multiple clients/UIs (React Web and Flutter).
-- 0.2.x (current) - Fully federated gRPC social network - able to view Posts/People/Events from oakcity.social on jonline.io, etc.
-  - Most federation features are being built atop React Web. Flutter app still functional for login and listing Users, Groups, and Posts, though comparatively less featureful otherwise. This is fine, as web is really the priority given what Jonline is and the current politics behind app stores. A sad state of affairs, though.
-  - A dedicated iOS/Android developer who has the time and faith to deal with Apple/Google would be a welcome contributor!
-- 0.3.x/0.4.x - Based on which is ready first, 0.3.x and 0.4.x will mark the releases of:
-  - Web push notification support for discussions, and more chat-oriented features generally once that's in place.
-    - Again, interested iOS/Android devs could make welcome contributions during this work. Jonline's current environment makes Web push the sensible thing to prioritize on my own end.
-  - JBL, a load balancer, which will make hosting lots of domains affordable.
-- 0.5.x/0.6.x - Music and Video streaming features. These could also easily be added sooner, but are a backburner priority for me for now. Wanna change my mind? Buy me *lots* of coffees and beers below 🙃
-- There are lots of other features that could be added (see below), but this is the immediate priority set.
-- Jonline will only ever get a 1.0.x release if I become a millionaire from it, so mash these payment buttons and put in big numbers if you want me building this stuff full time:
-
-[![Buy me a coffee!](https://img.shields.io/badge/🙏%20buy%20me%20a%20coffee%20☕️-venmo-information?style=for-the-badge&labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
-[![Buy me a beer!](https://img.shields.io/badge/🙏%20buy%20me%20a%20beer%20🍺-paypal-information?style=for-the-badge&labelColor={}&color={})](https://paypal.me/JLatane)
-
-Other potential future features, that may in particular be of interest to small/medium/local businesses, and to cities/counties that want to support their local businesses, include:
-
+- Push APIs for Posts
+  - Could offer more "chat" based UX
 - Payments
   - Jonline should support user-to-user payments via Apple Pay, Venmo, etc.
 - Products
@@ -352,7 +358,7 @@ Other potential future features, that may in particular be of interest to small/
   - Built atop OpenStreetMap, Google Maps, or possibly let the user/server choose implmementation.
   - OSS, social-baed competitor to Uber/Lyft.
 
-Again, if you want these features prioritized, reach out to me in any way, but especially with those payment buttons above 🙏
+If you want these features prioritized, or have ideas about how they would fit into Jonline's design philosophy, reach out to me in any way, but especially with those payment buttons above 🙏
 
 ### Dumfederation
 

@@ -435,11 +435,38 @@ userCard basePath viewingServerHost server maybeAccount followStatusAndButton us
         ]
         [ userCardAvatar (displayName user) (avatarUrl server maybeAccount user)
         , div [ Html.Attributes.class "user-card-details" ]
-            [ div [] [ text (displayName user) ]
+            [ div [] (text (displayName user) :: userCardBadges user)
             , div [ Html.Attributes.class "user-card-meta" ] [ text (userCardMetaText user) ]
             ]
         , followStatusAndButton
         ]
+
+
+{-| Duplicated (rather than reusing `Components.Authors.compactBadges`) since
+`Authors` itself imports this module (for `userCard`, mirroring `avatarUrl`/
+`profileHref` elsewhere), so the reverse import would be a cycle -- same
+reasoning as `userCardAvatar` above.
+-}
+userCardBadges : User -> List (Html msg)
+userCardBadges user =
+    (if List.member ADMIN user.permissions then
+        [ Html.span [ Html.Attributes.class "author-badge-compact", Html.Attributes.title "Admin" ] [ text "🛡️" ] ]
+
+     else
+        []
+    )
+        ++ (if List.member BUSINESS user.permissions then
+                [ Html.span [ Html.Attributes.class "author-badge-compact", Html.Attributes.title "Business Account" ] [ text "💼" ] ]
+
+            else
+                []
+           )
+        ++ (if List.member RUNBOTS user.permissions then
+                [ Html.span [ Html.Attributes.class "author-badge-compact", Html.Attributes.title "Has Permission to Run Bots" ] [ text "🤖" ] ]
+
+            else
+                []
+           )
 
 
 {-| Duplicated (rather than reusing `UI.imageOrInitial`) since `UI` itself
