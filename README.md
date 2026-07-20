@@ -18,6 +18,8 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 
 This is new and totally vibecoded, but works pretty well. It's got a bundled launcher that should make it easy to configure, and can setup your local Postgres DB with `createdb` and `dropdb` for  you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
 
+Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/homebrew_jonline.sh`) (which is literally the launcher script).
+
 ```bash
 brew install jonlatane/jonline/jonline
 jonline local_db_create # literally just: createdb jonline_dev
