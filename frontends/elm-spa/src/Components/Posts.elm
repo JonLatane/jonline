@@ -1,7 +1,6 @@
 module Components.Posts exposing
     ( allVisibilities
     , allowedVisibilities
-    , authorLink
     , commentCountText
     , fetchAncestors
     , fetchPost
@@ -9,9 +8,6 @@ module Components.Posts exposing
     , fetchReplies
     , isAuthor
     , parsePostRouteId
-    , postAuthorAvatarUrl
-    , postAuthorHref
-    , postAuthorName
     , postCard
     , postCommentCount
     , postContextLabel
@@ -37,13 +33,13 @@ Post-related page) need: building a `GetPosts` request against a specific
 route's `id` or `id@host` segment.
 -}
 
+import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
-import Components.Users as Users
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, h1, img, span, text)
-import Html.Attributes exposing (alt, attribute, class, href, rel, src, target, title)
+import Html exposing (Html, a, button, div, h1, span, text)
+import Html.Attributes exposing (attribute, class, href, rel, target, title)
 import Html.Events
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
@@ -322,44 +318,6 @@ fallbackTitle post =
     post.content
         |> Maybe.map (String.left 60)
         |> Maybe.withDefault "Post"
-
-
-postAuthorName : Post -> String
-postAuthorName post =
-    post.author
-        |> Maybe.andThen .username
-        |> Maybe.withDefault "unknown"
-
-
-{-| The author's profile link -- `Nothing` if the post has no `author` at all
-(shouldn't normally happen, but `Post.author` is optional). The author is
-always on `postServerHost` (the same server as the post itself; `Author` has
-no host of its own to look elsewhere) -- see `Components.Users.profileHref`,
-which already falls back to `/user/:id` if the username isn't routable.
--}
-postAuthorHref : String -> String -> String -> Post -> Maybe String
-postAuthorHref basePath viewingServerHost postServerHost post =
-    post.author
-        |> Maybe.map
-            (\author ->
-                Users.profileHref basePath
-                    viewingServerHost
-                    postServerHost
-                    { userId = author.userId, username = Maybe.withDefault "" author.username }
-            )
-
-
-{-| The author's avatar URL -- `Nothing` if the post has no `author`, `server`
-isn't resolved yet (e.g. still connecting), or the author just has no avatar
-set. `server` (unlike `postAuthorHref`'s plain `postServerHost` string) needs
-to be the actual resolved `Shared.AccountsPanel.Server` -- building a media URL
-needs its connection details, not just its hostname (see
-`Shared.AccountsPanel.mediaUrl`).
--}
-postAuthorAvatarUrl : Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Post -> Maybe String
-postAuthorAvatarUrl maybeServer maybeAccount post =
-    Maybe.map2 (\server author -> Users.authorAvatarUrl server maybeAccount author) maybeServer post.author
-        |> Maybe.andThen identity
 
 
 {-| A post's most relevant timestamp for "recency" sorting/display: when it
@@ -701,47 +659,6 @@ editButton maybeAccount onEditClicked post =
             text ""
 
 
-{-| A small avatar/placeholder for a post's author, matching the size of the
-Accounts Panel toggle's own avatars (`.post-author-avatar`, see `posts.css`).
-Falls back to an initial-letter placeholder the same way `UI.imageOrInitial`
-does elsewhere in the app; duplicated here rather than reusing that function
-since `UI` itself imports `Components.Posts` (for `postCard`), so the reverse
-import would be a cycle.
--}
-authorAvatar : String -> Maybe String -> Html msg
-authorAvatar name maybeUrl =
-    case maybeUrl of
-        Just url ->
-            img [ class "post-author-avatar", src url, alt name ] []
-
-        Nothing ->
-            div [ classes [ "post-author-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]
-
-
-{-| A post's author avatar + name, linking to their profile (see
-`postAuthorHref`) -- a `span` (not a link) if the post somehow has no `author`
-at all, so the avatar still shows either way. Used by both `postDetail` (a
-plain, unwrapped link -- fine as-is) and `postCard` (which needs the
-"stretched link" dance in its own doc comment to keep this independently
-clickable without nesting an `<a>` inside `postCard`'s own enclosing one).
--}
-authorLink : String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> Post -> Html msg
-authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post =
-    let
-        name =
-            postAuthorName post
-
-        content =
-            [ authorAvatar name (postAuthorAvatarUrl maybeServer maybeAccount post), text name ]
-    in
-    case postAuthorHref basePath viewingServerHost postServerHost post of
-        Just profileHref ->
-            a [ href profileHref, class "post-author-link" ] content
-
-        Nothing ->
-            span [ class "post-author-link" ] content
-
-
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
 otherwise obvious once posts from several are mixed together by recency. Tinted
@@ -838,7 +755,7 @@ postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer m
                 text ""
         , div [ class "post-card-meta" ]
             [ span [ class "post-meta-left" ]
-                [ authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                [ Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                 , text
                     (" · "
                         ++ postServerHost
@@ -915,7 +832,7 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
         , div [ class "post-detail-meta" ]
             [ span [ class "post-meta-left" ]
                 [ text "by "
-                , authorLink basePath viewingServerHost postServerHost maybeServer maybeAccount post
+                , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                 , text " · "
                 , visibilityView
                 ]

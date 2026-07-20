@@ -50,7 +50,11 @@
   margin: 0;
 }
 
-.profile-admin-badge {
+/* Components/Authors.elm's Admin/Run Bots badges -- `.author-badge` (verbose,
+   used here) and `.author-badge-compact` (inline in cards/replies, see
+   posts.css) share this same sizing so the 🛡️/🤖 emoji themselves render at
+   the same size in both places. */
+.author-badge {
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--muted);

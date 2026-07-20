@@ -183,7 +183,7 @@ statusView shared model =
                             [ div [ class "profile-username" ]
                                 [ text account.username
                                 , if AccountsPanel.isAdmin account then
-                                    span [ class "profile-admin-badge", title "Admin on this server" ] [ text "🛡️ Admin" ]
+                                    span [ class "author-badge", title "Admin on this server" ] [ text "🛡️ Admin" ]
 
                                   else
                                     text ""

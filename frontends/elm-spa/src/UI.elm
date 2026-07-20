@@ -1853,6 +1853,14 @@ adminAccountPanel shared account =
             adminServer
                 |> Maybe.map (\s -> s.branding.name)
                 |> Maybe.withDefault ""
+
+        adminServerLogo =
+            case adminServer of
+                Just s ->
+                    imageOrInitial [ "admin-account-server-logo" ] s.branding.name s.branding.logoUrl
+
+                Nothing ->
+                    text ""
     in
     div [ class "admin-account-panel" ]
         [ button
@@ -1861,7 +1869,8 @@ adminAccountPanel shared account =
             ]
             [ div [ class "admin-account-toggle-content" ]
                 [ div [ class "admin-account-server-row" ]
-                    [ span [ class "admin-account-server-host" ] [ text account.server ]
+                    [ adminServerLogo
+                    , span [ class "admin-account-server-host" ] [ text account.server ]
                     , span [ class "admin-account-server-name" ] [ text adminServerName ]
                     ]
                 , div [ class "admin-account-identity-row" ]

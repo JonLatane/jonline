@@ -30,6 +30,7 @@ but none of this module's profile-editing machinery.
 
 -}
 
+import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
@@ -954,24 +955,19 @@ isAdminAccount maybeAccount =
             False
 
 
-{-| A user's username (plus an admin badge, if applicable) exactly as it
-appears atop their profile page -- factored out of `profileDetail` since
-`nameHeader` (below) also needs it, unadorned by any edit affordance, so this
-itself stays `Html msg`-polymorphic. Also used directly by
-`Components.Pages.PostsPage` as a no-avatar fallback for its "Posts |
-&lt;name&gt;" heading when the author's server isn't currently known/enabled
-(so there's no `AccountsPanel.Server` to resolve an avatar against).
+{-| A user's username (plus Admin/Run Bots badges, if applicable -- see
+`Components.Authors.badges`) exactly as it appears atop their profile page --
+factored out of `profileDetail` since `nameHeader` (below) also needs it,
+unadorned by any edit affordance, so this itself stays `Html msg`-polymorphic.
+Also used directly by `Components.Pages.PostsPage` as a no-avatar fallback for
+its "Posts | &lt;name&gt;" heading when the author's server isn't currently
+known/enabled (so there's no `AccountsPanel.Server` to resolve an avatar
+against).
 -}
 usernameHeading : User -> Html msg
 usernameHeading user =
     h1 [ class "profile-username" ]
-        [ text user.username
-        , if Users.isAdminUser user then
-            span [ class "profile-admin-badge", title "Admin" ] [ text "🛡️ Admin" ]
-
-          else
-            text ""
-        ]
+        (text user.username :: Authors.badges user)
 
 
 {-| The read-only "name area" atop a profile page -- `usernameHeading` plus

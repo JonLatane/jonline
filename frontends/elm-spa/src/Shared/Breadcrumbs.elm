@@ -23,6 +23,7 @@ callers/`Model` don't need to change shape again once it's wired up, but its
 
 -}
 
+import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
@@ -172,13 +173,13 @@ replySegment accountsPanelModel model post =
             AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
 
         name =
-            Posts.postAuthorName post
+            Authors.name post.author
     in
     button
         [ classes (segmentClasses model "breadcrumb-reply" post.id)
         , onClick (SegmentClicked post.id)
         ]
-        [ segmentAvatar name (Posts.postAuthorAvatarUrl maybeServer maybeAccount post)
+        [ segmentAvatar name (Authors.avatarUrl maybeServer maybeAccount post.author)
         , span [ class "breadcrumb-reply-username" ] [ text name ]
         ]
 
@@ -272,7 +273,7 @@ replyCardView basePath accountsPanelModel model post =
           else
             text ""
         , div [ class "breadcrumb-reply-card-meta" ]
-            [ Posts.authorLink basePath accountsPanelModel.mainFrontendHost model.host maybeServer maybeAccount post
+            [ Authors.link basePath accountsPanelModel.mainFrontendHost model.host maybeServer maybeAccount post.author
             , a
                 [ href (Posts.postHref basePath accountsPanelModel.mainFrontendHost model.host post)
                 , class "breadcrumb-reply-card-permalink"

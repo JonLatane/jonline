@@ -10,7 +10,6 @@ module Components.Users exposing
     , fetchUserById
     , fetchUserByUsername
     , fetchUserListing
-    , isAdminUser
     , isReservedUsername
     , moderationPasses
     , moderationPending
@@ -403,11 +402,6 @@ mediaReferenceUrl server maybeAccount maybeMedia =
                     Nothing ->
                         base
             )
-
-
-isAdminUser : User -> Bool
-isAdminUser user =
-    List.member ADMIN user.permissions
 
 
 {-| A compact card for a `user` in a list (`/people`, or a profile's own

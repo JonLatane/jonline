@@ -261,6 +261,24 @@
   font-size: 0.75rem;
 }
 
+.admin-account-server-logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.admin-account-server-logo.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.25);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.65rem;
+}
+
 .admin-account-server-host {
   flex: 0 0 auto;
   font-weight: 600;
