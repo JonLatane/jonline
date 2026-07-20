@@ -43,6 +43,7 @@ jobs:
       - uses: arduino/setup-protoc@v3
         with:
           version: "29.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: ts-graphviz/setup-graphviz@v2
       - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v4
@@ -247,6 +248,7 @@ jobs:
       - uses: arduino/setup-protoc@v3
         with:
           version: "26.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: Swatinem/rust-cache@v2
         with:
@@ -283,6 +285,7 @@ jobs:
       - uses: arduino/setup-protoc@v3
         with:
           version: "26.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       # diesel's "postgres" feature links libpq at build time; Homebrew's libpq is
       # keg-only (not symlinked into /opt/homebrew), so point pq-sys/pkg-config at it.
@@ -316,6 +319,7 @@ jobs:
       - uses: arduino/setup-protoc@v3
         with:
           version: "26.x"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       # - run: sudo apt install libprotobuf-dev protobuf-compiler
 
       - uses: Swatinem/rust-cache@v2
