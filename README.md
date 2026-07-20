@@ -14,6 +14,18 @@ The "dev" instance is up at [Jonline.io](https://jonline.io) (the Flutter app be
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20coffee%20☕️-venmo-information?labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 [![Buy me a beer!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20beer%20🍺-paypal-information?labelColor={}&color={})](https://paypal.me/JLatane)
 
+## Install and Run via Homebrew
+
+This is new and totally vibecoded, but works pretty well. It's got a bundled launcher that should make it easy to configure, and can setup your local Postgres DB with `createdb` and `dropdb` for  you, and start a MinIO instance with `docker`. You will need to provide these yourself, but that's it. The Homebrew distro ships as a thin `bash` launcher that stores your environment variables in `~/.jonline` and loads them when launching the Rust `jonline` binary (which is renamed to `jonline-server` in this distro, for your monitoring purposes).
+
+```bash
+brew install jonlatane/jonline/jonline
+jonline local_db_create # literally just: createdb jonline_dev
+jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"
+jonline help # show subcommands for the bash launcher
+jonline server # launch the server
+```
+
 ## Images & Deployments
 
 [![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
@@ -27,6 +39,7 @@ JBL (Jonline Balancer of Loads, the load balancer for Jonline) is a straightforw
 | [OakCity.Social ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Flutter UI](https://OakCity.Social/flutter/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
 
 - [Jonline  ](#jonline--)
+  - [Install and Run via Homebrew](#install-and-run-via-homebrew)
   - [Images \& Deployments](#images--deployments)
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
