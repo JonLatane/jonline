@@ -44,7 +44,7 @@ append the result without their own empty-badges check.
 
 import Components.Users as Users
 import Html exposing (Html, a, div, img, span, text)
-import Html.Attributes exposing (alt, class, src, title)
+import Html.Attributes exposing (alt, attribute, class, src, title)
 import Proto.Jonline exposing (Author)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Shared.AccountsPanel as AccountsPanel
@@ -152,7 +152,7 @@ avatar : String -> Maybe String -> Html msg
 avatar authorName maybeUrl =
     case maybeUrl of
         Just url ->
-            img [ class "post-author-avatar", src url, alt authorName ] []
+            img [ class "post-author-avatar", src url, alt authorName, attribute "loading" "lazy" ] []
 
         Nothing ->
             div [ classes [ "post-author-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter authorName) ]

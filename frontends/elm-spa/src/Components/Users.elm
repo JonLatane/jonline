@@ -40,8 +40,7 @@ fields.
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, img, text)
-import Html.Attributes exposing (alt, href, src)
-import Proto.Google.Protobuf
+import Html.Attributes exposing (alt, attribute, href, src)
 import Proto.Google.Protobuf
 import Proto.Jonline exposing (Author, FederatedAccount, Follow, GetUsersResponse, User, defaultGetUsersRequest)
 import Proto.Jonline.Jonline as Jonline
@@ -420,6 +419,7 @@ Unlike `Components.PostCard.postCard`, the whole card can just be one plain
 `preventDefault` (see `FollowStatusAndButton.followActionButton`) rather than
 needing this function's callers to reach for that module's own "stretched
 link" treatment.
+
 -}
 userCard : String -> String -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Html msg -> User -> Html msg
 userCard basePath viewingServerHost server maybeAccount followStatusAndButton user =
@@ -478,7 +478,7 @@ userCardAvatar : String -> Maybe String -> Html msg
 userCardAvatar name maybeUrl =
     case maybeUrl of
         Just url ->
-            img [ Html.Attributes.class "user-card-avatar", src url, alt name ] []
+            img [ Html.Attributes.class "user-card-avatar", src url, alt name, attribute "loading" "lazy" ] []
 
         Nothing ->
             div [ classes [ "user-card-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter name) ]

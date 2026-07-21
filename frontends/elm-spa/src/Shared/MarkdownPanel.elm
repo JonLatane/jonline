@@ -23,7 +23,7 @@ import Components.Posts as Posts
 import Components.Users as Users
 import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)
-import Html.Attributes exposing (alt, class, disabled, placeholder, spellcheck, src, value)
+import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, spellcheck, src, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (Post, User, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
@@ -479,7 +479,7 @@ accountAvatar : List AccountsPanel.Server -> AccountsPanel.Account -> Html msg
 accountAvatar servers account =
     case AccountsPanel.accountAvatarUrl servers account of
         Just url ->
-            img [ class "markdown-panel-account-avatar", src url, alt account.username ] []
+            img [ class "markdown-panel-account-avatar", src url, alt account.username, attribute "loading" "lazy" ] []
 
         Nothing ->
             div [ classes [ "markdown-panel-account-avatar", "placeholder" ] ] [ text (AccountsPanel.initialLetter account.username) ]
