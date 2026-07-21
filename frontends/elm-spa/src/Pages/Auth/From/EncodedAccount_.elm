@@ -7,6 +7,8 @@ account?") before actually adding it to `Shared.AccountsPanel`'s accounts.
 The sending side is `Pages.Auth.To.Key_`.
 -}
 
+import Browser.Navigation as Nav
+import Dict
 import Effect exposing (Effect)
 import Gen.Params.Auth.From.EncodedAccount_ exposing (Params)
 import Html exposing (Html, a, button, div, h2, p, span, text)
@@ -27,8 +29,8 @@ import View exposing (View)
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
-        { init = init shared req.params
-        , update = update
+        { init = init shared req
+        , update = update shared req
         , view = view shared req
         , subscriptions = subscriptions
         }
@@ -48,18 +50,29 @@ type Status
 
 type alias Model =
     { status : Status
+
+    -- `?start_path=` (see `UI.signInFromButton`/`Pages.Auth.To.Key_`) -- the
+    -- app-relative path the user was on, on this origin, before the SSO
+    -- hand-off started. When present, a successfully decrypted account skips
+    -- the confirmation step (see `GotDecryptResult`) and is added/redirected
+    -- to automatically.
+    , startPath : Maybe String
     }
 
 
-init : Shared.Model -> Params -> ( Model, Effect Msg )
-init shared params =
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init shared req =
+    let
+        startPath =
+            Dict.get "start_path" req.query
+    in
     case shared.federatedAuth.privateKey of
         Nothing ->
-            ( { status = DecryptFailed "No pending sign-in was started from this browser." }, Effect.none )
+            ( { status = DecryptFailed "No pending sign-in was started from this browser.", startPath = startPath }, Effect.none )
 
         Just privateKey ->
-            ( { status = Decrypting }
-            , FederatedAuth.decrypt privateKey params.encodedAccount |> Effect.fromCmd
+            ( { status = Decrypting, startPath = startPath }
+            , FederatedAuth.decrypt privateKey req.params.encodedAccount |> Effect.fromCmd
             )
 
 
@@ -74,15 +87,26 @@ type Msg
     | SharedMsg Shared.Msg
 
 
-update : Msg -> Model -> ( Model, Effect Msg )
-update msg model =
+update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
+update shared req msg model =
     case msg of
         GotDecryptResult value ->
             case FederatedAuth.decryptResult value of
                 Ok accountJson ->
                     case Decode.decodeString AccountsPanel.accountDecoder accountJson of
                         Ok account ->
-                            ( { model | status = Decrypted account }, Effect.none )
+                            case model.startPath of
+                                Just startPath ->
+                                    ( { model | status = Accepted account }
+                                    , Effect.batch
+                                        [ Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.FederatedAccountReceived account))
+                                        , Effect.fromShared (Shared.FederatedAuthMsg FederatedAuth.Discarded)
+                                        , Nav.replaceUrl req.key (shared.basePath ++ startPath) |> Effect.fromCmd
+                                        ]
+                                    )
+
+                                Nothing ->
+                                    ( { model | status = Decrypted account }, Effect.none )
 
                         Err _ ->
                             ( { model | status = DecryptFailed "The received account data was malformed." }, Effect.none )

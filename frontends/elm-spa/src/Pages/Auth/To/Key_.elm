@@ -11,6 +11,7 @@ The receiving side is `Pages.Auth.From.EncodedAccount_`.
 -}
 
 import Browser.Navigation as Nav
+import Dict
 import Effect exposing (Effect)
 import Gen.Params.Auth.To.Key_ exposing (Params)
 import Grpc
@@ -30,13 +31,14 @@ import Shared.FederatedAuth as FederatedAuth
 import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
+import Url
 import View exposing (View)
 
 
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
-        { init = init shared req.params
+        { init = init shared req
         , update = update shared
         , view = view shared req
         , subscriptions = subscriptions
@@ -52,6 +54,13 @@ type alias Model =
     , publicKey : Maybe FederatedAuth.PublicKey
     , password : String
     , status : FormStatus
+
+    -- The path (app-relative, no `basePath`) the user was on when they
+    -- clicked "Sign in from <server>" (see `UI.signInFromButton`) -- passed
+    -- through unchanged into the redirect back to `requestingHost` (see
+    -- `GotEncryptResult`) so `Pages.Auth.From.EncodedAccount_` can send them
+    -- back where they started instead of just the home page.
+    , startPath : Maybe String
     }
 
 
@@ -59,11 +68,11 @@ type alias Model =
 unlike `Components.PostCard.parsePostRouteId`'s `id[@host]`, since this route
 has no "current server" to fall back to.
 -}
-init : Shared.Model -> Params -> ( Model, Effect Msg )
-init _ params =
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init _ req =
     let
         ( keyString, requestingHost ) =
-            case String.split "@" params.key of
+            case String.split "@" req.params.key of
                 [ key, host ] ->
                     ( Just key, host )
 
@@ -74,6 +83,7 @@ init _ params =
       , publicKey = keyString |> Maybe.andThen FederatedAuth.urlStringToPublicKey
       , password = ""
       , status = Idle
+      , startPath = Dict.get "start_path" req.query
       }
     , Effect.none
     )
@@ -141,7 +151,19 @@ update shared msg model =
             case FederatedAuth.encryptResult value of
                 Ok ciphertext ->
                     ( model
-                    , Nav.load ("https://" ++ model.requestingHost ++ "/elm/auth/from/" ++ ciphertext)
+                    , Nav.load
+                        ("https://"
+                            ++ model.requestingHost
+                            ++ "/elm/auth/from/"
+                            ++ ciphertext
+                            ++ (case model.startPath of
+                                    Just startPath ->
+                                        "?start_path=" ++ Url.percentEncode startPath
+
+                                    Nothing ->
+                                        ""
+                               )
+                        )
                         |> Effect.fromCmd
                     )
 
