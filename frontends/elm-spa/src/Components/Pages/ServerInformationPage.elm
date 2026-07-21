@@ -107,6 +107,7 @@ init : Shared.Model -> Bool -> String -> ( Model, Effect Msg )
 init shared pageIsSecure targetHost =
     let
         model0 =
+
             { targetHost = targetHost
             , isSecure = pageIsSecure
             , ownServerStatus = LoadingOwnServer
@@ -114,19 +115,34 @@ init shared pageIsSecure targetHost =
             , adminsStatus = AdminsNotLoaded
             , renameStatus = NotRenaming
             }
-    in
-    case AccountsPanel.serverForHost shared.accountsPanel.servers targetHost of
-        Just server ->
-            ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins }
-            , fetchAdmins server
-            )
+        ( fetchedModel, fetchEffect ) =
+            case AccountsPanel.serverForHost shared.accountsPanel.servers targetHost of
+                Just server ->
+                    ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins }
+                    , fetchAdmins server
+                    )
 
-        Nothing ->
-            ( model0
-            , AccountsPanel.connectToServer pageIsSecure targetHost
-                |> Task.attempt GotOwnServerResult
-                |> Effect.fromCmd
-            )
+                Nothing ->
+                    ( model0
+                    , AccountsPanel.connectToServer pageIsSecure targetHost
+                        |> Task.attempt GotOwnServerResult
+                        |> Effect.fromCmd
+                    )
+    in
+    ( fetchedModel
+      -- Closes the Accounts Panel if it happened to be open -- landing on
+      -- either of this component's pages (`Pages.About`/
+      -- `Pages.Server.ServerIdentifier_`) always shows the info it'd
+      -- otherwise duplicate, so leaving the panel open reads as redundant.
+    , Effect.batch [ fetchEffect, closeAccountsPanelEffect ]
+    )
+
+
+{-| Closes the Accounts Panel, if it's open -- see `init`'s own doc.
+-}
+closeAccountsPanelEffect : Effect Msg
+closeAccountsPanelEffect =
+    Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
 
 
 {-| The `Server` to actually show details for -- whichever the app already

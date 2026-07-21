@@ -55,7 +55,9 @@ init shared req =
             Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.username
     in
     if Users.isReservedUsername username then
-        ( Reserved username, Effect.none )
+        ( Reserved username
+        , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        )
 
     else
         UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username)

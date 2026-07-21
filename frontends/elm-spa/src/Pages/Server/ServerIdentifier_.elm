@@ -21,6 +21,7 @@ import Html.Attributes exposing (class)
 import Page
 import Request
 import Shared
+import Shared.AccountsPanel as AccountsPanel
 import UI
 import View exposing (View)
 
@@ -70,7 +71,9 @@ init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
     case parseServerIdentifier params.serverIdentifier of
         Nothing ->
-            ( Invalid params.serverIdentifier, Effect.none )
+            ( Invalid params.serverIdentifier
+            , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+            )
 
         Just parsed ->
             ServerInformationPage.init shared parsed.isSecure parsed.host

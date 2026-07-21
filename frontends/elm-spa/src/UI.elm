@@ -398,7 +398,7 @@ infoButton shared =
     a
         [ classes [ "panel-icon-button", "info-button" ]
         , href (shared.basePath ++ Route.toHref Route.About)
-        , onClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
         , title "About"
         ]
         [ text "i" ]
@@ -424,7 +424,7 @@ serverInfoButton shared server =
     a
         [ classes [ "panel-icon-button", "info-button", "server-chip-info-button" ]
         , href (shared.basePath ++ Route.toHref (Route.Server__ServerIdentifier_ { serverIdentifier = serverIdentifier }))
-        , onClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
         , title ("About " ++ server.frontendHost)
         ]
         [ text "i" ]
@@ -1223,6 +1223,7 @@ accountRow shared count mainCount index account =
         , a
             [ class "account-row-profile-link"
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
+            , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
             ]
             [ avatarOrPlaceholder shared.accountsPanel.servers account
             , div [ class "account-row-label" ]
