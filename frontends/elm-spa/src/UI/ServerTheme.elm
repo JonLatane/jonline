@@ -96,7 +96,7 @@ colorMetaFromRgb rgb =
             lumaOfRgb rgb
 
         isDark =
-            luma > 0.5
+            luma > 0.55
     in
     if isDark then
         { color = color

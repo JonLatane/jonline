@@ -27,14 +27,14 @@ their own `permissions : List Permission` field, so these two are written
 against the structural `{ a | permissions : List Permission }` rather than
 either concrete type.
 
-Two badge renderings, both ordered Admin-then-Run-Bots (if a user/author has
-both):
+Two badge renderings, both ordered Admin-then-Business-then-Run-Bots (if a
+user/author has more than one):
 
   - `badges` -- verbose, as shown atop a profile page: Admin gets visible
-    "🛡️ Admin" text, Run Bots is a bare "🤖" (there's no equally short label
-    for it), both still with a `title` tooltip.
+    "🛡️ Admin" text, Business and Run Bots are bare emoji ("💼"/"🤖", no
+    equally short label for either), all still with a `title` tooltip.
   - `compactBadges` -- for inline use next to a name (`link`'s own use),
-    where there's no room for "Admin" as visible text: both bare emoji,
+    where there's no room for "Admin" as visible text: all bare emoji,
     `title`-only.
 
 Either returns `[]` for an unprivileged user/author, so callers can just
@@ -64,6 +64,12 @@ badges entity =
      else
         []
     )
+        ++ (if hasPermission BUSINESS entity then
+                [ span [ class "author-badge", title "Business Account" ] [ text "💼" ] ]
+
+            else
+                []
+           )
         ++ (if hasPermission RUNBOTS entity then
                 [ span [ class "author-badge", title "Has Permission to Run Bots" ] [ text "🤖" ] ]
 
@@ -80,6 +86,12 @@ compactBadges entity =
      else
         []
     )
+        ++ (if hasPermission BUSINESS entity then
+                [ span [ class "author-badge-compact", title "Business Account" ] [ text "💼" ] ]
+
+            else
+                []
+           )
         ++ (if hasPermission RUNBOTS entity then
                 [ span [ class "author-badge-compact", title "Has Permission to Run Bots" ] [ text "🤖" ] ]
 

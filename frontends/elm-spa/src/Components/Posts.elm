@@ -41,7 +41,6 @@ import Grpc
 import Html exposing (Html, a, button, div, h1, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target, title)
 import Html.Events
-import Json.Decode as Decode
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -53,6 +52,7 @@ import Shared.Conversions exposing (int64ToInt, timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 {-| Fetches a single post (including reply/preview data) from
@@ -521,9 +521,7 @@ starButton postServerHost starred onStarClicked post =
             )
             :: (case onStarClicked of
                     Just msg ->
-                        [ Html.Events.custom "click"
-                            (Decode.succeed { message = msg, stopPropagation = True, preventDefault = True })
-                        ]
+                        [ stopPropagationAndPreventDefaultOnClick msg ]
 
                     Nothing ->
                         []

@@ -35,14 +35,13 @@ import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, button, div, text)
 import Html.Attributes exposing (class, disabled)
-import Html.Events
-import Json.Decode as Decode
 import Proto.Google.Protobuf
 import Proto.Jonline exposing (Follow, User, defaultFollow)
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Task
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 type SubmitStatus
@@ -326,7 +325,7 @@ followActionButton status clickMsg buttonClass label =
     button
         [ class "follow-status-button"
         , class buttonClass
-        , Html.Events.custom "click" (Decode.succeed { message = clickMsg, stopPropagation = True, preventDefault = True })
+        , stopPropagationAndPreventDefaultOnClick clickMsg
         , disabled (status == Submitting)
         ]
         [ text label ]

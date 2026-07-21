@@ -16,8 +16,14 @@ use rocket::{
 use rocket_cache_response::CacheResponse;
 
 lazy_static! {
-    pub static ref INFORMATIONAL_PAGES: Vec<Route> =
-        routes![info_shield, docs, documentation, protocol_docs, favicon];
+    pub static ref INFORMATIONAL_PAGES: Vec<Route> = routes![
+        info_shield,
+        docs,
+        documentation,
+        protocol_docs,
+        favicon_ico,
+        favicon_png
+    ];
 }
 
 #[rocket::get("/info_shield")]
@@ -139,7 +145,7 @@ async fn docs_path(path: &str) -> CacheResponse<Result<NamedFile, Status>> {
 }
 
 #[rocket::get("/favicon.ico")]
-async fn favicon<'a>(
+async fn favicon_ico<'a>(
     state: &State<RocketState>,
 ) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
     let mut conn = state.pool.get().unwrap();
@@ -215,4 +221,84 @@ async fn favicon<'a>(
             })
         }
     }
+}
+
+#[rocket::get("/favicon.png")]
+async fn favicon_png<'a>(
+    state: &State<RocketState>,
+) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
+    let mut conn = state.pool.get().unwrap();
+    let configuration = get_server_configuration_proto(&mut conn).unwrap();
+    let logo = configuration
+        .server_info
+        .unwrap_or(ServerInfo {
+            ..Default::default()
+        })
+        .logo
+        .unwrap_or(ServerLogo {
+            ..Default::default()
+        })
+        .square_media_id;
+    match logo {
+        None => {
+            let favicon_ico_path = if std::path::Path::new("opt/web/favicon.ico").exists() {
+                "opt/web/favicon.ico".to_string()
+            } else if std::path::Path::new("../frontends/tamagui/apps/next/out/favicon.ico")
+                .exists()
+            {
+                "../frontends/tamagui/apps/next/out/favicon.ico".to_string()
+            } else {
+                return Err(Status::ExpectationFailed);
+            };
+            let png_filename = format!(
+                "{}/default-favicon.png",
+                state.tempdir.path().display()
+            );
+            convert_ico_to_png(&favicon_ico_path, &png_filename)?;
+
+            Ok(CacheResponse::Public {
+                responder: (ContentType::PNG, open_named_file(&png_filename).await?),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
+        Some(square_media_id) => {
+            let data = load_media_file_data(&square_media_id, state).await?;
+            let mut content_type = data.0;
+            let mut named_filename = data.1.path().as_os_str().to_str().unwrap().to_string();
+
+            // Convert ICO icons to PNG
+            if content_type.to_string().ends_with("ico") {
+                let png_filename = format!(
+                    "{}/ico-converted-favicon.png",
+                    state.tempdir.path().display()
+                );
+                convert_ico_to_png(&named_filename, &png_filename)?;
+                named_filename = png_filename;
+                content_type = ContentType::PNG;
+            }
+
+            Ok(CacheResponse::Public {
+                responder: (content_type, open_named_file(&named_filename).await?),
+                max_age: 3600 * 12,
+                must_revalidate: true,
+            })
+        }
+    }
+}
+
+/// Decodes the largest frame in an ICO file and writes it out as a PNG.
+fn convert_ico_to_png(ico_path: &str, png_path: &str) -> Result<(), Status> {
+    let ico_file = std::fs::File::open(ico_path).map_err(|_| Status::ExpectationFailed)?;
+    let icon_dir = ico::IconDir::read(ico_file).map_err(|_| Status::ExpectationFailed)?;
+    let entry = icon_dir
+        .entries()
+        .iter()
+        .max_by_key(|entry| entry.width())
+        .ok_or(Status::ExpectationFailed)?;
+    let image = entry.decode().map_err(|_| Status::ExpectationFailed)?;
+    let png_file = std::fs::File::create(png_path).map_err(|_| Status::ExpectationFailed)?;
+    image
+        .write_png(png_file)
+        .map_err(|_| Status::ExpectationFailed)
 }

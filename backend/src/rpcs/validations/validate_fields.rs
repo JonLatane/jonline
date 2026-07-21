@@ -47,6 +47,7 @@ pub fn validate_username(value: &str) -> Result<(), Status> {
             "info_shield",
             "robots.txt",
             "favicon.ico",
+            "favicon.png",
             "sitemap.xml",
             "sitemap.xml.gz",
             "sitemap.xml.gz",

@@ -74,7 +74,6 @@ import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, RefreshToken
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
-import Protobuf.Types.Int64 as Int64
 import Request exposing (Request)
 import Set
 import Shared.Conversions exposing (timestampToPosix)
@@ -349,7 +348,7 @@ type Msg
     | ToggleAccountsPanel
     | CloseAccountsPanel
     | ShowAddAccountFormClicked
-    | PasswordNeededClicked Account
+    | ReauthenticateButtonClicked Account
     | GotPermissionsRefresh String (Result Grpc.Error ( Account, User ))
     | GotServerPermissionsRefresh String (List ( String, Result Grpc.Error ( Account, User ) ))
     | MainServerSelected String
@@ -1871,7 +1870,7 @@ updateHelp req msg model =
         ShowAddAccountFormClicked ->
             ( { model | addAccountFormExpanded = True }, Cmd.none )
 
-        PasswordNeededClicked account ->
+        ReauthenticateButtonClicked account ->
             -- Reopens the (possibly-collapsed) Account form pre-filled with this
             -- account's server/username, focused straight on Password -- the
             -- quickest path back to a working access token once its refresh
@@ -2400,16 +2399,17 @@ effectively a boot loop on every future load. The only way out of
 which doesn't go through here at all.
 
 Runs every account's refresh as one batch, settling into a single
-`GotServerPermissionsRefresh` once *all* of them finish, rather than each
+`GotServerPermissionsRefresh` once _all_ of them finish, rather than each
 independently dispatching (and persisting the result of) its own
 `GotPermissionsRefresh` -- so a server with several accounts produces one
 `persist` (and cross-tab broadcast -- see `Ports.persistAccountsAndServers`)
 instead of one per account. Two tabs both reconnecting to the same servers at
 startup would otherwise each re-broadcast every single account's result as it
-trickles in, each broadcast in turn nudging the *other* tab's own
+trickles in, each broadcast in turn nudging the _other_ tab's own
 `AccountsAndServersBroadcastReceived` -- see `Model.accessTokenRefreshChecked`,
 which defers this even further, into one `persist` for the whole startup
 sweep.
+
 -}
 refreshPermissionsForServer : Server -> List Account -> Cmd Msg
 refreshPermissionsForServer server accounts =
@@ -2771,7 +2771,7 @@ finishStartupUnit model =
 
 
 {-| `finishStartupUnit`, then `persist`s -- but only when that'll actually
-write anything: either this unit is the one that just finished the *whole*
+write anything: either this unit is the one that just finished the _whole_
 sweep (flipping `accessTokenRefreshChecked` from `False` to `True`), so
 `persist` now finally goes through, capturing every server/account change
 accumulated during the sweep in one write (see `persist`'s own doc); or the

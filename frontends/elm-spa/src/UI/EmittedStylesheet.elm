@@ -26,6 +26,7 @@ color math is already cached in `Shared.Branding`.
 -}
 
 import Html exposing (Html, node, text)
+import Html.Attributes exposing (id)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (hostnameToCSSClass)
@@ -34,7 +35,7 @@ import UI.ServerTheme
 
 view : Shared.Model -> Html msg
 view shared =
-    node "style" [] [ text (css shared) ]
+    node "style" [ id "emitted-stylesheet" ] [ text (css shared) ]
 
 
 css : Shared.Model -> String
@@ -127,6 +128,12 @@ serverRules darkMode mainTheme mainFrontendHost server =
     in
     String.concat
         [ colorRule (withDescendants selector ".background-color-primary") theme.primaryColor theme.primaryTextColor
+        , textColorRule (selector ++ ".background-color-primary:not(.navbar, .account-row) a") <|
+            if theme.primaryColor == theme.primaryLightColor then
+                theme.navDarkColor
+
+            else
+                theme.navLightColor
         , colorRule (withDescendants selector ".background-color-primary-5") (theme.primaryColor ++ "05") theme.textColor
         , colorRule (withDescendants selector ".background-color-primary-10") (theme.primaryColor ++ "10") theme.textColor
         , colorRule (withDescendants selector ".background-color-primary-25") (theme.primaryColor ++ "40") theme.textColor

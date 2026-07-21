@@ -53,42 +53,77 @@ jonline - launcher for the Jonline server and its local dev dependencies
 
 Usage: jonline <command> [args...]
 
-Relies on Postgres's createdb/dropdb/psql for its local database, and on
-docker for its local minio (S3-compatible storage). Edit ~/.jonline (created
-on first run) to point DATABASE_URL/MINIO_* at different instances instead.
+Relies on Postgres's createdb/dropdb/psql for its example database (local_db_* commands),
+and on Docker's docker for its example MinIO (local_minio_* commands; S3-compatible storage).
 
-Quick start:
+Relies on `jq` and `curl` for its self-updating commands (install, show_latest, update, cleanup_updates).
+
+Edit ~/.jonline (created on first run) to point DATABASE_URL, MINIO_* and other environment
+variables at different instances, if desired. (Or use "jonline edit_environment".)
+
+Start server:
+  jonline server
+
+Quick setup:
   jonline local_db_create && jonline local_minio_create && jonline server
 
 Commands:
-  server                 Run the Jonline server (jonline-server-<arch>)
-  version                Print the Jonline server version (jonline-server-<arch> --version)
+  Core/Lifecycle:
+    server                   Run the Jonline server (jonline-server)
+    version                  Print the Jonline server version (jonline-server --version)
+    local_instances_stop     Stop any running jonline-server processes
+    help                     Show this help text
 
-  environment            Print the current config (cat ~/.jonline)
-  edit_environment       Edit the config in $EDITOR (falls back to vi)
+  Environment/Configuration:
+    environment              Print the current config (cat ~/.jonline)
+    edit_environment         Edit the config in $EDITOR (falls back to vi)
 
-  local_db_create        Create the local Postgres database (createdb jonline_dev)
-  local_db_drop          Drop the local Postgres database (dropdb jonline_dev)
-  local_db_reset         Stop local instances, then drop and recreate the local database
-  local_db_connect       Connect to the local database with psql ($DATABASE_URL)
+  Example Environment (will match generated default generated ~/.jonline):
+    local_db_create          Create a local Postgres database (createdb jonline_dev)
+    local_db_drop            Drop the local Postgres database (dropdb jonline_dev)
+    local_db_reset           Stop local instances, then drop and recreate the local database
+    local_db_connect         Connect to the local database with psql ($DATABASE_URL)
 
-  local_minio_start      Start the existing local minio docker container
-  local_minio_create     Start local minio, creating its docker container first if needed
-  local_minio_delete     Stop and remove the local minio docker container
-  local_instances_stop   Stop any running jonline-server processes
+    local_minio_start        Start an existing local MinIO docker container
+    local_minio_create       Start local MinIO, creating its docker container first if needed
+    local_minio_delete       Stop and remove the local MinIO docker container
 
-  install                Move this jonline folder to its canonical location
-                          (@@JONLINE_PACKAGE_BASE_DIR@@), required once before `update` works
-  show_latest            Print the latest Jonline release version available on GitHub
-  update                 Download the latest release and install it, backing up the
-                          current install first (requires `gh` and `jq`; requires `install` first)
-  cleanup_updates        Delete backups/downloads accumulated by `update`, freeing disk space
-  uninstall              Delete @@JONLINE_PACKAGE_BASE_DIR@@ entirely, after confirming (press y)
+  Background jobs:
+    delete_expired_tokens    Delete expired auth tokens from the database
+    delete_unowned_media     Delete media no longer referenced by any post/user/etc.
+    generate_preview_images  Generate media preview images -- requires Brave Browser
+                             installed at /usr/bin/brave-browser (e.g. `apt install
+                             brave-browser`) plus ad/cookie-blocking Chrome extensions
+                             unpacked at /opt/preview_generator_extensions/{ublock,nocookies}/
+                             -- neither is set up by this script; see
+                             deploys/docker/preview_generator/Dockerfile for a reference setup
 
-  help                   Show this help text
+  Admin tools:
+    set_permission           Grant/revoke a global permission for a user by username
+                             e.g.: jonline set_permission <my_admin_username> admin on
+    delete_preview_images    Delete generated preview images, e.g. to force regeneration
+    disable_cdn_grpc         Disable the experimental gRPC CDN settings, as an "escape hatch" in case you 
+                             mess up your CDN configuration in the web UI and lose gRPC access.
 
-Every command except `update`/`cleanup_updates` works from wherever you put
-the extracted `jonline` folder -- `install` is only needed to opt into `update`.
+  Utilities:
+    to_db_id                 Convert a proto (external, string) ID to a database (internal) ID
+    to_proto_id              Convert a database (internal) ID to a proto (external, string) ID
+    grpcurl                  Run the bundled grpcurl. "Like curl, but for gRPC."
+                             (https://github.com/fullstorydev/grpcurl)
+
+  Linux self-updater subcommands (require `curl` and/or `jq`):
+
+    install                  Move this jonline folder to its canonical location
+                             (@@JONLINE_PACKAGE_BASE_DIR@@), required once before `update` works
+    show_latest              Print the latest Jonline release version available on GitHub
+    update                   Download the latest release and install it to @@JONLINE_PACKAGE_BASE_DIR@@, 
+                             backing up the current install first (requires `install` first)
+    cleanup_updates          Delete backups/downloads accumulated by `update`, freeing disk space
+    uninstall                Delete @@JONLINE_PACKAGE_BASE_DIR@@ entirely, after confirming (press y)
+
+
+  Every command except `update`/`cleanup_updates` works from wherever you put
+  the extracted `jonline` folder -- `install` is only needed to opt into `update`.
 JONLINE_HELP_EOF
 }
 
@@ -149,6 +184,21 @@ _jonline_arch() {
   esac
 }
 
+# Deletes the arch-suffixed binaries (jonline-server-<arch>, grpcurl-<arch>,
+# ...) that don't match this machine's architecture, e.g. removes every
+# *-amd64 binary on an arm64 machine. Used by `install`/`update` since the
+# release package ships binaries for every built architecture side-by-side,
+# but only one of each pair is ever needed on a given machine.
+_jonline_delete_foreign_arch_binaries() {
+  local dir="$1"
+  local other_arch
+  case "$(_jonline_arch)" in
+    amd64) other_arch=arm64 ;;
+    arm64) other_arch=amd64 ;;
+  esac
+  rm -f "$dir"/*-"$other_arch"
+}
+
 # Resolves the package root (the dir containing jonline-server-<arch>, docs/,
 # tamagui_web/, etc.) from this script's own location, i.e. wherever the
 # tarball happens to be extracted -- `readlink -f` follows symlinks (e.g. a
@@ -160,12 +210,63 @@ _jonline_package_dir() {
   dirname "$(dirname "$script_path")"
 }
 
+# Shared by every command below that execs one of the package's arch-suffixed
+# binaries (jonline-server-<arch>, delete_expired_tokens-<arch>, grpcurl-<arch>, ...).
+_jonline_exec_bin() {
+  local bin="$1"
+  shift
+  cd "$(_jonline_package_dir)" && exec "./${bin}-$(_jonline_arch)" "$@"
+}
+
 server() {
-  cd "$(_jonline_package_dir)" && exec "./jonline-server-$(_jonline_arch)" "$@"
+  _jonline_exec_bin jonline-server "$@"
 }
 
 version() {
   server --version
+}
+
+# Background jobs
+delete_expired_tokens() {
+  _jonline_exec_bin delete_expired_tokens "$@"
+}
+
+delete_unowned_media() {
+  _jonline_exec_bin delete_unowned_media "$@"
+}
+
+# Renders media preview images headlessly. Requires Brave Browser at
+# /usr/bin/brave-browser (apt install brave-browser) and ad/cookie-blocking
+# Chrome extensions unpacked at /opt/preview_generator_extensions/{ublock,nocookies}/
+# -- see deploys/docker/preview_generator/Dockerfile for a reference setup.
+generate_preview_images() {
+  _jonline_exec_bin generate_preview_images "$@"
+}
+
+# Admin tools
+set_permission() {
+  _jonline_exec_bin set_permission "$@"
+}
+
+delete_preview_images() {
+  _jonline_exec_bin delete_preview_images "$@"
+}
+
+disable_cdn_grpc() {
+  _jonline_exec_bin disable_cdn_grpc "$@"
+}
+
+# Utilities
+to_db_id() {
+  _jonline_exec_bin to_db_id "$@"
+}
+
+to_proto_id() {
+  _jonline_exec_bin to_proto_id "$@"
+}
+
+grpcurl() {
+  _jonline_exec_bin grpcurl "$@"
 }
 
 environment() {
@@ -177,10 +278,14 @@ edit_environment() {
   ${EDITOR:-vi} "$JONLINE_ENV"
 }
 
-# Requires `gh` (GitHub CLI) and `jq`. Both just need to be installed --
-# reading public release metadata doesn't require `gh auth login`.
+# Requires `curl` and `jq`. Both just need to be installed -- reading
+# public release metadata doesn't require any authentication.
+_jonline_latest_release_json() {
+  curl -sf "https://api.github.com/repos/${JONLINE_RELEASES_REPO}/releases/latest"
+}
+
 show_latest() {
-  gh api "repos/${JONLINE_RELEASES_REPO}/releases/latest" | jq -r '.tag_name'
+  _jonline_latest_release_json | jq -r '.tag_name'
 }
 
 # `update` and `cleanup_updates` only ever manage this fixed location -- not
@@ -208,6 +313,7 @@ install() {
 
   mkdir -p "$(dirname "$base")"
   mv "$pkg_dir" "$base"
+  _jonline_delete_foreign_arch_binaries "$base"
   echo "Installed to $base."
   echo "Run $base/bin/jonline server (consider adding $base/bin to your \$PATH)."
 }
@@ -230,8 +336,10 @@ update() {
   local arch
   arch="$(_jonline_arch)"
 
+  local release_json
+  release_json="$(_jonline_latest_release_json)"
   local latest_tag
-  latest_tag="$(show_latest)"
+  latest_tag="$(printf '%s' "$release_json" | jq -r '.tag_name')"
   local latest_version="${latest_tag#v}"
 
   local current_version="none"
@@ -257,7 +365,16 @@ update() {
   local sha_name="${asset_name}.sha256"
   local download_dir
   download_dir="$(mktemp -d)"
-  gh release download "$latest_tag" --repo "$JONLINE_RELEASES_REPO" --pattern "$asset_name" --pattern "$sha_name" --dir "$download_dir" --clobber
+
+  local asset_url sha_url
+  asset_url="$(printf '%s' "$release_json" | jq -r --arg name "$asset_name" '.assets[] | select(.name == $name) | .browser_download_url')"
+  sha_url="$(printf '%s' "$release_json" | jq -r --arg name "$sha_name" '.assets[] | select(.name == $name) | .browser_download_url')"
+  if [ -z "$asset_url" ] || [ -z "$sha_url" ]; then
+    echo "Couldn't find $asset_name and/or $sha_name among the assets of release $latest_tag." >&2
+    exit 1
+  fi
+  curl -sL -o "$download_dir/$asset_name" "$asset_url"
+  curl -sL -o "$download_dir/$sha_name" "$sha_url"
 
   echo "Verifying checksum..."
   (cd "$download_dir" && sha256sum -c "$sha_name")
@@ -271,6 +388,7 @@ update() {
   mkdir -p "$base"
   tar -xjf "$download_dir/$asset_name" -C "$base"
   rm -rf "$download_dir"
+  _jonline_delete_foreign_arch_binaries "$base"
 
   echo "Updated to v${latest_version}."
 }
@@ -322,7 +440,7 @@ case "$cmd" in
   help|-h|--help)
     jonline_help
     ;;
-  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|install|show_latest|update|cleanup_updates|uninstall)
+  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl|install|show_latest|update|cleanup_updates|uninstall)
     "$cmd" "$@"
     ;;
   *)

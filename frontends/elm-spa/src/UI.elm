@@ -26,6 +26,7 @@ import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 import UI.Modal
 import View exposing (View)
 
@@ -1172,6 +1173,17 @@ accountRow shared count mainCount index account =
                 , canMoveBackward = canMoveUp
                 , canMoveForward = canMoveDown
                 }
+
+        -- "reauthentication" (not "password") when this account isn't on the
+        -- server we're actually browsing from -- clicking it still routes
+        -- through `PasswordNeededClicked`, but the wording makes clear it's
+        -- logging back into a different server, not this one.
+        needsPasswordLabel =
+            if account.server /= shared.accountsPanel.browsingHost then
+                "Reauthentication Required"
+
+            else
+                "Password Required"
     in
     div
         (id (AccountsPanel.accountRowDomId accId)
@@ -1196,19 +1208,12 @@ accountRow shared count mainCount index account =
                 , div [ classes [ "account-row-server-badge", account.server, "background-color-nav" ] ]
                     [ text (account.server ++ " | " ++ branding.name) ]
                 , if account.needsPassword then
-                    -- `preventDefaultOn`, not `onClick` -- this button sits inside the
-                    -- profile-link `a` above, so a plain `onClick` here would still let
-                    -- the anchor's own default action (navigating to the profile) fire
-                    -- too, since it's a native browser default action tied to
-                    -- `preventDefault`, not to `stopPropagation` (unlike `serverChip`'s
-                    -- `stopClick`, whose enclosing "click target" is a plain `div`, with
-                    -- no default action of its own to prevent).
                     button
                         [ type_ "button"
                         , class "account-needs-password"
-                        , preventDefaultOn "click" (Decode.succeed ( Shared.AccountsPanelMsg (AccountsPanel.PasswordNeededClicked account), True ))
+                        , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg (AccountsPanel.ReauthenticateButtonClicked account))
                         ]
-                        [ text "password required" ]
+                        [ text needsPasswordLabel ]
 
                   else
                     text ""
