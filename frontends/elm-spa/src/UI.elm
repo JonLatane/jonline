@@ -28,6 +28,7 @@ import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 import UI.Modal
+import Url
 import View exposing (View)
 
 
@@ -121,7 +122,7 @@ headerNav shared currentRoute =
                   else
                     starredPostsToggle shared
                 ]
-            , div [ class "nav-right" ] [ accountsMenu shared ]
+            , div [ class "nav-right" ] [ accountsMenu shared currentRoute ]
             ]
 
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
@@ -459,8 +460,8 @@ themeToggle shared =
 -- ACCOUNTS MENU
 
 
-accountsMenu : Shared.Model -> Html Shared.Msg
-accountsMenu shared =
+accountsMenu : Shared.Model -> Route -> Html Shared.Msg
+accountsMenu shared currentRoute =
     let
         enabledAccounts =
             AccountsPanel.enabledAccounts shared.accountsPanel
@@ -518,7 +519,7 @@ accountsMenu shared =
                 )
             , hostMismatchWarning shared
             ]
-        , accountsPanel shared
+        , accountsPanel shared currentRoute
         ]
 
 
@@ -673,8 +674,8 @@ transition (fade + slide) rather than the panel just appearing/disappearing
 outright -- see `.nav-panel`/`.nav-panel.is-closed` in main.css.
 
 -}
-accountsPanel : Shared.Model -> Html Shared.Msg
-accountsPanel shared =
+accountsPanel : Shared.Model -> Route -> Html Shared.Msg
+accountsPanel shared currentRoute =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -683,7 +684,7 @@ accountsPanel shared =
         [ accountsPanelTabBar shared
         , case activeTab shared of
             AdminPanel.AccountsAndServersTab ->
-                accountsAndServersTab shared
+                accountsAndServersTab shared currentRoute
 
             AdminPanel.SettingsTab ->
                 settingsTab shared
@@ -787,15 +788,15 @@ activeTab shared =
 {-| The current UI of the Accounts Panel, minus the info/brightness buttons
 (now in `accountsPanelTabBar` instead). Always shows, for everyone.
 -}
-accountsAndServersTab : Shared.Model -> Html Shared.Msg
-accountsAndServersTab shared =
+accountsAndServersTab : Shared.Model -> Route -> Html Shared.Msg
+accountsAndServersTab shared currentRoute =
     div [ class "accounts-panel-tab-content" ]
         [ serversStrip shared
         , unreachableServersWarning shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
-        , formView shared
+        , formView shared currentRoute
         ]
 
 
@@ -1296,10 +1297,10 @@ those re-enable, themed with _that_ server's colors rather than
 handoff to Username that completes the "type a host, Enter, type a username,
 Enter, type a password" flow.
 -}
-formView : Shared.Model -> Html Shared.Msg
-formView shared =
+formView : Shared.Model -> Route -> Html Shared.Msg
+formView shared currentRoute =
     if AccountsPanel.shouldShowAddAccountForm shared.accountsPanel then
-        addAccountForm shared
+        addAccountForm shared currentRoute
 
     else
         div [ class "account-form" ]
@@ -1330,8 +1331,8 @@ formThemeHost accountsPanelModel =
         accountsPanelModel.mainFrontendHost
 
 
-addAccountForm : Shared.Model -> Html Shared.Msg
-addAccountForm shared =
+addAccountForm : Shared.Model -> Route -> Html Shared.Msg
+addAccountForm shared currentRoute =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -1519,7 +1520,7 @@ addAccountForm shared =
 
           else
             text ""
-        , signInFromButton shared accountFieldsDisabled
+        , signInFromButton shared currentRoute accountFieldsDisabled
         , case ( form.status, addForm.status ) of
             ( AccountsPanel.Errored err, _ ) ->
                 div [ class "auth-error" ] [ text err ]
@@ -1569,8 +1570,8 @@ username/password for other hosts too, but never suppresses this button for
 `browsingHost`/`mainFrontendHost` themselves.
 
 -}
-signInFromButton : Shared.Model -> Bool -> Html Shared.Msg
-signInFromButton shared accountFieldsDisabled =
+signInFromButton : Shared.Model -> Route -> Bool -> Html Shared.Msg
+signInFromButton shared currentRoute accountFieldsDisabled =
     let
         accountsPanelModel =
             shared.accountsPanel
@@ -1590,6 +1591,8 @@ signInFromButton shared accountFieldsDisabled =
                             ++ FederatedAuth.publicKeyToUrlString publicKey
                             ++ "@"
                             ++ accountsPanelModel.browsingHost
+                            ++ "?start_path="
+                            ++ Url.percentEncode (Route.toHref currentRoute)
                         )
                     )
                 , disabled accountFieldsDisabled
