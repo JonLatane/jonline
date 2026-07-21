@@ -56,6 +56,11 @@ use tokio::task::JoinHandle;
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().any(|arg| arg == "--version") {
+        println!("{}", rpcs::get_service_version()?.version);
+        return Ok(());
+    }
+
     init_crypto();
     init_service_logging();
     db_connection::migrate_database();
