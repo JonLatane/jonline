@@ -1,0 +1,8 @@
+{
+  "name": "run-elm-driver",
+  "private": true,
+  "description": "Headless-Chromium driver for the run-elm skill -- not part of the Elm app itself.",
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}

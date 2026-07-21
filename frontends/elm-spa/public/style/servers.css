@@ -1,0 +1,191 @@
+/* Pages.Server.ServerIdentifier_ -- the /server/:serverIdentifier detail page */
+
+.server-details-error,
+.server-details-loading,
+.server-details-add {
+  max-width: 40rem;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.server-details-add {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--chip-bg);
+  margin-bottom: 1rem;
+}
+
+.server-details-add-button {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+}
+
+.server-details-tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.server-details-tab {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  opacity: 0.7;
+}
+
+.server-details-tab.selected {
+  opacity: 1;
+  background: var(--panel-bg);
+  border-color: var(--fg);
+}
+
+.server-details-tab-content {
+  max-width: 40rem;
+  margin: 0 auto;
+}
+
+.server-details-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.server-details-rename-button,
+.server-details-rename-save,
+.server-details-rename-cancel {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+.server-details-rename-input {
+  font-size: 1.1rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
+}
+
+.server-details-rename-error {
+  color: var(--danger);
+  font-size: 0.85rem;
+  flex-basis: 100%;
+}
+
+.server-details-policy {
+  margin-top: 1rem;
+}
+
+.server-details-admins {
+  margin-top: 1.5rem;
+}
+
+.server-details-admin-list,
+.server-details-permission-list,
+.server-details-federated-servers {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+
+.server-details-admin-list li,
+.server-details-permission-list li {
+  padding: 0.2rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.server-details-color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.server-details-color-swatch {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.server-details-color-label {
+  flex: 1 1 auto;
+}
+
+.server-details-color-hex {
+  color: var(--muted);
+  font-family: monospace;
+}
+
+.server-details-logo {
+  margin-top: 1rem;
+}
+
+.server-details-logo-image {
+  width: 6rem;
+  height: 6rem;
+  object-fit: cover;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+}
+
+.server-details-setting,
+.server-details-permissions {
+  margin-bottom: 1.25rem;
+}
+
+.server-details-federated-server {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.server-details-federated-server-badge {
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.server-details-cdn-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.server-details-cdn-field {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.server-details-cdn-field-label {
+  color: var(--muted);
+  min-width: 8rem;
+}
+
+/* Pages.About -- the app's own blurb, shown below the main server's own
+   Components.Pages.ServerInformationPage tabs. */
+.about-jonline {
+  max-width: 40rem;
+  margin: 2rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}

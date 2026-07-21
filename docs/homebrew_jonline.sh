@@ -69,17 +69,21 @@ Quick setup:
   jonline local_db_create && jonline local_minio_create && jonline server
 
 Commands:
+
   Core/Lifecycle:
+
     server                   Run the Jonline server (jonline-server)
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
 
   Environment/Configuration:
+
     environment              Print the current config (cat ~/.jonline)
     edit_environment         Edit the config in $EDITOR (falls back to vi)
 
   Example Environment (will match generated default generated ~/.jonline):
+
     local_db_create          Create a local Postgres database (createdb jonline_dev)
     local_db_drop            Drop the local Postgres database (dropdb jonline_dev)
     local_db_reset           Stop local instances, then drop and recreate the local database
@@ -90,6 +94,7 @@ Commands:
     local_minio_delete       Stop and remove the local MinIO docker container
 
   Background jobs:
+
     delete_expired_tokens    Delete expired auth tokens from the database
     delete_unowned_media     Delete media no longer referenced by any post/user/etc.
     generate_preview_images  Generate media preview images -- NOT currently supported on
@@ -100,6 +105,7 @@ Commands:
                              /opt/preview_generator_extensions/{ublock,nocookies}/
 
   Admin tools:
+
     set_permission           Grant/revoke a global permission for a user by username
                              e.g.: jonline set_permission <my_admin_username> admin on
     delete_preview_images    Delete generated preview images, e.g. to force regeneration
@@ -107,6 +113,7 @@ Commands:
                              mess up your CDN configuration in the web UI and lose gRPC access.
 
   Utilities:
+
     to_db_id                 Convert a proto (external, string) ID to a database (internal) ID
     to_proto_id              Convert a database (internal) ID to a proto (external, string) ID
     grpcurl                  Run the bundled grpcurl. "Like curl, but for gRPC."

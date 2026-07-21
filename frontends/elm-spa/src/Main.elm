@@ -57,9 +57,11 @@ import Gen.Model
 import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
+import Pages.About
 import Pages.Home_
 import Pages.People
 import Pages.Post.PostId_
+import Pages.Server.ServerIdentifier_
 import Pages.User.UserId_
 import Pages.User.UserId_.Followers
 import Pages.User.UserId_.Following
@@ -267,11 +269,17 @@ such hook (e.g. `About`, `NotFound`) -- see `Pages.Home_.fromShared`,
 sharedMsgForPage : Shared.Msg -> Gen.Model.Model -> Maybe Gen.Msg.Msg
 sharedMsgForPage sharedMsg page =
     case page of
+        Gen.Model.About _ _ ->
+            Just (Gen.Msg.About (Pages.About.fromShared sharedMsg))
+
         Gen.Model.Home_ _ _ ->
             Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
 
         Gen.Model.Post__PostId_ _ _ ->
             Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+        Gen.Model.Server__ServerIdentifier_ _ _ ->
+            Just (Gen.Msg.Server__ServerIdentifier_ (Pages.Server.ServerIdentifier_.fromShared sharedMsg))
 
         Gen.Model.User__UserId_ _ _ ->
             Just (Gen.Msg.User__UserId_ (Pages.User.UserId_.fromShared sharedMsg))

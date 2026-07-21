@@ -147,7 +147,14 @@ init shared pageIsSecure targetHost lookup =
       , federatedProfilesEdit = Nothing
       , followStatusAndButton = FollowStatusAndButton.init
       }
-    , Effect.map ResolverMsg resolverEffect
+      -- Closes the Accounts Panel if it happened to be open -- landing on a
+      -- profile page always shows the info an open panel would otherwise
+      -- duplicate (see `Components.Pages.ServerInformationPage.init`, same
+      -- reasoning).
+    , Effect.batch
+        [ Effect.map ResolverMsg resolverEffect
+        , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        ]
     )
 
 
