@@ -25,9 +25,9 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Params.Auth.To.Key_ exposing (Params)
 import Grpc
-import Html exposing (Html, button, div, h2, input, label, p, span, text)
-import Html.Attributes exposing (checked, class, disabled, placeholder, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, button, div, form, h2, input, label, p, span, text)
+import Html.Attributes exposing (attribute, checked, class, disabled, name, placeholder, spellcheck, type_, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Json.Encode as Encode
 import Page
 import Ports
@@ -379,7 +379,15 @@ signInView shared model =
                 submitting =
                     model.status == Submitting
             in
-            div [ class "auth-to-page" ]
+            -- A real `<form>` (rather than `div`), with a real `submit` button
+            -- (rather than `onClick` + `type_ "button"`) and matching
+            -- `autocomplete`s on the fields below -- so Safari/Chrome/password
+            -- managers recognize this as a login form worth offering to
+            -- fill/save, and Enter in either field submits it. `onSubmit`
+            -- alone (not a button `onClick`) is what fires `SignInClicked`,
+            -- so a native submit (Enter key or clicking the button) can never
+            -- double-fire it.
+            form [ class "auth-to-page", onSubmit SignInClicked ]
                 [ h2 [] [ text (model.requestingHost ++ " is asking to sign in") ]
                 , case signedInAccount of
                     Just account ->
@@ -389,6 +397,13 @@ signInView shared model =
                         usernameField shared model accountsOnHost submitting
                 , input
                     [ type_ "password"
+                    , name "current-password"
+
+                    -- "current-password", not "new-password": this page never
+                    -- creates an account, only signs into one that already
+                    -- exists -- see `UI.elm`'s identical choice for its own
+                    -- password field.
+                    , attribute "autocomplete" "current-password"
                     , placeholder "Password"
                     , value model.password
                     , onInput PasswordChanged
@@ -397,8 +412,7 @@ signInView shared model =
                     []
                 , alsoSignInCheckbox model.alsoSignInHere accountForUsername submitting
                 , button
-                    [ onClick SignInClicked
-                    , disabled (submitting || String.isEmpty model.password || String.isEmpty username)
+                    [ disabled (submitting || String.isEmpty model.password || String.isEmpty username)
                     , classes [ hostnameToCSSClass model.requestingHost, "background-color-primary", "auth-to-signin-button" ]
                     ]
                     [ text ("Sign in on " ++ model.requestingHost) ]
@@ -447,6 +461,11 @@ usernameField shared model accountsOnHost submitting =
     div [ class "auth-to-username-section" ]
         (input
             [ type_ "text"
+            , name "username"
+            , attribute "autocomplete" "username"
+            , attribute "autocapitalize" "none"
+            , attribute "autocorrect" "off"
+            , spellcheck False
             , placeholder ("Username on " ++ shared.accountsPanel.browsingHost)
             , value model.username
             , onInput UsernameChanged
