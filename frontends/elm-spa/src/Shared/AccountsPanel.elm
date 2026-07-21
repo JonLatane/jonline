@@ -356,6 +356,8 @@ type Msg
     | ServerChipClicked String
     | SetWebUserInterfaceClicked String WebUserInterface
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
+    | RenameServerClicked String String
+    | GotRenameServerResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | FocusInput String
     | ServerConnected Server
     | MoveAccountUpClicked String
@@ -1978,6 +1980,49 @@ updateHelp req msg model =
                     -- doesn't visibly change; the admin can retry.
                     ( model, Cmd.none )
 
+        RenameServerClicked id newName ->
+            let
+                maybeAccount =
+                    model.accounts |> List.filter (\a -> accountId a == id) |> List.head
+
+                maybeServer =
+                    maybeAccount
+                        |> Maybe.andThen (\a -> serverForHost model.servers a.server)
+            in
+            case ( maybeAccount, maybeServer ) of
+                ( Just account, Just server ) ->
+                    ( model, renameServer server account newName )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        GotRenameServerResult _ result ->
+            case result of
+                Ok ( refreshedAccount, newConfig ) ->
+                    let
+                        newModel =
+                            { model
+                                | accounts = upsertAccount refreshedAccount model.accounts
+                                , servers =
+                                    List.map
+                                        (\s ->
+                                            if s.frontendHost == refreshedAccount.server then
+                                                { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+
+                                            else
+                                                s
+                                        )
+                                        model.servers
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    -- Server unreachable, refresh token rejected, etc. -- surfaced to
+                    -- the caller (see `Pages.Server.ServerIdentifier_`) via this same
+                    -- `Result` passing through `Main.notifyPageOfSharedMsg`.
+                    ( model, Cmd.none )
+
         FocusInput domId ->
             ( model, Task.attempt (\_ -> NoOp) (Dom.focus domId) )
 
@@ -2460,6 +2505,46 @@ setWebUserInterface server account ui =
                 |> Grpc.toTask
         )
         |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
+
+
+{-| Sets `server`'s display name via `ConfigureServer`, authenticated as
+`account` -- same convention as `setWebUserInterface` just above (only ever
+invoked for accounts with `ADMIN` on `server`, see
+`Pages.Server.ServerIdentifier_`'s rename button; the server itself also
+validates that permission). Unlike `setWebUserInterface`, this re-fetches the
+server's configuration fresh (`GetServerConfiguration`) right before writing
+it back, rather than starting from `server.configuration` (this page's own
+possibly-stale cache) -- same reasoning as `Components.Posts.updatePost`'s
+own fetch-then-update -- so a config change made elsewhere (another tab, the
+Tamagui app, another admin) in between isn't clobbered by this one only
+changing `serverInfo.name`.
+-}
+renameServer : Server -> Account -> String -> Cmd Msg
+renameServer server account newName =
+    performWithAccount
+        (connectionOf server)
+        account
+        (\accessToken ->
+            Grpc.new Jonline.getServerConfiguration {}
+                |> Grpc.setHost (connectionUrl (connectionOf server))
+                |> withAccessToken (Just accessToken)
+                |> Grpc.toTask
+                |> Task.andThen
+                    (\freshConfig ->
+                        let
+                            info =
+                                Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+
+                            newConfig =
+                                { freshConfig | serverInfo = Just { info | name = Just newName } }
+                        in
+                        Grpc.new Jonline.configureServer newConfig
+                            |> Grpc.setHost (connectionUrl (connectionOf server))
+                            |> withAccessToken (Just accessToken)
+                            |> Grpc.toTask
+                    )
+        )
+        |> Task.attempt (GotRenameServerResult (accountId account))
 
 
 {-| A server's configuration can declare (via `externalCdnConfig`) that it's
