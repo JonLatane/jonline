@@ -4,50 +4,24 @@ module Pages.Server.ServerIdentifier_ exposing (Model, Msg, fromShared, page)
 server, identified by a `[http|https]:hostname` route segment (e.g.
 "http:localhost", "https:jonline.io" -- no slashes, since this is a single
 route param; mirrors the Tamagui app's `server_details_screen.tsx`, which
-parses its own `id` route param the same way).
-
-If the server's already known (added to `Shared.AccountsPanel`, i.e. the user
-has it in their Accounts & Servers), its live, cached `Server` is shown.
-Otherwise this page probes it itself (`AccountsPanel.connectToServer`) purely
-for display -- that probe is never written back to `Shared.AccountsPanel`
-unless the user explicitly clicks "Add Server" (`AddServerClicked`), which
-dispatches the same `AccountsPanel.ServerConnected` used by the Accounts
-panel's own "Add Server" flow.
-
-Almost everything shown lives in `Server.configuration` (a `ServerConfiguration`)
--- the sole exception is the About tab's admin list, which needs its own
-`GetUsers` fetch (there's no dedicated "list admins" RPC yet, so this fetches
-a page of users and filters for `ADMIN` client-side, same as the Tamagui
-screen does).
-
-Renaming (via `ConfigureServer`) is the only mutation this page supports, and
-only for a signed-in account with `ADMIN` on this specific server -- routed
-through `Shared.AccountsPanel.RenameServerClicked` (not called directly)
-so the app's cached `Server` list stays in sync with the change, same as
-`UI.elm`'s web-UI toggle.
-
+parses its own `id` route param the same way). Thin wrapper around
+`Components.Pages.ServerInformationPage`, which does all the actual work --
+mirrors `Pages.Username_`'s own `Reserved`/`Profile` split around
+`Components.Pages.UserProfilePage`, for the same reason: parsing the route
+segment can fail (an ill-formed identifier) in a way that has nothing to do
+with that shared module, so it's handled here instead, before that module's
+`Model` is ever constructed.
 -}
 
-import Components.Markdown as Markdown
-import Components.Users as Users
+import Components.Pages.ServerInformationPage as ServerInformationPage
 import Effect exposing (Effect)
 import Gen.Params.Server.ServerIdentifier_ exposing (Params)
-import Grpc
-import Html exposing (Html, button, div, h2, h3, img, input, label, li, p, span, text, ul)
-import Html.Attributes exposing (checked, class, disabled, src, style, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (div, p, text)
+import Html.Attributes exposing (class)
 import Page
-import Proto.Jonline exposing (FederatedServer, GetUsersResponse, User, defaultGetUsersRequest, defaultServerInfo)
-import Proto.Jonline.Jonline as Jonline
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
 import Shared
-import Shared.AccountsPanel as AccountsPanel
-import Task
 import UI
-import UI.Classes exposing (classes)
-import UI.ServerTheme as ServerTheme
 import View exposing (View)
 
 
@@ -55,7 +29,7 @@ page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
         { init = init shared req.params
-        , update = update shared req
+        , update = update shared
         , view = view shared req
         , subscriptions = subscriptions
         }
@@ -65,51 +39,13 @@ page shared req =
 -- MODEL
 
 
-type Tab
-    = AboutTab
-    | ThemeTab
-    | SettingsTab
-    | FederationTab
-    | CdnTab
-
-
-{-| This page's own probe of the server, kept entirely separate from
-`Shared.AccountsPanel.Model.servers` -- see the module doc. Irrelevant
-(`OwnServerNotNeeded`) whenever the server's already known.
+{-| `Invalid` short-circuits straight to an error message, without ever
+constructing a `ServerInformationPage.Model` (and thus without ever
+attempting a connection) -- see the module doc.
 -}
-type OwnServerStatus
-    = OwnServerNotNeeded
-    | LoadingOwnServer
-    | OwnServerLoaded AccountsPanel.Server
-    | OwnServerFailed String
-
-
-type AdminsStatus
-    = AdminsNotLoaded
-    | LoadingAdmins
-    | AdminsLoaded (List User)
-    | AdminsFailed
-
-
-{-| Live only while the server's name is being edited by an admin -- `pending`
-is the in-progress `<input>` value, independent of the actual name until
-`RenameSaveClicked` succeeds. Mirrors `Pages.Post.PostId_`'s `VisibilityEdit`.
--}
-type RenameStatus
-    = NotRenaming
-    | Renaming String AccountsPanel.FormStatus
-
-
-type alias Model =
-    { identifier : String
-    , targetHost : String
-    , isSecure : Bool
-    , identifierValid : Bool
-    , ownServerStatus : OwnServerStatus
-    , activeTab : Tab
-    , adminsStatus : AdminsStatus
-    , renameStatus : RenameStatus
-    }
+type Model
+    = Invalid String
+    | Info ServerInformationPage.Model
 
 
 {-| Parses a `/server/:serverIdentifier` route segment like "http:localhost"
@@ -132,90 +68,14 @@ parseServerIdentifier identifier =
 
 init : Shared.Model -> Params -> ( Model, Effect Msg )
 init shared params =
-    let
-        parsed =
-            parseServerIdentifier params.serverIdentifier
-
-        model0 =
-            { identifier = params.serverIdentifier
-            , targetHost = parsed |> Maybe.map .host |> Maybe.withDefault params.serverIdentifier
-            , isSecure = parsed |> Maybe.map .isSecure |> Maybe.withDefault True
-            , identifierValid = parsed /= Nothing
-            , ownServerStatus = LoadingOwnServer
-            , activeTab = AboutTab
-            , adminsStatus = AdminsNotLoaded
-            , renameStatus = NotRenaming
-            }
-    in
-    if not model0.identifierValid then
-        ( model0, Effect.none )
-
-    else
-        case AccountsPanel.serverForHost shared.accountsPanel.servers model0.targetHost of
-            Just server ->
-                ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins }
-                , fetchAdmins server
-                )
-
-            Nothing ->
-                ( model0
-                , AccountsPanel.connectToServer model0.isSecure model0.targetHost
-                    |> Task.attempt GotOwnServerResult
-                    |> Effect.fromCmd
-                )
-
-
-{-| The `Server` to actually show details for -- whichever the app already
-knows about (from `Shared.AccountsPanel`, if this server's been added to
-Accounts & Servers already), falling back to this page's own probe
-(`ownServerStatus`) otherwise.
--}
-effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.Server
-effectiveServer shared model =
-    case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
-        Just server ->
-            Just server
-
+    case parseServerIdentifier params.serverIdentifier of
         Nothing ->
-            case model.ownServerStatus of
-                OwnServerLoaded server ->
-                    Just server
+            ( Invalid params.serverIdentifier, Effect.none )
 
-                _ ->
-                    Nothing
-
-
-isKnownServer : Shared.Model -> Model -> Bool
-isKnownServer shared model =
-    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost /= Nothing
-
-
-fetchAdmins : AccountsPanel.Server -> Effect Msg
-fetchAdmins server =
-    Grpc.new Jonline.getUsers defaultGetUsersRequest
-        |> Grpc.setHost (AccountsPanel.serverUrl server)
-        |> Grpc.toTask
-        |> Task.attempt GotAdmins
-        |> Effect.fromCmd
-
-
-{-| The signed-in, enabled account (if any) on this specific server, but only
-if it actually has `ADMIN` -- what gates the Rename button/RPC. Renaming (or
-any other `ConfigureServer` mutation) is only possible for a server that's
-already known (see the module doc), so this only ever matches once
-`isKnownServer` is `True`.
--}
-adminAccountFor : Shared.Model -> Model -> Maybe AccountsPanel.Account
-adminAccountFor shared model =
-    AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost
-        |> Maybe.andThen
-            (\account ->
-                if AccountsPanel.isAdmin account then
-                    Just account
-
-                else
-                    Nothing
-            )
+        Just parsed ->
+            ServerInformationPage.init shared parsed.isSecure parsed.host
+                |> Tuple.mapFirst Info
+                |> Tuple.mapSecond (Effect.map InfoMsg)
 
 
 
@@ -223,517 +83,68 @@ adminAccountFor shared model =
 
 
 type Msg
-    = TabSelected Tab
-    | GotOwnServerResult (Result Grpc.Error AccountsPanel.Server)
-    | AddServerClicked AccountsPanel.Server
-    | GotAdmins (Result Grpc.Error GetUsersResponse)
-    | RenameClicked String
-    | RenameChanged String
-    | RenameCancelClicked
-    | RenameSaveClicked
-    | SharedMsg Shared.Msg
+    = InfoMsg ServerInformationPage.Msg
 
 
-{-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
-into `update`'s `SharedMsg` branch -- see `Pages.Post.PostId_.fromShared`.
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared (InfoMsg subMsg) model =
+    case model of
+        Info subModel ->
+            ServerInformationPage.update shared subMsg subModel
+                |> Tuple.mapFirst Info
+                |> Tuple.mapSecond (Effect.map InfoMsg)
+
+        Invalid _ ->
+            ( model, Effect.none )
+
+
+{-| See `Components.Pages.ServerInformationPage.fromShared` -- a no-op for an
+`Invalid` page, which never fetches anything to begin with.
 -}
 fromShared : Shared.Msg -> Msg
-fromShared =
-    SharedMsg
-
-
-update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
-update shared req msg model =
-    case msg of
-        TabSelected tab ->
-            ( { model | activeTab = tab }, Effect.none )
-
-        GotOwnServerResult (Ok server) ->
-            ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = LoadingAdmins }
-            , fetchAdmins server
-            )
-
-        GotOwnServerResult (Err err) ->
-            ( { model | ownServerStatus = OwnServerFailed (AccountsPanel.grpcErrorToString err) }, Effect.none )
-
-        AddServerClicked server ->
-            ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ServerConnected server)) )
-
-        GotAdmins (Ok response) ->
-            ( { model | adminsStatus = AdminsLoaded (List.filter (\user -> List.member ADMIN user.permissions) response.users) }
-            , Effect.none
-            )
-
-        GotAdmins (Err _) ->
-            ( { model | adminsStatus = AdminsFailed }, Effect.none )
-
-        RenameClicked currentName ->
-            ( { model | renameStatus = Renaming currentName AccountsPanel.Idle }, Effect.none )
-
-        RenameChanged newText ->
-            ( { model
-                | renameStatus =
-                    case model.renameStatus of
-                        Renaming _ status ->
-                            Renaming newText status
-
-                        NotRenaming ->
-                            NotRenaming
-              }
-            , Effect.none
-            )
-
-        RenameCancelClicked ->
-            ( { model | renameStatus = NotRenaming }, Effect.none )
-
-        RenameSaveClicked ->
-            case ( model.renameStatus, adminAccountFor shared model ) of
-                ( Renaming pendingName _, Just account ) ->
-                    ( { model | renameStatus = Renaming pendingName AccountsPanel.Submitting }
-                    , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.RenameServerClicked (AccountsPanel.accountId account) pendingName))
-                    )
-
-                _ ->
-                    ( model, Effect.none )
-
-        SharedMsg subMsg ->
-            let
-                renameStatus =
-                    case subMsg of
-                        Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult _ (Ok _)) ->
-                            NotRenaming
-
-                        Shared.AccountsPanelMsg (AccountsPanel.GotRenameServerResult _ (Err err)) ->
-                            case model.renameStatus of
-                                Renaming pending _ ->
-                                    Renaming pending (AccountsPanel.Errored (AccountsPanel.grpcErrorToString err))
-
-                                NotRenaming ->
-                                    NotRenaming
-
-                        _ ->
-                            model.renameStatus
-            in
-            ( { model | renameStatus = renameStatus }, Effect.fromShared subMsg )
+fromShared sharedMsg =
+    InfoMsg (ServerInformationPage.fromShared sharedMsg)
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model of
+        Info subModel ->
+            Sub.map InfoMsg (ServerInformationPage.subscriptions subModel)
+
+        Invalid _ ->
+            Sub.none
 
 
 
 -- VIEW
 
 
-view : Shared.Model -> Request.With Params -> Model -> View Msg
-view shared req model =
-    { title = titleFor shared model
-    , body = UI.layout shared req.route SharedMsg [ bodyView shared model ]
-    }
-
-
 titleFor : Shared.Model -> Model -> String
 titleFor shared model =
-    let
-        subtitle =
-            case effectiveServer shared model of
-                Just server ->
-                    server.branding.name
+    case model of
+        Info subModel ->
+            ServerInformationPage.titleFor shared subModel
 
-                Nothing ->
-                    model.identifier
-    in
-    UI.pageTitle shared [ subtitle ]
+        Invalid identifier ->
+            identifier
 
 
-bodyView : Shared.Model -> Model -> Html Msg
-bodyView shared model =
-    if not model.identifierValid then
-        div [ class "server-details-error" ]
-            [ p [] [ text ("\"" ++ model.identifier ++ "\" isn't a valid server identifier.") ]
-            , p [] [ text "Server identifiers look like http:hostname or https:hostname, e.g. https:jonline.io." ]
+view : Shared.Model -> Request.With Params -> Model -> View Msg
+view shared req model =
+    { title = UI.pageTitle shared [ titleFor shared model ]
+    , body =
+        UI.layout shared
+            req.route
+            fromShared
+            [ case model of
+                Info subModel ->
+                    Html.map InfoMsg (ServerInformationPage.view shared subModel)
+
+                Invalid identifier ->
+                    div [ class "server-details-error" ]
+                        [ p [] [ text ("\"" ++ identifier ++ "\" isn't a valid server identifier.") ]
+                        , p [] [ text "Server identifiers look like http:hostname or https:hostname, e.g. https:jonline.io." ]
+                        ]
             ]
-
-    else
-        case effectiveServer shared model of
-            Just server ->
-                div [ class "server-details" ]
-                    [ addServerButton shared model server
-                    , tabBar model
-                    , tabContent shared model server
-                    ]
-
-            Nothing ->
-                case model.ownServerStatus of
-                    LoadingOwnServer ->
-                        p [ class "server-details-loading" ] [ text ("Connecting to " ++ model.targetHost ++ "…") ]
-
-                    OwnServerFailed err ->
-                        div [ class "server-details-error" ]
-                            [ p [] [ text ("Couldn't find a Jonline server at " ++ model.identifier ++ ".") ]
-                            , p [] [ text err ]
-                            ]
-
-                    _ ->
-                        text ""
-
-
-addServerButton : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
-addServerButton shared model server =
-    if isKnownServer shared model then
-        text ""
-
-    else
-        div [ class "server-details-add" ]
-            [ p [] [ text "This server hasn't been added to your Accounts & Servers yet -- these details are just a preview." ]
-            , button [ class "server-details-add-button", onClick (AddServerClicked server) ] [ text ("Add " ++ model.targetHost) ]
-            ]
-
-
-tabBar : Model -> Html Msg
-tabBar model =
-    div [ class "server-details-tab-bar" ]
-        (List.map (tabButton model)
-            [ ( AboutTab, "About" )
-            , ( ThemeTab, "Theme" )
-            , ( SettingsTab, "Settings" )
-            , ( FederationTab, "Federation" )
-            , ( CdnTab, "CDN" )
-            ]
-        )
-
-
-tabButton : Model -> ( Tab, String ) -> Html Msg
-tabButton model ( tab, label_ ) =
-    button
-        [ classes
-            ("server-details-tab"
-                :: (if model.activeTab == tab then
-                        [ "selected" ]
-
-                    else
-                        []
-                   )
-            )
-        , onClick (TabSelected tab)
-        ]
-        [ text label_ ]
-
-
-tabContent : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
-tabContent shared model server =
-    case model.activeTab of
-        AboutTab ->
-            aboutTab shared model server
-
-        ThemeTab ->
-            themeTab server
-
-        SettingsTab ->
-            settingsTab server
-
-        FederationTab ->
-            federationTab server
-
-        CdnTab ->
-            cdnTab server
-
-
-
--- ABOUT TAB
-
-
-aboutTab : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
-aboutTab shared model server =
-    let
-        info =
-            Maybe.withDefault defaultServerInfo server.configuration.serverInfo
-
-        name =
-            Maybe.withDefault server.frontendHost info.name
-
-        maybeAdminAccount =
-            adminAccountFor shared model
-    in
-    div [ class "server-details-tab-content server-details-about" ]
-        [ h2 [ class "server-details-name" ] (nameView name model.renameStatus maybeAdminAccount)
-        , case info.description of
-            Just description ->
-                Markdown.view [ class "server-details-description" ] description
-
-            Nothing ->
-                text ""
-        , case info.privacyPolicy of
-            Just policy ->
-                div [ class "server-details-policy" ]
-                    [ h3 [] [ text "Privacy Policy" ]
-                    , Markdown.view [] policy
-                    ]
-
-            Nothing ->
-                text ""
-        , case info.mediaPolicy of
-            Just policy ->
-                div [ class "server-details-policy" ]
-                    [ h3 [] [ text "Media Policy" ]
-                    , Markdown.view [] policy
-                    ]
-
-            Nothing ->
-                text ""
-        , adminsView model.adminsStatus
-        ]
-
-
-nameView : String -> RenameStatus -> Maybe AccountsPanel.Account -> List (Html Msg)
-nameView name renameStatus maybeAdminAccount =
-    case ( renameStatus, maybeAdminAccount ) of
-        ( Renaming pendingName status, Just _ ) ->
-            [ input
-                [ class "server-details-rename-input"
-                , value pendingName
-                , onInput RenameChanged
-                , disabled (status == AccountsPanel.Submitting)
-                ]
-                []
-            , button
-                [ class "server-details-rename-save"
-                , onClick RenameSaveClicked
-                , disabled (status == AccountsPanel.Submitting)
-                ]
-                [ text
-                    (if status == AccountsPanel.Submitting then
-                        "Saving…"
-
-                     else
-                        "Save"
-                    )
-                ]
-            , button
-                [ class "server-details-rename-cancel"
-                , onClick RenameCancelClicked
-                , disabled (status == AccountsPanel.Submitting)
-                ]
-                [ text "Cancel" ]
-            , case status of
-                AccountsPanel.Errored err ->
-                    span [ class "server-details-rename-error" ] [ text err ]
-
-                _ ->
-                    text ""
-            ]
-
-        _ ->
-            [ text name
-            , case maybeAdminAccount of
-                Just _ ->
-                    button [ class "server-details-rename-button", onClick (RenameClicked name) ] [ text "Rename" ]
-
-                Nothing ->
-                    text ""
-            ]
-
-
-adminsView : AdminsStatus -> Html Msg
-adminsView status =
-    div [ class "server-details-admins" ]
-        [ h3 [] [ text "Admins" ]
-        , case status of
-            AdminsNotLoaded ->
-                text ""
-
-            LoadingAdmins ->
-                p [] [ text "Loading admins…" ]
-
-            AdminsFailed ->
-                p [] [ text "Couldn't load admins." ]
-
-            AdminsLoaded [] ->
-                p [] [ text "No admins found." ]
-
-            AdminsLoaded admins ->
-                ul [ class "server-details-admin-list" ]
-                    (List.map (\user -> li [] [ text (Users.displayName user) ]) admins)
-        ]
-
-
-
--- THEME TAB
-
-
-themeTab : AccountsPanel.Server -> Html Msg
-themeTab server =
-    let
-        info =
-            Maybe.withDefault defaultServerInfo server.configuration.serverInfo
-
-        primary =
-            info.colors |> Maybe.andThen .primary |> Maybe.map ServerTheme.colorMetaFromArgb |> Maybe.withDefault ServerTheme.neutralColorMeta
-
-        nav =
-            info.colors |> Maybe.andThen .navigation |> Maybe.map ServerTheme.colorMetaFromArgb |> Maybe.withDefault ServerTheme.neutralColorMeta
-
-        squareMediaId =
-            info.logo |> Maybe.andThen .squareMediaId
-    in
-    div [ class "server-details-tab-content server-details-theme" ]
-        [ colorSwatchRow "Primary Color" primary
-        , colorSwatchRow "Navigation Color" nav
-        , div [ class "server-details-logo" ]
-            [ h3 [] [ text "Server Image" ]
-            , case squareMediaId of
-                Just mediaId ->
-                    img [ class "server-details-logo-image", src (AccountsPanel.mediaUrl server mediaId) ] []
-
-                Nothing ->
-                    p [] [ text "No server image set." ]
-            ]
-        ]
-
-
-colorSwatchRow : String -> ServerTheme.ColorMeta -> Html Msg
-colorSwatchRow label_ colorMeta =
-    div [ class "server-details-color-row" ]
-        [ span [ class "server-details-color-swatch", style "background-color" colorMeta.color ] []
-        , span [ class "server-details-color-label" ] [ text label_ ]
-        , span [ class "server-details-color-hex" ] [ text colorMeta.color ]
-        ]
-
-
-
--- SETTINGS TAB
-
-
-settingsTab : AccountsPanel.Server -> Html Msg
-settingsTab server =
-    let
-        config =
-            server.configuration
-
-        webUi =
-            config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
-    in
-    div [ class "server-details-tab-content server-details-settings" ]
-        [ div [ class "server-details-setting" ]
-            [ h3 [] [ text "Default Web UI" ]
-            , p [] [ text (webUserInterfaceText webUi) ]
-            ]
-        , permissionsSection "Anonymous User Permissions" config.anonymousUserPermissions
-        , permissionsSection "Default User Permissions" config.defaultUserPermissions
-        , permissionsSection "Basic User Permissions" config.basicUserPermissions
-        ]
-
-
-webUserInterfaceText : WebUserInterface -> String
-webUserInterfaceText ui =
-    case ui of
-        FLUTTERWEB ->
-            "Flutter (legacy)"
-
-        HANDLEBARSTEMPLATES ->
-            "Handlebars Templates (deprecated)"
-
-        REACTTAMAGUI ->
-            "React (Tamagui)"
-
-        ELMSPA ->
-            "Elm"
-
-        WebUserInterfaceUnrecognized_ _ ->
-            "Unknown"
-
-
-permissionsSection : String -> List Permission -> Html Msg
-permissionsSection label_ permissions =
-    div [ class "server-details-permissions" ]
-        [ h3 [] [ text label_ ]
-        , if List.isEmpty permissions then
-            p [] [ text "None." ]
-
-          else
-            ul [ class "server-details-permission-list" ]
-                (List.map (\permission -> li [] [ text (Users.permissionText permission) ]) permissions)
-        ]
-
-
-
--- FEDERATION TAB
-
-
-federationTab : AccountsPanel.Server -> Html Msg
-federationTab server =
-    let
-        federatedServers =
-            server.configuration.federationInfo |> Maybe.map .servers |> Maybe.withDefault []
-    in
-    div [ class "server-details-tab-content server-details-federation" ]
-        [ h3 [] [ text "Federated Servers" ]
-        , if List.isEmpty federatedServers then
-            p [] [ text "This server doesn't federate with any other servers." ]
-
-          else
-            ul [ class "server-details-federated-servers" ]
-                (List.map federatedServerRow federatedServers)
-        ]
-
-
-federatedServerRow : FederatedServer -> Html Msg
-federatedServerRow federatedServer =
-    li [ class "server-details-federated-server" ]
-        [ span [ class "server-details-federated-server-host" ] [ text federatedServer.host ]
-        , if Maybe.withDefault False federatedServer.configuredByDefault then
-            span [ class "server-details-federated-server-badge" ] [ text "configured by default" ]
-
-          else
-            text ""
-        , if Maybe.withDefault False federatedServer.pinnedByDefault then
-            span [ class "server-details-federated-server-badge" ] [ text "pinned by default" ]
-
-          else
-            text ""
-        ]
-
-
-
--- CDN TAB
-
-
-cdnTab : AccountsPanel.Server -> Html Msg
-cdnTab server =
-    let
-        cdnConfig =
-            server.configuration.externalCdnConfig
-    in
-    div [ class "server-details-tab-content server-details-cdn" ]
-        [ div [ class "server-details-cdn-row" ]
-            [ switchDisplay (cdnConfig /= Nothing)
-            , span [] [ text "External CDN HTTP Support" ]
-            ]
-        , div [ class "server-details-cdn-field" ]
-            [ span [ class "server-details-cdn-field-label" ] [ text "Frontend Host" ]
-            , span [] [ text (cdnConfig |> Maybe.map .frontendHost |> Maybe.withDefault "\u{2014}") ]
-            ]
-        , div [ class "server-details-cdn-field" ]
-            [ span [ class "server-details-cdn-field-label" ] [ text "Backend Host" ]
-            , span [] [ text (cdnConfig |> Maybe.map .backendHost |> Maybe.withDefault "\u{2014}") ]
-            ]
-        , div [ class "server-details-cdn-row" ]
-            [ switchDisplay (cdnConfig |> Maybe.map .cdnGrpc |> Maybe.withDefault False)
-            , span [] [ text "External CDN gRPC Support" ]
-            ]
-        ]
-
-
-{-| An always-disabled toggle switch -- this page is read-only apart from
-renaming (see the module doc), so CDN settings are shown but never editable
-here. Styled identically to `UI.elm`'s own `switchInput` (same `.switch`/
-`.disabled`/`.slider` classes, see `switch.css`), just without needing a live
-`Shared.Msg` to fire (it never will).
--}
-switchDisplay : Bool -> Html Msg
-switchDisplay isChecked =
-    label [ classes [ "switch", "disabled" ] ]
-        [ input [ type_ "checkbox", checked isChecked, disabled True ] []
-        , span [ class "slider" ] []
-        ]
+    }
