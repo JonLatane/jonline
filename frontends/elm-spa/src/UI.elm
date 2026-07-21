@@ -404,6 +404,32 @@ infoButton shared =
         [ text "i" ]
 
 
+{-| `infoButton`'s counterpart for one `serverChip` -- links to
+`Pages.Server.ServerIdentifier_` for that specific server (rather than
+`Route.About`, which is always `mainFrontendHost`) so a chip for any known
+server can be inspected the same way.
+-}
+serverInfoButton : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
+serverInfoButton shared server =
+    let
+        serverIdentifier =
+            (if server.tls then
+                "https:"
+
+             else
+                "http:"
+            )
+                ++ server.frontendHost
+    in
+    a
+        [ classes [ "panel-icon-button", "info-button", "server-chip-info-button" ]
+        , href (shared.basePath ++ Route.toHref (Route.Server__ServerIdentifier_ { serverIdentifier = serverIdentifier }))
+        , onClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , title ("About " ++ server.frontendHost)
+        ]
+        [ text "i" ]
+
+
 {-| Cycles Auto -> Light -> Dark -> Auto. "Auto" follows the OS preference
 (and reacts live if it changes); "Light"/"Dark" force it.
 -}
@@ -966,7 +992,10 @@ serverChip shared count index server =
                 , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
                 , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
                 ]
-            , div [ class "server-chip-host" ] [ text server.frontendHost ]
+            , div [ class "server-chip-host-row" ]
+                [ div [ class "server-chip-host" ] [ text server.frontendHost ]
+                , serverInfoButton shared server
+                ]
 
             -- , if isMainServer then
             --     div [ class "server-chip-main-badge" ] [ text "★ Main" ]

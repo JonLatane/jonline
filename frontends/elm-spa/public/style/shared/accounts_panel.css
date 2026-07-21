@@ -574,11 +574,26 @@
   text-align: center;
 }
 
+.server-chip-host-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+}
+
 .server-chip-host {
   font-size: 0.75rem;
   text-align: center;
   overflow-wrap: anywhere;
   opacity: 0.85;
+}
+
+.server-chip-info-button {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  font-size: 0.65rem;
 }
 
 .server-chip-bottom {
