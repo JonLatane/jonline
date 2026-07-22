@@ -34,19 +34,7 @@ pub fn get_posts(
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
-        (PostListingType::TextSearch, _, author_user_id) => get_search_posts(
-            request
-                .search_text
-                .as_deref()
-                .map(str::trim)
-                .filter(|search_text| !search_text.is_empty())
-                .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?,
-            author_user_id
-                .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
-                .transpose()?,
-            &user.clone(),
-            conn,
-        )?,
+        (PostListingType::TextSearch, _, _) => get_search_posts(&request, &user.clone(), conn)?,
         (_, _, Some(_author_user_id)) => get_user_posts(request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
@@ -82,7 +70,7 @@ pub fn get_posts(
                 conn,
             )?
         }
-        (_, None, _) => get_public_and_following_posts(&user, conn),
+        (_, None, _) => get_public_and_following_posts(&request, &user, conn),
     };
 
     Ok(GetPostsResponse {
@@ -151,17 +139,30 @@ fn get_by_post_id(
     Ok(result)
 }
 
+// `request.context()` defaults to `Post` (see `GetPostsRequest.context`'s proto doc comment).
+// The `parent_post_id IS NULL` filter only makes sense for that default POST case - it's what
+// keeps this a feed of top-level posts; a real REPLY always has a parent, so requesting REPLY
+// context here (e.g. "browse all accessible replies") would otherwise always come back empty.
 fn get_public_and_following_posts(
+    request: &GetPostsRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
-    query_visible_posts!(user)
+    let context = request.context();
+
+    let mut query = query_visible_posts!(user)
         .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .filter(posts::parent_post_id.is_null())
-        .filter(posts::context.eq(PostContext::Post.as_str_name()))
+        .filter(posts::context.eq(context.as_str_name()))
         .filter(posts::user_id.is_not_null())
         .order(posts::created_at.desc())
         .limit(PAGE_SIZE)
+        .into_boxed();
+
+    if context == PostContext::Post {
+        query = query.filter(posts::parent_post_id.is_null());
+    }
+
+    query
         .load::<(models::Post, Option<models::Author>)>(conn)
         .unwrap()
         .iter()
@@ -174,15 +175,26 @@ fn get_public_and_following_posts(
 // posts::user_id - matching the composite GIN indexes added alongside the search_text column, so
 // each of those filter combinations is served by a single index scan.
 fn get_search_posts(
-    search_text: &str,
-    author_user_id: Option<i64>,
+    request: &GetPostsRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
+    let search_text = request
+        .search_text
+        .as_deref()
+        .map(str::trim)
+        .filter(|search_text| !search_text.is_empty())
+        .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?;
+    let author_user_id = request
+        .author_user_id
+        .as_ref()
+        .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
+        .transpose()?;
+
     let search_query = websearch_to_tsquery_with_search_config(TsConfigurationByName("english"), search_text);
 
     let mut query = query_visible_posts!(user)
-        .filter(posts::context.eq(PostContext::Post.as_str_name()))
+        .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::search_text.matches(search_query))
         .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())

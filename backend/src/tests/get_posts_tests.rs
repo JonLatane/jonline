@@ -427,11 +427,22 @@ mod text_search {
         author_user_id: Option<String>,
         user: &Option<&crate::models::User>,
     ) -> Result<GetPostsResponse, Status> {
+        search_with_context(conn, search_text, author_user_id, None, user)
+    }
+
+    fn search_with_context(
+        conn: &mut crate::db_connection::PgPooledConnection,
+        search_text: Option<&str>,
+        author_user_id: Option<String>,
+        context: Option<PostContext>,
+        user: &Option<&crate::models::User>,
+    ) -> Result<GetPostsResponse, Status> {
         get_posts(
             GetPostsRequest {
                 listing_type: PostListingType::TextSearch as i32,
                 search_text: search_text.map(str::to_string),
                 author_user_id,
+                context: context.map(|c| c as i32),
                 ..Default::default()
             },
             user,
@@ -587,6 +598,49 @@ mod text_search {
 
             let response = search(conn, Some("flibbertigibbet"), None, &None)?;
             assert!(response.posts.is_empty());
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn matches_reply_context_when_requested() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "search_context_author");
+            let root = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    title: Some("a post about wombats".to_string()),
+                    ..Default::default()
+                },
+            );
+            let reply = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    context: PostContext::Reply,
+                    parent_post_id: Some(root.id),
+                    title: None,
+                    content: Some("a reply about wombats".to_string()),
+                    ..Default::default()
+                },
+            );
+
+            let post_response =
+                search_with_context(conn, Some("wombats"), None, Some(PostContext::Post), &None)?;
+            assert_eq!(ids(&post_response), vec![root.id.to_proto_id()]);
+
+            let reply_response = search_with_context(
+                conn,
+                Some("wombats"),
+                None,
+                Some(PostContext::Reply),
+                &None,
+            )?;
+            assert_eq!(ids(&reply_response), vec![reply.id.to_proto_id()]);
             Ok(())
         });
     }
@@ -1119,6 +1173,57 @@ mod default_listing {
             let mut expected = vec![global_post.id.to_proto_id(), server_post.id.to_proto_id()];
             expected.sort();
             assert_eq!(actual, expected);
+            Ok(())
+        });
+    }
+
+    /// A real reply always has `parent_post_id` set, so simply swapping the `context` filter to
+    /// `REPLY` (like the `POST` default does) would come back empty were the `parent_post_id IS
+    /// NULL` filter still applied unconditionally - that filter only makes sense for the `POST`
+    /// case. See `get_public_and_following_posts`'s doc comment.
+    #[test]
+    fn respects_requested_context() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "default_listing_author3");
+            let top_level = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let reply = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    context: PostContext::Reply,
+                    parent_post_id: Some(top_level.id),
+                    ..Default::default()
+                },
+            );
+
+            let post_response = get_posts(
+                GetPostsRequest {
+                    context: Some(PostContext::Post as i32),
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&post_response), vec![top_level.id.to_proto_id()]);
+
+            let reply_response = get_posts(
+                GetPostsRequest {
+                    context: Some(PostContext::Reply as i32),
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+            assert_eq!(ids(&reply_response), vec![reply.id.to_proto_id()]);
             Ok(())
         });
     }

@@ -9,27 +9,34 @@ module Components.Pages.PostsPage exposing
     )
 
 {-| The shared guts of a "recent posts" page: fetching recent posts from every
-enabled server and rendering them with fade in/out animations -- reused by
-`Pages.Home_` (which adds its own "Recent Posts" heading and passes
-`author = Nothing`) and `Pages.Username_.Posts`/`Pages.User.UserId_.Posts`
-(which pass the already-resolved profile `User`, restricting the feed to
-that user's own posts and adding this module's own "Posts | &lt;name&gt;"
-heading, via `Components.Pages.UserProfilePage.nameHeader`), mirroring how
+enabled server and rendering them with fade in/out animations, plus a
+search box + POST/REPLY context chooser (see `searchRowView`) that switches
+the fetch to `TEXT_SEARCH` (debounced 500ms after typing stops) and persists
+`search_text`/`context` as URL query params -- reused by `Pages.Home_` (which
+adds its own "Recent Posts" heading and passes `author = Nothing`) and
+`Pages.Username_.Posts`/`Pages.User.UserId_.Posts` (which pass the
+already-resolved profile `User`, restricting the feed to that user's own
+posts and adding this module's own "Posts | &lt;name&gt;" heading, via
+`Components.Pages.UserProfilePage.nameHeader`), mirroring how
 `Components.Pages.UserProfilePage` is reused by `Pages.Username_` and
 `Pages.User.UserId_` themselves.
 -}
 
 import Animation
+import Browser.Navigation
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Posts as Posts
 import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, div, h2, p, text)
-import Html.Attributes exposing (class, href, style)
+import Html exposing (Html, a, button, div, h2, input, option, p, select, text)
+import Html.Attributes exposing (class, href, placeholder, selected, style, title, type_, value)
+import Html.Events exposing (onClick, onInput)
 import Html.Keyed
+import Process
 import Proto.Jonline exposing (Post, User)
+import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -38,6 +45,7 @@ import Task
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
 import UI.Flip
+import Url.Builder
 
 
 
@@ -79,6 +87,11 @@ type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
     , author : Maybe ( String, User )
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , searchText : String
+    , context : PostContext
+    , searchGeneration : Int
     }
 
 
@@ -91,10 +104,73 @@ already-resolved profile `User` paired with the host it was resolved from
 this, so this module never needs to fetch the `User` itself -- it only needs
 the host alongside it to look up that server's `AccountsPanel.Server`/signed-in
 `Account` for `authorHeadingView`'s avatar).
+
+`navKey`/`path`, from the calling page's own `Request`, are what let
+`searchRowView`'s search box/context chooser persist `search_text`/`context`
+as URL query params (see `pushSearchUrl`) without this module needing to know
+which page-specific `Gen.Params.*` type that `Request` is actually parameterized
+over -- every caller's `Request.key`/`Request.url.path` fit this regardless.
+`query`, that same `Request`'s already-parsed `.query`, seeds `searchText`/
+`context` back out of the URL on load, so a shared/reloaded link reproduces
+the same search.
 -}
-init : Shared.Model -> Maybe ( String, User ) -> ( Model, Effect Msg )
-init shared author =
-    fetchNewServers shared { postsByServer = Dict.empty, postAnimations = Dict.empty, author = author }
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
+init shared author navKey path query =
+    fetchNewServers shared
+        { postsByServer = Dict.empty
+        , postAnimations = Dict.empty
+        , author = author
+        , navKey = navKey
+        , path = path
+        , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
+        , context = Dict.get "context" query |> Maybe.andThen postContextFromParam |> Maybe.withDefault POST
+        , searchGeneration = 0
+        }
+
+
+{-| Fetches `serversToFetch` (marking each `Loading` first) using the current
+`model.searchText`/`model.context`, and drops any already-fetched server
+that's no longer enabled -- shared by `fetchNewServers` (which only passes
+the servers that actually need it, see its own doc comment) and
+`applySearchChange` (which always passes every enabled server, since a
+changed search must re-fetch everything regardless of whether that server's
+acting account also happens to have changed).
+-}
+refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
+refetchServers shared model serversToFetch =
+    let
+        enabledServers =
+            AccountsPanel.enabledServers shared.accountsPanel
+
+        currentAccountId server =
+            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                |> Maybe.map AccountsPanel.accountId
+
+        fetchEffect server =
+            Posts.fetchPosts
+                shared.accountsPanel
+                ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+                , server.frontendHost
+                )
+                (model.author |> Maybe.map (Tuple.second >> .id))
+                model.searchText
+                model.context
+                |> Task.attempt (GotServerPosts server.frontendHost)
+                |> Effect.fromCmd
+
+        prunedPostsByServer =
+            Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
+    in
+    ( { model
+        | postsByServer =
+            List.foldl
+                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
+                prunedPostsByServer
+                serversToFetch
+      }
+    , Effect.batch (List.map fetchEffect serversToFetch)
+    )
+        |> Tuple.mapFirst syncAnimations
 
 
 {-| Drops posts for servers that are no longer enabled (so disabling a server
@@ -116,15 +192,12 @@ distrustful fallback in case some future state change doesn't route through
 fetchNewServers : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchNewServers shared model =
     let
-        enabledServers =
-            AccountsPanel.enabledServers shared.accountsPanel
-
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
                 |> Maybe.map AccountsPanel.accountId
 
         serversToFetch =
-            enabledServers
+            AccountsPanel.enabledServers shared.accountsPanel
                 |> List.filter
                     (\server ->
                         case Dict.get server.frontendHost model.postsByServer of
@@ -134,30 +207,94 @@ fetchNewServers shared model =
                             Just feed ->
                                 feed.accountId /= currentAccountId server
                     )
-
-        fetchEffect server =
-            Posts.fetchRecentPosts
-                shared.accountsPanel
-                ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
-                , server.frontendHost
-                )
-                (model.author |> Maybe.map (Tuple.second >> .id))
-                |> Task.attempt (GotServerPosts server.frontendHost)
-                |> Effect.fromCmd
-
-        prunedPostsByServer =
-            Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
     in
-    ( { model
-        | postsByServer =
-            List.foldl
-                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
-                prunedPostsByServer
-                serversToFetch
-      }
-    , Effect.batch (List.map fetchEffect serversToFetch)
-    )
-        |> Tuple.mapFirst syncAnimations
+    refetchServers shared model serversToFetch
+
+
+{-| Re-fetches every enabled server (unconditionally -- unlike
+`fetchNewServers`, a changed search has to override every already-Loaded
+feed, not just servers whose acting account changed) and persists the new
+`search_text`/`context` to the URL -- the single path `SearchDebounceElapsed`,
+`ContextChanged`, and `ClearSearchClicked` all funnel through.
+-}
+applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
+applySearchChange shared model =
+    let
+        ( refetchedModel, refetchEffect ) =
+            refetchServers shared model (AccountsPanel.enabledServers shared.accountsPanel)
+    in
+    ( refetchedModel, Effect.batch [ refetchEffect, pushSearchUrl refetchedModel ] )
+
+
+{-| Persists `model.searchText`/`model.context` to the URL as `search_text`/
+`context` query params, via `replaceUrl` (not `pushUrl` -- editing the search
+box shouldn't spam browser history with one entry per debounce fire).
+Omitted entirely when at their defaults (blank search, `POST` context), so
+the common case keeps a clean URL. Query-string-only navigation like this
+doesn't re-trigger this page's `init` -- see `Main.elm`'s `ChangedUrl`
+handler, which only does that when `url.path` itself changes.
+-}
+pushSearchUrl : Model -> Effect Msg
+pushSearchUrl model =
+    let
+        searchTextParam =
+            if String.isEmpty (String.trim model.searchText) then
+                []
+
+            else
+                [ Url.Builder.string "search_text" model.searchText ]
+
+        contextParam =
+            if model.context == POST then
+                []
+
+            else
+                [ Url.Builder.string "context" (postContextParam model.context) ]
+    in
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (searchTextParam ++ contextParam))
+        |> Effect.fromCmd
+
+
+{-| `POST`/`REPLY` as sent/read back via `search_text`/`context`'s URL query
+params and `searchRowView`'s `<select>` `value`/`onInput` -- any other
+`PostContext` (there are more, but only these two are offered in the
+chooser -- see `searchRowView`) round-trips back to `Nothing`/is left alone.
+-}
+postContextParam : PostContext -> String
+postContextParam context =
+    case context of
+        REPLY ->
+            "REPLY"
+
+        _ ->
+            "POST"
+
+
+postContextFromParam : String -> Maybe PostContext
+postContextFromParam param =
+    case String.toUpper param of
+        "POST" ->
+            Just POST
+
+        "REPLY" ->
+            Just REPLY
+
+        _ ->
+            Nothing
+
+
+{-| Title-cased display label for `searchRowView`'s context chooser --
+`postContextParam`/`postContextFromParam` handle the URL/`<select>` `value`
+round-trip separately, since those are deliberately not title-cased.
+-}
+postContextLabel : PostContext -> String
+postContextLabel context =
+    case context of
+        REPLY ->
+            "Reply"
+
+        _ ->
+            "Post"
 
 
 
@@ -262,6 +399,10 @@ type Msg
     | Animate Animation.Msg
     | RemovePost String
     | SharedMsg Shared.Msg
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ContextChanged String
+    | ClearSearchClicked
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -335,6 +476,37 @@ update shared msg model =
             in
             ( fetchedModel, Effect.batch [ Effect.fromShared subMsg, fetchEffect ] )
 
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 500
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked/ContextChanged) already
+                -- bumped searchGeneration past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ContextChanged param ->
+            case postContextFromParam param of
+                Just newContext ->
+                    applySearchChange shared { model | context = newContext, searchGeneration = model.searchGeneration + 1 }
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -352,7 +524,54 @@ view : Shared.Model -> Model -> Html Msg
 view shared model =
     div []
         [ authorHeadingView shared model.author
+        , searchRowView model
         , postsListView shared model
+        ]
+
+
+{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`)
+plus a POST/REPLY context chooser, side by side -- only those two contexts
+are offered for now (`Proto.Jonline.PostContext` has others, e.g. `EVENT`,
+that don't apply to a plain posts feed). The clear ("╳") button, styled like
+`UI.elm`'s `fieldClearButton`/`.field-clear-button` (can't reuse that
+directly -- it's hardcoded to `Shared.Msg`/`AccountsPanel.Msg`, not this
+module's own `Msg`), only appears once there's search text to clear.
+-}
+searchRowView : Model -> Html Msg
+searchRowView model =
+    div [ class "posts-search-row" ]
+        [ div [ class "posts-search-field" ]
+            [ input
+                [ type_ "text"
+                , class "posts-search-input"
+                , placeholder "Search posts..."
+                , value model.searchText
+                , onInput SearchTextChanged
+                ]
+                []
+            , if String.isEmpty model.searchText then
+                text ""
+
+              else
+                button
+                    [ type_ "button"
+                    , class "field-clear-button"
+                    , onClick ClearSearchClicked
+                    , title "Clear search"
+                    ]
+                    [ text "╳" ]
+            ]
+        , select [ class "posts-search-context", onInput ContextChanged ]
+            (List.map
+                (\context ->
+                    option
+                        [ value (postContextParam context)
+                        , selected (model.context == context)
+                        ]
+                        [ text (postContextLabel context) ]
+                )
+                [ POST, REPLY ]
+            )
         ]
 
 
