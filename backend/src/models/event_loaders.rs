@@ -1,4 +1,4 @@
-use super::{Author, Event, EventAttendance, EventInstance, Post, User, AUTHOR_COLUMNS};
+use super::{Author, Event, EventAttendance, EventInstance, Post, User, AUTHOR_COLUMNS, POST_COLUMNS};
 use diesel::{
     dsl::sql,
     sql_types::{Bool, Text},
@@ -53,7 +53,7 @@ pub fn get_event_instances(
         )
         .select((
             event_instances::all_columns,
-            posts::all_columns,
+            POST_COLUMNS,
             AUTHOR_COLUMNS.nullable(),
         ))
         .filter(event_instances::event_id.eq(event_id))

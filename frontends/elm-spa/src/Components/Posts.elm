@@ -4,7 +4,7 @@ module Components.Posts exposing
     , commentCountText
     , fetchAncestors
     , fetchPost
-    , fetchRecentPosts
+    , fetchPosts
     , fetchReplies
     , isAuthor
     , parsePostRouteId
@@ -45,6 +45,7 @@ import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
+import Proto.Jonline.PostListingType exposing (PostListingType(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
@@ -79,24 +80,51 @@ fetchPost accountsPanelModel maybeAccountServer postId =
         )
 
 
-{-| Fetches the most recent publicly-accessible posts from
-`maybeAccountServer`'s server, authenticated as its account if any (so e.g.
-followed-user/group posts are included too) -- otherwise identical to
-`fetchPost`. `authorUserId`, if given, restricts the results to that user's
-posts (see `GetPostsRequest`'s `{listing_type: AuthorPosts, author_user_id:}`
-form), for `Components.Pages.PostsPage`'s use on a user's own posts page.
+{-| Fetches posts from `maybeAccountServer`'s server, authenticated as its
+account if any (so e.g. followed-user/group posts are included too) --
+otherwise identical to `fetchPost`. `authorUserId`, if given, restricts the
+results to that user's posts (see `GetPostsRequest`'s `{listing_type:
+AuthorPosts, author_user_id:}` form), for `Components.Pages.PostsPage`'s use
+on a user's own posts page.
+
+`searchText`, if non-blank (leading/trailing whitespace is trimmed, and a
+blank string is treated the same as empty), switches the request to
+`TEXT_SEARCH` -- otherwise this is the same "most recent publicly-accessible
+posts" request `fetchRecentPosts` used to be. `context` is sent either way
+(`GetPosts`' `TEXT_SEARCH` and default `ALL_ACCESSIBLE_POSTS` branches both
+read it -- see `backend/src/rpcs/posts/get_posts.rs`), so
+`Components.Pages.PostsPage`'s POST/REPLY chooser works whether or not
+there's search text entered.
 -}
-fetchRecentPosts :
+fetchPosts :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> Maybe String
+    -> String
+    -> PostContext
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchRecentPosts accountsPanelModel maybeAccountServer authorUserId =
+fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context =
+    let
+        trimmedSearchText =
+            String.trim searchText
+
+        request =
+            if String.isEmpty trimmedSearchText then
+                { defaultGetPostsRequest | authorUserId = authorUserId, context = Just context }
+
+            else
+                { defaultGetPostsRequest
+                    | authorUserId = authorUserId
+                    , listingType = TEXTSEARCH
+                    , searchText = Just trimmedSearchText
+                    , context = Just context
+                }
+    in
     performWithOptionalAccountServer
         accountsPanelModel
         maybeAccountServer
         (\server maybeToken ->
-            Grpc.new Jonline.getPosts { defaultGetPostsRequest | authorUserId = authorUserId }
+            Grpc.new Jonline.getPosts request
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask

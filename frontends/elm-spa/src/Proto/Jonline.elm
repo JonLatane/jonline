@@ -2306,6 +2306,7 @@ fieldNumbersGetPostsRequest :
     , postIds : Int
     , listingType : Int
     , page : Int
+    , searchText : Int
     }
 fieldNumbersGetPostsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetPostsRequest
@@ -2351,6 +2352,9 @@ encodeGetPostsRequest =
      - Get posts by a user for a group. (TODO)
  - `{listing_type: AuthorPosts, author_user_id:}`
      - Get posts by a user. (TODO)
+ - `{listing_type: TextSearch, search_text:}`
+     - Full-text search across accessible posts' author username/real name, title, link, and content.
+     - `{listing_type: TextSearch, search_text:, author_user_id:}` scopes the search to one author.
 
 
 ## Fields

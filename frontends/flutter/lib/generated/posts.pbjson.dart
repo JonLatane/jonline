@@ -24,6 +24,7 @@ const PostListingType$json = {
     {'1': 'MY_GROUPS_POSTS', '2': 2},
     {'1': 'DIRECT_POSTS', '2': 3},
     {'1': 'POSTS_PENDING_MODERATION', '2': 4},
+    {'1': 'TEXT_SEARCH', '2': 5},
     {'1': 'GROUP_POSTS', '2': 10},
     {'1': 'GROUP_POSTS_PENDING_MODERATION', '2': 11},
   ],
@@ -33,8 +34,8 @@ const PostListingType$json = {
 final $typed_data.Uint8List postListingTypeDescriptor = $convert.base64Decode(
     'Cg9Qb3N0TGlzdGluZ1R5cGUSGAoUQUxMX0FDQ0VTU0lCTEVfUE9TVFMQABITCg9GT0xMT1dJTk'
     'dfUE9TVFMQARITCg9NWV9HUk9VUFNfUE9TVFMQAhIQCgxESVJFQ1RfUE9TVFMQAxIcChhQT1NU'
-    'U19QRU5ESU5HX01PREVSQVRJT04QBBIPCgtHUk9VUF9QT1NUUxAKEiIKHkdST1VQX1BPU1RTX1'
-    'BFTkRJTkdfTU9ERVJBVElPThAL');
+    'U19QRU5ESU5HX01PREVSQVRJT04QBBIPCgtURVhUX1NFQVJDSBAFEg8KC0dST1VQX1BPU1RTEA'
+    'oSIgoeR1JPVVBfUE9TVFNfUEVORElOR19NT0RFUkFUSU9OEAs=');
 
 @$core.Deprecated('Use postContextDescriptor instead')
 const PostContext$json = {
@@ -121,6 +122,15 @@ const GetPostsRequest$json = {
       '10': 'listingType'
     },
     {'1': 'page', '3': 15, '4': 1, '5': 13, '10': 'page'},
+    {
+      '1': 'search_text',
+      '3': 7,
+      '4': 1,
+      '5': 9,
+      '9': 6,
+      '10': 'searchText',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_post_id'},
@@ -129,6 +139,7 @@ const GetPostsRequest$json = {
     {'1': '_reply_depth'},
     {'1': '_context'},
     {'1': '_post_ids'},
+    {'1': '_search_text'},
   ],
 };
 
@@ -139,9 +150,10 @@ final $typed_data.Uint8List getPostsRequestDescriptor = $convert.base64Decode(
     'B2dyb3VwSWSIAQESJAoLcmVwbHlfZGVwdGgYBCABKA1IA1IKcmVwbHlEZXB0aIgBARIzCgdjb2'
     '50ZXh0GAUgASgOMhQuam9ubGluZS5Qb3N0Q29udGV4dEgEUgdjb250ZXh0iAEBEh4KCHBvc3Rf'
     'aWRzGAkgASgJSAVSB3Bvc3RJZHOIAQESOwoMbGlzdGluZ190eXBlGAogASgOMhguam9ubGluZS'
-    '5Qb3N0TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEhIKBHBhZ2UYDyABKA1SBHBhZ2VCCgoIX3Bv'
-    'c3RfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIOCgxfcmVwbHlfZGVwdGhCCg'
-    'oIX2NvbnRleHRCCwoJX3Bvc3RfaWRz');
+    '5Qb3N0TGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlEhIKBHBhZ2UYDyABKA1SBHBhZ2USJAoLc2Vh'
+    'cmNoX3RleHQYByABKAlIBlIKc2VhcmNoVGV4dIgBAUIKCghfcG9zdF9pZEIRCg9fYXV0aG9yX3'
+    'VzZXJfaWRCCwoJX2dyb3VwX2lkQg4KDF9yZXBseV9kZXB0aEIKCghfY29udGV4dEILCglfcG9z'
+    'dF9pZHNCDgoMX3NlYXJjaF90ZXh0');
 
 @$core.Deprecated('Use getPostsResponseDescriptor instead')
 const GetPostsResponse$json = {

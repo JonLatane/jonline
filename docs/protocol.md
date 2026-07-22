@@ -1143,6 +1143,9 @@ Valid GetPostsRequest formats:
     - Get posts by a user for a group. (TODO)
 - `{listing_type: AuthorPosts, author_user_id:}`
     - Get posts by a user. (TODO)
+- `{listing_type: TextSearch, search_text:}`
+    - Full-text search across accessible posts&#39; author username/real name, title, link, and content.
+    - `{listing_type: TextSearch, search_text:, author_user_id:}` scopes the search to one author.
 
 
 | Field | Type | Label | Description |
@@ -1155,6 +1158,7 @@ Valid GetPostsRequest formats:
 | post_ids | [string](#string) | optional | Returns expanded posts with the given IDs. |
 | listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See `PostListingType` for more info. |
 | page | [uint32](#uint32) |  | The page of results to return. Defaults to 0. |
+| search_text | [string](#string) | optional | Full-text search query, matched against the author&#39;s username/real name and the post&#39;s title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`. |
 
 
 
@@ -1288,6 +1292,7 @@ A high-level enumeration of general ways of requesting posts.
 | MY_GROUPS_POSTS | 2 | Returns posts from any group the user is a member of. |
 | DIRECT_POSTS | 3 | Returns `DIRECT` posts that are directly addressed to the user. |
 | POSTS_PENDING_MODERATION | 4 | Returns posts pending moderation by the server-level mods/admins. |
+| TEXT_SEARCH | 5 | Returns posts matching the full-text `search_text` query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter. |
 | GROUP_POSTS | 10 | Returns posts from a specific group. Requires group_id parameter. |
 | GROUP_POSTS_PENDING_MODERATION | 11 | Returns pending_moderation posts from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
 

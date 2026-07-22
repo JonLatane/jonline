@@ -32,6 +32,37 @@
   text-overflow: ellipsis;
 }
 
+/* Search box + POST/REPLY context chooser (see
+   Components/Pages/PostsPage.elm's `searchRowView`), sitting between the
+   heading and the post list. `.posts-search-field` mirrors
+   `.account-form-field` (accounts_panel.css) -- `position: relative` plus
+   right padding on the input is what lets `.field-clear-button` overlay the
+   field's right edge instead of shifting layout when it appears/disappears. */
+.posts-search-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.posts-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.posts-search-input {
+  width: 100%;
+  padding-right: 2rem;
+}
+
+.posts-search-context {
+  flex-shrink: 0;
+}
+
 .posts-empty {
   color: var(--muted);
 }

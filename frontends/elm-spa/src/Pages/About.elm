@@ -86,5 +86,6 @@ aboutJonlineView =
         [ h2 [] [ text "About Jonline" ]
         , p [] [ text "Jonline is a federated, decentralized social media platform created by Jon Latané." ]
         , p [] [ text "It's available under the AGPL, with a Rust BE and a new Elm FE, ", a [ href "https://github.com/JonLatane/jonline" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
+        , p [] [ text "It takes about ", a [ href "https://github.com/JonLatane/jonline#2-minute-startup-with-homebrew" ] [ text "2 minutes to set up Jonline on macOS with Homebrew" ], text " and ", a [ href "https://github.com/JonLatane/jonline#3-minute-startup-on-linux" ] [ text "3 minutes to set up Jonline on Linux" ], text "." ]
         , p [] [ text "Feel free to ", a [ href "mailto:jonlatane@gmail.com" ] [ text "email me" ], text " if you have any questions or want to contribute." ]
         ]

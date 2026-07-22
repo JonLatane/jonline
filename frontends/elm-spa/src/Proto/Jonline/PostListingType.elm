@@ -39,6 +39,9 @@ fieldNumbersPostListingType n_ =
         POSTSPENDINGMODERATION ->
             4
 
+        TEXTSEARCH ->
+            5
+
         GROUPPOSTS ->
             10
 
@@ -79,6 +82,9 @@ encodePostListingType value =
             POSTSPENDINGMODERATION ->
                 4
 
+            TEXTSEARCH ->
+                5
+
             GROUPPOSTS ->
                 10
 
@@ -113,6 +119,9 @@ decodePostListingType =
                     4 ->
                         POSTSPENDINGMODERATION
 
+                    5 ->
+                        TEXTSEARCH
+
                     10 ->
                         GROUPPOSTS
 
@@ -133,6 +142,7 @@ type PostListingType
     | MYGROUPSPOSTS
     | DIRECTPOSTS
     | POSTSPENDINGMODERATION
+    | TEXTSEARCH
     | GROUPPOSTS
     | GROUPPOSTSPENDINGMODERATION
     | PostListingTypeUnrecognized_ Int

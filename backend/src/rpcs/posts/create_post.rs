@@ -131,6 +131,7 @@ pub fn create_post(
                     _ => Moderation::Unmoderated.as_str_name().to_string(),
                 },
             })
+            .returning(models::POST_COLUMNS)
             .get_result::<models::Post>(conn)?;
         match parent_post_db_id.to_owned() {
             Some(parent_id) => {

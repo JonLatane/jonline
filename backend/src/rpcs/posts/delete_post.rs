@@ -25,7 +25,7 @@ pub fn delete_post(
     let moderator = validate_permission(&Some(current_user), Permission::ModeratePosts).is_ok();
 
     let mut existing_post = posts::table
-        .select(posts::all_columns)
+        .select(models::POST_COLUMNS)
         .filter(posts::id.eq(request.id.to_db_id_or_err("id")?))
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;

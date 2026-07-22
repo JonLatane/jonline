@@ -120,6 +120,7 @@ pub fn create_event(
                     .map(|m| m.id.to_db_id().unwrap())
                     .collect(),
             })
+            .returning(models::POST_COLUMNS)
             .get_result::<models::Post>(conn)?;
         let inserted_event = insert_into(events::table)
             .values(&models::NewEvent {
@@ -157,6 +158,7 @@ pub fn create_event(
             );
             let instance_post: models::Post = insert_into(posts::table)
                 .values(&new_post)
+                .returning(models::POST_COLUMNS)
                 .get_result::<models::Post>(conn)?;
             // let instance_post: Option<models::Post> = match &instance.post {
             //     Some(p) => Some(

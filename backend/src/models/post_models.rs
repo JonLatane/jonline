@@ -11,7 +11,7 @@ use crate::{
 
 pub fn get_post(post_id: i64, conn: &mut PgPooledConnection) -> Result<Post, Status> {
     posts::table
-        .select(posts::all_columns)
+        .select(POST_COLUMNS)
         .filter(posts::id.eq(post_id))
         .first::<Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "post_not_found"))
@@ -64,6 +64,56 @@ pub struct Post {
 
     pub unauthenticated_star_count: i64
 }
+
+/// Explicit column list for `posts`, excluding `search_text` (a denormalized tsvector used only
+/// for full-text search filtering/indexing - it has no corresponding field on `Post` since it's
+/// never read back into application code, and diesel_full_text_search's `TsVector` doesn't
+/// support being written from Rust via `AsChangeset` anyway).
+pub const POST_COLUMNS: (
+    posts::id,
+    posts::user_id,
+    posts::parent_post_id,
+    posts::title,
+    posts::link,
+    posts::content,
+    posts::response_count,
+    posts::reply_count,
+    posts::group_count,
+    posts::media,
+    posts::media_generated,
+    posts::embed_link,
+    posts::shareable,
+    posts::context,
+    posts::visibility,
+    posts::moderation,
+    posts::created_at,
+    posts::updated_at,
+    posts::published_at,
+    posts::last_activity_at,
+    posts::unauthenticated_star_count,
+) = (
+    posts::id,
+    posts::user_id,
+    posts::parent_post_id,
+    posts::title,
+    posts::link,
+    posts::content,
+    posts::response_count,
+    posts::reply_count,
+    posts::group_count,
+    posts::media,
+    posts::media_generated,
+    posts::embed_link,
+    posts::shareable,
+    posts::context,
+    posts::visibility,
+    posts::moderation,
+    posts::created_at,
+    posts::updated_at,
+    posts::published_at,
+    posts::last_activity_at,
+    posts::unauthenticated_star_count,
+);
 
 #[derive(Debug, Insertable)]
 #[diesel(table_name = posts)]

@@ -35,6 +35,11 @@ export enum PostListingType {
   DIRECT_POSTS = 3,
   /** POSTS_PENDING_MODERATION - Returns posts pending moderation by the server-level mods/admins. */
   POSTS_PENDING_MODERATION = 4,
+  /**
+   * TEXT_SEARCH - Returns posts matching the full-text `search_text` query, scoped the same way
+   * ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+   */
+  TEXT_SEARCH = 5,
   /** GROUP_POSTS - Returns posts from a specific group. Requires group_id parameter. */
   GROUP_POSTS = 10,
   /**
@@ -62,6 +67,9 @@ export function postListingTypeFromJSON(object: any): PostListingType {
     case 4:
     case "POSTS_PENDING_MODERATION":
       return PostListingType.POSTS_PENDING_MODERATION;
+    case 5:
+    case "TEXT_SEARCH":
+      return PostListingType.TEXT_SEARCH;
     case 10:
     case "GROUP_POSTS":
       return PostListingType.GROUP_POSTS;
@@ -87,6 +95,8 @@ export function postListingTypeToJSON(object: PostListingType): string {
       return "DIRECT_POSTS";
     case PostListingType.POSTS_PENDING_MODERATION:
       return "POSTS_PENDING_MODERATION";
+    case PostListingType.TEXT_SEARCH:
+      return "TEXT_SEARCH";
     case PostListingType.GROUP_POSTS:
       return "GROUP_POSTS";
     case PostListingType.GROUP_POSTS_PENDING_MODERATION:
@@ -191,6 +201,9 @@ export function postContextToJSON(object: PostContext): string {
  *     - Get posts by a user for a group. (TODO)
  * - `{listing_type: AuthorPosts, author_user_id:}`
  *     - Get posts by a user. (TODO)
+ * - `{listing_type: TextSearch, search_text:}`
+ *     - Full-text search across accessible posts' author username/real name, title, link, and content.
+ *     - `{listing_type: TextSearch, search_text:, author_user_id:}` scopes the search to one author.
  */
 export interface GetPostsRequest {
   /** Returns the single post with the given ID. */
@@ -221,6 +234,11 @@ export interface GetPostsRequest {
   listingType: PostListingType;
   /** The page of results to return. Defaults to 0. */
   page: number;
+  /**
+   * Full-text search query, matched against the author's username/real name and the post's
+   * title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
+   */
+  searchText?: string | undefined;
 }
 
 /** Used for getting posts. */
@@ -384,6 +402,7 @@ function createBaseGetPostsRequest(): GetPostsRequest {
     postIds: undefined,
     listingType: 0,
     page: 0,
+    searchText: undefined,
   };
 }
 
@@ -412,6 +431,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     }
     if (message.page !== 0) {
       writer.uint32(120).uint32(message.page);
+    }
+    if (message.searchText !== undefined) {
+      writer.uint32(58).string(message.searchText);
     }
     return writer;
   },
@@ -487,6 +509,14 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
           message.page = reader.uint32();
           continue;
         }
+        case 7: {
+          if (tag !== 58) {
+            break;
+          }
+
+          message.searchText = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -506,6 +536,7 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
       postIds: isSet(object.postIds) ? globalThis.String(object.postIds) : undefined,
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
       page: isSet(object.page) ? globalThis.Number(object.page) : 0,
+      searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
     };
   },
 
@@ -535,6 +566,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     if (message.page !== 0) {
       obj.page = Math.round(message.page);
     }
+    if (message.searchText !== undefined) {
+      obj.searchText = message.searchText;
+    }
     return obj;
   },
 
@@ -551,6 +585,7 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     message.postIds = object.postIds ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.page = object.page ?? 0;
+    message.searchText = object.searchText ?? undefined;
     return message;
   },
 };

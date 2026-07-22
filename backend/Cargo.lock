@@ -947,6 +947,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "diesel_full_text_search"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ae98dca9bec8bf7013b819a46b5e3bdb94f1e49269452f5f01477220045888ea"
+dependencies = [
+ "byteorder",
+ "diesel",
+]
+
+[[package]]
 name = "diesel_migrations"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1940,7 +1950,7 @@ dependencies = [
 
 [[package]]
 name = "jonline"
-version = "0.5.543"
+version = "0.5.544"
 dependencies = [
  "anyhow",
  "async-compression",
@@ -1951,6 +1961,7 @@ dependencies = [
  "bytes",
  "chrono",
  "diesel",
+ "diesel_full_text_search",
  "diesel_migrations",
  "dotenv",
  "env_logger",
