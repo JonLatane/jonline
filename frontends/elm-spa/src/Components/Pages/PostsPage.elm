@@ -32,8 +32,9 @@ import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, a, button, div, h2, input, option, p, select, text)
 import Html.Attributes exposing (class, href, placeholder, selected, style, title, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
+import Json.Decode as Decode
 import Process
 import Proto.Jonline exposing (Post, User)
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -113,6 +114,7 @@ over -- every caller's `Request.key`/`Request.url.path` fit this regardless.
 `query`, that same `Request`'s already-parsed `.query`, seeds `searchText`/
 `context` back out of the URL on load, so a shared/reloaded link reproduces
 the same search.
+
 -}
 init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
 init shared author navKey path query =
@@ -255,21 +257,26 @@ pushSearchUrl model =
         |> Effect.fromCmd
 
 
-{-| `POST`/`REPLY` as sent/read back via `search_text`/`context`'s URL query
-params and `searchRowView`'s `<select>` `value`/`onInput` -- any other
-`PostContext` (there are more, but only these two are offered in the
-chooser -- see `searchRowView`) round-trips back to `Nothing`/is left alone.
+{-| `post`/`reply` as sent via `search_text`/`context`'s URL query param and
+`searchRowView`'s `<select>` `value`/`onInput` -- lowercase since it's the
+URL-facing form; `postContextFromParam` reads it back case-insensitively, so
+`?context=REPLY`/`?context=Reply`/etc. (e.g. a hand-edited or older link)
+still work.
 -}
 postContextParam : PostContext -> String
 postContextParam context =
     case context of
         REPLY ->
-            "REPLY"
+            "reply"
 
         _ ->
-            "POST"
+            "post"
 
 
+{-| Case-insensitive inverse of `postContextParam`. Any other `PostContext`
+(there are more, but only `POST`/`REPLY` are offered in the chooser -- see
+`searchRowView`) round-trips back to `Nothing`/is left alone.
+-}
 postContextFromParam : String -> Maybe PostContext
 postContextFromParam param =
     case String.toUpper param of
@@ -291,10 +298,10 @@ postContextLabel : PostContext -> String
 postContextLabel context =
     case context of
         REPLY ->
-            "Reply"
+            "Replies"
 
         _ ->
-            "Post"
+            "Posts"
 
 
 
@@ -523,7 +530,7 @@ subscriptions model =
 view : Shared.Model -> Model -> Html Msg
 view shared model =
     div []
-        [ authorHeadingView shared model.author
+        [ authorHeadingView shared model.author model.context
         , searchRowView model
         , postsListView shared model
         ]
@@ -547,6 +554,7 @@ searchRowView model =
                 , placeholder "Search posts..."
                 , value model.searchText
                 , onInput SearchTextChanged
+                , onEscape ClearSearchClicked
                 ]
                 []
             , if String.isEmpty model.searchText then
@@ -575,17 +583,39 @@ searchRowView model =
         ]
 
 
-{-| "Posts" alone once there's an `author` to filter by (even before that
-`User` -- already resolved by the caller, see `init` -- has actually
-rendered), upgraded to "Posts | &lt;name&gt;" via
+{-| Fires `msg` (and suppresses the key's default effect) when Escape is
+pressed in a text input -- mirrors `UI.elm`'s `onEnter`, just for a different
+key; defined locally rather than imported from there since `UI` is the
+higher-level module that itself ends up depending on pages like this one.
+-}
+onEscape : msg -> Html.Attribute msg
+onEscape msg =
+    preventDefaultOn "keydown"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Escape" then
+                        Decode.succeed ( msg, True )
+
+                    else
+                        Decode.fail "Not the Escape key"
+                )
+        )
+
+
+{-| "Posts"/"Replies" (matching `context` -- the same POST/REPLY chooser
+`searchRowView` renders just below this) alone once there's an `author` to
+filter by (even before that `User` -- already resolved by the caller, see
+`init` -- has actually rendered), upgraded to "Posts | &lt;name&gt;" via
 `Components.Pages.UserProfilePage.nameHeader` (with that author's avatar, via
 its resolved-host `AccountsPanel.Server`/signed-in `Account`, if that host is
 still a known server -- falling back to `UserProfilePage.usernameHeading`,
 avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
-(`author == Nothing`), which supplies its own "Recent Posts" heading instead.
+(`author == Nothing`), which supplies its own "Recent Posts"/"Recent Replies"
+heading instead (see `Pages.Home_.heading`).
 -}
-authorHeadingView : Shared.Model -> Maybe ( String, User ) -> Html Msg
-authorHeadingView shared maybeAuthor =
+authorHeadingView : Shared.Model -> Maybe ( String, User ) -> PostContext -> Html Msg
+authorHeadingView shared maybeAuthor context =
     case maybeAuthor of
         Nothing ->
             text ""
@@ -594,9 +624,17 @@ authorHeadingView shared maybeAuthor =
             let
                 profileUrl =
                     usernameHref "" shared.accountsPanel.mainFrontendHost host author.username
+
+                headingText =
+                    case context of
+                        REPLY ->
+                            "Replies"
+
+                        _ ->
+                            "Posts"
             in
             div [ class "posts-page-heading" ]
-                [ h2 [] [ text "Posts" ]
+                [ h2 [] [ text headingText ]
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
                     [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
                         Just server ->
