@@ -37,7 +37,7 @@ import Grpc
 import Html exposing (Html, button, div, h2, h3, img, input, label, li, p, span, text, ul)
 import Html.Attributes exposing (checked, class, disabled, src, style, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (FederatedServer, GetUsersResponse, User, defaultGetUsersRequest, defaultServerInfo)
+import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, User, defaultGetUsersRequest, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -78,6 +78,13 @@ type AdminsStatus
     | AdminsFailed
 
 
+type VersionStatus
+    = VersionNotLoaded
+    | LoadingVersion
+    | VersionLoaded String
+    | VersionFailed
+
+
 {-| Live only while the server's name is being edited by an admin -- `pending`
 is the in-progress `<input>` value, independent of the actual name until
 `RenameSaveClicked` succeeds. Mirrors `Pages.Post.PostId_`'s `VisibilityEdit`.
@@ -93,6 +100,7 @@ type alias Model =
     , ownServerStatus : OwnServerStatus
     , activeTab : Tab
     , adminsStatus : AdminsStatus
+    , versionStatus : VersionStatus
     , renameStatus : RenameStatus
     }
 
@@ -113,13 +121,14 @@ init shared pageIsSecure targetHost =
             , ownServerStatus = LoadingOwnServer
             , activeTab = AboutTab
             , adminsStatus = AdminsNotLoaded
+            , versionStatus = VersionNotLoaded
             , renameStatus = NotRenaming
             }
         ( fetchedModel, fetchEffect ) =
             case AccountsPanel.serverForHost shared.accountsPanel.servers targetHost of
                 Just server ->
-                    ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins }
-                    , fetchAdmins server
+                    ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins, versionStatus = LoadingVersion }
+                    , Effect.batch [ fetchAdmins server, fetchVersion server ]
                     )
 
                 Nothing ->
@@ -195,6 +204,15 @@ fetchAdmins server =
         |> Effect.fromCmd
 
 
+fetchVersion : AccountsPanel.Server -> Effect Msg
+fetchVersion server =
+    Grpc.new Jonline.getServiceVersion {}
+        |> Grpc.setHost (AccountsPanel.serverUrl server)
+        |> Grpc.toTask
+        |> Task.attempt GotVersion
+        |> Effect.fromCmd
+
+
 {-| The signed-in, enabled account (if any) on this specific server, but only
 if it actually has `ADMIN` -- what gates the Rename button/RPC. Renaming (or
 any other `ConfigureServer` mutation) is only possible for a server that's
@@ -223,6 +241,7 @@ type Msg
     | GotOwnServerResult (Result Grpc.Error AccountsPanel.Server)
     | AddServerClicked AccountsPanel.Server
     | GotAdmins (Result Grpc.Error GetUsersResponse)
+    | GotVersion (Result Grpc.Error GetServiceVersionResponse)
     | RenameClicked String
     | RenameChanged String
     | RenameCancelClicked
@@ -245,8 +264,8 @@ update shared msg model =
             ( { model | activeTab = tab }, Effect.none )
 
         GotOwnServerResult (Ok server) ->
-            ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = LoadingAdmins }
-            , fetchAdmins server
+            ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = LoadingAdmins, versionStatus = LoadingVersion }
+            , Effect.batch [ fetchAdmins server, fetchVersion server ]
             )
 
         GotOwnServerResult (Err err) ->
@@ -262,6 +281,12 @@ update shared msg model =
 
         GotAdmins (Err _) ->
             ( { model | adminsStatus = AdminsFailed }, Effect.none )
+
+        GotVersion (Ok response) ->
+            ( { model | versionStatus = VersionLoaded response.version }, Effect.none )
+
+        GotVersion (Err _) ->
+            ( { model | versionStatus = VersionFailed }, Effect.none )
 
         RenameClicked currentName ->
             ( { model | renameStatus = Renaming currentName AccountsPanel.Idle }, Effect.none )
@@ -439,6 +464,7 @@ aboutTab shared model server =
     in
     div [ class "server-details-tab-content server-details-about" ]
         [ h2 [ class "server-details-name" ] (nameView name model.renameStatus maybeAdminAccount)
+        , versionView model.versionStatus
         , case info.description of
             Just description ->
                 Markdown.view [ class "server-details-description" ] description
@@ -514,6 +540,22 @@ nameView name renameStatus maybeAdminAccount =
                 Nothing ->
                     text ""
             ]
+
+
+versionView : VersionStatus -> Html Msg
+versionView status =
+    case status of
+        VersionNotLoaded ->
+            text ""
+
+        LoadingVersion ->
+            text ""
+
+        VersionLoaded version ->
+            p [ class "server-details-version" ] [ text ("Jonline " ++ version) ]
+
+        VersionFailed ->
+            text ""
 
 
 adminsView : Shared.Model -> AccountsPanel.Server -> AdminsStatus -> Html Msg
