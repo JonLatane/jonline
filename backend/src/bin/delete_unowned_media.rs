@@ -21,6 +21,7 @@ async fn main() {
         log::info!("Deleting Media: {:?}", media);
         let posts = posts::table
             .filter(posts::media.contains(vec![media.id]))
+            .select(jonline::models::POST_COLUMNS)
             .load::<jonline::models::Post>(&mut conn)
             .expect("Failed to load Posts with Media");
         for post in posts {

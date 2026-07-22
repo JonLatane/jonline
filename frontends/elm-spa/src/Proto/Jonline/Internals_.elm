@@ -3021,9 +3021,19 @@ fieldNumbersProto__Jonline__GetPostsRequest :
     , postIds : Int
     , listingType : Int
     , page : Int
+    , searchText : Int
     }
 fieldNumbersProto__Jonline__GetPostsRequest =
-    { postId = 1, authorUserId = 2, groupId = 3, replyDepth = 4, context = 5, postIds = 9, listingType = 10, page = 15 }
+    { postId = 1
+    , authorUserId = 2
+    , groupId = 3
+    , replyDepth = 4
+    , context = 5
+    , postIds = 9
+    , listingType = 10
+    , page = 15
+    , searchText = 7
+    }
 
 
 {-| Default for Proto__Jonline__GetPostsRequest. Should only be used for 'required' decoders as an initial value.
@@ -3039,6 +3049,7 @@ defaultProto__Jonline__GetPostsRequest =
     , postIds = Nothing
     , listingType = Proto.Jonline.PostListingType.defaultPostListingType
     , page = 0
+    , searchText = Nothing
     }
 
 
@@ -3066,6 +3077,7 @@ decodeProto__Jonline__GetPostsRequest =
             Proto.Jonline.PostListingType.decodePostListingType
             (\a r -> { r | listingType = a })
         , Protobuf.Decode.optional 15 Protobuf.Decode.uint32 (\a r -> { r | page = a })
+        , Protobuf.Decode.optional 7 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | searchText = a })
         ]
 
 
@@ -3086,6 +3098,7 @@ encodeProto__Jonline__GetPostsRequest value =
         , ( 9, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.postIds )
         , ( 10, Proto.Jonline.PostListingType.encodePostListingType value.listingType )
         , ( 15, Protobuf.Encode.uint32 value.page )
+        , ( 7, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.searchText )
         ]
 
 
@@ -3101,6 +3114,7 @@ type alias Proto__Jonline__GetPostsRequest =
     , postIds : Maybe String
     , listingType : Proto.Jonline.PostListingType.PostListingType
     , page : Int
+    , searchText : Maybe String
     }
 
 

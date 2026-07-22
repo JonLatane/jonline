@@ -2572,6 +2572,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <li>Get posts by a user. (TODO)</li>
         </ul>
       </li>
+      <li><code>{listing_type: TextSearch, search_text:}</code>
+        <ul>
+          <li>Full-text search across accessible posts' author username/real name, title, link, and content.</li>
+          <li><code>{listing_type: TextSearch, search_text:, author_user_id:}</code> scopes the search to one author.</li>
+        </ul>
+      </li>
     </ul>
     <table>
       <thead>
@@ -2630,6 +2636,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#uint32">uint32</a></td>
           <td></td>
           <td>The page of results to return. Defaults to 0.</td>
+        </tr>
+        <tr>
+          <td>search_text</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Full-text search query, matched against the author's username/real name and the post's title/link/content. Required (and only used) when <code>listing_type</code> is <code>TEXT_SEARCH</code>.</td>
         </tr>
       </tbody>
     </table>
@@ -2982,6 +2994,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>POSTS_PENDING_MODERATION</td>
           <td>4</td>
           <td>Returns posts pending moderation by the server-level mods/admins.</td>
+        </tr>
+        <tr>
+          <td>TEXT_SEARCH</td>
+          <td>5</td>
+          <td>Returns posts matching the full-text <code>search_text</code> query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.</td>
         </tr>
         <tr>
           <td>GROUP_POSTS</td>

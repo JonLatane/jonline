@@ -36,7 +36,7 @@ pub fn upsert_event_attendance(
         .filter(event_instances::id.eq(event_instance_id))
         .select((
             events::all_columns,
-            posts::all_columns,
+            models::POST_COLUMNS,
             event_instances::all_columns,
         ))
         .first::<(models::Event, models::Post, models::EventInstance)>(conn)

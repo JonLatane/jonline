@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
 use diesel::*;
+use diesel_full_text_search::{
+    configuration::TsConfigurationByName, websearch_to_tsquery_with_search_config,
+    TsVectorExtensions,
+};
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
@@ -30,6 +34,19 @@ pub fn get_posts(
             None | Some(0) => get_by_post_id(&user, &post_id, conn)?,
             Some(reply_depth) => get_replies_to_post_id(&user, &post_id, reply_depth, conn)?,
         },
+        (PostListingType::TextSearch, _, author_user_id) => get_search_posts(
+            request
+                .search_text
+                .as_deref()
+                .map(str::trim)
+                .filter(|search_text| !search_text.is_empty())
+                .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?,
+            author_user_id
+                .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
+                .transpose()?,
+            &user.clone(),
+            conn,
+        )?,
         (_, _, Some(_author_user_id)) => get_user_posts(request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
@@ -120,7 +137,7 @@ fn get_by_post_id(
     };
     let result: Vec<MarshalablePost> = query_visible_posts!(user)
         .filter(posts::id.eq(post_db_id))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -139,7 +156,7 @@ fn get_public_and_following_posts(
     conn: &mut PgPooledConnection,
 ) -> Vec<MarshalablePost> {
     query_visible_posts!(user)
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .filter(posts::parent_post_id.is_null())
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(posts::user_id.is_not_null())
@@ -150,6 +167,40 @@ fn get_public_and_following_posts(
         .iter()
         .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect()
+}
+
+// Full-text search across accessible posts' author username/real name, title, link, and content.
+// Filters on (posts::context, posts::search_text) and, when scoped to an author, also
+// posts::user_id - matching the composite GIN indexes added alongside the search_text column, so
+// each of those filter combinations is served by a single index scan.
+fn get_search_posts(
+    search_text: &str,
+    author_user_id: Option<i64>,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalablePost>, Status> {
+    let search_query = websearch_to_tsquery_with_search_config(TsConfigurationByName("english"), search_text);
+
+    let mut query = query_visible_posts!(user)
+        .filter(posts::context.eq(PostContext::Post.as_str_name()))
+        .filter(posts::search_text.matches(search_query))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
+        .order(posts::created_at.desc())
+        .limit(PAGE_SIZE)
+        .into_boxed();
+
+    if let Some(author_user_id) = author_user_id {
+        query = query.filter(posts::user_id.eq(author_user_id));
+    }
+
+    let result: Vec<MarshalablePost> = query
+        .load::<(models::Post, Option<models::Author>)>(conn)
+        .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
+        .iter()
+        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
+        .collect();
+
+    Ok(result)
 }
 
 fn get_my_group_posts(
@@ -165,7 +216,7 @@ fn get_my_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(memberships::user_id.eq(user.id))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -197,7 +248,7 @@ fn get_group_posts(
                 .filter(group_posts::group_id.eq(group_id))
                 .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
                 .select((
-                    posts::all_columns,
+                    models::POST_COLUMNS,
                     models::AUTHOR_COLUMNS.nullable(),
                     group_posts::all_columns.nullable(),
                     group_post_users.fields(models::AUTHOR_COLUMNS.nullable()),
@@ -243,7 +294,7 @@ fn get_user_posts(
     let result: Vec<MarshalablePost> = query_visible_posts!(current_user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::user_id.eq(user_id))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -260,7 +311,7 @@ fn get_following_posts(
     let result: Vec<MarshalablePost> = query_visible_posts!(&Some(user))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(follows::user_id.eq(user.id))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -306,7 +357,7 @@ fn get_replies_to_post_ids(
     let level = query_visible_posts!(user)
         .filter(posts::parent_post_id.eq_any(post_ids))
         .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
-        .select((posts::all_columns, models::AUTHOR_COLUMNS.nullable()))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
         .order(posts::created_at.desc())
         .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)

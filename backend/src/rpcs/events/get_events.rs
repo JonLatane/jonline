@@ -108,9 +108,9 @@ macro_rules! query_visible_events {
             .select((
                 event_instances::all_columns,
                 events::all_columns,
-                posts::all_columns,
+                models::POST_COLUMNS,
                 AUTHOR_COLUMNS.nullable(),
-                instance_posts.fields(posts::all_columns),
+                instance_posts.fields(models::POST_COLUMNS),
                 instance_users.fields(AUTHOR_COLUMNS).nullable(),
             ))
             //TODO UNCOMMENT THISSSS

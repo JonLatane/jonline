@@ -153,6 +153,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::TsVector;
+
     posts (id) {
         id -> Int8,
         user_id -> Nullable<Int8>,
@@ -175,6 +178,7 @@ diesel::table! {
         published_at -> Nullable<Timestamp>,
         last_activity_at -> Timestamp,
         unauthenticated_star_count -> Int8,
+        search_text -> TsVector,
     }
 }
 

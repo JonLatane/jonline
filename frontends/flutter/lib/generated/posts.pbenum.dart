@@ -37,6 +37,11 @@ class PostListingType extends $pb.ProtobufEnum {
   static const PostListingType POSTS_PENDING_MODERATION =
       PostListingType._(4, _omitEnumNames ? '' : 'POSTS_PENDING_MODERATION');
 
+  /// Returns posts matching the full-text `search_text` query, scoped the same way
+  /// ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+  static const PostListingType TEXT_SEARCH =
+      PostListingType._(5, _omitEnumNames ? '' : 'TEXT_SEARCH');
+
   /// Returns posts from a specific group. Requires group_id parameter.
   static const PostListingType GROUP_POSTS =
       PostListingType._(10, _omitEnumNames ? '' : 'GROUP_POSTS');
@@ -53,6 +58,7 @@ class PostListingType extends $pb.ProtobufEnum {
     MY_GROUPS_POSTS,
     DIRECT_POSTS,
     POSTS_PENDING_MODERATION,
+    TEXT_SEARCH,
     GROUP_POSTS,
     GROUP_POSTS_PENDING_MODERATION,
   ];

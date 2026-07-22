@@ -20,7 +20,7 @@ pub fn delete_event(
 
     let event = get_event(request.id.to_db_id_or_err("id")?, &Some(current_user), conn)?;
     let event_post = posts::table
-        .select(posts::all_columns)
+        .select(models::POST_COLUMNS)
         .filter(posts::id.eq(event.post_id))
         .first::<models::Post>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_post_not_found"))?;

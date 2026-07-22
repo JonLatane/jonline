@@ -42,6 +42,9 @@ export 'posts.pbenum.dart';
 ///     - Get posts by a user for a group. (TODO)
 /// - `{listing_type: AuthorPosts, author_user_id:}`
 ///     - Get posts by a user. (TODO)
+/// - `{listing_type: TextSearch, search_text:}`
+///     - Full-text search across accessible posts' author username/real name, title, link, and content.
+///     - `{listing_type: TextSearch, search_text:, author_user_id:}` scopes the search to one author.
 class GetPostsRequest extends $pb.GeneratedMessage {
   factory GetPostsRequest({
     $core.String? postId,
@@ -49,6 +52,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     $core.String? groupId,
     $core.int? replyDepth,
     PostContext? context,
+    $core.String? searchText,
     $core.String? postIds,
     PostListingType? listingType,
     $core.int? page,
@@ -59,6 +63,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     if (groupId != null) result.groupId = groupId;
     if (replyDepth != null) result.replyDepth = replyDepth;
     if (context != null) result.context = context;
+    if (searchText != null) result.searchText = searchText;
     if (postIds != null) result.postIds = postIds;
     if (listingType != null) result.listingType = listingType;
     if (page != null) result.page = page;
@@ -84,6 +89,7 @@ class GetPostsRequest extends $pb.GeneratedMessage {
     ..aI(4, _omitFieldNames ? '' : 'replyDepth', fieldType: $pb.PbFieldType.OU3)
     ..aE<PostContext>(5, _omitFieldNames ? '' : 'context',
         enumValues: PostContext.values)
+    ..aOS(7, _omitFieldNames ? '' : 'searchText')
     ..aOS(9, _omitFieldNames ? '' : 'postIds')
     ..aE<PostListingType>(10, _omitFieldNames ? '' : 'listingType',
         enumValues: PostListingType.values)
@@ -159,33 +165,44 @@ class GetPostsRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(5)
   void clearContext() => $_clearField(5);
 
+  /// Full-text search query, matched against the author's username/real name and the post's
+  /// title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
+  @$pb.TagNumber(7)
+  $core.String get searchText => $_getSZ(5);
+  @$pb.TagNumber(7)
+  set searchText($core.String value) => $_setString(5, value);
+  @$pb.TagNumber(7)
+  $core.bool hasSearchText() => $_has(5);
+  @$pb.TagNumber(7)
+  void clearSearchText() => $_clearField(7);
+
   /// Returns expanded posts with the given IDs.
   @$pb.TagNumber(9)
-  $core.String get postIds => $_getSZ(5);
+  $core.String get postIds => $_getSZ(6);
   @$pb.TagNumber(9)
-  set postIds($core.String value) => $_setString(5, value);
+  set postIds($core.String value) => $_setString(6, value);
   @$pb.TagNumber(9)
-  $core.bool hasPostIds() => $_has(5);
+  $core.bool hasPostIds() => $_has(6);
   @$pb.TagNumber(9)
   void clearPostIds() => $_clearField(9);
 
   /// The listing type of the request. See `PostListingType` for more info.
   @$pb.TagNumber(10)
-  PostListingType get listingType => $_getN(6);
+  PostListingType get listingType => $_getN(7);
   @$pb.TagNumber(10)
   set listingType(PostListingType value) => $_setField(10, value);
   @$pb.TagNumber(10)
-  $core.bool hasListingType() => $_has(6);
+  $core.bool hasListingType() => $_has(7);
   @$pb.TagNumber(10)
   void clearListingType() => $_clearField(10);
 
   /// The page of results to return. Defaults to 0.
   @$pb.TagNumber(15)
-  $core.int get page => $_getIZ(7);
+  $core.int get page => $_getIZ(8);
   @$pb.TagNumber(15)
-  set page($core.int value) => $_setUnsignedInt32(7, value);
+  set page($core.int value) => $_setUnsignedInt32(8, value);
   @$pb.TagNumber(15)
-  $core.bool hasPage() => $_has(7);
+  $core.bool hasPage() => $_has(8);
   @$pb.TagNumber(15)
   void clearPage() => $_clearField(15);
 }

@@ -25,6 +25,9 @@ import "users.proto";
 //     - Get posts by a user for a group. (TODO)
 // - `{listing_type: AuthorPosts, author_user_id:}`
 //     - Get posts by a user. (TODO)
+// - `{listing_type: TextSearch, search_text:}`
+//     - Full-text search across accessible posts' author username/real name, title, link, and content.
+//     - `{listing_type: TextSearch, search_text:, author_user_id:}` scopes the search to one author.
 message GetPostsRequest {
   // Returns the single post with the given ID.
   optional string post_id = 1;
@@ -42,6 +45,9 @@ message GetPostsRequest {
   PostListingType listing_type = 10;
   // The page of results to return. Defaults to 0.
   uint32 page = 15;
+  // Full-text search query, matched against the author's username/real name and the post's
+  // title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
+  optional string search_text = 7;
 }
 
 // Used for getting posts.
@@ -63,6 +69,9 @@ enum PostListingType {
   DIRECT_POSTS = 3;
   // Returns posts pending moderation by the server-level mods/admins.
   POSTS_PENDING_MODERATION = 4;
+  // Returns posts matching the full-text `search_text` query, scoped the same way
+  // ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+  TEXT_SEARCH = 5;
 
   // Returns posts from a specific group. Requires group_id parameter.
   GROUP_POSTS = 10;

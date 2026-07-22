@@ -89,7 +89,7 @@ fn update_event_instances(
                 Ok(instance_id) => {
                     let instance_and_post = event_instances::table
                         .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
-                        .select((event_instances::all_columns, posts::all_columns))
+                        .select((event_instances::all_columns, models::POST_COLUMNS))
                         .filter(event_instances::id.eq(instance_id))
                         .first::<(models::EventInstance, models::Post)>(conn)
                         .ok();
@@ -190,6 +190,7 @@ fn update_event_instances(
                 println!("Updating instance post: {:?}", updated_instance);
                 diesel::update(&updated_instance_post)
                     .set(&updated_instance_post)
+                    .returning(models::POST_COLUMNS)
                     .get_result::<models::Post>(conn)
                     .map_err(|e| {
                         log::error!("Failed to update event instance post: {:?}", e);
@@ -272,6 +273,7 @@ pub fn create_instance(
     );
     let instance_post: models::Post = insert_into(posts::table)
         .values(&new_post)
+        .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)
         .map_err(|e| {
             log::error!("Failed to create event instance post: {:?}", e);
