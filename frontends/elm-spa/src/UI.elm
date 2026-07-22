@@ -7,7 +7,7 @@ import Dict
 import Effect exposing (Effect)
 import Gen.Route as Route exposing (Route(..))
 import Html exposing (Attribute, Html, a, button, div, header, img, input, label, main_, nav, p, span, text)
-import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, placeholder, spellcheck, src, style, target, title, type_, value)
+import Html.Attributes exposing (alt, attribute, checked, class, classList, disabled, href, id, name, novalidate, placeholder, spellcheck, src, style, target, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -1053,7 +1053,7 @@ imageOrInitial : List String -> String -> Maybe String -> Html msg
 imageOrInitial baseClasses name maybeUrl =
     case maybeUrl of
         Just url ->
-            img [ classes baseClasses, src url, alt name ] []
+            img [ classes baseClasses, src url, alt name, attribute "loading" "lazy" ] []
 
         Nothing ->
             div [ classes ("placeholder" :: baseClasses) ] [ text (AccountsPanel.initialLetter name) ]
@@ -1375,18 +1375,61 @@ addAccountForm shared currentRoute =
 
             else
                 AccountsPanel.NoOp
+
+        -- `Nothing` at the Username-only step; set once the user's picked
+        -- "Log In" or "Create Account" (`AccountsPanel.ChooseLoginClicked`/
+        -- `ChooseCreateAccountClicked`), which is also when the Password field
+        -- first renders -- see `AccountsPanel.Model.newAccountType`.
+        newAccountType =
+            accountsPanelModel.newAccountType
+
+        -- Submitting for real (rather than just picking a flow) is the same
+        -- message either way -- it's what the one visible button (alongside
+        -- "<- Back") now does once `newAccountType` is set.
+        submitMsg =
+            if newAccountType == Just AccountsPanel.CreateNewAccount then
+                AccountsPanel.CreateAccountClicked
+
+            else
+                AccountsPanel.LoginClicked
     in
     Html.form
         [ class "account-form"
 
+        -- The Server field is `type_ "url"` for its mobile keyboard (`/`,
+        -- `.`, no space bar) -- but the browser's own URL constraint
+        -- validation rejects plain hostnames like "localhost" (no scheme),
+        -- which now matters once there's a real `type_ "submit"` button
+        -- below: without this, clicking it never gets as far as firing
+        -- `submit` at all, just a native "Enter a URL." bubble. We already
+        -- do our own validation/error surfacing (`FormStatus.Errored`), so
+        -- the browser's is only ever in the way here.
+        , novalidate True
+
         -- Real `<form>` (rather than `div`) so Safari/Chrome/password
         -- managers recognize `account-form-username`/`account-form-password`
         -- as a credential pair worth offering to fill/save. Every button
-        -- below is explicitly `type_ "button"`, so this never natively
-        -- submits (which would reload the page); `onSubmit` just guards
-        -- against a stray implicit submission (e.g. Enter in a field) ever
-        -- doing that, without duplicating any button's own `onClick`.
-        , onSubmit (Shared.AccountsPanelMsg AccountsPanel.NoOp)
+        -- here is `type_ "button"` -- inert to native submission -- *except*
+        -- the one that actually submits the password (Log In/Create
+        -- Account, once `newAccountType` is set): that one's deliberately
+        -- `type_ "submit"`, so clicking it fires a real `submit` event on
+        -- this form rather than only an Elm `onClick`. That's the signal
+        -- Chrome/Safari's own "Save password?" prompt is watching for in a
+        -- JS-driven SPA with no page navigation -- an `onClick`-only button
+        -- never triggers it, no matter how correct the field markup is.
+        -- `Html.Events.onSubmit` always calls `preventDefault` (blocking the
+        -- page reload a native submit would otherwise cause), so this is
+        -- safe to let through for real rather than treating it as a stray
+        -- event to swallow.
+        , onSubmit
+            (Shared.AccountsPanelMsg
+                (if newAccountType == Nothing then
+                    AccountsPanel.NoOp
+
+                 else
+                    submitMsg
+                )
+            )
         ]
         [ input
             [ id "account-form-server"
@@ -1431,7 +1474,11 @@ addAccountForm shared currentRoute =
                     , placeholder "Username"
                     , value form.username
                     , onInput (AccountsPanel.UsernameChanged >> Shared.AccountsPanelMsg)
-                    , onEnter (Shared.AccountsPanelMsg (AccountsPanel.FocusInput "account-form-password"))
+
+                    -- Enter here defaults to the Log In path (see
+                    -- `ChooseLoginClicked`) -- the more common case, per the
+                    -- Password field's own `autocomplete` choice below.
+                    , onEnter (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
                     , disabled accountFieldsDisabled
                     ]
                     []
@@ -1443,80 +1490,142 @@ addAccountForm shared currentRoute =
 
           else
             text ""
-        , if showUsernamePasswordFields then
-            div [ class "account-form-field password-field" ]
-                [ input
-                    [ id "account-form-password"
-                    , type_
-                        (if form.passwordVisible then
-                            "text"
-
-                         else
-                            "password"
-                        )
-                    , name "current-password"
-
-                    -- "current-password" (not "new-password") even though this
-                    -- field also doubles as Create Account's password: it's the
-                    -- more common case (logging into an existing account), and
-                    -- it's the token that lets a password manager offer to fill
-                    -- a saved password here at all. "new-password" would only
-                    -- gain a generated-password suggestion for the signup path,
-                    -- at the cost of breaking autofill for the login path.
-                    , attribute "autocomplete" "current-password"
-                    , placeholder "Password"
-                    , value form.password
-                    , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
-                    , onEnter (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-                    , disabled accountFieldsDisabled
-                    ]
-                    []
-                , if String.isEmpty form.password then
-                    text ""
-
-                  else
-                    button
-                        [ type_ "button"
-                        , classList
-                            [ ( "password-toggle-button", True )
-                            , ( "revealed", form.passwordVisible )
-                            ]
-                        , onClick (Shared.AccountsPanelMsg AccountsPanel.PasswordVisibilityToggled)
-                        , disabled accountFieldsDisabled
-                        , title
+        , case newAccountType of
+            Just accountType ->
+                div [ class "account-form-field password-field" ]
+                    [ input
+                        [ id "account-form-password"
+                        , type_
                             (if form.passwordVisible then
-                                "Hide password"
+                                "text"
 
                              else
-                                "Show password"
+                                "password"
                             )
-                        ]
-                        [ text "👁" ]
-                , fieldClearButton accountFieldsDisabled
-                    (not (String.isEmpty form.password))
-                    (AccountsPanel.PasswordChanged "")
-                    "Clear password"
-                ]
+                        , name
+                            (if accountType == AccountsPanel.CreateNewAccount then
+                                "new-password"
 
-          else
-            text ""
+                             else
+                                "current-password"
+                            )
+
+                        -- "new-password" for Create Account (offers a
+                        -- browser-generated password, and won't try to
+                        -- match this against an existing saved one);
+                        -- "current-password" for Log In (offers the
+                        -- matching saved password, if any). Only knowable
+                        -- once `newAccountType` says which flow this is --
+                        -- see its own doc.
+                        , attribute "autocomplete"
+                            (if accountType == AccountsPanel.CreateNewAccount then
+                                "new-password"
+
+                             else
+                                "current-password"
+                            )
+                        , placeholder "Password"
+                        , value form.password
+                        , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+                        , onEnter (Shared.AccountsPanelMsg submitMsg)
+                        , disabled accountFieldsDisabled
+                        ]
+                        []
+                    , if String.isEmpty form.password then
+                        text ""
+
+                      else
+                        button
+                            [ type_ "button"
+                            , classList
+                                [ ( "password-toggle-button", True )
+                                , ( "revealed", form.passwordVisible )
+                                ]
+                            , onClick (Shared.AccountsPanelMsg AccountsPanel.PasswordVisibilityToggled)
+                            , disabled accountFieldsDisabled
+                            , title
+                                (if form.passwordVisible then
+                                    "Hide password"
+
+                                 else
+                                    "Show password"
+                                )
+                            ]
+                            [ text "👁" ]
+                    , fieldClearButton accountFieldsDisabled
+                        (not (String.isEmpty form.password))
+                        (AccountsPanel.PasswordChanged "")
+                        "Clear password"
+                    ]
+
+            Nothing ->
+                text ""
         , if showUsernamePasswordFields then
             div [ class "account-form-buttons" ]
-                [ button
-                    [ type_ "button"
-                    , onClick (Shared.AccountsPanelMsg AccountsPanel.LoginClicked)
-                    , disabled accountFieldsDisabled
-                    , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
-                    ]
-                    [ text "Login" ]
-                , button
-                    [ type_ "button"
-                    , onClick (Shared.AccountsPanelMsg AccountsPanel.CreateAccountClicked)
-                    , disabled accountFieldsDisabled
-                    , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
-                    ]
-                    [ text "Create Account" ]
-                ]
+                (case newAccountType of
+                    Nothing ->
+                        [ button
+                            [ type_ "button"
+                            , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseLoginClicked)
+                            , disabled accountFieldsDisabled
+                            , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-primary" ]
+                            ]
+                            [ text "Login" ]
+                        , button
+                            [ type_ "button"
+                            , onClick (Shared.AccountsPanelMsg AccountsPanel.ChooseCreateAccountClicked)
+                            , disabled accountFieldsDisabled
+                            , classes [ hostnameToCSSClass <| formThemeHost shared.accountsPanel, "background-color-nav" ]
+                            ]
+                            [ text "Create Account" ]
+                        ]
+
+                    Just accountType ->
+                        [ button
+                            [ type_ "button"
+                            , onClick (Shared.AccountsPanelMsg AccountsPanel.NewAccountBackClicked)
+                            , disabled accountFieldsDisabled
+
+                            -- Deliberately untinted (unlike the submit
+                            -- button next to it) -- a plain, neutral grey
+                            -- so it doesn't read as another server-themed
+                            -- call to action, same as the Create Account
+                            -- confirmation modal's "Cancel" button.
+                            --
+                            -- `back-button` itself just narrows it to a
+                            -- third of the row (see accounts_panel.css) --
+                            -- it's the less important of the two.
+                            , class "back-button"
+                            ]
+                            [ text "← Back" ]
+                        , button
+                            [ -- `type_ "submit"` (not `"button"`, unlike every other
+                              -- button in this form) -- deliberately the one control
+                              -- that fires this `<form>`'s native `submit` event (see
+                              -- the form's own `onSubmit` for why), rather than
+                              -- dispatching `submitMsg` itself via `onClick` -- doing
+                              -- both would submit twice per click.
+                              type_ "submit"
+                            , disabled accountFieldsDisabled
+                            , classes
+                                [ hostnameToCSSClass <| formThemeHost shared.accountsPanel
+                                , if accountType == AccountsPanel.CreateNewAccount then
+                                    "background-color-nav"
+
+                                  else
+                                    "background-color-primary"
+                                ]
+                            ]
+                            [ text
+                                (if accountType == AccountsPanel.CreateNewAccount then
+                                    "Create Account"
+
+                                 else
+                                    "Login"
+                                )
+                            ]
+                        ]
+                )
 
           else
             text ""

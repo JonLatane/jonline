@@ -827,6 +827,14 @@
 }
 
 .account-form-buttons button {
+  flex: 2;
+}
+
+/* The "<- Back" button, once Password is showing (see UI.elm's
+   addAccountForm): a third of the row, next to the actual Log In/Create
+   Account submit button taking the other two-thirds -- it's the less
+   important of the pair, so gets the smaller target. */
+.account-form-buttons .back-button {
   flex: 1;
 }
 

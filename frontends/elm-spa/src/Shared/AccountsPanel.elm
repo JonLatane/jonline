@@ -8,6 +8,7 @@ module Shared.AccountsPanel exposing
     , MaybeAccountServer
     , Model
     , Msg(..)
+    , NewAccountType(..)
     , PendingCreateAccount
     , Server
     , ServerLogoSize(..)
@@ -173,6 +174,17 @@ type FormStatus
     | Errored String
 
 
+{-| Which of the two flows `Model.newAccountType` is mid-way through --
+picked by `ChooseLoginClicked`/`ChooseCreateAccountClicked` -- so the Password
+field (see `UI.addAccountForm`) knows whether to ask the browser for a
+"new-password" (with generation offered) or a "current-password" (with saved
+passwords offered) autofill.
+-}
+type NewAccountType
+    = CreateNewAccount
+    | LoginToAccount
+
+
 type alias AccountForm =
     { server : String
     , username : String
@@ -241,6 +253,20 @@ type alias Model =
     -- `shouldShowAddAccountForm`. Irrelevant (the form always shows) when
     -- `accounts` is empty.
     , addAccountFormExpanded : Bool
+
+    -- Once the Username field names a known server, whether (and which of)
+    -- "Log In"/"Create Account" has been picked -- see `ChooseLoginClicked`/
+    -- `ChooseCreateAccountClicked`. `Nothing` while still at the
+    -- Username-only step, before either's been clicked: the Password field
+    -- (see `UI.addAccountForm`) only renders once this is `Just _`, so its
+    -- `autocomplete`/`name` can be set to "new-password" or "current-password"
+    -- up front, rather than the field existing from the start with an
+    -- autocomplete hint that's only a guess. Once set, the same button
+    -- (now alongside a "<- Back" button, `NewAccountBackClicked`) actually
+    -- submits via `LoginClicked`/`CreateAccountClicked`. Reset to `Nothing`
+    -- by `NewAccountBackClicked`, a successful `GotAuthResult`, or the
+    -- Server field changing (`setServerField`).
+    , newAccountType : Maybe NewAccountType
 
     -- Set once `CreateAccountClicked` has resolved the target server's
     -- configuration, until the user confirms or cancels -- see
@@ -328,6 +354,9 @@ type Msg
     | PasswordVisibilityToggled
     | LoginClicked
     | CreateAccountClicked
+    | ChooseLoginClicked
+    | ChooseCreateAccountClicked
+    | NewAccountBackClicked
     | GotCreateAccountServerInfo (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotCreateAccountModalViewport (Result Dom.Error Dom.Viewport)
     | AccessTokenResponseReceived Account AccessTokenResponse
@@ -1019,6 +1048,7 @@ init req flags =
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
       , addAccountFormExpanded = False
+      , newAccountType = Nothing
       , createAccountConfirmation = Nothing
       , browsingHost = browsingHost
       , mainFrontendHost = browsingHost
@@ -1120,6 +1150,22 @@ updateHelp req msg model =
 
         PasswordVisibilityToggled ->
             ( updateForm (\form -> { form | passwordVisible = not form.passwordVisible }) model, Cmd.none )
+
+        ChooseLoginClicked ->
+            ( { model | newAccountType = Just LoginToAccount }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")
+            )
+
+        ChooseCreateAccountClicked ->
+            ( { model | newAccountType = Just CreateNewAccount }
+            , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")
+            )
+
+        NewAccountBackClicked ->
+            ( { model | newAccountType = Nothing }
+                |> updateForm (\f -> { f | password = "", passwordVisible = False })
+            , Cmd.none
+            )
 
         LoginClicked ->
             let
@@ -1278,6 +1324,7 @@ updateHelp req msg model =
                                             model.accountForm
                                     in
                                     { form | password = "", passwordVisible = False, status = Idle }
+                                , newAccountType = Nothing
                             }
                     in
                     ( newModel, persist newModel )
@@ -1879,6 +1926,7 @@ updateHelp req msg model =
             -- token's been rejected (see `GotPermissionsRefresh`).
             ( { model
                 | addAccountFormExpanded = True
+                , newAccountType = Just LoginToAccount
                 , accountForm =
                     { server = account.server
                     , username = account.username
@@ -2135,6 +2183,7 @@ hasInProgressAddAccountInput model =
     in
     (String.trim form.username /= "")
         || (String.trim form.password /= "")
+        || (model.newAccountType /= Nothing)
         || not (isKnownServer model form.server)
 
 
@@ -2255,11 +2304,13 @@ into the same message below the field (see `UI.elm`'s `formView`), so an old
 error (a failed login, "That server is already in your list.", etc.) needs
 clearing whenever the field changes for _any_ reason: typing
 (`ServerChanged`), tapping a known server's chip (`ServerChipClicked`), or
-picking a new main server (`MainServerSelected`).
+picking a new main server (`MainServerSelected`). Also resets
+`newAccountType` back to the Username-only step -- a Login/Create Account
+choice made for whatever server was previously named no longer applies.
 -}
 setServerField : String -> Model -> Model
 setServerField server model =
-    model
+    { model | newAccountType = Nothing }
         |> updateForm (\form -> { form | server = server, status = clearErrored form.status })
         |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
 

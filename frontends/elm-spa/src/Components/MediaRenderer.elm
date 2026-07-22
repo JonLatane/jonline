@@ -77,6 +77,7 @@ view sizing server maybeAccount onImageClicked media =
                 , src mediaUrl
                 , alt (Maybe.withDefault "" media.name)
                 , onClick (onImageClicked media.id)
+                , attribute "loading" "lazy"
                 ]
                 []
 
