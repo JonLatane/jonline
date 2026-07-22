@@ -1,8 +1,12 @@
 use diesel::*;
 // use diesel::internal::operators_macro::FieldAliasMapper;
-use tonic::Status;
+use diesel_full_text_search::{
+    configuration::TsConfigurationByName, to_tsquery_with_search_config, TsVectorExtensions,
+};
+use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
+use crate::logic::prefix_tsquery_text;
 use crate::marshaling::*;
 use crate::models;
 use crate::models::MEDIA_REFERENCE_COLUMNS;
@@ -27,15 +31,46 @@ pub fn get_users(
         request.to_owned().user_id,
     ) {
         (Some(user), Some(FollowRequests), _, _) => {
-            Ok(get_follow_requests(request.to_owned(), user, conn))
+            Ok(get_follow_requests(request.to_owned(), user, None, conn))
         }
+        (Some(user), Some(FollowRequestsTextSearch), _, _) => Ok(get_follow_requests(
+            request.to_owned(),
+            user,
+            Some(required_search_text(&request)?),
+            conn,
+        )),
         (None, Some(FollowRequests), _, _) => Ok(GetUsersResponse::default()),
-        (_, Some(Following), _, Some(_)) => get_following(request.to_owned(), user, conn),
-        (_, Some(Followers), _, Some(_)) => get_followers(request.to_owned(), user, conn),
-        (_, Some(Friends), _, Some(_)) => get_friends(request.to_owned(), user, conn),
+        (None, Some(FollowRequestsTextSearch), _, _) => Ok(GetUsersResponse::default()),
+        (_, Some(Following), _, Some(_)) => get_following(request.to_owned(), user, None, conn),
+        (_, Some(FollowingTextSearch), _, Some(_)) => get_following(
+            request.to_owned(),
+            user,
+            Some(required_search_text(&request)?),
+            conn,
+        ),
+        (_, Some(Followers), _, Some(_)) => get_followers(request.to_owned(), user, None, conn),
+        (_, Some(FollowersTextSearch), _, Some(_)) => get_followers(
+            request.to_owned(),
+            user,
+            Some(required_search_text(&request)?),
+            conn,
+        ),
+        (_, Some(Friends), _, Some(_)) => get_friends(request.to_owned(), user, None, conn),
+        (_, Some(FriendsTextSearch), _, Some(_)) => get_friends(
+            request.to_owned(),
+            user,
+            Some(required_search_text(&request)?),
+            conn,
+        ),
+        (_, Some(UsersTextSearch), _, _) => Ok(get_all_users(
+            request.to_owned(),
+            user,
+            Some(required_search_text(&request)?),
+            conn,
+        )),
         (_, _, Some(_), _) => Ok(get_by_username(request.to_owned(), user, conn)),
         (_, _, _, Some(_)) => get_by_user_id(request.to_owned(), user, conn),
-        _ => Ok(get_all_users(request.to_owned(), user, conn)),
+        _ => Ok(get_all_users(request.to_owned(), user, None, conn)),
     }?;
     // let response = match request.to_owned().username {
     //     Some(_) => get_by_username(request.to_owned(), user, conn),
@@ -53,9 +88,27 @@ pub fn get_users(
     Ok(response)
 }
 
+// `request.search_text`, trimmed and required non-empty - used by every `*_TEXT_SEARCH`
+// `UserListingType` (see `get_users`' dispatch match). Also rejects search_text that
+// `prefix_tsquery_text` can't turn into anything (e.g. all punctuation), so every downstream
+// caller can assume `prefix_tsquery_text` on the value returned here is always non-empty.
+fn required_search_text(request: &GetUsersRequest) -> Result<&str, Status> {
+    let search_text = request
+        .search_text
+        .as_deref()
+        .map(str::trim)
+        .filter(|search_text| !search_text.is_empty())
+        .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?;
+    if prefix_tsquery_text(search_text).is_empty() {
+        return Err(Status::new(Code::InvalidArgument, "search_text_required"));
+    }
+    Ok(search_text)
+}
+
 fn get_all_users(
     request: GetUsersRequest,
     user: &Option<&models::User>,
+    search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let visibilities = match user {
@@ -70,7 +123,7 @@ fn get_all_users(
     let target_follows_user_id = target_follows.field(follows::user_id);
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
-    let users = users::table
+    let mut query = users::table
         .left_join(
             follows::table.on(follows::target_user_id
                 .eq(users::id)
@@ -85,7 +138,7 @@ fn get_all_users(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -98,6 +151,17 @@ fn get_all_users(
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
+        .into_boxed();
+
+    if let Some(search_text) = search_text {
+        let search_query = to_tsquery_with_search_config(
+            TsConfigurationByName("english"),
+            prefix_tsquery_text(search_text),
+        );
+        query = query.filter(users::search_text.matches(search_query));
+    }
+
+    let users = query
         .load::<(
             models::User,
             Option<models::Follow>,
@@ -125,6 +189,7 @@ fn get_all_users(
 fn get_follow_requests(
     request: GetUsersRequest,
     user: &models::User,
+    search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> GetUsersResponse {
     let target_follows = alias!(follows as target_follows);
@@ -133,7 +198,7 @@ fn get_follow_requests(
     let target_follows_target_user_moderation =
         target_follows.field(follows::target_user_moderation);
     let target_follows_columns = target_follows.fields(follows::all_columns);
-    let users = target_follows
+    let mut query = target_follows
         .inner_join(users::table.on(target_follows_user_id.eq(users::id)))
         .left_join(
             follows::table.on(follows::target_user_id
@@ -142,7 +207,7 @@ fn get_follow_requests(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns,
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -153,6 +218,17 @@ fn get_follow_requests(
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
+        .into_boxed();
+
+    if let Some(search_text) = search_text {
+        let search_query = to_tsquery_with_search_config(
+            TsConfigurationByName("english"),
+            prefix_tsquery_text(search_text),
+        );
+        query = query.filter(users::search_text.matches(search_query));
+    }
+
+    let users = query
         .load::<(
             models::User,
             Option<models::Follow>,
@@ -214,7 +290,7 @@ fn get_by_username(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -287,7 +363,7 @@ fn get_by_user_id(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -329,6 +405,7 @@ fn get_by_user_id(
 fn get_following(
     request: GetUsersRequest,
     user: &Option<&models::User>,
+    search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
@@ -351,7 +428,7 @@ fn get_following(
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
 
-    let users = relationship_follows
+    let mut query = relationship_follows
         .inner_join(users::table.on(relationship_follows_target_user_id.eq(users::id)))
         .left_join(
             follows::table.on(follows::target_user_id
@@ -367,7 +444,7 @@ fn get_following(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -382,6 +459,17 @@ fn get_following(
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
+        .into_boxed();
+
+    if let Some(search_text) = search_text {
+        let search_query = to_tsquery_with_search_config(
+            TsConfigurationByName("english"),
+            prefix_tsquery_text(search_text),
+        );
+        query = query.filter(users::search_text.matches(search_query));
+    }
+
+    let users = query
         .load::<(
             models::User,
             Option<models::Follow>,
@@ -410,6 +498,7 @@ fn get_following(
 fn get_followers(
     request: GetUsersRequest,
     user: &Option<&models::User>,
+    search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
@@ -432,7 +521,7 @@ fn get_followers(
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
 
-    let users = relationship_follows
+    let mut query = relationship_follows
         .inner_join(users::table.on(relationship_follows_user_id.eq(users::id)))
         .left_join(
             follows::table.on(follows::target_user_id
@@ -448,7 +537,7 @@ fn get_followers(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -463,6 +552,17 @@ fn get_followers(
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
+        .into_boxed();
+
+    if let Some(search_text) = search_text {
+        let search_query = to_tsquery_with_search_config(
+            TsConfigurationByName("english"),
+            prefix_tsquery_text(search_text),
+        );
+        query = query.filter(users::search_text.matches(search_query));
+    }
+
+    let users = query
         .load::<(
             models::User,
             Option<models::Follow>,
@@ -492,6 +592,7 @@ fn get_followers(
 fn get_friends(
     request: GetUsersRequest,
     user: &Option<&models::User>,
+    search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
     let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
@@ -524,7 +625,7 @@ fn get_friends(
     let target_follows_target_user_id = target_follows.field(follows::target_user_id);
     let target_follows_columns = target_follows.fields(follows::all_columns);
 
-    let users = following_relationship
+    let mut query = following_relationship
         .inner_join(users::table.on(following_relationship_target_user_id.eq(users::id)))
         .inner_join(follower_relationship.on(follower_relationship_user_id.eq(users::id)))
         .left_join(
@@ -541,7 +642,7 @@ fn get_friends(
         )
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -558,6 +659,17 @@ fn get_friends(
         .order(users::created_at.desc())
         .limit(PAGE_SIZE)
         .offset((request.page.unwrap_or(0) * 100).into())
+        .into_boxed();
+
+    if let Some(search_text) = search_text {
+        let search_query = to_tsquery_with_search_config(
+            TsConfigurationByName("english"),
+            prefix_tsquery_text(search_text),
+        );
+        query = query.filter(users::search_text.matches(search_query));
+    }
+
+    let users = query
         .load::<(
             models::User,
             Option<models::Follow>,

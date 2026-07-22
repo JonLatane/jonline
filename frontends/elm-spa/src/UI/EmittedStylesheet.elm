@@ -129,7 +129,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
     String.concat
         [ colorRule (withDescendants selector ".background-color-primary") theme.primaryColor theme.primaryTextColor
         , textColorRule (selector ++ ".background-color-primary:not(.navbar, .account-row) a") <|
-            if theme.primaryColor == theme.primaryLightColor then
+            if theme.primaryLuma > 0.55 then
                 theme.navDarkColor
 
             else

@@ -27,7 +27,7 @@ page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
         { init = init shared req
-        , update = update shared
+        , update = update shared req
         , view = view shared req
         , subscriptions = subscriptions
         }
@@ -71,8 +71,8 @@ fromShared sharedMsg =
     ResolverMsg (Resolver.fromShared sharedMsg)
 
 
-update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
-update shared msg model =
+update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
+update shared req msg model =
     case ( msg, model ) of
         ( ResolverMsg subMsg, Resolving resolverModel ) ->
             let
@@ -83,7 +83,7 @@ update shared msg model =
                 Resolver.Loaded user ->
                     let
                         ( listingModel, listingEffect ) =
-                            UsersPage.init shared (Just ( newResolver.targetHost, user, FRIENDS ))
+                            UsersPage.init shared (Just ( newResolver.targetHost, user, FRIENDS )) req.key req.url.path req.query
                     in
                     ( Listing listingModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map ListingMsg listingEffect ] )
 

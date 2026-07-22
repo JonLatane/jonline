@@ -194,7 +194,7 @@ type alias AccountForm =
     -- Whether the password field (see `UI.addAccountForm`) is currently
     -- rendered as plain text rather than masked -- toggled by its "show
     -- password" button (`PasswordVisibilityToggled`).
-    , passwordVisible : Bool
+    , showPasswordAsText : Bool
     }
 
 
@@ -1091,7 +1091,7 @@ emptyForm =
     , username = ""
     , password = ""
     , status = Idle
-    , passwordVisible = False
+    , showPasswordAsText = False
     }
 
 
@@ -1141,7 +1141,7 @@ updateHelp req msg model =
                 (\form ->
                     { form
                         | password = password
-                        , passwordVisible = form.passwordVisible && not (String.isEmpty password)
+                        , showPasswordAsText = form.showPasswordAsText && not (String.isEmpty password)
                     }
                 )
                 model
@@ -1149,7 +1149,7 @@ updateHelp req msg model =
             )
 
         PasswordVisibilityToggled ->
-            ( updateForm (\form -> { form | passwordVisible = not form.passwordVisible }) model, Cmd.none )
+            ( updateForm (\form -> { form | showPasswordAsText = not form.showPasswordAsText }) model, Cmd.none )
 
         ChooseLoginClicked ->
             ( { model | newAccountType = Just LoginToAccount }
@@ -1163,7 +1163,7 @@ updateHelp req msg model =
 
         NewAccountBackClicked ->
             ( { model | newAccountType = Nothing }
-                |> updateForm (\f -> { f | password = "", passwordVisible = False })
+                |> updateForm (\f -> { f | password = "", showPasswordAsText = False })
             , Cmd.none
             )
 
@@ -1323,7 +1323,7 @@ updateHelp req msg model =
                                         form =
                                             model.accountForm
                                     in
-                                    { form | password = "", passwordVisible = False, status = Idle }
+                                    { form | password = "", showPasswordAsText = False, status = Idle }
                                 , newAccountType = Nothing
                             }
                     in
@@ -1932,7 +1932,7 @@ updateHelp req msg model =
                     , username = account.username
                     , password = ""
                     , status = Idle
-                    , passwordVisible = False
+                    , showPasswordAsText = False
                     }
               }
             , Task.attempt (\_ -> NoOp) (Dom.focus "account-form-password")

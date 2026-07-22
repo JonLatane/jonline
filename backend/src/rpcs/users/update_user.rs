@@ -57,7 +57,7 @@ pub fn update_user(
     let transaction_result: Result<models::User, diesel::result::Error> = conn
         .transaction::<models::User, diesel::result::Error, _>(|conn| {
             let mut existing_user = users::table
-                .select(users::all_columns)
+                .select(models::USER_COLUMNS)
                 .filter(users::id.eq(user_db_id))
                 .first::<models::User>(conn)?;
             if admin || self_update {

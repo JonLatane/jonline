@@ -24,6 +24,11 @@ const UserListingType$json = {
     {'1': 'FRIENDS', '2': 2},
     {'1': 'FOLLOWERS', '2': 3},
     {'1': 'FOLLOW_REQUESTS', '2': 4},
+    {'1': 'USERS_TEXT_SEARCH', '2': 5},
+    {'1': 'FOLLOWERS_TEXT_SEARCH', '2': 6},
+    {'1': 'FOLLOWING_TEXT_SEARCH', '2': 7},
+    {'1': 'FRIENDS_TEXT_SEARCH', '2': 8},
+    {'1': 'FOLLOW_REQUESTS_TEXT_SEARCH', '2': 9},
     {'1': 'ADMINS', '2': 10},
   ],
 };
@@ -31,7 +36,10 @@ const UserListingType$json = {
 /// Descriptor for `UserListingType`. Decode as a `google.protobuf.EnumDescriptorProto`.
 final $typed_data.Uint8List userListingTypeDescriptor = $convert.base64Decode(
     'Cg9Vc2VyTGlzdGluZ1R5cGUSDAoIRVZFUllPTkUQABINCglGT0xMT1dJTkcQARILCgdGUklFTk'
-    'RTEAISDQoJRk9MTE9XRVJTEAMSEwoPRk9MTE9XX1JFUVVFU1RTEAQSCgoGQURNSU5TEAo=');
+    'RTEAISDQoJRk9MTE9XRVJTEAMSEwoPRk9MTE9XX1JFUVVFU1RTEAQSFQoRVVNFUlNfVEVYVF9T'
+    'RUFSQ0gQBRIZChVGT0xMT1dFUlNfVEVYVF9TRUFSQ0gQBhIZChVGT0xMT1dJTkdfVEVYVF9TRU'
+    'FSQ0gQBxIXChNGUklFTkRTX1RFWFRfU0VBUkNIEAgSHwobRk9MTE9XX1JFUVVFU1RTX1RFWFRf'
+    'U0VBUkNIEAkSCgoGQURNSU5TEAo=');
 
 @$core.Deprecated('Use userDescriptor instead')
 const User$json = {
@@ -492,7 +500,16 @@ const GetUsersRequest$json = {
       '10': 'userId',
       '17': true
     },
-    {'1': 'page', '3': 99, '4': 1, '5': 5, '9': 2, '10': 'page', '17': true},
+    {
+      '1': 'search_text',
+      '3': 3,
+      '4': 1,
+      '5': 9,
+      '9': 2,
+      '10': 'searchText',
+      '17': true
+    },
+    {'1': 'page', '3': 99, '4': 1, '5': 5, '9': 3, '10': 'page', '17': true},
     {
       '1': 'listing_type',
       '3': 100,
@@ -505,6 +522,7 @@ const GetUsersRequest$json = {
   '8': [
     {'1': '_username'},
     {'1': '_user_id'},
+    {'1': '_search_text'},
     {'1': '_page'},
   ],
 };
@@ -512,9 +530,10 @@ const GetUsersRequest$json = {
 /// Descriptor for `GetUsersRequest`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List getUsersRequestDescriptor = $convert.base64Decode(
     'Cg9HZXRVc2Vyc1JlcXVlc3QSHwoIdXNlcm5hbWUYASABKAlIAFIIdXNlcm5hbWWIAQESHAoHdX'
-    'Nlcl9pZBgCIAEoCUgBUgZ1c2VySWSIAQESFwoEcGFnZRhjIAEoBUgCUgRwYWdliAEBEjsKDGxp'
-    'c3RpbmdfdHlwZRhkIAEoDjIYLmpvbmxpbmUuVXNlckxpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZU'
-    'ILCglfdXNlcm5hbWVCCgoIX3VzZXJfaWRCBwoFX3BhZ2U=');
+    'Nlcl9pZBgCIAEoCUgBUgZ1c2VySWSIAQESJAoLc2VhcmNoX3RleHQYAyABKAlIAlIKc2VhcmNo'
+    'VGV4dIgBARIXCgRwYWdlGGMgASgFSANSBHBhZ2WIAQESOwoMbGlzdGluZ190eXBlGGQgASgOMh'
+    'guam9ubGluZS5Vc2VyTGlzdGluZ1R5cGVSC2xpc3RpbmdUeXBlQgsKCV91c2VybmFtZUIKCghf'
+    'dXNlcl9pZEIOCgxfc2VhcmNoX3RleHRCBwoFX3BhZ2U=');
 
 @$core.Deprecated('Use getUsersResponseDescriptor instead')
 const GetUsersResponse$json = {

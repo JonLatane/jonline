@@ -1490,76 +1490,80 @@ addAccountForm shared currentRoute =
 
           else
             text ""
-        , case newAccountType of
-            Just accountType ->
-                div [ class "account-form-field password-field" ]
-                    [ input
-                        [ id "account-form-password"
-                        , type_
-                            (if form.passwordVisible then
-                                "text"
-
-                             else
-                                "password"
-                            )
-                        , name
-                            (if accountType == AccountsPanel.CreateNewAccount then
-                                "new-password"
-
-                             else
-                                "current-password"
-                            )
-
-                        -- "new-password" for Create Account (offers a
-                        -- browser-generated password, and won't try to
-                        -- match this against an existing saved one);
-                        -- "current-password" for Log In (offers the
-                        -- matching saved password, if any). Only knowable
-                        -- once `newAccountType` says which flow this is --
-                        -- see its own doc.
-                        , attribute "autocomplete"
-                            (if accountType == AccountsPanel.CreateNewAccount then
-                                "new-password"
-
-                             else
-                                "current-password"
-                            )
-                        , placeholder "Password"
-                        , value form.password
-                        , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
-                        , onEnter (Shared.AccountsPanelMsg submitMsg)
-                        , disabled accountFieldsDisabled
-                        ]
-                        []
-                    , if String.isEmpty form.password then
-                        text ""
-
-                      else
-                        button
-                            [ type_ "button"
-                            , classList
-                                [ ( "password-toggle-button", True )
-                                , ( "revealed", form.passwordVisible )
-                                ]
-                            , onClick (Shared.AccountsPanelMsg AccountsPanel.PasswordVisibilityToggled)
-                            , disabled accountFieldsDisabled
-                            , title
-                                (if form.passwordVisible then
-                                    "Hide password"
+        , if showUsernamePasswordFields then
+            case newAccountType of
+                Just accountType ->
+                    div [ class "account-form-field password-field" ]
+                        [ input
+                            [ id "account-form-password"
+                            , type_
+                                (if form.showPasswordAsText then
+                                    "text"
 
                                  else
-                                    "Show password"
+                                    "password"
                                 )
-                            ]
-                            [ text "👁" ]
-                    , fieldClearButton accountFieldsDisabled
-                        (not (String.isEmpty form.password))
-                        (AccountsPanel.PasswordChanged "")
-                        "Clear password"
-                    ]
+                            , name
+                                (if accountType == AccountsPanel.CreateNewAccount then
+                                    "new-password"
 
-            Nothing ->
-                text ""
+                                 else
+                                    "current-password"
+                                )
+
+                            -- "new-password" for Create Account (offers a
+                            -- browser-generated password, and won't try to
+                            -- match this against an existing saved one);
+                            -- "current-password" for Log In (offers the
+                            -- matching saved password, if any). Only knowable
+                            -- once `newAccountType` says which flow this is --
+                            -- see its own doc.
+                            , attribute "autocomplete"
+                                (if accountType == AccountsPanel.CreateNewAccount then
+                                    "new-password"
+
+                                 else
+                                    "current-password"
+                                )
+                            , placeholder "Password"
+                            , value form.password
+                            , onInput (AccountsPanel.PasswordChanged >> Shared.AccountsPanelMsg)
+                            , onEnter (Shared.AccountsPanelMsg submitMsg)
+                            , disabled accountFieldsDisabled
+                            ]
+                            []
+                        , if String.isEmpty form.password then
+                            text ""
+
+                          else
+                            button
+                                [ type_ "button"
+                                , classList
+                                    [ ( "password-toggle-button", True )
+                                    , ( "revealed", form.showPasswordAsText )
+                                    ]
+                                , onClick (Shared.AccountsPanelMsg AccountsPanel.PasswordVisibilityToggled)
+                                , disabled accountFieldsDisabled
+                                , title
+                                    (if form.showPasswordAsText then
+                                        "Hide password"
+
+                                     else
+                                        "Show password"
+                                    )
+                                ]
+                                [ text "👁" ]
+                        , fieldClearButton accountFieldsDisabled
+                            (not (String.isEmpty form.password))
+                            (AccountsPanel.PasswordChanged "")
+                            "Clear password"
+                        ]
+
+                Nothing ->
+                    text ""
+
+          else
+            text ""
         , if showUsernamePasswordFields then
             div [ class "account-form-buttons" ]
                 (case newAccountType of

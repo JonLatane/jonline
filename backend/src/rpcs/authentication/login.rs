@@ -26,9 +26,11 @@ pub fn login(
     );
     let user_result = match &request.user_id {
         Some(user_id) if user_id.len() > 0 => users
+            .select(models::USER_COLUMNS)
             .filter(id.eq(user_id.to_db_id_or_err("user_id")?))
             .first::<models::User>(conn),
         _ => users
+            .select(models::USER_COLUMNS)
             .filter(username.eq(&request.username))
             .first::<models::User>(conn),
     };

@@ -40,7 +40,7 @@ pub fn main() {
     log::info!("Connecting to DB...");
     let mut conn = db_connection::establish_connection();
     let mut user = match users::table
-        .select(users::all_columns)
+        .select(jonline::models::USER_COLUMNS)
         .filter(users::username.eq(username))
         .first::<jonline::models::User>(&mut conn)
     {
@@ -76,7 +76,10 @@ pub fn main() {
     }
     log::info!("Updated permissions: {:?}", perms);
     user.permissions = perms.into();
-    user.save_changes::<jonline::models::User>(&mut conn)
+    diesel::update(users::table.filter(users::id.eq(user.id)))
+        .set(&user)
+        .returning(jonline::models::USER_COLUMNS)
+        .get_result::<jonline::models::User>(&mut conn)
         .unwrap();
     log::info!("Updated user {}.", username);
 }

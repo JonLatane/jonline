@@ -51,12 +51,14 @@ type alias ServerTheme =
     , primaryLightColor : String
     , primaryBgColor : String
     , primaryAnchorColor : String
+    , primaryLuma : Float
     , navColor : String
     , navTextColor : String
     , navDarkColor : String
     , navLightColor : String
     , navBgColor : String
     , navAnchorColor : String
+    , navLuma : Float
     , textColor : String
     , backgroundColor : String
     , transparentBackgroundColor : String
@@ -96,7 +98,7 @@ colorMetaFromRgb rgb =
             lumaOfRgb rgb
 
         isDark =
-            luma > 0.55
+            luma > 0.5
     in
     if isDark then
         { color = color
@@ -139,6 +141,7 @@ fromColorMetas darkMode primary nav =
 
         else
             primary.lightColor
+    , primaryLuma = primary.luma
     , navColor = nav.color
     , navTextColor = nav.textColor
     , navDarkColor = nav.darkColor
@@ -155,6 +158,7 @@ fromColorMetas darkMode primary nav =
 
         else
             nav.lightColor
+    , navLuma = nav.luma
     , textColor =
         if darkMode then
             "#eaeaea"

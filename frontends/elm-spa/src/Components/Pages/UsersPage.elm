@@ -28,14 +28,18 @@ around, so that complexity isn't needed here.
 
 -}
 
+import Browser.Navigation
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
 import Components.Users.FollowStatusAndButton as FollowStatusAndButton
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, div, h2, p, text)
-import Html.Attributes exposing (class, href)
+import Html exposing (Html, a, button, div, h2, input, p, text)
+import Html.Attributes exposing (class, href, placeholder, title, type_, value)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Json.Decode as Decode
+import Process
 import Proto.Jonline exposing (GetUsersResponse, User)
 import Proto.Jonline.UserListingType exposing (UserListingType(..))
 import Shared
@@ -43,6 +47,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Task
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
+import Url.Builder
 
 
 
@@ -78,12 +83,33 @@ type alias Model =
     -- yet) are treated as `FollowStatusAndButton.init`, same "absent means
     -- default" convention as `Components.Pages.PostsPage`'s per-post state.
     , followStatusAndButtons : Dict String FollowStatusAndButton.Model
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , searchText : String
+    , searchGeneration : Int
     }
 
 
-init : Shared.Model -> Maybe ( String, User, UserListingType ) -> ( Model, Effect Msg )
-init shared target =
-    fetchNewServers shared { usersByServer = Dict.empty, target = target, followStatusAndButtons = Dict.empty }
+{-| `navKey`/`path`, from the calling page's own `Request`, are what let
+`searchRowView`'s search box persist `search_text` as a URL query param (see
+`pushSearchUrl`) without this module needing to know which page-specific
+`Gen.Params.*` type that `Request` is actually parameterized over -- mirrors
+`Components.Pages.PostsPage.init` exactly, just without a context param (there
+being no `Users` equivalent of `PostContext` to choose between). `query`,
+that same `Request`'s already-parsed `.query`, seeds `searchText` back out of
+the URL on load, so a shared/reloaded link reproduces the same search.
+-}
+init : Shared.Model -> Maybe ( String, User, UserListingType ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
+init shared target navKey path query =
+    fetchNewServers shared
+        { usersByServer = Dict.empty
+        , target = target
+        , followStatusAndButtons = Dict.empty
+        , navKey = navKey
+        , path = path
+        , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
+        , searchGeneration = 0
+        }
 
 
 {-| Which servers this listing should ever fetch from: every enabled server,
@@ -128,8 +154,44 @@ fetchServerEffect shared model server =
         )
         (model.target |> Maybe.map (\( _, user, _ ) -> user.id))
         (model.target |> Maybe.map (\( _, _, listingType ) -> listingType) |> Maybe.withDefault EVERYONE)
+        model.searchText
         |> Task.attempt (GotServerUsers server.frontendHost)
         |> Effect.fromCmd
+
+
+{-| Fetches `serversToFetch` (marking each `Loading` first) using the current
+`model.searchText`, and drops any already-fetched server that's no longer a
+`candidateServers` member -- shared by `fetchNewServers` (which only passes
+the servers that actually need it) and `applySearchChange` (which always
+passes every `candidateServers` member, since a changed search must re-fetch
+everything regardless of whether that server's acting account also happens to
+have changed) -- mirrors `Components.Pages.PostsPage.refetchServers` exactly.
+-}
+refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
+refetchServers shared model serversToFetch =
+    let
+        servers =
+            candidateServers shared model
+
+        currentAccountId server =
+            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                |> Maybe.map AccountsPanel.accountId
+
+        fetchEffect server =
+            fetchServerEffect shared model server
+
+        prunedUsersByServer =
+            Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
+    in
+    ( { model
+        | usersByServer =
+            List.foldl
+                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
+                prunedUsersByServer
+                serversToFetch
+      }
+    , Effect.batch (List.map fetchEffect serversToFetch)
+    )
 
 
 {-| See `Components.Pages.PostsPage.fetchNewServers`'s doc comment -- same
@@ -158,22 +220,44 @@ fetchNewServers shared model =
                             Just feed ->
                                 feed.accountId /= currentAccountId server
                     )
-
-        fetchEffect server =
-            fetchServerEffect shared model server
-
-        prunedUsersByServer =
-            Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
     in
-    ( { model
-        | usersByServer =
-            List.foldl
-                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
-                prunedUsersByServer
-                serversToFetch
-      }
-    , Effect.batch (List.map fetchEffect serversToFetch)
-    )
+    refetchServers shared model serversToFetch
+
+
+{-| Re-fetches every `candidateServers` member (unconditionally -- unlike
+`fetchNewServers`, a changed search has to override every already-Loaded
+feed, not just servers whose acting account changed) and persists the new
+`search_text` to the URL -- the single path `SearchDebounceElapsed` and
+`ClearSearchClicked` both funnel through. Mirrors
+`Components.Pages.PostsPage.applySearchChange` exactly.
+-}
+applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
+applySearchChange shared model =
+    let
+        ( refetchedModel, refetchEffect ) =
+            refetchServers shared model (candidateServers shared model)
+    in
+    ( refetchedModel, Effect.batch [ refetchEffect, pushSearchUrl refetchedModel ] )
+
+
+{-| Persists `model.searchText` to the URL as a `search_text` query param, via
+`replaceUrl` (not `pushUrl` -- editing the search box shouldn't spam browser
+history with one entry per debounce fire). Omitted entirely when blank, so
+the common case keeps a clean URL. Mirrors
+`Components.Pages.PostsPage.pushSearchUrl`, just without a `context` param.
+-}
+pushSearchUrl : Model -> Effect Msg
+pushSearchUrl model =
+    let
+        searchTextParam =
+            if String.isEmpty (String.trim model.searchText) then
+                []
+
+            else
+                [ Url.Builder.string "search_text" model.searchText ]
+    in
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery searchTextParam)
+        |> Effect.fromCmd
 
 
 
@@ -185,6 +269,9 @@ type Msg
     | Poll
     | SharedMsg Shared.Msg
     | FollowStatusAndButtonMsg String FollowStatusAndButton.Msg
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ClearSearchClicked
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -273,6 +360,29 @@ update shared msg model =
                 Nothing ->
                     ( model, Effect.none )
 
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 500
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked) already bumped searchGeneration past this
+                -- timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
@@ -287,8 +397,63 @@ view : Shared.Model -> Model -> Html Msg
 view shared model =
     div []
         [ targetHeadingView shared model.target
+        , searchRowView model
         , usersListView shared model
         ]
+
+
+{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) --
+mirrors `Components.Pages.PostsPage.searchRowView`, just without a context
+chooser (there's no `Users` equivalent of `PostContext` to pick between), and
+reusing that same module's `.posts-search-row`/`.posts-search-field`/
+`.posts-search-input`/`.field-clear-button` CSS classes -- already shared
+across Posts/Users pages (see `targetHeadingView`'s own reuse of
+`.posts-page-heading` below), so no new CSS is needed here.
+-}
+searchRowView : Model -> Html Msg
+searchRowView model =
+    div [ class "posts-search-row" ]
+        [ div [ class "posts-search-field" ]
+            [ input
+                [ type_ "text"
+                , class "posts-search-input"
+                , placeholder "Search people..."
+                , value model.searchText
+                , onInput SearchTextChanged
+                , onEscape ClearSearchClicked
+                ]
+                []
+            , if String.isEmpty model.searchText then
+                text ""
+
+              else
+                button
+                    [ type_ "button"
+                    , class "field-clear-button"
+                    , onClick ClearSearchClicked
+                    , title "Clear search"
+                    ]
+                    [ text "╳" ]
+            ]
+        ]
+
+
+{-| Fires `msg` (and suppresses the key's default effect) when Escape is
+pressed in a text input -- mirrors `Components.Pages.PostsPage.onEscape`.
+-}
+onEscape : msg -> Html.Attribute msg
+onEscape msg =
+    preventDefaultOn "keydown"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Escape" then
+                        Decode.succeed ( msg, True )
+
+                    else
+                        Decode.fail "Not the Escape key"
+                )
+        )
 
 
 {-| "Following"/"Followers"/"Friends" alone once there's a `target` to filter

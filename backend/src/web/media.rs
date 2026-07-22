@@ -243,6 +243,7 @@ fn get_auth_user(
     let user: models::User = match user_id {
         Err(status) => return Err(status),
         Ok(user_id) => schema::users::table
+            .select(models::USER_COLUMNS)
             .filter(users::id.eq(user_id))
             .first::<models::User>(conn)
             .unwrap(),

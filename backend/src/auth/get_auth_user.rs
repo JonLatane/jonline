@@ -44,6 +44,7 @@ pub fn get_auth_user<T>(
     let user_id = get_auth_user_id(request, conn);
     match user_id {
         Ok(Some(user_id)) => Ok(schema::users::table
+            .select(models::USER_COLUMNS)
             .filter(users::id.eq(user_id))
             .first::<models::User>(conn)
             .ok()),

@@ -18,7 +18,7 @@ pub fn create_follow(
         validate_permission(&Some(user), Permission::Admin)?;
     }
     let target_user = users::table
-        .select(users::all_columns)
+        .select(models::USER_COLUMNS)
         .filter(users::id.eq(request.target_user_id.to_db_id_or_err("target_user_id")?))
         .first::<models::User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "target_user_not_found"))?;

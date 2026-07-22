@@ -49,6 +49,7 @@ pub fn create_account(
             moderation.eq(server_configuration.people_settings.as_ref().unwrap().default_moderation.to_string_moderation()),
             visibility.eq(server_configuration.people_settings.unwrap().default_visibility.to_string_visibility()),
         ))
+        .returning(models::USER_COLUMNS)
         .get_result::<models::User>(conn);
 
     let result = match insert_result {

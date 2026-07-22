@@ -263,6 +263,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::TsVector;
+
     users (id) {
         id -> Int8,
         username -> Varchar,
@@ -284,6 +287,7 @@ diesel::table! {
         response_count -> Int4,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        search_text -> TsVector,
     }
 }
 

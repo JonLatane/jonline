@@ -92,7 +92,6 @@
   margin-top: 1.5rem;
 }
 
-.server-details-admin-list,
 .server-details-permission-list,
 .server-details-federated-servers {
   list-style: none;
@@ -100,10 +99,15 @@
   margin: 0.5rem 0 0;
 }
 
-.server-details-admin-list li,
 .server-details-permission-list li {
   padding: 0.2rem 0;
   border-bottom: 1px solid var(--border);
+}
+
+/* Admins are now `Users.userCard`s (see `ServerInformationPage.adminCardView`)
+   inside a plain `.users-list` -- see users.css for that class's own rules. */
+.server-details-admins .users-list {
+  margin-top: 0.5rem;
 }
 
 .server-details-color-row {

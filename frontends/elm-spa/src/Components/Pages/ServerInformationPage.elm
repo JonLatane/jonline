@@ -463,7 +463,7 @@ aboutTab shared model server =
 
             Nothing ->
                 text ""
-        , adminsView model.adminsStatus
+        , adminsView shared server model.adminsStatus
         ]
 
 
@@ -516,8 +516,8 @@ nameView name renameStatus maybeAdminAccount =
             ]
 
 
-adminsView : AdminsStatus -> Html Msg
-adminsView status =
+adminsView : Shared.Model -> AccountsPanel.Server -> AdminsStatus -> Html Msg
+adminsView shared server status =
     div [ class "server-details-admins" ]
         [ h3 [] [ text "Admins" ]
         , case status of
@@ -534,9 +534,24 @@ adminsView status =
                 p [] [ text "No admins found." ]
 
             AdminsLoaded admins ->
-                ul [ class "server-details-admin-list" ]
-                    (List.map (\user -> li [] [ text (Users.displayName user) ]) admins)
+                div [ class "users-list" ] (List.map (adminCardView shared server) admins)
         ]
+
+
+{-| One admin's `Users.userCard` -- links to that admin's profile (same card
+used by `Components.Pages.UsersPage`'s People/Following/Followers/Friends
+listings), with no follow-status/button slot (`text ""`) since this page is
+otherwise entirely read-only (see the module doc) and doesn't track any
+per-card `FollowStatusAndButton.Model` state to back one.
+-}
+adminCardView : Shared.Model -> AccountsPanel.Server -> User -> Html Msg
+adminCardView shared server user =
+    Users.userCard shared.basePath
+        shared.accountsPanel.mainFrontendHost
+        server
+        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost)
+        (text "")
+        user
 
 
 
