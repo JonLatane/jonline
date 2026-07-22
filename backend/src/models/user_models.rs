@@ -8,7 +8,7 @@ use crate::schema::{users, follows};
 
 pub fn get_user(user_id: i64, conn: &mut PgPooledConnection,) -> Result<User, Status> {
     users::table
-        .select(users::all_columns)
+        .select(USER_COLUMNS)
         .filter(users::id.eq(user_id))
         .first::<User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
@@ -45,6 +45,53 @@ pub struct User {
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
 }
+
+/// Explicit column list for `users`, excluding `search_text` (a generated tsvector used only for
+/// full-text search filtering/indexing - it has no corresponding field on `User` since it's never
+/// read back into application code, mirroring `post_models::POST_COLUMNS`).
+pub const USER_COLUMNS: (
+    users::id,
+    users::username,
+    users::password_salted_hash,
+    users::real_name,
+    users::email,
+    users::phone,
+    users::permissions,
+    users::avatar_media_id,
+    users::bio,
+    users::visibility,
+    users::moderation,
+    users::default_follow_moderation,
+    users::follower_count,
+    users::following_count,
+    users::group_count,
+    users::post_count,
+    users::event_count,
+    users::response_count,
+    users::created_at,
+    users::updated_at,
+) = (
+    users::id,
+    users::username,
+    users::password_salted_hash,
+    users::real_name,
+    users::email,
+    users::phone,
+    users::permissions,
+    users::avatar_media_id,
+    users::bio,
+    users::visibility,
+    users::moderation,
+    users::default_follow_moderation,
+    users::follower_count,
+    users::following_count,
+    users::group_count,
+    users::post_count,
+    users::event_count,
+    users::response_count,
+    users::created_at,
+    users::updated_at,
+);
 
 pub const AUTHOR_COLUMNS: (
     users::id,

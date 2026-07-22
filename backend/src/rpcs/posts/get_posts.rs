@@ -2,8 +2,7 @@ use std::collections::HashMap;
 
 use diesel::*;
 use diesel_full_text_search::{
-    configuration::TsConfigurationByName, websearch_to_tsquery_with_search_config,
-    TsVectorExtensions,
+    configuration::TsConfigurationByName, to_tsquery_with_search_config, TsVectorExtensions,
 };
 use tonic::{Code, Status};
 
@@ -185,13 +184,18 @@ fn get_search_posts(
         .map(str::trim)
         .filter(|search_text| !search_text.is_empty())
         .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?;
+    let prefix_query_text = prefix_tsquery_text(search_text);
+    if prefix_query_text.is_empty() {
+        return Err(Status::new(Code::InvalidArgument, "search_text_required"));
+    }
     let author_user_id = request
         .author_user_id
         .as_ref()
         .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
         .transpose()?;
 
-    let search_query = websearch_to_tsquery_with_search_config(TsConfigurationByName("english"), search_text);
+    // Prefix (not just whole/stemmed lexeme) matching - see `prefix_tsquery_text`'s doc comment.
+    let search_query = to_tsquery_with_search_config(TsConfigurationByName("english"), prefix_query_text);
 
     let mut query = query_visible_posts!(user)
         .filter(posts::context.eq(request.context().as_str_name()))

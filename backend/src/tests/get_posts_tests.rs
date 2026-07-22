@@ -513,6 +513,29 @@ mod text_search {
         });
     }
 
+    /// `search_text` matches by tsquery *prefix* (Postgres's `:*` operator - see
+    /// `crate::logic::prefix_tsquery_text`), not just a whole/stemmed lexeme - "zzyzxauth" should
+    /// find a "zzyzxauthor2"-authored post too, not just an exact "zzyzxauthor2" username.
+    #[test]
+    fn matches_author_username_prefix() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "zzyzxauthor2");
+            let post = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+
+            let response = search(conn, Some("zzyzxauth"), None, &None)?;
+            assert_eq!(ids(&response), vec![post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
     #[test]
     fn scoped_by_author_user_id() {
         let mut conn = test_conn();

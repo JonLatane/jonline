@@ -1605,6 +1605,23 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
       Request to get one or more users by a variety of parameters.
       Supported parameters depend on <code>listing_type</code>.
     </p>
+    <ul>
+      <li><code>{listing_type: USERS_TEXT_SEARCH, search_text:}</code>
+        <ul>
+          <li>Full-text search across accessible users' username, real name, and bio.</li>
+        </ul>
+      </li>
+      <li>
+        <code>{listing_type: FOLLOWERS_TEXT_SEARCH, search_text:, user_id:}</code> (and the
+        <code>FOLLOWING_TEXT_SEARCH</code>/<code>FRIENDS_TEXT_SEARCH</code>/<code>FOLLOW_REQUESTS_TEXT_SEARCH</code> equivalents)
+        <ul>
+          <li>
+            Scopes that same full-text search to <code>user_id</code>'s followers/following/friends/follow
+            requests, same relationship rules as the non-search <code>listing_type</code>.
+          </li>
+        </ul>
+      </li>
+    </ul>
     <table>
       <thead>
         <tr>
@@ -1626,6 +1643,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>The user ID to search for.</td>
+        </tr>
+        <tr>
+          <td>search_text</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Full-text search query, matched against the user's username/real name/bio. Required (and only used) when <code>listing_type</code> is <code>USERS_TEXT_SEARCH</code> or one of the <code>*_TEXT_SEARCH</code> variants.</td>
         </tr>
         <tr>
           <td>page</td>
@@ -1929,12 +1952,20 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>Get users who have requested to follow the current user.</td>
         </tr>
         <tr>
-          <td>ADMINS</td>
-          <td>10</td>
-          <td>[TODO] Gets admins for a server.</td>
+          <td>USERS_TEXT_SEARCH</td>
+          <td>5</td>
+          <td>Returns users matching the full-text <code>search_text</code> query, scoped the same way <code>EVERYONE</code> is. Requires <code>search_text</code> parameter.</td>
         </tr>
       </tbody>
     </table>
+    <p>
+      Named <code>USERS_TEXT_SEARCH</code> (not the bare <code>TEXT_SEARCH</code> used by <code>PostListingType</code>) because proto3 enum values share a single namespace across the whole <code>jonline</code> package (C++ scoping rules) - <code>PostListingType</code> already claimed <code>TEXT_SEARCH</code>. |
+      | FOLLOWERS_TEXT_SEARCH | 6 | Scopes <code>TEXT_SEARCH</code> to users following <code>user_id</code>. Requires <code>search_text</code> and <code>user_id</code>. |
+      | FOLLOWING_TEXT_SEARCH | 7 | Scopes <code>TEXT_SEARCH</code> to users <code>user_id</code> follows. Requires <code>search_text</code> and <code>user_id</code>. |
+      | FRIENDS_TEXT_SEARCH | 8 | Scopes <code>TEXT_SEARCH</code> to <code>user_id</code>'s friends (mutual follows). Requires <code>search_text</code> and <code>user_id</code>. |
+      | FOLLOW_REQUESTS_TEXT_SEARCH | 9 | Scopes <code>TEXT_SEARCH</code> to the signed-in caller's pending follow requests. Requires <code>search_text</code>. |
+      | ADMINS | 10 | [TODO] Gets admins for a server. |
+    </p>
     <p><a name="media-proto"></a></p>
     <p align="right"><a href="#top">Top</a></p>
     <h2 id="mediaproto"><a class="anchor" aria-hidden="true" tabindex="-1" href="#mediaproto"><span class="octicon octicon-link"></span></a>media.proto</h2>

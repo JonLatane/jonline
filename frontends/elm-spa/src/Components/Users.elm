@@ -19,6 +19,7 @@ module Components.Users exposing
     , permissionFromText
     , permissionText
     , profileHref
+    , textSearchListingType
     , titleName
     , updateFollow
     , updateUser
@@ -46,7 +47,7 @@ import Proto.Jonline exposing (Author, FederatedAccount, Follow, GetUsersRespons
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.UserListingType exposing (UserListingType)
+import Proto.Jonline.UserListingType exposing (UserListingType(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
@@ -82,22 +83,69 @@ fetchUserByUsername accountsPanelModel maybeAccountServer username =
 {-| Fetches a `listingType` listing of users from `maybeAccountServer`'s
 server -- `EVERYONE` for `/people`, or `FOLLOWING`/`FOLLOWERS`/`FRIENDS`
 relative to `targetUserId` for a profile's own relationship pages (see
-`Components.Pages.UsersPage`). Note: as of this writing, the backend
-(`backend/src/rpcs/users/get_users.rs`) only special-cases `listingType` for
-`FOLLOWREQUESTS` targeting the _signed-in caller_; passing a `targetUserId`
-here takes priority server-side and just returns that one user regardless of
-`listingType`, so `FOLLOWING`/`FOLLOWERS`/`FRIENDS` don't yet return real
-relationship data for an arbitrary target user -- this is wired up to the
-request shape the backend is _meant_ to support once that's implemented.
+`Components.Pages.UsersPage`).
+
+`searchText`, if non-blank (leading/trailing whitespace is trimmed, same
+convention as `Components.Posts.fetchPosts`), switches `listingType` to its
+`textSearchListingType` counterpart and sends it as `search_text` --
+otherwise this is the plain (unscoped-by-search) listing `listingType` itself
+already was.
 -}
 fetchUserListing :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> Maybe String
     -> UserListingType
+    -> String
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse )
-fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType =
-    fetchUsers accountsPanelModel maybeAccountServer { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
+fetchUserListing accountsPanelModel maybeAccountServer targetUserId listingType searchText =
+    let
+        trimmedSearchText =
+            String.trim searchText
+
+        request =
+            if String.isEmpty trimmedSearchText then
+                { defaultGetUsersRequest | userId = targetUserId, listingType = listingType }
+
+            else
+                { defaultGetUsersRequest
+                    | userId = targetUserId
+                    , listingType = textSearchListingType listingType
+                    , searchText = Just trimmedSearchText
+                }
+    in
+    fetchUsers accountsPanelModel maybeAccountServer request
+
+
+{-| The `*_TEXT_SEARCH` counterpart of `listingType`, for `fetchUserListing`'s
+non-blank-`searchText` case: `EVERYONE` -> `USERSTEXTSEARCH` (named
+`USERS_TEXT_SEARCH`, not the bare `TEXT_SEARCH` used by `PostListingType`,
+since proto3 enum values share one namespace across the whole `jonline`
+package -- see `protos/users.proto`), and
+`FOLLOWING`/`FOLLOWERS`/`FRIENDS`/`FOLLOWREQUESTS` -> their own
+`*TEXTSEARCH` variant. Any other `UserListingType` is left as-is (there's no
+search-scoped equivalent to switch to).
+-}
+textSearchListingType : UserListingType -> UserListingType
+textSearchListingType listingType =
+    case listingType of
+        EVERYONE ->
+            USERSTEXTSEARCH
+
+        FOLLOWING ->
+            FOLLOWINGTEXTSEARCH
+
+        FOLLOWERS ->
+            FOLLOWERSTEXTSEARCH
+
+        FRIENDS ->
+            FRIENDSTEXTSEARCH
+
+        FOLLOWREQUESTS ->
+            FOLLOWREQUESTSTEXTSEARCH
+
+        other ->
+            other
 
 
 fetchUsers :

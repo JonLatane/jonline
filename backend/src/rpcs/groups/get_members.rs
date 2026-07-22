@@ -109,7 +109,7 @@ fn get_all_members(
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             memberships::all_columns,
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),
@@ -197,7 +197,7 @@ fn get_members_by_username(
         .left_join(media::table.on(media::id.nullable().eq(users::avatar_media_id.nullable())))
         .select((
             memberships::all_columns,
-            users::all_columns,
+            models::USER_COLUMNS,
             follows::all_columns.nullable(),
             target_follows_columns.nullable(),
             MEDIA_REFERENCE_COLUMNS.nullable(),

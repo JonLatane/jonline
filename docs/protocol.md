@@ -704,11 +704,19 @@ Model for a user&#39;s follow of another user.
 Request to get one or more users by a variety of parameters.
 Supported parameters depend on `listing_type`.
 
+- `{listing_type: USERS_TEXT_SEARCH, search_text:}`
+    - Full-text search across accessible users&#39; username, real name, and bio.
+- `{listing_type: FOLLOWERS_TEXT_SEARCH, search_text:, user_id:}` (and the
+  `FOLLOWING_TEXT_SEARCH`/`FRIENDS_TEXT_SEARCH`/`FOLLOW_REQUESTS_TEXT_SEARCH` equivalents)
+    - Scopes that same full-text search to `user_id`&#39;s followers/following/friends/follow
+      requests, same relationship rules as the non-search `listing_type`.
+
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | username | [string](#string) | optional | The username to search for. Substrings are supported. |
 | user_id | [string](#string) | optional | The user ID to search for. |
+| search_text | [string](#string) | optional | Full-text search query, matched against the user&#39;s username/real name/bio. Required (and only used) when `listing_type` is `USERS_TEXT_SEARCH` or one of the `*_TEXT_SEARCH` variants. |
 | page | [int32](#int32) | optional | The page of results to return. Pages are 0-indexed. |
 | listing_type | [UserListingType](#jonline-UserListingType) |  | The number of results to return per page. |
 
@@ -809,6 +817,13 @@ Ways of listing users.
 | FRIENDS | 2 | Get users who follow and are followed by the current user. |
 | FOLLOWERS | 3 | Get users who follow the current user. |
 | FOLLOW_REQUESTS | 4 | Get users who have requested to follow the current user. |
+| USERS_TEXT_SEARCH | 5 | Returns users matching the full-text `search_text` query, scoped the same way `EVERYONE` is. Requires `search_text` parameter.
+
+Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by `PostListingType`) because proto3 enum values share a single namespace across the whole `jonline` package (C&#43;&#43; scoping rules) - `PostListingType` already claimed `TEXT_SEARCH`. |
+| FOLLOWERS_TEXT_SEARCH | 6 | Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`. |
+| FOLLOWING_TEXT_SEARCH | 7 | Scopes `TEXT_SEARCH` to users `user_id` follows. Requires `search_text` and `user_id`. |
+| FRIENDS_TEXT_SEARCH | 8 | Scopes `TEXT_SEARCH` to `user_id`&#39;s friends (mutual follows). Requires `search_text` and `user_id`. |
+| FOLLOW_REQUESTS_TEXT_SEARCH | 9 | Scopes `TEXT_SEARCH` to the signed-in caller&#39;s pending follow requests. Requires `search_text`. |
 | ADMINS | 10 | [TODO] Gets admins for a server. |
 
 

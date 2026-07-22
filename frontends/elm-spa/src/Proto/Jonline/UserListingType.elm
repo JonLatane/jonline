@@ -39,6 +39,21 @@ fieldNumbersUserListingType n_ =
         FOLLOWREQUESTS ->
             4
 
+        USERSTEXTSEARCH ->
+            5
+
+        FOLLOWERSTEXTSEARCH ->
+            6
+
+        FOLLOWINGTEXTSEARCH ->
+            7
+
+        FRIENDSTEXTSEARCH ->
+            8
+
+        FOLLOWREQUESTSTEXTSEARCH ->
+            9
+
         ADMINS ->
             10
 
@@ -76,6 +91,21 @@ encodeUserListingType value =
             FOLLOWREQUESTS ->
                 4
 
+            USERSTEXTSEARCH ->
+                5
+
+            FOLLOWERSTEXTSEARCH ->
+                6
+
+            FOLLOWINGTEXTSEARCH ->
+                7
+
+            FRIENDSTEXTSEARCH ->
+                8
+
+            FOLLOWREQUESTSTEXTSEARCH ->
+                9
+
             ADMINS ->
                 10
 
@@ -107,6 +137,21 @@ decodeUserListingType =
                     4 ->
                         FOLLOWREQUESTS
 
+                    5 ->
+                        USERSTEXTSEARCH
+
+                    6 ->
+                        FOLLOWERSTEXTSEARCH
+
+                    7 ->
+                        FOLLOWINGTEXTSEARCH
+
+                    8 ->
+                        FRIENDSTEXTSEARCH
+
+                    9 ->
+                        FOLLOWREQUESTSTEXTSEARCH
+
                     10 ->
                         ADMINS
 
@@ -124,5 +169,10 @@ type UserListingType
     | FRIENDS
     | FOLLOWERS
     | FOLLOWREQUESTS
+    | USERSTEXTSEARCH
+    | FOLLOWERSTEXTSEARCH
+    | FOLLOWINGTEXTSEARCH
+    | FRIENDSTEXTSEARCH
+    | FOLLOWREQUESTSTEXTSEARCH
     | ADMINS
     | UserListingTypeUnrecognized_ Int

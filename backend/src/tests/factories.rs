@@ -53,8 +53,60 @@ pub fn create_user_with(
             users::visibility.eq(visibility.to_string_visibility()),
             users::moderation.eq(moderation.to_string_moderation()),
         ))
+        // users::search_text has no corresponding field on `models::User` (see USER_COLUMNS'
+        // doc comment), so a plain `RETURNING *` can't deserialize into it - the explicit
+        // column list is required here, same as create_post's own `POST_COLUMNS`.
+        .returning(models::USER_COLUMNS)
         .get_result::<models::User>(conn)
         .expect("failed to create test user")
+}
+
+/// Like `create_user_with`, but with distinct `real_name`/`bio` text (`create_user_with` always
+/// sets `real_name` equal to `username`, and leaves `bio` at its DB default of `""`) - for
+/// `get_users_tests`' `USERS_TEXT_SEARCH` specs, which need each of username/real_name/bio to be
+/// independently distinguishable/matchable.
+pub fn create_user_with_profile(
+    conn: &mut PgPooledConnection,
+    username: &str,
+    real_name: &str,
+    bio: &str,
+) -> models::User {
+    insert_into(users::table)
+        .values((
+            users::username.eq(username),
+            users::password_salted_hash.eq("test_hash"),
+            users::real_name.eq(real_name),
+            users::bio.eq(bio),
+            users::permissions.eq(vec![
+                Permission::ViewPosts,
+                Permission::CreatePosts,
+                Permission::ViewGroups,
+                Permission::FollowUsers,
+            ]
+            .to_json_permissions()),
+            users::visibility.eq(Visibility::GlobalPublic.to_string_visibility()),
+            users::moderation.eq(Moderation::Unmoderated.to_string_moderation()),
+        ))
+        .returning(models::USER_COLUMNS)
+        .get_result::<models::User>(conn)
+        .expect("failed to create test user")
+}
+
+/// Updates `user`'s `real_name`/`bio` - exercises `users.search_text`'s `GENERATED ALWAYS AS
+/// ... STORED` recompute-on-update behavior (see
+/// `2026-07-22-202628_add_search_text_to_users/up.sql`), for a spec confirming a changed
+/// real_name/bio actually changes what that user matches on.
+pub fn update_user_profile(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    real_name: &str,
+    bio: &str,
+) -> models::User {
+    diesel::update(users::table.filter(users::id.eq(user.id)))
+        .set((users::real_name.eq(real_name), users::bio.eq(bio)))
+        .returning(models::USER_COLUMNS)
+        .get_result::<models::User>(conn)
+        .expect("failed to update test user")
 }
 
 #[derive(Clone)]
@@ -177,17 +229,27 @@ pub fn create_group_post(
 }
 
 /// `user` is the follower; `target` is the account being followed (matches `follows.user_id` /
-/// `follows.target_user_id`).
+/// `follows.target_user_id`). Always `Approved` - see `create_follow_with_moderation` for a
+/// `Pending` one (e.g. for `get_users_tests`' `follow_requests_text_search` specs).
 pub fn create_follow(
     conn: &mut PgPooledConnection,
     user: &models::User,
     target: &models::User,
 ) -> models::Follow {
+    create_follow_with_moderation(conn, user, target, Moderation::Approved)
+}
+
+pub fn create_follow_with_moderation(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    target: &models::User,
+    target_user_moderation: Moderation,
+) -> models::Follow {
     insert_into(follows::table)
         .values(&models::NewFollow {
             user_id: user.id,
             target_user_id: target.id,
-            target_user_moderation: Moderation::Approved.to_string_moderation(),
+            target_user_moderation: target_user_moderation.to_string_moderation(),
         })
         .get_result::<models::Follow>(conn)
         .expect("failed to create test follow")

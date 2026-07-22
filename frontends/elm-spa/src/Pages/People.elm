@@ -21,7 +21,7 @@ import View exposing (View)
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
-        { init = init shared
+        { init = init shared req
         , update = UsersPage.update shared
         , view = view shared req
         , subscriptions = UsersPage.subscriptions
@@ -36,9 +36,9 @@ type alias Model =
     UsersPage.Model
 
 
-init : Shared.Model -> ( Model, Effect Msg )
-init shared =
-    UsersPage.init shared Nothing
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init shared req =
+    UsersPage.init shared Nothing req.key req.url.path req.query
 
 
 

@@ -3760,9 +3760,10 @@ type alias Proto__Jonline__GetUsersResponse =
 {-| The field numbers for the fields of `Proto__Jonline__GetUsersRequest`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersProto__Jonline__GetUsersRequest : { username : Int, userId : Int, page : Int, listingType : Int }
+fieldNumbersProto__Jonline__GetUsersRequest :
+    { username : Int, userId : Int, searchText : Int, page : Int, listingType : Int }
 fieldNumbersProto__Jonline__GetUsersRequest =
-    { username = 1, userId = 2, page = 99, listingType = 100 }
+    { username = 1, userId = 2, searchText = 3, page = 99, listingType = 100 }
 
 
 {-| Default for Proto__Jonline__GetUsersRequest. Should only be used for 'required' decoders as an initial value.
@@ -3772,6 +3773,7 @@ defaultProto__Jonline__GetUsersRequest : Proto__Jonline__GetUsersRequest
 defaultProto__Jonline__GetUsersRequest =
     { username = Nothing
     , userId = Nothing
+    , searchText = Nothing
     , page = Nothing
     , listingType = Proto.Jonline.UserListingType.defaultUserListingType
     }
@@ -3786,6 +3788,7 @@ decodeProto__Jonline__GetUsersRequest =
         defaultProto__Jonline__GetUsersRequest
         [ Protobuf.Decode.optional 1 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | username = a })
         , Protobuf.Decode.optional 2 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | userId = a })
+        , Protobuf.Decode.optional 3 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | searchText = a })
         , Protobuf.Decode.optional 99 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | page = a })
         , Protobuf.Decode.optional
             100
@@ -3802,6 +3805,7 @@ encodeProto__Jonline__GetUsersRequest value =
     Protobuf.Encode.message
         [ ( 1, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.username )
         , ( 2, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.userId )
+        , ( 3, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.searchText )
         , ( 99, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.page )
         , ( 100, Proto.Jonline.UserListingType.encodeUserListingType value.listingType )
         ]
@@ -3813,6 +3817,7 @@ encodeProto__Jonline__GetUsersRequest value =
 type alias Proto__Jonline__GetUsersRequest =
     { username : Maybe String
     , userId : Maybe String
+    , searchText : Maybe String
     , page : Maybe Int
     , listingType : Proto.Jonline.UserListingType.UserListingType
     }

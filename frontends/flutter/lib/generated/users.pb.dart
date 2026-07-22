@@ -881,16 +881,25 @@ class ContactMethod extends $pb.GeneratedMessage {
 
 /// Request to get one or more users by a variety of parameters.
 /// Supported parameters depend on `listing_type`.
+///
+/// - `{listing_type: USERS_TEXT_SEARCH, search_text:}`
+///     - Full-text search across accessible users' username, real name, and bio.
+/// - `{listing_type: FOLLOWERS_TEXT_SEARCH, search_text:, user_id:}` (and the
+///   `FOLLOWING_TEXT_SEARCH`/`FRIENDS_TEXT_SEARCH`/`FOLLOW_REQUESTS_TEXT_SEARCH` equivalents)
+///     - Scopes that same full-text search to `user_id`'s followers/following/friends/follow
+///       requests, same relationship rules as the non-search `listing_type`.
 class GetUsersRequest extends $pb.GeneratedMessage {
   factory GetUsersRequest({
     $core.String? username,
     $core.String? userId,
+    $core.String? searchText,
     $core.int? page,
     UserListingType? listingType,
   }) {
     final result = create();
     if (username != null) result.username = username;
     if (userId != null) result.userId = userId;
+    if (searchText != null) result.searchText = searchText;
     if (page != null) result.page = page;
     if (listingType != null) result.listingType = listingType;
     return result;
@@ -911,6 +920,7 @@ class GetUsersRequest extends $pb.GeneratedMessage {
       createEmptyInstance: create)
     ..aOS(1, _omitFieldNames ? '' : 'username')
     ..aOS(2, _omitFieldNames ? '' : 'userId')
+    ..aOS(3, _omitFieldNames ? '' : 'searchText')
     ..aI(99, _omitFieldNames ? '' : 'page')
     ..aE<UserListingType>(100, _omitFieldNames ? '' : 'listingType',
         enumValues: UserListingType.values)
@@ -955,23 +965,34 @@ class GetUsersRequest extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   void clearUserId() => $_clearField(2);
 
+  /// Full-text search query, matched against the user's username/real name/bio. Required (and
+  /// only used) when `listing_type` is `USERS_TEXT_SEARCH` or one of the `*_TEXT_SEARCH` variants.
+  @$pb.TagNumber(3)
+  $core.String get searchText => $_getSZ(2);
+  @$pb.TagNumber(3)
+  set searchText($core.String value) => $_setString(2, value);
+  @$pb.TagNumber(3)
+  $core.bool hasSearchText() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSearchText() => $_clearField(3);
+
   /// The page of results to return. Pages are 0-indexed.
   @$pb.TagNumber(99)
-  $core.int get page => $_getIZ(2);
+  $core.int get page => $_getIZ(3);
   @$pb.TagNumber(99)
-  set page($core.int value) => $_setSignedInt32(2, value);
+  set page($core.int value) => $_setSignedInt32(3, value);
   @$pb.TagNumber(99)
-  $core.bool hasPage() => $_has(2);
+  $core.bool hasPage() => $_has(3);
   @$pb.TagNumber(99)
   void clearPage() => $_clearField(99);
 
   /// The number of results to return per page.
   @$pb.TagNumber(100)
-  UserListingType get listingType => $_getN(3);
+  UserListingType get listingType => $_getN(4);
   @$pb.TagNumber(100)
   set listingType(UserListingType value) => $_setField(100, value);
   @$pb.TagNumber(100)
-  $core.bool hasListingType() => $_has(3);
+  $core.bool hasListingType() => $_has(4);
   @$pb.TagNumber(100)
   void clearListingType() => $_clearField(100);
 }

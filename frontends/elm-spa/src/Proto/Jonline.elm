@@ -2948,7 +2948,7 @@ type alias GetUsersResponse =
 {-| The field numbers for the fields of `GetUsersRequest`. This is mostly useful for internals, like documentation generation.
 
 -}
-fieldNumbersGetUsersRequest : { username : Int, userId : Int, page : Int, listingType : Int }
+fieldNumbersGetUsersRequest : { username : Int, userId : Int, searchText : Int, page : Int, listingType : Int }
 fieldNumbersGetUsersRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetUsersRequest
 
@@ -2979,6 +2979,13 @@ encodeGetUsersRequest =
 
 {-|  Request to get one or more users by a variety of parameters.
  Supported parameters depend on `listing_type`.
+
+ - `{listing_type: USERS_TEXT_SEARCH, search_text:}`
+     - Full-text search across accessible users' username, real name, and bio.
+ - `{listing_type: FOLLOWERS_TEXT_SEARCH, search_text:, user_id:}` (and the
+   `FOLLOWING_TEXT_SEARCH`/`FRIENDS_TEXT_SEARCH`/`FOLLOW_REQUESTS_TEXT_SEARCH` equivalents)
+     - Scopes that same full-text search to `user_id`'s followers/following/friends/follow
+       requests, same relationship rules as the non-search `listing_type`.
 
 
 ## Fields

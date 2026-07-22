@@ -33,6 +33,23 @@ export enum UserListingType {
   FOLLOWERS = 3,
   /** FOLLOW_REQUESTS - Get users who have requested to follow the current user. */
   FOLLOW_REQUESTS = 4,
+  /**
+   * USERS_TEXT_SEARCH - Returns users matching the full-text `search_text` query, scoped the same way
+   * `EVERYONE` is. Requires `search_text` parameter.
+   *
+   * Named `USERS_TEXT_SEARCH` (not the bare `TEXT_SEARCH` used by `PostListingType`) because
+   * proto3 enum values share a single namespace across the whole `jonline` package (C++ scoping
+   * rules) - `PostListingType` already claimed `TEXT_SEARCH`.
+   */
+  USERS_TEXT_SEARCH = 5,
+  /** FOLLOWERS_TEXT_SEARCH - Scopes `TEXT_SEARCH` to users following `user_id`. Requires `search_text` and `user_id`. */
+  FOLLOWERS_TEXT_SEARCH = 6,
+  /** FOLLOWING_TEXT_SEARCH - Scopes `TEXT_SEARCH` to users `user_id` follows. Requires `search_text` and `user_id`. */
+  FOLLOWING_TEXT_SEARCH = 7,
+  /** FRIENDS_TEXT_SEARCH - Scopes `TEXT_SEARCH` to `user_id`'s friends (mutual follows). Requires `search_text` and `user_id`. */
+  FRIENDS_TEXT_SEARCH = 8,
+  /** FOLLOW_REQUESTS_TEXT_SEARCH - Scopes `TEXT_SEARCH` to the signed-in caller's pending follow requests. Requires `search_text`. */
+  FOLLOW_REQUESTS_TEXT_SEARCH = 9,
   /** ADMINS - [TODO] Gets admins for a server. */
   ADMINS = 10,
   UNRECOGNIZED = -1,
@@ -55,6 +72,21 @@ export function userListingTypeFromJSON(object: any): UserListingType {
     case 4:
     case "FOLLOW_REQUESTS":
       return UserListingType.FOLLOW_REQUESTS;
+    case 5:
+    case "USERS_TEXT_SEARCH":
+      return UserListingType.USERS_TEXT_SEARCH;
+    case 6:
+    case "FOLLOWERS_TEXT_SEARCH":
+      return UserListingType.FOLLOWERS_TEXT_SEARCH;
+    case 7:
+    case "FOLLOWING_TEXT_SEARCH":
+      return UserListingType.FOLLOWING_TEXT_SEARCH;
+    case 8:
+    case "FRIENDS_TEXT_SEARCH":
+      return UserListingType.FRIENDS_TEXT_SEARCH;
+    case 9:
+    case "FOLLOW_REQUESTS_TEXT_SEARCH":
+      return UserListingType.FOLLOW_REQUESTS_TEXT_SEARCH;
     case 10:
     case "ADMINS":
       return UserListingType.ADMINS;
@@ -77,6 +109,16 @@ export function userListingTypeToJSON(object: UserListingType): string {
       return "FOLLOWERS";
     case UserListingType.FOLLOW_REQUESTS:
       return "FOLLOW_REQUESTS";
+    case UserListingType.USERS_TEXT_SEARCH:
+      return "USERS_TEXT_SEARCH";
+    case UserListingType.FOLLOWERS_TEXT_SEARCH:
+      return "FOLLOWERS_TEXT_SEARCH";
+    case UserListingType.FOLLOWING_TEXT_SEARCH:
+      return "FOLLOWING_TEXT_SEARCH";
+    case UserListingType.FRIENDS_TEXT_SEARCH:
+      return "FRIENDS_TEXT_SEARCH";
+    case UserListingType.FOLLOW_REQUESTS_TEXT_SEARCH:
+      return "FOLLOW_REQUESTS_TEXT_SEARCH";
     case UserListingType.ADMINS:
       return "ADMINS";
     case UserListingType.UNRECOGNIZED:
@@ -273,6 +315,13 @@ export interface ContactMethod {
 /**
  * Request to get one or more users by a variety of parameters.
  * Supported parameters depend on `listing_type`.
+ *
+ * - `{listing_type: USERS_TEXT_SEARCH, search_text:}`
+ *     - Full-text search across accessible users' username, real name, and bio.
+ * - `{listing_type: FOLLOWERS_TEXT_SEARCH, search_text:, user_id:}` (and the
+ *   `FOLLOWING_TEXT_SEARCH`/`FRIENDS_TEXT_SEARCH`/`FOLLOW_REQUESTS_TEXT_SEARCH` equivalents)
+ *     - Scopes that same full-text search to `user_id`'s followers/following/friends/follow
+ *       requests, same relationship rules as the non-search `listing_type`.
  */
 export interface GetUsersRequest {
   /** The username to search for. Substrings are supported. */
@@ -281,6 +330,13 @@ export interface GetUsersRequest {
     | undefined;
   /** The user ID to search for. */
   userId?:
+    | string
+    | undefined;
+  /**
+   * Full-text search query, matched against the user's username/real name/bio. Required (and
+   * only used) when `listing_type` is `USERS_TEXT_SEARCH` or one of the `*_TEXT_SEARCH` variants.
+   */
+  searchText?:
     | string
     | undefined;
   /** The page of results to return. Pages are 0-indexed. */
@@ -1339,7 +1395,7 @@ export const ContactMethod: MessageFns<ContactMethod> = {
 };
 
 function createBaseGetUsersRequest(): GetUsersRequest {
-  return { username: undefined, userId: undefined, page: undefined, listingType: 0 };
+  return { username: undefined, userId: undefined, searchText: undefined, page: undefined, listingType: 0 };
 }
 
 export const GetUsersRequest: MessageFns<GetUsersRequest> = {
@@ -1349,6 +1405,9 @@ export const GetUsersRequest: MessageFns<GetUsersRequest> = {
     }
     if (message.userId !== undefined) {
       writer.uint32(18).string(message.userId);
+    }
+    if (message.searchText !== undefined) {
+      writer.uint32(26).string(message.searchText);
     }
     if (message.page !== undefined) {
       writer.uint32(792).int32(message.page);
@@ -1382,6 +1441,14 @@ export const GetUsersRequest: MessageFns<GetUsersRequest> = {
           message.userId = reader.string();
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.searchText = reader.string();
+          continue;
+        }
         case 99: {
           if (tag !== 792) {
             break;
@@ -1411,6 +1478,7 @@ export const GetUsersRequest: MessageFns<GetUsersRequest> = {
     return {
       username: isSet(object.username) ? globalThis.String(object.username) : undefined,
       userId: isSet(object.userId) ? globalThis.String(object.userId) : undefined,
+      searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
       page: isSet(object.page) ? globalThis.Number(object.page) : undefined,
       listingType: isSet(object.listingType) ? userListingTypeFromJSON(object.listingType) : 0,
     };
@@ -1423,6 +1491,9 @@ export const GetUsersRequest: MessageFns<GetUsersRequest> = {
     }
     if (message.userId !== undefined) {
       obj.userId = message.userId;
+    }
+    if (message.searchText !== undefined) {
+      obj.searchText = message.searchText;
     }
     if (message.page !== undefined) {
       obj.page = Math.round(message.page);
@@ -1440,6 +1511,7 @@ export const GetUsersRequest: MessageFns<GetUsersRequest> = {
     const message = createBaseGetUsersRequest();
     message.username = object.username ?? undefined;
     message.userId = object.userId ?? undefined;
+    message.searchText = object.searchText ?? undefined;
     message.page = object.page ?? undefined;
     message.listingType = object.listingType ?? 0;
     return message;
