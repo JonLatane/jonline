@@ -37,6 +37,15 @@ local_db_reset: local_instances_stop local_db_drop local_db_create
 local_db_connect:
 	psql $(DATABASE_URL)
 
+# Separate DB `cargo test` runs specs against (see backend/src/tests/), so specs never touch
+# jonline_dev's data. Mirrors the local_db_* targets above; migrations are applied automatically
+# on first test run (see src/tests/factories.rs), not here.
+local_test_db_create:
+	createdb jonline_test
+local_test_db_drop:
+	dropdb jonline_test
+local_test_db_reset: local_test_db_drop local_test_db_create
+
 MAKEFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 MAKEFILE_DIR := $(dir $(MAKEFILE_PATH))
 

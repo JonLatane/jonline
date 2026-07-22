@@ -43,19 +43,7 @@ pub mod web_push;
 pub use marshaling::*;
 
 #[cfg(test)]
-mod tests {
-    use crate::marshaling::ToDbId;
-    use crate::marshaling::ToProtoId;
-
-    #[test]
-    fn id_conversions_work() {
-        assert_eq!(10, 10.to_proto_id().to_db_id().unwrap());
-        assert_eq!(
-            10000000000000,
-            (10000000000000 as i64).to_proto_id().to_db_id().unwrap()
-        );
-    }
-}
+mod tests;
 
 pub fn report_error<E: 'static>(err: E)
 where

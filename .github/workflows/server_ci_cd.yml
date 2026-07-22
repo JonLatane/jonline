@@ -410,6 +410,25 @@ jobs:
   test_rust_binaries:
     name: Test Rust Binaries
     runs-on: ubuntu-latest
+    # Backs the DB-backed specs under backend/src/tests/ (see src/tests/factories.rs), which run
+    # against TEST_DATABASE_URL - a dedicated `jonline_test` DB, analogous to a Rails dev/test
+    # split, kept separate from the `jonline_dev` DB used by a real running server. Migrations are
+    # applied automatically on first test run, so no separate migration step is needed here.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: jonline_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      TEST_DATABASE_URL: postgres://postgres@localhost:5432/jonline_test
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
