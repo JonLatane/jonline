@@ -739,10 +739,16 @@ mainServerTheme darkMode model =
 {-| `CompactServerLogo` is a single-line horizontal glyph+name, for tight
 spaces like the nav bar; `RegularServerLogo` stacks a larger glyph above a
 (possibly two-line) name, for the Accounts Panel's server chips.
+`HorizontalServerLogo` is `RegularServerLogo`'s same larger glyph/(possibly
+two-line) name, just laid out in a row (glyph left of the name) with the name
+left-aligned instead of stacked/centered -- for contexts with more width to
+spare than the nav bar but where a centered stack still reads oddly, e.g.
+`Shared.Breadcrumbs`' server overview panel.
 -}
 type ServerLogoSize
     = CompactServerLogo
     | RegularServerLogo
+    | HorizontalServerLogo
 
 
 serverNameAndLogo : Server -> ServerLogoSize -> Html msg
@@ -787,9 +793,16 @@ serverNameAndLogo server size =
         primaryLine =
             namePrefix
 
+        -- `RegularServerLogo` and `HorizontalServerLogo` share the same
+        -- larger glyph size and "large" primary-line/secondary-line logic --
+        -- they differ only in layout (stacked+centered vs. row+left-aligned,
+        -- both via `sizeClass` below), not sizing.
+        isBig =
+            size /= CompactServerLogo
+
         primaryClasses =
             "server-name-primary"
-                :: (if size == RegularServerLogo && largeName then
+                :: (if isBig && largeName then
                         [ "large" ]
 
                     else
@@ -799,7 +812,7 @@ serverNameAndLogo server size =
         secondaryLine =
             case nameSuffix of
                 Just suffix ->
-                    if size == RegularServerLogo && not largeName && suffix /= "" then
+                    if isBig && not largeName && suffix /= "" then
                         div [ class "server-name-secondary" ] [ text suffix ]
 
                     else
@@ -815,6 +828,9 @@ serverNameAndLogo server size =
 
                 RegularServerLogo ->
                     "regular"
+
+                HorizontalServerLogo ->
+                    "horizontal"
     in
     div [ class ("server-name-and-logo " ++ sizeClass) ]
         [ logo

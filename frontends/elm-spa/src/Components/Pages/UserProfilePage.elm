@@ -47,6 +47,7 @@ import Proto.Jonline exposing (FederatedAccount, User)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.MarkdownPanel as MarkdownPanel
@@ -137,16 +138,19 @@ init shared pageIsSecure targetHost lookup =
     let
         ( resolverModel, resolverEffect ) =
             Resolver.init shared targetHost lookup
+
+        model =
+            { resolver = resolverModel
+            , connectStatus = ServerDependentView.NotConnected
+            , pageIsSecure = pageIsSecure
+            , federatedProfiles = Dict.empty
+            , realNameEdit = Nothing
+            , permissionsEdit = Nothing
+            , federatedProfilesEdit = Nothing
+            , followStatusAndButton = FollowStatusAndButton.init
+            }
     in
-    ( { resolver = resolverModel
-      , connectStatus = ServerDependentView.NotConnected
-      , pageIsSecure = pageIsSecure
-      , federatedProfiles = Dict.empty
-      , realNameEdit = Nothing
-      , permissionsEdit = Nothing
-      , federatedProfilesEdit = Nothing
-      , followStatusAndButton = FollowStatusAndButton.init
-      }
+    ( model
       -- Closes the Accounts Panel if it happened to be open -- landing on a
       -- profile page always shows the info an open panel would otherwise
       -- duplicate (see `Components.Pages.ServerInformationPage.init`, same
@@ -154,6 +158,7 @@ init shared pageIsSecure targetHost lookup =
     , Effect.batch
         [ Effect.map ResolverMsg resolverEffect
         , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , setBreadcrumbsHost shared model
         ]
     )
 
@@ -232,8 +237,40 @@ accountsPanelEffect maybeAccountsPanelMsg =
         |> Maybe.withDefault Effect.none
 
 
+{-| `update`, plus keeping `Shared.Breadcrumbs` pointed at this profile's own
+`FromServerHost targetHost` -- mirrors `Pages.Home_.setBreadcrumbsHost`
+(reissued after every `update`, a no-op once already in sync via the same
+equality check), except keyed to `model.resolver.targetHost` rather than
+`mainFrontendHost`, since a profile page (unlike the home feed) always
+belongs to one specific server. `targetHost` is already known from the route
+by `init` (see `Pages.User.UserId_.init`/`Pages.Username_.init`), so this
+covers both the very first paint and any later host change (e.g.
+`ConnectClicked` connecting a not-yet-connected `targetHost`).
+-}
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsHost shared newModel ] )
+
+
+setBreadcrumbsHost : Shared.Model -> Model -> Effect Msg
+setBreadcrumbsHost shared model =
+    let
+        host =
+            model.resolver.targetHost
+    in
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
+        Effect.none
+
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         ResolverMsg subMsg ->
             let
@@ -910,7 +947,8 @@ profileDetail shared model server maybeAccount user =
                     [ usernameHeading user
                     , realNameView canEdit model.realNameEdit user
                     ]
-                , otherServerIndicator shared server
+
+                -- , otherServerIndicator shared server
                 ]
             , Html.map FollowStatusAndButtonMsg (FollowStatusAndButton.view model.followStatusAndButton maybeAccount user)
             ]

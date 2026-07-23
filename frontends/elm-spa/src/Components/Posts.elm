@@ -964,12 +964,6 @@ without the hover fill-in, since this one isn't a link). `onEditClicked`
 drives `editButton`, shown in the meta line's `post-meta-right` group only to
 the post's own author.
 
-The title row also gets `otherServerLogo`, the post's own server's logo/name
-(no badge/link, just identification) to the right of the title/context chip,
-whenever `postServerHost` isn't `viewingServerHost` (`mainFrontendHost`) --
-mirrors `Components.Pages.UserProfilePage.otherServerIndicator`, minus its
-leading "@" (which reads naturally next to a username but not a post title).
-
 Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
 title of its own (`postTitleText`'s fallback to a truncated `content` exists
 for contexts, like `postCard`'s feed entries, where _something_ short is
@@ -994,8 +988,7 @@ postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPane
 postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
-            [ otherServerLogo viewingServerHost postServerHost maybeServer
-            , if post.context == POST then
+            [ if post.context == POST then
                 h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
 
               else
@@ -1045,32 +1038,3 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 text ""
         , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
         ]
-
-
-{-| The post's own server's logo/name, pinned to the top-right of `postDetail`'s
-title/context chip (see `.post-detail-other-server`'s `float: right` in
-posts.css -- placed first in `post-detail-title-row` so the title/context
-element after it, as normal flow content, wraps around it instead of sharing
-a flex row's full height with it) whenever `postServerHost` isn't
-`viewingServerHost` (i.e. `shared.accountsPanel.mainFrontendHost`, per every
-caller of `postDetail`) -- mirrors `Components.Pages.UserProfilePage.otherServerIndicator`,
-minus its leading "@" span (this sits next to a post title, not a username) --
-same `AccountsPanel.serverNameAndLogo`'s `RegularServerLogo` style
-`UI.homeLinkContent` uses for the Home button. `maybeServer` is `Nothing` only
-while `postServerHost` hasn't finished connecting yet (see
-`ServerDependentView`), in which case this renders nothing rather than a bare
-hostname.
--}
-otherServerLogo : String -> String -> Maybe AccountsPanel.Server -> Html msg
-otherServerLogo viewingServerHost postServerHost maybeServer =
-    if postServerHost == viewingServerHost then
-        text ""
-
-    else
-        case maybeServer of
-            Just server ->
-                div [ class "post-detail-other-server" ]
-                    [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
-
-            Nothing ->
-                text ""

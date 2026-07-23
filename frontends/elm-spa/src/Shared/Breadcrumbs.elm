@@ -35,18 +35,22 @@ import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
+import Components.Users as Users
+import Gen.Route as Route
 import Html exposing (Html, a, button, div, h1, img, span, text)
-import Html.Attributes exposing (alt, class, href, src)
+import Html.Attributes exposing (alt, class, href, src, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Event, EventInstance, Post)
+import Proto.Jonline exposing (Event, EventInstance, Post, User, defaultServerInfo)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 type BreadcrumbRoot
     = FromPost Post
     | FromEvent Event EventInstance
     | FromServerHost String
+    | FromUser User
 
 
 type alias Model =
@@ -220,7 +224,29 @@ rootSegment accountsPanelModel model root =
 
         FromEvent _ _ ->
             div [ classes [ "breadcrumb-segment", "breadcrumb-root" ] ]
-                [ text "TODO: User/Event Breadcrumb Rendering" ]
+                [ text "TODO: Event Breadcrumb Rendering" ]
+
+        FromUser user ->
+            let
+                maybeServer =
+                    AccountsPanel.serverForHost accountsPanelModel.servers model.host
+
+                maybeAccount =
+                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts model.host
+
+                name =
+                    if String.isEmpty user.realName then
+                        user.username
+
+                    else
+                        user.realName
+            in
+            a
+                [ classes [ "breadcrumb-segment", "breadcrumb-root" ]
+                ]
+                [ segmentAvatar name (Maybe.andThen (\server -> Users.avatarUrl server maybeAccount user) maybeServer)
+                , span [ class "breadcrumb-root-title" ] [ text name ]
+                ]
 
         FromServerHost host ->
             serverSegment accountsPanelModel host model.viewingHost
@@ -351,7 +377,7 @@ previewPanel : String -> AccountsPanel.Model -> Model -> Html Msg
 previewPanel basePath accountsPanelModel model =
     div [ classes [ "breadcrumb-reply-panel", "nav-panel", openClosedClass (model.viewingPost /= Nothing || model.viewingHost) ] ]
         (if model.viewingHost then
-            [ text "Server overview" ]
+            [ serverOverviewView basePath accountsPanelModel model ]
 
          else
             case postFor model model.viewingPost of
@@ -361,6 +387,67 @@ previewPanel basePath accountsPanelModel model =
                 Nothing ->
                     []
         )
+
+
+{-| `previewPanel`'s content while `model.viewingHost` -- `hostSegment`/
+`rootSegment`'s server chip's own equivalent of `replyCardView`, showing the
+server itself rather than one of its Posts: its `AccountsPanel.serverNameAndLogo`,
+its `ServerInfo.description` (if any, same `Components.Markdown` rendering as
+everywhere else server/Post content renders), and an info button through to
+its full `Components.Pages.ServerInformationPage` (`serverOverviewInfoButton`).
+Renders nothing if `model.host` isn't a known `AccountsPanel.Server` yet, same
+as `serverSegment`.
+-}
+serverOverviewView : String -> AccountsPanel.Model -> Model -> Html Msg
+serverOverviewView basePath accountsPanelModel model =
+    case AccountsPanel.serverForHost accountsPanelModel.servers model.host of
+        Just server ->
+            let
+                info =
+                    Maybe.withDefault defaultServerInfo server.configuration.serverInfo
+            in
+            div [ class "breadcrumb-server-overview" ]
+                [ div [ class "breadcrumb-server-overview-header" ]
+                    [ AccountsPanel.serverNameAndLogo server AccountsPanel.HorizontalServerLogo
+                    , serverOverviewInfoButton basePath server
+                    ]
+                , case info.description of
+                    Just description ->
+                        Markdown.view [ class "breadcrumb-server-overview-description" ] description
+
+                    Nothing ->
+                        text ""
+                ]
+
+        Nothing ->
+            text ""
+
+
+{-| Mirrors `UI.serverInfoButton` -- not reused directly since `UI` itself
+imports `Shared.Breadcrumbs` (for `previewPanel`), so the reverse import would
+cycle; closes this panel's own viewer (`CloseViewer`) rather than the Accounts
+Panel on click, same `stopPropagationAndPreventDefaultOnClick` reasoning
+(nested inside `previewPanel`, not another link).
+-}
+serverOverviewInfoButton : String -> AccountsPanel.Server -> Html Msg
+serverOverviewInfoButton basePath server =
+    let
+        serverIdentifier =
+            (if server.tls then
+                "https:"
+
+             else
+                "http:"
+            )
+                ++ server.frontendHost
+    in
+    a
+        [ classes [ "panel-icon-button", "info-button", "breadcrumb-server-overview-info-button" ]
+        , href (basePath ++ Route.toHref (Route.Server__ServerIdentifier_ { serverIdentifier = serverIdentifier }))
+        , stopPropagationAndPreventDefaultOnClick CloseViewer
+        , title ("About " ++ server.frontendHost)
+        ]
+        [ text "i" ]
 
 
 {-| Whether `post` is `model`'s own root (as opposed to one of its `replies`)

@@ -387,3 +387,33 @@
 .breadcrumb-reply-card-content {
   font-size: 0.9rem;
 }
+
+/* Server overview -- `Shared.Breadcrumbs.serverOverviewView`, shown in place
+   of `.breadcrumb-reply-card` when the server chip at the left of the trail
+   (rather than a reply segment) is the one currently open. */
+.breadcrumb-server-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breadcrumb-server-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: -10px;
+}
+
+.breadcrumb-server-overview-header .server-name-and-logo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.breadcrumb-server-overview-info-button {
+  flex: 0 0 auto;
+}
+
+.breadcrumb-server-overview-description {
+  font-size: 0.9rem;
+}

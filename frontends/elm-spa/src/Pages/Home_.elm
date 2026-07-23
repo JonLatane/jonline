@@ -49,7 +49,7 @@ init shared req =
         ( model, effect ) =
             PostsPage.init shared Nothing req.key req.url.path req.query
     in
-    ( model, Effect.batch [ effect, setBreadcrumbsHost shared ] )
+    ( model, Effect.batch [ effect ] )
 
 
 
@@ -66,29 +66,7 @@ update shared msg model =
         ( newModel, effect ) =
             PostsPage.update shared msg model
     in
-    ( newModel, Effect.batch [ effect, setBreadcrumbsHost shared ] )
-
-
-{-| Keeps `Shared.Breadcrumbs` set to `FromServerHost mainFrontendHost` --
-re-issued on every `update` (a no-op once already in sync, see the equality
-check below) rather than just once in `init`, so it stays correct across
-`mainFrontendHost` resolving/changing while already on this page too (e.g.
-the initial anonymous -> resolved negotiation, or switching servers via the
-Accounts panel) -- both arrive as ordinary messages this page's `update`
-already sees (via `PostsPage`'s own `SharedMsg`), not just at mount.
--}
-setBreadcrumbsHost : Shared.Model -> Effect Msg
-setBreadcrumbsHost shared =
-    let
-        host =
-            shared.accountsPanel.mainFrontendHost
-    in
-    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
-        Effect.none
-
-    else
-        Effect.fromShared
-            (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
+    ( newModel, Effect.batch [ effect ] )
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --

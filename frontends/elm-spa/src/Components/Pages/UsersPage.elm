@@ -46,6 +46,7 @@ import Proto.Jonline exposing (GetUsersResponse, User)
 import Proto.Jonline.UserListingType exposing (UserListingType(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Task
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
@@ -123,16 +124,20 @@ the URL on load, so a shared/reloaded link reproduces the same search.
 -}
 init : Shared.Model -> Maybe ( String, User, UserListingType ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
 init shared target navKey path query =
-    fetchNewServers shared
-        { usersByServer = Dict.empty
-        , userAnimations = Dict.empty
-        , target = target
-        , followStatusAndButtons = Dict.empty
-        , navKey = navKey
-        , path = path
-        , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
-        , searchGeneration = 0
-        }
+    let
+        ( fetchedModel, fetchEffect ) =
+            fetchNewServers shared
+                { usersByServer = Dict.empty
+                , userAnimations = Dict.empty
+                , target = target
+                , followStatusAndButtons = Dict.empty
+                , navKey = navKey
+                , path = path
+                , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
+                , searchGeneration = 0
+                }
+    in
+    ( fetchedModel, Effect.batch [ fetchEffect, setBreadcrumbsRoot shared fetchedModel ] )
 
 
 {-| Which servers this listing should ever fetch from: every enabled server,
@@ -262,6 +267,33 @@ applySearchChange shared model =
             refetchServers shared model (candidateServers shared model)
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushSearchUrl refetchedModel ] )
+
+
+{-| Keeps `Shared.Breadcrumbs` pointed at this listing's own root:
+`FromServerHost mainFrontendHost` for `Pages.People`'s unfiltered listing
+(`model.target == Nothing`), or `FromUser` the already-resolved `target` user
+once there is one (`Pages.Username_.{Following,Followers,Friends}`/
+`Pages.User.UserId_.{Following,Followers,Friends}`) -- mirrors
+`Components.Pages.PostsPage.setBreadcrumbsRoot` exactly, just keyed off
+`target`'s `User` instead of `author`'s, reissued after every `update`, a
+no-op once already in sync via the same equality check.
+-}
+setBreadcrumbsRoot : Shared.Model -> Model -> Effect Msg
+setBreadcrumbsRoot shared model =
+    let
+        ( root, host ) =
+            case model.target of
+                Just ( targetHost, user, _ ) ->
+                    ( Breadcrumbs.FromUser user, targetHost )
+
+                Nothing ->
+                    ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+    in
+    if shared.breadcrumbs.root == Just root then
+        Effect.none
+
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
 
 
 {-| Persists `model.searchText` to the URL as a `search_text` query param, via
@@ -400,6 +432,15 @@ fromShared =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsRoot shared newModel ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         GotServerUsers frontendHost (Ok ( maybeAccountsPanelMsg, response )) ->
             let
