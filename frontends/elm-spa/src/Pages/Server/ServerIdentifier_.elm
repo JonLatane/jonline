@@ -2,7 +2,7 @@ module Pages.Server.ServerIdentifier_ exposing (Model, Msg, fromShared, page)
 
 {-| `/server/:serverIdentifier` -- a read-only detail page for a Jonline
 server, identified by a `[http|https]:hostname` route segment (e.g.
-"http:localhost", "https:jonline.io" -- no slashes, since this is a single
+"<http:localhost">, "<https:jonline.io"> -- no slashes, since this is a single
 route param; mirrors the Tamagui app's `server_details_screen.tsx`, which
 parses its own `id` route param the same way). Thin wrapper around
 `Components.Pages.ServerInformationPage`, which does all the actual work --
@@ -49,8 +49,8 @@ type Model
     | Info ServerInformationPage.Model
 
 
-{-| Parses a `/server/:serverIdentifier` route segment like "http:localhost"
-or "https:jonline.io" -- `Nothing` if it isn't exactly `[http|https]:host`
+{-| Parses a `/server/:serverIdentifier` route segment like "<http:localhost">
+or "<https:jonline.io"> -- `Nothing` if it isn't exactly `[http|https]:host`
 (no slashes, no port -- `AccountsPanel.connectToServer` discovers the actual
 port/backend host itself).
 -}
@@ -72,7 +72,7 @@ init shared params =
     case parseServerIdentifier params.serverIdentifier of
         Nothing ->
             ( Invalid params.serverIdentifier
-            , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+            , Effect.none
             )
 
         Just parsed ->

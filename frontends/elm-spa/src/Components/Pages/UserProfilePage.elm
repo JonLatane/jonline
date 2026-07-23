@@ -157,7 +157,7 @@ init shared pageIsSecure targetHost lookup =
       -- reasoning).
     , Effect.batch
         [ Effect.map ResolverMsg resolverEffect
-        , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , Effect.fromShared Shared.CloseAllPanels
         , setBreadcrumbsHost shared model
         ]
     )

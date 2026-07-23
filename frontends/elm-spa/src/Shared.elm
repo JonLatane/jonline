@@ -128,6 +128,7 @@ type Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
@@ -485,7 +486,16 @@ updateImpl req msg model =
             ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
 
         BreadcrumbsMsg subMsg ->
-            ( { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }, Cmd.none )
+            let
+                breadcrumbsModel =
+                    { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }
+            in
+            case subMsg of
+                Breadcrumbs.SetRoot _ _ _ ->
+                    updateImpl req CloseAllPanels breadcrumbsModel
+
+                _ ->
+                    ( breadcrumbsModel, Cmd.none )
 
         MarkdownPanelMsg subMsg ->
             let
@@ -558,6 +568,16 @@ updateImpl req msg model =
                     updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open MyMediaPanel.Browse host)) enabledModel
             in
             ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
+
+        CloseAllPanels ->
+            let
+                ( closedAccountsModel, closeAccountsCmd ) =
+                    updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
+
+                ( closedStarredModel, closeStarredCmd ) =
+                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) closedAccountsModel
+            in
+            ( closedStarredModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd ] )
 
         ThemePreferenceClicked ->
             let
