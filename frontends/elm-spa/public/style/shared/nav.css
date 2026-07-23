@@ -109,7 +109,9 @@
   text-decoration: none;
   color: inherit;
   padding: 0.4rem 0.9rem;
-  border-radius: 999px;
+  border-radius: 14px;
+  margin-top: -10px;
+  margin-bottom: -10px;
 }
 
 .nav-link:hover {
@@ -138,9 +140,9 @@
      button's own rounded corners, hence `overflow: hidden` here too. */
   padding: 0 0.6rem 0 0;
   overflow: hidden;
-  border-radius: 14px;
+  /* border-radius: 14px;
   margin-top: -10px;
-  margin-bottom: -10px;
+  margin-bottom: -10px; */
   /* See .nav-links' min-width comment -- same reasoning, one level down. */
   min-width: 0;
 }

@@ -116,6 +116,7 @@ headerNav shared currentRoute =
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
+                , peopleLink shared currentRoute
                 , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
                     text ""
 
@@ -348,6 +349,35 @@ homeLinkContent shared =
 
         Nothing ->
             text "Home"
+
+
+{-| A circular icon nav link to the People page (`/people`), sitting between
+the Home link and the Starred Posts toggle -- same `.nav-menu-toggle.circular`
+button styling `starredPostsToggle` uses for its own ⭐, but a plain route
+link (highlighted via `background-color-nav` when `currentRoute` is already
+`Route.People`, mirroring `navLink`'s `isCurrent` handling) rather than a
+panel toggle.
+-}
+peopleLink : Shared.Model -> Route -> Html Shared.Msg
+peopleLink shared currentRoute =
+    let
+        isCurrent =
+            currentRoute == Route.People
+    in
+    a
+        [ href (shared.basePath ++ Route.toHref Route.People)
+        , classes
+            ("nav-link"
+                :: (if isCurrent then
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+                    else
+                        []
+                   )
+            )
+        , title "People"
+        ]
+        [ text "👥" ]
 
 
 {-| Looks up a known server by `frontendHost` -- a thin wrapper around
