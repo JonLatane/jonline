@@ -169,16 +169,27 @@ bar accountsPanelModel model =
             text ""
 
         Just root ->
-            if List.isEmpty model.replies && model.host == accountsPanelModel.mainFrontendHost then
+            let
+                isForUser =
+                    case root of
+                        FromUser _ ->
+                            True
+
+                        _ ->
+                            False
+            in
+            if List.isEmpty model.replies && model.host == accountsPanelModel.mainFrontendHost && not isForUser then
                 text ""
 
             else
-                div [ classes [ "breadcrumbs-bar", hostnameToCSSClass model.host, "background-color-primary" ] ]
-                    (List.intersperse separator
-                        (hostSegment accountsPanelModel model root
-                            ++ (rootSegment accountsPanelModel model root :: List.map (replySegment accountsPanelModel model) model.replies)
+                div [ classes [ "breadcrumbs-bar-container", hostnameToCSSClass model.host, "background-color-primary" ] ]
+                    [ div [ classes [ "breadcrumbs-bar" ] ]
+                        (List.intersperse separator
+                            (hostSegment accountsPanelModel model root
+                                ++ (rootSegment accountsPanelModel model root :: List.map (replySegment accountsPanelModel model) model.replies)
+                            )
                         )
-                    )
+                    ]
 
 
 separator : Html Msg
@@ -243,6 +254,7 @@ rootSegment accountsPanelModel model root =
             in
             a
                 [ classes [ "breadcrumb-segment", "breadcrumb-root" ]
+                , href <| "/" ++ user.username
                 ]
                 [ segmentAvatar name (Maybe.andThen (\server -> Users.avatarUrl server maybeAccount user) maybeServer)
                 , span [ class "breadcrumb-root-title" ] [ text name ]

@@ -933,6 +933,9 @@ profileDetail shared model server maybeAccount user =
         postsHref =
             baseHref ++ "/posts"
 
+        repliesHref =
+            baseHref ++ "/posts?context=reply"
+
         followersHref =
             baseHref ++ "/followers"
 
@@ -964,7 +967,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts postsHref followersHref followingHref user
+        , profileCounts postsHref repliesHref followersHref followingHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         ]
@@ -1172,16 +1175,18 @@ editErrorView status =
 `Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
 own (yet) to link to.
 -}
-profileCounts : String -> String -> String -> User -> Html Msg
-profileCounts postsHref followersHref followingHref user =
+profileCounts : String -> String -> String -> String -> User -> Html Msg
+profileCounts postsHref repliesHref followersHref followingHref user =
     let
         counts =
             [ ( "Followers", user.followerCount, Just followersHref )
             , ( "Following", user.followingCount, Just followingHref )
-            , ( "Groups", user.groupCount, Nothing )
+
+            -- , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
-            , ( "Responses", user.responseCount, Nothing )
-            , ( "Events", user.eventCount, Nothing )
+            , ( "Replies", user.responseCount, Just repliesHref )
+
+            -- , ( "Events", user.eventCount, Nothing )
             ]
                 |> List.filterMap (\( label, maybeCount, maybeHref ) -> maybeCount |> Maybe.map (\c -> ( label, c, maybeHref )))
     in

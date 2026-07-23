@@ -209,12 +209,22 @@
    avatar+username chip per reply in the chain leading to whichever Post is
    currently being viewed. Empty (renders nothing) until a page sets a root,
    so it takes up no space on pages that never do. */
+
+.breadcrumbs-bar-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+}
+
 .breadcrumbs-bar {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   overflow-x: auto;
   padding: 0.25rem;
+  width: 100%;
+  max-width: 800px;
 }
 
 .breadcrumb-separator {
