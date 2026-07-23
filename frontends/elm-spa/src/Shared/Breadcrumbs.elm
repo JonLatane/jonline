@@ -16,10 +16,18 @@ shared instance, populated contextually by whichever page has a chain to show
 (currently just `Pages.Post.PostId_`, via `SetRoot`) rather than each page
 owning its own breadcrumb state.
 
-Only `FromPost` is actually rendered for now -- `FromEvent` (an Event
+`FromPost` and `FromServerHost` are rendered -- `FromEvent` (an Event
 Instance's discussion, reached the same way) is a real variant already so
 callers/`Model` don't need to change shape again once it's wired up, but its
 `rootSegment`/its own ancestor-fetching aren't implemented yet.
+
+`FromServerHost` is the odd one out: it isn't reached via a chain of replies
+at all (see `SetRoot`'s own doc) -- `Pages.Home_` sets it to
+`AccountsPanel.mainFrontendHost` since its feed isn't scoped to any one
+server, just so the trail still shows _something_ identifying "home". A
+`serverSegment` chip (server logo + name) is also what gets prepended at the
+left of the trail on `FromPost`/`FromEvent` roots whenever `Model.host` isn't
+`mainFrontendHost` -- see `bar`.
 
 -}
 
@@ -32,12 +40,13 @@ import Html.Attributes exposing (alt, class, href, src)
 import Html.Events exposing (onClick)
 import Proto.Jonline exposing (Event, EventInstance, Post)
 import Shared.AccountsPanel as AccountsPanel
-import UI.Classes exposing (classes, openClosedClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 
 type BreadcrumbRoot
     = FromPost Post
     | FromEvent Event EventInstance
+    | FromServerHost String
 
 
 type alias Model =
@@ -82,6 +91,13 @@ type Msg
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        -- `FromServerHost` never has a reply chain of its own (see its own
+        -- doc) -- `replies` is forced to `[]` here regardless of what's
+        -- passed, rather than trusting every future caller to remember to
+        -- pass `[]` itself.
+        SetRoot ((FromServerHost host) as root) _ _ ->
+            { root = Just root, host = host, replies = [], viewing = Nothing }
+
         SetRoot root host replies ->
             { root = Just root, host = host, replies = replies, viewing = Nothing }
 
@@ -127,7 +143,13 @@ postFor model maybePostId =
 
 
 {-| The horizontally-scrollable trail itself -- empty (`text ""`) if no page
-has set a `root` right now. Mounted at the bottom of `.navbar` (see
+has set a `root` right now, or if there'd be nothing worth showing even with
+one: no `replies` (so no actual reply chain to trace back through) on
+`mainFrontendHost` (so there's no `hostSegment` server chip to show either --
+see its own doc) leaves just a single "home" chip that says nothing a viewer
+doesn't already know, e.g. `Pages.Home_`'s own `FromServerHost
+mainFrontendHost` root, or a plain top-level Post that happens to already be
+on `mainFrontendHost`. Mounted at the bottom of `.navbar` (see
 `UI.headerNav`), not as a floating panel like `replyPanel` below.
 -}
 bar : AccountsPanel.Model -> Model -> Html Msg
@@ -137,10 +159,16 @@ bar accountsPanelModel model =
             text ""
 
         Just root ->
-            div [ class "breadcrumbs-bar" ]
-                (List.intersperse separator
-                    (rootSegment model root :: List.map (replySegment accountsPanelModel model) model.replies)
-                )
+            if List.isEmpty model.replies && model.host == accountsPanelModel.mainFrontendHost then
+                text ""
+
+            else
+                div [ classes [ "breadcrumbs-bar", hostnameToCSSClass model.host, "background-color-primary" ] ]
+                    (List.intersperse separator
+                        (hostSegment accountsPanelModel model root
+                            ++ (rootSegment accountsPanelModel model root :: List.map (replySegment accountsPanelModel model) model.replies)
+                        )
+                    )
 
 
 separator : Html Msg
@@ -148,8 +176,34 @@ separator =
     span [ class "breadcrumb-separator" ] [ text "›" ]
 
 
-rootSegment : Model -> BreadcrumbRoot -> Html Msg
-rootSegment model root =
+{-| The server logo/name chip prepended at the very left of the trail
+whenever `model.host` (the server every segment below actually lives on)
+isn't `accountsPanelModel.mainFrontendHost` -- e.g. a reply chain or root Post
+reached on a server other than the one "driving" the rest of the UI's chrome,
+so it's clear which server this whole trail belongs to before ever reaching
+`rootSegment` itself. A list so `bar` can just concat it onto the front of
+the segments it interspersed with separators -- empty (no chip, no extra
+separator) either when there's nothing to disambiguate, or when `root` is
+already `FromServerHost` (`Pages.Home_`'s own root, always set to
+`mainFrontendHost` -- see `Pages.Home_`), which would otherwise render this
+same chip twice.
+-}
+hostSegment : AccountsPanel.Model -> Model -> BreadcrumbRoot -> List (Html Msg)
+hostSegment accountsPanelModel model root =
+    case root of
+        FromServerHost _ ->
+            []
+
+        _ ->
+            if model.host /= "" && model.host /= accountsPanelModel.mainFrontendHost then
+                [ serverSegment accountsPanelModel model.host ]
+
+            else
+                []
+
+
+rootSegment : AccountsPanel.Model -> Model -> BreadcrumbRoot -> Html Msg
+rootSegment accountsPanelModel model root =
     case root of
         FromPost post ->
             button
@@ -161,6 +215,52 @@ rootSegment model root =
         FromEvent _ _ ->
             div [ classes [ "breadcrumb-segment", "breadcrumb-root" ] ]
                 [ text "TODO: User/Event Breadcrumb Rendering" ]
+
+        FromServerHost host ->
+            serverSegment accountsPanelModel host
+
+
+{-| A single-line server logo + name chip -- a square logo image (or an
+initial-letter placeholder, mirroring `segmentAvatar` below) followed by the
+server's own branding name, clipped to one line with an ellipsis (see
+`.breadcrumb-server` in nav.css). Deliberately not
+`AccountsPanel.serverNameAndLogo` -- that splits a server's name into an
+emoji "badge" plus a fuller secondary line across two rows for the Accounts
+Panel's own (much roomier) chips, which doesn't fit the trail's tight single
+line. Always tinted with `host`'s own `background-color-primary` (see
+`UI.EmittedStylesheet`), unconditionally rather than only while some segment
+is `viewing` (contrast `segmentClasses`) -- there's no "open" state for this
+chip, it's just always this server's own color. Renders nothing if `host`
+isn't a known `AccountsPanel.Server` yet (e.g. still being resolved).
+-}
+serverSegment : AccountsPanel.Model -> String -> Html msg
+serverSegment accountsPanelModel host =
+    case AccountsPanel.serverForHost accountsPanelModel.servers host of
+        Just server ->
+            div
+                [ classes
+                    [ "breadcrumb-segment"
+                    , "breadcrumb-server"
+                    , hostnameToCSSClass host
+                    , "background-color-primary"
+                    ]
+                ]
+                [ serverSegmentLogo server.branding
+                , span [ class "breadcrumb-server-name" ] [ text server.branding.name ]
+                ]
+
+        Nothing ->
+            text ""
+
+
+serverSegmentLogo : AccountsPanel.Branding -> Html msg
+serverSegmentLogo branding =
+    case branding.logoUrl of
+        Just url ->
+            img [ class "breadcrumb-server-logo", src url, alt branding.name ] []
+
+        Nothing ->
+            div [ classes [ "breadcrumb-server-logo", "placeholder" ] ] [ text (AccountsPanel.initialLetter branding.name) ]
 
 
 replySegment : AccountsPanel.Model -> Model -> Post -> Html Msg
@@ -186,16 +286,17 @@ replySegment accountsPanelModel model post =
 
 {-| The classes for a segment button: always `"breadcrumb-segment"` plus its
 own kind (`"breadcrumb-root"`/`"breadcrumb-reply"`); additionally
-`[ model.host, "background-color-primary" ]` (see `UI.EmittedStylesheet`) when
-this segment's Post is the one `replyPanel` currently has open, tinting it
-with that server's own primary color to mark it as the open one.
+`[ hostnameToCSSClass model.host, "background-color-primary" ]` (see
+`UI.EmittedStylesheet`) when this segment's Post is the one `replyPanel`
+currently has open, tinting it with that server's own primary color to mark
+it as the open one.
 -}
 segmentClasses : Model -> String -> String -> List String
 segmentClasses model kindClass postId =
     "breadcrumb-segment"
         :: kindClass
         :: (if model.viewing == Just postId then
-                [ model.host, "background-color-primary" ]
+                [ hostnameToCSSClass model.host, "background-color-nav" ]
 
             else
                 []

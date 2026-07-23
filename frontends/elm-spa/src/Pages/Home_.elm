@@ -6,7 +6,10 @@ module Pages.Home_ exposing (Model, Msg, fromShared, page)
 this page adds its own "Recent Posts"/"Recent Replies" heading (see
 `heading`, which tracks `PostsPage`'s own POST/REPLY context chooser) and
 passes `authorUserId = Nothing` (an unfiltered feed, rather than one user's
-own posts).
+own posts) -- plus, unlike those other `PostsPage` callers, keeps
+`Shared.Breadcrumbs` pointed at `mainFrontendHost` (see `setBreadcrumbsHost`),
+since this feed isn't scoped to any one server for a breadcrumb trail to
+identify the way a Post's own reply chain is.
 -}
 
 import Components.Pages.PostsPage as PostsPage
@@ -17,6 +20,7 @@ import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
 import Shared
+import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import View exposing (View)
 
@@ -25,7 +29,7 @@ page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
         { init = init shared req
-        , update = PostsPage.update shared
+        , update = update shared
         , view = view shared req
         , subscriptions = PostsPage.subscriptions
         }
@@ -41,7 +45,11 @@ type alias Model =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    PostsPage.init shared Nothing req.key req.url.path req.query
+    let
+        ( model, effect ) =
+            PostsPage.init shared Nothing req.key req.url.path req.query
+    in
+    ( model, Effect.batch [ effect, setBreadcrumbsHost shared ] )
 
 
 
@@ -50,6 +58,37 @@ init shared req =
 
 type alias Msg =
     PostsPage.Msg
+
+
+update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+update shared msg model =
+    let
+        ( newModel, effect ) =
+            PostsPage.update shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsHost shared ] )
+
+
+{-| Keeps `Shared.Breadcrumbs` set to `FromServerHost mainFrontendHost` --
+re-issued on every `update` (a no-op once already in sync, see the equality
+check below) rather than just once in `init`, so it stays correct across
+`mainFrontendHost` resolving/changing while already on this page too (e.g.
+the initial anonymous -> resolved negotiation, or switching servers via the
+Accounts panel) -- both arrive as ordinary messages this page's `update`
+already sees (via `PostsPage`'s own `SharedMsg`), not just at mount.
+-}
+setBreadcrumbsHost : Shared.Model -> Effect Msg
+setBreadcrumbsHost shared =
+    let
+        host =
+            shared.accountsPanel.mainFrontendHost
+    in
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
+        Effect.none
+
+    else
+        Effect.fromShared
+            (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page --

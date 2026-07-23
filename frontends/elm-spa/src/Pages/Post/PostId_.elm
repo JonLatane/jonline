@@ -254,11 +254,15 @@ update shared req msg model =
                         ( Nothing, existing ) ->
                             ( existing, Effect.none )
 
-                -- Only a Post reached via a reply chain (`REPLY` context) has
-                -- any breadcrumb trail to show -- see `GotBreadcrumbAncestors`
-                -- for where `Shared.Breadcrumbs` actually gets set once this
-                -- resolves. A plain top-level Post just clears whatever trail
-                -- an earlier reply page here might have left behind.
+                -- A Post reached via a reply chain (`REPLY` context) fetches
+                -- its ancestors first -- see `GotBreadcrumbAncestors` for
+                -- where `Shared.Breadcrumbs` actually gets set once that
+                -- resolves. A plain top-level Post has no chain to fetch, but
+                -- still sets `Shared.Breadcrumbs` to its own `targetHost` (as
+                -- a `FromServerHost`, same as `Pages.Home_`), so the trail
+                -- still shows a `hostSegment` server chip when it's on a
+                -- server other than `mainFrontendHost` (see
+                -- `Shared.Breadcrumbs.bar`) -- not just cleared outright.
                 breadcrumbsEffect =
                     case List.head response.posts of
                         Just post ->
@@ -268,7 +272,10 @@ update shared req msg model =
                                     |> Effect.fromCmd
 
                             else
-                                Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear)
+                                Effect.fromShared
+                                    (Shared.BreadcrumbsMsg
+                                        (Breadcrumbs.SetRoot (Breadcrumbs.FromPost post) model.targetHost [])
+                                    )
 
                         Nothing ->
                             Effect.none
