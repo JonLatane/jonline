@@ -2,7 +2,7 @@
    Pages/Username_.elm) -- mirrors post-detail's look. */
 
 .profile-detail {
-  margin: 1rem 0;
+  margin: 0.5rem 0;
   padding: 0.8rem 1rem;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -212,29 +212,14 @@
   max-width: 100%;
 }
 
-.profile-section-title {
-  flex-basis: 100%;
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  margin: 0.8rem 0 0.4rem;
-}
+/* .section-title, .permission-badges, .permission-badge (+ .editable) and
+   .permission-remove are shared with ServerInformationPage -- see main.css. */
 
-.profile-permissions,
 .profile-federated {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
   align-items: center;
-}
-
-.profile-permission-badge {
-  display: inline-block;
-  padding: 0.05rem 0.5rem;
-  border-radius: 999px;
-  background: var(--chip-bg);
-  font-size: 0.8rem;
 }
 
 .profile-permissions-view,
@@ -243,22 +228,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
-}
-
-.profile-permission-badge.editable {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.profile-permission-remove {
-  border: none;
-  background: none;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1;
-  padding: 0;
-  cursor: pointer;
 }
 
 .profile-permissions-add {

@@ -1180,8 +1180,8 @@ permissionsSection isAdmin maybeEdit user =
     case maybeEdit of
         Just edit ->
             div [ class "profile-permissions-edit" ]
-                [ h2 [ class "profile-section-title" ] [ text "Permissions" ]
-                , div [ class "profile-permissions" ] (edit.pending |> List.map permissionEditBadge)
+                [ h2 [ class "section-title" ] [ text "Permissions" ]
+                , div [ class "permission-badges" ] (edit.pending |> List.map permissionEditBadge)
                 , div [ class "profile-permissions-add" ]
                     [ select [ onInput PermissionAddSelectionChanged ]
                         (addablePermissions edit.pending
@@ -1214,10 +1214,10 @@ permissionsSection isAdmin maybeEdit user =
 
             else
                 div [ class "profile-permissions-view" ]
-                    [ h2 [ class "profile-section-title" ] [ text "Permissions" ]
-                    , div [ class "profile-permissions" ]
+                    [ h2 [ class "section-title" ] [ text "Permissions" ]
+                    , div [ class "permission-badges" ]
                         (user.permissions
-                            |> List.map (\permission -> span [ class "profile-permission-badge" ] [ text (Users.permissionText permission) ])
+                            |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ])
                         )
                     , if isAdmin then
                         button [ class "profile-edit-button", onClick PermissionsEditClicked ] [ text "Edit" ]
@@ -1229,10 +1229,10 @@ permissionsSection isAdmin maybeEdit user =
 
 permissionEditBadge : Permission -> Html Msg
 permissionEditBadge permission =
-    span [ class "profile-permission-badge editable" ]
+    span [ class "permission-badge editable" ]
         [ text (Users.permissionText permission)
         , button
-            [ class "profile-permission-remove"
+            [ class "permission-remove"
             , onClick (PermissionRemoveClicked permission)
             , title ("Remove " ++ Users.permissionText permission)
             ]
@@ -1256,7 +1256,7 @@ federatedProfilesSection shared model server canEdit user =
 
     else
         div [ class "profile-federated" ]
-            (h2 [ class "profile-section-title" ] [ text "Federated Profiles" ]
+            (h2 [ class "section-title" ] [ text "Federated Profiles" ]
                 :: (user.federatedProfiles
                         |> List.map (federatedProfileEntry shared model server user model.federatedProfilesEdit)
                    )
