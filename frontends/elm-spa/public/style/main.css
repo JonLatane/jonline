@@ -95,6 +95,11 @@ main {
   }
 }
 
+h2 {
+  margin-block-start: 0.5em;
+  margin-block-end: 0.5em;
+}
+
 /* Reserves scroll room while a just-navigated-to page's content is still
    loading in (and so shorter than its final height) -- see UI.scrollPreserver
    and Shared.Model.scrollPreserverVisible. Collapsed by default; expanded for
