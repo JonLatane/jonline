@@ -385,7 +385,7 @@ replyAnimationView config model ( depth, post, flip ) =
                 config.maybeServer
                 config.maybeAccount
                 (config.onMediaClicked post)
-                depth
+                (depth - 1)
                 loaded
                 loading
                 collapsed
@@ -396,4 +396,3 @@ replyAnimationView config model ( depth, post, flip ) =
             ]
         ]
     )
-

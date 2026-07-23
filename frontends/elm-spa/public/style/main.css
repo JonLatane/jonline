@@ -95,6 +95,11 @@ main {
   }
 }
 
+h2 {
+  margin-block-start: 0.5em;
+  margin-block-end: 0.5em;
+}
+
 /* Reserves scroll room while a just-navigated-to page's content is still
    loading in (and so shorter than its final height) -- see UI.scrollPreserver
    and Shared.Model.scrollPreserverVisible. Collapsed by default; expanded for
@@ -346,5 +351,53 @@ input[disabled] {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.9rem;
+  cursor: pointer;
+}
+
+/* Shared "section label above a group of content" style -- used by
+   UserProfilePage's Permissions/Federated Profiles sections and
+   ServerInformationPage's permissions sections (Components/Pages/*Page.elm's
+   `permissionsSection`s). */
+.section-title {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin: 0.8rem 0 0.4rem;
+}
+
+/* Shared permission-badge pill, and the flex row that lays a group of them
+   out -- used by UserProfilePage (view + editable badges, see
+   `permissionEditBadge`) and ServerInformationPage's read-only permission
+   lists (both Components/Pages/*Page.elm's `permissionsSection`s). */
+.permission-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.permission-badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border-radius: 999px;
+  background: var(--chip-bg);
+  font-size: 0.8rem;
+}
+
+.permission-badge.editable {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.permission-remove {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  padding: 0;
   cursor: pointer;
 }

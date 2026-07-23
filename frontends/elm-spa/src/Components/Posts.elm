@@ -17,8 +17,8 @@ module Components.Posts exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
-    , replyCard
     , repliesCountText
+    , replyCard
     , timestampsText
     , updatePost
     , visibilityFromText
@@ -96,6 +96,7 @@ posts" request `fetchRecentPosts` used to be. `context` is sent either way
 read it -- see `backend/src/rpcs/posts/get_posts.rs`), so
 `Components.Pages.PostsPage`'s POST/REPLY chooser works whether or not
 there's search text entered.
+
 -}
 fetchPosts :
     AccountsPanel.Model
@@ -824,6 +825,7 @@ direct reply, 2 for a reply to a reply, etc.) drives its left-indentation, so
 state to drive these at all) can pass `Nothing` and get that action's
 button omitted entirely, rather than needing to fabricate a message value
 that can never actually fire.
+
 -}
 replyCard :
     String

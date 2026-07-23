@@ -685,13 +685,13 @@ webUserInterfaceText ui =
 permissionsSection : String -> List Permission -> Html Msg
 permissionsSection label_ permissions =
     div [ class "server-details-permissions" ]
-        [ h3 [] [ text label_ ]
+        [ h3 [ class "section-title" ] [ text label_ ]
         , if List.isEmpty permissions then
             p [] [ text "None." ]
 
           else
-            ul [ class "server-details-permission-list" ]
-                (List.map (\permission -> li [] [ text (Users.permissionText permission) ]) permissions)
+            div [ class "permission-badges" ]
+                (permissions |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ]))
         ]
 
 
