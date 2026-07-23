@@ -268,8 +268,33 @@
   border-radius: 8px;
 }
 
-.post-detail-title {
+/* `overflow: hidden` (a clearfix) rather than `display: flex` -- unlike the
+   profile page's `.profile-other-server`, this one `float`s (see below) so a
+   long title's later lines wrap the full card width underneath it instead of
+   being squeezed into a narrower column for the title's entire height. */
+.post-detail-title-row {
+  /* overflow: hidden; */
   margin: 0 0 0.3rem;
+}
+
+.post-detail-title-row .post-detail-title,
+.post-detail-title-row .post-detail-context {
+  margin: 0;
+}
+
+.post-detail-other-server {
+  float: right;
+  margin-left: 0.6rem;
+  min-width: 88px;
+}
+
+/* Lets the server logo/name reclaim `.post-detail`'s own horizontal padding
+   on narrow screens, matching `.profile-other-server`'s same treatment (see
+   profiles.css) -- there's less room for the title to share with it there. */
+@media (max-width: 639px) {
+  .post-detail-other-server {
+    margin-right: -0.5rem;
+  }
 }
 
 /* The post's own `link` field, shown below the title -- see

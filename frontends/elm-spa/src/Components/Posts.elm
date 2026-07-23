@@ -17,6 +17,7 @@ module Components.Posts exposing
     , postTimestamp
     , postTitleText
     , postVisibilityText
+    , replyCard
     , repliesCountText
     , timestampsText
     , updatePost
@@ -39,7 +40,7 @@ import Components.MultiMediaRenderer as MultiMediaRenderer
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, span, text)
-import Html.Attributes exposing (attribute, class, href, rel, target, title)
+import Html.Attributes exposing (attribute, class, href, rel, style, target, title)
 import Html.Events
 import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
 import Proto.Jonline.Jonline as Jonline
@@ -563,8 +564,8 @@ starButton postServerHost starred onStarClicked post =
 common case, a post with no replies-to-replies -- otherwise
 `"replyCount/responseCount"` (e.g. `"20/25"`) so a thread with actual
 sub-discussion shows both numbers at a glance. Shared by `commentCountText`
-(below, for `postCard`/`postDetail`) and `Components.PostReplies.replyCard`,
-so a reply card's own count matches a post card's exactly.
+(below, for `postCard`/`postDetail`) and `replyCard`, so a reply card's own
+count matches a post card's exactly.
 -}
 repliesCountText : Post -> String
 repliesCountText post =
@@ -735,6 +736,19 @@ same cards.
 -}
 postCard : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
 postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
+    if post.context == REPLY then
+        replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked 0 True False False Nothing Nothing Nothing post
+
+    else
+        postCardView browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
+
+
+{-| The plain (non-`REPLY`) rendering `postCard` falls back to -- see its own
+doc comment above for why `REPLY` posts instead defer entirely to
+`replyCard`.
+-}
+postCardView : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Bool -> Bool -> Maybe msg -> Post -> Html msg
+postCardView browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post =
     div
         [ classes
             ([ "post-card"
@@ -798,11 +812,161 @@ postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer m
         ]
 
 
-{-| Full rendering for a single post (see the Post page) -- no server badge,
-since that's already the page you're on, but still tinted with `postServerHost`'s
-`primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
-since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
-meta line's `post-meta-right` group only to the post's own author.
+{-| A single reply's card -- author, content, a Reply button, and (bottom
+right of the actions row) a merged load-more/collapse-expand button carrying
+`post`'s own reply/response counts (see `replyStatusButton`). `depth` (1 for a
+direct reply, 2 for a reply to a reply, etc.) drives its left-indentation, so
+`Components.PostReplies.view`'s flattened list still reads as a nested thread.
+
+`onReplyClicked`/`onLoadRepliesClicked`/`onToggleCollapsedClicked` are each
+`Maybe msg` rather than plain `msg` so a caller with no real handler for one
+(`postCard`'s own `REPLY`-context fallback above, which has no reply-thread
+state to drive these at all) can pass `Nothing` and get that action's
+button omitted entirely, rather than needing to fabricate a message value
+that can never actually fire.
+-}
+replyCard :
+    String
+    -> String
+    -> String
+    -> Maybe AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> (String -> msg)
+    -> Int
+    -> Bool
+    -> Bool
+    -> Bool
+    -> Maybe msg
+    -> Maybe msg
+    -> Maybe msg
+    -> Post
+    -> Html msg
+replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked depth loaded loading collapsed onReplyClicked onLoadRepliesClicked onToggleCollapsedClicked post =
+    div
+        [ class "post-reply-item"
+        , style "margin-left" (String.fromInt (min depth 8 * 20) ++ "px")
+        ]
+        [ div [ class "post-reply-meta" ]
+            [ span [ class "post-meta-left" ]
+                (Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
+                    :: (if post.visibility == GLOBALPUBLIC then
+                            []
+
+                        else
+                            [ text (" · " ++ postVisibilityText post) ]
+                       )
+                )
+            , span [ class "post-meta-right" ]
+                [ a
+                    [ href (postHref basePath viewingServerHost postServerHost post)
+                    , class "post-reply-permalink"
+                    , attribute "aria-label" "Permalink"
+                    ]
+                    [ text "🔗" ]
+                ]
+            ]
+        , case maybeServer of
+            Just server ->
+                MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked post.media
+
+            Nothing ->
+                text ""
+        , case post.content of
+            Just content ->
+                Markdown.view [ class "post-reply-content" ] content
+
+            Nothing ->
+                text ""
+        , div [ class "post-reply-actions" ]
+            [ case ( maybeAccount, onReplyClicked ) of
+                ( Just account, Just msg ) ->
+                    if List.member REPLYTOPOSTS account.permissions then
+                        button [ class "post-reply-button", Html.Events.onClick msg ] [ text "Reply" ]
+
+                    else
+                        text ""
+
+                _ ->
+                    text ""
+            , replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post
+            ]
+        ]
+
+
+{-| The merged "load more"/"collapse"/"expand" button in a reply card's
+bottom-right corner (`.post-reply-status-button`, pinned right via
+`margin-left: auto` same as `.post-meta-right`), carrying `post`'s own
+reply/response counts (`repliesCountText`, matching `commentCountText`'s own
+formatting) in each of its three states:
+
+  - still more to fetch (`post.replies`'s length doesn't yet match
+    `post.replyCount`, and this node hasn't been explicitly `ReplyLoaded`):
+    "Load 💬 X/Y More" (or a "Loading replies…" placeholder while `loading`),
+    firing `onLoadRepliesClicked` (if supplied)
+  - fully loaded and has any replies: an Expand/Collapse toggle (driven by
+    `collapsed`) firing `onToggleCollapsedClicked` (if supplied)
+  - fully loaded with no replies at all, or no handler supplied for the
+    state it's in: nothing
+
+-}
+replyStatusButton : Bool -> Bool -> Bool -> Maybe msg -> Maybe msg -> Post -> Html msg
+replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post =
+    let
+        fullyLoaded =
+            loaded || List.length post.replies == post.replyCount
+
+        countText =
+            "💬 " ++ repliesCountText post
+    in
+    if fullyLoaded then
+        if List.isEmpty post.replies then
+            text ""
+
+        else
+            case onToggleCollapsedClicked of
+                Just msg ->
+                    button
+                        [ class "post-reply-status-button", Html.Events.onClick msg ]
+                        [ text
+                            -- ▲/▼ ◀/▶
+                            ((if collapsed then
+                                "▶ "
+
+                              else
+                                "▼ "
+                             )
+                                ++ countText
+                            )
+                        ]
+
+                Nothing ->
+                    text ""
+
+    else if loading then
+        span [ class "post-reply-loading" ] [ text "Loading replies…" ]
+
+    else
+        case onLoadRepliesClicked of
+            Just msg ->
+                button
+                    [ class "post-reply-status-button", Html.Events.onClick msg ]
+                    [ text ("Load " ++ countText ++ " More") ]
+
+            Nothing ->
+                text ""
+
+
+{-| Full rendering for a single post (see the Post page) -- still tinted with
+`postServerHost`'s `primaryAnchorColor` border like `postCard` is (just
+without the hover fill-in, since this one isn't a link). `onEditClicked`
+drives `editButton`, shown in the meta line's `post-meta-right` group only to
+the post's own author.
+
+The title row also gets `otherServerLogo`, the post's own server's logo/name
+(no badge/link, just identification) to the right of the title/context chip,
+whenever `postServerHost` isn't `viewingServerHost` (`mainFrontendHost`) --
+mirrors `Components.Pages.UserProfilePage.otherServerIndicator`, minus its
+leading "@" (which reads naturally next to a username but not a post title).
 
 Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
 title of its own (`postTitleText`'s fallback to a truncated `content` exists
@@ -827,16 +991,19 @@ be a bare `postVisibilityText post` text node.
 postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
 postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
-        [ if post.context == POST then
-            h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        [ div [ class "post-detail-title-row" ]
+            [ otherServerLogo viewingServerHost postServerHost maybeServer
+            , if post.context == POST then
+                h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
 
-          else
-            case postContextLabel post.context of
-                Just contextLabel ->
-                    div [ class "post-detail-context" ] [ text contextLabel ]
+              else
+                case postContextLabel post.context of
+                    Just contextLabel ->
+                        div [ class "post-detail-context" ] [ text contextLabel ]
 
-                Nothing ->
-                    text ""
+                    Nothing ->
+                        text ""
+            ]
         , case postLinkText post of
             Just link ->
                 a
@@ -876,3 +1043,32 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 text ""
         , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
         ]
+
+
+{-| The post's own server's logo/name, pinned to the top-right of `postDetail`'s
+title/context chip (see `.post-detail-other-server`'s `float: right` in
+posts.css -- placed first in `post-detail-title-row` so the title/context
+element after it, as normal flow content, wraps around it instead of sharing
+a flex row's full height with it) whenever `postServerHost` isn't
+`viewingServerHost` (i.e. `shared.accountsPanel.mainFrontendHost`, per every
+caller of `postDetail`) -- mirrors `Components.Pages.UserProfilePage.otherServerIndicator`,
+minus its leading "@" span (this sits next to a post title, not a username) --
+same `AccountsPanel.serverNameAndLogo`'s `RegularServerLogo` style
+`UI.homeLinkContent` uses for the Home button. `maybeServer` is `Nothing` only
+while `postServerHost` hasn't finished connecting yet (see
+`ServerDependentView`), in which case this renders nothing rather than a bare
+hostname.
+-}
+otherServerLogo : String -> String -> Maybe AccountsPanel.Server -> Html msg
+otherServerLogo viewingServerHost postServerHost maybeServer =
+    if postServerHost == viewingServerHost then
+        text ""
+
+    else
+        case maybeServer of
+            Just server ->
+                div [ class "post-detail-other-server" ]
+                    [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
+
+            Nothing ->
+                text ""

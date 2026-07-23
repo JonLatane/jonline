@@ -18,6 +18,7 @@
 .profile-header {
   display: flex;
   align-items: center;
+  flex: 1 1 auto;
   gap: 0.8rem;
 }
 
@@ -41,6 +42,29 @@
 
 .profile-header-names {
   min-width: 0;
+}
+
+.profile-other-server {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 88px;
+  margin-left: auto;
+}
+
+.profile-other-server-at {
+  color: var(--muted);
+  font-size: 1.4rem;
+}
+
+/* Lets the indicator reclaim `.profile-detail`'s own horizontal padding on
+   narrow screens, matching `.post-detail-other-server`'s same treatment (see
+   posts.css) -- there's less room for the names column to share with it
+   there. */
+@media (max-width: 639px) {
+  .profile-other-server {
+    margin-right: -1rem;
+  }
 }
 
 .profile-username {
@@ -312,8 +336,8 @@
 
 .profile-federated-avatar {
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -325,6 +349,16 @@
   background: rgba(127, 127, 127, 0.35);
   font-weight: 700;
   font-size: 0.7rem;
+}
+
+.profile-federated-names {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-federated-realname {
+  font-weight: 600;
 }
 
 .profile-federated-badge {
