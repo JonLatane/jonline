@@ -154,8 +154,10 @@ fn get_all_users(
         .into_boxed();
 
     if let Some(search_text) = search_text {
+        // "simple" (not "english") to match users_build_search_text's indexing config - see
+        // 2026-07-23-012047_add_search_text_no_stopwords.
         let search_query = to_tsquery_with_search_config(
-            TsConfigurationByName("english"),
+            TsConfigurationByName("simple"),
             prefix_tsquery_text(search_text),
         );
         query = query.filter(users::search_text.matches(search_query));
@@ -221,8 +223,10 @@ fn get_follow_requests(
         .into_boxed();
 
     if let Some(search_text) = search_text {
+        // "simple" (not "english") to match users_build_search_text's indexing config - see
+        // 2026-07-23-012047_add_search_text_no_stopwords.
         let search_query = to_tsquery_with_search_config(
-            TsConfigurationByName("english"),
+            TsConfigurationByName("simple"),
             prefix_tsquery_text(search_text),
         );
         query = query.filter(users::search_text.matches(search_query));
@@ -462,8 +466,10 @@ fn get_following(
         .into_boxed();
 
     if let Some(search_text) = search_text {
+        // "simple" (not "english") to match users_build_search_text's indexing config - see
+        // 2026-07-23-012047_add_search_text_no_stopwords.
         let search_query = to_tsquery_with_search_config(
-            TsConfigurationByName("english"),
+            TsConfigurationByName("simple"),
             prefix_tsquery_text(search_text),
         );
         query = query.filter(users::search_text.matches(search_query));
@@ -555,8 +561,10 @@ fn get_followers(
         .into_boxed();
 
     if let Some(search_text) = search_text {
+        // "simple" (not "english") to match users_build_search_text's indexing config - see
+        // 2026-07-23-012047_add_search_text_no_stopwords.
         let search_query = to_tsquery_with_search_config(
-            TsConfigurationByName("english"),
+            TsConfigurationByName("simple"),
             prefix_tsquery_text(search_text),
         );
         query = query.filter(users::search_text.matches(search_query));
@@ -662,8 +670,10 @@ fn get_friends(
         .into_boxed();
 
     if let Some(search_text) = search_text {
+        // "simple" (not "english") to match users_build_search_text's indexing config - see
+        // 2026-07-23-012047_add_search_text_no_stopwords.
         let search_query = to_tsquery_with_search_config(
-            TsConfigurationByName("english"),
+            TsConfigurationByName("simple"),
             prefix_tsquery_text(search_text),
         );
         query = query.filter(users::search_text.matches(search_query));
