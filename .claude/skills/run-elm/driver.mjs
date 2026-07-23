@@ -75,9 +75,27 @@ async function main() {
           await page.click(rest, { timeout: 15000 });
           break;
 
+        case "click-at": {
+          // click <selector> at a specific offset within it, e.g. to hit a
+          // large backdrop element at a point not covered by a child overlay.
+          const [selector, coords] = splitFirst(rest);
+          const [x, y] = coords.split(" ").map(Number);
+          await page.click(selector, { position: { x, y }, timeout: 15000 });
+          break;
+        }
+
         case "fill": {
           const [selector, value] = splitFirst(rest);
           await page.fill(selector, value);
+          break;
+        }
+
+        case "type": {
+          // No click-to-focus first -- some fields (e.g. the create-account
+          // password field) are already focused programmatically by the app
+          // itself, and clicking can race a concurrently-animating overlay.
+          const [, value] = splitFirst(rest);
+          await page.keyboard.type(value, { delay: 20 });
           break;
         }
 

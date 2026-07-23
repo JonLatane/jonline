@@ -24,9 +24,11 @@
      .markdown-panel (26, see markdown_panel.css) -- a sibling of .navbar, not
      a descendant, so it's *this* z-index (not its own, lower one) that
      decides whether Accounts/Starred Posts, opened on top of an already-open
-     Markdown panel, actually render above it. Below .media-viewer-panel (29,
-     see media_viewer_panel.css) though -- a fullscreen lightbox should stay
-     on top even if Accounts/Starred Posts is then opened over it. */
+     Markdown panel, actually render above it. Below .my-media-panel (29, see
+     my_media_panel.css) and .media-viewer-panel (30, see
+     media_viewer_panel.css) though -- opening the My Media panel from an
+     Accounts Panel chip should cover that panel rather than getting buried
+     behind it, and a fullscreen lightbox should stay on top of both. */
   z-index: 28;
 }
 

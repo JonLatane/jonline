@@ -30,10 +30,11 @@ import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
-import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
@@ -74,6 +75,7 @@ type alias Model =
     , starredPostsPanel : StarredPostsPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
+    , myMediaPanel : MyMediaPanel.Model
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
@@ -124,6 +126,8 @@ type Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
+    | MyMediaPanelMsg MyMediaPanel.Msg
+    | MyMediaPanelOpenForAccount AccountsPanel.Account
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
@@ -293,6 +297,7 @@ init basePath req flags =
             , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
+            , myMediaPanel = MyMediaPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
             , systemPrefersDark = systemPrefersDark
@@ -509,6 +514,50 @@ updateImpl req msg model =
                 , scrollPreserverCmd
                 ]
             )
+
+        MyMediaPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                    MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel }
+            , Cmd.batch
+                [ Cmd.map MyMediaPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
+        MyMediaPanelOpenForAccount account ->
+            -- The media button on an Account chip (`UI.accountRow`) opens this
+            -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
+            -- multi-panel composition via `updateImpl`. The chip is clickable for
+            -- disabled (signed-out-of-aggregation) accounts too, so bring the
+            -- account along into `enabled` here, the same as clicking its switch
+            -- (`AccountsPanel.ToggleAccountEnabled`), rather than silently
+            -- browsing an account the Accounts Panel still shows as off.
+            let
+                host =
+                    account.server
+
+                ( enabledModel, enableCmd ) =
+                    if account.enabled then
+                        ( model, Cmd.none )
+
+                    else
+                        updateImpl req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
+
+                ( openedModel, openCmd ) =
+                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open MyMediaPanel.Browse host)) enabledModel
+            in
+            ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
 
         ThemePreferenceClicked ->
             let

@@ -1,0 +1,171 @@
+/* The app-wide "My Media" panel (see Shared/MyMediaPanel.elm) -- a large,
+   centered overlay like `.markdown-panel` (not a small dropdown anchored
+   below a nav toggle, like the Accounts/Starred Posts panels), since it's
+   showing a whole grid of media previews. Reuses the `.nav-panel` base rule
+   (position/opacity/pointer-events transition, see accounts_panel.css) for
+   the same "always rendered, open/closed is a plain CSS transition"
+   convention every panel here follows, overriding its positioning/sizing to
+   suit. */
+.my-media-panel.nav-panel {
+  position: fixed;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 900px);
+  height: 75vh;
+  max-height: 75vh;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+
+  /* Above `.markdown-panel` (26, see markdown_panel.css) -- opened from an
+     Account chip, it should reasonably win over a stale editor left open
+     behind it. Also above `.navbar` (28, see nav.css) and, with it, the
+     Accounts/Starred Posts panels (its own `.navbar` descendants, forming one
+     stacking context at *its* z-index regardless of their own individual
+     ones) -- opening it from the Accounts Panel should cover that panel,
+     rather than getting buried behind it. Still below the Media Viewer panel
+     (30, see media_viewer_panel.css) and `.modal`'s own 31/32 -- a fullscreen
+     lightbox, or a Cancel/Confirm dialog, should still win over a media
+     browser left open behind it. */
+  z-index: 29;
+}
+
+.my-media-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(100%);
+}
+
+/* Phone-width screens: edge to edge, same reasoning as `.markdown-panel`'s
+   own override (markdown_panel.css) -- no spare width to give up on a small
+   screen, and this already reads as a full "screen" of its own there. */
+@media (max-width: 639px) {
+  .my-media-panel.nav-panel {
+    left: 0;
+    right: 0;
+    width: 100vw;
+    max-width: 100vw;
+    transform: none;
+    border-radius: 0;
+  }
+
+  .my-media-panel.nav-panel.is-closed {
+    transform: translateY(100%);
+  }
+}
+
+.my-media-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.my-media-panel-title {
+  font-weight: 700;
+}
+
+/* Groups the account badge and close button together on the right of the
+   header, so they read as one unit right-aligned against the title (see
+   `.my-media-panel-header`'s own `space-between`), rather than the badge
+   floating in the middle between three flex children. */
+.my-media-panel-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.my-media-panel-account {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.my-media-panel-avatar {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.my-media-panel-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.my-media-panel-username {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Phone-width screens: the header has less room, and the title/close button
+   already matter more than the account badge's own username -- hide it there
+   and rely on the avatar alone. */
+@media (max-width: 639px) {
+  .my-media-panel-username {
+    display: none;
+  }
+}
+
+.my-media-panel-close {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  line-height: 1;
+}
+
+.my-media-panel-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.my-media-panel-message {
+  color: var(--muted);
+}
+
+.my-media-panel-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.my-media-panel-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  width: 238px;
+  max-width: 100%;
+}
+
+.my-media-panel-item-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-media-panel-item-type {
+  font-size: 0.7rem;
+  color: var(--muted);
+}

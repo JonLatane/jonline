@@ -22,6 +22,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.EmittedStylesheet as EmittedStylesheet
@@ -75,6 +76,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
     , Html.map toMsg (markdownPanel shared)
+    , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
     , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
@@ -193,18 +195,21 @@ comments.
 Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
-at once. Right now that means tapping the background closes the Starred Posts
-panel first, then the Accounts Panel, then the Breadcrumbs reply viewer, then
-(on a fourth tap) the Markdown panel behind all three -- matching the actual
-paint order. `.breadcrumb-reply-panel` is (like the Accounts/Starred Posts
-panels) a `.navbar` descendant, so all three render above `.markdown-panel`
-(a `.navbar` _sibling_) regardless of their own individual z-indices, purely
-because `.navbar`'s own z-index (28) beats `.markdown-panel`'s (26) as whole
-stacking contexts; _within_ `.navbar`, `.breadcrumb-reply-panel`'s lower
-z-index (see nav.css) is what then keeps it under the Accounts/Starred Posts
-panels specifically. Swap their order here to change that priority. Only
-blurs/tints the page while a panel with `blurs = True` is open (currently the
-Accounts Panel, the Breadcrumbs reply viewer and the Markdown panel, all of
+at once. Right now that means tapping the background closes the My Media panel
+first, then the Starred Posts panel, then the Accounts Panel, then the
+Breadcrumbs reply viewer, then (on a fifth tap) the Markdown panel behind all
+four -- matching the actual paint order. `.my-media-panel` (29, see
+my\_media\_panel.css) is a `.navbar` _sibling_ with a higher z-index than
+`.navbar`'s own (28), so it renders above the whole thing -- `.navbar` and
+every one of its descendants (`.breadcrumb-reply-panel`, the Accounts/Starred
+Posts panels) alike, regardless of their own individual z-indices.
+_Within_ `.navbar`, `.breadcrumb-reply-panel`'s lower z-index (see nav.css) is
+what then keeps it under the Accounts/Starred Posts panels specifically.
+`.markdown-panel`'s own 26 (see markdown\_panel.css), the lowest of the lot, is
+what keeps it below `.navbar` and so below all three of its descendants too.
+Swap their order here to change that priority. Only blurs/tints the page while
+a panel with `blurs = True` is open (currently the Accounts Panel, the
+Breadcrumbs reply viewer, the My Media panel and the Markdown panel, all of
 which block interaction with the rest of the page while open); the Starred
 Posts panel doesn't, since starring/unstarring posts while it's open is an
 expected, encouraged interaction rather than something to block.
@@ -215,7 +220,11 @@ sharedBackdrop shared =
     let
         panels : List BackdropPanel
         panels =
-            [ { isOpen = shared.starredPostsPanel.showStarredPostsPanel
+            [ { isOpen = MyMediaPanel.isOpen shared.myMediaPanel
+              , closeMsg = Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked
+              , blurs = True
+              }
+            , { isOpen = shared.starredPostsPanel.showStarredPostsPanel
               , closeMsg = Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel
               , blurs = False
               }
@@ -1256,7 +1265,15 @@ accountRow shared count mainCount index account =
             , href (Users.profileHref shared.basePath shared.accountsPanel.mainFrontendHost account.server { userId = account.userId, username = account.username })
             , stopPropagationAndPreventDefaultOnClick (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
             ]
-            [ avatarOrPlaceholder shared.accountsPanel.servers account
+            [ button
+                [ class "media-btn"
+                , if account.needsPassword then
+                    title "Sign in to view media"
+
+                  else
+                    stopPropagationAndPreventDefaultOnClick (Shared.MyMediaPanelOpenForAccount account)
+                ]
+                [ avatarOrPlaceholder shared.accountsPanel.servers account ]
             , div [ class "account-row-label" ]
                 [ div [ class "account-row-username" ]
                     [ text (AccountsPanel.displayName account)
@@ -2093,6 +2110,20 @@ behind it.
 markdownPanel : Shared.Model -> Html Shared.Msg
 markdownPanel shared =
     Html.map Shared.MarkdownPanelMsg (MarkdownPanel.view shared.accountsPanel shared.markdownPanel)
+
+
+{-| The "My Media" panel (see `Shared.MyMediaPanel`) -- opened from a
+signed-in Account chip's media button (`accountRow`, below), not a nav icon,
+so it's mounted directly in `layout` too, same as `markdownPanel`. Sits above
+both the Markdown panel and `.navbar` itself -- and, with it, the
+Accounts/Starred Posts panels (see `my_media_panel.css`'s z-index) -- browsing
+your own media reasonably wins over a stale editor left open behind it, and
+should cover the very Accounts Panel it was opened from rather than getting
+buried behind it. Still below the Media Viewer panel and `.modal`, though.
+-}
+myMediaPanel : Shared.Model -> Html Shared.Msg
+myMediaPanel shared =
+    Html.map Shared.MyMediaPanelMsg (MyMediaPanel.view shared.accountsPanel shared.myMediaPanel)
 
 
 {-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`

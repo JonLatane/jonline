@@ -750,6 +750,31 @@
   color: white;
 }
 
+/* Opens `Shared.MyMediaPanel` for this account's own server -- see
+   `UI.accountRow`. Sized/shaped like `.remove-btn` (same row of small
+   circular icon buttons) but neutral-colored, not danger-red. */
+.media-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* flex: 0 0 auto; */
+  padding: 0;
+  border: 0;
+  /* width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1;
+  border: 1px solid var(--border);*/
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.media-btn:hover {
+  background: var(--chip-bg);
+}
+
 .external-link-btn {
   display: flex;
   align-items: center;
