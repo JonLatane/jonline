@@ -616,7 +616,13 @@ searchRowView model =
             [ input
                 [ type_ "text"
                 , class "posts-search-input"
-                , placeholder "Search posts..."
+                , placeholder <|
+                    case model.context of
+                        REPLY ->
+                            "Search replies..."
+
+                        _ ->
+                            "Search posts..."
                 , value model.searchText
                 , onInput SearchTextChanged
                 , onEscape ClearSearchClicked
