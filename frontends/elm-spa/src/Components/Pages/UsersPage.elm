@@ -22,12 +22,13 @@ and adding a "Following | &lt;name&gt;"-style heading), mirroring
 `Components.Pages.PostsPage`'s own `author` parameter and reuse by
 `Pages.Username_.Posts`/`Pages.User.UserId_.Posts`.
 
-Unlike `PostsPage`, this has no fade in/out animation machinery -- a list of
-users has no equivalent of posts' star-driven reordering/removal to animate
-around, so that complexity isn't needed here.
+Like `PostsPage`, cards fade/scale in and out (see `UserAnimation`) as users
+appear/disappear from the listing -- e.g. a search that narrows the results,
+or a server being disabled -- via `UI.Flip`.
 
 -}
 
+import Animation
 import Browser.Navigation
 import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
@@ -36,8 +37,9 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, a, button, div, h2, input, p, text)
-import Html.Attributes exposing (class, href, placeholder, title, type_, value)
+import Html.Attributes exposing (class, href, placeholder, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
+import Html.Keyed
 import Json.Decode as Decode
 import Process
 import Proto.Jonline exposing (GetUsersResponse, User)
@@ -47,6 +49,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Task
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
+import UI.Flip
 import Url.Builder
 
 
@@ -71,8 +74,27 @@ type alias ServerFeed =
     }
 
 
+{-| A user card's fade in/out state, keyed in `userAnimations` by
+`followStatusAndButtonKey` (the same host+id key `followStatusAndButtons`
+already uses -- both dicts identify a card the same way, so there's no need
+for a second key convention) so it survives independently of `usersByServer`
+-- a server being disabled (or re-fetched under a different account, or a
+search narrowing the results) drops/replaces its users in `usersByServer`
+immediately, but a `removing` `flip` entry here keeps rendering its
+last-known `user`/`host` until its fade-out finishes, instead of the card
+just vanishing. Mirrors `Components.Pages.PostsPage.PostAnimation` exactly --
+see `UI.Flip` for what `flip` itself drives.
+-}
+type alias UserAnimation =
+    { host : String
+    , user : User
+    , flip : UI.Flip.State Msg
+    }
+
+
 type alias Model =
     { usersByServer : Dict String ServerFeed
+    , userAnimations : Dict String UserAnimation
 
     -- The user + host + listing type to restrict the listing to, if any --
     -- `Nothing` for `Pages.People`'s unfiltered `EVERYONE` listing.
@@ -103,6 +125,7 @@ init : Shared.Model -> Maybe ( String, User, UserListingType ) -> Browser.Naviga
 init shared target navKey path query =
     fetchNewServers shared
         { usersByServer = Dict.empty
+        , userAnimations = Dict.empty
         , target = target
         , followStatusAndButtons = Dict.empty
         , navKey = navKey
@@ -192,6 +215,7 @@ refetchServers shared model serversToFetch =
       }
     , Effect.batch (List.map fetchEffect serversToFetch)
     )
+        |> Tuple.mapFirst syncAnimations
 
 
 {-| See `Components.Pages.PostsPage.fetchNewServers`'s doc comment -- same
@@ -261,12 +285,102 @@ pushSearchUrl model =
 
 
 
+-- ANIMATION
+
+
+{-| A freshly-seen user card: starts invisible/slightly shrunk and immediately
+animates in to its natural opacity/scale. Mirrors
+`Components.Pages.PostsPage.newPostAnimation`.
+-}
+newUserAnimation : String -> User -> UserAnimation
+newUserAnimation host user =
+    { host = host, user = user, flip = UI.Flip.enter }
+
+
+{-| A user card that was mid fade-out (its server got disabled, then
+re-enabled -- or its feed got re-fetched, e.g. by a changed search -- before
+the fade-out finished) reappearing: interrupts whatever fade-out step was
+queued (including its trailing `RemoveUser` send, so that message never fires
+for this key) and animates back in. Mirrors
+`Components.Pages.PostsPage.reappearingPostAnimation`.
+-}
+reappearingUserAnimation : String -> User -> UserAnimation -> UserAnimation
+reappearingUserAnimation host user anim =
+    { anim | host = host, user = user, flip = UI.Flip.reappear anim.flip }
+
+
+{-| A user card no longer present in `usersByServer` (its server was
+disabled, or its feed is being re-fetched under a different account/search):
+animates out, then sends `RemoveUser` to actually drop it from
+`userAnimations` once the fade finishes. Mirrors
+`Components.Pages.PostsPage.removingPostAnimation`.
+-}
+removingUserAnimation : String -> UserAnimation -> UserAnimation
+removingUserAnimation key anim =
+    { anim | flip = UI.Flip.remove (RemoveUser key) anim.flip }
+
+
+{-| Reconciles `userAnimations` with the users currently `Loaded` in
+`usersByServer`: starts a fade-in for newly-seen users, a fade-out for users
+that dropped out (rather than deleting them outright), and un-interrupts a
+still-fading-out card that reappeared. Safe/cheap to call after every
+`usersByServer` change, so `update`/`refetchServers` just call it
+unconditionally wherever that dict might have changed. Mirrors
+`Components.Pages.PostsPage.syncAnimations` exactly, just keyed by
+`followStatusAndButtonKey` instead of `postAnimationKey`.
+-}
+syncAnimations : Model -> Model
+syncAnimations model =
+    let
+        currentUsers : Dict String ( String, User )
+        currentUsers =
+            model.usersByServer
+                |> Dict.toList
+                |> List.concatMap
+                    (\( host, feed ) ->
+                        case feed.status of
+                            Loaded users ->
+                                List.map (\user -> ( followStatusAndButtonKey host user, ( host, user ) )) users
+
+                            _ ->
+                                []
+                    )
+                |> Dict.fromList
+
+        addOrRefresh key ( host, user ) animations =
+            case Dict.get key animations of
+                Nothing ->
+                    Dict.insert key (newUserAnimation host user) animations
+
+                Just anim ->
+                    if anim.flip.removing then
+                        Dict.insert key (reappearingUserAnimation host user anim) animations
+
+                    else
+                        Dict.insert key { anim | host = host, user = user } animations
+
+        withCurrent =
+            Dict.foldl addOrRefresh model.userAnimations currentUsers
+
+        startRemovingIfGone key anim animations =
+            if anim.flip.removing || Dict.member key currentUsers then
+                animations
+
+            else
+                Dict.insert key (removingUserAnimation key anim) animations
+    in
+    { model | userAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
+
+
+
 -- UPDATE
 
 
 type Msg
     = GotServerUsers String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetUsersResponse ))
     | Poll
+    | Animate Animation.Msg
+    | RemoveUser String
     | SharedMsg Shared.Msg
     | FollowStatusAndButtonMsg String FollowStatusAndButton.Msg
     | SearchTextChanged String
@@ -300,6 +414,7 @@ update shared msg model =
                         (Maybe.map (\feed -> { feed | status = Loaded response.users }))
                         model.usersByServer
               }
+                |> syncAnimations
             , accountEffect
             )
 
@@ -308,11 +423,29 @@ update shared msg model =
                 | usersByServer =
                     Dict.update frontendHost (Maybe.map (\feed -> { feed | status = Failed })) model.usersByServer
               }
+                |> syncAnimations
             , Effect.none
             )
 
         Poll ->
             fetchNewServers shared model
+
+        Animate animMsg ->
+            let
+                step key anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert key { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.userAnimations
+            in
+            ( { model | userAnimations = newAnimations }, Effect.batch (List.map Effect.fromCmd cmds) )
+
+        RemoveUser key ->
+            ( { model | userAnimations = Dict.remove key model.userAnimations }, Effect.none )
 
         SharedMsg subMsg ->
             let
@@ -385,8 +518,11 @@ update shared msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Time.every 30000 (\_ -> Poll)
+subscriptions model =
+    Sub.batch
+        [ Time.every 30000 (\_ -> Poll)
+        , UI.Flip.subscription Animate (List.map .flip (Dict.values model.userAnimations))
+        ]
 
 
 
@@ -507,28 +643,43 @@ listingTypeHeading listingType =
 usersListView : Shared.Model -> Model -> Html Msg
 usersListView shared model =
     let
-        loadedUsers =
-            model.usersByServer
+        sortedAnimations =
+            model.userAnimations
                 |> Dict.toList
-                |> List.concatMap
-                    (\( host, feed ) ->
-                        case feed.status of
-                            Loaded users ->
-                                List.map (\user -> ( host, user )) users
-
-                            _ ->
-                                []
-                    )
-                |> List.sortBy (\( _, user ) -> String.toLower user.username)
+                |> List.sortBy (\( _, anim ) -> String.toLower anim.user.username)
     in
     if Dict.isEmpty model.usersByServer then
         p [ class "posts-empty" ] [ text "Connect to a server to see people." ]
 
-    else if List.isEmpty loadedUsers then
+    else if List.isEmpty sortedAnimations then
         p [ class "posts-empty" ] [ text "No people yet." ]
 
     else
-        div [ class "users-list" ] (List.map (userCardView shared model) loadedUsers)
+        Html.Keyed.node "div"
+            [ class "users-list flip-animated-column" ]
+            (List.map (userAnimationView shared model) sortedAnimations)
+
+
+{-| Wraps `userCardView` in a fading/scaling/collapsing animated `<div>` (see
+`syncAnimations`) -- mirrors `Components.Pages.PostsPage.postAnimationView`
+exactly, including the inner clip `div`'s `pointer-events: none` while
+`removing`, so a fading-out card can't be clicked/followed while it's on its
+way out.
+-}
+userAnimationView : Shared.Model -> Model -> ( String, UserAnimation ) -> ( String, Html Msg )
+userAnimationView shared model ( key, anim ) =
+    let
+        pointerEventsAttr =
+            if anim.flip.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    ( key
+    , div (UI.Flip.itemAttributes UI.Flip.Vertical anim.flip False)
+        [ div pointerEventsAttr [ userCardView shared model ( anim.host, anim.user ) ] ]
+    )
 
 
 userCardView : Shared.Model -> Model -> ( String, User ) -> Html Msg

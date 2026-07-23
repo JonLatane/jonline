@@ -4,7 +4,6 @@
 .users-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
   margin: 1rem 0;
 }
 
