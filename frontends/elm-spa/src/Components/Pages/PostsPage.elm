@@ -11,7 +11,7 @@ module Components.Pages.PostsPage exposing
 {-| The shared guts of a "recent posts" page: fetching recent posts from every
 enabled server and rendering them with fade in/out animations, plus a
 search box + POST/REPLY context chooser (see `searchRowView`) that switches
-the fetch to `TEXT_SEARCH` (debounced 500ms after typing stops) and persists
+the fetch to `TEXT_SEARCH` (debounced 311ms after typing stops) and persists
 `search_text`/`context` as URL query params -- reused by `Pages.Home_` (which
 adds its own "Recent Posts" heading and passes `author = Nothing`) and
 `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` (which pass the
@@ -489,7 +489,7 @@ update shared msg model =
                     model.searchGeneration + 1
             in
             ( { model | searchText = text, searchGeneration = generation }
-            , Process.sleep 500
+            , Process.sleep 311
                 |> Task.perform (\_ -> SearchDebounceElapsed generation)
                 |> Effect.fromCmd
             )

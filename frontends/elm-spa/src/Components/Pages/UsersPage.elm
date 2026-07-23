@@ -366,7 +366,7 @@ update shared msg model =
                     model.searchGeneration + 1
             in
             ( { model | searchText = text, searchGeneration = generation }
-            , Process.sleep 500
+            , Process.sleep 311
                 |> Task.perform (\_ -> SearchDebounceElapsed generation)
                 |> Effect.fromCmd
             )
