@@ -910,6 +910,7 @@ profileDetail shared model server maybeAccount user =
                     [ usernameHeading user
                     , realNameView canEdit model.realNameEdit user
                     ]
+                , otherServerIndicator shared server
                 ]
             , Html.map FollowStatusAndButtonMsg (FollowStatusAndButton.view model.followStatusAndButton maybeAccount user)
             ]
@@ -975,6 +976,27 @@ usernameHeading : User -> Html msg
 usernameHeading user =
     h1 [ class "profile-username" ]
         (text user.username :: Authors.badges user)
+
+
+{-| "@ &lt;server logo/name&gt;", shown to the right of the username/real
+name/badges whenever this profile's own server (`server`, i.e. the target
+host actually serving the profile) isn't `mainFrontendHost` -- lets a viewer
+browsing a federated/other-server profile tell at a glance which server it
+actually lives on. The "@" is its own muted, slightly-smaller-than-the-username
+span; the logo/name reuses `AccountsPanel.serverNameAndLogo`'s `RegularServerLogo`
+style, the same one `UI.homeLinkContent` uses for the Home button, just without
+that button's nav-specific enlarging CSS.
+-}
+otherServerIndicator : Shared.Model -> AccountsPanel.Server -> Html msg
+otherServerIndicator shared server =
+    if server.frontendHost == shared.accountsPanel.mainFrontendHost then
+        text ""
+
+    else
+        div [ class "profile-other-server" ]
+            [ span [ class "profile-other-server-at" ] [ text "@" ]
+            , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
+            ]
 
 
 {-| The read-only "name area" atop a profile page -- `usernameHeading` plus
