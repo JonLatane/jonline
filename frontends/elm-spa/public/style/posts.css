@@ -288,21 +288,6 @@
   margin: 0;
 }
 
-.post-detail-other-server {
-  float: right;
-  margin-left: 0.6rem;
-  min-width: 88px;
-}
-
-/* Lets the server logo/name reclaim `.post-detail`'s own horizontal padding
-   on narrow screens, matching `.profile-other-server`'s same treatment (see
-   profiles.css) -- there's less room for the title to share with it there. */
-@media (max-width: 639px) {
-  .post-detail-other-server {
-    margin-right: -0.5rem;
-  }
-}
-
 /* The post's own `link` field, shown below the title -- see
    `.post-card-link`'s doc comment; `postDetail` has no enclosing overlay to
    escape, so this needs none of that trick, just the matching look. */

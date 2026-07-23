@@ -494,6 +494,14 @@
   gap: 0.2rem;
 }
 
+/* Same larger glyph/text sizing as `.regular` (see the shared selectors
+   below), just laid out as a row with the name left-aligned instead of
+   stacked/centered -- see `HorizontalServerLogo`'s own doc. */
+.server-name-and-logo.horizontal {
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
 .server-logo-image {
   flex: 0 0 auto;
   border-radius: 6px;
@@ -505,7 +513,8 @@
   height: 20px;
 }
 
-.server-name-and-logo.regular .server-logo-image {
+.server-name-and-logo.regular .server-logo-image,
+.server-name-and-logo.horizontal .server-logo-image {
   width: 32px;
   height: 32px;
 }
@@ -527,7 +536,9 @@
 }
 
 .server-name-and-logo.regular .server-logo-emoji,
-.server-name-and-logo.regular .server-logo-placeholder {
+.server-name-and-logo.regular .server-logo-placeholder,
+.server-name-and-logo.horizontal .server-logo-emoji,
+.server-name-and-logo.horizontal .server-logo-placeholder {
   width: 32px;
   height: 32px;
   font-size: 1.6rem;
@@ -540,7 +551,8 @@
   font-weight: 700;
 }
 
-.server-name-and-logo.regular .server-logo-placeholder {
+.server-name-and-logo.regular .server-logo-placeholder,
+.server-name-and-logo.horizontal .server-logo-placeholder {
   font-size: 1.1rem;
 }
 

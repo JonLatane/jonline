@@ -214,7 +214,7 @@
   align-items: center;
   gap: 0.35rem;
   overflow-x: auto;
-  padding: 0 1rem 0.35rem;
+  padding: 0.25rem;
 }
 
 .breadcrumb-separator {
@@ -251,6 +251,42 @@
    it actually shrink down to `.breadcrumb-root`'s capped width instead of
    overflowing past it. */
 .breadcrumb-root-title {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* `Shared.Breadcrumbs.serverSegment` -- the server logo/name chip prepended
+   at the left of the trail whenever it isn't already on `mainFrontendHost`
+   (or, on `Pages.Home_`, the chip its `FromServerHost` root renders as
+   directly). Same `max-width`/ellipsis-on-an-inner-block approach as
+   `.breadcrumb-root`/`.breadcrumb-root-title` above, for the same reason. */
+.breadcrumb-server {
+  max-width: 200px;
+  min-width: 0;
+}
+
+.breadcrumb-server-logo {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.breadcrumb-server-logo.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(127, 127, 127, 0.35);
+  color: var(--fg);
+  font-weight: 700;
+  font-size: 0.6rem;
+}
+
+.breadcrumb-server-name {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -349,5 +385,35 @@
 }
 
 .breadcrumb-reply-card-content {
+  font-size: 0.9rem;
+}
+
+/* Server overview -- `Shared.Breadcrumbs.serverOverviewView`, shown in place
+   of `.breadcrumb-reply-card` when the server chip at the left of the trail
+   (rather than a reply segment) is the one currently open. */
+.breadcrumb-server-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.breadcrumb-server-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: -10px;
+}
+
+.breadcrumb-server-overview-header .server-name-and-logo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.breadcrumb-server-overview-info-button {
+  flex: 0 0 auto;
+}
+
+.breadcrumb-server-overview-description {
   font-size: 0.9rem;
 }

@@ -43,6 +43,7 @@ import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
+import Shared.Breadcrumbs as Breadcrumbs
 import Task
 import UI.Classes exposing (classes)
 import UI.ServerTheme as ServerTheme
@@ -143,7 +144,7 @@ init shared pageIsSecure targetHost =
       -- either of this component's pages (`Pages.About`/
       -- `Pages.Server.ServerIdentifier_`) always shows the info it'd
       -- otherwise duplicate, so leaving the panel open reads as redundant.
-    , Effect.batch [ fetchEffect, closeAccountsPanelEffect ]
+    , Effect.batch [ fetchEffect, closeAccountsPanelEffect, setBreadcrumbsHost shared fetchedModel ]
     )
 
 
@@ -193,6 +194,22 @@ identifierText model =
         "http:"
     )
         ++ model.targetHost
+
+
+{-| Keeps `Shared.Breadcrumbs` pointed at this page's own
+`FromServerHost targetHost` -- mirrors `Components.Pages.UserProfilePage.setBreadcrumbsHost`
+(reissued after every `update`, a no-op once already in sync via the same
+equality check), so the trail identifies this server both on the very first
+paint and across any later host change (e.g. `GotOwnServerResult` resolving
+the own-probe).
+-}
+setBreadcrumbsHost : Shared.Model -> Model -> Effect Msg
+setBreadcrumbsHost shared model =
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost model.targetHost) then
+        Effect.none
+
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost model.targetHost) model.targetHost []))
 
 
 fetchAdmins : AccountsPanel.Server -> Effect Msg
@@ -259,6 +276,15 @@ fromShared =
 
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsHost shared newModel ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         TabSelected tab ->
             ( { model | activeTab = tab }, Effect.none )
