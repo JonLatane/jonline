@@ -1,4 +1,4 @@
-module Shared.Breadcrumbs exposing (BreadcrumbRoot(..), Model, Msg(..), bar, init, replyPanel, update)
+module Shared.Breadcrumbs exposing (BreadcrumbRoot(..), Model, Msg(..), bar, init, previewPanel, update)
 
 {-| A trail of "how did I get here" chips shown at the bottom of the top nav
 (see `UI.headerNav`), for a Post reached by following a chain of replies (and,
@@ -67,7 +67,8 @@ type alias Model =
     -- The id of whichever segment's `replyPanel` is currently open, if any --
     -- looked up against `root`/`replies` at render time (see `postFor`)
     -- rather than storing the `Post` itself a second time.
-    , viewing : Maybe String
+    , viewingPost : Maybe String
+    , viewingHost : Bool
     }
 
 
@@ -76,7 +77,8 @@ init =
     { root = Nothing
     , host = ""
     , replies = []
-    , viewing = Nothing
+    , viewingPost = Nothing
+    , viewingHost = False
     }
 
 
@@ -84,6 +86,7 @@ type Msg
     = SetRoot BreadcrumbRoot String (List Post)
     | Clear
     | SegmentClicked String
+    | ViewHost
     | CloseViewer
     | NoOp
 
@@ -96,23 +99,26 @@ update msg model =
         -- passed, rather than trusting every future caller to remember to
         -- pass `[]` itself.
         SetRoot ((FromServerHost host) as root) _ _ ->
-            { root = Just root, host = host, replies = [], viewing = Nothing }
+            { root = Just root, host = host, replies = [], viewingPost = Nothing, viewingHost = False }
 
         SetRoot root host replies ->
-            { root = Just root, host = host, replies = replies, viewing = Nothing }
+            { root = Just root, host = host, replies = replies, viewingPost = Nothing, viewingHost = False }
 
         Clear ->
             init
 
         SegmentClicked postId ->
-            if model.viewing == Just postId then
-                { model | viewing = Nothing }
+            if model.viewingPost == Just postId then
+                { model | viewingPost = Nothing }
 
             else
-                { model | viewing = Just postId }
+                { model | viewingPost = Just postId, viewingHost = False }
+
+        ViewHost ->
+            { model | viewingHost = True, viewingPost = Nothing }
 
         CloseViewer ->
-            { model | viewing = Nothing }
+            { model | viewingHost = False, viewingPost = Nothing }
 
         NoOp ->
             model
@@ -196,7 +202,7 @@ hostSegment accountsPanelModel model root =
 
         _ ->
             if model.host /= "" && model.host /= accountsPanelModel.mainFrontendHost then
-                [ serverSegment accountsPanelModel model.host ]
+                [ serverSegment accountsPanelModel model.host model.viewingHost ]
 
             else
                 []
@@ -217,7 +223,7 @@ rootSegment accountsPanelModel model root =
                 [ text "TODO: User/Event Breadcrumb Rendering" ]
 
         FromServerHost host ->
-            serverSegment accountsPanelModel host
+            serverSegment accountsPanelModel host model.viewingHost
 
 
 {-| A single-line server logo + name chip -- a square logo image (or an
@@ -233,16 +239,26 @@ is `viewing` (contrast `segmentClasses`) -- there's no "open" state for this
 chip, it's just always this server's own color. Renders nothing if `host`
 isn't a known `AccountsPanel.Server` yet (e.g. still being resolved).
 -}
-serverSegment : AccountsPanel.Model -> String -> Html msg
-serverSegment accountsPanelModel host =
+serverSegment : AccountsPanel.Model -> String -> Bool -> Html Msg
+serverSegment accountsPanelModel host viewingHost =
     case AccountsPanel.serverForHost accountsPanelModel.servers host of
         Just server ->
-            div
-                [ classes
+            button
+                [ onClick <|
+                    if viewingHost then
+                        CloseViewer
+
+                    else
+                        ViewHost
+                , classes
                     [ "breadcrumb-segment"
                     , "breadcrumb-server"
                     , hostnameToCSSClass host
-                    , "background-color-primary"
+                    , if viewingHost then
+                        "background-color-nav"
+
+                      else
+                        "background-color-primary"
                     ]
                 ]
                 [ serverSegmentLogo server.branding
@@ -295,7 +311,7 @@ segmentClasses : Model -> String -> String -> List String
 segmentClasses model kindClass postId =
     "breadcrumb-segment"
         :: kindClass
-        :: (if model.viewing == Just postId then
+        :: (if model.viewingPost == Just postId then
                 [ hostnameToCSSClass model.host, "background-color-nav" ]
 
             else
@@ -331,15 +347,19 @@ rendered, even closed, same "opening/closing is a CSS transition" convention
 as every other panel here -- see `UI.Classes.openClosedClass`. `basePath` is
 `Shared.Model.basePath`, needed for the author/permalink links.
 -}
-replyPanel : String -> AccountsPanel.Model -> Model -> Html Msg
-replyPanel basePath accountsPanelModel model =
-    div [ classes [ "breadcrumb-reply-panel", "nav-panel", openClosedClass (model.viewing /= Nothing) ] ]
-        (case postFor model model.viewing of
-            Just post ->
-                [ replyCardView basePath accountsPanelModel model post ]
+previewPanel : String -> AccountsPanel.Model -> Model -> Html Msg
+previewPanel basePath accountsPanelModel model =
+    div [ classes [ "breadcrumb-reply-panel", "nav-panel", openClosedClass (model.viewingPost /= Nothing || model.viewingHost) ] ]
+        (if model.viewingHost then
+            [ text "Server overview" ]
 
-            Nothing ->
-                []
+         else
+            case postFor model model.viewingPost of
+                Just post ->
+                    [ replyCardView basePath accountsPanelModel model post ]
+
+                Nothing ->
+                    []
         )
 
 

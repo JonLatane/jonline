@@ -223,7 +223,7 @@ sharedBackdrop shared =
               , closeMsg = Shared.AccountsPanelMsg AccountsPanel.ToggleAccountsPanel
               , blurs = True
               }
-            , { isOpen = shared.breadcrumbs.viewing /= Nothing
+            , { isOpen = shared.breadcrumbs.viewingPost /= Nothing || shared.breadcrumbs.viewingHost
               , closeMsg = Shared.BreadcrumbsMsg Breadcrumbs.CloseViewer
               , blurs = True
               }
@@ -2114,7 +2114,7 @@ see nav.css) resolves against `.navbar` itself.
 -}
 breadcrumbsReplyPanel : Shared.Model -> Html Shared.Msg
 breadcrumbsReplyPanel shared =
-    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.replyPanel shared.basePath shared.accountsPanel shared.breadcrumbs)
+    Html.map Shared.BreadcrumbsMsg (Breadcrumbs.previewPanel shared.basePath shared.accountsPanel shared.breadcrumbs)
 
 
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
