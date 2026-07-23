@@ -380,6 +380,10 @@
   pointer-events: none;
 }
 
+.nav-panel.is-closed * {
+  pointer-events: none;
+}
+
 /* Squared off to match the Accounts Panel toggle's own bottom-right corner
    (`.accounts-menu-toggle.is-open`, above) -- this panel's `right: 0` lines
    its right edge up exactly with the button's (see `.nav-panel`'s own `top`
