@@ -326,8 +326,8 @@
 
 .profile-federated-avatar {
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
 }
@@ -339,6 +339,16 @@
   background: rgba(127, 127, 127, 0.35);
   font-weight: 700;
   font-size: 0.7rem;
+}
+
+.profile-federated-names {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.profile-federated-realname {
+  font-weight: 600;
 }
 
 .profile-federated-badge {

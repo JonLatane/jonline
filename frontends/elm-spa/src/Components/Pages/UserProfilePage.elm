@@ -1346,9 +1346,9 @@ federatedProfilesEditControls shared model server canEdit user =
 {-| One federated profile's link/button -- always links out via
 `Users.userIdHref` (the "still just a link" baseline behavior), but once its
 `User` has actually loaded (see `kickOffFederatedFetches`), it's upgraded to
-show that user's avatar, their username on that server, a `crossCheckBadge`,
-and -- via `federatedServer`'s CSS class, see `UI.EmittedStylesheet` -- that
-server's own colors.
+show that user's avatar, their username on that server, their real name (if
+set), a `crossCheckBadge`, and -- via `federatedServer`'s CSS class, see
+`UI.EmittedStylesheet` -- that server's own colors.
 -}
 federatedProfileLink : Shared.Model -> Model -> AccountsPanel.Server -> User -> FederatedAccount -> Html Msg
 federatedProfileLink shared model server user account =
@@ -1381,7 +1381,14 @@ federatedProfileLink shared model server user account =
                         (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts account.host)
                         federatedUser
                     )
-                , span [ class "profile-federated-username" ] [ text (federatedUser.username ++ "@" ++ account.host) ]
+                , div [ class "profile-federated-names" ]
+                    [ span [ class "profile-federated-username" ] [ text (federatedUser.username ++ "@" ++ account.host) ]
+                    , if String.isEmpty (String.trim federatedUser.realName) then
+                        text ""
+
+                      else
+                        span [ class "profile-federated-realname" ] [ text federatedUser.realName ]
+                    ]
                 , crossCheckBadge server user federatedUser
                 ]
 
