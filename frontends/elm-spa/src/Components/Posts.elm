@@ -798,11 +798,17 @@ postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer m
         ]
 
 
-{-| Full rendering for a single post (see the Post page) -- no server badge,
-since that's already the page you're on, but still tinted with `postServerHost`'s
-`primaryAnchorColor` border like `postCard` is (just without the hover fill-in,
-since this one isn't a link). `onEditClicked` drives `editButton`, shown in the
-meta line's `post-meta-right` group only to the post's own author.
+{-| Full rendering for a single post (see the Post page) -- still tinted with
+`postServerHost`'s `primaryAnchorColor` border like `postCard` is (just
+without the hover fill-in, since this one isn't a link). `onEditClicked`
+drives `editButton`, shown in the meta line's `post-meta-right` group only to
+the post's own author.
+
+The title row also gets `otherServerLogo`, the post's own server's logo/name
+(no badge/link, just identification) to the right of the title/context chip,
+whenever `postServerHost` isn't `viewingServerHost` (`mainFrontendHost`) --
+mirrors `Components.Pages.UserProfilePage.otherServerIndicator`, minus its
+leading "@" (which reads naturally next to a username but not a post title).
 
 Only a plain `POST` gets a title at all -- a `REPLY`/`EVENT`/etc. has no real
 title of its own (`postTitleText`'s fallback to a truncated `content` exists
@@ -827,16 +833,19 @@ be a bare `postVisibilityText post` text node.
 postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
 postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
-        [ if post.context == POST then
-            h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
+        [ div [ class "post-detail-title-row" ]
+            [ if post.context == POST then
+                h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
 
-          else
-            case postContextLabel post.context of
-                Just contextLabel ->
-                    div [ class "post-detail-context" ] [ text contextLabel ]
+              else
+                case postContextLabel post.context of
+                    Just contextLabel ->
+                        div [ class "post-detail-context" ] [ text contextLabel ]
 
-                Nothing ->
-                    text ""
+                    Nothing ->
+                        text ""
+            , otherServerLogo viewingServerHost postServerHost maybeServer
+            ]
         , case postLinkText post of
             Just link ->
                 a
@@ -876,3 +885,28 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 text ""
         , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
         ]
+
+
+{-| The post's own server's logo/name, shown to the right of `postDetail`'s
+title/context chip whenever `postServerHost` isn't `viewingServerHost` (i.e.
+`shared.accountsPanel.mainFrontendHost`, per every caller of `postDetail`) --
+mirrors `Components.Pages.UserProfilePage.otherServerIndicator`, minus its
+leading "@" span (this sits next to a post title, not a username) -- same
+`AccountsPanel.serverNameAndLogo`'s `RegularServerLogo` style `UI.homeLinkContent`
+uses for the Home button. `maybeServer` is `Nothing` only while `postServerHost`
+hasn't finished connecting yet (see `ServerDependentView`), in which case this
+renders nothing rather than a bare hostname.
+-}
+otherServerLogo : String -> String -> Maybe AccountsPanel.Server -> Html msg
+otherServerLogo viewingServerHost postServerHost maybeServer =
+    if postServerHost == viewingServerHost then
+        text ""
+
+    else
+        case maybeServer of
+            Just server ->
+                div [ class "post-detail-other-server" ]
+                    [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
+
+            Nothing ->
+                text ""

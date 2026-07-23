@@ -48,13 +48,23 @@
   display: flex;
   align-items: center;
   gap: 0.3rem;
-  min-width: 0;
+  min-width: 88px;
   margin-left: auto;
 }
 
 .profile-other-server-at {
   color: var(--muted);
   font-size: 1.4rem;
+}
+
+/* Lets the indicator reclaim `.profile-detail`'s own horizontal padding on
+   narrow screens, matching `.post-detail-other-server`'s same treatment (see
+   posts.css) -- there's less room for the names column to share with it
+   there. */
+@media (max-width: 639px) {
+  .profile-other-server {
+    margin-right: -1rem;
+  }
 }
 
 .profile-username {
