@@ -130,11 +130,35 @@ init shared author navKey path query =
         }
 
 
+{-| The servers this page should ever fetch from: every enabled server for an
+unfiltered feed (`model.author == Nothing`, e.g. `Pages.Home_`), or, once
+`author` restricts the feed to one user, _only_ that user's own resolved
+host -- looked up via `AccountsPanel.serverForHost` (not `enabledServers`),
+since a user profile can be resolved, and its posts fetched anonymously,
+from a known server the viewer hasn't toggled "enabled" (or isn't signed
+into at all) -- see `Components.Users.Resolver.fetchTask`, which resolves
+`author` itself the same way. Without this restriction, both plain listing
+and (especially) `TEXT_SEARCH` would fan out to every other enabled server
+too, e.g. showing `jon@oakcitysocial.com`'s posts on `jon@jonline.io`'s
+own posts page.
+-}
+relevantServers : Shared.Model -> Model -> List AccountsPanel.Server
+relevantServers shared model =
+    case model.author of
+        Just ( host, _ ) ->
+            AccountsPanel.serverForHost shared.accountsPanel.servers host
+                |> Maybe.map List.singleton
+                |> Maybe.withDefault []
+
+        Nothing ->
+            AccountsPanel.enabledServers shared.accountsPanel
+
+
 {-| Fetches `serversToFetch` (marking each `Loading` first) using the current
 `model.searchText`/`model.context`, and drops any already-fetched server
-that's no longer enabled -- shared by `fetchNewServers` (which only passes
-the servers that actually need it, see its own doc comment) and
-`applySearchChange` (which always passes every enabled server, since a
+that's no longer `relevantServers` -- shared by `fetchNewServers` (which only
+passes the servers that actually need it, see its own doc comment) and
+`applySearchChange` (which always passes every relevant server, since a
 changed search must re-fetch everything regardless of whether that server's
 acting account also happens to have changed).
 -}
@@ -142,7 +166,7 @@ refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, 
 refetchServers shared model serversToFetch =
     let
         enabledServers =
-            AccountsPanel.enabledServers shared.accountsPanel
+            relevantServers shared model
 
         currentAccountId server =
             AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
@@ -199,7 +223,7 @@ fetchNewServers shared model =
                 |> Maybe.map AccountsPanel.accountId
 
         serversToFetch =
-            AccountsPanel.enabledServers shared.accountsPanel
+            relevantServers shared model
                 |> List.filter
                     (\server ->
                         case Dict.get server.frontendHost model.postsByServer of
@@ -213,7 +237,7 @@ fetchNewServers shared model =
     refetchServers shared model serversToFetch
 
 
-{-| Re-fetches every enabled server (unconditionally -- unlike
+{-| Re-fetches every relevant server (unconditionally -- unlike
 `fetchNewServers`, a changed search has to override every already-Loaded
 feed, not just servers whose acting account changed) and persists the new
 `search_text`/`context` to the URL -- the single path `SearchDebounceElapsed`,
@@ -223,7 +247,7 @@ applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
 applySearchChange shared model =
     let
         ( refetchedModel, refetchEffect ) =
-            refetchServers shared model (AccountsPanel.enabledServers shared.accountsPanel)
+            refetchServers shared model (relevantServers shared model)
     in
     ( refetchedModel, Effect.batch [ refetchEffect, pushSearchUrl refetchedModel ] )
 
