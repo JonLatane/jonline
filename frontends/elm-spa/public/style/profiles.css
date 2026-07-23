@@ -11,11 +11,13 @@
 .profile-header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem;
+  /* justify-content: space-between; */
+  /* gap: 0.8rem; */
+  flex-direction: column;
 }
 
 .profile-header {
+  width: 100%;
   display: flex;
   align-items: center;
   flex: 1 1 auto;
