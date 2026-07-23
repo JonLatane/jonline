@@ -89,6 +89,12 @@ main {
   padding: 1rem;
 }
 
+@media (max-width: 639px) {
+  main {
+    padding: 0 4px;
+  }
+}
+
 /* Reserves scroll room while a just-navigated-to page's content is still
    loading in (and so shorter than its final height) -- see UI.scrollPreserver
    and Shared.Model.scrollPreserverVisible. Collapsed by default; expanded for

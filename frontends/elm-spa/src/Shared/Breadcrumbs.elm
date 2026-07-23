@@ -220,7 +220,7 @@ segmentAvatar name maybeUrl =
 {-| A popup, anchored just under `bar`'s own trail (see nav.css's
 `.breadcrumb-reply-panel`), showing whichever segment's Post was last tapped
 (see `viewing`) -- a smaller, read-only relative of
-`Components.PostReplies.replyCard` (title if it's the root -- see `isRoot`,
+`Components.Posts.replyCard` (title if it's the root -- see `isRoot`,
 author, media, content via `Components.Markdown` same as everywhere else Post
 content renders, permalink; no Reply/load-more/collapse actions, which don't
 make sense for a single already-in-hand Post shown out of its thread, and no

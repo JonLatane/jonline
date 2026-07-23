@@ -1,4 +1,4 @@
-module Components.PostReplies exposing (Model, Msg, ReplyLoadStatus(..), init, refresh, replyCard, subscriptions, update, view)
+module Components.PostReplies exposing (Model, Msg, ReplyLoadStatus(..), init, refresh, subscriptions, update, view)
 
 {-| Threaded replies for a single Post (see `Pages.Post.PostId_`) -- the
 `Post` proto is itself recursive/graph-shaped via its own `replies` field (see
@@ -12,32 +12,27 @@ itself requested some `reply_depth`) -- from then on, an individual reply
 whose own `replies` are incomplete (`replyCount` more than were returned --
 see the proto doc comment: fewer than `replyCount` can come back if some are
 hidden by moderation/visibility) gets its own "Load replies" button
-(`replyCard`), which fetches just that subtree (`LoadRepliesClicked`).
+(`Components.Posts.replyCard`), which fetches just that subtree
+(`LoadRepliesClicked`).
 
 The whole tree is flattened (`flattenReplies`) into a single depth-tagged list
 for display -- a caller wanting an actually-nested visual layout still gets it
-via each item's own `depth` (see `replyCard`'s indentation) rather than
-nested HTML, which is what lets the whole thing render as one flat,
+via each item's own `depth` (see `Components.Posts.replyCard`'s indentation)
+rather than nested HTML, which is what lets the whole thing render as one flat,
 FLIP-animated list (`UI.Flip`) the same way `Pages.Home_`'s recent-posts feed
 and the Starred Posts panel already do for their own (non-nested) post lists.
 
 -}
 
 import Animation
-import Components.Authors as Authors
-import Components.Markdown as Markdown
-import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, span, text)
-import Html.Attributes exposing (attribute, class, href, style)
-import Html.Events exposing (onClick)
+import Html exposing (Html, div, span, text)
+import Html.Attributes exposing (class, style)
 import Html.Keyed
 import Proto.Jonline exposing (GetPostsResponse, Post, unwrapPost, wrapPost)
-import Proto.Jonline.Permission exposing (Permission(..))
-import Proto.Jonline.Visibility exposing (Visibility(..))
 import Set exposing (Set)
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -54,7 +49,7 @@ initialReplyDepth =
 
 
 {-| Per-node (keyed by Post id) reply-loading state -- `ReplyLoaded` suppresses
-`replyCard`'s "Load replies" button even if `replyCount` still disagrees with
+`Components.Posts.replyCard`'s "Load replies" button even if `replyCount` still disagrees with
 the actual `replies` array size (moderation/visibility can hide some -- see
 this module's doc comment), since that mismatch is then expected rather than
 "not loaded yet".
@@ -383,7 +378,7 @@ replyAnimationView config model ( depth, post, flip ) =
     ( post.id
     , div (Flip.itemAttributes Flip.Vertical flip False)
         [ div pointerEventsAttr
-            [ replyCard
+            [ Posts.replyCard
                 config.basePath
                 config.viewingServerHost
                 config.postServerHost
@@ -394,140 +389,11 @@ replyAnimationView config model ( depth, post, flip ) =
                 loaded
                 loading
                 collapsed
-                (config.onReplyClicked post)
-                (config.toMsg (LoadRepliesClicked post.id))
-                (config.toMsg (ToggleCollapsed post.id))
+                (Just (config.onReplyClicked post))
+                (Just (config.toMsg (LoadRepliesClicked post.id)))
+                (Just (config.toMsg (ToggleCollapsed post.id)))
                 post
             ]
         ]
     )
 
-
-{-| A single reply's card -- author, content, a Reply button, and (bottom
-right of the actions row) a merged load-more/collapse-expand button carrying
-`post`'s own reply/response counts (see `replyStatusButton`). `depth` (1 for a
-direct reply, 2 for a reply to a reply, etc.) drives its left-indentation, so
-the flattened list `view` renders still reads as a nested thread. Exposed (not
-just used by `view`) so any other place wanting to show a single reply --
-e.g. a future notification/mention view -- can reuse the exact same card.
--}
-replyCard :
-    String
-    -> String
-    -> String
-    -> Maybe AccountsPanel.Server
-    -> Maybe AccountsPanel.Account
-    -> (String -> msg)
-    -> Int
-    -> Bool
-    -> Bool
-    -> Bool
-    -> msg
-    -> msg
-    -> msg
-    -> Post
-    -> Html msg
-replyCard basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked depth loaded loading collapsed onReplyClicked onLoadRepliesClicked onToggleCollapsedClicked post =
-    div
-        [ class "post-reply-item"
-        , style "margin-left" (String.fromInt (min depth 8 * 20) ++ "px")
-        ]
-        [ div [ class "post-reply-meta" ]
-            [ span [ class "post-meta-left" ]
-                (Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
-                    :: (if post.visibility == GLOBALPUBLIC then
-                            []
-
-                        else
-                            [ text (" · " ++ Posts.postVisibilityText post) ]
-                       )
-                )
-            , span [ class "post-meta-right" ]
-                [ a
-                    [ href (Posts.postHref basePath viewingServerHost postServerHost post)
-                    , class "post-reply-permalink"
-                    , attribute "aria-label" "Permalink"
-                    ]
-                    [ text "🔗" ]
-                ]
-            ]
-        , case maybeServer of
-            Just server ->
-                MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked post.media
-
-            Nothing ->
-                text ""
-        , case post.content of
-            Just content ->
-                Markdown.view [ class "post-reply-content" ] content
-
-            Nothing ->
-                text ""
-        , div [ class "post-reply-actions" ]
-            [ case maybeAccount of
-                Just account ->
-                    if List.member REPLYTOPOSTS account.permissions then
-                        button [ class "post-reply-button", onClick onReplyClicked ] [ text "Reply" ]
-
-                    else
-                        text ""
-
-                Nothing ->
-                    text ""
-            , replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post
-            ]
-        ]
-
-
-{-| The merged "load more"/"collapse"/"expand" button in a reply card's
-bottom-right corner (`.post-reply-status-button`, pinned right via
-`margin-left: auto` same as `.post-meta-right`), carrying `post`'s own
-reply/response counts (`Posts.repliesCountText`, matching `commentCountText`'s
-own formatting) in each of its three states:
-
-  - still more to fetch (`post.replies`'s length doesn't yet match
-    `post.replyCount`, and this node hasn't been explicitly `ReplyLoaded`):
-    "Load 💬 X/Y More" (or a "Loading replies…" placeholder while `loading`),
-    firing `onLoadRepliesClicked`
-  - fully loaded and has any replies: an Expand/Collapse toggle (driven by
-    `collapsed`, which mirrors `Model.collapsedReplies`) firing
-    `onToggleCollapsedClicked` -- see `flattenAt`, which is what actually
-    hides a collapsed node's descendants
-  - fully loaded with no replies at all: nothing
-
--}
-replyStatusButton : Bool -> Bool -> Bool -> msg -> msg -> Post -> Html msg
-replyStatusButton loaded loading collapsed onLoadRepliesClicked onToggleCollapsedClicked post =
-    let
-        fullyLoaded =
-            loaded || List.length post.replies == post.replyCount
-
-        countText =
-            "💬 " ++ Posts.repliesCountText post
-    in
-    if fullyLoaded then
-        if List.isEmpty post.replies then
-            text ""
-
-        else
-            button
-                [ class "post-reply-status-button", onClick onToggleCollapsedClicked ]
-                [ text
-                    -- ▲/▼ ◀/▶
-                    ((if collapsed then
-                        "▶ "
-
-                      else
-                        "▼ "
-                     )
-                        ++ countText
-                    )
-                ]
-
-    else if loading then
-        span [ class "post-reply-loading" ] [ text "Loading replies…" ]
-
-    else
-        button
-            [ class "post-reply-status-button", onClick onLoadRepliesClicked ]
-            [ text ("Load " ++ countText ++ " More") ]

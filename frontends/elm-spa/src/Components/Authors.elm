@@ -161,8 +161,8 @@ avatar authorName maybeUrl =
 {-| An author's avatar + name + Admin/Run Bots badges, linking to their
 profile (see `href`) -- a `span` (not a link) if `maybeAuthor` is `Nothing`,
 so the avatar still shows either way. Used by `Components.Posts`'
-`postCard`/`postDetail`, `Components.PostReplies.replyCard`, and
-`Shared.Breadcrumbs.replyCardView` -- `postDetail`'s is a plain, unwrapped
+`postCard`/`postDetail`/`replyCard`, and `Shared.Breadcrumbs.replyCardView`
+-- `postDetail`'s is a plain, unwrapped
 link (fine as-is); `postCard`'s needs the "stretched link" dance in its own
 doc comment to keep this independently clickable without nesting an `<a>`
 inside `postCard`'s own enclosing one.

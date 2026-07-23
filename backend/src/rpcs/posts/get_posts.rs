@@ -18,7 +18,7 @@ use crate::schema::{follows, group_posts, memberships, posts, users};
 
 use crate::rpcs::validations::PASSING_MODERATIONS;
 
-const PAGE_SIZE: i64 = 1000;
+const PAGE_SIZE: i64 = 200;
 pub fn get_posts(
     request: GetPostsRequest,
     user: &Option<&models::User>,
@@ -198,7 +198,8 @@ fn get_search_posts(
     // "simple" (not "english") to match posts_build_search_text's indexing config - see
     // 2026-07-23-012047_add_search_text_no_stopwords - otherwise a query for a stopword like
     // "about" would get stripped from the query side even though it's indexed on the document side.
-    let search_query = to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text);
+    let search_query =
+        to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text);
 
     let mut query = query_visible_posts!(user)
         .filter(posts::context.eq(request.context().as_str_name()))
