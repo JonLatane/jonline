@@ -329,6 +329,10 @@
   text-overflow: ellipsis;
 }
 
+.breadcrumbs-bar:has(:nth-child(5))> :not(:last-child) .breadcrumb-reply-username {
+  display: none;
+}
+
 /* Narrow screens: drop the username text from reply segments, leaving just
    the avatar -- the trail can otherwise run out of horizontal room fast once
    several replies are chained, and the avatar alone is still enough to tap
