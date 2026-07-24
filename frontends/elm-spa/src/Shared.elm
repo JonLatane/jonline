@@ -26,6 +26,7 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
+import Proto.Jonline exposing (Media)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
@@ -66,6 +67,7 @@ comes up.
 type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
+    | ConfirmMediaDelete Media
 
 
 type alias Model =
@@ -527,7 +529,7 @@ updateImpl req msg model =
 
         MyMediaPanelMsg subMsg ->
             let
-                ( subModel, subCmd, maybeAccountsPanelMsg ) =
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
                     MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
@@ -538,8 +540,21 @@ updateImpl req msg model =
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
 
+                -- `MyMediaPanel.DeleteClicked`'s own request (see its doc) to
+                -- open the shared "are you sure?" dialog -- same
+                -- `RequestDelete` a plain `Shared.Msg` click (`serverChip`/
+                -- `accountRow`) would fire directly, just routed through this
+                -- panel's own `Msg` space instead since its `view` is fully
+                -- `Html.map`-wrapped (see `UI.myMediaPanel`).
+                confirmingDeleteFor =
+                    case maybeDeleteRequest of
+                        Just media ->
+                            Just (ConfirmMediaDelete media)
+
+                        Nothing ->
+                            model.confirmingDeleteFor
             in
-            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel }
+            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
@@ -602,27 +617,50 @@ updateImpl req msg model =
             ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
 
         ConfirmDelete ->
-            let
-                removeMsg =
-                    model.confirmingDeleteFor
-                        |> Maybe.map
-                            (\confirmation ->
-                                case confirmation of
-                                    ConfirmAccountDelete account ->
-                                        AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)
-
-                                    ConfirmServerDelete server ->
-                                        AccountsPanel.RemoveServerClicked server.frontendHost
-                            )
-            in
-            case removeMsg of
-                Just subMsg ->
+            case model.confirmingDeleteFor of
+                Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req subMsg model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accountsPanel
                     in
                     ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
                     , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                Just (ConfirmServerDelete server) ->
+                    let
+                        ( subModel, subCmd ) =
+                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accountsPanel
+                    in
+                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                -- Unlike the two branches above (which just flip local
+                -- state), this actually calls `DeleteMedia` -- see
+                -- `MyMediaPanel.deleteTask`. Its own `maybeAccountsPanelMsg`
+                -- is forwarded the same way `MyMediaPanelMsg` above does;
+                -- `DeleteConfirmed` never produces a delete request of its
+                -- own (that's only `DeleteClicked`), so its second value is
+                -- ignored here.
+                Just (ConfirmMediaDelete media) ->
+                    let
+                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
+                            MyMediaPanel.update model.accountsPanel (MyMediaPanel.DeleteConfirmed media) model.myMediaPanel
+
+                        ( accountsPanelModel, accountsPanelCmd ) =
+                            case maybeAccountsPanelMsg of
+                                Just accountsPanelMsg ->
+                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                                Nothing ->
+                                    ( model.accountsPanel, Cmd.none )
+                    in
+                    ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
+                    , Cmd.batch
+                        [ Cmd.map MyMediaPanelMsg subCmd
+                        , Cmd.map AccountsPanelMsg accountsPanelCmd
+                        ]
                     )
 
                 Nothing ->

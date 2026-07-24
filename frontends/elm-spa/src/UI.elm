@@ -1896,6 +1896,11 @@ deleteConfirmationModal shared =
                             ( "Remove Server?"
                             , "Remove " ++ server.frontendHost ++ " from your server list?"
                             )
+
+                        Shared.ConfirmMediaDelete media ->
+                            ( "Delete Media?"
+                            , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
+                            )
             in
             UI.Modal.view
                 { class = "confirm-delete-modal"

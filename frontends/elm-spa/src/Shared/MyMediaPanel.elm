@@ -35,13 +35,14 @@ import Components.MediaRenderer as MediaRenderer
 import File exposing (File)
 import File.Select
 import Grpc
-import Html exposing (Html, button, div, img, span, text)
-import Html.Attributes exposing (alt, attribute, class, disabled, src)
-import Html.Events exposing (on, onClick, preventDefaultOn)
+import Html exposing (Html, button, div, img, input, span, text)
+import Html.Attributes exposing (alt, attribute, class, disabled, src, step, title, type_, value)
+import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
 import Http
 import Json.Decode as Decode
-import Proto.Jonline exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest)
+import Proto.Jonline exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest, defaultMedia)
 import Proto.Jonline.Jonline as Jonline
+import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, openClosedClass)
@@ -91,12 +92,32 @@ type alias Model =
     -- `view`'s `on "dragenter"`/`"dragleave"`. Purely a CSS hook
     -- (`is-dragging-over`); doesn't gate `Drop` itself.
     , isDraggingOver : Bool
+
+    -- Media IDs with a `DeleteMedia` request currently in flight -- a `Set`
+    -- (not a single `Maybe`, unlike `uploadStatus`) since nothing stops the
+    -- user confirming a second item's delete while the first is still
+    -- in-flight. Drives disabling that item's delete button and showing
+    -- "Deleting…" in its place (see `mediaItemView`).
+    , deletingIds : Set String
+
+    -- Set by the most recent failed `DeleteMedia` -- shown next to
+    -- `uploadStatus` in the header (see `uploadStatusView`'s counterpart,
+    -- `deleteStatusView`) until the next delete attempt or panel close.
+    , deleteError : Maybe String
+
+    -- The slider-controlled pixel size of each grid item's long edge (see
+    -- `zoomSliderView`) -- carried forward across `Open`/`CloseClicked`
+    -- (unlike the rest of this record, which those reset) so the user's
+    -- preferred preview size sticks across panel sessions. 238 matches
+    -- `ExtraSmall`'s own fixed CSS cap (`media.css`), so the slider's
+    -- default looks identical to before this existed.
+    , zoom : Float
     }
 
 
 init : Model
 init =
-    { targetHost = "", purpose = Browse, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False }
+    { targetHost = "", purpose = Browse, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238 }
 
 
 {-| Whether the panel is currently open -- drives `openClosedClass` and
@@ -129,6 +150,20 @@ type Msg
     | DragEnter
     | DragLeave
     | GotUploadResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, String ))
+      -- The delete button on a grid item (see `mediaItemView`) -- doesn't
+      -- delete anything itself, just bubbles `media` up through `update`'s
+      -- own extra return value for `Shared.update` to turn into a
+      -- `Shared.RequestDelete`, the same shared "are you sure?" flow
+      -- `UI.serverChip`/`UI.accountRow` use (see `Shared.DeleteConfirmation`).
+    | DeleteClicked Media
+      -- Fired back from `Shared.update`'s `ConfirmDelete` once the user's
+      -- confirmed the dialog `DeleteClicked` requested -- this is what
+      -- actually calls `DeleteMedia`.
+    | DeleteConfirmed Media
+    | GotDeleteResult Media (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+      -- The bottom-right zoom slider (see `zoomSliderView`) -- `Float` since
+      -- that's what an `input[type=range]`'s value parses as.
+    | ZoomChanged Float
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
@@ -137,41 +172,44 @@ itself surface an `AccountsPanel.Msg` it needs forwarded on its behalf (an
 `AccessTokenResponseReceived`, if fetching/uploading had to refresh the
 account's token first -- see `AccountsPanel.performWithAccountServer`) for
 `Shared.update` to actually dispatch, same convention as
-`Shared.MarkdownPanel.update`.
+`Shared.MarkdownPanel.update`. The extra `Maybe Media` alongside it is
+`DeleteClicked`'s own request for `Shared.update` to open the shared delete
+confirmation dialog for -- same "second forwarded value" convention
+`Shared.StarredPostsPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
 update accountsPanelModel msg model =
     case msg of
         Open purpose host ->
             let
                 opened =
-                    { targetHost = host, purpose = purpose, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False }
+                    { targetHost = host, purpose = purpose, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom }
             in
             case resolve accountsPanelModel host of
                 Ok resolved ->
                     ( opened
                     , fetchTask accountsPanelModel resolved.account
                         |> Task.attempt GotMediaResult
-                    , Nothing
+                    , ( Nothing, Nothing )
                     )
 
                 Err err ->
-                    ( { opened | status = FetchFailed err }, Cmd.none, Nothing )
+                    ( { opened | status = FetchFailed err }, Cmd.none, ( Nothing, Nothing ) )
 
         CloseClicked ->
-            ( init, Cmd.none, Nothing )
+            ( { init | zoom = model.zoom }, Cmd.none, ( Nothing, Nothing ) )
 
         GotMediaResult (Ok ( maybeAccountsPanelMsg, response )) ->
-            ( { model | status = Fetched response.media }, Cmd.none, maybeAccountsPanelMsg )
+            ( { model | status = Fetched response.media }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
 
         GotMediaResult (Err err) ->
-            ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, Nothing )
+            ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
 
         MediaItemClicked _ ->
-            ( model, Cmd.none, Nothing )
+            ( model, Cmd.none, ( Nothing, Nothing ) )
 
         AddClicked ->
-            ( model, File.Select.file acceptedMimeTypes GotFile, Nothing )
+            ( model, File.Select.file acceptedMimeTypes GotFile, ( Nothing, Nothing ) )
 
         GotFile file ->
             startUpload accountsPanelModel model file
@@ -182,13 +220,13 @@ update accountsPanelModel msg model =
                     startUpload accountsPanelModel { model | isDraggingOver = False } file
 
                 Nothing ->
-                    ( { model | isDraggingOver = False }, Cmd.none, Nothing )
+                    ( { model | isDraggingOver = False }, Cmd.none, ( Nothing, Nothing ) )
 
         DragEnter ->
-            ( { model | isDraggingOver = True }, Cmd.none, Nothing )
+            ( { model | isDraggingOver = True }, Cmd.none, ( Nothing, Nothing ) )
 
         DragLeave ->
-            ( { model | isDraggingOver = False }, Cmd.none, Nothing )
+            ( { model | isDraggingOver = False }, Cmd.none, ( Nothing, Nothing ) )
 
         GotUploadResult (Ok ( maybeAccountsPanelMsg, _ )) ->
             -- Re-fetch to show the new item -- cheaper to just re-run the
@@ -199,37 +237,82 @@ update accountsPanelModel msg model =
                 Ok resolved ->
                     ( { model | uploadStatus = NotUploading, status = Fetching }
                     , fetchTask accountsPanelModel resolved.account |> Task.attempt GotMediaResult
-                    , maybeAccountsPanelMsg
+                    , ( maybeAccountsPanelMsg, Nothing )
                     )
 
                 Err _ ->
-                    ( { model | uploadStatus = NotUploading }, Cmd.none, maybeAccountsPanelMsg )
+                    ( { model | uploadStatus = NotUploading }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
 
         GotUploadResult (Err err) ->
             case model.uploadStatus of
                 Uploading file ->
-                    ( { model | uploadStatus = UploadFailed file (AccountsPanel.grpcErrorToString err) }, Cmd.none, Nothing )
+                    ( { model | uploadStatus = UploadFailed file (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
 
                 _ ->
-                    ( model, Cmd.none, Nothing )
+                    ( model, Cmd.none, ( Nothing, Nothing ) )
+
+        DeleteClicked media ->
+            ( model, Cmd.none, ( Nothing, Just media ) )
+
+        DeleteConfirmed media ->
+            case resolve accountsPanelModel model.targetHost of
+                Ok resolved ->
+                    ( { model | deletingIds = Set.insert media.id model.deletingIds, deleteError = Nothing }
+                    , deleteTask accountsPanelModel resolved.account media
+                        |> Task.attempt (GotDeleteResult media)
+                    , ( Nothing, Nothing )
+                    )
+
+                Err err ->
+                    ( { model | deleteError = Just err }, Cmd.none, ( Nothing, Nothing ) )
+
+        GotDeleteResult media (Ok ( maybeAccountsPanelMsg, _ )) ->
+            -- Re-fetch rather than just filtering `media` out of `Fetched`'s
+            -- own list locally -- same reasoning `GotUploadResult` gives for
+            -- doing the same after an upload.
+            let
+                clearedModel =
+                    { model | deletingIds = Set.remove media.id model.deletingIds }
+            in
+            case resolve accountsPanelModel model.targetHost of
+                Ok resolved ->
+                    ( { clearedModel | status = Fetching }
+                    , fetchTask accountsPanelModel resolved.account |> Task.attempt GotMediaResult
+                    , ( maybeAccountsPanelMsg, Nothing )
+                    )
+
+                Err _ ->
+                    ( clearedModel, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+
+        GotDeleteResult media (Err err) ->
+            ( { model
+                | deletingIds = Set.remove media.id model.deletingIds
+                , deleteError = Just (AccountsPanel.grpcErrorToString err)
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        ZoomChanged zoom ->
+            ( { model | zoom = zoom }, Cmd.none, ( Nothing, Nothing ) )
 
 
 {-| Shared by `GotFile`/`Drop` -- resolves `targetHost` again (same check
 `Open` makes) since either can land well after the account this panel was
 opened for stopped being usable (signed out mid-pick, server disabled, ...).
 -}
-startUpload : AccountsPanel.Model -> Model -> File -> ( Model, Cmd Msg, Maybe AccountsPanel.Msg )
+startUpload : AccountsPanel.Model -> Model -> File -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
 startUpload accountsPanelModel model file =
     case resolve accountsPanelModel model.targetHost of
         Ok resolved ->
             ( { model | uploadStatus = Uploading file }
             , uploadTask accountsPanelModel resolved model.targetHost file
                 |> Task.attempt GotUploadResult
-            , Nothing
+            , ( Nothing, Nothing )
             )
 
         Err err ->
-            ( { model | uploadStatus = UploadFailed file err }, Cmd.none, Nothing )
+            ( { model | uploadStatus = UploadFailed file err }, Cmd.none, ( Nothing, Nothing ) )
 
 
 {-| By extension, same allowlist `frontends/tamagui`'s `media_uploader.tsx`
@@ -290,6 +373,26 @@ fetchTask accountsPanelModel account =
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken (Just token)
                 |> Grpc.toTask
+        )
+
+
+{-| The `DeleteMedia` RPC (`protos/jonline.proto`) takes a `Media`, but
+`backend/src/rpcs/media/delete_media.rs` only ever looks at its `id` --
+`defaultMedia` fills in the rest with placeholders nothing on the backend
+reads. Its response is `google.protobuf.Empty`; mapped away to `()` here
+purely so `GotDeleteResult` doesn't need its own import of that type.
+-}
+deleteTask : AccountsPanel.Model -> AccountsPanel.Account -> Media -> Task Grpc.Error ( Maybe AccountsPanel.Msg, () )
+deleteTask accountsPanelModel account media =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        ( Just account.userId, account.server )
+        (\server token ->
+            Grpc.new Jonline.deleteMedia { defaultMedia | id = media.id }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+                |> Task.map (always ())
         )
 
 
@@ -413,6 +516,7 @@ view accountsPanelModel model =
             [ span [ class "my-media-panel-title" ] [ text "My Media" ]
             , div [ class "my-media-panel-header-right" ]
                 [ uploadStatusView model.uploadStatus
+                , deleteStatusView model.deleteError
                 , accountBadge accountsPanelModel model
                 , button
                     [ class "my-media-panel-add"
@@ -424,7 +528,26 @@ view accountsPanelModel model =
                 ]
             ]
         , div [ class "my-media-panel-content" ] (contentView accountsPanelModel model)
+        , if hasMedia model then
+            zoomSliderView model
+
+          else
+            text ""
         ]
+
+
+{-| Whether `contentView` currently has a non-empty grid worth zooming --
+gates `zoomSliderView` (see `view`), which would otherwise float uselessly
+over "Loading…"/"No media yet."/error text.
+-}
+hasMedia : Model -> Bool
+hasMedia model =
+    case model.status of
+        Fetched (_ :: _) ->
+            True
+
+        _ ->
+            False
 
 
 isUploading : UploadStatus -> Bool
@@ -464,6 +587,21 @@ uploadStatusView status =
         UploadFailed file err ->
             span [ classes [ "my-media-panel-upload-status", "my-media-panel-upload-error" ] ]
                 [ text ("Couldn't upload " ++ File.name file ++ ": " ++ err) ]
+
+
+{-| `uploadStatusView`'s counterpart for `deleteError` -- deletes don't have
+an in-progress message of their own here (that's shown inline on the item
+itself, see `mediaItemView`'s "Deleting…"), only a failure.
+-}
+deleteStatusView : Maybe String -> Html Msg
+deleteStatusView deleteError =
+    case deleteError of
+        Nothing ->
+            text ""
+
+        Just err ->
+            span [ classes [ "my-media-panel-upload-status", "my-media-panel-upload-error" ] ]
+                [ text ("Couldn't delete: " ++ err) ]
 
 
 {-| The account whose media this panel is browsing, shown as an avatar +
@@ -520,15 +658,82 @@ contentView accountsPanelModel model =
                     [ div [ class "my-media-panel-message" ] [ text "No media yet." ] ]
 
                 Fetched media ->
-                    [ div [ class "my-media-panel-grid" ]
-                        (List.map (mediaItemView resolved.server resolved.account) media)
+                    [ div
+                        [ class "my-media-panel-grid"
+
+                        -- Read by `my_media_panel.css`'s own override of
+                        -- `.media-renderer-extra-small`'s fixed max-width/
+                        -- height (see `media.css`) -- letting `zoomSliderView`
+                        -- resize every item without `MediaRenderer` itself
+                        -- needing a third, continuously-sized `Sizing`.
+                        --
+                        -- This has to go through `attribute "style"` (a raw
+                        -- style-attribute *string*, parsed by the browser's
+                        -- own CSS parser) rather than `Html.Attributes.style`
+                        -- -- elm/virtual-dom applies the latter as
+                        -- `domNode.style[key] = value` (plain bracket
+                        -- assignment), which silently no-ops for a custom
+                        -- property (`--*`) key: the DOM only picks up custom
+                        -- properties set via `style.setProperty` or, as here,
+                        -- parsed from the attribute string. A named property
+                        -- like `color` works with either, which is why this
+                        -- doesn't show up anywhere else in this codebase.
+                        , attribute "style" ("--my-media-zoom-size: " ++ String.fromFloat model.zoom ++ "px;")
+                        ]
+                        (List.map (mediaItemView resolved.server resolved.account model.deletingIds) media)
                     ]
 
 
-mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Media -> Html Msg
-mediaItemView server account media =
+mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Set String -> Media -> Html Msg
+mediaItemView server account deletingIds media =
+    let
+        deleting =
+            Set.member media.id deletingIds
+    in
     div [ class "my-media-panel-item" ]
-        [ MediaRenderer.view MediaRenderer.ExtraSmall server (Just account) MediaItemClicked (toMediaReference media)
+        [ div [ class "my-media-panel-item-preview" ]
+            [ MediaRenderer.view MediaRenderer.ExtraSmall server (Just account) MediaItemClicked (toMediaReference media)
+            , button
+                [ classes [ "remove-btn", "my-media-panel-item-delete" ]
+                , onClick (DeleteClicked media)
+                , disabled deleting
+                , title "Delete this media"
+                ]
+                [ text "╳" ]
+            ]
         , div [ class "my-media-panel-item-name" ] [ text (Maybe.withDefault "Untitled" media.name) ]
-        , div [ class "my-media-panel-item-type" ] [ text media.contentType ]
+        , div [ class "my-media-panel-item-type" ]
+            [ text
+                (if deleting then
+                    "Deleting…"
+
+                 else
+                    media.contentType
+                )
+            ]
+        ]
+
+
+{-| Floats over `.my-media-panel-content`'s own scrolling (see
+`my_media_panel.css`'s `.my-media-panel-zoom`, `position: absolute` within
+this panel's `position: fixed` root) rather than sitting inline in the
+header/content flow, so it stays reachable at a constant spot regardless of
+how far the grid's scrolled. Drives every item's size via a CSS custom
+property rather than each `input` event re-rendering the whole grid through
+`Sizing` -- see `contentView`'s `Fetched` branch.
+-}
+zoomSliderView : Model -> Html Msg
+zoomSliderView model =
+    div [ class "my-media-panel-zoom" ]
+        [ span [ class "my-media-panel-zoom-icon" ] [ text "🔍" ]
+        , input
+            [ type_ "range"
+            , Html.Attributes.min "80"
+            , Html.Attributes.max "480"
+            , step "8"
+            , value (String.fromFloat model.zoom)
+            , onInput (\v -> ZoomChanged (String.toFloat v |> Maybe.withDefault model.zoom))
+            , title "Preview size"
+            ]
+            []
         ]
