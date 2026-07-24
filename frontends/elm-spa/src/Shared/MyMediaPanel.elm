@@ -417,15 +417,23 @@ tile as "gone" and fade the whole grid out for the length of every refetch.
 Mirrors `Components.Pages.UsersPage.syncAnimations` -- see its own doc --
 keyed by `Media.id` instead.
 
-Also builds the new `mediaOrder` here rather than leaving `mediaAnimationsInOrder`
-to rederive it from `fetchedOrder` each render -- see that function's own doc
-for why a freshly-removing tile has to keep its *existing* slot instead of
-moving anywhere, which only a value actually stored in `Model` (not recomputed
-from scratch every time) can guarantee.
+Also builds the new `mediaOrder` here (via `UI.Flip.syncOrder` -- see its own
+doc for why this panel needs it at all, unlike e.g. `AccountsPanel`'s
+servers/accounts) rather than leaving `mediaAnimationsInOrder` to rederive
+order from `fetchedOrder` fresh each render.
 -}
 syncMediaAnimations : Model -> Model
 syncMediaAnimations model =
     let
+        fetchedOrder : List String
+        fetchedOrder =
+            case model.status of
+                Fetched media ->
+                    List.map .id media
+
+                _ ->
+                    []
+
         currentMedia : Dict String Media
         currentMedia =
             case model.status of
@@ -459,26 +467,11 @@ syncMediaAnimations model =
 
         newAnimations =
             Dict.foldl startRemovingIfGone withCurrent withCurrent
-
-        -- Ids never seen before (a fresh `Open`, or a just-uploaded/just-
-        -- refetched item) -- prepended ahead of everything already tracked,
-        -- matching `fetchedOrder`'s own newest-first convention (`GetMedia`'s
-        -- response order).
-        newIds =
-            Dict.keys currentMedia |> List.filter (\id -> not (List.member id model.mediaOrder))
-
-        -- Every previously-ordered id that's still tracked after the above --
-        -- resting *or* mid removing-fade -- kept in its exact existing slot.
-        -- Critically, a tile that just started removing is *not* relocated
-        -- here (unlike the old `fetchedOrder ++ removingOnlyIds` approach) --
-        -- reordering a DOM node in the same patch that also flips its
-        -- `flip-collapsed` class silently cancels the CSS transition in every
-        -- browser tested (confirmed by instrumenting a real delete), so a
-        -- removing tile has to fade out from exactly where it already is.
-        keptOrder =
-            model.mediaOrder |> List.filter (\id -> Dict.member id newAnimations)
     in
-    { model | mediaAnimations = newAnimations, mediaOrder = newIds ++ keptOrder }
+    { model
+        | mediaAnimations = newAnimations
+        , mediaOrder = UI.Flip.syncOrder (\id -> Dict.member id newAnimations) fetchedOrder model.mediaOrder
+    }
 
 
 {-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
