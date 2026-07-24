@@ -36,6 +36,15 @@
   transform: translateX(-50%) translateY(100%);
 }
 
+/* The whole panel is a drop target for uploading (see `view`'s
+   `dropTargetAttributes`) -- a dashed highlight anywhere a drag is hovering
+   makes that droppable-ness discoverable, same idea as a native OS drop
+   zone. */
+.my-media-panel.nav-panel.is-dragging-over {
+  outline: 2px dashed var(--fg);
+  outline-offset: -2px;
+}
+
 /* Phone-width screens: edge to edge, same reasoning as `.markdown-panel`'s
    own override (markdown_panel.css) -- no spare width to give up on a small
    screen, and this already reads as a full "screen" of its own there. */
@@ -116,6 +125,39 @@
   .my-media-panel-username {
     display: none;
   }
+}
+
+.my-media-panel-add {
+  flex: 0 0 auto;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.my-media-panel-add:disabled {
+  opacity: 0.5;
+}
+
+/* Shown in the header while `AddClicked`/`Drop` has an upload in flight (or
+   just failed) -- see `uploadStatusView`. Shares the account badge's own
+   truncate-on-overflow treatment (`.my-media-panel-username`) since it sits
+   in the same cramped `.my-media-panel-header-right` row. */
+.my-media-panel-upload-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.my-media-panel-upload-error {
+  color: var(--danger);
 }
 
 .my-media-panel-close {

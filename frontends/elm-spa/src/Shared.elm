@@ -537,6 +537,7 @@ updateImpl req msg model =
 
                         Nothing ->
                             ( model.accountsPanel, Cmd.none )
+
             in
             ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel }
             , Cmd.batch
