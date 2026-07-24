@@ -21,7 +21,6 @@ module UI.Flip exposing
     , subscription
     , swapDeltas
     , syncEnter
-    , syncOrder
     )
 
 {-| Generic FLIP-style ("First, Last, Invert, Play") animation helpers for
@@ -126,6 +125,26 @@ reappear state =
 
 {-| Starts an item animating out, then sends `onRemoved` once the fade
 finishes -- the caller uses that to actually drop it from its own collection.
+
+A caller's render-order derivation has to keep a `removing` item at its exact
+existing rank, never relocate it -- moving a keyed DOM node and changing the
+class this flips on (`flip-collapsed`, via `itemAttributes`) in the same patch
+silently cancels the CSS collapse transition in every browser tested
+(confirmed via a real delete, instrumented headless: no `transitionrun` event
+at all, the item's box just snaps straight to its collapsed size). Every
+caller in this codebase gets this for free already, via one of two patterns:
+`AccountsPanel`'s servers/accounts and `StarredPostsPanel`'s starred posts
+keep an item in their own locally-owned order at its original slot until
+`onRemoved` actually deletes it (nothing ever reorders a still-present item);
+`Components.Pages.PostsPage`/`UsersPage` instead re-sort their whole list
+every render, but by a stable per-item property (a post's timestamp, a user's
+username) that doesn't change just because an item started removing, so nothing
+re-sorts relative to anything else. A caller whose order comes from a server
+refetch with no such natural sort key (e.g. `Shared.MyMediaPanel`, before it
+switched to sorting by `Media.createdAt`) needs to track its own explicit
+order list instead of rederiving one fresh as "current fetch order, plus
+whichever removing ids the fetch no longer mentions, tacked on the end" --
+that tacking-on is exactly the relocate-on-remove this note warns about.
 -}
 remove : msg -> State msg -> State msg
 remove onRemoved state =
@@ -233,49 +252,6 @@ syncEnter idOf items animations =
         )
         animations
         items
-
-
-{-| Merges a fresh "currently present" id list into a caller's own persisted
-display order, for a keyed FLIP list whose underlying items come from a
-server refetch (unlike `syncEnter`'s accounts/servers, which stay in their own
-locally-owned list at their original slot until a `remove`'s `onRemoved`
-callback actually deletes them -- see that list's own `RemoveXClicked`/
-`FinishRemoveX` pair). A caller in that situation needs this because the
-naive approach -- rederiving order fresh every time as "currently-present ids,
-in their fetched order, followed by whichever removing ids the fetch no
-longer mentions" -- relocates a tile to the end of the list in the exact same
-update that starts its remove-fade (`remove` flips `removing` to `True`,
-adding `flip-collapsed`). Moving a keyed DOM node and changing the class that
-would start its CSS transition in the same patch silently cancels that
-transition in every browser tested (confirmed via a real delete, instrumented
-headless: no `transitionrun` event at all, the tile's width just snaps
-straight to its collapsed value) -- so a removing tile has to keep its exact
-existing slot, and only a value actually persisted in the caller's own model
-(not recomputed from scratch each render) can guarantee that.
-
-`stillTracked` is the caller's own "is this id still in my animations dict"
-predicate (e.g. `\id -> Dict.member id model.mediaAnimations` called *after*
-that dict's own this-render updates) -- this doesn't touch `animations`
-itself, so it can't tell a resting id from a removing one; it only needs to
-drop ids that finished removing and were already dropped from the animations
-dict entirely (see `remove`'s `onRemoved`), which otherwise would linger in
-`previousOrder` forever. `currentIds` is the fetch's own order (used only to
-decide where brand-new ids get inserted -- prepended ahead of everything
-already known, matching a typical newest-first `GetX` response); every id
-already in `previousOrder` keeps its exact spot regardless of `currentIds`'
-own order.
--}
-syncOrder : (String -> Bool) -> List String -> List String -> List String
-syncOrder stillTracked currentIds previousOrder =
-    let
-        newIds =
-            currentIds |> List.filter (\id -> not (List.member id previousOrder))
-
-        kept =
-            previousOrder |> List.filter stillTracked
-    in
-    newIds ++ kept
-
 
 
 -- MOVING

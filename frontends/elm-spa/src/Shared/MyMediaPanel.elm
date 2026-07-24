@@ -60,7 +60,9 @@ import Proto.Jonline exposing (GetMediaResponse, Media, MediaReference, defaultG
 import Proto.Jonline.Jonline as Jonline
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
+import Time
 import UI.Classes exposing (classes, openClosedClass)
 import UI.Flip
 
@@ -145,11 +147,6 @@ type alias Model =
     -- fades/collapses out instead of disappearing outright. Mirrors
     -- `Components.Pages.UsersPage.userAnimations` -- see its own doc.
     , mediaAnimations : Dict String MediaAnimation
-
-    -- The grid's actual display order -- see `mediaAnimationsInOrder`'s doc
-    -- for why this has to be tracked explicitly, in `Model`, rather than
-    -- rederived fresh from `status`'s `Fetched` list on every render.
-    , mediaOrder : List String
     }
 
 
@@ -168,7 +165,7 @@ type alias MediaAnimation =
 
 init : Model
 init =
-    { targetHost = "", selectionType = Nothing, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty, mediaOrder = [] }
+    { targetHost = "", selectionType = Nothing, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty }
 
 
 {-| Whether the panel is currently open -- drives `openClosedClass` and
@@ -242,7 +239,7 @@ update accountsPanelModel msg model =
         Open selectionType host ->
             let
                 opened =
-                    { targetHost = host, selectionType = selectionType, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty, mediaOrder = [] }
+                    { targetHost = host, selectionType = selectionType, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty }
             in
             case resolve accountsPanelModel host of
                 Ok resolved ->
@@ -395,7 +392,7 @@ update accountsPanelModel msg model =
             ( { model | mediaAnimations = newMediaAnimations }, Cmd.batch cmds, ( Nothing, Nothing ) )
 
         RemoveMediaAnimation id ->
-            ( { model | mediaAnimations = Dict.remove id model.mediaAnimations, mediaOrder = List.filter ((/=) id) model.mediaOrder }
+            ( { model | mediaAnimations = Dict.remove id model.mediaAnimations }
             , Cmd.none
             , ( Nothing, Nothing )
             )
@@ -404,8 +401,8 @@ update accountsPanelModel msg model =
             ( { model | zoom = zoom }, Cmd.none, ( Nothing, Nothing ) )
 
 
-{-| Reconciles `mediaAnimations`/`mediaOrder` with `status`'s current `Fetched`
-list: starts a fade-in for newly-seen media (a fresh `Open`, or a just-uploaded
+{-| Reconciles `mediaAnimations` with `status`'s current `Fetched` list:
+starts a fade-in for newly-seen media (a fresh `Open`, or a just-uploaded
 item once its post-upload refetch lands), a fade-out for media no longer
 present (a just-deleted item, once _its_ refetch lands), and un-interrupts a
 still-fading-out item that reappeared. Only ever called from `GotMediaResult`
@@ -416,24 +413,10 @@ reconcile against -- calling this then would read every currently-tracked
 tile as "gone" and fade the whole grid out for the length of every refetch.
 Mirrors `Components.Pages.UsersPage.syncAnimations` -- see its own doc --
 keyed by `Media.id` instead.
-
-Also builds the new `mediaOrder` here (via `UI.Flip.syncOrder` -- see its own
-doc for why this panel needs it at all, unlike e.g. `AccountsPanel`'s
-servers/accounts) rather than leaving `mediaAnimationsInOrder` to rederive
-order from `fetchedOrder` fresh each render.
 -}
 syncMediaAnimations : Model -> Model
 syncMediaAnimations model =
     let
-        fetchedOrder : List String
-        fetchedOrder =
-            case model.status of
-                Fetched media ->
-                    List.map .id media
-
-                _ ->
-                    []
-
         currentMedia : Dict String Media
         currentMedia =
             case model.status of
@@ -464,14 +447,8 @@ syncMediaAnimations model =
 
             else
                 Dict.insert id { anim | flip = UI.Flip.remove (RemoveMediaAnimation id) anim.flip } animations
-
-        newAnimations =
-            Dict.foldl startRemovingIfGone withCurrent withCurrent
     in
-    { model
-        | mediaAnimations = newAnimations
-        , mediaOrder = UI.Flip.syncOrder (\id -> Dict.member id newAnimations) fetchedOrder model.mediaOrder
-    }
+    { model | mediaAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
 
 
 {-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
@@ -928,18 +905,42 @@ contentView accountsPanelModel model =
                         [ div [ class "my-media-panel-message" ] [ text "No media yet." ] ]
 
 
-{-| `mediaAnimations` in display order -- just reads `mediaOrder` (kept up to
-date by `syncMediaAnimations`/`RemoveMediaAnimation`) rather than rederiving
-order from `status`'s `Fetched` list on every render: a tile that's mid
-removing-fade has to stay in its *exact* existing slot rather than moving
-anywhere (see `syncMediaAnimations`'s own doc on why a reorder alongside the
-class change that starts its fade would silently cancel the CSS transition),
-and only a value actually persisted in `Model` can guarantee that.
+{-| `mediaAnimations` in display order -- sorted newest-first by each tile's
+own `media.createdAt`, mirroring `Components.Pages.PostsPage.postAnimationView`
+call site's `List.sortBy (Posts.postTimestamp ...)` and
+`Components.Pages.UsersPage.usersListView`'s sort by username exactly: a
+stable sort on a value that never changes for an item already being displayed
+(unlike "current fetch order, plus whichever ids are mid removing-fade tacked
+on separately") means a tile that starts removing keeps its exact rank
+relative to every other tile without moving -- which matters here more than
+it's just tidy: reordering a keyed DOM node and changing the class that
+starts its remove-fade in the same patch silently cancels the CSS collapse
+transition in every browser tested (confirmed via a real delete, instrumented
+headless -- no `transitionrun` event at all, the tile's width just snaps
+straight to its collapsed value). A still-removing tile whose id has already
+dropped out of `status`'s own `Fetched` list keeps rendering here purely
+because it's still in `mediaAnimations` at all (see `syncMediaAnimations`) --
+its `createdAt` came along for the ride in `MediaAnimation.media`.
 -}
 mediaAnimationsInOrder : Model -> List ( String, MediaAnimation )
 mediaAnimationsInOrder model =
-    model.mediaOrder
-        |> List.filterMap (\id -> Dict.get id model.mediaAnimations |> Maybe.map (\anim -> ( id, anim )))
+    model.mediaAnimations
+        |> Dict.toList
+        |> List.sortBy (\( _, anim ) -> -(Time.posixToMillis (mediaTimestamp anim.media)))
+
+
+{-| A media item's "recency" sort key -- mirrors `Components.Posts.postTimestamp`
+exactly, just falling straight back to `Time.millisToPosix 0` since `Media`
+(unlike `Post`) has no separate `publishedAt` to prefer first.
+-}
+mediaTimestamp : Media -> Time.Posix
+mediaTimestamp media =
+    case media.createdAt of
+        Just ts ->
+            timestampToPosix ts
+
+        Nothing ->
+            Time.millisToPosix 0
 
 
 {-| Wraps `mediaItemView` in a fading/scaling/collapsing animated outer `div`
