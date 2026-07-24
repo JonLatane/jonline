@@ -412,7 +412,8 @@ since that's a transient state with no real `Fetched` list of its own to
 reconcile against -- calling this then would read every currently-tracked
 tile as "gone" and fade the whole grid out for the length of every refetch.
 Mirrors `Components.Pages.UsersPage.syncAnimations` -- see its own doc --
-keyed by `Media.id` instead.
+keyed by `Media.id` instead. See `UI.Flip.syncAnimations` for the shared
+reconciliation logic this hands its own `MediaAnimation` shape to.
 -}
 syncMediaAnimations : Model -> Model
 syncMediaAnimations model =
@@ -425,30 +426,16 @@ syncMediaAnimations model =
 
                 _ ->
                     Dict.empty
-
-        addOrRefresh id media animations =
-            case Dict.get id animations of
-                Nothing ->
-                    Dict.insert id { media = media, flip = UI.Flip.enter } animations
-
-                Just anim ->
-                    if anim.flip.removing then
-                        Dict.insert id { media = media, flip = UI.Flip.reappear anim.flip } animations
-
-                    else
-                        Dict.insert id { anim | media = media } animations
-
-        withCurrent =
-            Dict.foldl addOrRefresh model.mediaAnimations currentMedia
-
-        startRemovingIfGone id anim animations =
-            if anim.flip.removing || Dict.member id currentMedia then
-                animations
-
-            else
-                Dict.insert id { anim | flip = UI.Flip.remove (RemoveMediaAnimation id) anim.flip } animations
     in
-    { model | mediaAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
+    { model
+        | mediaAnimations =
+            UI.Flip.syncAnimations
+                RemoveMediaAnimation
+                (\media -> { media = media, flip = UI.Flip.enter })
+                (\media anim -> { anim | media = media })
+                currentMedia
+                model.mediaAnimations
+    }
 
 
 {-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`

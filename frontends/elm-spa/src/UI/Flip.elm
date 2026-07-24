@@ -20,6 +20,7 @@ module UI.Flip exposing
     , startMove
     , subscription
     , swapDeltas
+    , syncAnimations
     , syncEnter
     )
 
@@ -252,6 +253,68 @@ syncEnter idOf items animations =
         )
         animations
         items
+
+
+{-| Reconciles a caller's own keyed animation dict -- any record shape with at
+least a `flip : State msg` field, e.g. `Components.Pages.PostsPage.PostAnimation`/
+`UsersPage.UserAnimation`/`Shared.MyMediaPanel.MediaAnimation`, all unchanged --
+against a fresh `Dict String data` of whatever's currently present (a page's
+own `Loaded` posts/users, a panel's own `Fetched` media, ...): starts a fade-in
+(`enter`) for a newly-seen id via `buildEntering`, refreshes an existing
+(non-`flip`) fields via `refresh` for one already resting or reappearing
+(`reappear`s its `flip` first, same as a still-fading-out item un-interrupted
+elsewhere), and fades out (`remove`) any id no longer present. Generalizes
+`PostsPage.syncAnimations`/`UsersPage.syncAnimations` (identical apart from
+what their own animation record holds) and `MyMediaPanel.syncMediaAnimations`.
+
+`buildEntering`/`refresh` are the only caller-supplied pieces, since this
+function has no way to know a caller's other fields (`r`) exist at all, let
+alone how to fill them in from `data` -- `buildEntering data` constructs a
+whole fresh record (own `flip` included, via `enter`); `refresh data anim`
+updates `anim`'s own fields from `data` (its `flip` already handled by the
+time this runs, whether staying put or just `reappear`ed).
+
+Doesn't derive render order -- see `remove`'s own doc for why a naive
+"currently-present ids, plus whichever removing ids the fetch no longer
+mentions, tacked onto the end" would relocate a removing item and silently
+cancel its CSS collapse transition; a stable per-item sort key (as
+`PostsPage`/`UsersPage`/`MyMediaPanel` all use) or a caller-owned order list
+(as `AccountsPanel`/`StarredPostsPanel` effectively do, by never moving a
+still-present item at all) is still the caller's own job.
+-}
+syncAnimations :
+    (String -> msg)
+    -> (data -> { r | flip : State msg })
+    -> (data -> { r | flip : State msg } -> { r | flip : State msg })
+    -> Dict String data
+    -> Dict String { r | flip : State msg }
+    -> Dict String { r | flip : State msg }
+syncAnimations onRemoved buildEntering refresh currentItems animations =
+    let
+        addOrRefresh id data acc =
+            case Dict.get id acc of
+                Nothing ->
+                    Dict.insert id (buildEntering data) acc
+
+                Just anim ->
+                    if anim.flip.removing then
+                        Dict.insert id (refresh data { anim | flip = reappear anim.flip }) acc
+
+                    else
+                        Dict.insert id (refresh data anim) acc
+
+        withCurrent =
+            Dict.foldl addOrRefresh animations currentItems
+
+        startRemovingIfGone id anim acc =
+            if anim.flip.removing || Dict.member id currentItems then
+                acc
+
+            else
+                Dict.insert id { anim | flip = remove (onRemoved id) anim.flip } acc
+    in
+    Dict.foldl startRemovingIfGone withCurrent withCurrent
+
 
 
 -- MOVING
