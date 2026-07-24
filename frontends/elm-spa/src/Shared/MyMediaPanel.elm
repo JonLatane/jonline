@@ -996,8 +996,8 @@ zoomSliderView model =
         [ span [ class "my-media-panel-zoom-icon" ] [ text "🔍" ]
         , input
             [ type_ "range"
-            , Html.Attributes.min "72"
-            , Html.Attributes.max "480"
+            , Html.Attributes.min "48"
+            , Html.Attributes.max "1080"
             , step "8"
             , value (String.fromFloat model.zoom)
             , onInput (\v -> ZoomChanged (String.toFloat v |> Maybe.withDefault model.zoom))
