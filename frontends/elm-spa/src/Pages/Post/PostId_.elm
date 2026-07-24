@@ -228,6 +228,28 @@ accountsPanelEffect maybeAccountsPanelMsg =
         |> Maybe.withDefault Effect.none
 
 
+{-| Fully applies a just-fetched/-saved `post` to this page -- the one place
+any save (or refetch) completion should route through so the page's own
+`postDetailView` reflects it immediately rather than only after a reload.
+Handles both halves of that: sets `model.postStatus` itself, _and_ pushes
+`post` into `Shared.StarredPostsPanel`'s cache (see its `PostUpdated`/
+`freshestPost`) so that cache -- which `postDetailView` prefers over
+whatever's passed to it whenever this Post has ever been starred -- can't go
+on serving a stale copy back out from under this update.
+
+Used by both `GotPost` (the initial load, and content-edit saves via
+`refetch`) and `GotVisibilitySaveResult`; any future per-field edit on this
+page (mirroring `VisibilitySaveClicked`'s `Posts.updatePost` pattern) should
+route its own successful save through this too rather than hand-rolling the
+same two updates again.
+-}
+applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
+applyUpdatedPost model post =
+    ( { model | postStatus = PostLoaded post }
+    , Effect.fromShared (Shared.StarredPostsPanelMsg (StarredPostsPanel.PostUpdated model.targetHost post))
+    )
+
+
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
 update shared req msg model =
     case msg of
@@ -279,16 +301,17 @@ update shared req msg model =
 
                         Nothing ->
                             Effect.none
+
+                ( postUpdatedModel, postUpdatedEffect ) =
+                    case List.head response.posts of
+                        Just post ->
+                            applyUpdatedPost model post
+
+                        Nothing ->
+                            ( { model | postStatus = PostFailed }, Effect.none )
             in
-            ( { model
-                | postStatus =
-                    response.posts
-                        |> List.head
-                        |> Maybe.map PostLoaded
-                        |> Maybe.withDefault PostFailed
-                , repliesModel = repliesModel
-              }
-            , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect ]
+            ( { postUpdatedModel | repliesModel = repliesModel }
+            , Effect.batch [ accountEffect, repliesEffect, breadcrumbsEffect, postUpdatedEffect ]
             )
 
         GotPost (Err _) ->
@@ -375,8 +398,12 @@ update shared req msg model =
                     ( model, Effect.none )
 
         GotVisibilitySaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
-            ( { model | postStatus = PostLoaded updatedPost, visibilityEdit = Nothing }
-            , accountsPanelEffect maybeAccountsPanelMsg
+            let
+                ( postUpdatedModel, postUpdatedEffect ) =
+                    applyUpdatedPost model updatedPost
+            in
+            ( { postUpdatedModel | visibilityEdit = Nothing }
+            , Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, postUpdatedEffect ]
             )
 
         GotVisibilitySaveResult (Err err) ->

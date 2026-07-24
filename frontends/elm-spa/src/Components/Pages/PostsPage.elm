@@ -373,41 +373,15 @@ postAnimationKey host post =
     host ++ "@" ++ post.id
 
 
-{-| A freshly-seen post: starts invisible/slightly shrunk and immediately
-animates in to its natural opacity/scale.
--}
-newPostAnimation : String -> Post -> PostAnimation
-newPostAnimation host post =
-    { host = host, post = post, flip = UI.Flip.enter }
-
-
-{-| A post that was mid fade-out (its server got disabled, then re-enabled --
-or its feed got re-fetched -- before the fade-out finished) reappearing:
-interrupts whatever fade-out step was queued (including its trailing
-`RemovePost` send, so that message never fires for this key) and animates
-back in.
--}
-reappearingPostAnimation : String -> Post -> PostAnimation -> PostAnimation
-reappearingPostAnimation host post anim =
-    { anim | host = host, post = post, flip = UI.Flip.reappear anim.flip }
-
-
-{-| A post no longer present in `postsByServer` (its server was disabled, or
-its feed is being re-fetched under a different account): animates out, then
-sends `RemovePost` to actually drop it from `postAnimations` once the fade
-finishes.
--}
-removingPostAnimation : String -> PostAnimation -> PostAnimation
-removingPostAnimation key anim =
-    { anim | flip = UI.Flip.remove (RemovePost key) anim.flip }
-
-
 {-| Reconciles `postAnimations` with the posts currently `Loaded` in
 `postsByServer`: starts a fade-in for newly-seen posts, a fade-out for posts
 that dropped out (rather than deleting them outright), and un-interrupts a
 still-fading-out post that reappeared. Safe/cheap to call after every
 `postsByServer` change, so `update` just calls it unconditionally wherever
-that dict might have changed.
+that dict might have changed. `RemovePost` is what actually drops a gone
+post's animation entry once its fade-out finishes. See `UI.Flip.syncAnimations`
+for the shared reconciliation logic this hands its own `PostAnimation` shape
+to (mirrored by `Components.Pages.UsersPage.syncAnimations`).
 -}
 syncAnimations : Model -> Model
 syncAnimations model =
@@ -426,30 +400,16 @@ syncAnimations model =
                                 []
                     )
                 |> Dict.fromList
-
-        addOrRefresh key ( host, post ) animations =
-            case Dict.get key animations of
-                Nothing ->
-                    Dict.insert key (newPostAnimation host post) animations
-
-                Just anim ->
-                    if anim.flip.removing then
-                        Dict.insert key (reappearingPostAnimation host post anim) animations
-
-                    else
-                        Dict.insert key { anim | host = host, post = post } animations
-
-        withCurrent =
-            Dict.foldl addOrRefresh model.postAnimations currentPosts
-
-        startRemovingIfGone key anim animations =
-            if anim.flip.removing || Dict.member key currentPosts then
-                animations
-
-            else
-                Dict.insert key (removingPostAnimation key anim) animations
     in
-    { model | postAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
+    { model
+        | postAnimations =
+            UI.Flip.syncAnimations
+                RemovePost
+                (\( host, post ) -> { host = host, post = post, flip = UI.Flip.enter })
+                (\( host, post ) anim -> { anim | host = host, post = post })
+                currentPosts
+                model.postAnimations
+    }
 
 
 

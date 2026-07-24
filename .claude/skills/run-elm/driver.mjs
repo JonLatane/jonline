@@ -11,6 +11,10 @@
 //   wait-for <css selector>      wait for a selector (Playwright syntax, so
 //                                 `button:has-text("Theme")` works too)
 //   click <selector>
+//   upload <selector> <path>     clicks selector, intercepts the native file
+//                                 picker it opens (e.g. Elm's File.Select.file)
+//                                 and feeds it path, instead of it hanging
+//                                 waiting on a real OS dialog
 //   fill <selector> <value...>   rest of the line is the value
 //   press <key>                  e.g. Enter
 //   sleep <ms>
@@ -75,9 +79,37 @@ async function main() {
           await page.click(rest, { timeout: 15000 });
           break;
 
+        case "click-at": {
+          // click <selector> at a specific offset within it, e.g. to hit a
+          // large backdrop element at a point not covered by a child overlay.
+          const [selector, coords] = splitFirst(rest);
+          const [x, y] = coords.split(" ").map(Number);
+          await page.click(selector, { position: { x, y }, timeout: 15000 });
+          break;
+        }
+
+        case "upload": {
+          const [selector, filePath] = splitFirst(rest);
+          const [fileChooser] = await Promise.all([
+            page.waitForEvent("filechooser", { timeout: 15000 }),
+            page.click(selector, { timeout: 15000 }),
+          ]);
+          await fileChooser.setFiles(filePath);
+          break;
+        }
+
         case "fill": {
           const [selector, value] = splitFirst(rest);
           await page.fill(selector, value);
+          break;
+        }
+
+        case "type": {
+          // No click-to-focus first -- some fields (e.g. the create-account
+          // password field) are already focused programmatically by the app
+          // itself, and clicking can race a concurrently-animating overlay.
+          const [, value] = splitFirst(rest);
+          await page.keyboard.type(value, { delay: 20 });
           break;
         }
 
@@ -96,6 +128,12 @@ async function main() {
         case "console-errors":
           console.log(JSON.stringify(consoleErrors, null, 2));
           break;
+
+        case "eval": {
+          const result = await page.evaluate(rest);
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
 
         default:
           console.error(`unknown command: ${cmd}`);

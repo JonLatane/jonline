@@ -43,7 +43,7 @@ import Html exposing (Html, a, button, div, h1, h2, input, option, p, select, sp
 import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Google.Protobuf
-import Proto.Jonline exposing (FederatedAccount, User)
+import Proto.Jonline exposing (FederatedAccount, User, defaultMediaReference)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -51,9 +51,11 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions exposing (timestampToPosix)
 import Shared.MarkdownPanel as MarkdownPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Task
 import UI
 import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
@@ -84,6 +86,30 @@ until `RealNameSaveClicked` succeeds.
 -}
 type alias RealNameEdit =
     { input : String
+    , status : SubmitStatus
+    }
+
+
+{-| What `AvatarSaveClicked` should do to `user.avatar` (see `applyAvatarChoice`) --
+`AvatarUnchanged` leaves it alone (the default, entering edit mode), `AvatarChosen
+mediaId` overwrites it with that media (set by picking a tile in the shared
+`Shared.MyMediaPanel`, opened in `SingleSelect` mode -- see `AvatarEditClicked`
+and the `SharedMsg` handling of `MyMediaPanel.MediaItemClicked`), and `AvatarRemoved`
+(the "✕" button, see `avatarView`) clears it entirely.
+-}
+type AvatarChoice
+    = AvatarUnchanged
+    | AvatarChosen String
+    | AvatarRemoved
+
+
+{-| Live only while the avatar (see `Model.avatarEdit`) is being edited --
+mirrors `RealNameEdit`, except there's no in-progress text input, just
+`choice` (see `AvatarChoice`), driven by taps on the avatar itself/its "✕"
+button/the `Shared.MyMediaPanel` chooser this opens rather than typing.
+-}
+type alias AvatarEdit =
+    { choice : AvatarChoice
     , status : SubmitStatus
     }
 
@@ -123,6 +149,7 @@ type alias Model =
     , pageIsSecure : Bool
     , federatedProfiles : Dict String FederatedProfileStatus
     , realNameEdit : Maybe RealNameEdit
+    , avatarEdit : Maybe AvatarEdit
     , permissionsEdit : Maybe PermissionsEdit
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
     , followStatusAndButton : FollowStatusAndButton.Model
@@ -145,6 +172,7 @@ init shared pageIsSecure targetHost lookup =
             , pageIsSecure = pageIsSecure
             , federatedProfiles = Dict.empty
             , realNameEdit = Nothing
+            , avatarEdit = Nothing
             , permissionsEdit = Nothing
             , federatedProfilesEdit = Nothing
             , followStatusAndButton = FollowStatusAndButton.init
@@ -157,7 +185,7 @@ init shared pageIsSecure targetHost lookup =
       -- reasoning).
     , Effect.batch
         [ Effect.map ResolverMsg resolverEffect
-        , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , Effect.fromShared Shared.CloseAllPanels
         , setBreadcrumbsHost shared model
         ]
     )
@@ -183,6 +211,27 @@ withResolvedUser user resolver =
     { resolver | status = Resolver.Loaded user }
 
 
+{-| `AvatarSaveClicked`'s transform, passed to `Users.updateUser` the same way
+`RealNameSaveClicked`'s inline lambda is -- applied to a freshly re-fetched
+`User`, not `model.resolver`'s own possibly-stale one (see `Users.updateUser`'s
+own doc). `AvatarChosen mediaId` only ever needs to set `avatar.id` --
+`backend/src/rpcs/users/update_user.rs`'s `update_user` reads nothing else off
+it -- so the rest of `MediaReference` is left at `defaultMediaReference`'s
+placeholders.
+-}
+applyAvatarChoice : AvatarChoice -> User -> User
+applyAvatarChoice choice freshUser =
+    case choice of
+        AvatarUnchanged ->
+            freshUser
+
+        AvatarChosen mediaId ->
+            { freshUser | avatar = Just { defaultMediaReference | id = mediaId } }
+
+        AvatarRemoved ->
+            { freshUser | avatar = Nothing }
+
+
 
 -- UPDATE
 
@@ -200,6 +249,11 @@ type Msg
     | RealNameCancelClicked
     | RealNameSaveClicked
     | GotRealNameSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
+    | AvatarEditClicked
+    | AvatarRemoveClicked
+    | AvatarCancelClicked
+    | AvatarSaveClicked
+    | GotAvatarSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, User ))
     | BioEditClicked
     | PermissionsEditClicked
     | PermissionRemoveClicked Permission
@@ -330,6 +384,22 @@ updateInner shared msg model =
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
                             refetch shared resolvedModel
 
+                        -- The shared `Shared.MyMediaPanel` chooser (opened by
+                        -- `AvatarEditClicked`) reports a tap this way -- see
+                        -- `Shared.MyMediaPanel`'s own module doc on why this
+                        -- forwarded `Shared.Msg`, not some closure/callback,
+                        -- is what delivers the pick back here. Gated on
+                        -- `avatarEdit` already being `Just` so an unrelated
+                        -- Browse-mode tap (e.g. from the Accounts Panel)
+                        -- elsewhere can't be mistaken for an avatar pick.
+                        Shared.MyMediaPanelMsg (MyMediaPanel.MediaItemClicked mediaId) ->
+                            ( { resolvedModel
+                                | avatarEdit =
+                                    resolvedModel.avatarEdit |> Maybe.map (\edit -> { edit | choice = AvatarChosen mediaId })
+                              }
+                            , Effect.none
+                            )
+
                         _ ->
                             ( resolvedModel, Effect.none )
             in
@@ -372,6 +442,70 @@ updateInner shared msg model =
             ( { model
                 | realNameEdit =
                     model.realNameEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        AvatarEditClicked ->
+            case model.resolver.status of
+                Resolver.Loaded _ ->
+                    ( { model
+                        | avatarEdit =
+                            -- Preserves an already-in-progress `choice`/`status`
+                            -- rather than resetting it -- this same message
+                            -- doubles as "re-open the picker" (see `avatarView`'s
+                            -- tap-the-avatar-while-editing handler), which
+                            -- shouldn't discard whatever's already been picked.
+                            case model.avatarEdit of
+                                Just edit ->
+                                    Just edit
+
+                                Nothing ->
+                                    Just { choice = AvatarUnchanged, status = Idle }
+                      }
+                    , Effect.fromShared
+                        (Shared.MyMediaPanelMsg
+                            (MyMediaPanel.Open
+                                (Just (MyMediaPanel.SingleSelect { imagesOnly = True }))
+                                model.resolver.targetHost
+                            )
+                        )
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        AvatarRemoveClicked ->
+            ( { model | avatarEdit = model.avatarEdit |> Maybe.map (\edit -> { edit | choice = AvatarRemoved }) }
+            , Effect.none
+            )
+
+        AvatarCancelClicked ->
+            ( { model | avatarEdit = Nothing }
+            , Effect.fromShared (Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked)
+            )
+
+        AvatarSaveClicked ->
+            case ( model.resolver.status, model.avatarEdit, serverAndAccount shared model ) of
+                ( Resolver.Loaded user, Just edit, Just ( server, account ) ) ->
+                    ( { model | avatarEdit = Just { edit | status = Submitting } }
+                    , Users.updateUser shared.accountsPanel ( Just account.userId, server.frontendHost ) user.id (applyAvatarChoice edit.choice)
+                        |> Task.attempt GotAvatarSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotAvatarSaveResult (Ok ( maybeAccountsPanelMsg, updatedUser )) ->
+            ( { model | resolver = withResolvedUser updatedUser model.resolver, avatarEdit = Nothing }
+            , accountsPanelEffect maybeAccountsPanelMsg
+            )
+
+        GotAvatarSaveResult (Err err) ->
+            ( { model
+                | avatarEdit =
+                    model.avatarEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
               }
             , Effect.none
             )
@@ -945,7 +1079,7 @@ profileDetail shared model server maybeAccount user =
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header-row" ]
             [ div [ class "profile-header" ]
-                [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
+                [ avatarView canEdit server maybeAccount model.avatarEdit user
                 , div [ class "profile-header-names" ]
                     [ usernameHeading user
                     , realNameView canEdit model.realNameEdit user
@@ -1072,6 +1206,84 @@ nameHeader server maybeAccount user =
 --         div [ class "profile-real-name-display" ]
 --             [ span [ class "profile-real-name" ] [ text user.realName ] ]
 --     ]
+
+
+{-| The avatar, plus (only for `canEdit`) its editing affordance below it: an
+"Edit" button when `model.avatarEdit == Nothing`, or -- while editing -- a "✕"
+button over the avatar's top-right corner (`AvatarRemoveClicked`, clears the
+avatar entirely) and a Save/Cancel row underneath it (mirrors `editSaveButton`/
+`editCancelButton`'s use elsewhere on this page). The avatar image itself
+previews `edit.choice` (see `avatarPreviewUrl`) rather than `user.avatar`
+once editing's started, and -- while editing -- is itself clickable
+(`AvatarEditClicked` again, which re-opens `Shared.MyMediaPanel` without
+resetting `choice`/`status`, see its own doc) so the user can pick again
+without hunting for a smaller "change" link. A non-`canEdit` viewer just gets
+the plain avatar, same as before this existed.
+-}
+avatarView : Bool -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe AvatarEdit -> User -> Html Msg
+avatarView canEdit server maybeAccount maybeEdit user =
+    if not canEdit then
+        UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
+
+    else
+        div [ class "profile-avatar-wrapper" ]
+            [ div
+                (case maybeEdit of
+                    Just _ ->
+                        classes [ "profile-avatar-frame", "editable" ] :: [ onClick AvatarEditClicked, title "Change avatar" ]
+
+                    Nothing ->
+                        [ classes [ "profile-avatar-frame" ] ]
+                )
+                [ UI.imageOrInitial [ "profile-avatar" ] user.username (avatarPreviewUrl server maybeAccount maybeEdit user)
+                , case maybeEdit of
+                    Just edit ->
+                        button
+                            [ class "profile-avatar-remove"
+                            , stopPropagationAndPreventDefaultOnClick AvatarRemoveClicked
+                            , disabled (edit.status == Submitting)
+                            , title "Remove avatar"
+                            ]
+                            [ text "✕" ]
+
+                    Nothing ->
+                        text ""
+                ]
+            , case maybeEdit of
+                Just edit ->
+                    div [ class "profile-avatar-edit-actions" ]
+                        [ editSaveButton AvatarSaveClicked edit.status
+                        , editCancelButton AvatarCancelClicked edit.status
+                        , editErrorView edit.status
+                        ]
+
+                Nothing ->
+                    button [ class "profile-edit-button", onClick AvatarEditClicked ] [ text "Edit" ]
+            ]
+
+
+{-| The avatar URL `avatarView` should actually preview: `user.avatar` itself
+(same as `Users.avatarUrl`) once no edit's in progress or nothing's changed
+yet (`AvatarUnchanged`), the just-picked media once one has (`AvatarChosen`,
+built via `Users.mediaReferenceUrl` off a throwaway `MediaReference` wrapping
+just that id -- nothing else about it is known/needed for a preview `<img>`),
+or `Nothing` (falling back to `UI.imageOrInitial`'s initial-letter
+placeholder) once the "✕" button's been hit (`AvatarRemoved`).
+-}
+avatarPreviewUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe AvatarEdit -> User -> Maybe String
+avatarPreviewUrl server maybeAccount maybeEdit user =
+    case maybeEdit |> Maybe.map .choice of
+        Nothing ->
+            Users.avatarUrl server maybeAccount user
+
+        Just AvatarUnchanged ->
+            Users.avatarUrl server maybeAccount user
+
+        Just (AvatarChosen mediaId) ->
+            Users.mediaReferenceUrl server maybeAccount (Just { defaultMediaReference | id = mediaId })
+
+        Just AvatarRemoved ->
+            Nothing
 
 
 {-| The Real Name line -- plain text (plus an Edit button, if `canEdit`) when

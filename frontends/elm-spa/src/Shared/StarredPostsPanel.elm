@@ -119,6 +119,7 @@ type Msg
     | AnimateItemFlip Animation.Msg
     | MediaClicked String Post String
     | StarredPostsBroadcastReceived Decode.Value
+    | PostUpdated String Post
 
 
 {-| `flags` is the raw, persisted `List String` (see `Ports.persistStarredPosts`)
@@ -177,6 +178,12 @@ this session (see `ToggleStar`), `model.posts` holds either the optimistic
 snapshot from that click or (once the RPC replies) the server's actual updated
 `Post`, complete with its current star count. Falls back to `post` itself
 (whatever the caller fetched it as) if it's never been touched.
+
+Because this always wins over whatever `Post` a page fetched for itself, a
+page that edits and re-saves a `Post` (e.g. `Pages.Post.PostId_`'s visibility/
+content editors) must also feed its freshly-saved copy back in here (see
+`PostUpdated`), or this cache entry goes stale and `freshestPost` keeps
+serving the old one right back to it.
 -}
 freshestPost : String -> Post -> Model -> Post
 freshestPost frontendHost post model =
@@ -503,6 +510,21 @@ updateHelp accountsPanelModel msg model =
             -- Handled by `update`, above -- see its own doc comment. Doesn't
             -- touch this module's `Model`, so nothing to do here.
             ( model, Cmd.none, Nothing )
+
+        -- A page that owns `post` fully saved a new copy of it (see
+        -- `freshestPost`'s doc) -- only overwrites an existing cache entry,
+        -- never creates one, since a `Post` that was never starred/fetched
+        -- into this panel has no stale copy here to correct in the first
+        -- place.
+        PostUpdated frontendHost post ->
+            let
+                key =
+                    starKey frontendHost post
+            in
+            ( { model | posts = Dict.update key (Maybe.map (\_ -> PostFetchLoaded frontendHost post)) model.posts }
+            , Cmd.none
+            , Nothing
+            )
 
         StarredPostsBroadcastReceived value ->
             case Decode.decodeValue (Decode.list Decode.string) value of

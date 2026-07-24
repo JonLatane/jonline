@@ -36,6 +36,7 @@ module Shared.AccountsPanel exposing
     , isMainServer
     , isSecure
     , mainServerTheme
+    , mediaBaseUrl
     , mediaUrl
     , performWithAccountServer
     , performWithOptionalAccountServer

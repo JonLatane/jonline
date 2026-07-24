@@ -19,14 +19,16 @@
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 
-  /* Below `.navbar` (28, see nav.css) and `.media-viewer-panel` (29, see
+  /* Below `.navbar` (28, see nav.css), `.my-media-panel` (29, see
+     my_media_panel.css) and `.media-viewer-panel` (30, see
      media_viewer_panel.css) -- the Accounts/Starred Posts panels (`.navbar`'s
      descendants, forming one stacking context at *its* z-index, not their
-     own lower ones) and a fullscreen image/video both reasonably win over a
-     glanced-at editor left open behind them. Still above plain page content,
-     so a post's Edit/Reply button reliably brings this to the front of
-     everything else, and below `.modal`'s own 30/31 (a Cancel/Confirm dialog
-     opened *from* this panel, if one's ever added, should still win). */
+     own lower ones), the My Media panel, and a fullscreen image/video all
+     reasonably win over a glanced-at editor left open behind them. Still
+     above plain page content, so a post's Edit/Reply button reliably brings
+     this to the front of everything else, and below `.modal`'s own 31/32 (a
+     Cancel/Confirm dialog opened *from* this panel, if one's ever added,
+     should still win). */
   z-index: 26;
 }
 

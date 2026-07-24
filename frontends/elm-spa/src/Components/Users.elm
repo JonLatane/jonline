@@ -11,6 +11,7 @@ module Components.Users exposing
     , fetchUserByUsername
     , fetchUserListing
     , isReservedUsername
+    , mediaReferenceUrl
     , moderationPasses
     , moderationPending
     , moderationRejected
@@ -433,6 +434,12 @@ authorAvatarUrl server maybeAccount author =
     mediaReferenceUrl server maybeAccount author.avatar
 
 
+{-| `avatarUrl`/`authorAvatarUrl`'s shared guts, exposed on its own too --
+`Components.Pages.UserProfilePage`'s in-progress avatar edit uses it directly
+(wrapping a bare `mediaId` in a throwaway `MediaReference`, see its own
+`avatarPreviewUrl`) to preview a newly-picked media item that isn't
+`user.avatar` yet.
+-}
 mediaReferenceUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Proto.Jonline.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia

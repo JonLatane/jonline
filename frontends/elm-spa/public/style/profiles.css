@@ -42,6 +42,51 @@
   font-size: 1.5rem;
 }
 
+/* Components/UserProfilePage.elm's `avatarView` -- the avatar plus (only for
+   `canEdit`) its edit affordance below it. `.profile-avatar-frame` wraps just
+   the avatar image/placeholder so the "✕" button (`.profile-avatar-remove`)
+   can sit pinned to its corner regardless of the avatar's own size. */
+.profile-avatar-wrapper {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.profile-avatar-frame {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.profile-avatar-frame.editable {
+  cursor: pointer;
+}
+
+.profile-avatar-remove {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.profile-avatar-edit-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
 .profile-header-names {
   min-width: 0;
 }

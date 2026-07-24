@@ -320,46 +320,15 @@ pushSearchUrl model =
 -- ANIMATION
 
 
-{-| A freshly-seen user card: starts invisible/slightly shrunk and immediately
-animates in to its natural opacity/scale. Mirrors
-`Components.Pages.PostsPage.newPostAnimation`.
--}
-newUserAnimation : String -> User -> UserAnimation
-newUserAnimation host user =
-    { host = host, user = user, flip = UI.Flip.enter }
-
-
-{-| A user card that was mid fade-out (its server got disabled, then
-re-enabled -- or its feed got re-fetched, e.g. by a changed search -- before
-the fade-out finished) reappearing: interrupts whatever fade-out step was
-queued (including its trailing `RemoveUser` send, so that message never fires
-for this key) and animates back in. Mirrors
-`Components.Pages.PostsPage.reappearingPostAnimation`.
--}
-reappearingUserAnimation : String -> User -> UserAnimation -> UserAnimation
-reappearingUserAnimation host user anim =
-    { anim | host = host, user = user, flip = UI.Flip.reappear anim.flip }
-
-
-{-| A user card no longer present in `usersByServer` (its server was
-disabled, or its feed is being re-fetched under a different account/search):
-animates out, then sends `RemoveUser` to actually drop it from
-`userAnimations` once the fade finishes. Mirrors
-`Components.Pages.PostsPage.removingPostAnimation`.
--}
-removingUserAnimation : String -> UserAnimation -> UserAnimation
-removingUserAnimation key anim =
-    { anim | flip = UI.Flip.remove (RemoveUser key) anim.flip }
-
-
 {-| Reconciles `userAnimations` with the users currently `Loaded` in
 `usersByServer`: starts a fade-in for newly-seen users, a fade-out for users
 that dropped out (rather than deleting them outright), and un-interrupts a
 still-fading-out card that reappeared. Safe/cheap to call after every
 `usersByServer` change, so `update`/`refetchServers` just call it
-unconditionally wherever that dict might have changed. Mirrors
-`Components.Pages.PostsPage.syncAnimations` exactly, just keyed by
-`followStatusAndButtonKey` instead of `postAnimationKey`.
+unconditionally wherever that dict might have changed. `RemoveUser` is what
+actually drops a gone user's animation entry once its fade-out finishes. See
+`UI.Flip.syncAnimations` for the shared reconciliation logic this hands its
+own `UserAnimation` shape to (mirrored by `Components.Pages.PostsPage.syncAnimations`).
 -}
 syncAnimations : Model -> Model
 syncAnimations model =
@@ -378,30 +347,16 @@ syncAnimations model =
                                 []
                     )
                 |> Dict.fromList
-
-        addOrRefresh key ( host, user ) animations =
-            case Dict.get key animations of
-                Nothing ->
-                    Dict.insert key (newUserAnimation host user) animations
-
-                Just anim ->
-                    if anim.flip.removing then
-                        Dict.insert key (reappearingUserAnimation host user anim) animations
-
-                    else
-                        Dict.insert key { anim | host = host, user = user } animations
-
-        withCurrent =
-            Dict.foldl addOrRefresh model.userAnimations currentUsers
-
-        startRemovingIfGone key anim animations =
-            if anim.flip.removing || Dict.member key currentUsers then
-                animations
-
-            else
-                Dict.insert key (removingUserAnimation key anim) animations
     in
-    { model | userAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
+    { model
+        | userAnimations =
+            UI.Flip.syncAnimations
+                RemoveUser
+                (\( host, user ) -> { host = host, user = user, flip = UI.Flip.enter })
+                (\( host, user ) anim -> { anim | host = host, user = user })
+                currentUsers
+                model.userAnimations
+    }
 
 
 

@@ -1,9 +1,27 @@
 module UI.Flip exposing
     ( Axis(..)
-    , State, restingState, enter, reappear, remove, animate, subscription, itemAttributes, syncEnter
-    , MoveState, atRest, startMove, swapDeltas, moveAttributes, moveAnimate, moveSubscription
-    , moveListItemBy, beginReorder, applyReorder
-    , reorderButtonPair, reorderButtons
+    , MoveState
+    , State
+    , animate
+    , applyReorder
+    , atRest
+    , beginReorder
+    , enter
+    , itemAttributes
+    , moveAnimate
+    , moveAttributes
+    , moveListItemBy
+    , moveSubscription
+    , reappear
+    , remove
+    , reorderButtonPair
+    , reorderButtons
+    , restingState
+    , startMove
+    , subscription
+    , swapDeltas
+    , syncAnimations
+    , syncEnter
     )
 
 {-| Generic FLIP-style ("First, Last, Invert, Play") animation helpers for
@@ -108,6 +126,26 @@ reappear state =
 
 {-| Starts an item animating out, then sends `onRemoved` once the fade
 finishes -- the caller uses that to actually drop it from its own collection.
+
+A caller's render-order derivation has to keep a `removing` item at its exact
+existing rank, never relocate it -- moving a keyed DOM node and changing the
+class this flips on (`flip-collapsed`, via `itemAttributes`) in the same patch
+silently cancels the CSS collapse transition in every browser tested
+(confirmed via a real delete, instrumented headless: no `transitionrun` event
+at all, the item's box just snaps straight to its collapsed size). Every
+caller in this codebase gets this for free already, via one of two patterns:
+`AccountsPanel`'s servers/accounts and `StarredPostsPanel`'s starred posts
+keep an item in their own locally-owned order at its original slot until
+`onRemoved` actually deletes it (nothing ever reorders a still-present item);
+`Components.Pages.PostsPage`/`UsersPage` instead re-sort their whole list
+every render, but by a stable per-item property (a post's timestamp, a user's
+username) that doesn't change just because an item started removing, so nothing
+re-sorts relative to anything else. A caller whose order comes from a server
+refetch with no such natural sort key (e.g. `Shared.MyMediaPanel`, before it
+switched to sorting by `Media.createdAt`) needs to track its own explicit
+order list instead of rederiving one fresh as "current fetch order, plus
+whichever removing ids the fetch no longer mentions, tacked on the end" --
+that tacking-on is exactly the relocate-on-remove this note warns about.
 -}
 remove : msg -> State msg -> State msg
 remove onRemoved state =
@@ -168,6 +206,7 @@ past that box without changing its layout size. `flip-moving` only needs to
 suspend the clip for the slide's own duration, not disable it outright (a
 moved item can still later need the collapse-clip if it's removed), so it's a
 separate class rather than folded into `flip-collapsed`.
+
 -}
 itemAttributes : Axis -> State state -> Bool -> List (Html.Attribute msg)
 itemAttributes axis state moving =
@@ -196,6 +235,7 @@ persisted accounts/servers reloaded on startup) should pre-seed `animations`
 with `restingState` for each of them (rather than starting from `Dict.empty`)
 before ever calling this, so this treats them as "already known" rather than
 "just appeared" the first time it runs.
+
 -}
 syncEnter : (a -> String) -> List a -> Dict String (State msg) -> Dict String (State msg)
 syncEnter idOf items animations =
@@ -213,6 +253,67 @@ syncEnter idOf items animations =
         )
         animations
         items
+
+
+{-| Reconciles a caller's own keyed animation dict -- any record shape with at
+least a `flip : State msg` field, e.g. `Components.Pages.PostsPage.PostAnimation`/
+`UsersPage.UserAnimation`/`Shared.MyMediaPanel.MediaAnimation`, all unchanged --
+against a fresh `Dict String data` of whatever's currently present (a page's
+own `Loaded` posts/users, a panel's own `Fetched` media, ...): starts a fade-in
+(`enter`) for a newly-seen id via `buildEntering`, refreshes an existing
+(non-`flip`) fields via `refresh` for one already resting or reappearing
+(`reappear`s its `flip` first, same as a still-fading-out item un-interrupted
+elsewhere), and fades out (`remove`) any id no longer present. Generalizes
+`PostsPage.syncAnimations`/`UsersPage.syncAnimations` (identical apart from
+what their own animation record holds) and `MyMediaPanel.syncMediaAnimations`.
+
+`buildEntering`/`refresh` are the only caller-supplied pieces, since this
+function has no way to know a caller's other fields (`r`) exist at all, let
+alone how to fill them in from `data` -- `buildEntering data` constructs a
+whole fresh record (own `flip` included, via `enter`); `refresh data anim`
+updates `anim`'s own fields from `data` (its `flip` already handled by the
+time this runs, whether staying put or just `reappear`ed).
+
+Doesn't derive render order -- see `remove`'s own doc for why a naive
+"currently-present ids, plus whichever removing ids the fetch no longer
+mentions, tacked onto the end" would relocate a removing item and silently
+cancel its CSS collapse transition; a stable per-item sort key (as
+`PostsPage`/`UsersPage`/`MyMediaPanel` all use) or a caller-owned order list
+(as `AccountsPanel`/`StarredPostsPanel` effectively do, by never moving a
+still-present item at all) is still the caller's own job.
+-}
+syncAnimations :
+    (String -> msg)
+    -> (data -> { r | flip : State msg })
+    -> (data -> { r | flip : State msg } -> { r | flip : State msg })
+    -> Dict String data
+    -> Dict String { r | flip : State msg }
+    -> Dict String { r | flip : State msg }
+syncAnimations onRemoved buildEntering refresh currentItems animations =
+    let
+        addOrRefresh id data acc =
+            case Dict.get id acc of
+                Nothing ->
+                    Dict.insert id (buildEntering data) acc
+
+                Just anim ->
+                    if anim.flip.removing then
+                        Dict.insert id (refresh data { anim | flip = reappear anim.flip }) acc
+
+                    else
+                        Dict.insert id (refresh data anim) acc
+
+        withCurrent =
+            Dict.foldl addOrRefresh animations currentItems
+
+        startRemovingIfGone id anim acc =
+            if anim.flip.removing || Dict.member id currentItems then
+                acc
+
+            else
+                Dict.insert id { anim | flip = remove (onRemoved id) anim.flip } acc
+    in
+    Dict.foldl startRemovingIfGone withCurrent withCurrent
 
 
 
@@ -244,7 +345,7 @@ atRest =
 
 
 {-| Starts (or restarts) a move: `( deltaX, deltaY )` is how far, in px, the
-item's *new* position differs from where it just was along each axis
+item's _new_ position differs from where it just was along each axis
 (`old - new`, so a positive component means it moved backward along that axis
 -- up or left -- and should slide forward into place; a negative component
 means it moved forward -- down or right -- and should slide backward into
@@ -260,6 +361,7 @@ slides from where it was to where it now is instead of jumping.
 on receipt, sets `moving` back to `False` (mirroring `remove`'s `onRemoved`),
 rather than clearing it eagerly the way `entering` is -- since here the whole
 point is for `moving` to stay `True` for the slide's real duration.
+
 -}
 startMove : msg -> ( Float, Float ) -> MoveState msg -> MoveState msg
 startMove onSettled ( deltaX, deltaY ) state =
@@ -275,9 +377,9 @@ startMove onSettled ( deltaX, deltaY ) state =
 
 
 {-| The post-swap `( deltaX, deltaY )` "Invert" offsets (see `startMove`) for
-two *adjacent* items that just swapped places along `axis` -- e.g. two account
+two _adjacent_ items that just swapped places along `axis` -- e.g. two account
 rows in a vertical list, or two server chips in a horizontal strip. Derived
-entirely from their *pre-swap* rects (`Browser.Dom.getElement`), so a caller
+entirely from their _pre-swap_ rects (`Browser.Dom.getElement`), so a caller
 can compute this in the very same `update` that performs the swap, without
 waiting for a second DOM measurement after the swap re-renders -- since the
 item that was "first" along `axis` keeps that position, and the other lands
@@ -285,6 +387,7 @@ immediately after it (plus whatever gap was between them), swapping places.
 
 Returns `(movedItemDelta, neighborDelta)`, matching the order `moved`/
 `neighbor` were passed in.
+
 -}
 swapDeltas : Axis -> Dom.Element -> Dom.Element -> ( ( Float, Float ), ( Float, Float ) )
 swapDeltas axis moved neighbor =
@@ -493,7 +596,7 @@ arrange the pair differently: `reorderButtons` below stacks them into one
 `.reorder-buttons` element for a vertical list; `UI.serverChip` instead splits
 them to either side of a horizontal list's item content. Takes the click
 `Attribute` itself (rather than a bare `msg`) so a caller whose pair sits
-*inside* some other clickable element can pass `stopPropagationOn "click" ...`
+_inside_ some other clickable element can pass `stopPropagationOn "click" ...`
 instead of a plain `onClick`, so tapping an arrow doesn't also trigger that.
 -}
 reorderButtonPair :

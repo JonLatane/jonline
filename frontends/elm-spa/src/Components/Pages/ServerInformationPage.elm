@@ -116,7 +116,6 @@ init : Shared.Model -> Bool -> String -> ( Model, Effect Msg )
 init shared pageIsSecure targetHost =
     let
         model0 =
-
             { targetHost = targetHost
             , isSecure = pageIsSecure
             , ownServerStatus = LoadingOwnServer
@@ -125,6 +124,7 @@ init shared pageIsSecure targetHost =
             , versionStatus = VersionNotLoaded
             , renameStatus = NotRenaming
             }
+
         ( fetchedModel, fetchEffect ) =
             case AccountsPanel.serverForHost shared.accountsPanel.servers targetHost of
                 Just server ->
@@ -144,15 +144,8 @@ init shared pageIsSecure targetHost =
       -- either of this component's pages (`Pages.About`/
       -- `Pages.Server.ServerIdentifier_`) always shows the info it'd
       -- otherwise duplicate, so leaving the panel open reads as redundant.
-    , Effect.batch [ fetchEffect, closeAccountsPanelEffect, setBreadcrumbsHost shared fetchedModel ]
+    , Effect.batch [ fetchEffect, setBreadcrumbsHost shared fetchedModel ]
     )
-
-
-{-| Closes the Accounts Panel, if it's open -- see `init`'s own doc.
--}
-closeAccountsPanelEffect : Effect Msg
-closeAccountsPanelEffect =
-    Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
 
 
 {-| The `Server` to actually show details for -- whichever the app already
@@ -776,11 +769,11 @@ cdnTab server =
             ]
         , div [ class "server-details-cdn-field" ]
             [ span [ class "server-details-cdn-field-label" ] [ text "Frontend Host" ]
-            , span [] [ text (cdnConfig |> Maybe.map .frontendHost |> Maybe.withDefault "\u{2014}") ]
+            , span [] [ text (cdnConfig |> Maybe.map .frontendHost |> Maybe.withDefault "—") ]
             ]
         , div [ class "server-details-cdn-field" ]
             [ span [ class "server-details-cdn-field-label" ] [ text "Backend Host" ]
-            , span [] [ text (cdnConfig |> Maybe.map .backendHost |> Maybe.withDefault "\u{2014}") ]
+            , span [] [ text (cdnConfig |> Maybe.map .backendHost |> Maybe.withDefault "—") ]
             ]
         , div [ class "server-details-cdn-row" ]
             [ switchDisplay (cdnConfig |> Maybe.map .cdnGrpc |> Maybe.withDefault False)

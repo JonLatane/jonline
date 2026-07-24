@@ -22,6 +22,16 @@ pub fn get_author(user_id: i64, conn: &mut PgPooledConnection,) -> Result<Author
 }
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
+// Diesel's `AsChangeset` otherwise skips `Option<T>` fields entirely (no `SET`
+// clause at all) when they're `None`, rather than setting the column to
+// `NULL` -- without this, `update_user.rs`'s `existing_user.avatar_media_id =
+// None` (clearing a user's avatar) silently no-ops instead of persisting.
+// Safe for every other `Option` field here (`email`, `phone`) too: every
+// `.set(&existing_user)`/`.set(&user)` caller only ever reassigns fields it
+// actually means to change, leaving the rest at whatever was just fetched --
+// so a `None` reaching this changeset always means "actually `NULL` in the
+// DB already", never "leave whatever's there alone".
+#[diesel(treat_none_as_null = true)]
 pub struct User {
     pub id: i64,
     pub username: String,

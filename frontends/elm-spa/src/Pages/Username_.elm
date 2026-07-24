@@ -56,7 +56,7 @@ init shared req =
     in
     if Users.isReservedUsername username then
         ( Reserved username
-        , Effect.fromShared (Shared.AccountsPanelMsg AccountsPanel.CloseAccountsPanel)
+        , Effect.none
         )
 
     else

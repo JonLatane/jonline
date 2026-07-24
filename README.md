@@ -48,12 +48,18 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 ```bash
 brew install jonlatane/jonline/jonline
 
-jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
-jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"
 jonline help # show subcommands for the bash launcher
+
+# Either configure to use your own MinIO/Postgres (and thus not needing `createdb` or `docker`):
 jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
-jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
-jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
+jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS 
+
+# Or, create the examples. These are what will be auto-populated in ~/.jonline.
+jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
+jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"credentials.
+
+# Launch the server. HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
+jonline server
 
 # Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.
@@ -68,7 +74,7 @@ brew upgrade jonlatane/jonline/jonline # Upgrade to the latest release.
 
 ### Linux: Self-updateable `.tar.bz2` with `arm64` and `amd64` binaries and launcher
 
-Rather than figure out all the Linux repos' stuff, Jonline ships a Linux tarball with both `arm64` and `amd64` binaries, and a launcher to choose the right one. It also provides a launcher whose functionality mirrors the Homebrew one.
+Rather than figure out all the Linux repos' stuff, Jonline ships as Linux tarball with both `arm64` and `amd64` binaries, and a launcher (mirroring the Homebrew one) to choose the right archicture's binaries. It can also auto-delete unneeded binaries. You can run Jonline from either wherever you extract it, or install it to `~/.jonline-linux/` (which, along with the platform-agnostic env vars in `~/.jonline`, and any `$PATH`-setting you do yourself, are its only traces on your system).
 
 Additional docs for the Jonline thin launcher can be found in [`docs/linux_jonline.sh`](https://github.com/JonLatane/jonline/blob/docs/linux_jonline.sh`) (which *is literally the launcher script that will become your `#{install_dir}/bin/jonline`*, if you wanna PR any changes).
 
@@ -91,22 +97,28 @@ mkdir jonline && tar xjf jonline.tar.bz2 -C jonline && rm jonline.tar.bz2
 cd jonline
 ./bin/jonline version
 
-# We'll just do this for test/demo setup.
+# Either just do this to run from wherever you extracted it:
 export PATH=$PATH:$(pwd)/bin
 
-# Alternatively, to install immediately, we could: 
-# ./bin/jonline install
-# This might be useful to add to your .profile/.zshrc/etc.:
-# export PATH=$PATH:$HOME/.jonline-linux/bin
+# Or, to install to $HOME/.jonline-linux immediately:
+./bin/jonline install
+    # If you choose to install, this to might be also useful to add to your .profile/.zshrc/etc.:
+    export PATH=$PATH:$HOME/.jonline-linux/bin
 
-### The rest of setup is the same as for macOS
-jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
-jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"
+### The rest of setup is the same as for macOS:
+
 jonline help # show subcommands for the bash launcher
-jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
-jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS credentials.
 
-jonline server # launch the server on ports 80 and 8000, 27707 (gRPC), and 443 if TLS is configured
+# Either configure to use your own MinIO/Postgres (and thus not needing `createdb` or `docker`):
+jonline environment # literally just: cat ~/.jonline. Contains database, MinIO, and optional TLS credentials.
+jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those database, MinIO, and optional TLS 
+
+# Or, create the examples. These are what will be auto-populated in ~/.jonline.
+jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
+jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"credentials.
+
+# Launch the server. HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
+jonline server
 
 # Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.

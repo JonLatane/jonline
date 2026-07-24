@@ -26,14 +26,16 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
+import Proto.Jonline exposing (Media)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
-import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
@@ -65,6 +67,7 @@ comes up.
 type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
+    | ConfirmMediaDelete Media
 
 
 type alias Model =
@@ -74,6 +77,7 @@ type alias Model =
     , starredPostsPanel : StarredPostsPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
+    , myMediaPanel : MyMediaPanel.Model
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
@@ -124,6 +128,9 @@ type Msg
     | StarredPostsPanelMsg StarredPostsPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
+    | MyMediaPanelMsg MyMediaPanel.Msg
+    | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
     | SystemPrefersDarkChanged Bool
@@ -293,6 +300,7 @@ init basePath req flags =
             , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
+            , myMediaPanel = MyMediaPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
             , systemPrefersDark = systemPrefersDark
@@ -480,7 +488,16 @@ updateImpl req msg model =
             ( { model | mediaViewerPanel = MediaViewerPanel.update subMsg model.mediaViewerPanel }, Cmd.none )
 
         BreadcrumbsMsg subMsg ->
-            ( { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }, Cmd.none )
+            let
+                breadcrumbsModel =
+                    { model | breadcrumbs = Breadcrumbs.update subMsg model.breadcrumbs }
+            in
+            case subMsg of
+                Breadcrumbs.SetRoot _ _ _ ->
+                    updateImpl req CloseAllPanels breadcrumbsModel
+
+                _ ->
+                    ( breadcrumbsModel, Cmd.none )
 
         MarkdownPanelMsg subMsg ->
             let
@@ -510,6 +527,74 @@ updateImpl req msg model =
                 ]
             )
 
+        MyMediaPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
+                    MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+
+                -- `MyMediaPanel.DeleteClicked`'s own request (see its doc) to
+                -- open the shared "are you sure?" dialog -- same
+                -- `RequestDelete` a plain `Shared.Msg` click (`serverChip`/
+                -- `accountRow`) would fire directly, just routed through this
+                -- panel's own `Msg` space instead since its `view` is fully
+                -- `Html.map`-wrapped (see `UI.myMediaPanel`).
+                confirmingDeleteFor =
+                    case maybeDeleteRequest of
+                        Just media ->
+                            Just (ConfirmMediaDelete media)
+
+                        Nothing ->
+                            model.confirmingDeleteFor
+            in
+            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+            , Cmd.batch
+                [ Cmd.map MyMediaPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
+        MyMediaPanelOpenForAccount account ->
+            -- The media button on an Account chip (`UI.accountRow`) opens this
+            -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
+            -- multi-panel composition via `updateImpl`. The chip is clickable for
+            -- disabled (signed-out-of-aggregation) accounts too, so bring the
+            -- account along into `enabled` here, the same as clicking its switch
+            -- (`AccountsPanel.ToggleAccountEnabled`), rather than silently
+            -- browsing an account the Accounts Panel still shows as off.
+            let
+                host =
+                    account.server
+
+                ( enabledModel, enableCmd ) =
+                    if account.enabled then
+                        ( model, Cmd.none )
+
+                    else
+                        updateImpl req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
+
+                ( openedModel, openCmd ) =
+                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
+            in
+            ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
+
+        CloseAllPanels ->
+            let
+                ( closedAccountsModel, closeAccountsCmd ) =
+                    updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
+
+                ( closedStarredModel, closeStarredCmd ) =
+                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) closedAccountsModel
+            in
+            ( closedStarredModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd ] )
+
         ThemePreferenceClicked ->
             let
                 newPreference =
@@ -532,27 +617,50 @@ updateImpl req msg model =
             ( { model | confirmingDeleteFor = Nothing }, Cmd.none )
 
         ConfirmDelete ->
-            let
-                removeMsg =
-                    model.confirmingDeleteFor
-                        |> Maybe.map
-                            (\confirmation ->
-                                case confirmation of
-                                    ConfirmAccountDelete account ->
-                                        AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)
-
-                                    ConfirmServerDelete server ->
-                                        AccountsPanel.RemoveServerClicked server.frontendHost
-                            )
-            in
-            case removeMsg of
-                Just subMsg ->
+            case model.confirmingDeleteFor of
+                Just (ConfirmAccountDelete account) ->
                     let
                         ( subModel, subCmd ) =
-                            AccountsPanel.update req subMsg model.accountsPanel
+                            AccountsPanel.update req (AccountsPanel.RemoveAccountClicked (AccountsPanel.accountId account)) model.accountsPanel
                     in
                     ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
                     , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                Just (ConfirmServerDelete server) ->
+                    let
+                        ( subModel, subCmd ) =
+                            AccountsPanel.update req (AccountsPanel.RemoveServerClicked server.frontendHost) model.accountsPanel
+                    in
+                    ( { model | accountsPanel = subModel, confirmingDeleteFor = Nothing }
+                    , Cmd.map AccountsPanelMsg subCmd
+                    )
+
+                -- Unlike the two branches above (which just flip local
+                -- state), this actually calls `DeleteMedia` -- see
+                -- `MyMediaPanel.deleteTask`. Its own `maybeAccountsPanelMsg`
+                -- is forwarded the same way `MyMediaPanelMsg` above does;
+                -- `DeleteConfirmed` never produces a delete request of its
+                -- own (that's only `DeleteClicked`), so its second value is
+                -- ignored here.
+                Just (ConfirmMediaDelete media) ->
+                    let
+                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
+                            MyMediaPanel.update model.accountsPanel (MyMediaPanel.DeleteConfirmed media) model.myMediaPanel
+
+                        ( accountsPanelModel, accountsPanelCmd ) =
+                            case maybeAccountsPanelMsg of
+                                Just accountsPanelMsg ->
+                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                                Nothing ->
+                                    ( model.accountsPanel, Cmd.none )
+                    in
+                    ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
+                    , Cmd.batch
+                        [ Cmd.map MyMediaPanelMsg subCmd
+                        , Cmd.map AccountsPanelMsg accountsPanelCmd
+                        ]
                     )
 
                 Nothing ->
@@ -662,6 +770,7 @@ subscriptions _ model =
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
         , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
         , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
+        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 

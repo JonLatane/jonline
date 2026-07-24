@@ -54,12 +54,6 @@
   padding-bottom: 0.6rem;
 }
 
-.flip-animated-item.flip-moving button:hover {
-  /* pointer-events: none; */
-  /* color: initial;
-  background-color: initial; */
-}
-
 /* While the item nested inside this clip layer is mid reorder-slide (see
    `UI.Flip.itemAttributes`'s `moving` param/`MoveState.moving`), its own
    `transform` carries it outside this box's bounds without changing the
@@ -133,4 +127,56 @@
 
 .flip-animated-item.horizontal:last-child>* {
   padding-right: 0;
+}
+
+/* Wrapping counterpart of `.flip-animated-row`, for a multi-row tile grid
+   (`Shared.MyMediaPanel`'s media grid) instead of a single-line strip --
+   same `.flip-animated-item.horizontal` collapse-on-remove/grow-on-add
+   trick (a tile shrinking to `grid-template-columns: 0fr` still pulls later
+   tiles left and, once enough width frees up, up onto the row above, purely
+   via the browser's own flex-wrap reflow -- no JS measurement needed for
+   any of that). */
+.flip-animated-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+
+  /* Otherwise flex's default `stretch` forces every tile in a wrapped row
+     to the height of the tallest one in *that row* -- same issue
+     `.servers-strip` (accounts_panel.css) documents and fixes for itself.
+     Here it's worse than just blank space below shorter tiles: it also
+     overrides a collapsing tile's own `grid-template-rows: 0fr` (below)
+     with the row's still-full height for as long as any taller sibling
+     shares that row, since cross-axis stretch wins over the item's own
+     block-sizing regardless of what its own grid tracks say. Confirmed by
+     instrumenting a real delete in a headless browser: without this, the
+     tile's box only ever narrows (stays full height) and doesn't visibly
+     shrink until it's yanked from the DOM outright at the very end. */
+  align-items: flex-start;
+}
+
+/* `.flip-animated-item.horizontal`'s own base rule (above) leaves
+   `grid-template-rows: none` -- fine for the Servers strip, a *row* of
+   short, wide chips where only width ever needs to collapse -- but a media
+   tile is the opposite shape (tall/portrait), so collapsing width alone
+   left it as a full-height sliver narrowing away over the transition's
+   first fraction of a second, then just sitting there (still full height,
+   practically invisible at ~0 width) for the rest of its fade -- reading as
+   a glitchy flash rather than a tile shrinking away. Scoped under
+   `.flip-animated-grid` so it doesn't touch `.horizontal`'s other callers
+   (the Servers strip) -- collapses height *and* width together instead, so
+   a deleted tile visibly shrinks toward its center in both dimensions at
+   once, in sync with its own opacity/scale fade (`UI.Flip.remove`). */
+.flip-animated-grid .flip-animated-item {
+  /* grid-template-rows: 1fr;
+  transition: grid-template-columns 0.25s ease, grid-template-rows 0.25s ease; */
+  grid-template-rows: none;
+  grid-template-columns: 1fr;
+  transition: grid-template-columns 0.25s ease;
+  flex-shrink: 0;
+}
+
+.flip-animated-grid .flip-animated-item.flip-collapsed {
+  /* grid-template-rows: 0fr; */
+  grid-template-columns: 0fr;
 }
