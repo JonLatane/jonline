@@ -11,6 +11,10 @@
 //   wait-for <css selector>      wait for a selector (Playwright syntax, so
 //                                 `button:has-text("Theme")` works too)
 //   click <selector>
+//   upload <selector> <path>     clicks selector, intercepts the native file
+//                                 picker it opens (e.g. Elm's File.Select.file)
+//                                 and feeds it path, instead of it hanging
+//                                 waiting on a real OS dialog
 //   fill <selector> <value...>   rest of the line is the value
 //   press <key>                  e.g. Enter
 //   sleep <ms>
@@ -81,6 +85,16 @@ async function main() {
           const [selector, coords] = splitFirst(rest);
           const [x, y] = coords.split(" ").map(Number);
           await page.click(selector, { position: { x, y }, timeout: 15000 });
+          break;
+        }
+
+        case "upload": {
+          const [selector, filePath] = splitFirst(rest);
+          const [fileChooser] = await Promise.all([
+            page.waitForEvent("filechooser", { timeout: 15000 }),
+            page.click(selector, { timeout: 15000 }),
+          ]);
+          await fileChooser.setFiles(filePath);
           break;
         }
 

@@ -1,4 +1,4 @@
-module Shared.MyMediaPanel exposing (Model, Msg(..), Purpose(..), init, isOpen, update, view)
+module Shared.MyMediaPanel exposing (Model, Msg(..), Purpose(..), init, isOpen, subscriptions, update, view)
 
 {-| A single, app-wide "My Media" panel -- always scoped to one specific
 server (`targetHost`, same "resolve on demand rather than cache a live
@@ -30,14 +30,17 @@ pair, not worth the added complexity here).
 
 -}
 
+import Animation
 import Bytes.Encode
 import Components.MediaRenderer as MediaRenderer
+import Dict exposing (Dict)
 import File exposing (File)
 import File.Select
 import Grpc
 import Html exposing (Html, button, div, img, input, span, text)
-import Html.Attributes exposing (alt, attribute, class, disabled, src, step, title, type_, value)
+import Html.Attributes exposing (alt, attribute, class, disabled, src, step, style, title, type_, value)
 import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
+import Html.Keyed
 import Http
 import Json.Decode as Decode
 import Proto.Jonline exposing (GetMediaResponse, Media, MediaReference, defaultGetMediaRequest, defaultMedia)
@@ -46,6 +49,7 @@ import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
 import UI.Classes exposing (classes, openClosedClass)
+import UI.Flip
 
 
 {-| What this panel's open for -- see module doc. Threaded through `Open` now
@@ -112,12 +116,34 @@ type alias Model =
     -- `ExtraSmall`'s own fixed CSS cap (`media.css`), so the slider's
     -- default looks identical to before this existed.
     , zoom : Float
+
+    -- Each tile's enter/leave `UI.Flip.State`, keyed by `Media.id`, synced
+    -- (see `syncMediaAnimations`) against `status`'s own `Fetched` list
+    -- every time it changes -- newly-seen media (a fresh `Open`, or a just
+    -- uploaded item once its post-upload refetch lands) fades in, and media
+    -- that dropped out (a just-deleted item, once *its* refetch lands)
+    -- fades/collapses out instead of disappearing outright. Mirrors
+    -- `Components.Pages.UsersPage.userAnimations` -- see its own doc.
+    , mediaAnimations : Dict String MediaAnimation
+    }
+
+
+{-| One grid tile's enter/leave fade state, paired with the `Media` it was
+last rendered with -- mirrors `Components.Pages.UsersPage.UserAnimation` (see
+its own doc): keeping `media` here, not just relying on `status`'s own
+`Fetched` list, lets a just-deleted tile keep rendering its last-known
+preview/name for the length of its fade-out, rather than needing to somehow
+survive in `Fetched` itself once it's gone from the server.
+-}
+type alias MediaAnimation =
+    { media : Media
+    , flip : UI.Flip.State Msg
     }
 
 
 init : Model
 init =
-    { targetHost = "", purpose = Browse, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238 }
+    { targetHost = "", purpose = Browse, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty }
 
 
 {-| Whether the panel is currently open -- drives `openClosedClass` and
@@ -161,6 +187,13 @@ type Msg
       -- actually calls `DeleteMedia`.
     | DeleteConfirmed Media
     | GotDeleteResult Media (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
+      -- Steps every tile's enter/leave fade (`mediaAnimations`) forward on
+      -- an animation-frame tick -- mirrors `AccountsPanel.AnimateItemFlip`.
+    | AnimateItemFlip Animation.Msg
+      -- Fired once a removing tile's fade-out finishes (see
+      -- `UI.Flip.remove`) -- actually drops it from `mediaAnimations` for
+      -- good.
+    | RemoveMediaAnimation String
       -- The bottom-right zoom slider (see `zoomSliderView`) -- `Float` since
       -- that's what an `input[type=range]`'s value parses as.
     | ZoomChanged Float
@@ -183,7 +216,7 @@ update accountsPanelModel msg model =
         Open purpose host ->
             let
                 opened =
-                    { targetHost = host, purpose = purpose, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom }
+                    { targetHost = host, purpose = purpose, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty }
             in
             case resolve accountsPanelModel host of
                 Ok resolved ->
@@ -200,7 +233,18 @@ update accountsPanelModel msg model =
             ( { init | zoom = model.zoom }, Cmd.none, ( Nothing, Nothing ) )
 
         GotMediaResult (Ok ( maybeAccountsPanelMsg, response )) ->
-            ( { model | status = Fetched response.media }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+            -- `GotUploadResult`/`GotDeleteResult` both re-run `fetchTask`
+            -- (see their own docs) *without* first bouncing `status` back to
+            -- `Fetching` -- so it's still `Fetched <previous list>` right up
+            -- until this replaces it with the fresh one, and `contentView`
+            -- keeps rendering the (still-accurate-enough) grid the entire
+            -- time instead of swapping to "Loading…" and back around it.
+            -- That matters here specifically because `syncMediaAnimations`
+            -- (below) is what starts a just-gone tile's removing-fade -- if
+            -- the grid had been unmounted in between, that tile would have
+            -- no prior on-screen frame to fade *from*, and would just appear
+            -- already-collapsed instead of animating.
+            ( syncMediaAnimations { model | status = Fetched response.media }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
 
         GotMediaResult (Err err) ->
             ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
@@ -233,9 +277,12 @@ update accountsPanelModel msg model =
             -- same `GetMedia` `Open` already does than to splice a new `Media`
             -- into `Fetched`'s list, since `POST /media`'s response is just a
             -- plaintext ID, not the full `Media` `GetMedia` would return.
+            -- Deliberately leaves `status` (and so the still-`Fetched` grid
+            -- `contentView` renders from it) alone rather than bouncing it
+            -- through `Fetching` -- see `GotMediaResult`'s own doc on why.
             case resolve accountsPanelModel model.targetHost of
                 Ok resolved ->
-                    ( { model | uploadStatus = NotUploading, status = Fetching }
+                    ( { model | uploadStatus = NotUploading }
                     , fetchTask accountsPanelModel resolved.account |> Task.attempt GotMediaResult
                     , ( maybeAccountsPanelMsg, Nothing )
                     )
@@ -269,7 +316,11 @@ update accountsPanelModel msg model =
         GotDeleteResult media (Ok ( maybeAccountsPanelMsg, _ )) ->
             -- Re-fetch rather than just filtering `media` out of `Fetched`'s
             -- own list locally -- same reasoning `GotUploadResult` gives for
-            -- doing the same after an upload.
+            -- doing the same after an upload. Also leaves `status` alone
+            -- (see that same comment) -- deliberately so, since it's what
+            -- lets the just-deleted tile's own removing-fade actually play
+            -- (see `GotMediaResult`'s doc) instead of the whole grid
+            -- unmounting to "Loading…" and back around it.
             let
                 clearedModel =
                     { model | deletingIds = Set.remove media.id model.deletingIds }
@@ -293,8 +344,92 @@ update accountsPanelModel msg model =
             , ( Nothing, Nothing )
             )
 
+        AnimateItemFlip animMsg ->
+            let
+                step id anim ( animations, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg anim.flip
+                    in
+                    ( Dict.insert id { anim | flip = newFlip } animations, cmd :: accCmds )
+
+                ( newMediaAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.mediaAnimations
+            in
+            ( { model | mediaAnimations = newMediaAnimations }, Cmd.batch cmds, ( Nothing, Nothing ) )
+
+        RemoveMediaAnimation id ->
+            ( { model | mediaAnimations = Dict.remove id model.mediaAnimations }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
         ZoomChanged zoom ->
             ( { model | zoom = zoom }, Cmd.none, ( Nothing, Nothing ) )
+
+
+{-| Reconciles `mediaAnimations` with `status`'s current `Fetched` list:
+starts a fade-in for newly-seen media (a fresh `Open`, or a just-uploaded
+item once its post-upload refetch lands), a fade-out for media no longer
+present (a just-deleted item, once _its_ refetch lands), and un-interrupts a
+still-fading-out item that reappeared. Only ever called from `GotMediaResult`
+-- deliberately _not_ whenever `status` merely passes through `Fetching`
+(e.g. `GotUploadResult`/`GotDeleteResult` kicking off their own refetch),
+since that's a transient state with no real `Fetched` list of its own to
+reconcile against -- calling this then would read every currently-tracked
+tile as "gone" and fade the whole grid out for the length of every refetch.
+Mirrors `Components.Pages.UsersPage.syncAnimations` -- see its own doc --
+keyed by `Media.id` instead.
+-}
+syncMediaAnimations : Model -> Model
+syncMediaAnimations model =
+    let
+        currentMedia : Dict String Media
+        currentMedia =
+            case model.status of
+                Fetched media ->
+                    media |> List.map (\m -> ( m.id, m )) |> Dict.fromList
+
+                _ ->
+                    Dict.empty
+
+        addOrRefresh id media animations =
+            case Dict.get id animations of
+                Nothing ->
+                    Dict.insert id { media = media, flip = UI.Flip.enter } animations
+
+                Just anim ->
+                    if anim.flip.removing then
+                        Dict.insert id { media = media, flip = UI.Flip.reappear anim.flip } animations
+
+                    else
+                        Dict.insert id { anim | media = media } animations
+
+        withCurrent =
+            Dict.foldl addOrRefresh model.mediaAnimations currentMedia
+
+        startRemovingIfGone id anim animations =
+            if anim.flip.removing || Dict.member id currentMedia then
+                animations
+
+            else
+                Dict.insert id { anim | flip = UI.Flip.remove (RemoveMediaAnimation id) anim.flip } animations
+    in
+    { model | mediaAnimations = Dict.foldl startRemovingIfGone withCurrent withCurrent }
+
+
+{-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
+(unlike e.g. `Shared.StarredPostsPanel.subscriptions`' own `AnimateItemFlip`
+sub, this panel's tiles only ever render while it's open, so nothing outside
+`view` could still be mid-animation once it's closed).
+-}
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    if isOpen model then
+        UI.Flip.subscription AnimateItemFlip (Dict.values model.mediaAnimations |> List.map .flip)
+
+    else
+        Sub.none
 
 
 {-| Shared by `GotFile`/`Drop` -- resolves `targetHost` again (same check
@@ -359,7 +494,7 @@ resolve accountsPanelModel host =
 {-| `user_id` is required by `GetMediaRequest` whenever `media_id` isn't set
 (`backend/src/rpcs/media/get_media.rs` errors otherwise) -- passing
 `account.userId` explicitly, rather than leaving it unset and relying on the
-backend's "no user_id means the caller's own media" fallback, keeps this
+backend's "no user\_id means the caller's own media" fallback, keeps this
 request meaningful even though today it only ever runs for the signed-in
 account's own chip.
 -}
@@ -491,12 +626,13 @@ The whole panel (this root node) is a drop target -- `dragenter`/`dragover`
 toggle `is-dragging-over` (a pure CSS hook, see my\_media\_panel.css) and
 `drop` hands the dropped files to `Drop`. `dragover` needs its own
 `preventDefault` (not just `dragenter`'s) -- browsers refuse to fire `drop` at
-all on an element that didn't call `preventDefault` on the *last* `dragover`
+all on an element that didn't call `preventDefault` on the _last_ `dragover`
 before the drop, not just the first `dragenter`. `dragleave` firing whenever
 the pointer crosses from this panel onto one of its own children (not just
 when it actually leaves the panel) means `is-dragging-over` can flicker off
 briefly while dragging over a media item -- a cosmetic rough edge, not
 something `Drop`'s own correctness depends on.
+
 -}
 view : AccountsPanel.Model -> Model -> Html Msg
 view accountsPanelModel model =
@@ -538,16 +674,14 @@ view accountsPanelModel model =
 
 {-| Whether `contentView` currently has a non-empty grid worth zooming --
 gates `zoomSliderView` (see `view`), which would otherwise float uselessly
-over "Loading…"/"No media yet."/error text.
+over "Loading…"/"No media yet."/error text. Reads `mediaAnimations` rather
+than `status` directly so the slider stays put through a last remaining
+tile's own delete fade-out, instead of vanishing out from under the user's
+cursor the instant `status` itself goes empty.
 -}
 hasMedia : Model -> Bool
 hasMedia model =
-    case model.status of
-        Fetched (_ :: _) ->
-            True
-
-        _ ->
-            False
+    not (Dict.isEmpty model.mediaAnimations)
 
 
 isUploading : UploadStatus -> Bool
@@ -569,7 +703,8 @@ dropTargetAttributes =
     ]
 
 
-{-| Per `File.decoder`'s own doc example. -}
+{-| Per `File.decoder`'s own doc example.
+-}
 droppedFilesDecoder : Decode.Decoder (List File)
 droppedFilesDecoder =
     Decode.field "dataTransfer" (Decode.field "files" (Decode.list File.decoder))
@@ -644,44 +779,114 @@ contentView accountsPanelModel model =
             [ div [ class "my-media-panel-message" ] [ text err ] ]
 
         Ok resolved ->
+            let
+                orderedAnimations =
+                    mediaAnimationsInOrder model
+            in
+            if not (List.isEmpty orderedAnimations) then
+                -- Keeps the grid itself mounted (so already-there tiles keep
+                -- their DOM nodes, key for key) through a *re*-fetch's own
+                -- transient `Fetching` -- `GotUploadResult`/`GotDeleteResult`
+                -- both set `status` back to `Fetching` while their own
+                -- refetch is in flight (see `update`). Swapping the whole
+                -- grid out for a "Loading…" message and back, as a plain
+                -- `case model.status of` would, unmounts and remounts every
+                -- tile in between -- a freshly-mounted node has no prior
+                -- frame to transition *from*, so `syncMediaAnimations`
+                -- marking a just-deleted tile `removing` right as it
+                -- remounts would just render it already-collapsed instead of
+                -- animating the collapse. `status` still gates *which*
+                -- `Fetching`/`FetchFailed`/`NotFetched` message to show
+                -- below -- just only once there's nothing left to show in
+                -- its place.
+                [ Html.Keyed.node "div"
+                    [ classes [ "my-media-panel-grid", "flip-animated-grid" ]
+
+                    -- Read by `my_media_panel.css`'s own override of
+                    -- `.media-renderer-extra-small`'s fixed max-width/
+                    -- height (see `media.css`) -- letting `zoomSliderView`
+                    -- resize every item without `MediaRenderer` itself
+                    -- needing a third, continuously-sized `Sizing`.
+                    --
+                    -- This has to go through `attribute "style"` (a raw
+                    -- style-attribute *string*, parsed by the browser's
+                    -- own CSS parser) rather than `Html.Attributes.style`
+                    -- -- elm/virtual-dom applies the latter as
+                    -- `domNode.style[key] = value` (plain bracket
+                    -- assignment), which silently no-ops for a custom
+                    -- property (`--*`) key: the DOM only picks up custom
+                    -- properties set via `style.setProperty` or, as here,
+                    -- parsed from the attribute string. A named property
+                    -- like `color` works with either, which is why this
+                    -- doesn't show up anywhere else in this codebase.
+                    , attribute "style" ("--my-media-zoom-size: " ++ String.fromFloat model.zoom ++ "px;")
+                    ]
+                    (List.map (mediaAnimationView resolved.server resolved.account model) orderedAnimations)
+                ]
+
+            else
+                case model.status of
+                    NotFetched ->
+                        []
+
+                    Fetching ->
+                        [ div [ class "my-media-panel-message" ] [ text "Loading…" ] ]
+
+                    FetchFailed err ->
+                        [ div [ class "my-media-panel-message" ] [ text err ] ]
+
+                    Fetched _ ->
+                        [ div [ class "my-media-panel-message" ] [ text "No media yet." ] ]
+
+
+{-| `mediaAnimations` in display order: every currently-`Fetched` id in that
+list's own order, followed by any id that's only still around because it's
+mid removing-fade (a just-deleted item -- see `syncMediaAnimations`) --
+grouping fading-out tiles at the end rather than trying to preserve their
+exact prior slot, since nothing here tracks a stable position for an id once
+it's dropped out of `status`'s own list.
+-}
+mediaAnimationsInOrder : Model -> List ( String, MediaAnimation )
+mediaAnimationsInOrder model =
+    let
+        fetchedOrder =
             case model.status of
-                NotFetched ->
+                Fetched media ->
+                    List.map .id media
+
+                _ ->
                     []
 
-                Fetching ->
-                    [ div [ class "my-media-panel-message" ] [ text "Loading…" ] ]
+        removingOnlyIds =
+            model.mediaAnimations
+                |> Dict.toList
+                |> List.filter (\( id, anim ) -> anim.flip.removing && not (List.member id fetchedOrder))
+                |> List.map Tuple.first
+    in
+    (fetchedOrder ++ removingOnlyIds)
+        |> List.filterMap (\id -> Dict.get id model.mediaAnimations |> Maybe.map (\anim -> ( id, anim )))
 
-                FetchFailed err ->
-                    [ div [ class "my-media-panel-message" ] [ text err ] ]
 
-                Fetched [] ->
-                    [ div [ class "my-media-panel-message" ] [ text "No media yet." ] ]
+{-| Wraps `mediaItemView` in a fading/scaling/collapsing animated outer `div`
+(entering when freshly uploaded/loaded, removing when deleted -- see
+`mediaAnimations`) -- the `UI.Flip.Horizontal` axis matches the grid's own
+left-to-right, wrap-to-next-row flow (see `flip.css`'s `.flip-animated-grid`
+doc). Mirrors `UI.serverChipFlip` -- see its own doc.
+-}
+mediaAnimationView : AccountsPanel.Server -> AccountsPanel.Account -> Model -> ( String, MediaAnimation ) -> ( String, Html Msg )
+mediaAnimationView server account model ( mediaId, anim ) =
+    let
+        pointerEventsAttr =
+            if anim.flip.removing then
+                [ style "pointer-events" "none" ]
 
-                Fetched media ->
-                    [ div
-                        [ class "my-media-panel-grid"
-
-                        -- Read by `my_media_panel.css`'s own override of
-                        -- `.media-renderer-extra-small`'s fixed max-width/
-                        -- height (see `media.css`) -- letting `zoomSliderView`
-                        -- resize every item without `MediaRenderer` itself
-                        -- needing a third, continuously-sized `Sizing`.
-                        --
-                        -- This has to go through `attribute "style"` (a raw
-                        -- style-attribute *string*, parsed by the browser's
-                        -- own CSS parser) rather than `Html.Attributes.style`
-                        -- -- elm/virtual-dom applies the latter as
-                        -- `domNode.style[key] = value` (plain bracket
-                        -- assignment), which silently no-ops for a custom
-                        -- property (`--*`) key: the DOM only picks up custom
-                        -- properties set via `style.setProperty` or, as here,
-                        -- parsed from the attribute string. A named property
-                        -- like `color` works with either, which is why this
-                        -- doesn't show up anywhere else in this codebase.
-                        , attribute "style" ("--my-media-zoom-size: " ++ String.fromFloat model.zoom ++ "px;")
-                        ]
-                        (List.map (mediaItemView resolved.server resolved.account model.deletingIds) media)
-                    ]
+            else
+                []
+    in
+    ( mediaId
+    , div (UI.Flip.itemAttributes UI.Flip.Horizontal anim.flip False)
+        [ div pointerEventsAttr [ mediaItemView server account model.deletingIds anim.media ] ]
+    )
 
 
 mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Set String -> Media -> Html Msg
@@ -728,7 +933,7 @@ zoomSliderView model =
         [ span [ class "my-media-panel-zoom-icon" ] [ text "🔍" ]
         , input
             [ type_ "range"
-            , Html.Attributes.min "80"
+            , Html.Attributes.min "72"
             , Html.Attributes.max "480"
             , step "8"
             , value (String.fromFloat model.zoom)

@@ -190,10 +190,16 @@
    reads it is scoped under `.my-media-panel-item`/`.my-media-panel-grid` so
    it only affects this panel's own previews, never `media.css`'s other
    `.media-renderer-extra-small` callers (e.g. `Shared.StarredPostsPanel`). */
+/* `.flip-animated-grid` (flip.css) already supplies `display: flex;
+   flex-wrap: wrap`, plus every tile's own FLIP enter/leave collapse
+   behavior -- this just adds the vertical space between wrapped rows. Deliberately
+   *not* a plain `gap` (which'd set `column-gap` too) -- horizontal spacing
+   between tiles instead lives as each `.flip-animated-item.horizontal`'s own
+   `padding-right` (flip.css), so it can shrink away smoothly as a tile
+   collapses on delete, same "no `gap`" reasoning `flip.css` gives for every
+   other FLIP list. */
 .my-media-panel-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  row-gap: 0.75rem;
 }
 
 .my-media-panel-item {

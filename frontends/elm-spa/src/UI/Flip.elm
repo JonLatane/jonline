@@ -1,9 +1,26 @@
 module UI.Flip exposing
     ( Axis(..)
-    , State, restingState, enter, reappear, remove, animate, subscription, itemAttributes, syncEnter
-    , MoveState, atRest, startMove, swapDeltas, moveAttributes, moveAnimate, moveSubscription
-    , moveListItemBy, beginReorder, applyReorder
-    , reorderButtonPair, reorderButtons
+    , MoveState
+    , State
+    , animate
+    , applyReorder
+    , atRest
+    , beginReorder
+    , enter
+    , itemAttributes
+    , moveAnimate
+    , moveAttributes
+    , moveListItemBy
+    , moveSubscription
+    , reappear
+    , remove
+    , reorderButtonPair
+    , reorderButtons
+    , restingState
+    , startMove
+    , subscription
+    , swapDeltas
+    , syncEnter
     )
 
 {-| Generic FLIP-style ("First, Last, Invert, Play") animation helpers for
@@ -168,6 +185,7 @@ past that box without changing its layout size. `flip-moving` only needs to
 suspend the clip for the slide's own duration, not disable it outright (a
 moved item can still later need the collapse-clip if it's removed), so it's a
 separate class rather than folded into `flip-collapsed`.
+
 -}
 itemAttributes : Axis -> State state -> Bool -> List (Html.Attribute msg)
 itemAttributes axis state moving =
@@ -196,6 +214,7 @@ persisted accounts/servers reloaded on startup) should pre-seed `animations`
 with `restingState` for each of them (rather than starting from `Dict.empty`)
 before ever calling this, so this treats them as "already known" rather than
 "just appeared" the first time it runs.
+
 -}
 syncEnter : (a -> String) -> List a -> Dict String (State msg) -> Dict String (State msg)
 syncEnter idOf items animations =
@@ -244,7 +263,7 @@ atRest =
 
 
 {-| Starts (or restarts) a move: `( deltaX, deltaY )` is how far, in px, the
-item's *new* position differs from where it just was along each axis
+item's _new_ position differs from where it just was along each axis
 (`old - new`, so a positive component means it moved backward along that axis
 -- up or left -- and should slide forward into place; a negative component
 means it moved forward -- down or right -- and should slide backward into
@@ -260,6 +279,7 @@ slides from where it was to where it now is instead of jumping.
 on receipt, sets `moving` back to `False` (mirroring `remove`'s `onRemoved`),
 rather than clearing it eagerly the way `entering` is -- since here the whole
 point is for `moving` to stay `True` for the slide's real duration.
+
 -}
 startMove : msg -> ( Float, Float ) -> MoveState msg -> MoveState msg
 startMove onSettled ( deltaX, deltaY ) state =
@@ -275,9 +295,9 @@ startMove onSettled ( deltaX, deltaY ) state =
 
 
 {-| The post-swap `( deltaX, deltaY )` "Invert" offsets (see `startMove`) for
-two *adjacent* items that just swapped places along `axis` -- e.g. two account
+two _adjacent_ items that just swapped places along `axis` -- e.g. two account
 rows in a vertical list, or two server chips in a horizontal strip. Derived
-entirely from their *pre-swap* rects (`Browser.Dom.getElement`), so a caller
+entirely from their _pre-swap_ rects (`Browser.Dom.getElement`), so a caller
 can compute this in the very same `update` that performs the swap, without
 waiting for a second DOM measurement after the swap re-renders -- since the
 item that was "first" along `axis` keeps that position, and the other lands
@@ -285,6 +305,7 @@ immediately after it (plus whatever gap was between them), swapping places.
 
 Returns `(movedItemDelta, neighborDelta)`, matching the order `moved`/
 `neighbor` were passed in.
+
 -}
 swapDeltas : Axis -> Dom.Element -> Dom.Element -> ( ( Float, Float ), ( Float, Float ) )
 swapDeltas axis moved neighbor =
@@ -493,7 +514,7 @@ arrange the pair differently: `reorderButtons` below stacks them into one
 `.reorder-buttons` element for a vertical list; `UI.serverChip` instead splits
 them to either side of a horizontal list's item content. Takes the click
 `Attribute` itself (rather than a bare `msg`) so a caller whose pair sits
-*inside* some other clickable element can pass `stopPropagationOn "click" ...`
+_inside_ some other clickable element can pass `stopPropagationOn "click" ...`
 instead of a plain `onClick`, so tapping an arrow doesn't also trigger that.
 -}
 reorderButtonPair :

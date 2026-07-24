@@ -770,6 +770,7 @@ subscriptions _ model =
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
         , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
         , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
+        , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
         , if model.starredPostsPanel.showStarredPostsPanel then
             Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
 
