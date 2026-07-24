@@ -581,7 +581,7 @@ updateImpl req msg model =
                         updateImpl req (AccountsPanelMsg (AccountsPanel.ToggleAccountEnabled (AccountsPanel.accountId account))) model
 
                 ( openedModel, openCmd ) =
-                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open MyMediaPanel.Browse host)) enabledModel
+                    updateImpl req (MyMediaPanelMsg (MyMediaPanel.Open Nothing host)) enabledModel
             in
             ( openedModel, Cmd.batch [ enableCmd, openCmd ] )
 

@@ -1,4 +1,4 @@
-module Shared.MyMediaPanel exposing (Model, Msg(..), Purpose(..), init, isOpen, subscriptions, update, view)
+module Shared.MyMediaPanel exposing (Model, Msg(..), SelectionType(..), init, isOpen, subscriptions, update, view)
 
 {-| A single, app-wide "My Media" panel -- always scoped to one specific
 server (`targetHost`, same "resolve on demand rather than cache a live
@@ -9,11 +9,24 @@ uploaded media, fetched via `GetMedia` (`protos/media.proto`) and rendered as
 a grid of small previews (`Components.MediaRenderer`, `ExtraSmall` sizing)
 alongside each item's filename/content type.
 
-`Purpose` is here so `Model`/`Msg` already have a place for this panel to grow
-into a single-/multi-select "media chooser" input (for a post's media, an
-avatar, ...) without a later reshape of these types -- only `Browse` is
-actually wired up right now; `ChooseSingle`/`ChooseMultiple` don't yet change
-this module's behavior at all.
+`SelectionType` is what lets this same panel double as a single-/multi-select
+"media chooser" input (for a `User`'s avatar today -- see
+`Components.Pages.UserProfilePage.AvatarEditClicked` -- a post's media,
+later) instead of just plain browsing: `model.selectionType == Nothing` is
+today's original "just browse/manage your media" mode (opened via
+`Shared.MyMediaPanelOpenForAccount`), while `Just (SingleSelect _)` swaps the
+header to "Select Media" and turns a tap on a grid item (`MediaItemClicked`,
+see `update`) into a selection that immediately closes the panel rather than
+a no-op. There's deliberately no callback closure carried on `SingleSelect`
+-- `Shared.MyMediaPanelMsg (MyMediaPanel.MediaItemClicked mediaId)` is a top-
+level `Shared.Msg` (this panel's `view` is `Html.map`-wrapped once, globally,
+by `UI.myMediaPanel`), so `Main.elm`'s `notifyPageOfSharedMsg` already
+forwards it verbatim to whichever page is current -- the opening page just
+matches on it in its own `SharedMsg`/`fromShared` case (mirrors how
+`Shared.MarkdownPanel.GotSaveResult` is picked up), gated on its own
+"am I mid-edit" state so an unrelated Browse-mode tap elsewhere can't be
+mistaken for a selection. `MultiSelect` is a stub for a future multi-select
+flow -- not wired to anything yet.
 
 The header's "Add" button doubles as this panel's upload trigger (`AddClicked`
 opens the OS file picker via `File.Select.file`), and the whole panel is also
@@ -52,14 +65,17 @@ import UI.Classes exposing (classes, openClosedClass)
 import UI.Flip
 
 
-{-| What this panel's open for -- see module doc. Threaded through `Open` now
-so a future chooser doesn't need to change that message's shape, just add
-real behavior behind the `ChooseSingle`/`ChooseMultiple` cases below.
+{-| What a `Just` `Model.selectionType` turns this panel into -- see module
+doc. `SingleSelect`'s `imagesOnly` restricts the grid to image media only
+(hiding videos/PDFs/etc that couldn't be tapped-to-select anyway --
+`Components.MediaRenderer.view` only ever attaches `onImageClicked` for
+images in the first place, see its own doc) -- `False` for a future chooser
+that's fine picking any media type. `MultiSelect` is a stub -- no fields yet,
+not wired to any behavior below.
 -}
-type Purpose
-    = Browse
-    | ChooseSingle
-    | ChooseMultiple
+type SelectionType
+    = SingleSelect { imagesOnly : Bool }
+    | MultiSelect
 
 
 type FetchStatus
@@ -88,7 +104,11 @@ type alias Model =
       -- same "don't cache a live Account/Server" reasoning as
       -- `MarkdownPanel.targetHost`. `""` means "not open" (see `isOpen`).
       targetHost : String
-    , purpose : Purpose
+
+    -- `Nothing` is plain Browse/manage mode (today's original behavior,
+    -- unaffected below); `Just` turns this panel into a media chooser -- see
+    -- `SelectionType`.
+    , selectionType : Maybe SelectionType
     , status : FetchStatus
     , uploadStatus : UploadStatus
 
@@ -143,7 +163,7 @@ type alias MediaAnimation =
 
 init : Model
 init =
-    { targetHost = "", purpose = Browse, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty }
+    { targetHost = "", selectionType = Nothing, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty }
 
 
 {-| Whether the panel is currently open -- drives `openClosedClass` and
@@ -156,12 +176,13 @@ isOpen model =
 
 
 type Msg
-    = Open Purpose String
+    = Open (Maybe SelectionType) String
     | CloseClicked
     | GotMediaResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetMediaResponse ))
-      -- Fired when a media item's preview is tapped -- a no-op today (Browse
-      -- mode has nothing to do with it yet); reserved for `ChooseSingle`/
-      -- `ChooseMultiple` to toggle a selection once those are wired up.
+      -- Fired when a media item's preview is tapped -- a no-op in Browse mode
+      -- (`model.selectionType == Nothing`); while `Just (SingleSelect _)`,
+      -- `update` closes the panel instead (see its own doc on why that alone
+      -- is enough to deliver the selection to whichever page opened this).
       -- Required regardless, since `Components.MediaRenderer.view` always
       -- needs an `onImageClicked : String -> msg` to attach.
     | MediaItemClicked String
@@ -213,10 +234,10 @@ confirmation dialog for -- same "second forwarded value" convention
 update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
 update accountsPanelModel msg model =
     case msg of
-        Open purpose host ->
+        Open selectionType host ->
             let
                 opened =
-                    { targetHost = host, purpose = purpose, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty }
+                    { targetHost = host, selectionType = selectionType, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty }
             in
             case resolve accountsPanelModel host of
                 Ok resolved ->
@@ -250,7 +271,17 @@ update accountsPanelModel msg model =
             ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
 
         MediaItemClicked _ ->
-            ( model, Cmd.none, ( Nothing, Nothing ) )
+            case model.selectionType of
+                Just (SingleSelect _) ->
+                    -- The tapped id itself isn't needed here -- `Main.elm`
+                    -- forwards this same `MediaItemClicked` verbatim to
+                    -- whichever page opened this panel (see module doc), so
+                    -- all this needs to do is close the panel as the visible
+                    -- "selection made" feedback.
+                    ( { init | zoom = model.zoom }, Cmd.none, ( Nothing, Nothing ) )
+
+                _ ->
+                    ( model, Cmd.none, ( Nothing, Nothing ) )
 
         AddClicked ->
             ( model, File.Select.file acceptedMimeTypes GotFile, ( Nothing, Nothing ) )
@@ -649,7 +680,7 @@ view accountsPanelModel model =
             :: dropTargetAttributes
         )
         [ div [ class "my-media-panel-header" ]
-            [ span [ class "my-media-panel-title" ] [ text "My Media" ]
+            [ span [ class "my-media-panel-title" ] [ text (headerTitle model.selectionType) ]
             , div [ class "my-media-panel-header-right" ]
                 [ uploadStatusView model.uploadStatus
                 , deleteStatusView model.deleteError
@@ -682,6 +713,38 @@ cursor the instant `status` itself goes empty.
 hasMedia : Model -> Bool
 hasMedia model =
     not (Dict.isEmpty model.mediaAnimations)
+
+
+{-| "My Media" in plain Browse mode, "Select Media" while `selectionType` is
+`Just` anything -- see module doc.
+-}
+headerTitle : Maybe SelectionType -> String
+headerTitle selectionType =
+    case selectionType of
+        Just _ ->
+            "Select Media"
+
+        Nothing ->
+            "My Media"
+
+
+{-| Whether `media` belongs in the grid at all under `selectionType` -- only
+`SingleSelect`'s `imagesOnly` ever excludes anything (any media type is fine
+in Browse mode or under a future `imagesOnly = False` chooser); mirrors
+`Components.MediaRenderer.view`'s own content-type switch, which already
+only ever attaches a click handler to images in the first place.
+-}
+mediaAllowed : Maybe SelectionType -> Media -> Bool
+mediaAllowed selectionType media =
+    case selectionType of
+        Just (SingleSelect { imagesOnly }) ->
+            not imagesOnly || String.startsWith "image/" media.contentType
+
+        Just MultiSelect ->
+            True
+
+        Nothing ->
+            True
 
 
 isUploading : UploadStatus -> Bool
@@ -782,6 +845,7 @@ contentView accountsPanelModel model =
             let
                 orderedAnimations =
                     mediaAnimationsInOrder model
+                        |> List.filter (\( _, anim ) -> mediaAllowed model.selectionType anim.media)
             in
             if not (List.isEmpty orderedAnimations) then
                 -- Keeps the grid itself mounted (so already-there tiles keep

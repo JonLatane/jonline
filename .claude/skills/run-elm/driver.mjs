@@ -129,6 +129,12 @@ async function main() {
           console.log(JSON.stringify(consoleErrors, null, 2));
           break;
 
+        case "eval": {
+          const result = await page.evaluate(rest);
+          console.log(JSON.stringify(result, null, 2));
+          break;
+        }
+
         default:
           console.error(`unknown command: ${cmd}`);
       }
