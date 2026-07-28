@@ -173,8 +173,6 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
   - [What is Jonline?](#what-is-jonline)
     - [Why Jonline vs. Mastodon/OpenSocial?](#why-jonline-vs-mastodonopensocial)
       - [Jonline as a protocol vs. ActivityPub](#jonline-as-a-protocol-vs-activitypub)
-    - [Cost of Development](#cost-of-development)
-    - [Cost of Operation](#cost-of-operation)
     - [Why *not* Jonline?](#why-not-jonline)
   - [Features Overview](#features-overview)
     - [Jonline Identifiers: Usernames, Group Names, and IDs](#jonline-identifiers-usernames-group-names-and-ids)
@@ -259,32 +257,9 @@ The hope is to build more useful business objects - yes, your boring SalesForce/
 
 All this is to say: it should be pretty straightforward to create, say, Ruby bindings for Jonline, and use them in Mastodon to make it work as a no-Events-support, no-Media-support Jonline instance. Or vice versa. This is back burner research, though. Get in contact if you're interested in contributing/learning to do this type of work!
 
-### Cost of Development
-
-Jonline is basically all just built by me (Jon) for free. So, tl;dr: $0. All the code here is AGPL (or MIT for the APIs only). I've built this in my spare time because I think it should exist. It's designed to be easy to hack on as a single person or tiny team, and easy to maintain deployments with little human effort. If the development of Jonline or the maintenance of an NYC-sized Jonline instance ever required more than 10 people, I would consider this something of a failing. PRs from many contributors are absolutely welcome, but with things like the `xz` leak, there's something to be said for building a small, select set of contributors in the FOSS world.
-
-### Cost of Operation
-
-Currently, Jonline's recommended DigitalOcean setup costs $24/mo for the server plus $13/mo per domain (due mostly to the LoadBalancer for each), totaling around $60/mo to run.
-
-It should be possible to bring this down to $24/mo for the server, plus $12/mo for a *single* load balancer, and then 60¢/mo per domain for 1GB Postgres and 5GB MinIO storage. The only thing is, the LB will need to also keep track of certificates in order to read `Host` headers and route traffic. Ideally the Jonline BE instances should still serve their data encrypted as well, simply functioning as `ClusterIP` rather than `LoadBalancer` services.
-
-Contributions and discussion on this topic are welcome! Please [discuss or contribute on the GitHub issue here](https://github.com/JonLatane/jonline/issues/15).
-
-Costs are designed to be predictable on most Kubernetes service providers. Jonline offers intuitive Makefile-based configuration in both a simple and advanced configuration (the latter of which is better for hosting many communities in a single Kubernetes cluster).
-
-| Simple (Current) Approach                                                                                                                                 | Scalable Approach                                                                                                                                                                                                                                                                       |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single JBL LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg)                                                                                                                                                    |
-| Costs $24/mo (for base server) + $12.60/mo ($12 for LoadBalancer, 60¢ for storage) per domain+IP.                                                         | Costs $36/mo ($24 for base server, $12 for JBL LoadBalancer IP) + 60¢/mo (for storage) per domain. ***Not yet implemented***; an ongoing dev effort (that welcomes outside contributions)! See [the GitHub issue for more information](https://github.com/JonLatane/jonline/issues/15). |
-
-**November 2023 Server Costs:** (3 instances)
-![November 2023 Server Costs](docs/digitalocean-invoice-2023-nov.png)
-
 ### Why *not* Jonline?
 
 - It's not done.
-- There's near-0% test coverage.
 - It's just my own (Jon) thing I'm doing in my spare time.
 - There's no community for ongoing support yet. It's just me, Jon 🙃 But do get in contact if you're trying to use this!
 
@@ -420,17 +395,19 @@ At its core, Jonline is a boring client-server app; the Browser/App, HTTP server
 
 ![Jonline Application Architecture](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Service_Architecture.svg)
 
-Generally, Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. To this end, Jonline has a "simple" deployment structure, and a more scalable alternative is in the process of being implemented:
+Generally, Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. To this end, Jonline has a "simple" deployment structure, and a more scalable alternative using Traefik:
 
 | Simple (Current) Approach                                                                                                                                 | Scalable Approach                                                                                                                    |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single JBL LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg) |
+| ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single Trafik LoadBalancer](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Traefik_Kubernetes_Deployment.svg) |
 |                                                                                                                                                           | Yet to be implemented. See [Cost of Operation](#cost-of-operation) for motivations                                                   |
 
 [Jonline's architecture docs](https://github.com/JonLatane/jonline/tree/main/docs/architecture) also cover and link to such topics as:
 
 - [Deployment management, in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys)
+    - This handles Jonline as well as Postgres and MinIO
 - [TLS cert generation, in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs)
+- [Traefik ingress management, in `deploys/ingress`](https://github.com/JonLatane/jonline/tree/main/deploys/ingress)
 
 [CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
 
