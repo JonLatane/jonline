@@ -226,4 +226,4 @@ This is how Jonline was originally deployed, and still is by default for a singl
 
 #### K8s cluster with multiple Jonline servers/deployments behind a single shared LoadBalancer
 This is what [`deploys/ingress/`](./ingress/README.md) sets up.
-![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg)
+![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Traefik_Kubernetes_Deployment.svg)
