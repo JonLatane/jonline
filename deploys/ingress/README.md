@@ -28,6 +28,12 @@ Get its external IP with:
 make deploy_ingress_get_ip
 ```
 
+To tear the shared controller back down (leaving any per-domain routes in place, harmlessly inert, and without touching the Traefik CRDs -- deleting those would delete every domain's routes across the whole cluster, not just the controller):
+
+```bash
+make remove_ingress
+```
+
 ## Onboarding a domain
 
 Once a namespace already has its own `jonline` backend, Postgres, MinIO and Cert-Manager certs set up (i.e. you've already done the [Basic Deployment](../README.md#basic-deployment) for it) and it's currently using `server_external.yaml` (its own LoadBalancer), you can move it behind the shared ingress:
@@ -51,6 +57,16 @@ NAMESPACE=mynamespace make deploy_be_internal_update
 ```
 
 Doing this out of order -- switching off the old LoadBalancer before DNS has actually moved -- will take the site down until DNS propagates, so don't skip the validation step above.
+
+### Fronting a domain with a CDN/proxy (e.g. Cloudflare)
+
+If something sits in front of Traefik and connects to it under a *different* hostname than `DOMAIN` -- e.g. Cloudflare proxying `jonline.io` to an origin that's actually `jonline.io.getj.online` -- you need to tell Traefik about that extra hostname too, or it won't recognize the connection (SNI passthrough on 443/27707 and Host-routing on 80/8000 both key off whatever hostname is presented *to Traefik*, not the one your Cert-Manager certs were issued for). Pass it via `EXTRA_DOMAINS` (space-separated if there's more than one):
+
+```bash
+NAMESPACE=mynamespace DOMAIN=my.domain.example.com EXTRA_DOMAINS=my.cdn-fronted-domain.com make add_ingress_domain
+```
+
+This is unrelated to TLS certs -- your origin keeps presenting its one Cert-Manager cert for `DOMAIN` regardless of which hostname was used to reach it, so a CDN validating that cert against its own hostname (e.g. Cloudflare's "Full (Strict)" mode) will see a mismatch and fail; using the CDN's "Full" (encrypt, don't validate) mode, or otherwise letting the CDN accept a non-matching origin cert, is the expected way to run this setup.
 
 To see every namespace/domain currently wired up to the shared ingress (queried live from the cluster, not from local files):
 

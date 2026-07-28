@@ -35,6 +35,8 @@ deploy_lb_restart:
 # of one each). See deploys/ingress/README.md.
 create_ingress:
 	cd deploys/ingress && $(MAKE) create_ingress
+remove_ingress:
+	cd deploys/ingress && $(MAKE) remove_ingress
 deploy_ingress_get_ip:
 	cd deploys/ingress && $(MAKE) deploy_ingress_get_ip
 deploy_ingress_restart:

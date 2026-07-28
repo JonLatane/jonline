@@ -20,7 +20,7 @@ spec:
     - web
   routes:
     - kind: Rule
-      match: Host(`${DOMAIN}`)
+      match: ${HOST_MATCH}
       services:
         - name: jonline
           port: 80
@@ -34,7 +34,7 @@ spec:
     - web-alt
   routes:
     - kind: Rule
-      match: Host(`${DOMAIN}`)
+      match: ${HOST_MATCH}
       services:
         - name: jonline
           port: 8000
@@ -47,12 +47,12 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostSNI(`${DOMAIN}`)
+    - match: ${SNI_MATCH}
       services:
         - name: jonline
           port: 443
-      tls:
-        passthrough: true
+  tls:
+    passthrough: true
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRouteTCP
@@ -62,9 +62,9 @@ spec:
   entryPoints:
     - grpc
   routes:
-    - match: HostSNI(`${DOMAIN}`)
+    - match: ${SNI_MATCH}
       services:
         - name: jonline
           port: 27707
-      tls:
-        passthrough: true
+  tls:
+    passthrough: true

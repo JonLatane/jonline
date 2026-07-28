@@ -11,13 +11,24 @@ TRAEFIK_CRDS_URL := https://raw.githubusercontent.com/traefik/traefik/$(TRAEFIK_
 
 # NAMESPACE/DOMAIN are intentionally NOT given defaults here: every
 # add_ingress_domain/remove_ingress_domain call is specific to one of *your*
-# domains, and should never silently fall back to a placeholder.
+# domains, and should never silently fall back to a placeholder. EXTRA_DOMAINS
+# is genuinely optional (see below), so it does default to empty.
+EXTRA_DOMAINS ?=
 
 # create_ingress: the one command that sets up the shared ingress. Contains
 # no domain-specific configuration whatsoever -- safe to run as-is on any
 # cluster. Run this once per cluster; then use add_ingress_domain below, once
 # per domain you want to route through it.
 create_ingress: deploy_ingress_crds deploy_ingress_controller_create
+
+# remove_ingress: tears down the shared controller itself (the reverse of
+# create_ingress). Deliberately does NOT touch the Traefik CRDs (deleting
+# those would delete every IngressRoute/IngressRouteTCP object -- i.e. every
+# domain's routes -- across every namespace in the cluster, not just the
+# controller) or any per-domain routes added via add_ingress_domain (those are
+# left behind, harmlessly inert, in their own namespaces; clean them up
+# individually with remove_ingress_domain if you want them gone too).
+remove_ingress: deploy_ingress_controller_delete
 
 deploy_ingress_ensure_namespace:
 	- kubectl create namespace $(INGRESS_NAMESPACE)
@@ -48,11 +59,26 @@ deploy_ingress_get_ip:
 # Per-domain routes. NAMESPACE is the existing namespace your `jonline`
 # backend/DB/certs already live in (see ../README.md); DOMAIN is that
 # backend's public hostname. Both are required -- there are no defaults.
+#
+# EXTRA_DOMAINS (optional, space-separated) lets other hostnames that front
+# the same backend -- e.g. a Cloudflare/CDN proxy in front of DOMAIN using its
+# own name -- match to this same namespace too. This matters because SNI
+# passthrough (443/27707) and Host-based routing (80/8000) both key off the
+# hostname the *client at Traefik's doorstep* presents: if something in front
+# of Traefik (a CDN, a proxy) connects to it using a different hostname than
+# DOMAIN, Traefik won't recognize it unless it's listed here as well.
+#
+# Traefik v3's Host()/HostSNI() each take exactly ONE hostname (unlike v2,
+# where they took several comma-separated) -- multiple hostnames must be
+# joined with explicit `||`, e.g. Host(`a`) || Host(`b`).
+HOST_MATCH := $(shell printf '%s\n' $(DOMAIN) $(EXTRA_DOMAINS) | sed 's/.*/Host(`&`)/' | paste -sd'~' - | sed 's/~/ || /g')
+SNI_MATCH := $(shell printf '%s\n' $(DOMAIN) $(EXTRA_DOMAINS) | sed 's/.*/HostSNI(`&`)/' | paste -sd'~' - | sed 's/~/ || /g')
+
 k8s/jonline-routes.$(NAMESPACE).generated.yaml: k8s/jonline-routes.template.yaml
 	@test -n "$(NAMESPACE)" || (echo "NAMESPACE is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social.example.com make add_ingress_domain" && exit 1)
 	@test -n "$(DOMAIN)" || (echo "DOMAIN is required, e.g. NAMESPACE=bullcitysocial DOMAIN=bullcity.social.example.com make add_ingress_domain" && exit 1)
 	cat k8s/jonline-routes.template.yaml | \
-	  sed 's/$${DOMAIN}/$(DOMAIN)/g' \
+	  sed -e 's/$${HOST_MATCH}/$(HOST_MATCH)/g' -e 's/$${SNI_MATCH}/$(SNI_MATCH)/g' \
 	  > k8s/jonline-routes.$(NAMESPACE).generated.yaml
 
 add_ingress_domain: k8s/jonline-routes.$(NAMESPACE).generated.yaml
@@ -68,4 +94,4 @@ remove_ingress_domain: k8s/jonline-routes.$(NAMESPACE).generated.yaml
 list_ingress_domains:
 	@kubectl get ingressroute -A -o json | \
 	  jq -r '.items[] | select(.metadata.name == "jonline-http") | "\(.metadata.namespace): \(.spec.routes[0].match)"' | \
-	  sed -E 's/Host\(`(.*)`\)/\1/'
+	  sed -E 's/Host\(//g; s/\)//g' | tr -d '`'
