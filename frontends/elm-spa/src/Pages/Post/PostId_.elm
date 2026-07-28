@@ -24,6 +24,7 @@ import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
 import UI
+import UI.Classes exposing (classes)
 import View exposing (View)
 
 
@@ -242,6 +243,7 @@ Used by both `GotPost` (the initial load, and content-edit saves via
 page (mirroring `VisibilitySaveClicked`'s `Posts.updatePost` pattern) should
 route its own successful save through this too rather than hand-rolling the
 same two updates again.
+
 -}
 applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
 applyUpdatedPost model post =
@@ -607,7 +609,7 @@ visibilityView maybeAccount maybeEdit post =
                                 )
                         )
                     , button
-                        [ class "post-visibility-save"
+                        [ classes [ "post-visibility-save", "background-color-primary" ]
                         , onClick (VisibilitySaveClicked post)
                         , disabled (edit.status == Submitting)
                         ]

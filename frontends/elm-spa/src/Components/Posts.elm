@@ -986,7 +986,7 @@ be a bare `postVisibilityText post` text node.
 -}
 postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
 postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
-    div [ classes [ "post-detail", postServerHost, "border-color-primary-anchor-50" ] ]
+    div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
                 h1 [ class "post-detail-title" ] [ text (postTitleText post) ]
