@@ -1,0 +1,50 @@
+--- a/schema.rs
++++ b/schema.rs
+@@ -1,11 +1,5 @@
+ // @generated automatically by Diesel CLI.
+ 
+-pub mod sql_types {
+-    #[derive(diesel::sql_types::SqlType)]
+-    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
+-    pub struct Tsvector;
+-}
+-
+ diesel::table! {
+     event_attendances (id) {
+         id -> Int8,
+@@ -160,7 +154,7 @@
+ 
+ diesel::table! {
+     use diesel::sql_types::*;
+-    use super::sql_types::Tsvector;
++    use diesel_full_text_search::TsVector;
+ 
+     posts (id) {
+         id -> Int8,
+@@ -184,7 +178,7 @@
+         published_at -> Nullable<Timestamp>,
+         last_activity_at -> Timestamp,
+         unauthenticated_star_count -> Int8,
+-        search_text -> Tsvector,
++        search_text -> TsVector,
+         sort_published_at -> Timestamp,
+     }
+ }
+@@ -271,7 +265,7 @@
+ 
+ diesel::table! {
+     use diesel::sql_types::*;
+-    use super::sql_types::Tsvector;
++    use diesel_full_text_search::TsVector;
+ 
+     users (id) {
+         id -> Int8,
+@@ -294,7 +288,7 @@
+         response_count -> Int4,
+         created_at -> Timestamp,
+         updated_at -> Timestamp,
+-        search_text -> Nullable<Tsvector>,
++        search_text -> TsVector,
+     }
+ }
+ 
