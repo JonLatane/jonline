@@ -204,21 +204,26 @@ As mentioned in [Deploying to namespaces other than `jonline`](#deploying-to-nam
 
 Note that multiple *external* deployments will each have a Kubernetes LoadBalancer. On many providers, this is relatively expensive (an external IP, $12/mo on DigitalOcean). Other Makefile targets include `deploy_be_internal_create` and `deploy_be_internal_insecure_create` (the latter of which will specifically ignore K8s-stored TLS certificates, to save CPU time by not encrypting interal services).
 
-It should be possible to manage many Jonline instances using Nginx and any preferred certificate management scheme you'd like as a sysadmin. Additionally, JBL is a somewhat novel, 
+### Jonline Ingress: sharing one LoadBalancer across many domains (recommended)
+[`deploys/ingress/`](./ingress/README.md) sets up a single, shared [Traefik](https://traefik.io) ingress that lets any number of Jonline instances -- each still in its own namespace, each with its own domain, Postgres, MinIO and Cert-Manager certs -- share **one** external IP/LoadBalancer instead of one each. Each backend keeps terminating its own TLS exactly as it does today (`deploy_be_internal_create`/`deploy_be_internal_update`); the ingress only reads the plaintext SNI hostname from the TLS handshake to route the still-encrypted bytes to the right namespace, so no certs need to move, be duplicated, or change hands.
 
-### Jonline Balancer of Loads (JBL), a load balancer for Kubernetes
-Jonline Balancer of Loads will be a dedicated Kubernetes LoadBalancer designed to use K8s secrets named `jonline-tls` to LoadBalance K8s services named `jonline` on ports 80, 443, 8000, and 27707 (Jonline's service ports) from across a variety of namespaces.
+```bash
+# Once per cluster:
+cd deploys/ingress && make create_ingress
+# Once per domain, after that domain's own basic deployment already exists:
+NAMESPACE=my_namespace DOMAIN=my.domain.example.com make add_ingress_domain
+```
 
-This feature is incomplete, but the `Makefile` scripts (that simply run `kubectl` and `jq` to manage configuration) are.
+See [`deploys/ingress/README.md`](./ingress/README.md) for the full walkthrough, including how to cut a domain over from its own LoadBalancer without downtime.
 
-Envisioned functionality: the final JBL binary should be able to both spawn an Nginx server that's. But to start with, whichever is easier would be a welcome contribution from anyone who thinks they could contribute it!
+This replaces the earlier, incomplete "JBL" (Jonline Balancer of Loads) effort described below, which hand-rolled an equivalent via a custom Rust binary shelling out to Nginx.
 
 ### Example Kubernetes Cluster Setups
-#### K8s cluster with multiple Kubernetes LoadBalancers (without JBL)
-This is how Jonline is currently deployed.
+#### K8s cluster with multiple Kubernetes LoadBalancers (without a shared ingress)
+This is how Jonline was originally deployed, and still is by default for a single domain.
 
 ![K8s cluster with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg)
 
-#### K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer
-Not yet implemented; an ongoing dev effort (that welcomes outside contributions)! See [the GitHub issue for more information](https://github.com/JonLatane/jonline/issues/15).
+#### K8s cluster with multiple Jonline servers/deployments behind a single shared LoadBalancer
+This is what [`deploys/ingress/`](./ingress/README.md) sets up.
 ![System with multiple Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/JBL_Kubernetes_Deployment.svg)

@@ -30,6 +30,22 @@ deploy_lb_update:
 deploy_lb_restart:
 	cd deploys/jbl && $(MAKE) deploy_lb_restart
 
+# Manage the shared Traefik ingress (lets many Jonline instances, each in
+# their own namespace/domain, share a single LoadBalancer/external IP instead
+# of one each). See deploys/ingress/README.md.
+create_ingress:
+	cd deploys/ingress && $(MAKE) create_ingress
+deploy_ingress_get_ip:
+	cd deploys/ingress && $(MAKE) deploy_ingress_get_ip
+deploy_ingress_restart:
+	cd deploys/ingress && $(MAKE) deploy_ingress_restart
+add_ingress_domain:
+	cd deploys/ingress && $(MAKE) add_ingress_domain
+remove_ingress_domain:
+	cd deploys/ingress && $(MAKE) remove_ingress_domain
+list_ingress_domains:
+	cd deploys/ingress && $(MAKE) list_ingress_domains
+
 # Targets for deploying Jonline to your K8s cluster.
 # Internal or external refers to whether the service is exposed to the internet.
 # External is the default, but internal is useful for testing, and could

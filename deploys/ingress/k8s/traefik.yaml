@@ -1,0 +1,134 @@
+# The shared Traefik ingress controller. This is the ONLY new external
+# IP/LoadBalancer this repo's ingress setup creates -- see ../README.md.
+#
+# CRDs (IngressRoute, IngressRouteTCP, etc.) are installed separately, straight
+# from the upstream Traefik repo, via `make deploy_ingress_crds` (they're
+# cluster-scoped and version-tied to the `image:` tag below, so there's no
+# reason to vendor a copy here).
+#
+# The ClusterRole rules below are copied from Traefik's own
+# kubernetes-crd-rbac.yml for this same version, with the ClusterRoleBinding's
+# subject namespace changed to match where this Deployment actually runs
+# (upstream's copy hardcodes "default").
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik-ingress-controller
+  namespace: traefik-ingress
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: traefik-ingress-controller
+rules:
+  - apiGroups: [""]
+    resources: ["services", "secrets", "nodes", "configmaps"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses", "ingressclasses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["extensions", "networking.k8s.io"]
+    resources: ["ingresses/status"]
+    verbs: ["update"]
+  - apiGroups: ["traefik.io"]
+    resources:
+      - middlewares
+      - middlewaretcps
+      - ingressroutes
+      - traefikservices
+      - ingressroutetcps
+      - ingressrouteudps
+      - tlsoptions
+      - tlsstores
+      - serverstransports
+      - serverstransporttcps
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: traefik-ingress-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-ingress-controller
+subjects:
+  - kind: ServiceAccount
+    name: traefik-ingress-controller
+    namespace: traefik-ingress
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: traefik
+  namespace: traefik-ingress
+  labels:
+    app: traefik
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: traefik
+  template:
+    metadata:
+      labels:
+        app: traefik
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      containers:
+        - name: traefik
+          image: docker.io/traefik:v3.7.9
+          args:
+            - --providers.kubernetescrd
+            - --entryPoints.web.address=:80
+            - --entryPoints.web-alt.address=:8000
+            - --entryPoints.websecure.address=:443
+            - --entryPoints.grpc.address=:27707
+          ports:
+            - name: web
+              containerPort: 80
+              protocol: TCP
+            - name: web-alt
+              containerPort: 8000
+              protocol: TCP
+            - name: websecure
+              containerPort: 443
+              protocol: TCP
+            - name: grpc
+              containerPort: 27707
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: traefik
+  namespace: traefik-ingress
+  labels:
+    app: traefik
+spec:
+  type: LoadBalancer
+  selector:
+    app: traefik
+  ports:
+    - name: web
+      protocol: TCP
+      port: 80
+      targetPort: 80
+    - name: web-alt
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+    - name: websecure
+      protocol: TCP
+      port: 443
+      targetPort: 443
+    - name: grpc
+      protocol: TCP
+      port: 27707
+      targetPort: 27707

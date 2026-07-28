@@ -1,0 +1,70 @@
+# Routes a single domain's traffic from the shared Traefik ingress (see ../README.md)
+# to this namespace's existing `jonline` Service. Applied *into the target
+# namespace itself* (alongside the `jonline` Service), not into the Traefik
+# controller's own namespace -- Traefik's kubernetescrd provider watches
+# IngressRoute/IngressRouteTCP objects across all namespaces by default, so no
+# cross-namespace service reference (and no allowCrossNamespace flag) is needed.
+#
+# 443 and 27707 are TLS passthrough: Traefik only reads the SNI hostname from
+# the unencrypted ClientHello to pick this route, then forwards the encrypted
+# bytes straight through. This namespace's `jonline` server keeps terminating
+# its own TLS exactly as it does today (server_internal.yaml, not
+# server_internal_insecure.yaml -- passthrough has nothing to forward to
+# otherwise).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jonline-http
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`${DOMAIN}`)
+      services:
+        - name: jonline
+          port: 80
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: jonline-http-alt
+spec:
+  entryPoints:
+    - web-alt
+  routes:
+    - kind: Rule
+      match: Host(`${DOMAIN}`)
+      services:
+        - name: jonline
+          port: 8000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: jonline-https
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: HostSNI(`${DOMAIN}`)
+      services:
+        - name: jonline
+          port: 443
+      tls:
+        passthrough: true
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: jonline-grpc
+spec:
+  entryPoints:
+    - grpc
+  routes:
+    - match: HostSNI(`${DOMAIN}`)
+      services:
+        - name: jonline
+          port: 27707
+      tls:
+        passthrough: true
