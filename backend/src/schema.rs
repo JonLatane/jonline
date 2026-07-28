@@ -179,6 +179,7 @@ diesel::table! {
         last_activity_at -> Timestamp,
         unauthenticated_star_count -> Int8,
         search_text -> TsVector,
+        sort_published_at -> Timestamp,
     }
 }
 

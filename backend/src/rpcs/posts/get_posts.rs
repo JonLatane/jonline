@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use diesel::*;
 use diesel_full_text_search::{
-    configuration::TsConfigurationByName, to_tsquery_with_search_config, TsVectorExtensions,
+    configuration::TsConfigurationByName, to_tsquery_with_search_config, ts_rank_cd,
+    TsVectorExtensions,
 };
 use tonic::{Code, Status};
 
@@ -149,11 +150,19 @@ fn get_public_and_following_posts(
 ) -> Vec<MarshalablePost> {
     let context = request.context();
 
+    // `sort_published_at` has to be selected explicitly (not just referenced in `.order(...)`) -
+    // `query_visible_posts!`'s joins can produce more than one row per post (e.g. one cross-posted
+    // to several groups), so it applies `SELECT DISTINCT`, and Postgres requires every ORDER BY
+    // expression under DISTINCT to appear in the select list.
     let mut query = query_visible_posts!(user)
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            posts::sort_published_at,
+        ))
         .filter(posts::context.eq(context.as_str_name()))
         .filter(posts::user_id.is_not_null())
-        .order(posts::created_at.desc())
+        .order(posts::sort_published_at.desc())
         .limit(PAGE_SIZE)
         .into_boxed();
 
@@ -162,10 +171,10 @@ fn get_public_and_following_posts(
     }
 
     query
-        .load::<(models::Post, Option<models::Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .unwrap()
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
+        .map(|(post, author, _)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect()
 }
 
@@ -199,21 +208,41 @@ fn get_search_posts(
     // 2026-07-23-012047_add_search_text_no_stopwords - otherwise a query for a stopword like
     // "about" would get stripped from the query side even though it's indexed on the document side.
     let search_query =
+        to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text.clone());
+    // A second, independent tsquery expression for the rank calculation below - `search_query`
+    // above is consumed by `.matches(...)`, and the generated tsquery expression type isn't Clone.
+    let rank_query =
         to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text);
 
-    let mut query = query_visible_posts!(user)
+    // `query_visible_posts!`'s joins can produce more than one row per matching post, so it
+    // applies `SELECT DISTINCT` - which Postgres requires every ORDER BY expression to appear in
+    // the select list for. That's fine for a plain column (see the other GetPosts branches), but
+    // `ts_rank_cd(...)` takes a bind parameter, and reusing the "same" Rust expression in both
+    // `.select(...)` and `.order(...)` still emits two independent bind placeholders - which
+    // Postgres treats as structurally different expressions and rejects just the same. So this
+    // resolves the post ids DISTINCT-ly first (a plain `posts::id` has no such problem), then
+    // ranks and orders the (already-unique) matches in a second, DISTINCT-free query.
+    let mut matching_post_ids = query_visible_posts!(user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::search_text.matches(search_query))
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .order(posts::created_at.desc())
-        .limit(PAGE_SIZE)
+        .select(posts::id)
         .into_boxed();
 
     if let Some(author_user_id) = author_user_id {
-        query = query.filter(posts::user_id.eq(author_user_id));
+        matching_post_ids = matching_post_ids.filter(posts::user_id.eq(author_user_id));
     }
 
-    let result: Vec<MarshalablePost> = query
+    let result: Vec<MarshalablePost> = posts::table
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .filter(posts::id.eq_any(matching_post_ids))
+        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
+        // Search results are ordered by match quality first (best guess at what the user is
+        // looking for), falling back to recency - `COALESCE(published_at, created_at)` - to keep
+        // ordering stable across the (common, with prefix matching) rank ties rather than falling
+        // through to unspecified/DB-natural order.
+        .order(ts_rank_cd(posts::search_text, rank_query).desc())
+        .then_order_by(posts::sort_published_at.desc())
+        .limit(PAGE_SIZE)
         .load::<(models::Post, Option<models::Author>)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -236,11 +265,16 @@ fn get_my_group_posts(
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(memberships::user_id.eq(user.id))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .load::<(models::Post, Option<models::Author>)>(conn)
+        .order(posts::sort_published_at.desc())
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            posts::sort_published_at,
+        ))
+        .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
+        .map(|(post, author, _)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -267,21 +301,24 @@ fn get_group_posts(
                 .filter(posts::context.eq(PostContext::Post.as_str_name()))
                 .filter(group_posts::group_id.eq(group_id))
                 .filter(group_posts::group_moderation.eq_any(moderations.to_string_moderations()))
+                .order(posts::sort_published_at.desc())
                 .select((
                     models::POST_COLUMNS,
                     models::AUTHOR_COLUMNS.nullable(),
                     group_posts::all_columns.nullable(),
                     group_post_users.fields(models::AUTHOR_COLUMNS.nullable()),
+                    posts::sort_published_at,
                 ))
                 .load::<(
                     models::Post,
                     Option<models::Author>,
                     Option<models::GroupPost>,
                     Option<models::Author>,
+                    std::time::SystemTime,
                 )>(conn)
                 .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
                 .iter()
-                .map(|(post, author, group_post, group_post_author)| {
+                .map(|(post, author, group_post, group_post_author, _)| {
                     MarshalablePost(
                         post.clone(),
                         author.clone(),
@@ -314,11 +351,16 @@ fn get_user_posts(
     let result: Vec<MarshalablePost> = query_visible_posts!(current_user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::user_id.eq(user_id))
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .load::<(models::Post, Option<models::Author>)>(conn)
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            posts::sort_published_at,
+        ))
+        .order(posts::sort_published_at.desc())
+        .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
+        .map(|(post, author, _)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -331,11 +373,16 @@ fn get_following_posts(
     let result: Vec<MarshalablePost> = query_visible_posts!(&Some(user))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(follows::user_id.eq(user.id))
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .load::<(models::Post, Option<models::Author>)>(conn)
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            posts::sort_published_at,
+        ))
+        .order(posts::sort_published_at.desc())
+        .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
-        .map(|(post, author)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
+        .map(|(post, author, _)| MarshalablePost(post.clone(), author.clone(), None, None, vec![]))
         .collect();
 
     Ok(result)
@@ -377,17 +424,21 @@ fn get_replies_to_post_ids(
     let level = query_visible_posts!(user)
         .filter(posts::parent_post_id.eq_any(post_ids))
         .filter(posts::user_id.is_not_null().or(posts::response_count.gt(0)))
-        .select((models::POST_COLUMNS, models::AUTHOR_COLUMNS.nullable()))
-        .order(posts::created_at.desc())
+        .select((
+            models::POST_COLUMNS,
+            models::AUTHOR_COLUMNS.nullable(),
+            posts::sort_published_at,
+        ))
+        .order(posts::sort_published_at.desc())
         .limit(PAGE_SIZE)
-        .load::<(models::Post, Option<models::Author>)>(conn)
+        .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?;
 
-    let child_ids: Vec<i64> = level.iter().map(|(post, _)| post.id).collect();
+    let child_ids: Vec<i64> = level.iter().map(|(post, ..)| post.id).collect();
     let mut grandchildren = get_replies_to_post_ids(user, &child_ids, reply_depth - 1, conn)?;
 
     let mut replies_by_parent: HashMap<i64, Vec<MarshalablePost>> = HashMap::new();
-    for (post, author) in level {
+    for (post, author, _) in level {
         let replies = grandchildren.remove(&post.id).unwrap_or_default();
         replies_by_parent
             .entry(post.parent_post_id.unwrap_or(0))

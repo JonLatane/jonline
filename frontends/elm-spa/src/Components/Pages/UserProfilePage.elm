@@ -1355,7 +1355,10 @@ bioSection canEdit user =
 editSaveButton : Msg -> SubmitStatus -> Html Msg
 editSaveButton onSave status =
     button
-        [ class "profile-edit-save", onClick onSave, disabled (status == Submitting) ]
+        [ classes [ "profile-edit-save", "background-color-primary" ]
+        , onClick onSave
+        , disabled (status == Submitting)
+        ]
         [ text
             (if status == Submitting then
                 "Saving…"

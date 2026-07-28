@@ -31,7 +31,7 @@ import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Task exposing (Task)
-import UI.Classes exposing (classes, openClosedClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 
 {-| What a save should do once the user's done editing: `PostContent post`
@@ -335,7 +335,7 @@ view accountsPanelModel model =
                         _ ->
                             Nothing
     in
-    div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing) ] ]
+    div [ classes [ "markdown-panel", "nav-panel", openClosedClass (model.target /= Nothing), hostnameToCSSClass model.targetHost ] ]
         [ div [ class "markdown-panel-header" ]
             [ modeSlider model.targetHost model.viewMode
             , accountRow accountsPanelModel model

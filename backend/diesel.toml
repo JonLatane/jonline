@@ -3,3 +3,13 @@
 
 [print_schema]
 file = "src/schema.rs"
+# Patches the raw `diesel print-schema` output so posts.search_text/users.search_text use
+# diesel_full_text_search::TsVector instead of the local `Tsvector` struct Diesel generates for
+# the postgres `tsvector` type (Diesel's postgres-type-name -> Rust-type-name convention
+# capitalizes the whole name as one word - "tsvector" -> "Tsvector" - which doesn't match this
+# crate's "TsVector", so Diesel can't find it and falls back to defining its own local type).
+# Also normalizes users.search_text from Nullable<TsVector> to TsVector: it's a `GENERATED
+# ALWAYS AS (...) STORED` column (see 2026-07-22-202628_add_search_text_to_users), so Postgres'
+# catalog reports it as nullable even though its generating expression can never produce SQL
+# NULL - and TsVectorExtensions::matches() is only implemented for non-nullable TsVector.
+patch_file = "diesel/schema.patch"

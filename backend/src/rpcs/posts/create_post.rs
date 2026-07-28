@@ -133,6 +133,21 @@ pub fn create_post(
             })
             .returning(models::POST_COLUMNS)
             .get_result::<models::Post>(conn)?;
+
+        // `published_at` is set once, the first time a post becomes SERVER_PUBLIC/GLOBAL_PUBLIC,
+        // and is immutable thereafter (see UpdatePost). Matching `inserted_post.created_at`
+        // exactly, rather than a separately-captured `SystemTime::now()`, avoids any clock skew
+        // between the two columns.
+        let inserted_post = if matches!(visibility, Visibility::ServerPublic | Visibility::GlobalPublic) {
+            update(posts::table)
+                .filter(posts::id.eq(inserted_post.id))
+                .set(posts::published_at.eq(inserted_post.created_at))
+                .returning(models::POST_COLUMNS)
+                .get_result::<models::Post>(conn)?
+        } else {
+            inserted_post
+        };
+
         match parent_post_db_id.to_owned() {
             Some(parent_id) => {
                 update(posts::table)

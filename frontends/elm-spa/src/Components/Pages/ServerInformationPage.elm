@@ -524,7 +524,7 @@ nameView name renameStatus maybeAdminAccount =
                 ]
                 []
             , button
-                [ class "server-details-rename-save"
+                [ classes [ "server-details-rename-save", "background-color-primary" ]
                 , onClick RenameSaveClicked
                 , disabled (status == AccountsPanel.Submitting)
                 ]

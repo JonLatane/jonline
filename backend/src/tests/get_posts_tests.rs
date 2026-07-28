@@ -5,6 +5,8 @@
 //! `test_transaction`, so nothing here is ever committed - tests are free to create users,
 //! posts, groups, etc. via `crate::tests::factories` without any cleanup step.
 
+use std::time::{Duration, SystemTime};
+
 use diesel::Connection;
 use tonic::{Code, Status};
 
@@ -15,6 +17,13 @@ use crate::tests::factories::*;
 
 fn ids(response: &GetPostsResponse) -> Vec<String> {
     response.posts.iter().map(|p| p.id.clone()).collect()
+}
+
+/// A timestamp `seconds` in the past - for building posts with distinct, explicit
+/// `created_at`/`published_at` values (see `PostOpts`'s doc comment on those fields for why that's
+/// necessary: plain `NOW()`-defaulted timestamps would all collide within one `test_transaction`).
+fn ago(seconds: u64) -> SystemTime {
+    SystemTime::now() - Duration::from_secs(seconds)
 }
 
 mod get_by_post_id {
@@ -416,6 +425,60 @@ mod replies {
             Ok(())
         });
     }
+
+    #[test]
+    fn orders_direct_replies_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "replies_order_author");
+            let root = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let older_reply = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    context: PostContext::Reply,
+                    parent_post_id: Some(root.id),
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            let newer_reply = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    context: PostContext::Reply,
+                    parent_post_id: Some(root.id),
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_posts(
+                GetPostsRequest {
+                    post_id: Some(root.id.to_proto_id()),
+                    reply_depth: Some(1),
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer_reply.id.to_proto_id(), older_reply.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
 }
 
 mod text_search {
@@ -667,6 +730,83 @@ mod text_search {
             Ok(())
         });
     }
+
+    /// Search results rank by match quality first: a title match (tsvector weight 'A') outranks
+    /// a content-only match (weight 'B') even when the content match is far more recent - unlike
+    /// every other GetPosts branch, which orders purely by effective publish date.
+    #[test]
+    fn orders_by_relevance_before_recency() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "search_relevance_author");
+            let title_match = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    title: Some("gerbilmongoose special".to_string()),
+                    created_at: Some(ago(600)),
+                    ..Default::default()
+                },
+            );
+            let content_match = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    content: Some("a post that mentions gerbilmongoose in passing".to_string()),
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+
+            let response = search(conn, Some("gerbilmongoose"), None, &None)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![title_match.id.to_proto_id(), content_match.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
+
+    /// When two results rank equally (identical title match), ties break by effective publish
+    /// date, most recent first.
+    #[test]
+    fn breaks_relevance_ties_by_recency() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "search_tiebreak_author");
+            let older = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    title: Some("wizardquokka".to_string()),
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            let newer = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    title: Some("wizardquokka".to_string()),
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+
+            let response = search(conn, Some("wizardquokka"), None, &None)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
 }
 
 mod user_posts {
@@ -754,6 +894,47 @@ mod user_posts {
             let mut expected = vec![public_post.id.to_proto_id(), private_post.id.to_proto_id()];
             expected.sort();
             assert_eq!(self_ids, expected);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn orders_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "userposts_order_author");
+            let older = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            let newer = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_posts(
+                GetPostsRequest {
+                    author_user_id: Some(author.id.to_proto_id()),
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
             Ok(())
         });
     }
@@ -857,6 +1038,59 @@ mod my_groups_posts {
             Ok(())
         });
     }
+
+    #[test]
+    fn orders_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let member = create_user(conn, "mygroups_order_member");
+            let author = create_user(conn, "mygroups_order_author");
+            let group = create_group(conn, "mygroups-order-group", GroupOpts::default());
+            create_membership(
+                conn,
+                &member,
+                &group,
+                Moderation::Approved,
+                Moderation::Approved,
+                vec![],
+            );
+            let older = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::ServerPublic,
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            create_group_post(conn, &older, &group, &author, Moderation::Approved);
+            let newer = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::ServerPublic,
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+            create_group_post(conn, &newer, &group, &author, Moderation::Approved);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::MyGroupsPosts as i32,
+                    ..Default::default()
+                },
+                &Some(&member),
+                conn,
+            )?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
+            Ok(())
+        });
+    }
 }
 
 mod following_posts {
@@ -916,6 +1150,50 @@ mod following_posts {
             )?;
 
             assert_eq!(ids(&response), vec![followed_post.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn orders_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let follower = create_user(conn, "following_order_follower");
+            let followed = create_user(conn, "following_order_followed");
+            create_follow(conn, &follower, &followed);
+
+            let older = create_post(
+                conn,
+                Some(&followed),
+                PostOpts {
+                    visibility: Visibility::ServerPublic,
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            let newer = create_post(
+                conn,
+                Some(&followed),
+                PostOpts {
+                    visibility: Visibility::ServerPublic,
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::FollowingPosts as i32,
+                    ..Default::default()
+                },
+                &Some(&follower),
+                conn,
+            )?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
             Ok(())
         });
     }
@@ -1044,6 +1322,57 @@ mod group_posts {
             ];
             expected.sort();
             assert_eq!(actual, expected);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn orders_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "grouppost_order_author");
+            let group = create_group(
+                conn,
+                "grouppost-order-group",
+                GroupOpts {
+                    non_member_permissions: vec![Permission::ViewPosts],
+                },
+            );
+            let older = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(120)),
+                    ..Default::default()
+                },
+            );
+            create_group_post(conn, &older, &group, &author, Moderation::Approved);
+            let newer = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(10)),
+                    ..Default::default()
+                },
+            );
+            create_group_post(conn, &newer, &group, &author, Moderation::Approved);
+
+            let response = get_posts(
+                GetPostsRequest {
+                    listing_type: PostListingType::GroupPosts as i32,
+                    group_id: Some(group.id.to_proto_id()),
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(
+                ids(&response),
+                vec![newer.id.to_proto_id(), older.id.to_proto_id()]
+            );
             Ok(())
         });
     }
@@ -1247,6 +1576,57 @@ mod default_listing {
                 conn,
             )?;
             assert_eq!(ids(&reply_response), vec![reply.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    /// Orders by `COALESCE(published_at, created_at)` descending: a post republished 1 minute
+    /// ago outranks one merely created 5 minutes ago, even though the republished post is
+    /// actually the oldest of the three by `created_at`.
+    #[test]
+    fn orders_by_effective_publish_date() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "default_listing_order_author");
+            let old_post = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(600)),
+                    ..Default::default()
+                },
+            );
+            let new_post = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(300)),
+                    ..Default::default()
+                },
+            );
+            let republished_post = create_post(
+                conn,
+                Some(&author),
+                PostOpts {
+                    visibility: Visibility::GlobalPublic,
+                    created_at: Some(ago(1200)),
+                    published_at: Some(ago(60)),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_posts(GetPostsRequest::default(), &None, conn)?;
+
+            assert_eq!(
+                ids(&response),
+                vec![
+                    republished_post.id.to_proto_id(),
+                    new_post.id.to_proto_id(),
+                    old_post.id.to_proto_id(),
+                ]
+            );
             Ok(())
         });
     }

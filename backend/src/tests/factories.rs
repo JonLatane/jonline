@@ -2,6 +2,8 @@
 //! [`test_conn`] and should wrap its body in `conn.test_transaction(...)`, so nothing created
 //! here is ever committed to `TEST_DATABASE_URL`.
 
+use std::time::SystemTime;
+
 use diesel::*;
 use diesel_migrations::MigrationHarness;
 
@@ -109,6 +111,21 @@ pub fn update_user_profile(
         .expect("failed to update test user")
 }
 
+/// `create_user`'s default permission set (`ViewPosts`/`CreatePosts`/`ViewGroups`/`FollowUsers`)
+/// doesn't include `PublishPosts{Locally,Globally}` - specs exercising CreatePost/UpdatePost's
+/// visibility handling grant those explicitly via this.
+pub fn grant_permissions(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    permissions: Vec<Permission>,
+) -> models::User {
+    diesel::update(users::table.filter(users::id.eq(user.id)))
+        .set(users::permissions.eq(permissions.to_json_permissions()))
+        .returning(models::USER_COLUMNS)
+        .get_result::<models::User>(conn)
+        .expect("failed to update test user permissions")
+}
+
 #[derive(Clone)]
 pub struct PostOpts {
     pub visibility: Visibility,
@@ -117,6 +134,13 @@ pub struct PostOpts {
     pub parent_post_id: Option<i64>,
     pub title: Option<String>,
     pub content: Option<String>,
+    /// Overrides `created_at`/`published_at`, which otherwise both default to `NOW()` - and
+    /// since `NOW()` is frozen for the lifetime of a Postgres transaction, every post a test
+    /// creates inside its `test_transaction` would otherwise get the *same* `created_at`. Specs
+    /// asserting on `GetPosts`' `sort_published_at` ordering need distinct, explicit timestamps
+    /// to have something meaningful to order by.
+    pub created_at: Option<SystemTime>,
+    pub published_at: Option<SystemTime>,
 }
 
 impl Default for PostOpts {
@@ -128,6 +152,8 @@ impl Default for PostOpts {
             parent_post_id: None,
             title: Some("Test Post".to_string()),
             content: Some("Test content".to_string()),
+            created_at: None,
+            published_at: None,
         }
     }
 }
@@ -138,7 +164,7 @@ pub fn create_post(
     author: Option<&models::User>,
     opts: PostOpts,
 ) -> models::Post {
-    insert_into(posts::table)
+    let post = insert_into(posts::table)
         .values(&models::NewPost {
             user_id: author.map(|u| u.id),
             parent_post_id: opts.parent_post_id,
@@ -154,6 +180,18 @@ pub fn create_post(
         // posts::search_text has no corresponding field on `models::Post` (see POST_COLUMNS'
         // doc comment), so a plain `RETURNING *` can't deserialize into it - the explicit
         // column list is required here, same as in create_post.rs.
+        .returning(models::POST_COLUMNS)
+        .get_result::<models::Post>(conn)
+        .expect("failed to create test post");
+
+    if opts.created_at.is_none() && opts.published_at.is_none() {
+        return post;
+    }
+    diesel::update(posts::table.filter(posts::id.eq(post.id)))
+        .set((
+            opts.created_at.map(|t| posts::created_at.eq(t)),
+            opts.published_at.map(|t| posts::published_at.eq(t)),
+        ))
         .returning(models::POST_COLUMNS)
         .get_result::<models::Post>(conn)
         .expect("failed to create test post")

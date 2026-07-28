@@ -83,6 +83,7 @@ pub fn update_post(
 
     let transaction_result: Result<models::Post, diesel::result::Error> = conn
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
+            let now = SystemTime::now();
             if admin || self_update {
                 // Only Events/EventInstances support title updates.
                 if vec![PostContext::Event, PostContext::EventInstance]
@@ -102,8 +103,20 @@ pub fn update_post(
                     .map_err(|_| diesel::result::Error::RollbackTransaction)?;
                 existing_post.embed_link = request.embed_link;
                 existing_post.shareable = request.shareable;
-                existing_post.updated_at = SystemTime::now().into();
+                existing_post.updated_at = now.into();
                 existing_post.visibility = request.visibility.to_string_visibility();
+
+                // `published_at` is set once, the first time a post becomes SERVER_PUBLIC/
+                // GLOBAL_PUBLIC, and is immutable thereafter - so only fill it in while it's
+                // still unset, matching whatever timestamp this update is otherwise using.
+                if existing_post.published_at.is_none()
+                    && matches!(
+                        existing_post.visibility.to_proto_visibility(),
+                        Some(Visibility::ServerPublic | Visibility::GlobalPublic)
+                    )
+                {
+                    existing_post.published_at = Some(now);
+                }
 
                 if moderation.is_some() {
                     existing_post.moderation = moderation.unwrap().to_string_moderation();
@@ -136,7 +149,7 @@ pub fn update_post(
                 existing_post.moderation = request.moderation.to_string_moderation();
                 // existing_post.permissions = request.permissions.to_json_permissions();
             }
-            existing_post.updated_at = SystemTime::now().into();
+            existing_post.updated_at = now.into();
 
             log::info!("Updating post: {:?}", existing_post);
             match diesel::update(posts::table)
