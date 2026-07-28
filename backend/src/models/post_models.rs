@@ -65,10 +65,16 @@ pub struct Post {
     pub unauthenticated_star_count: i64
 }
 
-/// Explicit column list for `posts`, excluding `search_text` (a denormalized tsvector used only
-/// for full-text search filtering/indexing - it has no corresponding field on `Post` since it's
-/// never read back into application code, and diesel_full_text_search's `TsVector` doesn't
-/// support being written from Rust via `AsChangeset` anyway).
+/// Explicit column list for `posts`, excluding:
+/// - `search_text`, a denormalized tsvector used only for full-text search filtering/indexing -
+///   it has no corresponding field on `Post` since it's never read back into application code,
+///   and diesel_full_text_search's `TsVector` doesn't support being written from Rust via
+///   `AsChangeset` anyway.
+/// - `sort_published_at`, a `GENERATED ALWAYS AS (COALESCE(published_at, created_at)) STORED`
+///   column GetPosts orders by (see 2026-07-27-215959_add_sort_published_at_to_posts). It's read
+///   via `posts::sort_published_at` directly in `.order(...)` calls rather than through a `Post`
+///   field - Postgres rejects any UPDATE/INSERT that names a generated column, and `Post` derives
+///   `AsChangeset`, so giving it a field here would make every `.set(&existing_post)` call fail.
 pub const POST_COLUMNS: (
     posts::id,
     posts::user_id,

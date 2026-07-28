@@ -433,8 +433,22 @@
    `Components.PostCard.postDetail`'s own `visibilityView` parameter). Same
    small-button vocabulary as `.post-edit-button`/`.profile-edit-*` since it
    sits inline in that same meta line. */
-.post-visibility-display,
+.post-visibility-display {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+/* Column layout so `.post-visibility-publish-warning` (see below) sits on its
+   own line under the controls rather than crowding the select/buttons row. */
 .post-visibility-edit {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.post-visibility-edit-controls {
   display: inline-flex;
   align-items: baseline;
   gap: 0.3rem;
@@ -463,6 +477,11 @@
 .post-visibility-error {
   color: var(--danger);
   font-size: 0.85rem;
+}
+
+.post-visibility-publish-warning {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 /* A post's whole threaded-replies tree -- see `Components.PostReplies`. The

@@ -13,7 +13,7 @@ import Page
 import Proto.Jonline exposing (Post)
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
-import Proto.Jonline.Visibility exposing (Visibility)
+import Proto.Jonline.Visibility exposing (Visibility(..))
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -563,6 +563,18 @@ postDetailView shared model post =
         displayPost
 
 
+{-| Whether saving `pending` for `post` would permanently set its
+`publishedAt` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own check,
+which fills in `published_at` (once, irreversibly) the first time a post
+becomes `SERVERPUBLIC`/`GLOBALPUBLIC` while it's still unset.
+-}
+setsPublishedAtPermanently : Post -> Visibility -> Bool
+setsPublishedAtPermanently post pending =
+    post.publishedAt
+        == Nothing
+        && (pending == SERVERPUBLIC || pending == GLOBALPUBLIC)
+
+
 {-| The visibility segment of `postDetail`'s meta line (see `postDetail`'s own
 `visibilityView` parameter) -- plain text (`Posts.postVisibilityText`) plus an
 Edit button when `model.visibilityEdit == Nothing`, shown only to `post`'s own
@@ -570,7 +582,8 @@ author (mirrors `Posts.editButton`'s own `isAuthor` gate, matching
 `backend/src/rpcs/posts/update_post.rs`'s `self_update` check); an inline
 `<select>` + Save/Cancel once editing, with its options narrowed to whatever
 `maybeAccount` is actually allowed to pick (`Posts.allowedVisibilities`,
-mirroring that same file's `PUBLISHPOSTS*`/`PUBLISHEVENTS*` permission check).
+mirroring that same file's `PUBLISHPOSTS*`/`PUBLISHEVENTS*` permission check),
+plus a `setsPublishedAtPermanently` warning below the controls when relevant.
 -}
 visibilityView : Maybe AccountsPanel.Account -> Maybe VisibilityEdit -> Post -> Html Msg
 visibilityView maybeAccount maybeEdit post =
@@ -581,42 +594,50 @@ visibilityView maybeAccount maybeEdit post =
                     Posts.allowedVisibilities account.permissions post.context post.visibility
             in
             span [ class "post-visibility-edit" ]
-                [ select [ onInput VisibilityChanged ]
-                    (options
-                        |> List.map
-                            (\visibility ->
-                                option
-                                    [ value (Posts.visibilityText visibility)
-                                    , selected (edit.pending == visibility)
-                                    ]
-                                    [ text (Posts.visibilityText visibility) ]
-                            )
-                    )
-                , button
-                    [ class "post-visibility-save"
-                    , onClick (VisibilitySaveClicked post)
-                    , disabled (edit.status == Submitting)
-                    ]
-                    [ text
-                        (if edit.status == Submitting then
-                            "Saving…"
-
-                         else
-                            "Save"
+                [ span [ class "post-visibility-edit-controls" ]
+                    [ select [ onInput VisibilityChanged ]
+                        (options
+                            |> List.map
+                                (\visibility ->
+                                    option
+                                        [ value (Posts.visibilityText visibility)
+                                        , selected (edit.pending == visibility)
+                                        ]
+                                        [ text (Posts.visibilityText visibility) ]
+                                )
                         )
-                    ]
-                , button
-                    [ class "post-visibility-cancel"
-                    , onClick VisibilityCancelClicked
-                    , disabled (edit.status == Submitting)
-                    ]
-                    [ text "Cancel" ]
-                , case edit.status of
-                    SubmitFailed err ->
-                        span [ class "post-visibility-error" ] [ text err ]
+                    , button
+                        [ class "post-visibility-save"
+                        , onClick (VisibilitySaveClicked post)
+                        , disabled (edit.status == Submitting)
+                        ]
+                        [ text
+                            (if edit.status == Submitting then
+                                "Saving…"
 
-                    _ ->
-                        text ""
+                             else
+                                "Save"
+                            )
+                        ]
+                    , button
+                        [ class "post-visibility-cancel"
+                        , onClick VisibilityCancelClicked
+                        , disabled (edit.status == Submitting)
+                        ]
+                        [ text "Cancel" ]
+                    , case edit.status of
+                        SubmitFailed err ->
+                            span [ class "post-visibility-error" ] [ text err ]
+
+                        _ ->
+                            text ""
+                    ]
+                , if setsPublishedAtPermanently post edit.pending then
+                    span [ class "post-visibility-publish-warning" ]
+                        [ text "Saving will permanently set this post's publication time." ]
+
+                  else
+                    text ""
                 ]
 
         _ ->
