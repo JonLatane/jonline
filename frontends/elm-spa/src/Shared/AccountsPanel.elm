@@ -389,6 +389,7 @@ type Msg
     | RenameServerClicked String String
     | GotRenameServerResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | FocusInput String
+    | ClearFieldClicked String Msg
     | ServerConnected Server
     | MoveAccountUpClicked String
     | MoveAccountDownClicked String
@@ -1920,7 +1921,7 @@ updateHelp req msg model =
                     { model | showAccountsPanel = newlyShown }
             in
             ( if newlyShown then
-                newModel
+                repopulateBlankServerField newModel
 
               else
                 collapseAddAccountFormIfIdle newModel
@@ -2090,6 +2091,17 @@ updateHelp req msg model =
 
         FocusInput domId ->
             ( model, Task.attempt (\_ -> NoOp) (Dom.focus domId) )
+
+        -- A field's "clear" button (see `UI.elm`'s `fieldClearButton`):
+        -- applies the actual clear (`ServerChanged ""`/`UsernameChanged
+        -- ""`/`PasswordChanged ""`) and refocuses the now-empty field, so
+        -- clearing it doesn't also lose your place in the form.
+        ClearFieldClicked domId clearMsg ->
+            let
+                ( clearedModel, clearCmd ) =
+                    updateHelp req clearMsg model
+            in
+            ( clearedModel, Cmd.batch [ clearCmd, Task.attempt (\_ -> NoOp) (Dom.focus domId) ] )
 
         ServerConnected server ->
             if List.any (\s -> s.frontendHost == server.frontendHost) model.servers then
@@ -2330,6 +2342,20 @@ setServerField server model =
     { model | newAccountType = Nothing }
         |> updateForm (\form -> { form | server = server, status = clearErrored form.status })
         |> updateAddServerForm (\f -> { f | status = clearErrored f.status })
+
+
+{-| Repopulates the Server field with `mainFrontendHost` if it's blank -- e.g.
+left cleared via the field's own "clear" button before the panel was last
+closed. Called whenever the Accounts Panel reopens (`ToggleAccountsPanel`), so
+a blanked-out Server field doesn't persist across a close/reopen cycle.
+-}
+repopulateBlankServerField : Model -> Model
+repopulateBlankServerField model =
+    if String.trim model.accountForm.server == "" then
+        setServerField model.mainFrontendHost model
+
+    else
+        model
 
 
 {-| Disables every other account on `server` besides `keepEnabledId` -- only one

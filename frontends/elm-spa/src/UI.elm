@@ -1478,18 +1478,25 @@ addAccountForm shared currentRoute =
                 )
             )
         ]
-        [ input
-            [ id "account-form-server"
-            , type_ "url"
-            , attribute "autocapitalize" "none"
-            , attribute "autocorrect" "off"
-            , spellcheck False
-            , placeholder "Server"
-            , value form.server
-            , onInput (AccountsPanel.ServerChanged >> Shared.AccountsPanelMsg)
-            , onEnter (Shared.AccountsPanelMsg serverEnterMsg)
+        [ div [ class "account-form-field" ]
+            [ input
+                [ id "account-form-server"
+                , type_ "url"
+                , attribute "autocapitalize" "none"
+                , attribute "autocorrect" "off"
+                , spellcheck False
+                , placeholder "Server"
+                , value form.server
+                , onInput (AccountsPanel.ServerChanged >> Shared.AccountsPanelMsg)
+                , onEnter (Shared.AccountsPanelMsg serverEnterMsg)
+                ]
+                []
+            , fieldClearButton submitting
+                (not (String.isEmpty form.server))
+                "account-form-server"
+                (AccountsPanel.ServerChanged "")
+                "Clear server"
             ]
-            []
         , if knownServer then
             text ""
 
@@ -1531,6 +1538,7 @@ addAccountForm shared currentRoute =
                     []
                 , fieldClearButton accountFieldsDisabled
                     (not (String.isEmpty form.username))
+                    "account-form-username"
                     (AccountsPanel.UsernameChanged "")
                     "Clear username"
                 ]
@@ -1602,6 +1610,7 @@ addAccountForm shared currentRoute =
                                 [ text "👁" ]
                         , fieldClearButton accountFieldsDisabled
                             (not (String.isEmpty form.password))
+                            "account-form-password"
                             (AccountsPanel.PasswordChanged "")
                             "Clear password"
                         ]
@@ -1694,16 +1703,17 @@ addAccountForm shared currentRoute =
 
 
 {-| A small circular "×" button overlaid on a field (see `addAccountForm`'s
-username/password fields) that clears it in one click -- shown only once
-there's something typed in to clear.
+server/username/password fields) that clears it in one click and refocuses
+it (via `AccountsPanel.ClearFieldClicked`) -- shown only once there's
+something typed in to clear.
 -}
-fieldClearButton : Bool -> Bool -> AccountsPanel.Msg -> String -> Html Shared.Msg
-fieldClearButton fieldDisabled visible clearMsg titleText =
+fieldClearButton : Bool -> Bool -> String -> AccountsPanel.Msg -> String -> Html Shared.Msg
+fieldClearButton fieldDisabled visible domId clearMsg titleText =
     if visible then
         button
             [ type_ "button"
             , class "field-clear-button"
-            , onClick (Shared.AccountsPanelMsg clearMsg)
+            , onClick (Shared.AccountsPanelMsg (AccountsPanel.ClearFieldClicked domId clearMsg))
             , disabled fieldDisabled
             , title titleText
             ]
