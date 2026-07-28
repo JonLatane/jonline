@@ -1,4 +1,4 @@
-# Note that the deploy steps expect that backend/Cargo.toml and deploys/k8s/server_external.yaml
+# Note that the deploy steps expect that backend/Cargo.toml and deploys/k8s/server_internal.yaml
 # have the same version number.
 name: Server CI/CD
 
@@ -667,8 +667,8 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_internal.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_internal.yaml
 
       - name: Save DigitalOcean kubeconfig with short-lived credentials
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
@@ -682,7 +682,7 @@ jobs:
       #   run: "kubectl patch serviceaccount default -p '{\"imagePullSecrets\": [{\"name\": \"registry-<your-registry-name>`\"}]}'"
 
       - name: Deploy to Jonline.io via DigitalOcean Kubernetes
-        run: kubectl apply -f deploys/k8s/server_external.yaml -n jonline
+        run: kubectl apply -f deploys/k8s/server_internal.yaml -n jonline
 
       - name: Verify Server deployment
         run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
@@ -1123,8 +1123,8 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_internal.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_internal.yaml
 
       - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
@@ -1133,7 +1133,7 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
       - name: Deploy to Bull City Social via DigitalOcean Kubernetes
-        run: kubectl apply -f deploys/k8s/server_external.yaml -n bullcitysocial
+        run: kubectl apply -f deploys/k8s/server_internal.yaml -n bullcitysocial
 
       - name: Verify Server deployment
         run: kubectl rollout status deployment/jonline -n bullcitysocial --timeout 2m
@@ -1170,8 +1170,8 @@ jobs:
         with:
           token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
 
-      - name: Update deploys/k8s/server_external.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
-        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_external.yaml
+      - name: Update deploys/k8s/server_internal.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_internal.yaml
 
       - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
         run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
@@ -1180,7 +1180,7 @@ jobs:
         run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
 
       - name: Deploy to Oak City Social via DigitalOcean Kubernetes
-        run: kubectl apply -f deploys/k8s/server_external.yaml -n oakcitysocial
+        run: kubectl apply -f deploys/k8s/server_internal.yaml -n oakcitysocial
 
       - name: Verify Server deployment
         run: kubectl rollout status deployment/jonline -n oakcitysocial --timeout 2m
