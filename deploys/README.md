@@ -15,7 +15,7 @@
       - [K8s cluster with multiple Kubernetes LoadBalancers (without JBL)](#k8s-cluster-with-multiple-kubernetes-loadbalancers-without-jbl)
       - [K8s cluster with multiple Jonline servers/deployments behind a single JBL LoadBalancer](#k8s-cluster-with-multiple-jonline-serversdeployments-behind-a-single-jbl-loadbalancer)
 
-Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment goes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
+Rather than requiring Helm, Ansible, Terraform, or other orchestration layers, Jonline deployment takes a more primitive route. Jonline deployment is built so you can simply maintain one cloned Jonline repo per cluster whose deployments you want to manage. Within your cluster's repo, you'll simply use `make` to deploy:
 
 * Clone this repo.
 * `cd deploys && make deploy_data_create deploy_be_create` to create backing Postgres and MinIO/S3 instances and your BE instance. (You actually don't have to `cd deploys` because the main `Makefile` has some passthroughs!)

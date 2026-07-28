@@ -26,12 +26,20 @@ pub fn update_post(
     let admin = validate_permission(&Some(user), Permission::Admin).is_ok();
     let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok();
 
-    let moderator_accessible_moderations = [Moderation::Approved, Moderation::Rejected, Moderation::Pending];
-    let moderation = match (moderator, request.moderation.to_proto_moderation().ok_or(Status::new(Code::InvalidArgument, "invalid_moderation"))?) {
-            (true, m) if moderator_accessible_moderations.contains(&m) => {
-                Some(request.moderation)
-            }
-            _ => None,
+    let moderator_accessible_moderations = [
+        Moderation::Approved,
+        Moderation::Rejected,
+        Moderation::Pending,
+    ];
+    let moderation = match (
+        moderator,
+        request
+            .moderation
+            .to_proto_moderation()
+            .ok_or(Status::new(Code::InvalidArgument, "invalid_moderation"))?,
+    ) {
+        (true, m) if moderator_accessible_moderations.contains(&m) => Some(request.moderation),
+        _ => None,
     };
 
     let mut existing_post = posts::table
@@ -85,15 +93,25 @@ pub fn update_post(
         .transaction::<models::Post, diesel::result::Error, _>(|conn| {
             let now = SystemTime::now();
             if admin || self_update {
-                // Only Events/EventInstances support title updates.
+                // Only Events/EventInstances support title and link updates.
                 if vec![PostContext::Event, PostContext::EventInstance]
                     .iter()
                     .map(|c| c.to_string_post_context())
                     .any(|s| s == existing_post.context)
+                    || (existing_post.context == PostContext::Post.to_string_post_context()
+                        && existing_post.published_at == None)
                 {
                     existing_post.title = request.title.to_owned();
                     existing_post.link = request.link.to_owned();
                 }
+
+                // Unpublished posts also support title updates.
+                if (existing_post.context == PostContext::Post.to_string_post_context()
+                    && existing_post.published_at == None)
+                {
+                    existing_post.title = request.title.to_owned();
+                }
+
                 existing_post.content = request.content.to_owned();
                 existing_post.media = request
                     .media
@@ -101,6 +119,7 @@ pub fn update_post(
                     .map(|m| m.id.to_db_id_or_err("media.id").map(|r| Some(r)))
                     .collect::<Result<Vec<Option<i64>>, Status>>()
                     .map_err(|_| diesel::result::Error::RollbackTransaction)?;
+
                 existing_post.embed_link = request.embed_link;
                 existing_post.shareable = request.shareable;
                 existing_post.updated_at = now.into();

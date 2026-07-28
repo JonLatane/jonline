@@ -117,7 +117,6 @@ h2 {
    the emitted `a { color: ... }` rule -- see UI.EmittedStylesheet. */
 
 a {
-  /* color: var(--link-color); */
   text-decoration: none;
 }
 
@@ -150,6 +149,9 @@ input[disabled] {
   opacity: 0.6;
 }
 
+pre {
+  display: inline;
+}
 
 /* Components/ServerDependentView.elm's "connect to this server" prompt */
 
