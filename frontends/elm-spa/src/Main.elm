@@ -58,16 +58,20 @@ import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
 import Pages.About
+import Pages.Event.EventId_
+import Pages.Events
 import Pages.Home_
 import Pages.People
 import Pages.Post.PostId_
 import Pages.Server.ServerIdentifier_
 import Pages.User.UserId_
+import Pages.User.UserId_.Events
 import Pages.User.UserId_.Followers
 import Pages.User.UserId_.Following
 import Pages.User.UserId_.Friends
 import Pages.User.UserId_.Posts
 import Pages.Username_
+import Pages.Username_.Events
 import Pages.Username_.Followers
 import Pages.Username_.Following
 import Pages.Username_.Friends
@@ -275,8 +279,14 @@ sharedMsgForPage sharedMsg page =
         Gen.Model.Home_ _ _ ->
             Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
 
+        Gen.Model.Events _ _ ->
+            Just (Gen.Msg.Events (Pages.Events.fromShared sharedMsg))
+
         Gen.Model.Post__PostId_ _ _ ->
             Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+        Gen.Model.Event__EventId_ _ _ ->
+            Just (Gen.Msg.Event__EventId_ (Pages.Event.EventId_.fromShared sharedMsg))
 
         Gen.Model.Server__ServerIdentifier_ _ _ ->
             Just (Gen.Msg.Server__ServerIdentifier_ (Pages.Server.ServerIdentifier_.fromShared sharedMsg))
@@ -286,6 +296,9 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.User__UserId___Posts _ _ ->
             Just (Gen.Msg.User__UserId___Posts (Pages.User.UserId_.Posts.fromShared sharedMsg))
+
+        Gen.Model.User__UserId___Events _ _ ->
+            Just (Gen.Msg.User__UserId___Events (Pages.User.UserId_.Events.fromShared sharedMsg))
 
         Gen.Model.User__UserId___Following _ _ ->
             Just (Gen.Msg.User__UserId___Following (Pages.User.UserId_.Following.fromShared sharedMsg))
@@ -301,6 +314,9 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.Username___Posts _ _ ->
             Just (Gen.Msg.Username___Posts (Pages.Username_.Posts.fromShared sharedMsg))
+
+        Gen.Model.Username___Events _ _ ->
+            Just (Gen.Msg.Username___Events (Pages.Username_.Events.fromShared sharedMsg))
 
         Gen.Model.Username___Following _ _ ->
             Just (Gen.Msg.Username___Following (Pages.Username_.Following.fromShared sharedMsg))

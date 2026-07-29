@@ -30,6 +30,9 @@ on:
       CLOUDFLARE_ZONE_OAKCITY_SOCIAL:
         description: "Cloudflare Zone ID for Oak City Social"
         required: true
+      CLOUDFLARE_ZONE_ATO_BAND:
+        description: "Cloudflare Zone ID for Ato Band"
+        required: true
       HOMEBREW_TAP_TOKEN:
         description: "GitHub PAT with contents:write on JonLatane/homebrew-jonline, used to push Formula updates"
         required: true
@@ -687,6 +690,14 @@ jobs:
       - name: Verify Server deployment
         run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
 
+      # Traefik's TLS-passthrough IngressRouteTCP routing (see jonline-https/jonline-grpc)
+      # can get wedged pointing at stale backend pod IPs after a rollout replaces pods --
+      # this refreshes it so jonline.io doesn't silently start 404ing/hanging post-deploy.
+      - name: Bounce Traefik to refresh routing
+        run: |
+          kubectl rollout restart deployment traefik -n traefik-ingress
+          kubectl rollout status deployment traefik -n traefik-ingress --timeout 2m
+
       - name: Purge Cloudflare cache
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
@@ -1197,3 +1208,80 @@ jobs:
             -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}'
+
+  deploy_ato_band:
+    name: Deploy Ato Band
+    needs: create_github_release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Versioning Data
+        id: vars
+        run: |-
+          echo "be_version=$(cat backend/Cargo.toml | grep 'version =' | sed -n 1p | awk '{print $3;}' | sed 's/"//g')" >> $GITHUB_OUTPUT
+          echo "sha_short=$(git rev-parse --short=7 HEAD)" >> $GITHUB_OUTPUT
+
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Update deploys/k8s/server_internal.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/server_internal.yaml
+
+      - name: Update deploys/k8s/preview_generator.yaml to use ${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}
+        run: sed -i 's|${{ steps.vars.outputs.be_version }}|${{ steps.vars.outputs.be_version }}-${{ steps.vars.outputs.sha_short }}|g' deploys/k8s/preview_generator.yaml
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+      - name: Deploy to Ato Band via DigitalOcean Kubernetes
+        run: kubectl apply -f deploys/k8s/server_internal.yaml -n ato-band
+
+      - name: Verify Server deployment
+        run: kubectl rollout status deployment/jonline -n ato-band --timeout 2m
+
+      - name: Deploy Preview Generator
+        run: kubectl apply -f deploys/k8s/preview_generator.yaml -n ato-band
+
+      - name: Purge Cloudflare cache
+        env:
+          CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_ATO_BAND }}
+          CLOUDFLARE_TOKEN: ${{ secrets.CLOUDFLARE_TOKEN }}
+        run: |
+          curl -sS --fail -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE}/purge_cache" \
+            -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data '{"purge_everything":true}'
+
+  bounce_traefik_production:
+    name: Bounce Traefik (Production)
+    # deploy_bullcitysocial, deploy_oakcitysocial, and deploy_ato_band run concurrently,
+    # so this waits on all three and bounces Traefik once for the group -- rather than
+    # once per namespace -- since any deploy's pod churn can wedge Traefik's
+    # TLS-passthrough routing (see the matching step in deploy_jonlineio_server). Runs
+    # if any succeeded, since a partial-success deploy still churns pods and can still
+    # wedge routing.
+    needs:
+      - deploy_bullcitysocial
+      - deploy_oakcitysocial
+      - deploy_ato_band
+    if: |
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.deploy_bullcitysocial.result == 'success' || needs.deploy_oakcitysocial.result == 'success' || needs.deploy_ato_band.result == 'success')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+      - name: Bounce Traefik to refresh routing
+        run: |
+          kubectl rollout restart deployment traefik -n traefik-ingress
+          kubectl rollout status deployment traefik -n traefik-ingress --timeout 2m

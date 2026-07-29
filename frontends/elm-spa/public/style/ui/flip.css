@@ -121,7 +121,7 @@
 }
 
 .flip-animated-item.horizontal>* {
-  padding-bottom: 0;
+  /* padding-bottom: 0; */
   padding-right: 0.6rem;
 }
 

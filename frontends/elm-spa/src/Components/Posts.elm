@@ -2,6 +2,7 @@ module Components.Posts exposing
     ( allVisibilities
     , allowedVisibilities
     , commentCountText
+    , contentPreviewFadeThreshold
     , fetchAncestors
     , fetchPost
     , fetchPosts
@@ -744,6 +745,17 @@ postCard browserTimeZone basePath viewingServerHost postServerHost maybeServer m
         postCardView browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked extraSmallMedia current starred onStarClicked post
 
 
+{-| Below this many characters of raw Markdown, a content preview (this
+module's own `postCardView`, and `Components.Events.eventCard`, which reuses
+it) shows the whole (short) message without fading its bottom edge -- the
+fade exists to signal "there's more below the cutoff", which would be
+misleading to show over a preview that isn't actually being truncated.
+-}
+contentPreviewFadeThreshold : Int
+contentPreviewFadeThreshold =
+    220
+
+
 {-| The plain (non-`REPLY`) rendering `postCard` falls back to -- see its own
 doc comment above for why `REPLY` posts instead defer entirely to
 `replyCard`.
@@ -791,6 +803,21 @@ postCardView browserTimeZone basePath viewingServerHost postServerHost maybeServ
 
                 else
                     MultiMediaRenderer.preview server maybeAccount onMediaClicked post.media
+
+            Nothing ->
+                text ""
+        , case post.content of
+            Just content ->
+                Markdown.view
+                    [ classes
+                        (if String.length content > contentPreviewFadeThreshold then
+                            [ "post-card-content-preview", "post-card-content-preview-fade" ]
+
+                         else
+                            [ "post-card-content-preview" ]
+                        )
+                    ]
+                    content
 
             Nothing ->
                 text ""

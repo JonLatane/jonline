@@ -125,6 +125,45 @@
   text-decoration: underline;
 }
 
+/* A short preview of the post's Markdown body, truncated to a few lines --
+   `max-height`/`overflow: hidden` do the clipping. Unlike
+   `.post-detail-content`/`.post-reply-content` (the full, interactive
+   renderings elsewhere), this one must NOT be independently clickable: it's
+   non-positioned so `.post-card-link-overlay` (see that class's own doc
+   comment on paint order) already paints above it and would intercept clicks
+   anyway, but `pointer-events: none` here makes that explicit and also kills
+   any embedded links' hover/cursor affordances, so nothing here misleadingly
+   looks interactive when the whole card is already one big link. */
+.post-card-content-preview {
+  display: block;
+  max-height: 4.5em;
+  overflow: hidden;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin: 0.3rem 0;
+  pointer-events: none;
+}
+
+/* Added alongside `.post-card-content-preview` only when `Components.Posts`'s
+   `contentPreviewFadeThreshold` judges the content long enough to actually be
+   truncated by its `max-height` -- the fade signals "there's more below the
+   cutoff", which would be misleading over a short message that isn't being
+   cut off at all. */
+.post-card-content-preview-fade {
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.post-card-content-preview>*:first-child {
+  margin-top: 0;
+}
+
+.post-card-content-preview>*:last-child {
+  margin-bottom: 0;
+}
+
 .post-card-meta {
   position: relative;
   color: var(--muted);

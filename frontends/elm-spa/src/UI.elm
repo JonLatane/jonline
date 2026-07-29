@@ -78,7 +78,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (markdownPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
-    , div [ class "container" ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
+    , div [ classes [ "container", hostnameToCSSClass shared.accountsPanel.mainFrontendHost ] ] [ main_ [] (children ++ [ scrollPreserver shared ]) ]
     ]
 
 
@@ -118,6 +118,7 @@ headerNav shared currentRoute =
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
+                , eventsLink shared currentRoute
                 , peopleLink shared currentRoute
                 , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
                     text ""
@@ -387,6 +388,32 @@ peopleLink shared currentRoute =
         , title "People"
         ]
         [ text "👥" ]
+
+
+{-| A circular icon nav link to the Events page (`/events`), sitting right
+next to `peopleLink` -- same styling/highlighting convention, just routed to
+`Route.Events` with a 📅 glyph.
+-}
+eventsLink : Shared.Model -> Route -> Html Shared.Msg
+eventsLink shared currentRoute =
+    let
+        isCurrent =
+            currentRoute == Route.Events
+    in
+    a
+        [ href (shared.basePath ++ Route.toHref Route.Events)
+        , classes
+            ("nav-link"
+                :: (if isCurrent then
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+                    else
+                        []
+                   )
+            )
+        , title "Events"
+        ]
+        [ text "📅" ]
 
 
 {-| Looks up a known server by `frontendHost` -- a thin wrapper around

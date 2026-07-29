@@ -48,6 +48,7 @@
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/media.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/profiles.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/posts.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/events.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/users.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/servers.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/shared/nav.css">');
@@ -196,6 +197,40 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
         m.setAttribute("content", color);
       });
+    });
+
+    // See Ports.elm's scrollElementLeft doc comment: Browser.Dom.setViewportOf
+    // always assigns scrollLeft from inside a requestAnimationFrame callback,
+    // which silently no-ops on an element with `scroll-behavior: smooth` --
+    // this plain callback (not rAF-wrapped) doesn't have that problem.
+    app.ports.scrollElementLeft.subscribe(function (payload) {
+      var el = document.getElementById(payload.id);
+      if (el) { el.scrollLeft = payload.left; }
+    });
+
+    // See Ports.elm's measureElements doc comment: Browser.Dom.getElement
+    // wraps every call in its own requestAnimationFrame, so measuring a
+    // whole list of elements one at a time (via Task.sequence) costs one
+    // frame per element -- this plain callback measures them all in a
+    // single JS turn instead. Each item is { key, id }: `id` is the actual
+    // DOM id to look up, `key` is echoed back verbatim in the result so the
+    // Elm side never has to reverse-derive its own caller-side key back out
+    // of a DOM id string.
+    app.ports.measureElements.subscribe(function (items) {
+      var results = [];
+      for (var i = 0; i < items.length; i++) {
+        var el = document.getElementById(items[i].id);
+        if (!el) { continue; }
+        var rect = el.getBoundingClientRect();
+        results.push({
+          key: items[i].key,
+          x: rect.left + window.pageXOffset,
+          y: rect.top + window.pageYOffset,
+          width: rect.width,
+          height: rect.height
+        });
+      }
+      app.ports.elementsMeasured.send(results);
     });
 
     darkMediaQuery.addEventListener("change", function (e) {

@@ -5,6 +5,7 @@ module UI.Flip exposing
     , animate
     , applyReorder
     , atRest
+    , atRestScaled
     , beginReorder
     , enter
     , itemAttributes
@@ -18,6 +19,7 @@ module UI.Flip exposing
     , reorderButtons
     , restingState
     , startMove
+    , startMoveScaled
     , subscription
     , swapDeltas
     , syncAnimations
@@ -344,6 +346,25 @@ atRest =
     }
 
 
+{-| Like `atRest`, but also tracks a `scale3d` property from the start (see
+`startMoveScaled`) -- a `MoveState` used with `startMoveScaled` needs to
+start from this rather than plain `atRest`: `elm-style-animation` tracks a
+fixed set of properties for the lifetime of a `State`, seeded by whatever
+`Animation.style` it was originally built with, so `scale3d` has to be
+present from the very first render, not introduced later by `startMoveScaled`
+itself.
+-}
+atRestScaled : MoveState msg
+atRestScaled =
+    { moving = False
+    , style =
+        Animation.style
+            [ Animation.translate (Animation.px 0) (Animation.px 0)
+            , Animation.scale3d 1 1 1
+            ]
+    }
+
+
 {-| Starts (or restarts) a move: `( deltaX, deltaY )` is how far, in px, the
 item's _new_ position differs from where it just was along each axis
 (`old - new`, so a positive component means it moved backward along that axis
@@ -370,6 +391,38 @@ startMove onSettled ( deltaX, deltaY ) state =
         Animation.interrupt
             [ Animation.set [ Animation.translate (Animation.px deltaX) (Animation.px deltaY) ]
             , Animation.to [ Animation.translate (Animation.px 0) (Animation.px 0) ]
+            , Animation.Messenger.send onSettled
+            ]
+            state.style
+    }
+
+
+{-| Like `startMove`, but also inverts a size change via `( scaleX, scaleY )`
+(the item's _old_ width/height divided by its _new_ ones) alongside the
+position delta -- for a caller whose item can change size across the same
+transition it's repositioned in (e.g. `Components.Pages.EventsPage`'s cards,
+full-width in `VerticalList` but a fixed tile width in `Grid`/`HorizontalList`),
+so the item visually grows/shrinks smoothly into its new box instead of
+snapping straight to the new size while only its position slides. `state`
+must have come from `atRestScaled`, not plain `atRest` -- see that value's
+own doc for why. The scaled element itself needs `transform-origin: top
+left` (not the CSS default `50% 50%`) for this to combine correctly with the
+position delta, since `( deltaX, deltaY )` is measured from each element's
+top-left corner (`Browser.Dom.Element.element.x`/`.y`).
+-}
+startMoveScaled : msg -> ( Float, Float ) -> ( Float, Float ) -> MoveState msg -> MoveState msg
+startMoveScaled onSettled ( deltaX, deltaY ) ( scaleX, scaleY ) state =
+    { moving = True
+    , style =
+        Animation.interrupt
+            [ Animation.set
+                [ Animation.translate (Animation.px deltaX) (Animation.px deltaY)
+                , Animation.scale3d scaleX scaleY 1
+                ]
+            , Animation.to
+                [ Animation.translate (Animation.px 0) (Animation.px 0)
+                , Animation.scale3d 1 1 1
+                ]
             , Animation.Messenger.send onSettled
             ]
             state.style

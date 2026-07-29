@@ -18,7 +18,7 @@ These steps are all based off of using [the `Makefile` in this directory](https:
 4. `unset HISTFILE` in your terminal to prevent your API token from being stored in history.
 5. `CERT_MANAGER_API_TOKEN=<api-token> CERT_MANAGER_DOMAIN=<your-domain.com> CERT_MANAGER_EMAIL=<your@email.com> make deploy_certmanager_credential`
     * To deploy the credential to a different namespace, add `NAMESPACE=my-k8s-namespace` to the environment variables.
-    * Eventually quick setup will work with other providers with the `CERT_MANAGER_PROVIDER` variable, but for now it defaults to `digitalocean` and that's the only valid value.
+    * Eventually quick setup will work with other providers with the `K8S_PROVIDER` variable, but for now it defaults to `digitalocean` and that's the only valid value.
 
 To validate that setup worked, simply run `kubectl get certificates`, which should yield something like:
 

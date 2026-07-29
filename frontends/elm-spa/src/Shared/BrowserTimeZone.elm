@@ -1,5 +1,6 @@
-module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateTime)
+module Shared.BrowserTimeZone exposing (BrowserTimeZone, formatDate, formatDateTime, formatDateTimeLocalInput, posixFromDateTimeLocalInput)
 
+import Shared.Conversions as Conversions
 import Time
 
 
@@ -112,3 +113,83 @@ monthNumber month =
 
         Time.Dec ->
             12
+
+
+{-| `YYYY-MM-DDTHH:mm` in `zone` -- the exact format an `<input
+type="datetime-local">` element's `value` attribute expects, so a date/time
+picker (e.g. `Components.Pages.EventsPage`'s "Events After &lt;date&gt;" tab)
+can be a plain controlled input: this formats a `Time.Posix` to populate it,
+and `posixFromDateTimeLocalInput` parses back whatever the user (or the
+browser's own native picker widget) sets it to.
+-}
+formatDateTimeLocalInput : Time.Zone -> Time.Posix -> String
+formatDateTimeLocalInput zone time =
+    let
+        pad2 n =
+            String.padLeft 2 '0' (String.fromInt n)
+    in
+    formatDate zone time
+        ++ "T"
+        ++ pad2 (Time.toHour zone time)
+        ++ ":"
+        ++ pad2 (Time.toMinute zone time)
+
+
+{-| The inverse of `formatDateTimeLocalInput` -- parses an `<input
+type="datetime-local">`'s value string (`YYYY-MM-DDTHH:mm`, always the
+viewer's own local wall-clock time, with no timezone of its own) back into
+the absolute `Time.Posix` it represents in `zone`.
+
+`elm/time`'s `Time.Zone` only goes one direction (instant -> local wall
+clock, via `Time.toHour`/etc.) -- there's no built-in inverse. This gets
+there by guessing (treating the input's Y/M/D/H/M as if they were already
+UTC, via `Shared.Conversions.daysFromCivil`), reading back what `zone` says
+the wall-clock is at that guess, and correcting by the difference --
+re-derived from the _original_ guess a second time (not chained onto the
+already-corrected candidate, which would double-count a stable offset
+instead of converging) so a guess landing right on a DST boundary still
+converges (this app's own use, picking a cutoff date for an events filter,
+doesn't need sub-minute precision across a boundary, but there's no reason
+not to get it right).
+-}
+posixFromDateTimeLocalInput : Time.Zone -> String -> Maybe Time.Posix
+posixFromDateTimeLocalInput zone raw =
+    let
+        offsetMinutesAt posix =
+            let
+                localAsUtcMillis =
+                    (Conversions.daysFromCivil (Time.toYear zone posix) (Conversions.monthToNumber (Time.toMonth zone posix)) (Time.toDay zone posix)
+                        * 86400
+                        + Time.toHour zone posix
+                        * 3600
+                        + Time.toMinute zone posix
+                        * 60
+                    )
+                        * 1000
+            in
+            (localAsUtcMillis - Time.posixToMillis posix) // 60000
+    in
+    case String.split "T" raw of
+        [ datePart, timePart ] ->
+            Maybe.map2
+                (\( year, month, day ) ( hour, minute, _ ) ->
+                    let
+                        guessMillis =
+                            (Conversions.daysFromCivil year month day * 86400 + hour * 3600 + minute * 60) * 1000
+
+                        correctFromGuess offset =
+                            guessMillis - offset * 60000
+
+                        candidate1 =
+                            correctFromGuess (offsetMinutesAt (Time.millisToPosix guessMillis))
+
+                        candidate2 =
+                            correctFromGuess (offsetMinutesAt (Time.millisToPosix candidate1))
+                    in
+                    Time.millisToPosix candidate2
+                )
+                (Conversions.parseDateParts datePart)
+                (Conversions.parseTimeParts timePart)
+
+        _ ->
+            Nothing

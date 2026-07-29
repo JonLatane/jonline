@@ -4,7 +4,7 @@
 NAMESPACE ?= jonline
 
 # Set these variables when setting up cert generation
-CERT_MANAGER_PROVIDER ?= digitalocean
+K8S_PROVIDER ?= digitalocean
 CERT_MANAGER_DOMAIN ?= jonline.io
 CERT_MANAGER_EMAIL ?= invalid_email
 CERT_MANAGER_API_TOKEN ?= invalid_token
@@ -21,13 +21,13 @@ deploy_certmanager:
 # Cert-Manager targets: These all revolve around generating a (.gitignored)
 # cert-manager.*.generated.yaml from a cert-manager.*.template.yaml
 deploy_certmanager_credential:
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_store_apitoken
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_prepare
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_apply
+	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_store_apitoken
+	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_prepare
+	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_apply
 deploy_certmanager_credential_apply:
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_apply
+	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_apply
 deploy_certmanager_credential_clean:
-	$(MAKE) deploy_certmanager_credential_$(CERT_MANAGER_PROVIDER)_clean
+	$(MAKE) deploy_certmanager_credential_$(K8S_PROVIDER)_clean
 
 # DigitalOcean Cert-Manager targets
 deploy_certmanager_credential_digitalocean_clean:

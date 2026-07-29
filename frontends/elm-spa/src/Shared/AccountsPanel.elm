@@ -2701,6 +2701,21 @@ against that backend host in turn, stopping at the first one that
 successfully returns server configuration -- which doubles as the
 connectivity check ("can we talk to a server here at all?") and a useful
 result (its configuration) at the same time.
+
+Each candidate gets `Grpc.setTimeout` (matching `discoverBackendHost`'s own
+5000ms) -- a wrong `(port_, tls)` combination doesn't always fail fast (a
+`GoodStatus_`-or-`ERR_CONNECTION_REFUSED` port refusal is quick, but e.g. TLS
+against a plaintext-only port can leave the browser's own connect/handshake
+timeout to eventually give up, which is far longer, tens of seconds).
+Without an explicit timeout here, `candidatePorts`' later entries only get
+tried once every earlier wrong one has separately run out that clock --
+multiplied by however many are wrong, this made connecting to a server whose
+correct candidate isn't first in the list (any federated server not
+listening on 27707, e.g. `bullcity.social`) visibly slow to the point of
+looking hung, on every page that needs to resolve it (any
+`Components.ServerDependentView` caller, plus every persisted server `init`
+reconnects to at startup) -- not particular to any one page.
+
 -}
 negotiateServerConfig : Bool -> String -> Task Grpc.Error ( Connection, ServerConfiguration )
 negotiateServerConfig pageIsSecure frontendHost =
@@ -2720,6 +2735,7 @@ negotiateServerConfig pageIsSecure frontendHost =
                                 in
                                 Grpc.new Jonline.getServerConfiguration {}
                                     |> Grpc.setHost (connectionUrl connection)
+                                    |> Grpc.setTimeout 5000
                                     |> Grpc.toTask
                                     |> Task.map (Tuple.pair connection)
                                     |> Task.onError (\_ -> tryCandidates rest)
