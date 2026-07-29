@@ -1,0 +1,95 @@
+/* Event detail page ("invitation" view) -- see Components/Events.elm and
+   Pages/Event/EventId_.elm. */
+
+.event-loading,
+.event-error {
+  color: var(--muted);
+}
+
+.event-detail {
+  margin: 0.5rem 0;
+  padding: 1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: linear-gradient(180deg, var(--chip-bg) 0%, transparent 140px);
+}
+
+.event-post-section {
+  margin: 0 0 1rem;
+}
+
+.event-post-title {
+  margin: 0 0 0.3rem;
+}
+
+.event-post-primary .event-post-title {
+  font-size: 1.6rem;
+}
+
+.event-post-secondary .event-post-title {
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+
+.event-post-link {
+  display: block;
+  max-width: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 0 0 0.4rem;
+  text-decoration: none;
+}
+
+.event-post-link:hover {
+  text-decoration: underline;
+}
+
+.event-post-meta {
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.6rem;
+}
+
+.event-post-content {
+  display: block;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+.event-post-content > *:first-child {
+  margin-top: 0;
+}
+
+.event-post-content > *:last-child {
+  margin-bottom: 0;
+}
+
+.event-post-content img {
+  max-width: 100%;
+}
+
+/* The start/end time + location block sits between the Event's own Post
+   (title/link/content) and the EventInstance's own override Post -- styled
+   like an invitation's date/venue line, set off from the surrounding prose
+   by its own border rather than blending into either Post section. */
+.event-instance-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  font-size: 1rem;
+}
+
+.event-instance-when,
+.event-instance-where {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
