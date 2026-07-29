@@ -1,6 +1,9 @@
 module Components.Events exposing
-    ( fetchEvent
+    ( eventInstanceHref
+    , fetchEvent
     , findInstance
+    , instanceDateText
+    , instanceMoment
     , instanceTimeRangeText
     , locationText
     , parseEventRouteId
@@ -10,16 +13,17 @@ module Components.Events exposing
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
 -- currently just what `Pages.Event.EventId_` needs: building a `GetEvents`
 request scoped to a single `EventInstance` (via `Shared.MaybeAccountRequest`),
-parsing the `/event/:eventId` route's `id` or `id@host` segment (an
+parsing/building the `/event/:eventId` route's `id`/`id@host` segment (an
 `EventInstance.id`, despite the route/field being named "eventId" -- see
-`Pages.Event.EventId_`'s own module doc), and rendering the `Post` each of an
-`Event` and its `EventInstance`s optionally carries.
+`Pages.Event.EventId_`'s own module doc), and rendering the `Post`/timing each
+of an `Event` and its `EventInstance`s carries.
 -}
 
 import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
 import Components.Posts as Posts
+import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (class, href, rel, target)
@@ -29,6 +33,7 @@ import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccoun
 import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
+import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
@@ -84,8 +89,64 @@ findInstance instanceId event =
     event.instances |> List.filter (\instance -> instance.id == instanceId) |> List.head
 
 
+{-| The href for `instance`, as seen from `viewingServerHost` -- mirrors
+`Components.Posts.postHref`, just keyed on an `EventInstance.id` (the route
+segment, despite `Gen.Route`/`Gen.Params` naming it "eventId") rather than a
+`Post.id`. Used by `Pages.Event.EventId_`'s date-picker strip to link between
+sibling `EventInstance`s of the same `Event`.
+-}
+eventInstanceHref : String -> String -> String -> EventInstance -> String
+eventInstanceHref basePath viewingServerHost eventServerHost instance =
+    let
+        routeId =
+            if eventServerHost == viewingServerHost then
+                instance.id
+
+            else
+                instance.id ++ "@" ++ eventServerHost
+    in
+    basePath ++ Gen.Route.toHref (Gen.Route.Event__EventId_ { eventId = routeId })
+
+
 
 -- DISPLAY
+
+
+{-| The instant that best represents "when" an `EventInstance` is -- `endsAt`
+if set (an instance stays current until it actually ends), falling back to
+`startsAt` (at least one of the two should always be set), `Nothing` only if
+neither is. Used both for filtering/sorting an `Event`'s instances by
+recency (see `Pages.Event.EventId_`'s `InstanceHistoryDisplay`) and, via
+`instanceDateText`, for display.
+-}
+instanceMoment : EventInstance -> Maybe Time.Posix
+instanceMoment instance =
+    case instance.endsAt of
+        Just ts ->
+            Just (timestampToPosix ts)
+
+        Nothing ->
+            instance.startsAt |> Maybe.map timestampToPosix
+
+
+{-| A compact, date-only label for `instance` (in `browserTimeZone`) -- e.g.
+for `Pages.Event.EventId_`'s date-picker strip, where a full
+`instanceTimeRangeText` would be too wide for a chip. Prefers `startsAt`
+(the date someone would actually plan around), falling back to `endsAt`.
+-}
+instanceDateText : BrowserTimeZone -> EventInstance -> String
+instanceDateText browserTimeZone instance =
+    case instance.startsAt of
+        Just ts ->
+            BrowserTimeZone.formatDate browserTimeZone.zone (timestampToPosix ts)
+
+        Nothing ->
+            case instance.endsAt of
+                Just ts ->
+                    BrowserTimeZone.formatDate browserTimeZone.zone (timestampToPosix ts)
+
+                Nothing ->
+                    "Date TBD"
 
 
 {-| An `EventInstance`'s start/end time, both in `browserTimeZone` -- just the

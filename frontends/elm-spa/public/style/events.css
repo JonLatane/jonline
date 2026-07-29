@@ -93,3 +93,70 @@
   gap: 0.4rem;
 }
 
+/* The date-picker strip -- see Pages/Event/EventId_.elm's
+   `instanceHistoryView`. Sits between the Event's own Post and the
+   currently-viewed EventInstance's start/end/location block. */
+.event-instance-history {
+  margin: 0 0 1rem;
+}
+
+.event-instance-history-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.event-instance-history-button {
+  padding: 0.15rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+
+/* `.flip-animated-row` (see ui/flip.css) supplies `display: flex;
+   flex-direction: row;` -- same "no gap, let .flip-animated-item.horizontal's
+   own padding-right hold the spacing instead" reasoning as `.servers-strip`
+   (accounts_panel.css), whose scrolling-row setup this otherwise mirrors. */
+.event-instance-strip {
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+}
+
+/* `.flip-animated-grid` (see ui/flip.css) supplies `display: flex;
+   flex-direction: row; flex-wrap: wrap;` -- the `InstanceLayoutChanged`
+   alternative to `.event-instance-strip`: no horizontal scrollbar, grows
+   downward instead. `row-gap` (rather than a full `gap` shorthand, which
+   would double up with `.flip-animated-item.horizontal`'s own
+   `padding-right` between chips on the same line) is needed because that
+   same `padding-right` convention leaves `padding-bottom` at `0`, which
+   would otherwise butt wrapped rows right up against each other. */
+.event-instance-grid {
+  align-items: flex-start;
+  row-gap: 0.4rem;
+}
+
+.event-instance-chip {
+  display: block;
+  flex: 0 0 auto;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--fg);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.event-instance-chip:hover {
+  text-decoration: underline;
+}
+
+.event-instance-chip-current {
+  font-weight: 700;
+}
+
