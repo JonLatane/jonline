@@ -11,6 +11,7 @@ port module Ports exposing
     , persistFederatedAuthKeyPair
     , persistStarredPosts
     , persistThemePreference
+    , scrollElementLeft
     , setNavBarColor
     , setTheme
     , starredPostsUpdated
@@ -28,7 +29,7 @@ to any other tab open on the same origin, which applies it via
 port persistAccountsAndServers : Encode.Value -> Cmd msg
 
 
-{-| Fires in *other* tabs (never the tab that called `persistAccountsAndServers`
+{-| Fires in _other_ tabs (never the tab that called `persistAccountsAndServers`
 itself) whenever one tab's accounts/servers change, carrying the same value
 `persistAccountsAndServers` was given -- decode with
 `Shared.AccountsPanel.persistedStateDecoder`. Lets multiple tabs on the same
@@ -50,7 +51,7 @@ mirroring `persistAccountsAndServers`/`accountsAndServersUpdated`.
 port persistStarredPosts : Encode.Value -> Cmd msg
 
 
-{-| Fires in *other* tabs (never the tab that called `persistStarredPosts`
+{-| Fires in _other_ tabs (never the tab that called `persistStarredPosts`
 itself) whenever one tab's starred posts change, carrying the same value
 `persistStarredPosts` was given -- decode with `Decode.list Decode.string`,
 same as `Shared.StarredPostsPanel.init`'s flags.
@@ -70,6 +71,21 @@ port persistThemePreference : String -> Cmd msg
 (falling back to the `prefers-color-scheme` media query).
 -}
 port setTheme : String -> Cmd msg
+
+
+{-| Scrolls the element with the given `id` (a `{ id : String, left : Float }`
+JSON payload, see `public/index.html`) so its `scrollLeft` becomes `left` --
+animated if it (or an ancestor) has CSS `scroll-behavior: smooth`. Exists
+because `Browser.Dom.setViewportOf` always performs its own `scrollLeft`
+assignment from inside a `requestAnimationFrame` callback (see `elm/browser`'s
+kernel code) -- which, at least in the environments this was tested in,
+silently fails to take effect at all on an element with `scroll-behavior:
+smooth` set, even though the `Task` itself reports success. A plain
+port-triggered assignment runs as a normal JS callback, not wrapped in
+`requestAnimationFrame`, and doesn't have this problem. See
+`Pages.Event.EventId_.scrollToInstance`, the only current caller.
+-}
+port scrollElementLeft : Encode.Value -> Cmd msg
 
 
 {-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s

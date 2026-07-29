@@ -195,17 +195,24 @@ locationText location =
         Just trimmed
 
 
-{-| Renders one of an `Event`/`EventInstance`'s `Post`s -- title, link, media,
-and content, plus a byline (author + visibility). `primary` picks an `h1`
-(for the `Event`'s own `Post`, the thing actually titling the page) vs. an
-`h2` (for an `EventInstance`'s own override `Post`, a secondary "about this
-date" block) -- unlike `Components.Posts.postDetail`, there's no
-title-vs-context-chip branching here: both an `Event`'s and an
+{-| Renders one of an `Event`/`EventInstance`'s `Post`s -- title, link, a
+byline (author + visibility), `extraContent`, then media and content.
+`primary` picks an `h1` (for the `Event`'s own `Post`, the thing actually
+titling the page) vs. an `h2` (for an `EventInstance`'s own override `Post`,
+a secondary "about this date" block) -- unlike `Components.Posts.postDetail`,
+there's no title-vs-context-chip branching here: both an `Event`'s and an
 `EventInstance`'s `Post` carry a real name of their own (see `events.proto`'s
 doc on `EventInstance.post`), not a generic reply/thread entry, so both
 always get a real heading. Deliberately lighter than `postDetail` otherwise
 too -- no star/edit/reply affordances, since `Pages.Event.EventId_` is a
 read-only invitation-style view, not a full post management page.
+
+`extraContent` sits right after the byline and before media -- e.g.
+`Pages.Event.EventId_` slots the currently-viewed `EventInstance`'s own
+date/location and its date-picker strip in there for the primary (`Event`)
+section, `text ""` for the secondary (`EventInstance`) section, which has
+nothing of its own to add there.
+
 -}
 postSection :
     BrowserTimeZone
@@ -216,9 +223,10 @@ postSection :
     -> Maybe AccountsPanel.Account
     -> (String -> msg)
     -> Bool
+    -> Html msg
     -> Post
     -> Html msg
-postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary post =
+postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary extraContent post =
     div
         [ classes
             [ "event-post-section"
@@ -252,6 +260,7 @@ postSection browserTimeZone basePath viewingServerHost postServerHost maybeServe
             , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
             , text (" · " ++ Posts.postVisibilityText post)
             ]
+        , extraContent
         , case maybeServer of
             Just server ->
                 MultiMediaRenderer.view server maybeAccount onMediaClicked post.media

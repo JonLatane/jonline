@@ -14,7 +14,7 @@ import Components.Pages.ServerInformationPage as ServerInformationPage
 import Effect exposing (Effect)
 import Gen.Params.About exposing (Params)
 import Html exposing (a, div, h2, p, pre, span, text)
-import Html.Attributes exposing (class, href)
+import Html.Attributes exposing (class, href, target)
 import Page
 import Request
 import Shared
@@ -85,7 +85,7 @@ aboutJonlineView =
     div [ class "about-jonline" ]
         [ h2 [] [ text "About Jonline" ]
         , p [] [ text "Jonline is a federated, decentralized social media platform created by Jon Latané." ]
-        , p [] [ text "It's AGPLv3, with a Rust BE and Elm FE, ", a [ href "https://github.com/JonLatane/jonline" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
+        , p [] [ text "It's AGPLv3, with a Rust BE and Elm FE (in the past, alternative ", a [ href "/tamagui/about", target "_self" ] [ text "React/Tamagui" ], text " and Flutter FEs), ", a [ href "https://github.com/JonLatane/jonline" ] [ text "available on GitHub" ], text ", and it should be easy to deploy yourself." ]
         , p [] [ text "Its only external requirements are PostgreSQL and MinIO/S3. If you have ", pre [] [ text "docker" ], text " and Postgres's ", pre [] [ text "createdb" ], text " it takes about ", a [ href "https://github.com/JonLatane/jonline#2-minute-startup-with-homebrew" ] [ text "2 minutes to set up Jonline on macOS with Homebrew" ], text " or ", a [ href "https://github.com/JonLatane/jonline#3-minute-startup-on-linux" ] [ text "3 minutes to set up Jonline on Linux" ], text "." ]
         , p [] [ text "Feel free to ", a [ href "mailto:jonlatane@gmail.com" ] [ text "email me" ], text " if you have any questions or want to contribute." ]
         ]

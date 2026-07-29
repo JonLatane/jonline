@@ -58,6 +58,7 @@ import Gen.Msg
 import Gen.Pages as Pages
 import Gen.Route as Route
 import Pages.About
+import Pages.Event.EventId_
 import Pages.Home_
 import Pages.People
 import Pages.Post.PostId_
@@ -277,6 +278,9 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.Post__PostId_ _ _ ->
             Just (Gen.Msg.Post__PostId_ (Pages.Post.PostId_.fromShared sharedMsg))
+
+        Gen.Model.Event__EventId_ _ _ ->
+            Just (Gen.Msg.Event__EventId_ (Pages.Event.EventId_.fromShared sharedMsg))
 
         Gen.Model.Server__ServerIdentifier_ _ _ ->
             Just (Gen.Msg.Server__ServerIdentifier_ (Pages.Server.ServerIdentifier_.fromShared sharedMsg))

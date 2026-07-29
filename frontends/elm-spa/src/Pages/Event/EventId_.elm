@@ -25,10 +25,12 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Gen.Params.Event.EventId_ exposing (Params)
 import Grpc
-import Html exposing (Html, a, button, div, p, text)
-import Html.Attributes exposing (class, href, id)
+import Html exposing (Html, a, button, div, p, span, text)
+import Html.Attributes exposing (attribute, class, disabled, href, id, title)
 import Html.Events exposing (onClick)
+import Json.Encode as Encode
 import Page
+import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
 import Request
@@ -202,12 +204,11 @@ type Msg
       -- `InstanceHistoryDisplay` filter finishes fading/collapsing out (see
       -- `UI.Flip.remove`) -- drops it from `instanceAnimations` for good.
     | RemoveInstanceAnimation String
-      -- Fired once the one-time scroll-the-current-instance-into-view
-      -- attempt (see `scrollToInstance`) settles, whether it actually
-      -- succeeded or not -- there's nothing useful to do with a failure (the
-      -- chip/strip not being found yet, say), so this is a pure no-op either
-      -- way.
-    | ScrolledToInstance (Result Dom.Error ())
+      -- The scroll-the-current-instance-into-view measurement (see
+      -- `scrollToInstance`) resolving with the target `scrollLeft` to send
+      -- through `Ports.scrollElementLeft` -- `Err` (the chip/strip not
+      -- found, e.g. an `Event` with only one instance) is a pure no-op.
+    | GotScrollTarget (Result Dom.Error Float)
     | Poll
     | SharedMsg Shared.Msg
 
@@ -303,10 +304,11 @@ minimumHistoryDisplayFor now instance =
 model.now instance` if it's currently more restrictive than that -- never
 lowers it, so this is safe to call every time `model.now`/the loaded `Event`
 change (`GotEvent`, `GotNow`) without ever undoing a broader mode the user
-already switched to via `historyButtons`, which (via that same
-`minimumHistoryDisplayFor` floor) never offers a button this would need to
-undo in the first place. In practice this is what actually picks this page's
-initial mode: `init` always starts `model.instanceHistoryDisplay` at
+already switched to via `historyButtonView`, whose button for any mode below
+that same `minimumHistoryDisplayFor` floor is `disabled` rather than
+removed, so there's no way to have reached one of those in the first place.
+In practice this is what actually picks this page's initial mode: `init`
+always starts `model.instanceHistoryDisplay` at
 `OnlyFuture` (the most restrictive possible value) before either the `Event`
 or a real `now` are known, so the first call after both land is the one that
 raises it to wherever the currently-viewed `instance` actually needs.
@@ -375,23 +377,43 @@ instanceChipDomId instanceId =
 
 
 {-| Scrolls `instanceStripDomId`'s strip horizontally so `instanceId`'s own
-chip is centered in view -- fired once whenever a new `EventInstance` becomes
+chip is centered in view -- fired both whenever a new `EventInstance` becomes
 "the current one" (a fresh page load, or the user clicking to a sibling
-instance's own page -- see `GotEvent`), not on every `HistoryDisplayChanged`
-toggle. `Process.sleep` first: every chip (including ones that were already
-visible) starts a fresh `UI.Flip.enter` whenever `syncInstanceAnimations`
-rebuilds `instanceAnimations` from scratch (as it does right after this same
-`GotEvent`), so measuring immediately would read every chip's still-collapsed
-(`grid-template-columns: 0fr`, see `flip.css`) 0-width position rather than
-its real, grown-in one -- 300ms clears `flip.css`'s own 0.25s collapse/grow
-transition with a little headroom. Silently gives up (`ScrolledToInstance`
-ignores its own `Result`) if the strip or chip aren't found -- e.g. an
-`Event` with only one instance, whose strip `instanceHistoryView` doesn't
-render at all.
+instance's own page -- see `GotEvent`) and whenever `HistoryDisplayChanged`
+reveals/hides other chips around it, potentially shifting its position.
+`Process.sleep delayMs` first in both cases: measuring immediately would read
+some chip's still-collapsed (`grid-template-columns: 0fr`, see `flip.css`)
+0-width position rather than its real, grown-in one, since a chip's own
+`UI.Flip.enter`/`remove` animation is still in progress at the moment either
+caller's own model update lands -- `GotEvent` passes 300ms (every chip,
+including ones that were already visible, starts a fresh `enter` whenever
+`syncInstanceAnimations` rebuilds `instanceAnimations` from scratch, as it
+does right after `GotEvent`), `HistoryDisplayChanged` passes 400ms (only the
+chips actually entering/leaving are mid-animation, but there's usually more
+of them sliding at once than a fresh page load ever has, so a little more
+headroom). Either way this clears `flip.css`'s own 0.25s collapse/grow transition.
+Silently gives up (`GotScrollTarget`'s `Err` case is a no-op) if the strip or
+chip aren't found -- e.g. an `Event` with only one instance, whose strip
+`instanceHistoryView` doesn't render at all.
+
+Only _measures_ here (`Dom.getElement`/`Dom.getViewportOf`) -- the actual
+scroll happens back in `update`'s `GotScrollTarget` case, via
+`Ports.scrollElementLeft` rather than `Dom.setViewportOf`. See that port's own
+doc comment: `Dom.setViewportOf` always assigns `scrollLeft` from inside a
+`requestAnimationFrame` callback, which silently fails to take effect at all
+on an element with this strip's own `scroll-behavior: smooth` (see
+`events.css`), even though the `Task` itself reports success -- confirmed by
+instrumenting a real run (a `GotScrollTarget`-equivalent debug message
+reported the correct computed target every time, yet `scrollLeft` never
+budged) and reproducing it directly (`requestAnimationFrame(() => { el.scrollLeft
+= x })`, checked a frame later, silently no-ops the same way). A port
+callback is a plain (non-rAF-wrapped) JS callback, and doesn't have the
+problem.
+
 -}
-scrollToInstance : String -> Cmd Msg
-scrollToInstance instanceId =
-    Process.sleep 300
+scrollToInstance : Float -> String -> Cmd Msg
+scrollToInstance delayMs instanceId =
+    Process.sleep delayMs
         |> Task.andThen
             (\_ ->
                 Task.map3 (\chip strip viewport -> ( chip, strip, viewport ))
@@ -399,21 +421,18 @@ scrollToInstance instanceId =
                     (Dom.getElement instanceStripDomId)
                     (Dom.getViewportOf instanceStripDomId)
             )
-        |> Task.andThen
+        |> Task.map
             (\( chip, strip, viewport ) ->
                 let
                     chipLeftWithinStrip =
                         chip.element.x - strip.element.x
-
-                    target =
-                        viewport.viewport.x
-                            + chipLeftWithinStrip
-                            - (viewport.viewport.width / 2)
-                            + (chip.element.width / 2)
                 in
-                Dom.setViewportOf instanceStripDomId (max 0 target) 0
+                viewport.viewport.x
+                    + chipLeftWithinStrip
+                    - (viewport.viewport.width / 2)
+                    + (chip.element.width / 2)
             )
-        |> Task.attempt ScrolledToInstance
+        |> Task.attempt GotScrollTarget
 
 
 update : Shared.Model -> Request.With Params -> Msg -> Model -> ( Model, Effect Msg )
@@ -452,7 +471,7 @@ update shared req msg model =
                 scrollEffect =
                     case newStatus of
                         EventLoaded _ _ ->
-                            scrollToInstance model.eventId |> Effect.fromCmd
+                            scrollToInstance 300 model.eventId |> Effect.fromCmd
 
                         _ ->
                             Effect.none
@@ -521,7 +540,17 @@ update shared req msg model =
             ( model, Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled model.targetHost)) )
 
         HistoryDisplayChanged mode ->
-            ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations, Effect.none )
+            if mode == model.instanceHistoryDisplay then
+                -- Clicking the already-active mode's button changes nothing
+                -- to animate (see `historyButtonView`'s highlighting) -- just
+                -- re-centers the strip on the current instance right away,
+                -- e.g. after the user's scrolled it away by hand.
+                ( model, scrollToInstance 0 model.eventId |> Effect.fromCmd )
+
+            else
+                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations
+                , scrollToInstance 1000 model.eventId |> Effect.fromCmd
+                )
 
         InstanceLayoutChanged layout ->
             ( { model | instanceLayout = layout }, Effect.none )
@@ -543,7 +572,18 @@ update shared req msg model =
         RemoveInstanceAnimation id ->
             ( { model | instanceAnimations = Dict.remove id model.instanceAnimations }, Effect.none )
 
-        ScrolledToInstance _ ->
+        GotScrollTarget (Ok target) ->
+            ( model
+            , Ports.scrollElementLeft
+                (Encode.object
+                    [ ( "id", Encode.string instanceStripDomId )
+                    , ( "left", Encode.float (max 0 target) )
+                    ]
+                )
+                |> Effect.fromCmd
+            )
+
+        GotScrollTarget (Err _) ->
             ( model, Effect.none )
 
         Poll ->
@@ -647,36 +687,44 @@ eventDetailView shared model event instance =
                 model.targetHost
                 maybeServer
                 maybeAccount
+
+        -- Slotted into the primary (`Event`) `postSection` as its
+        -- `extraContent`, between the byline and the media display -- the
+        -- currently-viewed `EventInstance`'s own start/end/location, then
+        -- (below that) the date-picker strip to switch to a sibling one.
+        instanceDetailAndStrip =
+            div [ class "event-instance-detail-and-strip" ]
+                [ div [ class "event-instance-detail" ]
+                    [ div [ class "event-instance-when" ] [ text "📅 ", Events.instanceTimeRangeText shared.browserTimeZone instance ]
+                    , case instance.location |> Maybe.andThen Events.locationText of
+                        Just locationLine ->
+                            div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
+
+                        Nothing ->
+                            text ""
+                    ]
+                , instanceHistoryView shared model event instance
+                ]
     in
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
             Just eventPost ->
-                postSection (MediaClicked eventPost) True eventPost
+                postSection (MediaClicked eventPost) True instanceDetailAndStrip eventPost
 
             Nothing ->
                 text ""
-        , instanceHistoryView shared model event instance
-        , div [ class "event-instance-detail" ]
-            [ div [ class "event-instance-when" ] [ text "📅 ", Events.instanceTimeRangeText shared.browserTimeZone instance ]
-            , case instance.location |> Maybe.andThen Events.locationText of
-                Just locationLine ->
-                    div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
-
-                Nothing ->
-                    text ""
-            ]
         , case instance.post |> Maybe.andThen meaningfulPost of
             Just instancePost ->
-                postSection (MediaClicked instancePost) False instancePost
+                postSection (MediaClicked instancePost) False (text "") instancePost
 
             Nothing ->
                 text ""
         ]
 
 
-{-| The date-picker strip: up to two "switch scope" buttons (see
-`historyButtons`) plus, once there's more than 3 chips to justify it, a
-scroll/grid layout toggle (see `instanceLayoutButtonView`), above either a
+{-| The date-picker strip: all 3 "switch scope" buttons (see `historyButtons`)
+plus, once there's more than 3 chips to justify it, a scroll/grid layout
+toggle (see `instanceLayoutButtonView`), above either a
 horizontally-scrolling row or a wrapping grid (`model.instanceLayout`) of
 every `EventInstance` currently selected by `model.instanceHistoryDisplay`,
 each linking to that instance's own page. Renders nothing at all for an
@@ -689,26 +737,22 @@ instanceHistoryView shared model event instance =
 
     else
         let
-            buttons =
-                historyButtons model event instance
+            minimumRank =
+                historyDisplayRank (minimumHistoryDisplayFor model.now instance)
 
             showLayoutToggle =
                 List.length event.instances > 3
         in
         div [ class "event-instance-history" ]
-            [ if List.isEmpty buttons && not showLayoutToggle then
-                text ""
+            [ div [ class "event-instance-history-buttons" ]
+                (List.map (historyButtonView model minimumRank) (historyButtons model event)
+                    ++ (if showLayoutToggle then
+                            [ instanceLayoutButtonView model.instanceLayout ]
 
-              else
-                div [ class "event-instance-history-buttons" ]
-                    (List.map historyButtonView buttons
-                        ++ (if showLayoutToggle then
-                                [ instanceLayoutButtonView model.instanceLayout ]
-
-                            else
-                                []
-                           )
-                    )
+                        else
+                            []
+                       )
+                )
             , div
                 (id instanceStripDomId :: instanceContainerAttributes model.instanceLayout)
                 (event.instances
@@ -736,27 +780,72 @@ instanceContainerAttributes layout =
             [ classes [ "event-instance-grid", "flip-animated-grid" ] ]
 
 
-{-| Toggles `model.instanceLayout` -- labeled for whichever layout it would
-switch _to_, not the current one.
+{-| Icon-only toggle between the strip's two layouts (see `InstanceLayout`) --
+always the same glyph (☰), rotated 90° via `.event-instance-layout-icon-rotated`
+(a CSS `transition`, see `events.css`) while `GridLayout` is active, rather
+than swapping to a second glyph -- labeled (via `aria-label`/`title`, for
+accessibility and a hover tooltip since the glyph itself doesn't change) for
+whichever layout it would switch _to_, not the current one. Always
+right-aligned (`.event-instance-layout-button`, see `events.css`) in the
+buttons row, regardless of how many "switch scope" buttons
+(`historyButtonView`) precede it.
 -}
 instanceLayoutButtonView : InstanceLayout -> Html Msg
 instanceLayoutButtonView layout =
-    case layout of
-        StripLayout ->
-            button
-                [ class "event-instance-history-button", onClick (InstanceLayoutChanged GridLayout) ]
-                [ text "Grid view" ]
+    let
+        ( targetLayout, targetLabel ) =
+            case layout of
+                StripLayout ->
+                    ( GridLayout, "Grid view" )
 
-        GridLayout ->
-            button
-                [ class "event-instance-history-button", onClick (InstanceLayoutChanged StripLayout) ]
-                [ text "List view" ]
-
-
-historyButtonView : ( InstanceHistoryDisplay, Int ) -> Html Msg
-historyButtonView ( mode, count ) =
+                GridLayout ->
+                    ( StripLayout, "List view" )
+    in
     button
-        [ class "event-instance-history-button", onClick (HistoryDisplayChanged mode) ]
+        [ classes [ "event-instance-history-button", "event-instance-layout-button" ]
+        , onClick (InstanceLayoutChanged targetLayout)
+        , attribute "aria-label" targetLabel
+        , title targetLabel
+        ]
+        [ span
+            [ classes
+                ("event-instance-layout-icon"
+                    :: (if layout == GridLayout then
+                            [ "event-instance-layout-icon-rotated" ]
+
+                        else
+                            []
+                       )
+                )
+            ]
+            [ text "☰" ]
+        ]
+
+
+{-| One of the 3 "switch scope" buttons -- highlighted (`background-color-primary`)
+if `mode` is `model.instanceHistoryDisplay` itself, disabled if `mode` is more
+restrictive than `minimumRank` (see `historyButtons`' own doc) since
+switching to it would hide `instance`, the very one this page is showing.
+-}
+historyButtonView : Model -> Int -> ( InstanceHistoryDisplay, Int ) -> Html Msg
+historyButtonView model minimumRank ( mode, count ) =
+    let
+        isCurrent =
+            mode == model.instanceHistoryDisplay
+    in
+    button
+        [ classes
+            ("event-instance-history-button"
+                :: (if isCurrent then
+                        [ "background-color-primary" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick (HistoryDisplayChanged mode)
+        , disabled (historyDisplayRank mode < minimumRank)
+        ]
         [ text (historyButtonLabel mode count) ]
 
 
@@ -781,62 +870,19 @@ historyButtonLabel mode count =
             String.fromInt count ++ " upcoming " ++ dateWord
 
 
-{-| Which "switch scope" buttons to show above the strip -- at most 2 (one
-for each `InstanceHistoryDisplay` other than `model.instanceHistoryDisplay`
-itself), skipping any whose count is redundant with what's already visible:
-e.g. if every instance is upcoming, `ShowAllInstances`/`SinceTwoWeeksAgo`
-would reveal the exact same set `OnlyFuture` already shows, so neither button
-appears; if only `ShowAllInstances` would add anything, only its button does.
-Also never offers a mode more restrictive than `minimumHistoryDisplayFor
-model.now instance` -- switching to one of those would hide `instance`, the
-very one this page is showing (see `clampHistoryDisplay`, which keeps
-`model.instanceHistoryDisplay` itself out of that territory in the first
-place, so there's nothing here to filter `model.instanceHistoryDisplay`
-itself against).
-
-Processes the two non-current, non-too-restrictive modes from most to least
-restrictive (`OnlyFuture`, then `SinceTwoWeeksAgo`, then `ShowAllInstances`),
-dropping any whose count matches the last kept count (starting from the
-current mode's own count) -- since `OnlyFuture`'s set is always a subset of
-`SinceTwoWeeksAgo`'s, which is always a subset of `ShowAllInstances`'s, equal
-counts mean equal sets, so a button whose target would show exactly what's
-already on screen is never worth offering. The result is re-sorted back into
-`ShowAllInstances`, `SinceTwoWeeksAgo`, `OnlyFuture` order for display either
-way.
-
+{-| The 3 "switch scope" buttons to show above the strip, always all 3 (see
+`historyButtonView` for how the current one is highlighted instead of
+omitted, and how one more restrictive than `minimumHistoryDisplayFor
+model.now instance` -- which would hide `instance`, the very one this page
+is showing -- is disabled instead of hidden).
 -}
-historyButtons : Model -> Event -> EventInstance -> List ( InstanceHistoryDisplay, Int )
-historyButtons model event instance =
+historyButtons : Model -> Event -> List ( InstanceHistoryDisplay, Int )
+historyButtons model event =
     let
         countFor mode =
             event.instances |> List.filter (instanceMatchesHistoryDisplay model.now mode) |> List.length
-
-        currentCount =
-            countFor model.instanceHistoryDisplay
-
-        minimumRank =
-            historyDisplayRank (minimumHistoryDisplayFor model.now instance)
-
-        ( _, kept ) =
-            [ OnlyFuture, SinceTwoWeeksAgo, ShowAllInstances ]
-                |> List.filter
-                    (\mode -> mode /= model.instanceHistoryDisplay && historyDisplayRank mode >= minimumRank)
-                |> List.foldl
-                    (\mode ( lastCount, acc ) ->
-                        let
-                            count =
-                                countFor mode
-                        in
-                        if count == lastCount then
-                            ( lastCount, acc )
-
-                        else
-                            ( count, mode :: acc )
-                    )
-                    ( currentCount, [] )
     in
     [ ShowAllInstances, SinceTwoWeeksAgo, OnlyFuture ]
-        |> List.filter (\mode -> List.member mode kept)
         |> List.map (\mode -> ( mode, countFor mode ))
 
 
