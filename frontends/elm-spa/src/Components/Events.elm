@@ -425,6 +425,21 @@ eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer
 
                     Nothing ->
                         text ""
+                , case eventPost.content of
+                    Just content ->
+                        Markdown.view
+                            [ classes
+                                (if String.length content > Posts.contentPreviewFadeThreshold then
+                                    [ "event-card-content-preview", "event-card-content-preview-fade" ]
+
+                                 else
+                                    [ "event-card-content-preview" ]
+                                )
+                            ]
+                            content
+
+                    Nothing ->
+                        text ""
                 , case instance.post |> Maybe.andThen meaningfulPost of
                     Just instancePost ->
                         div [ class "event-card-instance-note" ] [ text (Posts.postTitleText instancePost) ]

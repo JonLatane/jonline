@@ -393,6 +393,38 @@
   margin-top: 0.15rem;
 }
 
+/* Mirrors `posts.css`'s `.post-card-content-preview`/`-fade` -- see that
+   class's doc comment for why it's `pointer-events: none` (non-positioned
+   content already sits behind `.event-card-link-overlay` in paint order, but
+   this makes the no-independent-clicks intent explicit) and why the fade is
+   a separate modifier class rather than baked in (added only when
+   `Components.Posts.contentPreviewFadeThreshold` judges the content actually
+   long enough to be truncated by the `max-height` below). */
+.event-card-content-preview {
+  display: block;
+  max-height: 4.5em;
+  overflow: hidden;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-top: 0.3rem;
+  pointer-events: none;
+}
+
+.event-card-content-preview-fade {
+  mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+}
+
+.event-card-content-preview>*:first-child {
+  margin-top: 0;
+}
+
+.event-card-content-preview>*:last-child {
+  margin-bottom: 0;
+}
+
 .event-card-instance-note {
   font-size: 0.85rem;
   color: var(--muted);

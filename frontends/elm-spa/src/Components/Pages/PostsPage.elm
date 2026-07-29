@@ -684,12 +684,20 @@ postsListView shared model =
             model.postAnimations
                 |> Dict.toList
                 |> List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+
+        postsWord =
+            case model.context of
+                REPLY ->
+                    "replies"
+
+                _ ->
+                    "posts"
     in
     if Dict.isEmpty model.postsByServer then
-        p [ class "posts-empty" ] [ text "Connect to a server to see recent posts." ]
+        p [ class "posts-empty" ] [ text <| "Connect to a server to see recent " ++ postsWord ++ "." ]
 
     else if List.isEmpty sortedAnimations then
-        p [ class "posts-empty" ] [ text "No posts yet." ]
+        p [ class "posts-empty" ] [ text <| "No " ++ postsWord ++ " yet." ]
 
     else
         Html.Keyed.node "div"
