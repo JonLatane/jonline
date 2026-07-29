@@ -687,6 +687,14 @@ jobs:
       - name: Verify Server deployment
         run: kubectl rollout status deployment/jonline -n jonline --timeout 2m
 
+      # Traefik's TLS-passthrough IngressRouteTCP routing (see jonline-https/jonline-grpc)
+      # can get wedged pointing at stale backend pod IPs after a rollout replaces pods --
+      # this refreshes it so jonline.io doesn't silently start 404ing/hanging post-deploy.
+      - name: Bounce Traefik to refresh routing
+        run: |
+          kubectl rollout restart deployment traefik -n traefik-ingress
+          kubectl rollout status deployment traefik -n traefik-ingress --timeout 2m
+
       - name: Purge Cloudflare cache
         env:
           CLOUDFLARE_ZONE: ${{ secrets.CLOUDFLARE_ZONE_JONLINEIO }}
@@ -1197,3 +1205,31 @@ jobs:
             -H "Authorization: Bearer ${CLOUDFLARE_TOKEN}" \
             -H "Content-Type: application/json" \
             --data '{"purge_everything":true}'
+
+  bounce_traefik_production:
+    name: Bounce Traefik (Production)
+    # deploy_bullcitysocial and deploy_oakcitysocial run concurrently, so this waits on
+    # both and bounces Traefik once for the pair -- rather than once per namespace --
+    # since either deploy's pod churn can wedge Traefik's TLS-passthrough routing (see
+    # the matching step in deploy_jonlineio_server). Runs if either succeeded, since a
+    # partial-success deploy still churns pods and can still wedge routing.
+    needs:
+      - deploy_bullcitysocial
+      - deploy_oakcitysocial
+    if: |
+      always() && github.ref == 'refs/heads/main' &&
+      (needs.deploy_bullcitysocial.result == 'success' || needs.deploy_oakcitysocial.result == 'success')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Save DigitalOcean kubeconfig with short-lived credentials
+        run: doctl kubernetes cluster kubeconfig save --expiry-seconds 600 jonline-be
+
+      - name: Bounce Traefik to refresh routing
+        run: |
+          kubectl rollout restart deployment traefik -n traefik-ingress
+          kubectl rollout status deployment traefik -n traefik-ingress --timeout 2m

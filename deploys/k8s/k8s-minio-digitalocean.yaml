@@ -5,6 +5,7 @@ metadata:
   labels:
     app: jonline-minio
 spec:
+  clusterIP: None
   ports:
     - port: 9000
       protocol: TCP
@@ -12,17 +13,17 @@ spec:
     app: jonline-minio
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: jonline-minio
   labels:
     app: jonline-minio
 spec:
+  serviceName: jonline-minio
+  replicas: 1
   selector:
     matchLabels:
       app: jonline-minio
-  strategy:
-    type: Recreate
   template:
     metadata:
       labels:
@@ -61,4 +62,4 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: do-block-storage
+  storageClassName: do-block-storage-retain

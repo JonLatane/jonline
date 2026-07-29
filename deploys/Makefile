@@ -4,6 +4,10 @@
 # Configure these variables to deploy/test the official Jonline images on your own cluster.
 NAMESPACE ?= jonline
 
+# Selects which provider-specific k8s/*-$(K8S_PROVIDER).yaml manifests to use for the
+# DB/Minio/StorageClass targets below (e.g. "digitalocean"; "eks" or others as they're added).
+K8S_PROVIDER ?= digitalocean
+
 # Used when configuring the load balancer (deploy_lb_[un]link_service_account).
 TARGET_NAMESPACE ?= jonline
 
@@ -84,31 +88,35 @@ deploy_data_update: deploy_db_update deploy_minio_update
 deploy_data_delete: deploy_db_delete deploy_minio_delete
 deploy_data_restart: deploy_db_restart deploy_minio_restart
 
+# Cluster-scoped, so this is safe/idempotent to (re)apply from any namespace's create target.
+deploy_ensure_storageclass_retain:
+	kubectl apply -f k8s/storageclass-retain-$(K8S_PROVIDER).yaml
+
 # K8s DB deployment targets (optional if using managed DB)
-deploy_db_create: deploy_ensure_namespace
-	kubectl create -f k8s/k8s-postgres.yaml --save-config -n $(NAMESPACE)
+deploy_db_create: deploy_ensure_namespace deploy_ensure_storageclass_retain
+	kubectl create -f k8s/k8s-postgres-$(K8S_PROVIDER).yaml --save-config -n $(NAMESPACE)
 
 deploy_db_update:
-	kubectl apply -f k8s/k8s-postgres.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/k8s-postgres-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
 
 deploy_db_delete:
-	- kubectl delete -f k8s/k8s-postgres.yaml -n $(NAMESPACE)
+	- kubectl delete -f k8s/k8s-postgres-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
 
 deploy_db_restart:
-	kubectl rollout restart deployment jonline-postgres -n $(NAMESPACE)
+	kubectl rollout restart statefulset jonline-postgres -n $(NAMESPACE)
 
 # K8s Minio deployment targets (optional if using managed S3/Minio)
-deploy_minio_create: deploy_ensure_namespace
-	kubectl create -f k8s/k8s-minio.yaml --save-config -n $(NAMESPACE)
+deploy_minio_create: deploy_ensure_namespace deploy_ensure_storageclass_retain
+	kubectl create -f k8s/k8s-minio-$(K8S_PROVIDER).yaml --save-config -n $(NAMESPACE)
 
 deploy_minio_update:
-	kubectl apply -f k8s/k8s-minio.yaml -n $(NAMESPACE)
+	kubectl apply -f k8s/k8s-minio-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
 
 deploy_minio_delete:
-	- kubectl delete -f k8s/k8s-minio.yaml -n $(NAMESPACE)
+	- kubectl delete -f k8s/k8s-minio-$(K8S_PROVIDER).yaml -n $(NAMESPACE)
 
 deploy_minio_restart:
-	kubectl rollout restart deployment jonline-minio -n $(NAMESPACE)
+	kubectl rollout restart statefulset jonline-minio -n $(NAMESPACE)
 
 # Useful things
 deploy_ensure_namespace:
