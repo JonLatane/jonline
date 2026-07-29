@@ -1,12 +1,14 @@
 port module Ports exposing
     ( accountsAndServersUpdated
     , clearFederatedAuthKeyPair
+    , elementsMeasured
     , federatedAuthDecrypt
     , federatedAuthDecrypted
     , federatedAuthEncrypt
     , federatedAuthEncrypted
     , federatedAuthGenerateKeyPair
     , federatedAuthKeyPairGenerated
+    , measureElements
     , persistAccountsAndServers
     , persistFederatedAuthKeyPair
     , persistStarredPosts
@@ -86,6 +88,45 @@ port-triggered assignment runs as a normal JS callback, not wrapped in
 `Pages.Event.EventId_.scrollToInstance`, the only current caller.
 -}
 port scrollElementLeft : Encode.Value -> Cmd msg
+
+
+{-| Measures every DOM element named in the given JSON array of
+`{ key : String, id : String }` objects (`id` is the actual DOM id to look
+up; `key` is the caller's own correlation id, echoed back verbatim in the
+result -- see `elementsMeasured`) via a single plain JS callback -- exists
+for exactly the reason `scrollElementLeft` does (see its own doc comment):
+`Browser.Dom.getElement` (elm/browser's kernel code, see `_Browser_withNode`)
+wraps *every single call* in its own `requestAnimationFrame`, and Elm's
+`Task`s compose strictly sequentially (no real concurrency), so measuring N
+elements via `Task.sequence` over N separate `Dom.getElement` calls costs N
+whole animation frames, one after another. For
+`Components.Pages.EventsPage`'s FLIP layout-switch measurement (up to
+`maxDisplayedEvents` elements, twice per switch), that added up to a highly
+visible multi-hundred-millisecond gap between the layout actually switching
+and the slide-back animation starting -- confirmed by instrumenting a real
+transition (a `requestAnimationFrame` sampler logging the container's class
+and the moving element's `transform` every frame) and finding a ~150-250ms
+window on each side where the new layout had already rendered at its plain,
+un-inverted resting position before the invert transform was applied. A
+single port round-trip measures every requested id in one JS turn, with no
+`requestAnimationFrame` involved at all, so it costs the same one turn
+regardless of how many ids are given.
+-}
+port measureElements : Encode.Value -> Cmd msg
+
+
+{-| `[ { key : String, x : Float, y : Float, width : Float, height : Float }, ... ]`
+-- the result of `measureElements`, one entry per `key` whose `id` was
+actually found in the DOM (a missing one is just omitted, not an error).
+`key` is exactly whatever the caller sent as that item's own `key` (its own
+correlation id -- e.g. `Components.Pages.EventsPage`'s animation key, not the
+DOM id derived from it), never the DOM `id` itself -- this is what lets the
+Elm side avoid ever needing to reverse-derive its own key back out of a DOM
+id string. `x`/`y` are page (not viewport) coordinates, matching
+`Browser.Dom.Element.element`'s own convention. See
+`Components.Pages.EventsPage.rectsDecoder`.
+-}
+port elementsMeasured : (Encode.Value -> msg) -> Sub msg
 
 
 {-| Sets every `<meta name="theme-color">` tag's `content` to `mainFrontendHost`'s

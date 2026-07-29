@@ -59,11 +59,11 @@
   overflow-wrap: break-word;
 }
 
-.event-post-content > *:first-child {
+.event-post-content>*:first-child {
   margin-top: 0;
 }
 
-.event-post-content > *:last-child {
+.event-post-content>*:last-child {
   margin-bottom: 0;
 }
 
@@ -86,11 +86,21 @@
   font-size: 1rem;
 }
 
-.event-instance-when,
+.event-instance-when {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+/* Shrunk/greyed relative to `.event-instance-when` -- the location is
+   secondary/supporting information next to the date/time, same "muted"
+   treatment `.event-card-where` gives it on the card view. */
 .event-instance-where {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 /* The date-picker strip -- see Pages/Event/EventId_.elm's
@@ -196,3 +206,207 @@
   font-weight: 700;
 }
 
+/* Events index pages (`/events`, `/:username/events`, `/user/:id/events`) --
+   see Components/Pages/EventsPage.elm. `.events-list`/`.events-grid`/
+   `.events-strip` are the 3 `EventsDisplayMode` containers; `flip.css`
+   already supplies their generic column/wrapping-row/scrolling-row layout
+   (`.flip-animated-column`/`.flip-animated-grid`/`.flip-animated-row`), so
+   these only need mode-specific extras. */
+
+/* Holds `.events-tabs` and `.events-mode-buttons` on one row -- `.events-mode-buttons`'
+   own `margin-left: auto` (below) pins it to this row's right edge
+   regardless of how wide `.events-tabs` ends up, and `flex-wrap: wrap` here
+   (on top of each child's own) lets `.events-mode-buttons` drop to its own
+   second line on narrow screens rather than forcing itself to overlap/
+   squeeze `.events-tabs`. */
+.events-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+
+.events-mode-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+/* Mirrors `.event-instance-history-button` (above). */
+.events-mode-button {
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+/* `EventsPage.tabsView`'s "Upcoming Events"/"Events After <date>" tabs --
+   same row/pill conventions as `.events-mode-buttons`/`.events-mode-button`
+   above, just its own class since the two are conceptually distinct (this
+   picks the fetch's own time cutoff; `.events-mode-buttons` picks the
+   layout) even while sharing one `.events-controls-row`. The "Events After"
+   tab is a `div`, not a `button` (it nests a real
+   `<input type="datetime-local">`, and nesting interactive content inside a
+   `<button>` is invalid HTML), so this includes what `<button>` gives for
+   free elsewhere: `cursor: pointer` and inline-flex layout for its label +
+   input to sit on one line. */
+.events-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.events-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* The default tab -- set off from `.events-tab`'s own (and
+   `.events-mode-button`'s) smaller pill-label size. */
+.events-tab-primary {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Sized/inset to sit comfortably inline with its own tab's label text
+   rather than at the browser's own default `<input>` size. */
+.events-tab-date-input {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-left: 0.2rem;
+}
+
+/* Mirrors `.event-instance-strip` (above). */
+.events-strip {
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+}
+
+/* Lifts `.events-strip`'s own vertical clip while `EventsPage.eventsListView`
+   reports a card still mid `DisplayModeChanged` slide -- a card's FLIP
+   invert-offset can start well outside the strip's own shallow box (e.g.
+   sliding in from a `VerticalList` position far below it), and `overflow-x:
+   auto` alone already forces `overflow-y` to compute as `auto` too (which
+   still clips, just with a scrollbar) per the CSS overflow-x/-y pairing rule
+   -- only `visible` on both axes actually avoids clipping it mid-flight.
+   Higher specificity than `.events-strip` alone, so no `!important` needed;
+   reverts automatically the instant every card settles. */
+.events-strip.events-mode-transitioning {
+  overflow: visible;
+}
+
+/* Mirrors `.event-instance-grid` (above). */
+.events-grid {
+  align-items: flex-start;
+  row-gap: 0.8rem;
+}
+
+/* `Grid`/`HorizontalList` cards are a fixed tile width; `VerticalList`'s own
+   are full-bleed (mirrors `.post-card`'s own full-width column) -- switching
+   between them is a genuine resize, not just a reflow, which is why
+   `Components.Pages.EventsPage.GotPostModeMeasurements` computes a `scale`
+   ratio (via `UI.Flip.startMoveScaled`) alongside the position delta, rather
+   than the plain `UI.Flip.startMove` a same-size layout switch would need. */
+.events-grid .flip-animated-item,
+.events-strip .flip-animated-item {
+  width: 380px;
+  flex: 0 0 auto;
+}
+
+.events-list .flip-animated-item {
+  width: 100%;
+}
+
+/* `UI.Flip.startMoveScaled`'s own doc: the scaled element needs its
+   transform to originate from the same corner (`Browser.Dom.Element.element.x`/
+   `.y`) the position delta was measured from, not the CSS default `50% 50%`,
+   for the two to combine correctly. */
+.event-card-move {
+  transform-origin: top left;
+}
+
+/* Mirrors `.post-card`'s own border/background/stretched-link-overlay
+   conventions (see posts.css) -- `Components.Events.eventCard`. */
+.event-card {
+  position: relative;
+  display: block;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.2s ease;
+}
+
+/* `.flip-animated-item.flip-moving` (see `UI.Flip.itemAttributes`) is only
+   present on a card's outer wrapper for the real duration of its own
+   `DisplayModeChanged` slide -- not every card in a `.events-mode-transitioning`
+   container, just the ones actually still mid-flight -- so this blurs each
+   one only while it's actually moving/resizing, clearing on its own as soon
+   as that card settles. */
+.flip-moving .event-card {
+  backdrop-filter: blur(4px);
+}
+
+.event-card-link-overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.event-card-title {
+  font-weight: 700;
+}
+
+.event-card-when {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+/* Shrunk/greyed relative to `.event-card-when` -- the location is
+   secondary/supporting information next to the date/time, same "muted"
+   treatment `.event-instance-where` gives it on the detail view. */
+.event-card-where {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.15rem;
+}
+
+.event-card-instance-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.event-card-meta {
+  position: relative;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+  pointer-events: none;
+}
+
+.event-card-meta a {
+  pointer-events: auto;
+}

@@ -1,22 +1,28 @@
 module Components.Events exposing
-    ( eventInstanceHref
+    ( eventCard
+    , eventInstanceHref
+    , eventInstancePairs
     , fetchEvent
+    , fetchEvents
     , findInstance
     , instanceDateText
     , instanceMoment
     , instanceTimeRangeText
     , locationText
+    , meaningfulPost
     , parseEventRouteId
     , postSection
     )
 
 {-| Shared building blocks for displaying `Proto.Jonline.Event`s/`EventInstance`s
--- currently just what `Pages.Event.EventId_` needs: building a `GetEvents`
-request scoped to a single `EventInstance` (via `Shared.MaybeAccountRequest`),
-parsing/building the `/event/:eventId` route's `id`/`id@host` segment (an
-`EventInstance.id`, despite the route/field being named "eventId" -- see
-`Pages.Event.EventId_`'s own module doc), and rendering the `Post`/timing each
-of an `Event` and its `EventInstance`s carries.
+-- used by `Pages.Event.EventId_` (a single-instance detail view: building a
+`GetEvents` request scoped to a single `EventInstance` via
+`Shared.MaybeAccountRequest`, parsing/building the `/event/:eventId` route's
+`id`/`id@host` segment, an `EventInstance.id` despite the route/field being
+named "eventId" -- see that module's own doc) and by
+`Components.Pages.EventsPage` (a multi-`Event` listing: `fetchEvents`/
+`eventInstancePairs`/`eventCard`), plus the `Post`/timing rendering helpers
+both share.
 -}
 
 import Components.Authors as Authors
@@ -26,12 +32,12 @@ import Components.Posts as Posts
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, h1, h2, span, text)
-import Html.Attributes exposing (class, href, rel, target)
-import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultGetEventsRequest)
+import Html.Attributes exposing (attribute, class, href, rel, target)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
-import Shared.Conversions exposing (timestampToPosix)
+import Shared.Conversions exposing (posixToTimestamp, timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -59,6 +65,65 @@ fetchEvent accountsPanelModel maybeAccountServer eventInstanceId =
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
         )
+
+
+{-| Fetches `Event`s ending after `endsAfter` from `maybeAccountServer`'s
+server, authenticated as its account if any -- for
+`Components.Pages.EventsPage`'s listing, rather than `fetchEvent`'s single
+`EventInstance` lookup. `authorUserId`, if given, restricts the results to
+that user's own events (mirrors `Components.Posts.fetchPosts`' own
+`authorUserId` param), for that module's use on a user's own events page.
+
+`GetEventsRequest.timeFilter.endsAfter` is the only time filter
+`backend/src/rpcs/events/get_events.rs` actually implements (see its
+`query_visible_events!` macro), excluding any `EventInstance` that's already
+ended as of `endsAfter` -- `EventsPage` passes the live current time for its
+default "Upcoming Events" tab, or a user-picked cutoff for its "Events After
+&lt;date&gt;" one, so this is deliberately not called `now` (it isn't,
+always). `GetEventsResponse` isn't itself flattened per-`EventInstance` --
+see `eventInstancePairs`.
+-}
+fetchEvents :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> Maybe String
+    -> Time.Posix
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
+fetchEvents accountsPanelModel maybeAccountServer authorUserId endsAfter =
+    let
+        request =
+            { defaultGetEventsRequest
+                | authorUserId = authorUserId
+                , timeFilter = Just { defaultTimeFilter | endsAfter = Just (posixToTimestamp endsAfter) }
+            }
+    in
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
+            Grpc.new Jonline.getEvents request
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Flattens a `GetEventsResponse` into `(Event, EventInstance)` pairs -- for
+any listing request (unlike `fetchEvent`'s single-`event_instance_id` request,
+which returns one `Event` with every one of its instances),
+`get_public_and_following_events`/`get_user_events` each return **one `Event`
+per matching `EventInstance` row**, with `instances` holding just that one
+instance (see `events.proto`'s own doc comment on `GetEventsResponse`: "the
+response will carry duplicate `Event`s with the same ID" -- one entry per
+instance in the requested time frame). `Components.Pages.EventsPage` centers
+its whole listing on the `EventInstance`, same as `Pages.Event.EventId_`'s own
+detail view, so this is written generically (flat-mapping every `Event`'s
+`instances`, however many there are) rather than assuming exactly one.
+-}
+eventInstancePairs : GetEventsResponse -> List ( Event, EventInstance )
+eventInstancePairs response =
+    response.events
+        |> List.concatMap (\event -> List.map (\instance -> ( event, instance )) event.instances)
 
 
 
@@ -274,3 +339,100 @@ postSection browserTimeZone basePath viewingServerHost postServerHost maybeServe
             Nothing ->
                 text ""
         ]
+
+
+{-| `post` itself, unless it has nothing an `EventInstance`'s own override
+`Post` would actually add over the parent `Event`'s -- no title, link,
+content, or media, just the empty shell every `EventInstance` carries whether
+or not its creator actually filled one in. `Pages.Event.EventId_.eventDetailView`
+uses this to skip its own secondary `postSection` entirely for one of these;
+`eventCard` uses it the same way, to skip an instance-specific note line.
+-}
+meaningfulPost : Post -> Maybe Post
+meaningfulPost post =
+    let
+        hasTitle =
+            post.title |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
+
+        hasContent =
+            post.content |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
+
+        hasLink =
+            Posts.postLinkText post /= Nothing
+
+        hasMedia =
+            not (List.isEmpty post.media)
+    in
+    if hasTitle || hasContent || hasLink || hasMedia then
+        Just post
+
+    else
+        Nothing
+
+
+{-| A compact, read-only card for one `(Event, EventInstance)` pair --
+`Components.Pages.EventsPage`'s per-item rendering, centered on `instance`
+(its own start/end/location) the same way `Pages.Event.EventId_`'s detail view
+is, but titled/linked/media'd off `event.post` (the `Event`'s own name/link/
+media -- the "primary" `Post`, same primacy `eventDetailView` gives it),
+mirroring `Components.Posts.postCard`'s stretched-link-overlay card shape.
+Renders nothing if `event.post` is unset (shouldn't happen in practice --
+every `Event` is created with one -- but the field is optional on the wire).
+-}
+eventCard :
+    BrowserTimeZone
+    -> String
+    -> String
+    -> String
+    -> Maybe AccountsPanel.Server
+    -> Maybe AccountsPanel.Account
+    -> (String -> msg)
+    -> Event
+    -> EventInstance
+    -> Html msg
+eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked event instance =
+    case event.post of
+        Nothing ->
+            text ""
+
+        Just eventPost ->
+            div
+                [ classes
+                    [ "event-card"
+                    , hostnameToCSSClass eventServerHost
+                    , "border-color-primary-anchor-50"
+                    , "hover-border-color-primary-anchor"
+                    , "background-color-primary-5"
+                    ]
+                ]
+                [ a
+                    [ href (eventInstanceHref basePath viewingServerHost eventServerHost instance)
+                    , class "event-card-link-overlay"
+                    , attribute "aria-label" (Posts.postTitleText eventPost)
+                    ]
+                    []
+                , div [ class "event-card-title" ] [ text (Posts.postTitleText eventPost) ]
+                , div [ class "event-card-when" ] [ text "📅 ", instanceTimeRangeText browserTimeZone instance ]
+                , case instance.location |> Maybe.andThen locationText of
+                    Just locationLine ->
+                        div [ class "event-card-where" ] [ text "📍 ", text locationLine ]
+
+                    Nothing ->
+                        text ""
+                , case maybeServer of
+                    Just server ->
+                        MultiMediaRenderer.previewExtraSmall server maybeAccount onMediaClicked eventPost.media
+
+                    Nothing ->
+                        text ""
+                , case instance.post |> Maybe.andThen meaningfulPost of
+                    Just instancePost ->
+                        div [ class "event-card-instance-note" ] [ text (Posts.postTitleText instancePost) ]
+
+                    Nothing ->
+                        text ""
+                , div [ class "event-card-meta" ]
+                    [ Authors.link basePath viewingServerHost eventServerHost maybeServer maybeAccount eventPost.author
+                    , text (" · " ++ Posts.postVisibilityText eventPost)
+                    ]
+                ]

@@ -713,7 +713,7 @@ eventDetailView shared model event instance =
 
             Nothing ->
                 text ""
-        , case instance.post |> Maybe.andThen meaningfulPost of
+        , case instance.post |> Maybe.andThen Events.meaningfulPost of
             Just instancePost ->
                 postSection (MediaClicked instancePost) False (text "") instancePost
 
@@ -917,33 +917,3 @@ instanceChipView shared model anim =
             ]
             [ text (Events.instanceDateText shared.browserTimeZone instance) ]
         ]
-
-
-{-| `post` itself, unless it has nothing an `EventInstance`'s own override
-`Post` would actually add over the parent `Event`'s -- no title, link,
-content, or media, just the empty shell every `EventInstance` carries
-whether or not its creator actually filled one in. Showing `postSection` for
-one of these would render nothing but a redundant author/visibility line
-(see `Components.Events.postSection`), so `eventDetailView` skips the whole
-section instead.
--}
-meaningfulPost : Post -> Maybe Post
-meaningfulPost post =
-    let
-        hasTitle =
-            post.title |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
-
-        hasContent =
-            post.content |> Maybe.map (String.trim >> String.isEmpty >> not) |> Maybe.withDefault False
-
-        hasLink =
-            Posts.postLinkText post /= Nothing
-
-        hasMedia =
-            not (List.isEmpty post.media)
-    in
-    if hasTitle || hasContent || hasLink || hasMedia then
-        Just post
-
-    else
-        Nothing
