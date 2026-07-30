@@ -298,11 +298,23 @@ fetchServerEffect shared model endsAfter server =
         |> Effect.fromCmd
 
 
-{-| Mirrors `Components.Pages.PostsPage.refetchServers` exactly: fetches
-`serversToFetch` (marking each `Loading` first), and drops any already-fetched
-server that's no longer `relevantServers`. A no-op (nothing marked `Loading`,
-no fetch fired) while `model.endsAfter` is still `Nothing` -- see its own doc
-comment for why this page must never fetch before that's resolved.
+{-| Mirrors `Components.Pages.PostsPage.refetchServers`, with one deliberate
+departure: a server already `Loaded` under the *same* acting account keeps
+showing its last-known events (`status` untouched) while the re-fetch is in
+flight, rather than being reset to `Loading` first. `Loading` isn't rendered
+as its own state anywhere in this module -- the only thing it actually does
+is drop that server out of `syncAnimations`' `currentEvents`, which reads as
+every one of its events fading out and back in a moment later. That's exactly
+what `GotNow`'s poll-driven "advance the live cutoff" re-fetch was causing
+every 60s on the default `UpcomingEvents` tab, with no actual data change to
+justify it. A genuinely new server, or one whose acting account just changed
+(sign-in/out), still resets to `Loading` -- its previous events (fetched
+under a different or no account) are stale/invalid, not just "not yet
+refreshed," so they should disappear rather than linger. Drops any
+already-fetched server that's no longer `relevantServers`. A no-op (nothing
+touched, no fetch fired) while `model.endsAfter` is still `Nothing` -- see
+its own doc comment for why this page must never fetch before that's
+resolved.
 -}
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
@@ -321,13 +333,30 @@ refetchServers shared model serversToFetch =
 
                 prunedEventsByServer =
                     Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.eventsByServer
+
+                markServer server dict =
+                    let
+                        accountId =
+                            currentAccountId server
+
+                        statusIfSameAccount =
+                            Dict.get server.frontendHost dict
+                                |> Maybe.andThen
+                                    (\feed ->
+                                        if feed.accountId == accountId then
+                                            Just feed.status
+
+                                        else
+                                            Nothing
+                                    )
+                    in
+                    Dict.insert server.frontendHost
+                        { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
+                        dict
             in
             ( { model
                 | eventsByServer =
-                    List.foldl
-                        (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
-                        prunedEventsByServer
-                        serversToFetch
+                    List.foldl markServer prunedEventsByServer serversToFetch
               }
             , Effect.batch (List.map (fetchServerEffect shared model endsAfter) serversToFetch)
             )
@@ -932,10 +961,22 @@ applyMeasurementFailure model =
             ( newModel, pushUrlWhenIdle newModel )
 
 
+{-| Unlike `Components.Pages.PostsPage.subscriptions`/`Components.Pages.UsersPage.subscriptions`
+(whose 30s `Poll` is just a distrustful account-change fallback, see
+`PostsPage.fetchNewServers`'s own doc -- normally a no-op), this page's `Poll`
+does real work every time on the default `UpcomingEvents` tab: it's what
+advances `model.endsAfter` to the live "now" (via `GotNow`) so the listing
+keeps dropping events as they pass, which also re-fetches every relevant
+server (see `GotNow`/`refetchServers`). 60s (rather than 30s) is deliberately
+slower here since that's a real, visible, unavoidable-per-tick network
+round-trip rather than a cheap local check -- see `refetchServers`'s own doc
+for how the same-account `status`-preserving departure it already has keeps
+even this from flickering the list.
+-}
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every 30000 (\_ -> Poll)
+        [ Time.every 60000 (\_ -> Poll)
         , Ports.elementsMeasured GotMeasuredRects
         , UI.Flip.subscription Animate (List.map .flip (Dict.values model.eventAnimations))
         , UI.Flip.moveSubscription AnimateMove (List.map .move (Dict.values model.eventAnimations))

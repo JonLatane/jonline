@@ -160,13 +160,27 @@ relevantServers shared model =
             AccountsPanel.enabledServers shared.accountsPanel
 
 
-{-| Fetches `serversToFetch` (marking each `Loading` first) using the current
-`model.searchText`/`model.context`, and drops any already-fetched server
-that's no longer `relevantServers` -- shared by `fetchNewServers` (which only
-passes the servers that actually need it, see its own doc comment) and
+{-| Fetches `serversToFetch` using the current `model.searchText`/
+`model.context`, and drops any already-fetched server that's no longer
+`relevantServers` -- shared by `fetchNewServers` (which only passes the
+servers that actually need it, see its own doc comment) and
 `applySearchChange` (which always passes every relevant server, since a
 changed search must re-fetch everything regardless of whether that server's
 acting account also happens to have changed).
+
+A server already `Loaded` under the *same* acting account keeps showing its
+last-known posts (`status` left untouched) while the re-fetch is in flight,
+rather than being reset to `Loading` first -- `Loading` isn't rendered as its
+own state anywhere in this module, so the only thing resetting it did was
+drop that server out of `syncAnimations`' `currentPosts`, which reads as
+every one of its posts fading out and back in a moment later, even though
+`applySearchChange`'s response usually still contains most of the same posts.
+See `Components.Pages.EventsPage.refetchServers`'s own doc for where this was
+first diagnosed (a periodic full-list flicker there) and ported from. A
+genuinely new server, or one whose acting account just changed (sign-in/out),
+still resets to `Loading` -- its previous posts (fetched under a different or
+no account) are stale/invalid, not just "not yet refreshed," so they should
+disappear rather than linger.
 -}
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
@@ -192,13 +206,30 @@ refetchServers shared model serversToFetch =
 
         prunedPostsByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
+
+        markServer server dict =
+            let
+                accountId =
+                    currentAccountId server
+
+                statusIfSameAccount =
+                    Dict.get server.frontendHost dict
+                        |> Maybe.andThen
+                            (\feed ->
+                                if feed.accountId == accountId then
+                                    Just feed.status
+
+                                else
+                                    Nothing
+                            )
+            in
+            Dict.insert server.frontendHost
+                { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
+                dict
     in
     ( { model
         | postsByServer =
-            List.foldl
-                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
-                prunedPostsByServer
-                serversToFetch
+            List.foldl markServer prunedPostsByServer serversToFetch
       }
     , Effect.batch (List.map fetchEffect serversToFetch)
     )

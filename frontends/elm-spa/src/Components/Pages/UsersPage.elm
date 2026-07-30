@@ -187,13 +187,17 @@ fetchServerEffect shared model server =
         |> Effect.fromCmd
 
 
-{-| Fetches `serversToFetch` (marking each `Loading` first) using the current
-`model.searchText`, and drops any already-fetched server that's no longer a
-`candidateServers` member -- shared by `fetchNewServers` (which only passes
-the servers that actually need it) and `applySearchChange` (which always
-passes every `candidateServers` member, since a changed search must re-fetch
-everything regardless of whether that server's acting account also happens to
-have changed) -- mirrors `Components.Pages.PostsPage.refetchServers` exactly.
+{-| Fetches `serversToFetch` using the current `model.searchText`, and drops
+any already-fetched server that's no longer a `candidateServers` member --
+shared by `fetchNewServers` (which only passes the servers that actually need
+it) and `applySearchChange` (which always passes every `candidateServers`
+member, since a changed search must re-fetch everything regardless of whether
+that server's acting account also happens to have changed) -- mirrors
+`Components.Pages.PostsPage.refetchServers`, including its same-account
+`status`-preserving departure from a plain `Loading` reset -- see that
+module's own doc comment for why (a server already `Loaded` under the same
+acting account keeps its last-known users on screen while re-fetching, rather
+than flickering every card out and back in via `syncAnimations`).
 -}
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
@@ -210,13 +214,30 @@ refetchServers shared model serversToFetch =
 
         prunedUsersByServer =
             Dict.filter (\host _ -> List.member host (List.map .frontendHost servers)) model.usersByServer
+
+        markServer server dict =
+            let
+                accountId =
+                    currentAccountId server
+
+                statusIfSameAccount =
+                    Dict.get server.frontendHost dict
+                        |> Maybe.andThen
+                            (\feed ->
+                                if feed.accountId == accountId then
+                                    Just feed.status
+
+                                else
+                                    Nothing
+                            )
+            in
+            Dict.insert server.frontendHost
+                { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
+                dict
     in
     ( { model
         | usersByServer =
-            List.foldl
-                (\server -> Dict.insert server.frontendHost { status = Loading, accountId = currentAccountId server })
-                prunedUsersByServer
-                serversToFetch
+            List.foldl markServer prunedUsersByServer serversToFetch
       }
     , Effect.batch (List.map fetchEffect serversToFetch)
     )
