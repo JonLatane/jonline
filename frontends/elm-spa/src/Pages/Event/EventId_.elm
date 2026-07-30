@@ -33,6 +33,7 @@ import Page
 import Ports
 import Process
 import Proto.Jonline exposing (Event, EventInstance, Post)
+import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
@@ -719,7 +720,26 @@ eventDetailView shared model event instance =
 
             Nothing ->
                 text ""
+        , syncedFromView event
         ]
+
+
+{-| One small-text, clipped-not-wrapped line at the bottom of the event
+detail view, crediting the ICS feed this `Event` was pulled in from (see
+`Shared.EventSyncSourcesPanel`) -- renders nothing for a normal, non-synced
+event.
+-}
+syncedFromView : Event -> Html Msg
+syncedFromView event =
+    case event.eventSyncSource |> Maybe.andThen .configuration of
+        Just (Configuration.IcsSubscriptionUrl url) ->
+            div [ class "event-synced-from" ]
+                [ text "synced from "
+                , a [ href url, class "event-synced-from-link" ] [ text url ]
+                ]
+
+        _ ->
+            text ""
 
 
 {-| The date-picker strip: all 3 "switch scope" buttons (see `historyButtons`)

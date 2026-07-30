@@ -290,6 +290,7 @@ pub fn create_instance(
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
             info: json!({}),
+            event_sync_source_instance_id: None,
         })
         .get_result::<models::EventInstance>(conn)
         .map_err(|e| {

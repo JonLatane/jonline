@@ -141,8 +141,10 @@ serverRules darkMode mainTheme mainFrontendHost server =
         , colorRule (withDescendants selector ".background-color-nav") theme.navColor theme.navTextColor
         , colorRule (withDescendants selector ".background-color-primary-background") theme.primaryBgColor theme.textColor
         , borderColorRule (withDescendants selector ".border-color-primary") theme.primaryColor
+        , borderColorRule (withDescendants selector ".border-color-primary-text") theme.primaryTextColor
         , borderColorRule (withDescendants selector ".border-color-primary-anchor") theme.primaryAnchorColor
         , borderColorRule (withDescendants selector ".border-color-primary-anchor-50") (theme.primaryAnchorColor ++ "80")
+        , borderColorRule (withDescendants selector ".border-color-nav-text") theme.navTextColor
         , borderColorRule (withDescendants selector ".hover-border-color-primary-anchor:hover") theme.primaryAnchorColor
         , textColorRule (selector ++ ".post-star.starred") theme.primaryAnchorColor
         , backgroundOnlyColorRule (selector ++ ".post-card-current .post-star") (theme.backgroundColor ++ "80")

@@ -24,6 +24,18 @@ posixToTimestamp posix =
     { seconds = Int64.fromInts 0 (Time.posixToMillis posix // 1000), nanos = 0 }
 
 
+{-| The inverse of `int64ToInt` -- safe for any value that fits in a plain
+`Int` (which is all this app ever builds one from, e.g.
+`Shared.EventSyncSourcesPanel`'s `syncIntervalSeconds`, capped at 1 day in
+seconds), same 32-bit-until-2038 caveat `posixToTimestamp` already documents
+for the same reason (`Int64.fromInts` splits a value across two 32-bit
+halves, and this always passes `0` for the high half).
+-}
+int64FromInt : Int -> Int64.Int64
+int64FromInt value =
+    Int64.fromInts 0 value
+
+
 int64ToInt : Int64.Int64 -> Int
 int64ToInt value =
     let

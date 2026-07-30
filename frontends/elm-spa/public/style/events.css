@@ -103,6 +103,22 @@
   color: var(--muted);
 }
 
+/* Credits the ICS feed an `Event` was synced from (see
+   `Shared.EventSyncSourcesPanel`) -- one clipped, not wrapped, line at the
+   bottom of the event detail view. */
+.event-synced-from {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.event-synced-from-link {
+  color: inherit;
+}
+
 /* The date-picker strip -- see Pages/Event/EventId_.elm's
    `instanceHistoryView`. Sits between the Event's own Post and the
    currently-viewed EventInstance's start/end/location block. */
@@ -292,7 +308,7 @@
 
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
-  align-items: flex-start;
+  align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;

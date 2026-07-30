@@ -103,6 +103,8 @@ export enum Permission {
   MODERATE_EVENTS = 34,
   /** RSVP_TO_EVENTS - Allow the user to RSVP to events that allow RSVPs. */
   RSVP_TO_EVENTS = 35,
+  /** SYNCHRONIZE_EVENTS - Allow the user to synchronize events from outside sources. */
+  SYNCHRONIZE_EVENTS = 36,
   /**
    * VIEW_MEDIA - Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
    * Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
@@ -217,6 +219,9 @@ export function permissionFromJSON(object: any): Permission {
     case 35:
     case "RSVP_TO_EVENTS":
       return Permission.RSVP_TO_EVENTS;
+    case 36:
+    case "SYNCHRONIZE_EVENTS":
+      return Permission.SYNCHRONIZE_EVENTS;
     case 40:
     case "VIEW_MEDIA":
       return Permission.VIEW_MEDIA;
@@ -305,6 +310,8 @@ export function permissionToJSON(object: Permission): string {
       return "MODERATE_EVENTS";
     case Permission.RSVP_TO_EVENTS:
       return "RSVP_TO_EVENTS";
+    case Permission.SYNCHRONIZE_EVENTS:
+      return "SYNCHRONIZE_EVENTS";
     case Permission.VIEW_MEDIA:
       return "VIEW_MEDIA";
     case Permission.CREATE_MEDIA:

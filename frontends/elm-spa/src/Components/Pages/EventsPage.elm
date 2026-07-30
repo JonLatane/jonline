@@ -200,6 +200,7 @@ wait on anything. Without one, this starts on `UpcomingEvents` with
 `refetchServers`'s own guard) until the `Task.perform GotNow Time.now`
 below resolves and supplies a real cutoff; see `Model.endsAfter`'s own doc
 for why that matters.
+
 -}
 init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
 init shared author navKey path query =
@@ -428,7 +429,7 @@ being less to measure/animate.
 -}
 maxDisplayedEvents : Int
 maxDisplayedEvents =
-    20
+    60
 
 
 {-| `model.eventAnimations`, soonest-first (mirrors `PostsPage.postsListView`'s
@@ -901,7 +902,7 @@ UTC timestamp, via `Shared.Conversions.isoUtcString`, only while
 it entirely, same "round-trip to/from absence" convention `display` already
 uses for its own default). Built as one combined list (rather than each
 concern pushing its own `replaceUrl` independently) because
-`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the *whole*
+`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
 query string -- two independent single-param pushes would each silently
 wipe out whatever the other had just set.
 -}
@@ -943,6 +944,7 @@ still ends up correct even when there's no slide to wait on.
 
 Tab/`endsAfter` changes have no such animation to race, so `TabChanged`/
 `EndsAfterInputChanged` call `pushUrl` directly instead.
+
 -}
 pushUrlWhenIdle : Model -> Effect Msg
 pushUrlWhenIdle model =
@@ -967,13 +969,20 @@ pushUrl model =
 -- VIEW
 
 
-view : Shared.Model -> Model -> Html Msg
-view shared model =
+{-| `homeEmbedded` is `True` only for `Pages.Home_`'s own copy of this view
+(rendered above its posts feed, fixed to `HorizontalList`/"Row" -- see
+`Pages.Home_.init`'s `defaultedEventsModel`) -- it, together with
+`shared.adminPanel.showAllEventLayouts`, decides which (if any) of
+`modeButtonsView`'s layout buttons show; see that function's own doc for the
+full visibility rules.
+-}
+view : Shared.Model -> Bool -> Model -> Html Msg
+view shared homeEmbedded model =
     div []
         [ authorHeadingView shared model.author
         , div [ class "events-controls-row" ]
             [ tabsView shared model
-            , modeButtonsView model.mode
+            , modeButtonsView shared homeEmbedded model.mode
             ]
         , eventsListView shared model
         ]
@@ -1071,17 +1080,46 @@ tabsView shared model =
         ]
 
 
-{-| The 3 layout-switch buttons (see `EventsDisplayMode`), always all 3,
-highlighted (`background-color-nav` -- unlike `tabsView`'s own tabs, which
-use `background-color-primary`, so the two rows read as visually distinct
-kinds of control sharing one row) for `current`, and pushed to the row's
-right edge (see `events.css`'s `.events-controls-row`/`.events-mode-buttons`)
--- mirrors `Pages.Event.EventId_.historyButtonView`'s pill styling.
+{-| The layout-switch buttons (see `EventsDisplayMode`), highlighted
+(`background-color-nav` -- unlike `tabsView`'s own tabs, which use
+`background-color-primary`, so the two rows read as visually distinct kinds
+of control sharing one row) for `current`, and pushed to the row's right edge
+(see `events.css`'s `.events-controls-row`/`.events-mode-buttons`) -- mirrors
+`Pages.Event.EventId_.historyButtonView`'s pill styling.
+
+Which buttons show (if any) depends on `homeEmbedded` (see `view`'s own doc)
+and the "Show all event layouts" admin setting
+(`shared.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
+
+  - The setting on: all 3, everywhere -- the same as this used to always
+    render, before `homeEmbedded`/the setting existed.
+  - `Pages.Home_`'s embedded copy, setting off: none at all -- that copy is
+    fixed to `HorizontalList`/"Row" (see `Pages.Home_.init`), so there's
+    nothing useful to switch between.
+  - Every other (standalone) page, setting off: `VerticalList`/`Grid` only --
+    "Row" is `Pages.Home_`'s own look; hidden elsewhere so it doesn't read as
+    an equally-supported standalone layout.
+
 -}
-modeButtonsView : EventsDisplayMode -> Html Msg
-modeButtonsView current =
-    div [ class "events-mode-buttons" ]
-        (List.map (modeButtonView current) [ VerticalList, Grid, HorizontalList ])
+modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
+modeButtonsView shared homeEmbedded current =
+    let
+        visibleModes =
+            if shared.adminPanel.showAllEventLayouts then
+                [ VerticalList, Grid, HorizontalList ]
+
+            else if homeEmbedded then
+                []
+
+            else
+                [ VerticalList, Grid ]
+    in
+    if List.isEmpty visibleModes then
+        text ""
+
+    else
+        div [ class "events-mode-buttons" ]
+            (List.map (modeButtonView current) visibleModes)
 
 
 modeButtonView : EventsDisplayMode -> EventsDisplayMode -> Html Msg

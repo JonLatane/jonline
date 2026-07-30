@@ -76,6 +76,8 @@ enum Permission {
   MODERATE_EVENTS = 34;
   // Allow the user to RSVP to events that allow RSVPs.
   RSVP_TO_EVENTS = 35;
+  // Allow the user to synchronize events from outside sources.
+  SYNCHRONIZE_EVENTS = 36;
 
   // Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
   // Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*

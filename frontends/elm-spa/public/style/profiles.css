@@ -362,3 +362,64 @@
 .profile-error {
   color: var(--muted);
 }
+
+/* Shared.EventSyncSourcesPanel, embedded on UserProfilePage below permissions. */
+
+.event-sync-sources-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.event-sync-sources-header {
+  font-weight: 600;
+}
+
+.event-sync-sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.event-sync-sources-message {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.event-sync-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.event-sync-source-url {
+  flex: 1 1 16rem;
+  min-width: 10rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.event-sync-source-interval {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.event-sync-source-last-synced {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.event-sync-source-error {
+  flex-basis: 100%;
+  color: var(--danger);
+  font-size: 0.8rem;
+}

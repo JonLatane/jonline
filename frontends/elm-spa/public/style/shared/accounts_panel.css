@@ -1,9 +1,14 @@
-/* Nav-right: accounts menu (+ starred posts/admin menus) */
+/* Nav-right: accounts menu */
 
 .nav-right {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  /* Vertical `auto` centers it within `.nav-links`' row height (set by
+     `.nav-link-home`, nav.css) now that `.navbar-inner` carries no padding
+     of its own; horizontal 2px mirrors `.nav-link-home`'s own inset on the
+     opposite edge -- see `.navbar-inner`'s comment (nav.css). */
+  margin: auto 2px;
 }
 
 /* The Accounts Panel's tab bar: tabs (Accounts and Servers/Settings/Admin, see
@@ -76,8 +81,7 @@
   font-size: 0.95rem;
 }
 
-.accounts-menu,
-.admin-menu {
+.accounts-menu {
   position: relative;
   display: flex;
 }

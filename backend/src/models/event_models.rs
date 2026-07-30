@@ -2,7 +2,7 @@ use std::time::SystemTime;
 
 use diesel::*;
 
-use crate::schema::{event_attendances, event_instances, events};
+use crate::schema::{event_attendances, event_instances, event_sync_sources, events};
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct Event {
@@ -11,6 +11,7 @@ pub struct Event {
     pub info: serde_json::Value,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
+    pub event_sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Insertable)]
@@ -18,6 +19,7 @@ pub struct Event {
 pub struct NewEvent {
     pub post_id: i64,
     pub info: serde_json::Value,
+    pub event_sync_source_id: Option<i64>,
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]
@@ -32,6 +34,7 @@ pub struct EventInstance {
     pub location: Option<serde_json::Value>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
+    pub event_sync_source_instance_id: Option<String>,
 }
 
 #[derive(Debug, Insertable)]
@@ -43,6 +46,26 @@ pub struct NewEventInstance {
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
     pub location: Option<serde_json::Value>,
+    pub event_sync_source_instance_id: Option<String>,
+}
+
+#[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
+pub struct EventSyncSource {
+    pub id: i64,
+    pub user_id: i64,
+    pub sync_interval_seconds: i64,
+    pub configuration: serde_json::Value,
+    pub last_synced_at: Option<SystemTime>,
+    pub created_at: SystemTime,
+    pub updated_at: Option<SystemTime>,
+}
+
+#[derive(Debug, Insertable)]
+#[diesel(table_name = event_sync_sources)]
+pub struct NewEventSyncSource {
+    pub user_id: i64,
+    pub sync_interval_seconds: i64,
+    pub configuration: serde_json::Value,
 }
 
 #[derive(Debug, Queryable, Identifiable, Associations, AsChangeset, Clone)]

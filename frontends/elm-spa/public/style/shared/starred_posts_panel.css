@@ -1,3 +1,16 @@
+/* Wraps just the Starred Posts toggle button (`UI.elm`'s
+   `starredPostsToggle`) -- same bare `position: relative; display: flex;`
+   as `.accounts-menu` (accounts_panel.css), so `.starred-posts-count-badge`
+   below has a positioned ancestor to anchor its own corner placement to.
+   `flex-shrink: 0` keeps it (and the fixed-size toggle inside it) from
+   being squeezed by `.nav-links-scroll` (nav.css) -- same reasoning as
+   `.nav-link:not(.nav-link-home)`'s own `flex-shrink: 0` there. */
+.starred-posts-menu {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+}
+
 .starred-posts-panel,
 .nav-panel.starred-posts-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
@@ -8,72 +21,59 @@
 
   /* Unlike the Accounts Panel, this one is rendered by `UI.elm`'s
      `starredPostsPanel` as a direct child of `.navbar` itself (see
-     `headerNav`) rather than of its toggle's own `.admin-menu` wrapper, so
-     `left` here is in `.navbar`'s own coordinates -- and since `.navbar`
-     spans the full viewport width with no side margins, that's the same as
-     the screen's coordinates too.
+     `headerNav`) rather than of its toggle's own `.starred-posts-menu`
+     wrapper, so `left` here is in `.navbar`'s own coordinates -- and since
+     `.navbar` spans the full viewport width with no side margins, that's the
+     same as the screen's coordinates too.
 
      Wants to hang as far left as it can while staying attached below its
      toggle (the star button in `.nav-links`, after the Home link), but never
      spill left of the Home link's own left edge -- crowding out/overlapping
      the Home link would read as covering nav chrome rather than just
-     dropping down from the toggle. Both `16px` (the Home link's left edge,
-     i.e. `.navbar-inner`'s 1rem padding, once narrow enough that its
-     `max-width: 800px` isn't centering it away from 0) and `188px` (the
-     toggle's own right edge from that same origin -- the Home link's
-     rendered width + `.nav-links`' gap + the toggle's own ~35px) are
-     measured relative to `.navbar-inner`'s left edge; `max(0px, (100vw -
-     800px) / 2)` mirrors `.navbar-inner`'s own centering math for wider
-     viewports (its `margin: 0 auto` drifting everything inside it rightward
-     by half the excess over 800px) and is common to both, so it factors out
-     of the inner `max()` entirely. Since this panel (360px) is wider than
-     the ~172px gap between the Home link's left edge and the toggle's right
-     edge, attaching flush to the toggle would always spill past the Home
-     link regardless of viewport width -- so in practice this always resolves
-     to the Home link's left edge, extending rightward past the toggle; the
-     `max()` is still written generally (rather than hardcoded to just the
-     Home link's edge) so it keeps doing the right thing if the panel or
-     toggle's width ever changes enough to close that gap. */
+     dropping down from the toggle. Both `2px` (the Home link's left edge,
+     i.e. `.nav-link-home`'s own margin, nav.css -- `.navbar-inner` itself
+     carries no padding of its own anymore) and `188px` (the toggle's own
+     right edge from that same origin -- the Home link's rendered width +
+     `.nav-links`' gap + the toggle's own ~35px) are measured relative to
+     `.navbar-inner`'s left edge; `max(0px, (100vw - 800px) / 2)` mirrors
+     `.navbar-inner`'s own centering math for wider viewports (its `margin: 0
+     auto` drifting everything inside it rightward by half the excess over
+     800px) and is common to both, so it factors out of the inner `max()`
+     entirely. Since this panel (360px) is wider than the ~186px gap between
+     the Home link's left edge and the toggle's right edge, attaching flush
+     to the toggle would always spill past the Home link regardless of
+     viewport width -- so in practice this always resolves to the Home
+     link's left edge, extending rightward past the toggle; the `max()` is
+     still written generally (rather than hardcoded to just the Home link's
+     edge) so it keeps doing the right thing if the panel or toggle's width
+     ever changes enough to close that gap. Holds at this same flat `2px`
+     inset at every viewport width now, not just narrow ones -- unlike
+     `.navbar-inner`'s old padding, `.nav-link-home`'s margin doesn't grow on
+     wider screens, so there's no longer a separate phone-width override to
+     keep in sync with here. */
   right: auto;
-  left: calc(max(0px, (100vw - 800px) / 2) + max(16px, 188px - var(--panel-width)));
+  left: calc(max(0px, (100vw - 800px) / 2) + max(2px, 188px - var(--panel-width)));
 
   /* The base `.nav-panel` rule's `top: 100%` means something different here
      than it does for the Accounts Panel: that one's relative to its own
      toggle's own (already button-height-tall) box, but this one's relative
      to the full `.navbar` (see the `left` comment above for why) -- so
      `100%` would sit below `.navbar`'s whole content, breadcrumbs bar
-     included, rather than flush against just the toggle. Computed directly
-     from the two constants that actually place the toggle's bottom edge
-     within `.navbar` instead -- `.navbar-inner`'s own top padding (nav.css)
-     plus the fixed toggle height (--nav-toggle-height, main.css) -- so this
-     stays correct regardless of whether a breadcrumbs bar is also present
-     below the toggle row. */
-  top: calc(0.75rem + var(--nav-toggle-height) - 1px);
-}
-
-/* Phone-width screens: `.navbar-inner`'s left/right padding is trimmed to a
-   hairline 2px above, so the panel's left edge needs its own tighter offset
-   (2px, matching that padding, not the full 16px) to stay flush with the Home
-   link's new position instead of sitting well right of it. `(100vw - 800px) /
-   2` is always 0 in this breakpoint (max 639px is nowhere near the 800px it'd
-   need to go positive), so the base rule's full `calc()` collapses to this
-   flat value here. Repeats the base rule's own compound selector (rather than
-   just `.starred-posts-panel`) so this actually wins on specificity -- the
-   element always carries both classes at once, so a plain single-class
-   override here would lose the cascade to the base rule's higher-specificity
-   `.nav-panel.starred-posts-panel`, media query or not. */
-@media (max-width: 639px) {
-
-  .starred-posts-panel,
-  .nav-panel.starred-posts-panel {
-    left: 2px;
-  }
+     included, rather than flush against just the toggle. `12px` is the
+     toggle's own vertical centering inset within `.nav-links`' row --
+     `.nav-links-scroll` (nav.css) is exactly as tall as `.nav-link-home`
+     (68px: its 64px logo plus 2px margin top and bottom), and the toggle
+     itself is a fixed `--nav-toggle-height` (44px) centered within that via
+     `.nav-links-scroll`'s own `align-items: center`, leaving (68 - 44) / 2 =
+     12px above it -- so this stays correct regardless of whether a
+     breadcrumbs bar is also present below the toggle row. */
+  top: calc(12px + var(--nav-toggle-height) - 1px);
 }
 
 /* Notification-style count bubble on the Starred Posts toggle's corner --
-   positioned relative to `.admin-menu` (see `.accounts-menu, .admin-menu`
-   above), which wraps just the toggle button with no extra layout box of its
-   own, so this lines up with the button's own corner. Its background/text
+   positioned relative to `.starred-posts-menu` (above), which wraps just the
+   toggle button with no extra layout box of its own, so this lines up with
+   the button's own corner. Its background/text
    color come from the emitted `mainFrontendHost background-color-nav` rule
    (navColor/navTextColor -- see `UI.EmittedStylesheet`), same as e.g. the
    Login form's buttons, rather than a fixed color here. */
@@ -88,8 +88,10 @@
   border-radius: 999px;
   font-size: 0.65rem;
   font-weight: 700;
-  line-height: 16px;
+  /* line-height: 16px; */
   text-align: center;
+  border-width: 2px;
+  border-style: solid;
 }
 
 .starred-posts-header {

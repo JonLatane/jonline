@@ -11,7 +11,7 @@ use crate::db_connection::{establish_test_pool, PgPool, PgPooledConnection, MIGR
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{follows, group_posts, groups, memberships, posts, users};
+use crate::schema::{event_sync_sources, follows, group_posts, groups, memberships, posts, users};
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
 /// binary process, since `Once`/`lazy_static` state doesn't cross the parallel test threads
@@ -291,4 +291,52 @@ pub fn create_follow_with_moderation(
         })
         .get_result::<models::Follow>(conn)
         .expect("failed to create test follow")
+}
+
+/// Inserts an `event_sync_sources` row directly (bypassing `rpcs::create_event_sync_source`, so
+/// no sync/HTTP fetch happens) -- for specs that only care about ownership/permission handling,
+/// not the actual sync. Specs exercising sync itself should go through the RPC/logic functions
+/// against a `serve_ics`-backed URL instead.
+pub fn create_event_sync_source_row(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    ics_subscription_url: &str,
+) -> models::EventSyncSource {
+    insert_into(event_sync_sources::table)
+        .values(&models::NewEventSyncSource {
+            user_id: user.id,
+            sync_interval_seconds: 3600,
+            configuration: serde_json::json!({ "ics_subscription_url": ics_subscription_url }),
+        })
+        .get_result::<models::EventSyncSource>(conn)
+        .expect("failed to create test event sync source")
+}
+
+/// Starts a background thread serving `ics_text` as `text/calendar` for every HTTP request it
+/// receives (looping for the life of the test process -- there's no teardown, same as any other
+/// test-scoped leaked thread), and returns the `http://127.0.0.1:<port>/...` URL to fetch it
+/// from. Keeps sync specs hermetic: real network calls in a test suite are flaky and slow, so
+/// `sync_event_sync_source` (which always does a real HTTP fetch, unlike
+/// `sync_event_sync_source_text`) is exercised against this instead of the public internet.
+pub fn serve_ics(ics_text: &str) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test ICS server");
+    let port = listener.local_addr().expect("failed to read test ICS server port").port();
+    let body = ics_text.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 2048];
+            let _ = stream.read(&mut buf);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/calendar\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}/test.ics")
 }

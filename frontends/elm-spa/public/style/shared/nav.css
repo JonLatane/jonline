@@ -40,25 +40,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-}
-
-/* Phone-width screens: claw back nearly all of the navbar's left/right
-   padding -- 1rem on each side is space worth reclaiming when the whole
-   navbar is barely wider than the Home/Accounts buttons themselves. Left/
-   right are trimmed to a hairline 2px (rather than 0) so the Home and
-   Accounts buttons don't butt straight up against the screen edge; top/
-   bottom padding is untouched. Tablet and up keep the original padding.
-   Shares its 639px breakpoint with `.starred-posts-panel`'s own
-   narrow-screen override below (search this file for `639px`) -- CSS
-   custom properties can't be used inside `@media` feature values (no
-   `@custom-media` support in browsers), so there's no way to define this
-   once; keep both in sync by hand if it ever changes. */
-@media (max-width: 639px) {
-  .navbar-inner {
-    padding-left: 2px;
-    padding-right: 2px;
-  }
+  /* No padding of its own -- the Home link (`.nav-link-home`'s own 2px
+     margin) and the Accounts menu (`.nav-right`'s own 2px margin, see
+     accounts_panel.css) carry their own edge insets instead, so the row's
+     total height comes purely from its tallest child (`.nav-link-home`, see
+     its own comment) rather than padding stacking on top of it too. Also
+     what lets `.nav-links-scroll` (below) sit flush against both of them
+     with zero wasted space around its own scrollable box. */
+  padding: 0;
 }
 
 /* Covers everything below/behind the nav for every panel that closes via a
@@ -101,6 +90,32 @@
   min-width: 0;
 }
 
+/* Everything in .nav-links except the Home link -- Starred Posts, Events,
+   Posts, People -- so on a narrow screen this row scrolls horizontally
+   instead of wrapping/overflowing the Home link and .nav-right's Accounts
+   menu, both of which stay put outside this wrapper. Zero margin of its
+   own, so it's flush top-to-bottom against `.nav-links`' row height (set by
+   `.nav-link-home`, its tallest sibling) with no gap for a vertically-
+   overflowing child to get clipped into -- `overflow-x: auto` forces
+   `overflow-y` to compute to `auto` too (the CSS spec converts a `visible`
+   cross-axis overflow to `auto` as soon as the other axis isn't `visible`),
+   so anything taller than this box's own height would get silently clipped
+   instead of just scrolling sideways. Left at the default `flex-shrink: 1`
+   (rather than 0) so under real space pressure *this box itself* shrinks
+   below its icons' combined width -- `min-width: 0` is what lets that
+   shrinking go below the content's own size -- revealing the horizontal
+   scrollbar instead of ever squeezing an individual icon or clipping
+   `.nav-link-home` (which has its own `min-width` floor, see below, so this
+   is the side that actually gives first). */
+.nav-links-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin: 0;
+  overflow-x: auto;
+  min-width: 0;
+}
+
 /* Button-styled nav links. No background/text color of their own -- they
    inherit the navbar's primaryColor/primaryTextColor by default; the current
    page's link overrides that with the background-color-nav utility class
@@ -108,16 +123,40 @@
 .nav-link {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   text-decoration: none;
   color: inherit;
-  padding: 0.4rem 0.9rem;
-  border-radius: 14px;
-  margin-top: -10px;
-  margin-bottom: -10px;
+  border-radius: 16px;
 }
 
 .nav-link:hover {
   opacity: 0.85;
+}
+
+/* Events/Posts/People (everything in `.nav-links-scroll` except the
+   circular Starred Posts toggle, which sizes itself via
+   `.nav-menu-toggle.circular`) -- portrait-oriented rectangles, taller than
+   they are wide, rather than the small horizontal pill this used to be:
+   `--nav-toggle-height` (44px, main.css -- the same thumb-safe width the
+   Starred Posts/Accounts toggles use) keeps the tap target wide enough for
+   a thumb, while the height leans on nearly the full row (set by
+   `.nav-link-home`'s 64px logo) so they read as tall buttons rather than
+   small icons. `:not(.nav-link-home)` rather than a dedicated class, since
+   every one of these is already just a plain `.nav-link` in `UI.elm`
+   (`eventsLink`/`postsLink`/`peopleLink`) with nothing else to hook a
+   selector onto. `flex-shrink: 0` keeps this fixed size no matter how
+   little room `.nav-links-scroll` (its shrinkable flex parent, above) ends
+   up with -- without it, the flex algorithm would rather shrink these
+   buttons down than let the container's own box go narrower than its
+   content, defeating the point of that container's `overflow-x: auto`
+   (nothing would ever actually overflow it to scroll). `.starred-posts-menu`
+   (starred_posts_panel.css), this row's other child, carries the same
+   `flex-shrink: 0` for the same reason. */
+.nav-link:not(.nav-link-home) {
+  width: var(--nav-toggle-height);
+  height: 64px;
+  padding: 0;
+  flex-shrink: 0;
 }
 
 /* The Home link swaps in the browsing server's RegularServerLogo (glyph +
@@ -127,26 +166,33 @@
    glyph-above-name/fixed glyph size, which is why the width/height rules
    below override .server-name-and-logo.regular's defaults from
    AccountsPanel.elm's CSS instead of just reusing them) with the
-   left-aligned name stack to its right, plus a negative top/bottom margin so
-   the taller button overflows the navbar row instead of stretching it -- the
-   row's own height is otherwise fixed at --nav-toggle-height (main.css, see
-   accounts_panel.css's `.accounts-menu-toggle`), which this button's 64px
-   min-height nets down to exactly via -10px/-10px. `border-radius` is
-   dialed back from .nav-link's pill shape -- a stadium radius on a shape this
-   much taller than it is wide reads as an odd rounded-off oval rather than a
-   button, so a fixed radius is used instead. */
+   left-aligned name stack to its right. Its 64px-tall logo (see below) is
+   what sets `.nav-links`' whole row height -- `.nav-links-scroll` and
+   `.nav-right` (accounts_panel.css) just carry their own small margins
+   rather than fixing a height explicitly, so this is the one place that
+   actually does. `border-radius` is dialed back from .nav-link's pill shape
+   -- a stadium radius on a shape this much taller than it is wide reads as
+   an odd rounded-off oval rather than a button, so a fixed radius is used
+   instead. */
 .nav-link-home {
   align-items: stretch;
+  /* A small inset from `.navbar-inner`'s own (now padding-less) edges --
+     see `.navbar-inner`'s own comment. */
+  margin: 2px;
   /* No top/bottom/left padding -- the logo (see below) sits flush against
      those three edges, flush enough that it'd otherwise poke past the
      button's own rounded corners, hence `overflow: hidden` here too. */
   padding: 0 0.6rem 0 0;
   overflow: hidden;
-  /* border-radius: 14px;
-  margin-top: -10px;
-  margin-bottom: -10px; */
-  /* See .nav-links' min-width comment -- same reasoning, one level down. */
-  min-width: 0;
+  /* A floor, not a full `min-width: 0` -- large enough to always fit the
+     glyph (64px, flex-shrink: 0 below) plus its right padding and gap, with
+     a little room left over for at least a sliver of ellipsized name text,
+     so this can still shrink (letting the name ellipsize) under moderate
+     space pressure the way it always has, but stops well before the glyph
+     itself would run out of room and get clipped by `overflow: hidden`
+     above -- `.nav-links-scroll` (its flex sibling, left fully shrinkable)
+     is what absorbs space pressure beyond this floor instead. */
+  min-width: 142px;
 }
 
 .nav-link-home .server-name-and-logo.regular {

@@ -152,6 +152,6 @@ view shared req model =
                     p [ class "posts-empty" ] [ text "Loading…" ]
 
                 Events eventsModel ->
-                    Html.map EventsMsg (EventsPage.view shared eventsModel)
+                    Html.map EventsMsg (EventsPage.view shared False eventsModel)
             ]
     }

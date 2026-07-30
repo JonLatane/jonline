@@ -711,6 +711,9 @@ permissionText permission =
         RSVPTOEVENTS ->
             "RSVP To Events"
 
+        SYNCHRONIZEEVENTS ->
+            "Synchronize Events"
+
         VIEWMEDIA ->
             "View Media"
 
@@ -775,6 +778,7 @@ allPermissions =
     , PUBLISHEVENTSGLOBALLY
     , MODERATEEVENTS
     , RSVPTOEVENTS
+    , SYNCHRONIZEEVENTS
     , VIEWMEDIA
     , CREATEMEDIA
     , PUBLISHMEDIALOCALLY

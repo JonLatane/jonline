@@ -28,6 +28,19 @@ diesel::table! {
         location -> Nullable<Jsonb>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        event_sync_source_instance_id -> Nullable<Varchar>,
+    }
+}
+
+diesel::table! {
+    event_sync_sources (id) {
+        id -> Int8,
+        user_id -> Int8,
+        sync_interval_seconds -> Int8,
+        configuration -> Jsonb,
+        last_synced_at -> Nullable<Timestamp>,
+        created_at -> Timestamp,
+        updated_at -> Nullable<Timestamp>,
     }
 }
 
@@ -38,6 +51,7 @@ diesel::table! {
         info -> Jsonb,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        event_sync_source_id -> Nullable<Int8>,
     }
 }
 
@@ -295,6 +309,8 @@ diesel::table! {
 diesel::joinable!(event_attendances -> event_instances (event_instance_id));
 diesel::joinable!(event_instances -> events (event_id));
 diesel::joinable!(event_instances -> posts (post_id));
+diesel::joinable!(event_sync_sources -> users (user_id));
+diesel::joinable!(events -> event_sync_sources (event_sync_source_id));
 diesel::joinable!(events -> posts (post_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
@@ -319,6 +335,7 @@ diesel::joinable!(user_refresh_tokens -> users (user_id));
 diesel::allow_tables_to_appear_in_same_query!(
     event_attendances,
     event_instances,
+    event_sync_sources,
     events,
     federated_accounts,
     federated_profiles,

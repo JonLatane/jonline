@@ -66,6 +66,7 @@
   
 - [events.proto](#events-proto)
     - [AnonymousAttendee](#jonline-AnonymousAttendee)
+    - [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest)
     - [Event](#jonline-Event)
     - [EventAttendance](#jonline-EventAttendance)
     - [EventAttendances](#jonline-EventAttendances)
@@ -73,7 +74,9 @@
     - [EventInstance](#jonline-EventInstance)
     - [EventInstanceInfo](#jonline-EventInstanceInfo)
     - [EventInstanceRsvpInfo](#jonline-EventInstanceRsvpInfo)
+    - [EventSyncSource](#jonline-EventSyncSource)
     - [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest)
+    - [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse)
     - [GetEventsRequest](#jonline-GetEventsRequest)
     - [GetEventsResponse](#jonline-GetEventsResponse)
     - [TimeFilter](#jonline-TimeFilter)
@@ -614,6 +617,7 @@ and to Group non-members via [`non_member_permissions` in `Group`](#jonline-Grou
 | PUBLISH_EVENTS_GLOBALLY | 33 | Allow the user to publish events with `GLOBAL_PUBLIC` visibility. |
 | MODERATE_EVENTS | 34 | Allow the user to moderate events. |
 | RSVP_TO_EVENTS | 35 | Allow the user to RSVP to events that allow RSVPs. |
+| SYNCHRONIZE_EVENTS | 36 | Allow the user to synchronize events from outside sources. |
 | VIEW_MEDIA | 40 | Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.* Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.* |
 | CREATE_MEDIA | 41 | Allow the user to create media of `PRIVATE` and `LIMITED` visibility. *Not currently enforced.* |
 | PUBLISH_MEDIA_LOCALLY | 42 | Allow the user to publish media with `SERVER_PUBLIC` visibility. *Not currently enforced.* |
@@ -1347,6 +1351,22 @@ make them visible to the event creator.
 
 
 
+<a name="jonline-DeleteEventSyncSourceRequest"></a>
+
+### DeleteEventSyncSourceRequest
+Request to delete an EventSyncSource.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| source | [EventSyncSource](#jonline-EventSyncSource) |  | The source to be deleted. |
+| delete_synced_events | [bool](#bool) |  | Whether to delete synced events. |
+
+
+
+
+
+
 <a name="jonline-Event"></a>
 
 ### Event
@@ -1362,6 +1382,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (names). Its `PostContext` should be `EVENT`. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
+| event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning it should not be editable) |
 
 
 
@@ -1450,6 +1471,7 @@ a `Location`, and an optional `Post` (and discussion thread) specific to this pa
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#jonline-Location) | optional | The location of the event. |
+| event_sync_source_instance_id | [string](#string) | optional | If this instance&#39;s `Event` was synced from an |
 
 
 
@@ -1496,6 +1518,27 @@ Curently, the `optional` counts below are *never* returned by the API.
 
 
 
+<a name="jonline-EventSyncSource"></a>
+
+### EventSyncSource
+A user-owned source to sync events from.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| id | [string](#string) |  | Unique ID for the synchronization. |
+| owner | [Author](#jonline-Author) |  | The user information for the owner of this event sync. |
+| sync_interval_seconds | [uint64](#uint64) |  | How frequently the sync should happen in seconds. |
+| created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
+| updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
+| last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
+| ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
+
+
+
+
+
+
 <a name="jonline-GetEventAttendancesRequest"></a>
 
 ### GetEventAttendancesRequest
@@ -1506,6 +1549,21 @@ Request to get RSVP data for an event.
 | ----- | ---- | ----- | ----------- |
 | event_instance_id | [string](#string) |  | The ID of the event to get RSVP data for. |
 | anonymous_attendee_auth_token | [string](#string) | optional | If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.) |
+
+
+
+
+
+
+<a name="jonline-GetEventSyncSourcesResponse"></a>
+
+### GetEventSyncSourcesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| sources | [EventSyncSource](#jonline-EventSyncSource) | repeated |  |
 
 
 

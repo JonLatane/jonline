@@ -113,6 +113,43 @@ message Event {
   EventInfo info = 3;
   // A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   repeated EventInstance instances = 4;
+
+  // If the event was synced from a source (meaning it should not be editable)
+  optional EventSyncSource event_sync_source = 5;
+}
+
+// A user-owned source to sync events from.
+message EventSyncSource {
+  // Unique ID for the synchronization.
+  string id = 1;
+  // The user information for the owner of this event sync.
+  Author owner = 2;
+  // How frequently the sync should happen in seconds.
+  uint64 sync_interval_seconds = 3;
+
+  // The time the EventSyncSource was created.
+  google.protobuf.Timestamp created_at = 4;
+  // The time the EventSyncSource was last updated.
+  optional google.protobuf.Timestamp updated_at = 5;
+  // The time the EventSyncSource was last synced.
+  optional google.protobuf.Timestamp last_synced_at = 6;
+
+  oneof configuration {
+    // The iCal subscription URL for the calendar sync.
+    string ics_subscription_url = 7;
+  }
+}
+
+message GetEventSyncSourcesResponse {
+  repeated EventSyncSource sources = 1;
+}
+
+// Request to delete an EventSyncSource.
+message DeleteEventSyncSourceRequest {
+  // The source to be deleted.
+  EventSyncSource source = 1;
+  // Whether to delete synced events.
+  bool delete_synced_events = 2;
 }
 
 // To be used for ticketing, RSVPs, etc.
@@ -152,6 +189,9 @@ message EventInstance {
   google.protobuf.Timestamp ends_at = 6;
   // The location of the event.
   optional Location location = 7;
+  
+  // If this instance's `Event` was synced from an
+  optional string event_sync_source_instance_id = 8;
 }
 
 // To be used for ticketing, RSVPs, etc.

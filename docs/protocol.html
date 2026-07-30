@@ -240,6 +240,9 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-AnonymousAttendee">AnonymousAttendee</a></p>
           </li>
           <li>
+            <p><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-Event">Event</a></p>
           </li>
           <li>
@@ -261,7 +264,13 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
             <p><a href="#jonline-EventInstanceRsvpInfo">EventInstanceRsvpInfo</a></p>
           </li>
           <li>
+            <p><a href="#jonline-EventSyncSource">EventSyncSource</a></p>
+          </li>
+          <li>
             <p><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></p>
+          </li>
+          <li>
+            <p><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></p>
           </li>
           <li>
             <p><a href="#jonline-GetEventsRequest">GetEventsRequest</a></p>
@@ -1413,6 +1422,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>RSVP_TO_EVENTS</td>
           <td>35</td>
           <td>Allow the user to RSVP to events that allow RSVPs.</td>
+        </tr>
+        <tr>
+          <td>SYNCHRONIZE_EVENTS</td>
+          <td>36</td>
+          <td>Allow the user to synchronize events from outside sources.</td>
         </tr>
         <tr>
           <td>VIEW_MEDIA</td>
@@ -3083,6 +3097,33 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-DeleteEventSyncSourceRequest"></a></p>
+    <h3 id="deleteeventsyncsourcerequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#deleteeventsyncsourcerequest"><span class="octicon octicon-link"></span></a>DeleteEventSyncSourceRequest</h3>
+    <p>Request to delete an EventSyncSource.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>source</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td></td>
+          <td>The source to be deleted.</td>
+        </tr>
+        <tr>
+          <td>delete_synced_events</td>
+          <td><a href="#bool">bool</a></td>
+          <td></td>
+          <td>Whether to delete synced events.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-Event"></a></p>
     <h3 id="event"><a class="anchor" aria-hidden="true" tabindex="-1" href="#event"><span class="octicon octicon-link"></span></a>Event</h3>
     <p>
@@ -3123,6 +3164,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#jonline-EventInstance">EventInstance</a></td>
           <td>repeated</td>
           <td>A list of instances for the Event. <em>Events will only include all instances if the request is for a single event.</em></td>
+        </tr>
+        <tr>
+          <td>event_sync_source</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>optional</td>
+          <td>If the event was synced from a source (meaning it should not be editable)</td>
         </tr>
       </tbody>
     </table>
@@ -3352,6 +3399,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>optional</td>
           <td>The location of the event.</td>
         </tr>
+        <tr>
+          <td>event_sync_source_instance_id</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>If this instance's <code>Event</code> was synced from an</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-EventInstanceInfo"></a></p>
@@ -3450,6 +3503,63 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
         </tr>
       </tbody>
     </table>
+    <p><a name="jonline-EventSyncSource"></a></p>
+    <h3 id="eventsyncsource"><a class="anchor" aria-hidden="true" tabindex="-1" href="#eventsyncsource"><span class="octicon octicon-link"></span></a>EventSyncSource</h3>
+    <p>A user-owned source to sync events from.</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>id</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>Unique ID for the synchronization.</td>
+        </tr>
+        <tr>
+          <td>owner</td>
+          <td><a href="#jonline-Author">Author</a></td>
+          <td></td>
+          <td>The user information for the owner of this event sync.</td>
+        </tr>
+        <tr>
+          <td>sync_interval_seconds</td>
+          <td><a href="#uint64">uint64</a></td>
+          <td></td>
+          <td>How frequently the sync should happen in seconds.</td>
+        </tr>
+        <tr>
+          <td>created_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td></td>
+          <td>The time the EventSyncSource was created.</td>
+        </tr>
+        <tr>
+          <td>updated_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last updated.</td>
+        </tr>
+        <tr>
+          <td>last_synced_at</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time the EventSyncSource was last synced.</td>
+        </tr>
+        <tr>
+          <td>ics_subscription_url</td>
+          <td><a href="#string">string</a></td>
+          <td></td>
+          <td>The iCal subscription URL for the calendar sync.</td>
+        </tr>
+      </tbody>
+    </table>
     <p><a name="jonline-GetEventAttendancesRequest"></a></p>
     <h3 id="geteventattendancesrequest"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventattendancesrequest"><span class="octicon octicon-link"></span></a>GetEventAttendancesRequest</h3>
     <p>Request to get RSVP data for an event.</p>
@@ -3474,6 +3584,26 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#string">string</a></td>
           <td>optional</td>
           <td>If set, and if the token has an RSVP for this even, request that RSVP data in addition to the rest of the RSVP data. (The event creator can always see and moderate anonymous RSVPs.)</td>
+        </tr>
+      </tbody>
+    </table>
+    <p><a name="jonline-GetEventSyncSourcesResponse"></a></p>
+    <h3 id="geteventsyncsourcesresponse"><a class="anchor" aria-hidden="true" tabindex="-1" href="#geteventsyncsourcesresponse"><span class="octicon octicon-link"></span></a>GetEventSyncSourcesResponse</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Type</th>
+          <th>Label</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>sources</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>repeated</td>
+          <td></td>
         </tr>
       </tbody>
     </table>

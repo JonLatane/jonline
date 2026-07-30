@@ -50,6 +50,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions exposing (timestampToPosix)
+import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Task
@@ -270,6 +271,7 @@ type Msg
     | FederatedProfileRemoveClicked FederatedAccount
     | GotFederatedProfileRemoveResult FederatedAccount (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Google.Protobuf.Empty ))
     | FollowStatusAndButtonMsg FollowStatusAndButton.Msg
+    | EventSyncSourcesMsg EventSyncSourcesPanel.Msg
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -339,8 +341,23 @@ updateInner shared msg model =
                     let
                         ( federatedModel, federatedEffect ) =
                             kickOffFederatedFetches shared user newModel
+
+                        -- Only fetched for the caller's own profile or an
+                        -- Admin viewing someone else's (matches
+                        -- `get_event_sync_sources.rs`'s own gate) -- no point
+                        -- firing a request every other visitor's just going
+                        -- to get a `PermissionDenied` back from.
+                        maybeAccount =
+                            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts newResolver.targetHost
+
+                        eventSyncSourcesEffect =
+                            if canEditProfile maybeAccount user then
+                                Effect.fromShared (Shared.EventSyncSourcesPanelMsg (EventSyncSourcesPanel.Fetch newResolver.targetHost user.id))
+
+                            else
+                                Effect.none
                     in
-                    ( federatedModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, federatedEffect ] )
+                    ( federatedModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, federatedEffect, eventSyncSourcesEffect ] )
 
                 _ ->
                     ( newModel, Effect.map ResolverMsg resolverEffect )
@@ -739,6 +756,15 @@ updateInner shared msg model =
                 _ ->
                     ( model, Effect.none )
 
+        -- The section's state lives in `Shared.Model` (see
+        -- `Shared.EventSyncSourcesPanel`'s own module doc on why) -- this
+        -- page's `Msg` is just a wrapper so its `view` has something of its
+        -- own `Msg` type to dispatch, forwarded straight into
+        -- `Shared.update` via `Effect.fromShared`, same as
+        -- `accountsPanelEffect` does for `AccountsPanel.Msg`.
+        EventSyncSourcesMsg subMsg ->
+            ( model, Effect.fromShared (Shared.EventSyncSourcesPanelMsg subMsg) )
+
         GotFederatedServer account (Ok server) ->
             -- Registers the federated user's server into `shared.accountsPanel.servers`
             -- (same as `ConnectClicked`'s own `GotConnectResult` does for
@@ -1104,6 +1130,12 @@ profileDetail shared model server maybeAccount user =
         , profileCounts postsHref repliesHref followersHref followingHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
+        , Html.map EventSyncSourcesMsg
+            (EventSyncSourcesPanel.view
+                shared.browserTimeZone
+                { canManage = canEdit, canAdd = isOwnProfile maybeAccount user }
+                shared.eventSyncSourcesPanel
+            )
         ]
 
 

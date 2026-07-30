@@ -267,6 +267,19 @@ const Event$json = {
       '6': '.jonline.EventInstance',
       '10': 'instances'
     },
+    {
+      '1': 'event_sync_source',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '9': 0,
+      '10': 'eventSyncSource',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_event_sync_source'},
   ],
 };
 
@@ -274,7 +287,134 @@ const Event$json = {
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'CgVFdmVudBIOCgJpZBgBIAEoCVICaWQSIQoEcG9zdBgCIAEoCzINLmpvbmxpbmUuUG9zdFIEcG'
     '9zdBImCgRpbmZvGAMgASgLMhIuam9ubGluZS5FdmVudEluZm9SBGluZm8SNAoJaW5zdGFuY2Vz'
-    'GAQgAygLMhYuam9ubGluZS5FdmVudEluc3RhbmNlUglpbnN0YW5jZXM=');
+    'GAQgAygLMhYuam9ubGluZS5FdmVudEluc3RhbmNlUglpbnN0YW5jZXMSSQoRZXZlbnRfc3luY1'
+    '9zb3VyY2UYBSABKAsyGC5qb25saW5lLkV2ZW50U3luY1NvdXJjZUgAUg9ldmVudFN5bmNTb3Vy'
+    'Y2WIAQFCFAoSX2V2ZW50X3N5bmNfc291cmNl');
+
+@$core.Deprecated('Use eventSyncSourceDescriptor instead')
+const EventSyncSource$json = {
+  '1': 'EventSyncSource',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {
+      '1': 'owner',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.Author',
+      '10': 'owner'
+    },
+    {
+      '1': 'sync_interval_seconds',
+      '3': 3,
+      '4': 1,
+      '5': 4,
+      '10': 'syncIntervalSeconds'
+    },
+    {
+      '1': 'created_at',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 1,
+      '10': 'updatedAt',
+      '17': true
+    },
+    {
+      '1': 'last_synced_at',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 2,
+      '10': 'lastSyncedAt',
+      '17': true
+    },
+    {
+      '1': 'ics_subscription_url',
+      '3': 7,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'icsSubscriptionUrl'
+    },
+  ],
+  '8': [
+    {'1': 'configuration'},
+    {'1': '_updated_at'},
+    {'1': '_last_synced_at'},
+  ],
+};
+
+/// Descriptor for `EventSyncSource`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventSyncSourceDescriptor = $convert.base64Decode(
+    'Cg9FdmVudFN5bmNTb3VyY2USDgoCaWQYASABKAlSAmlkEiUKBW93bmVyGAIgASgLMg8uam9ubG'
+    'luZS5BdXRob3JSBW93bmVyEjIKFXN5bmNfaW50ZXJ2YWxfc2Vjb25kcxgDIAEoBFITc3luY0lu'
+    'dGVydmFsU2Vjb25kcxI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
+    'VzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYu'
+    'VGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJFCg5sYXN0X3N5bmNlZF9hdBgGIAEoCzIaLmdvb2'
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEjIKFGljc19zdWJzY3Jp'
+    'cHRpb25fdXJsGAcgASgJSABSEmljc1N1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg'
+    '0KC191cGRhdGVkX2F0QhEKD19sYXN0X3N5bmNlZF9hdA==');
+
+@$core.Deprecated('Use getEventSyncSourcesResponseDescriptor instead')
+const GetEventSyncSourcesResponse$json = {
+  '1': 'GetEventSyncSourcesResponse',
+  '2': [
+    {
+      '1': 'sources',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '10': 'sources'
+    },
+  ],
+};
+
+/// Descriptor for `GetEventSyncSourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getEventSyncSourcesResponseDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRFdmVudFN5bmNTb3VyY2VzUmVzcG9uc2USMgoHc291cmNlcxgBIAMoCzIYLmpvbmxpbm'
+        'UuRXZlbnRTeW5jU291cmNlUgdzb3VyY2Vz');
+
+@$core.Deprecated('Use deleteEventSyncSourceRequestDescriptor instead')
+const DeleteEventSyncSourceRequest$json = {
+  '1': 'DeleteEventSyncSourceRequest',
+  '2': [
+    {
+      '1': 'source',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '10': 'source'
+    },
+    {
+      '1': 'delete_synced_events',
+      '3': 2,
+      '4': 1,
+      '5': 8,
+      '10': 'deleteSyncedEvents'
+    },
+  ],
+};
+
+/// Descriptor for `DeleteEventSyncSourceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEventSyncSourceRequestDescriptor =
+    $convert.base64Decode(
+        'ChxEZWxldGVFdmVudFN5bmNTb3VyY2VSZXF1ZXN0EjAKBnNvdXJjZRgBIAEoCzIYLmpvbmxpbm'
+        'UuRXZlbnRTeW5jU291cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhS'
+        'EmRlbGV0ZVN5bmNlZEV2ZW50cw==');
 
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
@@ -388,9 +528,19 @@ const EventInstance$json = {
       '10': 'location',
       '17': true
     },
+    {
+      '1': 'event_sync_source_instance_id',
+      '3': 8,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'eventSyncSourceInstanceId',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_location'},
+    {'1': '_event_sync_source_instance_id'},
   ],
 };
 
@@ -401,7 +551,9 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'b25saW5lLkV2ZW50SW5zdGFuY2VJbmZvUgRpbmZvEjcKCXN0YXJ0c19hdBgFIAEoCzIaLmdvb2'
     'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCHN0YXJ0c0F0EjMKB2VuZHNfYXQYBiABKAsyGi5nb29n'
     'bGUucHJvdG9idWYuVGltZXN0YW1wUgZlbmRzQXQSMgoIbG9jYXRpb24YByABKAsyES5qb25saW'
-    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBQgsKCV9sb2NhdGlvbg==');
+    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBEkUKHWV2ZW50X3N5bmNfc291cmNlX2luc3RhbmNl'
+    'X2lkGAggASgJSAFSGWV2ZW50U3luY1NvdXJjZUluc3RhbmNlSWSIAQFCCwoJX2xvY2F0aW9uQi'
+    'AKHl9ldmVudF9zeW5jX3NvdXJjZV9pbnN0YW5jZV9pZA==');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

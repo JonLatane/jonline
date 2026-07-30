@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::mem::transmute;
 
 use super::{
@@ -9,6 +10,75 @@ use crate::protos::*;
 use crate::{marshaling::ToProtoAuthor, models};
 
 use super::MarshalablePost;
+
+pub type EventSyncSourceLookup = HashMap<i64, MarshalableEventSyncSource>;
+
+pub fn load_event_sync_source_lookup(
+    event_sync_source_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Option<EventSyncSourceLookup> {
+    Some(
+        models::get_event_sync_sources_by_ids(event_sync_source_ids, conn)
+            .into_iter()
+            .map(|(source, owner)| (source.id, MarshalableEventSyncSource(source, owner)))
+            .collect::<EventSyncSourceLookup>(),
+    )
+}
+
+pub trait FindEventSyncSource {
+    fn find_event_sync_source(&self, id: i64) -> Option<&MarshalableEventSyncSource>;
+}
+
+impl FindEventSyncSource for Option<&EventSyncSourceLookup> {
+    fn find_event_sync_source(&self, id: i64) -> Option<&MarshalableEventSyncSource> {
+        self.map(|lookup| lookup.get(&id)).flatten()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MarshalableEventSyncSource(pub models::EventSyncSource, pub models::Author);
+
+pub trait ToProtoMarshalableEventSyncSource {
+    fn to_proto(&self) -> EventSyncSource;
+}
+
+impl ToProtoMarshalableEventSyncSource for MarshalableEventSyncSource {
+    fn to_proto(&self) -> EventSyncSource {
+        let source = &self.0;
+        let owner = &self.1;
+        EventSyncSource {
+            id: source.id.to_proto_id(),
+            owner: Some(owner.to_proto(None)),
+            sync_interval_seconds: source.sync_interval_seconds as u64,
+            created_at: Some(source.created_at.to_proto()),
+            updated_at: source.updated_at.map(|t| t.to_proto()),
+            last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
+            configuration: configuration_to_proto(&source.configuration),
+        }
+    }
+}
+
+/// `configuration` JSONB shape today: `{"ics_subscription_url": "https://..."}` -- mirrors the
+/// proto `oneof`, which currently has one variant.
+pub fn configuration_to_proto(
+    configuration: &serde_json::Value,
+) -> Option<event_sync_source::Configuration> {
+    configuration
+        .get("ics_subscription_url")
+        .and_then(|v| v.as_str())
+        .map(|s| event_sync_source::Configuration::IcsSubscriptionUrl(s.to_string()))
+}
+
+pub fn configuration_to_json(
+    configuration: &Option<event_sync_source::Configuration>,
+) -> serde_json::Value {
+    match configuration {
+        Some(event_sync_source::Configuration::IcsSubscriptionUrl(url)) => {
+            serde_json::json!({ "ics_subscription_url": url })
+        }
+        None => serde_json::json!({}),
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct MarshalableEvent(
@@ -47,16 +117,30 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
 
     let lookup = load_media_lookup(media_ids, conn);
 
+    let event_sync_source_ids: Vec<i64> = data
+        .iter()
+        .filter_map(|marshalable_event| marshalable_event.0.event_sync_source_id)
+        .collect();
+    let sync_source_lookup = load_event_sync_source_lookup(event_sync_source_ids, conn);
+
     data.iter()
-        .map(|marshalable_event| marshalable_event.to_proto(lookup.as_ref()))
+        .map(|marshalable_event| marshalable_event.to_proto(lookup.as_ref(), sync_source_lookup.as_ref()))
         .collect()
 }
 pub trait ToProtoMarshalableEvent {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Event;
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        sync_source_lookup: Option<&EventSyncSourceLookup>,
+    ) -> Event;
 }
 
 impl ToProtoMarshalableEvent for MarshalableEvent {
-    fn to_proto(&self, media_lookup: Option<&MediaLookup>) -> Event {
+    fn to_proto(
+        &self,
+        media_lookup: Option<&MediaLookup>,
+        sync_source_lookup: Option<&EventSyncSourceLookup>,
+    ) -> Event {
         let event = self.0.to_owned();
         let post = self.1.to_owned();
         let instances = self.2.to_owned();
@@ -77,6 +161,10 @@ impl ToProtoMarshalableEvent for MarshalableEvent {
                 .map(|i| i.to_proto(media_lookup, hide_location))
                 .collect(),
             info: serde_json::from_value(self.0.info.to_owned()).ok(),
+            event_sync_source: event
+                .event_sync_source_id
+                .and_then(|id| sync_source_lookup.find_event_sync_source(id))
+                .map(|source| source.to_proto()),
             ..Default::default()
         }
     }
@@ -105,6 +193,7 @@ impl ToProtoMarshalableEventInstance for MarshalableEventInstance {
                 ..Default::default()
             }),
             location,
+            event_sync_source_instance_id: event_instance.event_sync_source_instance_id,
             ..Default::default()
         }
     }
