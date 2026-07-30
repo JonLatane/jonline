@@ -331,6 +331,10 @@
   min-width: 0;
 }
 
+.events-search-field .field-clear-button {
+  margin-right: 4px;
+}
+
 .events-search-input {
   width: 100%;
   padding-right: 2rem;
