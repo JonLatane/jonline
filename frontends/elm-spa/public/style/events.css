@@ -373,11 +373,63 @@
    between them is a genuine resize, not just a reflow, which is why
    `Components.Pages.EventsPage.GotPostModeMeasurements` computes a `scale`
    ratio (via `UI.Flip.startMoveScaled`) alongside the position delta, rather
-   than the plain `UI.Flip.startMove` a same-size layout switch would need. */
+   than the plain `UI.Flip.startMove` a same-size layout switch would need.
+
+   Deliberately `grid-template-columns` (this item's own single track, same
+   property `flip.css`'s `flip-collapsed` animates 0fr-ward) rather than a
+   flat `width: 380px` -- a static `width` would pin this item's own
+   *outer* box at 380px through the whole enter/remove transition (only its
+   *inner* single grid track would actually animate), so the surrounding
+   `flip-wrap` siblings would never see this item's box shrink and couldn't
+   reflow smoothly around it -- confirmed live, headless: they sat frozen
+   until the item hit `RemoveEvent`/left the DOM outright, then jumped
+   straight to their final positions instead of sliding in as it shrank.
+   With no explicit `width`, this grid container's own auto/intrinsic size
+   just *is* its one track's current size, so the box itself now animates
+   continuously between 380px and 0 right along with the track, and
+   `.events-grid`/`.events-strip`'s own `flex-wrap` reflows every other
+   card live as it does. At rest (`grid-template-columns: 380px` here,
+   rather than `flip.css`'s own default `1fr`) this still renders as a
+   fixed 380px tile, same as the old `width` rule did -- `1fr` alone, with
+   no `width` and no defined free space to distribute, would otherwise let
+   the tile size to its own content instead. `flip-moving` (`display: flex`,
+   overriding `display: grid` for the mode-switch slide, so this property
+   stops applying) still ends up 380px too, since its only child is pinned
+   there directly by the rule below. */
 .events-grid .flip-animated-item,
 .events-strip .flip-animated-item {
-  width: 380px;
+  grid-template-columns: 380px;
   flex: 0 0 auto;
+}
+
+/* `flip.css`'s own `.flip-collapsed` rules animate this same property to
+   `0fr` -- a *different* track-sizing type than this rule's own `380px`
+   length above (`<flex>` vs `<length>`), which browsers can't interpolate
+   continuously (confirmed live, headless: the box's own width jumped
+   straight to 0 instead of animating down). Overriding the collapsed end
+   to `0px` too keeps both endpoints the same type, so the transition
+   actually plays. */
+.events-grid .flip-animated-item.flip-collapsed,
+.events-strip .flip-animated-item.flip-collapsed {
+  grid-template-columns: 0px;
+}
+
+/* Without this, the card content below (a grid item of `.flip-animated-item`'s
+   own single-column grid, via `flip.css`'s collapse trick) defaults to
+   `justify-self: stretch` -- filling whatever width `grid-template-columns`
+   currently animates *through* (as low as a few px mid-transition) rather
+   than this fixed 380px tile size. Squeezing a card's title/description/
+   images into a near-0-width column wraps every word onto its own line,
+   ballooning `.flip-animated-item`'s own auto row height along with it (confirmed
+   live, headless: a card mid-enter/remove during a search-triggered swap
+   transiently measured ~800px tall) -- visible as a tall, near-empty sliver
+   flashing in the grid/strip for a frame. Pinning the content to the same
+   380px keeps it laid out exactly as it'll render at rest the whole time;
+   `.flip-animated-item`'s own `overflow: hidden` (flip.css) clips it to the
+   actually-animating width instead, like a blind drawn over static content. */
+.events-grid .flip-animated-item > *,
+.events-strip .flip-animated-item > * {
+  width: 380px;
 }
 
 .events-list .flip-animated-item {

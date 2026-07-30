@@ -115,6 +115,7 @@
    inside a plain `.users-list` -- see users.css for that class's own rules. */
 .server-details-admins .users-list {
   margin-top: 0.5rem;
+  gap: 0.6rem;
 }
 
 .server-details-color-row {
