@@ -11,7 +11,10 @@ use crate::db_connection::{establish_test_pool, PgPool, PgPooledConnection, MIGR
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{event_sync_sources, follows, group_posts, groups, memberships, posts, users};
+use crate::schema::{
+    event_instances, event_sync_sources, events, follows, group_posts, groups, memberships, posts,
+    users,
+};
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
 /// binary process, since `Once`/`lazy_static` state doesn't cross the parallel test threads
@@ -310,6 +313,108 @@ pub fn create_event_sync_source_row(
         })
         .get_result::<models::EventSyncSource>(conn)
         .expect("failed to create test event sync source")
+}
+
+/// Options for `create_event`'s underlying container `Post` (context `EVENT`) - mirrors
+/// `PostOpts`, but only exposes the fields `get_events_tests` actually varies.
+pub struct EventOpts {
+    pub visibility: Visibility,
+    pub moderation: Moderation,
+}
+
+impl Default for EventOpts {
+    fn default() -> Self {
+        EventOpts {
+            visibility: Visibility::ServerPublic,
+            moderation: Moderation::Unmoderated,
+        }
+    }
+}
+
+/// Inserts an `events` row directly (bypassing `rpcs::create_event`) along with its container
+/// `Post` (context `EVENT`, per `create_event.rs`). Returns both since `get_events` filters on
+/// the container post's visibility/moderation/user_id independently of any instance's own post.
+pub fn create_event(
+    conn: &mut PgPooledConnection,
+    author: &models::User,
+    opts: EventOpts,
+) -> (models::Event, models::Post) {
+    let post = create_post(
+        conn,
+        Some(author),
+        PostOpts {
+            visibility: opts.visibility,
+            moderation: opts.moderation,
+            context: PostContext::Event,
+            ..Default::default()
+        },
+    );
+    let event = insert_into(events::table)
+        .values(&models::NewEvent {
+            post_id: post.id,
+            info: serde_json::json!({}),
+            event_sync_source_id: None,
+        })
+        .get_result::<models::Event>(conn)
+        .expect("failed to create test event");
+    (event, post)
+}
+
+/// Options for `create_event_instance`'s underlying `Post` (context `EVENT_INSTANCE`) plus its
+/// `starts_at`/`ends_at`. Defaults to a one-hour instance starting a day from now.
+pub struct EventInstanceOpts {
+    pub visibility: Visibility,
+    pub moderation: Moderation,
+    pub starts_at: SystemTime,
+    pub ends_at: SystemTime,
+}
+
+impl Default for EventInstanceOpts {
+    fn default() -> Self {
+        let starts_at = SystemTime::now() + std::time::Duration::from_secs(86400);
+        EventInstanceOpts {
+            visibility: Visibility::ServerPublic,
+            moderation: Moderation::Unmoderated,
+            starts_at,
+            ends_at: starts_at + std::time::Duration::from_secs(3600),
+        }
+    }
+}
+
+/// Inserts an `event_instances` row directly, along with its own `Post` (context
+/// `EVENT_INSTANCE`) - `get_events`' `query_visible_events!` requires *both* the parent event's
+/// post and the instance's own post to independently pass visibility/moderation, so tests need
+/// separate control over each. `author: None` mirrors `create_post`'s own `author: None` (e.g. an
+/// instance post left behind by a deleted user).
+pub fn create_event_instance(
+    conn: &mut PgPooledConnection,
+    event: &models::Event,
+    author: Option<&models::User>,
+    opts: EventInstanceOpts,
+) -> (models::EventInstance, models::Post) {
+    let post = create_post(
+        conn,
+        author,
+        PostOpts {
+            visibility: opts.visibility,
+            moderation: opts.moderation,
+            context: PostContext::EventInstance,
+            ..Default::default()
+        },
+    );
+    let instance = insert_into(event_instances::table)
+        .values(&models::NewEventInstance {
+            event_id: event.id,
+            post_id: post.id,
+            info: serde_json::json!({}),
+            starts_at: opts.starts_at,
+            ends_at: opts.ends_at,
+            location: None,
+            event_sync_source_instance_id: None,
+        })
+        .get_result::<models::EventInstance>(conn)
+        .expect("failed to create test event instance");
+    (instance, post)
 }
 
 /// Starts a background thread serving `ics_text` as `text/calendar` for every HTTP request it

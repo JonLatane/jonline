@@ -324,8 +324,9 @@ fn get_group_events(
                 .flatten();
             validate_group_permission(&group, &membership.as_ref(), user, Permission::ViewPosts)?;
 
-            let query =
-                query_visible_events!(user, filter).filter(group_posts::group_id.eq(group_id));
+            let query = query_visible_events!(user, filter)
+                .filter(group_posts::group_id.eq(group_id))
+                .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS));
             let binding = query.load::<EventLoadData>(conn).unwrap();
             let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
