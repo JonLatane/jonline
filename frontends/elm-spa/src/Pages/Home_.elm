@@ -109,8 +109,29 @@ update shared msg model =
                 ( newPosts, postsEffect ) =
                     PostsPage.update shared (PostsPage.fromShared subMsg) model.posts
 
-                ( newEvents, eventsEffect ) =
+                ( newEvents, eventsEffectRaw ) =
                     EventsPage.update shared (EventsPage.fromShared subMsg) model.events
+
+                -- `PostsPage.update`/`EventsPage.update`'s own `SharedMsg`
+                -- branches each unconditionally re-emit `Effect.fromShared
+                -- subMsg` (see their own docs) -- that's what actually
+                -- applies an incoming `Shared.Msg` (e.g. toggling the
+                -- Accounts Panel or Starred Posts panel, both built with
+                -- `Shared.Msg` in `UI.layout`'s header and only reaching
+                -- either page via `fromShared`) back to `Shared.update`,
+                -- correct when only one feed is handling it. Both would fire
+                -- it here, for the exact same `subMsg` -- `Effect.partitionShared`
+                -- (in `Main.elm`) would then apply it to `Shared.update`
+                -- *twice* in the same pass. Harmless for an idempotent
+                -- message, but for a toggle that flips it on then right back
+                -- off again -- net zero, every time, which is exactly the
+                -- "can't open the Accounts/Starred Posts panel" bug this
+                -- fixes. `postsEffect` is kept as the one copy that actually
+                -- re-broadcasts `subMsg`; `eventsEffectRaw`'s own copy is
+                -- dropped via `Effect.partitionShared` (keeping its other
+                -- effects, e.g. `fetchNewServers`'s own fetch, intact).
+                ( _, eventsEffect ) =
+                    Effect.partitionShared eventsEffectRaw
             in
             ( { model | posts = newPosts, events = newEvents }
             , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect ]
