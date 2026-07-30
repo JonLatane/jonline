@@ -20,6 +20,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -1985,7 +1986,9 @@ deleteConfirmationModal shared =
                                         Nothing ->
                                             "this source"
                                    )
-                                ++ "? Events already synced from it will be kept, just no longer updated."
+                                ++ ", deleting the "
+                                ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                ++ " it synced? This can't be undone."
                             )
             in
             UI.Modal.view

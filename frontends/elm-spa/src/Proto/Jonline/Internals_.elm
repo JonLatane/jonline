@@ -285,7 +285,7 @@ import Protobuf.Types.Int64
 fieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration :
     FieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration
 fieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration =
-    { icsSubscriptionUrl = 7 }
+    { icsSubscriptionUrl = 9 }
 
 
 {-| The field numbers for the fields of `Proto__Jonline__EventSyncSource__Configuration__Configuration`. This is mostly useful for internals, like documentation generation.
@@ -302,7 +302,7 @@ decodeProto__Jonline__EventSyncSource__Configuration__Configuration :
     (Maybe Proto__Jonline__EventSyncSource__Configuration__Configuration -> a -> a) -> Protobuf.Decode.FieldDecoder a
 decodeProto__Jonline__EventSyncSource__Configuration__Configuration =
     Protobuf.Decode.oneOf
-        [ ( 7
+        [ ( 9
           , Protobuf.Decode.map Proto.Jonline.EventSyncSource.Configuration.IcsSubscriptionUrl Protobuf.Decode.string
           )
         ]
@@ -319,7 +319,7 @@ encodeProto__Jonline__EventSyncSource__Configuration__Configuration value =
             ( 0, Protobuf.Encode.none )
 
         Just (Proto.Jonline.EventSyncSource.Configuration.IcsSubscriptionUrl innerValue) ->
-            ( 7, Protobuf.Encode.string innerValue )
+            ( 9, Protobuf.Encode.string innerValue )
 
 
 {-| `Proto__Jonline__EventSyncSource__Configuration__Configuration` options
@@ -2354,6 +2354,8 @@ fieldNumbersProto__Jonline__EventSyncSource :
     , createdAt : Int
     , updatedAt : Int
     , lastSyncedAt : Int
+    , eventCount : Int
+    , eventInstanceCount : Int
     , configuration : FieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration
     }
 fieldNumbersProto__Jonline__EventSyncSource =
@@ -2363,6 +2365,8 @@ fieldNumbersProto__Jonline__EventSyncSource =
     , createdAt = 4
     , updatedAt = 5
     , lastSyncedAt = 6
+    , eventCount = 7
+    , eventInstanceCount = 8
     , configuration = fieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration
     }
 
@@ -2378,6 +2382,8 @@ defaultProto__Jonline__EventSyncSource =
     , createdAt = Nothing
     , updatedAt = Nothing
     , lastSyncedAt = Nothing
+    , eventCount = Protobuf.Types.Int64.fromInts 0 0
+    , eventInstanceCount = Protobuf.Types.Int64.fromInts 0 0
     , configuration = Nothing
     }
 
@@ -2404,6 +2410,8 @@ decodeProto__Jonline__EventSyncSource =
             6
             (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
             (\a r -> { r | lastSyncedAt = a })
+        , Protobuf.Decode.optional 7 Protobuf.Decode.uint64 (\a r -> { r | eventCount = a })
+        , Protobuf.Decode.optional 8 Protobuf.Decode.uint64 (\a r -> { r | eventInstanceCount = a })
         , decodeProto__Jonline__EventSyncSource__Configuration__Configuration (\a r -> { r | configuration = a })
         ]
 
@@ -2435,6 +2443,8 @@ encodeProto__Jonline__EventSyncSource value =
             )
                 value.lastSyncedAt
           )
+        , ( 7, Protobuf.Encode.uint64 value.eventCount )
+        , ( 8, Protobuf.Encode.uint64 value.eventInstanceCount )
         , encodeProto__Jonline__EventSyncSource__Configuration__Configuration value.configuration
         ]
 
@@ -2449,6 +2459,8 @@ type alias Proto__Jonline__EventSyncSource =
     , createdAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , updatedAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , lastSyncedAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
+    , eventCount : Protobuf.Types.Int64.Int64
+    , eventInstanceCount : Protobuf.Types.Int64.Int64
     , configuration : Maybe Proto__Jonline__EventSyncSource__Configuration__Configuration
     }
 

@@ -46,6 +46,8 @@ diesel::table! {
         last_synced_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
+        event_count -> Int8,
+        event_instance_count -> Int8,
     }
 }
 

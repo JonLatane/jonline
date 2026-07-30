@@ -53,6 +53,8 @@ impl ToProtoMarshalableEventSyncSource for MarshalableEventSyncSource {
             created_at: Some(source.created_at.to_proto()),
             updated_at: source.updated_at.map(|t| t.to_proto()),
             last_synced_at: source.last_synced_at.map(|t| t.to_proto()),
+            event_count: source.event_count as u64,
+            event_instance_count: source.event_instance_count as u64,
             configuration: configuration_to_proto(&source.configuration),
         }
     }

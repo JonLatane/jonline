@@ -90,6 +90,8 @@ pub struct EventSyncSource {
     pub last_synced_at: Option<SystemTime>,
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
+    pub event_count: i64,
+    pub event_instance_count: i64,
 }
 
 #[derive(Debug, Insertable)]

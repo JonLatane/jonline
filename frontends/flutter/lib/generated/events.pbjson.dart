@@ -352,9 +352,17 @@ const EventSyncSource$json = {
       '10': 'lastSyncedAt',
       '17': true
     },
+    {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
+    {
+      '1': 'event_instance_count',
+      '3': 8,
+      '4': 1,
+      '5': 4,
+      '10': 'eventInstanceCount'
+    },
     {
       '1': 'ics_subscription_url',
-      '3': 7,
+      '3': 9,
       '4': 1,
       '5': 9,
       '9': 0,
@@ -375,9 +383,11 @@ final $typed_data.Uint8List eventSyncSourceDescriptor = $convert.base64Decode(
     'dGVydmFsU2Vjb25kcxI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
     'VzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYu'
     'VGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJFCg5sYXN0X3N5bmNlZF9hdBgGIAEoCzIaLmdvb2'
-    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEjIKFGljc19zdWJzY3Jp'
-    'cHRpb25fdXJsGAcgASgJSABSEmljc1N1YnNjcmlwdGlvblVybEIPCg1jb25maWd1cmF0aW9uQg'
-    '0KC191cGRhdGVkX2F0QhEKD19sYXN0X3N5bmNlZF9hdA==');
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEh8KC2V2ZW50X2NvdW50'
+    'GAcgASgEUgpldmVudENvdW50EjAKFGV2ZW50X2luc3RhbmNlX2NvdW50GAggASgEUhJldmVudE'
+    'luc3RhbmNlQ291bnQSMgoUaWNzX3N1YnNjcmlwdGlvbl91cmwYCSABKAlIAFISaWNzU3Vic2Ny'
+    'aXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2'
+    'VkX2F0');
 
 @$core.Deprecated('Use getEventSyncSourcesResponseDescriptor instead')
 const GetEventSyncSourcesResponse$json = {

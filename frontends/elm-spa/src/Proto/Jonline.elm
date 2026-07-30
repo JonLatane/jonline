@@ -1668,6 +1668,8 @@ fieldNumbersEventSyncSource :
     , createdAt : Int
     , updatedAt : Int
     , lastSyncedAt : Int
+    , eventCount : Int
+    , eventInstanceCount : Int
     , configuration : Proto.Jonline.Internals_.FieldNumbersProto__Jonline__EventSyncSource__Configuration__Configuration
     }
 fieldNumbersEventSyncSource =
@@ -1721,6 +1723,18 @@ encodeEventSyncSource =
 ### createdAt
 
  The time the EventSyncSource was created.
+
+
+### eventCount
+
+ The number of events total associated with this EventSyncSource. Recomputed
+ on each sync.
+
+
+### eventInstanceCount
+
+ The number of event instances total associated with this EventSyncSource. Recomputed
+ on each sync.
 
 
 -}

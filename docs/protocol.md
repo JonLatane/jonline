@@ -1536,6 +1536,8 @@ A user-owned source to sync events from.
 | created_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the EventSyncSource was created. |
 | updated_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last updated. |
 | last_synced_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time the EventSyncSource was last synced. |
+| event_count | [uint64](#uint64) |  | The number of events total associated with this EventSyncSource. Recomputed on each sync. |
+| event_instance_count | [uint64](#uint64) |  | The number of event instances total associated with this EventSyncSource. Recomputed on each sync. |
 | ics_subscription_url | [string](#string) |  | The iCal subscription URL for the calendar sync. |
 
 

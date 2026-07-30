@@ -139,9 +139,16 @@ message EventSyncSource {
   // The time the EventSyncSource was last synced.
   optional google.protobuf.Timestamp last_synced_at = 6;
 
+  // The number of events total associated with this EventSyncSource. Recomputed
+  // on each sync.
+  uint64 event_count = 7;
+  // The number of event instances total associated with this EventSyncSource. Recomputed
+  // on each sync.
+  uint64 event_instance_count = 8;
+
   oneof configuration {
     // The iCal subscription URL for the calendar sync.
-    string ics_subscription_url = 7;
+    string ics_subscription_url = 9;
   }
 }
 

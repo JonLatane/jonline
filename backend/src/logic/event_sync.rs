@@ -182,8 +182,22 @@ pub fn sync_event_sync_source_text(
             }
         }
 
+        let event_count: i64 = events::table
+            .filter(events::event_sync_source_id.eq(source.id))
+            .count()
+            .get_result(conn)?;
+        let event_instance_count: i64 = event_instances::table
+            .inner_join(events::table)
+            .filter(events::event_sync_source_id.eq(source.id))
+            .count()
+            .get_result(conn)?;
+
         diesel::update(event_sync_sources::table.filter(event_sync_sources::id.eq(source.id)))
-            .set(event_sync_sources::last_synced_at.eq(SystemTime::now()))
+            .set((
+                event_sync_sources::last_synced_at.eq(SystemTime::now()),
+                event_sync_sources::event_count.eq(event_count),
+                event_sync_sources::event_instance_count.eq(event_instance_count),
+            ))
             .execute(conn)?;
 
         Ok(())

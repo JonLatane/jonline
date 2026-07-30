@@ -312,6 +312,16 @@ export interface EventSyncSource {
   lastSyncedAt?:
     | string
     | undefined;
+  /**
+   * The number of events total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventCount: number;
+  /**
+   * The number of event instances total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventInstanceCount: number;
   /** The iCal subscription URL for the calendar sync. */
   icsSubscriptionUrl?: string | undefined;
 }
@@ -1075,6 +1085,8 @@ function createBaseEventSyncSource(): EventSyncSource {
     createdAt: undefined,
     updatedAt: undefined,
     lastSyncedAt: undefined,
+    eventCount: 0,
+    eventInstanceCount: 0,
     icsSubscriptionUrl: undefined,
   };
 }
@@ -1099,8 +1111,14 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     if (message.lastSyncedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.lastSyncedAt), writer.uint32(50).fork()).join();
     }
+    if (message.eventCount !== 0) {
+      writer.uint32(56).uint64(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      writer.uint32(64).uint64(message.eventInstanceCount);
+    }
     if (message.icsSubscriptionUrl !== undefined) {
-      writer.uint32(58).string(message.icsSubscriptionUrl);
+      writer.uint32(74).string(message.icsSubscriptionUrl);
     }
     return writer;
   },
@@ -1161,7 +1179,23 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
           continue;
         }
         case 7: {
-          if (tag !== 58) {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.eventCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.eventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
             break;
           }
 
@@ -1185,6 +1219,8 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
       createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
       updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
       lastSyncedAt: isSet(object.lastSyncedAt) ? globalThis.String(object.lastSyncedAt) : undefined,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
+      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
       icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
     };
   },
@@ -1209,6 +1245,12 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     if (message.lastSyncedAt !== undefined) {
       obj.lastSyncedAt = message.lastSyncedAt;
     }
+    if (message.eventCount !== 0) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
+    }
     if (message.icsSubscriptionUrl !== undefined) {
       obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
     }
@@ -1228,6 +1270,8 @@ export const EventSyncSource: MessageFns<EventSyncSource> = {
     message.createdAt = object.createdAt ?? undefined;
     message.updatedAt = object.updatedAt ?? undefined;
     message.lastSyncedAt = object.lastSyncedAt ?? undefined;
+    message.eventCount = object.eventCount ?? 0;
+    message.eventInstanceCount = object.eventInstanceCount ?? 0;
     message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
     return message;
   },

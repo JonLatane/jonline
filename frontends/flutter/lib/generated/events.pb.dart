@@ -509,6 +509,8 @@ class EventSyncSource extends $pb.GeneratedMessage {
     $0.Timestamp? createdAt,
     $0.Timestamp? updatedAt,
     $0.Timestamp? lastSyncedAt,
+    $fixnum.Int64? eventCount,
+    $fixnum.Int64? eventInstanceCount,
     $core.String? icsSubscriptionUrl,
   }) {
     final result = create();
@@ -519,6 +521,9 @@ class EventSyncSource extends $pb.GeneratedMessage {
     if (createdAt != null) result.createdAt = createdAt;
     if (updatedAt != null) result.updatedAt = updatedAt;
     if (lastSyncedAt != null) result.lastSyncedAt = lastSyncedAt;
+    if (eventCount != null) result.eventCount = eventCount;
+    if (eventInstanceCount != null)
+      result.eventInstanceCount = eventInstanceCount;
     if (icsSubscriptionUrl != null)
       result.icsSubscriptionUrl = icsSubscriptionUrl;
     return result;
@@ -535,14 +540,14 @@ class EventSyncSource extends $pb.GeneratedMessage {
 
   static const $core.Map<$core.int, EventSyncSource_Configuration>
       _EventSyncSource_ConfigurationByTag = {
-    7: EventSyncSource_Configuration.icsSubscriptionUrl,
+    9: EventSyncSource_Configuration.icsSubscriptionUrl,
     0: EventSyncSource_Configuration.notSet
   };
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(
       _omitMessageNames ? '' : 'EventSyncSource',
       package: const $pb.PackageName(_omitMessageNames ? '' : 'jonline'),
       createEmptyInstance: create)
-    ..oo(0, [7])
+    ..oo(0, [9])
     ..aOS(1, _omitFieldNames ? '' : 'id')
     ..aOM<$2.Author>(2, _omitFieldNames ? '' : 'owner',
         subBuilder: $2.Author.create)
@@ -555,7 +560,13 @@ class EventSyncSource extends $pb.GeneratedMessage {
         subBuilder: $0.Timestamp.create)
     ..aOM<$0.Timestamp>(6, _omitFieldNames ? '' : 'lastSyncedAt',
         subBuilder: $0.Timestamp.create)
-    ..aOS(7, _omitFieldNames ? '' : 'icsSubscriptionUrl')
+    ..a<$fixnum.Int64>(
+        7, _omitFieldNames ? '' : 'eventCount', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..a<$fixnum.Int64>(
+        8, _omitFieldNames ? '' : 'eventInstanceCount', $pb.PbFieldType.OU6,
+        defaultOrMaker: $fixnum.Int64.ZERO)
+    ..aOS(9, _omitFieldNames ? '' : 'icsSubscriptionUrl')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -577,10 +588,10 @@ class EventSyncSource extends $pb.GeneratedMessage {
       $pb.GeneratedMessage.$_defaultFor<EventSyncSource>(create);
   static EventSyncSource? _defaultInstance;
 
-  @$pb.TagNumber(7)
+  @$pb.TagNumber(9)
   EventSyncSource_Configuration whichConfiguration() =>
       _EventSyncSource_ConfigurationByTag[$_whichOneof(0)]!;
-  @$pb.TagNumber(7)
+  @$pb.TagNumber(9)
   void clearConfiguration() => $_clearField($_whichOneof(0));
 
   /// Unique ID for the synchronization.
@@ -651,15 +662,37 @@ class EventSyncSource extends $pb.GeneratedMessage {
   @$pb.TagNumber(6)
   $0.Timestamp ensureLastSyncedAt() => $_ensure(5);
 
+  /// The number of events total associated with this EventSyncSource. Recomputed
+  /// on each sync.
+  @$pb.TagNumber(7)
+  $fixnum.Int64 get eventCount => $_getI64(6);
+  @$pb.TagNumber(7)
+  set eventCount($fixnum.Int64 value) => $_setInt64(6, value);
+  @$pb.TagNumber(7)
+  $core.bool hasEventCount() => $_has(6);
+  @$pb.TagNumber(7)
+  void clearEventCount() => $_clearField(7);
+
+  /// The number of event instances total associated with this EventSyncSource. Recomputed
+  /// on each sync.
+  @$pb.TagNumber(8)
+  $fixnum.Int64 get eventInstanceCount => $_getI64(7);
+  @$pb.TagNumber(8)
+  set eventInstanceCount($fixnum.Int64 value) => $_setInt64(7, value);
+  @$pb.TagNumber(8)
+  $core.bool hasEventInstanceCount() => $_has(7);
+  @$pb.TagNumber(8)
+  void clearEventInstanceCount() => $_clearField(8);
+
   /// The iCal subscription URL for the calendar sync.
-  @$pb.TagNumber(7)
-  $core.String get icsSubscriptionUrl => $_getSZ(6);
-  @$pb.TagNumber(7)
-  set icsSubscriptionUrl($core.String value) => $_setString(6, value);
-  @$pb.TagNumber(7)
-  $core.bool hasIcsSubscriptionUrl() => $_has(6);
-  @$pb.TagNumber(7)
-  void clearIcsSubscriptionUrl() => $_clearField(7);
+  @$pb.TagNumber(9)
+  $core.String get icsSubscriptionUrl => $_getSZ(8);
+  @$pb.TagNumber(9)
+  set icsSubscriptionUrl($core.String value) => $_setString(8, value);
+  @$pb.TagNumber(9)
+  $core.bool hasIcsSubscriptionUrl() => $_has(8);
+  @$pb.TagNumber(9)
+  void clearIcsSubscriptionUrl() => $_clearField(9);
 }
 
 class GetEventSyncSourcesResponse extends $pb.GeneratedMessage {

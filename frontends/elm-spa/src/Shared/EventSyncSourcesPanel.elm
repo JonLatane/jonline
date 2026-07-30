@@ -1,4 +1,4 @@
-module Shared.EventSyncSourcesPanel exposing (AddForm, Model, Msg(..), RowEdit, SubmitStatus(..), init, update, view)
+module Shared.EventSyncSourcesPanel exposing (AddForm, Model, Msg(..), RowEdit, SubmitStatus(..), init, syncedCountsLabel, update, view)
 
 {-| The "Event Sync Sources" section on `Components.Pages.UserProfilePage` --
 basic CRUD over `EventSyncSource` (`protos/events.proto`) for the profile's
@@ -15,6 +15,7 @@ Page-local model has no way to receive that confirmation back. Everything
 else about the flow (fetch on open, edit/save/delete, forwarding a token
 refresh, resolving which account to act as) mirrors `MyMediaPanel` at a
 smaller scale.
+
 -}
 
 import Components.EventSyncSources as EventSyncSources
@@ -30,6 +31,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions
 import Task
+import UI.Classes exposing (classes)
 
 
 type SubmitStatus
@@ -229,7 +231,7 @@ update accountsPanelModel msg model =
 
         DeleteConfirmed source ->
             ( { model | deletingIds = Set.insert source.id model.deletingIds }
-            , performForOwner accountsPanelModel model (\accountServer -> EventSyncSources.deleteEventSyncSource accountsPanelModel accountServer source False)
+            , performForOwner accountsPanelModel model (\accountServer -> EventSyncSources.deleteEventSyncSource accountsPanelModel accountServer source True)
                 |> Task.attempt (GotDeleteResult source.id)
             , ( Nothing, Nothing )
             )
@@ -321,6 +323,51 @@ isDirty source edit =
     edit.pendingUrl /= icsUrl source || edit.pendingIntervalSeconds /= Conversions.int64ToInt source.syncIntervalSeconds
 
 
+{-| Labels the row's delete button with exactly what it'll take with it --
+`DeleteConfirmed` always sends `deleteSyncedEvents = True`, so this doubles as
+the only warning the user gets before those rows are gone for good. Also used
+(via `syncedCountsLabel`) in `UI`'s confirmation dialog for the same source.
+-}
+deleteButtonLabel : EventSyncSource -> String
+deleteButtonLabel source =
+    "Delete along with " ++ syncedCountsLabel source
+
+
+{-| "N events" alone when every event has exactly one instance (the common
+non-recurring case, where naming both is redundant) -- otherwise "N events
+and M instances".
+-}
+syncedCountsLabel : EventSyncSource -> String
+syncedCountsLabel source =
+    let
+        eventCount =
+            Conversions.int64ToInt source.eventCount
+
+        instanceCount =
+            Conversions.int64ToInt source.eventInstanceCount
+    in
+    if eventCount == instanceCount then
+        pluralCount eventCount "event"
+
+    else
+        pluralCount eventCount "event"
+            ++ " and "
+            ++ pluralCount instanceCount "instance"
+
+
+pluralCount : Int -> String -> String
+pluralCount count noun =
+    String.fromInt count
+        ++ " "
+        ++ noun
+        ++ (if count == 1 then
+                ""
+
+            else
+                "s"
+           )
+
+
 
 -- VIEW
 
@@ -329,7 +376,7 @@ isDirty source edit =
 Admin may manage anyone's) -- gates the whole section's edit/delete
 affordances (a caller with neither shouldn't even see this section, but
 `view` doesn't assume that's already been checked). `canAdd` is
-self-only (an Admin still can't create a source *for* someone else, see
+self-only (an Admin still can't create a source _for_ someone else, see
 `create_event_sync_source.rs`) -- gates just the add row.
 -}
 view : BrowserTimeZone.BrowserTimeZone -> { canManage : Bool, canAdd : Bool } -> Model -> Html Msg
@@ -409,7 +456,7 @@ rowView browserTimeZone model source =
             [ span [ class "event-sync-source-last-synced" ] [ text ("Last synced: " ++ lastSyncedText) ]
             , if dirty then
                 button
-                    [ class "event-sync-source-save", onClick (RowSaveClicked source), disabled submitting ]
+                    [ classes [ "event-sync-source-save", "background-color-nav" ], onClick (RowSaveClicked source), disabled submitting ]
                     [ text
                         (if submitting then
                             "Saving…"
@@ -421,7 +468,7 @@ rowView browserTimeZone model source =
 
               else
                 button
-                    [ class "event-sync-source-refresh", onClick (RowRefreshClicked source), disabled submitting ]
+                    [ classes [ "event-sync-source-refresh", "background-color-primary" ], onClick (RowRefreshClicked source), disabled submitting ]
                     [ text
                         (if submitting then
                             "Refreshing…"
@@ -437,7 +484,7 @@ rowView browserTimeZone model source =
                         "Deleting…"
 
                      else
-                        "Delete"
+                        deleteButtonLabel source
                     )
                 ]
             ]
