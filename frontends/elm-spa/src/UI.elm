@@ -363,7 +363,7 @@ homeLinkContent shared =
             AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
 
         Nothing ->
-            text "Home"
+            text "🏠"
 
 
 {-| A circular icon nav link to the People page (`/people`), sitting between

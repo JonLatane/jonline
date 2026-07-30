@@ -242,6 +242,10 @@
   margin-bottom: 0.6rem;
 }
 
+.events-controls-row>h3 {
+  margin-right: 10px;
+}
+
 .events-mode-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -414,6 +418,26 @@
 
 .event-card-title {
   font-weight: 700;
+}
+
+/* The event's own `link` field, shown below the title -- mirrors
+   `.post-card-link`'s `position: relative` paint-order trick (see that
+   class's doc comment in posts.css) so it stays independently clickable
+   above `.event-card-link-overlay`. */
+.event-card-link {
+  position: relative;
+  display: block;
+  max-width: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.event-card-link:hover {
+  text-decoration: underline;
 }
 
 .event-card-when {

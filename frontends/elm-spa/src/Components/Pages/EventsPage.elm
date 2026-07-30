@@ -46,7 +46,7 @@ import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, h2, input, p, text)
+import Html exposing (Html, a, button, div, h2, h3, input, p, text)
 import Html.Attributes exposing (class, href, id, placeholder, style, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
@@ -469,9 +469,13 @@ visible. Capping the working set keeps every card's invert-offset small
 enough that this is far less likely to matter in practice, on top of just
 being less to measure/animate.
 -}
-maxDisplayedEvents : Int
-maxDisplayedEvents =
-    60
+maxDisplayedEvents : Model -> Int
+maxDisplayedEvents model =
+    if model.embeddedRow then
+        20
+
+    else
+        60
 
 
 {-| `model.eventAnimations`, soonest-first (mirrors `PostsPage.postsListView`'s
@@ -490,7 +494,7 @@ visibleAnimations model =
                     |> Maybe.withDefault (Time.millisToPosix 0)
                     |> Time.posixToMillis
             )
-        |> List.take maxDisplayedEvents
+        |> List.take (maxDisplayedEvents model)
 
 
 {-| A card's measured position/size (page coordinates, matching
@@ -1147,47 +1151,51 @@ rather than raw UTC.
 -}
 tabsView : Shared.Model -> Model -> Html Msg
 tabsView shared model =
-    div [ class "events-tabs" ]
-        [ button
-            [ classes
-                ("events-tab"
-                    :: "events-tab-primary"
-                    :: (if model.tab == UpcomingEvents then
-                            [ "background-color-primary" ]
+    if model.embeddedRow then
+        h3 [] [ text "Upcoming Events" ]
 
-                        else
-                            []
-                       )
-                )
-            , onClick (TabChanged UpcomingEvents)
-            ]
-            [ text "Upcoming Events" ]
-        , div
-            [ classes
-                ("events-tab"
-                    :: (if model.tab == EventsAfterDate then
-                            [ "background-color-primary" ]
+    else
+        div [ class "events-tabs" ]
+            [ button
+                [ classes
+                    ("events-tab"
+                        :: "events-tab-primary"
+                        :: (if model.tab == UpcomingEvents then
+                                [ "background-color-primary" ]
 
-                        else
-                            []
-                       )
-                )
-            , onClick (TabChanged EventsAfterDate)
-            ]
-            [ text "Events After "
-            , input
-                [ type_ "datetime-local"
-                , class "events-tab-date-input"
-                , value
-                    (BrowserTimeZone.formatDateTimeLocalInput
-                        shared.browserTimeZone.zone
-                        (Maybe.withDefault (Time.millisToPosix 0) model.endsAfter)
+                            else
+                                []
+                           )
                     )
-                , onInput EndsAfterInputChanged
+                , onClick (TabChanged UpcomingEvents)
                 ]
-                []
+                [ text "Upcoming Events" ]
+            , div
+                [ classes
+                    ("events-tab"
+                        :: (if model.tab == EventsAfterDate then
+                                [ "background-color-primary" ]
+
+                            else
+                                []
+                           )
+                    )
+                , onClick (TabChanged EventsAfterDate)
+                ]
+                [ text "Events After "
+                , input
+                    [ type_ "datetime-local"
+                    , class "events-tab-date-input"
+                    , value
+                        (BrowserTimeZone.formatDateTimeLocalInput
+                            shared.browserTimeZone.zone
+                            (Maybe.withDefault (Time.millisToPosix 0) model.endsAfter)
+                        )
+                    , onInput EndsAfterInputChanged
+                    ]
+                    []
+                ]
             ]
-        ]
 
 
 {-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) -- sits between
@@ -1207,7 +1215,7 @@ searchRowView model =
                 , placeholder <|
                     case model.mode of
                         HorizontalList ->
-                            "Search..."
+                            "Search posts and events..."
 
                         _ ->
                             "Search events..."

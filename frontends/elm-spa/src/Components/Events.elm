@@ -437,6 +437,18 @@ eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer
                     ]
                     []
                 , div [ class "event-card-title" ] [ text (Posts.postTitleText eventPost) ]
+                , case Posts.postLinkText eventPost of
+                    Just link ->
+                        a
+                            [ href link
+                            , target "_blank"
+                            , rel "noopener noreferrer"
+                            , classes [ hostnameToCSSClass eventServerHost, "event-card-link" ]
+                            ]
+                            [ text (Posts.stripLinkScheme link) ]
+
+                    Nothing ->
+                        text ""
                 , div [ class "event-card-when" ] [ text "📅 ", instanceTimeRangeText browserTimeZone instance ]
                 , case instance.location |> Maybe.andThen locationText of
                     Just locationLine ->

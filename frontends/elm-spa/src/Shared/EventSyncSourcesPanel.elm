@@ -21,7 +21,7 @@ smaller scale.
 import Components.EventSyncSources as EventSyncSources
 import Dict exposing (Dict)
 import Grpc
-import Html exposing (Html, button, div, input, option, select, span, text)
+import Html exposing (Html, button, div, h2, input, option, select, span, text)
 import Html.Attributes exposing (class, disabled, placeholder, selected, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Jonline exposing (EventSyncSource, GetEventSyncSourcesResponse, defaultEventSyncSource)
@@ -386,7 +386,7 @@ view browserTimeZone { canManage, canAdd } model =
 
     else
         div [ class "event-sync-sources-section" ]
-            ([ div [ class "event-sync-sources-header" ] [ text "Event Sync Sources" ]
+            ([ h2 [ class "section-title" ] [ text "Event Sync Sources" ]
              , div [ class "event-sync-sources-list" ] (contentView browserTimeZone model)
              ]
                 ++ (if canAdd then

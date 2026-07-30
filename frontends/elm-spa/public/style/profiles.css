@@ -368,11 +368,8 @@
 .event-sync-sources-section {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-}
-
-.event-sync-sources-header {
-  font-weight: 600;
+  gap: 0.25rem;
+  margin-top: 8px;
 }
 
 .event-sync-sources-list {
