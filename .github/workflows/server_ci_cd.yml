@@ -1210,7 +1210,7 @@ jobs:
             --data '{"purge_everything":true}'
 
   deploy_ato_band:
-    name: Deploy Ato Band
+    name: Deploy ATO Band
     needs: create_github_release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
