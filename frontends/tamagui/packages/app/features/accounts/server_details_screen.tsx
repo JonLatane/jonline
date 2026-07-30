@@ -122,7 +122,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
   const serverPrivacyPolicy = serverConfiguration?.serverInfo?.privacyPolicy;
   const [privacyPolicy, setPrivacyPolicy] = useState(serverPrivacyPolicy);
   const serverMediaPolicy = serverConfiguration?.serverInfo?.mediaPolicy;
-  const [mediaPolicy, setMediaPolicy] = useState(serverPrivacyPolicy);
+  const [mediaPolicy, setMediaPolicy] = useState(serverMediaPolicy);
   const serverLogo = serverConfiguration?.serverInfo?.logo;
   const [logo, setLogo] = useState(serverLogo || undefined);
 
@@ -233,6 +233,7 @@ export function BaseServerDetailsScreen(specificServer?: string) {
       name,
       description,
       privacyPolicy,
+      mediaPolicy,
       logo,
       webUserInterface,
       colors: {

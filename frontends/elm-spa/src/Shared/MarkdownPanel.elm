@@ -25,7 +25,7 @@ import Grpc
 import Html exposing (Html, button, div, img, span, text, textarea)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, spellcheck, src, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (Post, User, defaultGetPostsRequest, defaultPost)
+import Proto.Jonline exposing (Post, ServerInfo, User, defaultGetPostsRequest, defaultPost, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
@@ -42,11 +42,20 @@ opened); `NewReply post` creates a brand new reply to `post` (via `CreatePost`,
 `reply_to_post_id = post.id`), copying `post`'s own `visibility` for the new
 reply; `UserBio user` overwrites `user`'s own `bio` (via `Users.updateUser`,
 which does the same re-fetch-then-overwrite dance as `PostContent`).
+`ServerDescription`/`ServerPrivacyPolicy`/`ServerMediaPolicy server` overwrite
+just that one field of `server`'s `ServerInfo` (via `ConfigureServer`,
+re-fetching the server's configuration fresh first -- see `saveTask` --
+same reasoning as `PostContent`, and the same pattern
+`Shared.AccountsPanel.renameServer` already uses for `name`). Only ever
+opened for a signed-in account with `ADMIN` on that server (see `resolve`).
 -}
 type TargetType
     = PostContent Post
     | NewReply Post
     | UserBio User
+    | ServerDescription AccountsPanel.Server
+    | ServerPrivacyPolicy AccountsPanel.Server
+    | ServerMediaPolicy AccountsPanel.Server
 
 
 type SubmitStatus
@@ -176,6 +185,15 @@ initialContent target =
         UserBio user ->
             user.bio
 
+        ServerDescription server ->
+            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).description
+
+        ServerPrivacyPolicy server ->
+            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).privacyPolicy
+
+        ServerMediaPolicy server ->
+            Maybe.withDefault "" (AccountsPanel.serverInfoOf server).mediaPolicy
+
 
 type alias Resolved =
     { server : AccountsPanel.Server
@@ -232,6 +250,27 @@ resolve accountsPanelModel target host =
 
                                 else
                                     Err "You can only edit your own bio."
+
+                            ServerDescription _ ->
+                                if AccountsPanel.isAdmin account then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You must be an admin to edit this."
+
+                            ServerPrivacyPolicy _ ->
+                                if AccountsPanel.isAdmin account then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You must be an admin to edit this."
+
+                            ServerMediaPolicy _ ->
+                                if AccountsPanel.isAdmin account then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You must be an admin to edit this."
 
 
 {-| `PostContent` re-fetches its Post fresh (via `GetPosts`) before submitting
@@ -296,6 +335,60 @@ saveTask accountsPanelModel maybeAccountServer target content =
         UserBio user ->
             Users.updateUser accountsPanelModel maybeAccountServer user.id (\freshUser -> { freshUser | bio = content })
                 |> Task.map Tuple.first
+
+        ServerDescription server ->
+            saveServerInfoField accountsPanelModel maybeAccountServer server (\info -> { info | description = Just content })
+
+        ServerPrivacyPolicy server ->
+            saveServerInfoField accountsPanelModel maybeAccountServer server (\info -> { info | privacyPolicy = Just content })
+
+        ServerMediaPolicy server ->
+            saveServerInfoField accountsPanelModel maybeAccountServer server (\info -> { info | mediaPolicy = Just content })
+
+
+{-| Shared by `ServerDescription`/`ServerPrivacyPolicy`/`ServerMediaPolicy` --
+re-fetches `server`'s configuration fresh (`GetServerConfiguration`) and
+overlays just `updateInfo`'s change onto its `serverInfo` before writing the
+whole thing back (`ConfigureServer`), same fetch-then-overlay-then-write
+pattern (and the same reasoning -- not clobbering a concurrent config change
+made elsewhere) as `Shared.AccountsPanel.renameServer`. Unlike the other
+`saveTask` cases, the resulting `Msg` isn't just a possible token refresh --
+it's `AccountsPanel.GotServerConfigSaveResult`, which patches the freshly
+written `ServerConfiguration` straight into `Shared.AccountsPanel.Model.servers`
+(keyed by `server.frontendHost`) so `Components.Pages.ServerInformationPage`'s
+view picks up the change without a separate refetch of its own. A token
+refresh happening during this exact save (rare -- see `performWithAccountServer`)
+is deliberately not separately propagated here; the next authenticated request
+on this server just refreshes again.
+-}
+saveServerInfoField :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> AccountsPanel.Server
+    -> (ServerInfo -> ServerInfo)
+    -> Task Grpc.Error (Maybe AccountsPanel.Msg)
+saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\resolvedServer token ->
+            Grpc.new Jonline.getServerConfiguration {}
+                |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+                |> Task.andThen
+                    (\freshConfig ->
+                        let
+                            info =
+                                Maybe.withDefault defaultServerInfo freshConfig.serverInfo
+                        in
+                        Grpc.new Jonline.configureServer { freshConfig | serverInfo = Just (updateInfo info) }
+                            |> Grpc.setHost (AccountsPanel.serverUrl resolvedServer)
+                            |> withAccessToken (Just token)
+                            |> Grpc.toTask
+                    )
+        )
+        |> Task.map (\( _, newConfig ) -> Just (AccountsPanel.GotServerConfigSaveResult server.frontendHost newConfig))
 
 
 
