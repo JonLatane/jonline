@@ -41,7 +41,7 @@ import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
-import Html exposing (h2, text)
+import Html exposing (h2, h3, text)
 import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
@@ -192,7 +192,7 @@ view shared req model =
             req.route
             fromShared
             [ Html.map EventsMsg (EventsPage.view shared True model.events)
-            , h2 [] [ text (heading model.posts.context) ]
+            , h3 [] [ text (heading model.posts.context) ]
             , Html.map PostsMsg (PostsPage.view shared False model.posts)
             ]
     }

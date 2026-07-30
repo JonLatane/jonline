@@ -388,6 +388,7 @@ type Msg
     | GotSetWebUserInterfaceResult String (Result Grpc.Error ( Account, ServerConfiguration ))
     | RenameServerClicked String String
     | GotRenameServerResult String (Result Grpc.Error ( Account, ServerConfiguration ))
+    | GotServerConfigSaveResult String ServerConfiguration
     | FocusInput String
     | ClearFieldClicked String Msg
     | ServerConnected Server
@@ -2088,6 +2089,24 @@ updateHelp req msg model =
                     -- the caller (see `Pages.Server.ServerIdentifier_`) via this same
                     -- `Result` passing through `Main.notifyPageOfSharedMsg`.
                     ( model, Cmd.none )
+
+        GotServerConfigSaveResult host newConfig ->
+            let
+                newModel =
+                    { model
+                        | servers =
+                            List.map
+                                (\s ->
+                                    if s.frontendHost == host then
+                                        { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+
+                                    else
+                                        s
+                                )
+                                model.servers
+                    }
+            in
+            ( newModel, persist newModel )
 
         FocusInput domId ->
             ( model, Task.attempt (\_ -> NoOp) (Dom.focus domId) )

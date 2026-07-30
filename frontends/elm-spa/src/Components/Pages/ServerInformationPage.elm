@@ -22,11 +22,18 @@ Almost everything shown lives in `Server.configuration` (a `ServerConfiguration`
 a page of users and filters for `ADMIN` client-side, same as the Tamagui
 screen does).
 
-Renaming (via `ConfigureServer`) is the only mutation this page supports, and
-only for a signed-in account with `ADMIN` on this specific server -- routed
-through `Shared.AccountsPanel.RenameServerClicked` (not called directly)
-so the app's cached `Server` list stays in sync with the change, same as
-`UI.elm`'s web-UI toggle.
+Renaming, and editing the description/privacy policy/media policy, are the
+only mutations this page supports (all via `ConfigureServer`), and only for
+a signed-in account with `ADMIN` on this specific server. Renaming is routed
+through `Shared.AccountsPanel.RenameServerClicked` (not called directly) so
+the app's cached `Server` list stays in sync with the change, same as
+`UI.elm`'s web-UI toggle. The three Markdown fields instead go through the
+shared `Shared.MarkdownPanel` editor (`ServerDescription`/`ServerPrivacyPolicy`/
+`ServerMediaPolicy`, see `policySectionView`) -- same edit-in-panel/Save flow
+as post content on `Pages.Post.PostId_` -- which on a successful save
+dispatches `AccountsPanel.GotServerConfigSaveResult` to patch the cached
+`Server` the same way a rename does, so this page needs no refetch of its
+own to reflect the change.
 
 -}
 
@@ -44,6 +51,7 @@ import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.MarkdownPanel as MarkdownPanel
 import Task
 import UI.Classes exposing (classes)
 import UI.ServerTheme as ServerTheme
@@ -256,6 +264,9 @@ type Msg
     | RenameChanged String
     | RenameCancelClicked
     | RenameSaveClicked
+    | EditDescriptionClicked AccountsPanel.Server
+    | EditPrivacyPolicyClicked AccountsPanel.Server
+    | EditMediaPolicyClicked AccountsPanel.Server
     | SharedMsg Shared.Msg
 
 
@@ -335,6 +346,15 @@ updateInner shared msg model =
 
                 _ ->
                     ( model, Effect.none )
+
+        EditDescriptionClicked server ->
+            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerDescription server) model.targetHost)) )
+
+        EditPrivacyPolicyClicked server ->
+            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerPrivacyPolicy server) model.targetHost)) )
+
+        EditMediaPolicyClicked server ->
+            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerMediaPolicy server) model.targetHost)) )
 
         SharedMsg subMsg ->
             let
@@ -484,32 +504,47 @@ aboutTab shared model server =
     div [ class "server-details-tab-content server-details-about" ]
         [ h2 [ class "server-details-name" ] (nameView name model.renameStatus maybeAdminAccount)
         , versionView model.versionStatus
-        , case info.description of
-            Just description ->
-                Markdown.view [ class "server-details-description" ] description
-
-            Nothing ->
-                text ""
-        , case info.privacyPolicy of
-            Just policy ->
-                div [ class "server-details-policy" ]
-                    [ h3 [] [ text "Privacy Policy" ]
-                    , Markdown.view [] policy
-                    ]
-
-            Nothing ->
-                text ""
-        , case info.mediaPolicy of
-            Just policy ->
-                div [ class "server-details-policy" ]
-                    [ h3 [] [ text "Media Policy" ]
-                    , Markdown.view [] policy
-                    ]
-
-            Nothing ->
-                text ""
+        , policySectionView "server-details-description" Nothing (EditDescriptionClicked server) maybeAdminAccount info.description
+        , policySectionView "server-details-policy" (Just "Privacy Policy") (EditPrivacyPolicyClicked server) maybeAdminAccount info.privacyPolicy
+        , policySectionView "server-details-policy" (Just "Media Policy") (EditMediaPolicyClicked server) maybeAdminAccount info.mediaPolicy
         , adminsView shared server model.adminsStatus
         ]
+
+
+{-| One about-tab Markdown field backed by `Shared.MarkdownPanel` --
+`description` (`heading = Nothing`) or `privacyPolicy`/`mediaPolicy` (each
+headed). Renders nothing for a non-admin viewer when the field's unset, same
+as before this page supported editing it; an admin sees an "Edit" button
+either way -- even when unset, so they can set it for the first time, not
+just change existing text -- mirroring `nameView`'s Rename button.
+-}
+policySectionView : String -> Maybe String -> Msg -> Maybe AccountsPanel.Account -> Maybe String -> Html Msg
+policySectionView sectionClass heading editClicked maybeAdminAccount content =
+    case ( content, maybeAdminAccount ) of
+        ( Nothing, Nothing ) ->
+            text ""
+
+        _ ->
+            div [ class sectionClass ]
+                [ case heading of
+                    Just headingText ->
+                        h3 [] [ text headingText ]
+
+                    Nothing ->
+                        text ""
+                , case content of
+                    Just markdown ->
+                        Markdown.view [] markdown
+
+                    Nothing ->
+                        p [ class "server-details-policy-unset" ] [ text "Not set." ]
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick editClicked ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
 
 
 nameView : String -> RenameStatus -> Maybe AccountsPanel.Account -> List (Html Msg)

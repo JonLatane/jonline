@@ -487,6 +487,10 @@
   max-height: 300px;
 }
 
+/* .events-strip.flip-animated-row .event-card {
+  max-height: 300px;
+} */
+
 .events-strip.flip-animated-row .event-card:has(.multi-media-item, .multi-media-single-item) .event-card-content-preview {
   display: none;
 }
