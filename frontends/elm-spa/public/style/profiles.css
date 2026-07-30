@@ -413,6 +413,13 @@
   font-size: 0.85rem;
 }
 
+.event-sync-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
 .event-sync-source-last-synced {
   color: var(--muted);
   font-size: 0.8rem;

@@ -405,39 +405,41 @@ rowView browserTimeZone model source =
             ]
             []
         , intervalSelect (RowIntervalChanged source) edit.pendingIntervalSeconds (submitting || deleting)
-        , span [ class "event-sync-source-last-synced" ] [ text ("Last synced: " ++ lastSyncedText) ]
-        , if dirty then
-            button
-                [ class "event-sync-source-save", onClick (RowSaveClicked source), disabled submitting ]
+        , div [ class "event-sync-source-actions" ]
+            [ span [ class "event-sync-source-last-synced" ] [ text ("Last synced: " ++ lastSyncedText) ]
+            , if dirty then
+                button
+                    [ class "event-sync-source-save", onClick (RowSaveClicked source), disabled submitting ]
+                    [ text
+                        (if submitting then
+                            "Saving…"
+
+                         else
+                            "Save"
+                        )
+                    ]
+
+              else
+                button
+                    [ class "event-sync-source-refresh", onClick (RowRefreshClicked source), disabled submitting ]
+                    [ text
+                        (if submitting then
+                            "Refreshing…"
+
+                         else
+                            "Refresh"
+                        )
+                    ]
+            , button
+                [ class "event-sync-source-delete", onClick (DeleteClicked source), disabled deleting ]
                 [ text
-                    (if submitting then
-                        "Saving…"
+                    (if deleting then
+                        "Deleting…"
 
                      else
-                        "Save"
+                        "Delete"
                     )
                 ]
-
-          else
-            button
-                [ class "event-sync-source-refresh", onClick (RowRefreshClicked source), disabled submitting ]
-                [ text
-                    (if submitting then
-                        "Refreshing…"
-
-                     else
-                        "Refresh"
-                    )
-                ]
-        , button
-            [ class "event-sync-source-delete", onClick (DeleteClicked source), disabled deleting ]
-            [ text
-                (if deleting then
-                    "Deleting…"
-
-                 else
-                    "Delete"
-                )
             ]
         , case edit.status of
             SubmitFailed err ->

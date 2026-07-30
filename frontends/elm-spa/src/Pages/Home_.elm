@@ -24,7 +24,7 @@ reply chain is.
 There's only one visible search box here -- `EventsPage`'s (`PostsPage.view`
 is called with `showSearchRow = False`, hiding its own box and POST/REPLY
 chooser entirely, since a second, independent search box for the same page
-would be redundant/confusing). Typing in it still filters *both* feeds: see
+would be redundant/confusing). Typing in it still filters _both_ feeds: see
 `update`'s `PostsMsg`/`EventsMsg` branches, which relay a changed
 `searchText` into the other page's model via
 `PostsPage.searchTextChanged`/`EventsPage.searchTextChanged` -- each side
@@ -34,6 +34,7 @@ debounce logic here, it just keeps both `model.posts.searchText`/
 `model.events.searchText` in sync going forward. The `PostsMsg` half of that
 relay is effectively unreachable with the box hidden, but is kept for
 robustness/symmetry (e.g. a future `?search_text=` URL param divergence).
+
 -}
 
 import Components.Pages.EventsPage as EventsPage
@@ -45,7 +46,6 @@ import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
 import Shared
-import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import View exposing (View)
 
