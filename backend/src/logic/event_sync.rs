@@ -284,6 +284,7 @@ fn reconcile_instances(
     window_start_db: SystemTime,
 ) -> Result<(), diesel::result::Error> {
     let existing_instances: Vec<models::EventInstance> = event_instances::table
+        .select(models::EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::event_id.eq(event_id))
         .load::<models::EventInstance>(conn)?;
     let mut existing_by_instance_id: HashMap<String, models::EventInstance> = existing_instances

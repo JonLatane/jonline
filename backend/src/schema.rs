@@ -18,6 +18,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use diesel_full_text_search::TsVector;
+
     event_instances (id) {
         id -> Int8,
         event_id -> Int8,
@@ -29,6 +32,8 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Nullable<Timestamp>,
         event_sync_source_instance_id -> Nullable<Varchar>,
+        search_text -> TsVector,
+        user_id -> Nullable<Int8>,
     }
 }
 

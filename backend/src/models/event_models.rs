@@ -37,6 +37,38 @@ pub struct EventInstance {
     pub event_sync_source_instance_id: Option<String>,
 }
 
+/// Explicit column list for `event_instances`, excluding:
+/// - `search_text`, a denormalized tsvector used only for full-text search filtering/indexing --
+///   see `backend/migrations/2026-07-30-170000_add_search_text_to_event_instances` -- mirroring
+///   why `POST_COLUMNS` (`post_models.rs`) excludes `posts.search_text`.
+/// - `user_id`, denormalized from the instance's own Post's author purely so a composite GIN
+///   index can cover author-scoped search in one scan (see that same migration) -- never read
+///   back into application code, and `EventInstance` derives `AsChangeset`, so a field here would
+///   let a stray `.set(&existing_instance)` stomp the trigger-maintained value with stale data.
+pub const EVENT_INSTANCE_COLUMNS: (
+    event_instances::id,
+    event_instances::event_id,
+    event_instances::post_id,
+    event_instances::info,
+    event_instances::starts_at,
+    event_instances::ends_at,
+    event_instances::location,
+    event_instances::created_at,
+    event_instances::updated_at,
+    event_instances::event_sync_source_instance_id,
+) = (
+    event_instances::id,
+    event_instances::event_id,
+    event_instances::post_id,
+    event_instances::info,
+    event_instances::starts_at,
+    event_instances::ends_at,
+    event_instances::location,
+    event_instances::created_at,
+    event_instances::updated_at,
+    event_instances::event_sync_source_instance_id,
+);
+
 #[derive(Debug, Insertable)]
 #[diesel(table_name = event_instances)]
 pub struct NewEventInstance {

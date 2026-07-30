@@ -53,6 +53,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.Iterable<AttendanceStatus>? attendanceStatuses,
     $core.String? postId,
     EventListingType? listingType,
+    $core.String? searchText,
   }) {
     final result = create();
     if (eventId != null) result.eventId = eventId;
@@ -65,6 +66,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
       result.attendanceStatuses.addAll(attendanceStatuses);
     if (postId != null) result.postId = postId;
     if (listingType != null) result.listingType = listingType;
+    if (searchText != null) result.searchText = searchText;
     return result;
   }
 
@@ -96,6 +98,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aOS(8, _omitFieldNames ? '' : 'postId')
     ..aE<EventListingType>(10, _omitFieldNames ? '' : 'listingType',
         enumValues: EventListingType.values)
+    ..aOS(11, _omitFieldNames ? '' : 'searchText')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -204,6 +207,16 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   $core.bool hasListingType() => $_has(8);
   @$pb.TagNumber(10)
   void clearListingType() => $_clearField(10);
+
+  /// Search text for full-text search.
+  @$pb.TagNumber(11)
+  $core.String get searchText => $_getSZ(9);
+  @$pb.TagNumber(11)
+  set searchText($core.String value) => $_setString(9, value);
+  @$pb.TagNumber(11)
+  $core.bool hasSearchText() => $_has(9);
+  @$pb.TagNumber(11)
+  void clearSearchText() => $_clearField(11);
 }
 
 /// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.

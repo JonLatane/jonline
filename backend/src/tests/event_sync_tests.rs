@@ -17,6 +17,7 @@ const ICS_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
 fn instances_for(conn: &mut crate::db_connection::PgPooledConnection, event_id: i64) -> Vec<models::EventInstance> {
     event_instances::table
+        .select(models::EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::event_id.eq(event_id))
         .load::<models::EventInstance>(conn)
         .unwrap()

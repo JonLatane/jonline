@@ -306,6 +306,33 @@
   margin-left: 0.2rem;
 }
 
+/* `EventsPage.searchRowView`'s search box, sitting between `.events-tabs` and
+   `.events-mode-buttons` in `.events-controls-row` -- `flex: 1 1 12rem` lets it grow to fill the
+   row's remaining space beside the tabs while still being free to wrap to its own line on narrow
+   screens (matching `.events-controls-row`'s own `flex-wrap: wrap`). `.events-search-field`
+   mirrors `.posts-search-field` (posts.css) -- `position: relative` plus right padding on the
+   input is what lets `.field-clear-button` overlay the field's right edge instead of shifting
+   layout when it appears/disappears. */
+.events-search-row {
+  display: flex;
+  flex: 1 1 12rem;
+  min-width: 8rem;
+}
+
+.events-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.events-search-input {
+  width: 100%;
+  padding-right: 2rem;
+  margin: 4px;
+}
+
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;
@@ -427,6 +454,15 @@
   margin-top: 0.3rem;
   pointer-events: none;
 }
+
+.events-strip.flip-animated-row {
+  max-height: 300px;
+}
+
+.events-strip.flip-animated-row .event-card:has(.multi-media-item, .multi-media-single-item) .event-card-content-preview {
+  display: none;
+}
+
 
 .event-card-content-preview-fade {
   mask-image: linear-gradient(to bottom, black 60%, transparent 100%);

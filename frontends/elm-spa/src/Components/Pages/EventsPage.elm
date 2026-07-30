@@ -4,6 +4,7 @@ module Components.Pages.EventsPage exposing
     , Msg
     , fromShared
     , init
+    , searchTextChanged
     , subscriptions
     , update
     , view
@@ -46,8 +47,8 @@ import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, a, button, div, h2, input, p, text)
-import Html.Attributes exposing (class, href, id, style, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (class, href, id, placeholder, style, title, type_, value)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -132,6 +133,12 @@ type alias Model =
     , navKey : Browser.Navigation.Key
     , path : String
     , tab : EventsTab
+
+    -- The search box's text (see `searchRowView`), sent as `Components.Events.fetchEvents`' own
+    -- `searchText` -- mirrors `PostsPage.Model.searchText` exactly, including
+    -- `searchGeneration`'s debounce below.
+    , searchText : String
+    , searchGeneration : Int
 
     -- The cutoff actually sent as `Components.Events.fetchEvents`' own
     -- `endsAfter` -- `Nothing` only ever transiently, at startup, until
@@ -223,6 +230,8 @@ init shared author navKey path query =
                 , navKey = navKey
                 , path = path
                 , tab = tab
+                , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
+                , searchGeneration = 0
                 , endsAfter = endsAfter
                 , endsAfterInputGeneration = 0
                 }
@@ -268,6 +277,7 @@ fetchServerEffect shared model endsAfter server =
         , server.frontendHost
         )
         (model.author |> Maybe.map (Tuple.second >> .id))
+        model.searchText
         endsAfter
         |> Task.attempt (GotServerEvents server.frontendHost)
         |> Effect.fromCmd
@@ -307,6 +317,23 @@ refetchServers shared model serversToFetch =
             , Effect.batch (List.map (fetchServerEffect shared model endsAfter) serversToFetch)
             )
                 |> Tuple.mapFirst syncAnimations
+
+
+{-| Re-fetches every relevant server (unconditionally -- unlike
+`fetchNewServers`, a changed search has to override every already-Loaded
+feed, not just servers whose acting account changed) and persists the new
+`searchText` to the URL -- mirrors `Components.Pages.PostsPage.applySearchChange`
+exactly. The single path `SearchDebounceElapsed`/`ClearSearchClicked` both
+funnel through. A no-op fetch-wise (via `refetchServers`' own guard) while
+`model.endsAfter` is still `Nothing`, same as every other fetch on this page.
+-}
+applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
+applySearchChange shared model =
+    let
+        ( refetchedModel, refetchEffect ) =
+            refetchServers shared model (relevantServers shared model)
+    in
+    ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
 
 {-| Mirrors `Components.Pages.PostsPage.fetchNewServers` exactly: same
@@ -569,6 +596,13 @@ type Msg
       -- already bumped `model.endsAfterInputGeneration` past this timer's
       -- own (i.e. this one's stale).
     | EndsAfterDebounceElapsed Int
+      -- The search box firing (see `searchRowView`) -- mirrors
+      -- `PostsPage.SearchTextChanged`/`SearchDebounceElapsed`/
+      -- `ClearSearchClicked` exactly, just against `Events.fetchEvents`'
+      -- `searchText` instead of `Posts.fetchPosts`'.
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ClearSearchClicked
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -578,6 +612,17 @@ mirrors `Components.Pages.PostsPage.fromShared`.
 fromShared : Shared.Msg -> Msg
 fromShared =
     SharedMsg
+
+
+{-| Lets a sibling page (`Pages.Home_`, keeping this module's search box in sync with its embedded
+`PostsPage`'s own `model.searchText` behind the scenes) feed a search-text change in from outside
+exactly as if the user had typed it into this module's own search box -- same
+`SearchTextChanged`/`SearchDebounceElapsed` round-trip, same independent debounce timer -- mirrors
+`Components.Pages.PostsPage.searchTextChanged` exactly.
+-}
+searchTextChanged : String -> Msg
+searchTextChanged =
+    SearchTextChanged
 
 
 accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
@@ -816,6 +861,29 @@ updateInner shared msg model =
                 -- past this timer's -- it's stale, ignore it.
                 ( model, Effect.none )
 
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 311
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked) already bumped
+                -- searchGeneration past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
@@ -896,15 +964,16 @@ displayModeFromParam param =
 
 
 {-| Every query param this page persists, read fresh off `model` -- `display`
-(see `displayModeParam`) and `ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ`
-UTC timestamp, via `Shared.Conversions.isoUtcString`, only while
-`EventsAfterDate` is the active tab; `UpcomingEvents` -- the default -- omits
-it entirely, same "round-trip to/from absence" convention `display` already
-uses for its own default). Built as one combined list (rather than each
-concern pushing its own `replaceUrl` independently) because
-`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
-query string -- two independent single-param pushes would each silently
-wipe out whatever the other had just set.
+(see `displayModeParam`), `search_text` (mirrors `PostsPage.pushSearchUrl`'s
+own omit-when-blank convention), and `ends_after` (a standard
+`YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via `Shared.Conversions.isoUtcString`,
+only while `EventsAfterDate` is the active tab; `UpcomingEvents` -- the
+default -- omits it entirely, same "round-trip to/from absence" convention
+`display` already uses for its own default). Built as one combined list
+(rather than each concern pushing its own `replaceUrl` independently)
+because `Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the
+_whole_ query string -- independent single-param pushes would each silently
+wipe out whatever the others had just set.
 -}
 queryParams : Model -> List Url.Builder.QueryParameter
 queryParams model =
@@ -914,6 +983,12 @@ queryParams model =
      else
         [ Url.Builder.string "display" (displayModeParam model.mode) ]
     )
+        ++ (if String.isEmpty (String.trim model.searchText) then
+                []
+
+            else
+                [ Url.Builder.string "search_text" model.searchText ]
+           )
         ++ (case ( model.tab, model.endsAfter ) of
                 ( EventsAfterDate, Just endsAfter ) ->
                     [ Url.Builder.string "ends_after" (Conversions.isoUtcString endsAfter) ]
@@ -982,6 +1057,7 @@ view shared homeEmbedded model =
         [ authorHeadingView shared model.author
         , div [ class "events-controls-row" ]
             [ tabsView shared model
+            , searchRowView model
             , modeButtonsView shared homeEmbedded model.mode
             ]
         , eventsListView shared model
@@ -1078,6 +1154,65 @@ tabsView shared model =
                 []
             ]
         ]
+
+
+{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) -- sits between
+`tabsView` and `modeButtonsView` in `view`'s `events-controls-row`, so search still visibly
+respects whichever time-filter tab is active (see `Components.Events.fetchEvents`'s own doc for
+why the request itself still enforces that too, not just the UI placement). Mirrors
+`Components.Pages.PostsPage.searchRowView` closely, minus that module's POST/REPLY context
+chooser -- this listing has no equivalent.
+-}
+searchRowView : Model -> Html Msg
+searchRowView model =
+    div [ class "events-search-row" ]
+        [ div [ class "events-search-field" ]
+            [ input
+                [ type_ "text"
+                , class "events-search-input"
+                , placeholder <|
+                    case model.mode of
+                        HorizontalList ->
+                            "Search..."
+
+                        _ ->
+                            "Search events..."
+                , value model.searchText
+                , onInput SearchTextChanged
+                , onEscape ClearSearchClicked
+                ]
+                []
+            , if String.isEmpty model.searchText then
+                text ""
+
+              else
+                button
+                    [ type_ "button"
+                    , class "field-clear-button"
+                    , onClick ClearSearchClicked
+                    , title "Clear search"
+                    ]
+                    [ text "╳" ]
+            ]
+        ]
+
+
+{-| Fires `msg` (and suppresses the key's default effect) when Escape is pressed in a text input
+-- mirrors `Components.Pages.PostsPage.onEscape` exactly.
+-}
+onEscape : msg -> Html.Attribute msg
+onEscape msg =
+    preventDefaultOn "keydown"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Escape" then
+                        Decode.succeed ( msg, True )
+
+                    else
+                        Decode.fail "Not the Escape key"
+                )
+        )
 
 
 {-| The layout-switch buttons (see `EventsDisplayMode`), highlighted

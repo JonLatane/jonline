@@ -270,6 +270,10 @@ approach to predictable atomicity.
 | CreateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Creates an Event. *Authenticated.* |
 | UpdateEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | Updates an Event. *Authenticated.* |
 | DeleteEvent | [Event](#jonline-Event) | [Event](#jonline-Event) | (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* |
+| GetEventSyncSources | [User](#jonline-User) | [GetEventSyncSourcesResponse](#jonline-GetEventSyncSourcesResponse) | Gets a user&#39;s EventSyncSources. *Authenticated* (self, or Admin for any user). |
+| CreateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). |
+| UpdateEventSyncSource | [EventSyncSource](#jonline-EventSyncSource) | [EventSyncSource](#jonline-EventSyncSource) | Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user&#39;s), requires `SYNCHRONIZE_EVENTS` (or Admin). |
+| DeleteEventSyncSource | [DeleteEventSyncSourceRequest](#jonline-DeleteEventSyncSourceRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an EventSyncSource. *Authenticated* (owner, or Admin). |
 | GetEventAttendances | [GetEventAttendancesRequest](#jonline-GetEventAttendancesRequest) | [EventAttendances](#jonline-EventAttendances) | Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* |
 | UpsertEventAttendance | [EventAttendance](#jonline-EventAttendance) | [EventAttendance](#jonline-EventAttendance) | Upsert an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* See [EventAttendance](#jonline-EventAttendance) and [AnonymousAttendee](#jonline-AnonymousAttendee) for details. tl;dr: Anonymous RSVPs may updated/deleted with the `AnonymousAttendee.auth_token` returned by this RPC (the client should save this for the user, and ideally, offer a link with the token). |
 | DeleteEventAttendance | [EventAttendance](#jonline-EventAttendance) | [.google.protobuf.Empty](#google-protobuf-Empty) | Delete an EventAttendance. *Publicly accessible **or** Authenticated, with anonymous RSVP support.* |
@@ -1599,6 +1603,7 @@ Valid GetEventsRequest formats:
 | attendance_statuses | [AttendanceStatus](#jonline-AttendanceStatus) | repeated | If set, only return events for which the current user&#39;s attendance status matches one of the given statuses. If `attendee_id` is also set, only returns events where the given user&#39;s status matches one of the given statuses. |
 | post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
+| search_text | [string](#string) | optional | Search text for full-text search. |
 
 
 
@@ -1703,6 +1708,7 @@ Events returned are ordered by start time unless otherwise specified (specifical
 | MY_GROUPS_EVENTS | 2 | Returns events from any group the user is a member of. |
 | DIRECT_EVENTS | 3 | Returns `DIRECT` events that are directly addressed to the user. |
 | EVENTS_PENDING_MODERATION | 4 | Returns events pending moderation by the server-level mods/admins. |
+| EVENT_TEXT_SEARCH | 5 | Returns posts matching the full-text `search_text` query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter. |
 | GROUP_EVENTS | 10 | Returns events from a specific group. Requires group_id parameterRequires group_id parameter |
 | GROUP_EVENTS_PENDING_MODERATION | 11 | Returns pending_moderation events from a specific group. Requires group_id parameter and user must have group (or server) admin permissions. |
 | NEWLY_ADDED_EVENTS | 20 | Returns events from either `ALL_ACCESSIBLE_EVENTS` or a specific author (with optional author_user_id parameter). Returned EventInstances will be ordered by creation time rather than start time. |

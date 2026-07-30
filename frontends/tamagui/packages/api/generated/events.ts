@@ -32,6 +32,11 @@ export enum EventListingType {
   DIRECT_EVENTS = 3,
   /** EVENTS_PENDING_MODERATION - Returns events pending moderation by the server-level mods/admins. */
   EVENTS_PENDING_MODERATION = 4,
+  /**
+   * EVENT_TEXT_SEARCH - Returns posts matching the full-text `search_text` query, scoped the same way
+   * ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+   */
+  EVENT_TEXT_SEARCH = 5,
   /** GROUP_EVENTS - Returns events from a specific group. Requires group_id parameterRequires group_id parameter */
   GROUP_EVENTS = 10,
   /**
@@ -64,6 +69,9 @@ export function eventListingTypeFromJSON(object: any): EventListingType {
     case 4:
     case "EVENTS_PENDING_MODERATION":
       return EventListingType.EVENTS_PENDING_MODERATION;
+    case 5:
+    case "EVENT_TEXT_SEARCH":
+      return EventListingType.EVENT_TEXT_SEARCH;
     case 10:
     case "GROUP_EVENTS":
       return EventListingType.GROUP_EVENTS;
@@ -92,6 +100,8 @@ export function eventListingTypeToJSON(object: EventListingType): string {
       return "DIRECT_EVENTS";
     case EventListingType.EVENTS_PENDING_MODERATION:
       return "EVENTS_PENDING_MODERATION";
+    case EventListingType.EVENT_TEXT_SEARCH:
+      return "EVENT_TEXT_SEARCH";
     case EventListingType.GROUP_EVENTS:
       return "GROUP_EVENTS";
     case EventListingType.GROUP_EVENTS_PENDING_MODERATION:
@@ -215,6 +225,8 @@ export interface GetEventsRequest {
     | undefined;
   /** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
   listingType: EventListingType;
+  /** Search text for full-text search. */
+  searchText?: string | undefined;
 }
 
 /**
@@ -541,6 +553,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     attendanceStatuses: [],
     postId: undefined,
     listingType: 0,
+    searchText: undefined,
   };
 }
 
@@ -574,6 +587,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
+    }
+    if (message.searchText !== undefined) {
+      writer.uint32(90).string(message.searchText);
     }
     return writer;
   },
@@ -667,6 +683,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           message.listingType = reader.int32() as any;
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.searchText = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -689,6 +713,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
         : [],
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
+      searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
     };
   },
 
@@ -721,6 +746,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.listingType !== 0) {
       obj.listingType = eventListingTypeToJSON(message.listingType);
     }
+    if (message.searchText !== undefined) {
+      obj.searchText = message.searchText;
+    }
     return obj;
   },
 
@@ -740,6 +768,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.attendanceStatuses = object.attendanceStatuses?.map((e) => e) || [];
     message.postId = object.postId ?? undefined;
     message.listingType = object.listingType ?? 0;
+    message.searchText = object.searchText ?? undefined;
     return message;
   },
 };

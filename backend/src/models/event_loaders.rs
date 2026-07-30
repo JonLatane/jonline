@@ -1,6 +1,6 @@
 use super::{
     Author, Event, EventAttendance, EventInstance, EventSyncSource, Post, User, AUTHOR_COLUMNS,
-    POST_COLUMNS,
+    EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
 };
 use diesel::{
     dsl::sql,
@@ -79,7 +79,7 @@ pub fn get_event_instance(
     conn: &mut PgPooledConnection,
 ) -> Result<EventInstance, Status> {
     event_instances::table
-        .select(event_instances::all_columns)
+        .select(EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::id.eq(event_instance_id))
         .first::<EventInstance>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
@@ -101,7 +101,7 @@ pub fn get_event_instances(
             )),
         )
         .select((
-            event_instances::all_columns,
+            EVENT_INSTANCE_COLUMNS,
             POST_COLUMNS,
             AUTHOR_COLUMNS.nullable(),
         ))

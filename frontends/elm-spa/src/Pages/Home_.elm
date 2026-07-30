@@ -19,6 +19,20 @@ those other `PostsPage` callers, keeps `Shared.Breadcrumbs` pointed at
 `mainFrontendHost` (see `setBreadcrumbsHost`), since this feed isn't scoped
 to any one server for a breadcrumb trail to identify the way a Post's own
 reply chain is.
+
+There's only one visible search box here -- `EventsPage`'s (`PostsPage.view`
+is called with `showSearchRow = False`, hiding its own box and POST/REPLY
+chooser entirely, since a second, independent search box for the same page
+would be redundant/confusing). Typing in it still filters *both* feeds: see
+`update`'s `PostsMsg`/`EventsMsg` branches, which relay a changed
+`searchText` into the other page's model via
+`PostsPage.searchTextChanged`/`EventsPage.searchTextChanged` -- each side
+keeps its own independent debounce timer (see those modules' own
+`SearchTextChanged`/`SearchDebounceElapsed`), so this doesn't add any new
+debounce logic here, it just keeps both `model.posts.searchText`/
+`model.events.searchText` in sync going forward. The `PostsMsg` half of that
+relay is effectively unreachable with the box hidden, but is kept for
+robustness/symmetry (e.g. a future `?search_text=` URL param divergence).
 -}
 
 import Components.Pages.EventsPage as EventsPage
@@ -95,14 +109,36 @@ update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     case msg of
         PostsMsg subMsg ->
-            PostsPage.update shared subMsg model.posts
-                |> Tuple.mapFirst (\newPosts -> { model | posts = newPosts })
-                |> Tuple.mapSecond (Effect.map PostsMsg)
+            let
+                ( newPosts, postsEffect ) =
+                    PostsPage.update shared subMsg model.posts
+
+                ( syncedEvents, syncEffect ) =
+                    if newPosts.searchText /= model.events.searchText then
+                        EventsPage.update shared (EventsPage.searchTextChanged newPosts.searchText) model.events
+
+                    else
+                        ( model.events, Effect.none )
+            in
+            ( { model | posts = newPosts, events = syncedEvents }
+            , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg syncEffect ]
+            )
 
         EventsMsg subMsg ->
-            EventsPage.update shared subMsg model.events
-                |> Tuple.mapFirst (\newEvents -> { model | events = newEvents })
-                |> Tuple.mapSecond (Effect.map EventsMsg)
+            let
+                ( newEvents, eventsEffect ) =
+                    EventsPage.update shared subMsg model.events
+
+                ( syncedPosts, syncEffect ) =
+                    if newEvents.searchText /= model.posts.searchText then
+                        PostsPage.update shared (PostsPage.searchTextChanged newEvents.searchText) model.posts
+
+                    else
+                        ( model.posts, Effect.none )
+            in
+            ( { model | events = newEvents, posts = syncedPosts }
+            , Effect.batch [ Effect.map EventsMsg eventsEffect, Effect.map PostsMsg syncEffect ]
+            )
 
         SharedMsg subMsg ->
             let
@@ -168,13 +204,15 @@ view shared req model =
             fromShared
             [ Html.map EventsMsg (EventsPage.view shared True model.events)
             , h2 [] [ text (heading model.posts.context) ]
-            , Html.map PostsMsg (PostsPage.view shared model.posts)
+            , Html.map PostsMsg (PostsPage.view shared False model.posts)
             ]
     }
 
 
-{-| "Recent Posts"/"Recent Replies", matching `model.context` -- the same
-POST/REPLY chooser `PostsPage.searchRowView` renders just below this heading.
+{-| "Recent Posts"/"Recent Replies", matching `model.context` -- always "Recent Posts" in
+practice here, since `PostsPage.view`'s `showSearchRow = False` above hides the only control
+(`PostsPage.searchRowView`'s POST/REPLY chooser) that could ever change `model.posts.context`
+away from its `POST` default.
 -}
 heading : PostContext -> String
 heading context =

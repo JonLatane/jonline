@@ -1897,6 +1897,7 @@ fieldNumbersGetEventsRequest :
     , attendanceStatuses : Int
     , postId : Int
     , listingType : Int
+    , searchText : Int
     }
 fieldNumbersGetEventsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetEventsRequest

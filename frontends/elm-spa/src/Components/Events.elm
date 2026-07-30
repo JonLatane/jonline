@@ -34,6 +34,7 @@ import Grpc
 import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
 import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultGetEventsRequest, defaultTimeFilter)
+import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
 import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
@@ -80,22 +81,46 @@ that user's own events (mirrors `Components.Posts.fetchPosts`' own
 ended as of `endsAfter` -- `EventsPage` passes the live current time for its
 default "Upcoming Events" tab, or a user-picked cutoff for its "Events After
 &lt;date&gt;" one, so this is deliberately not called `now` (it isn't,
-always). `GetEventsResponse` isn't itself flattened per-`EventInstance` --
-see `eventInstancePairs`.
+always). This time filter is sent -- and still enforced -- regardless of
+`searchText`; see below. `GetEventsResponse` isn't itself flattened
+per-`EventInstance` -- see `eventInstancePairs`.
+
+`searchText`, if non-blank (leading/trailing whitespace is trimmed, and a
+blank string is treated the same as empty), switches the request to
+`EVENT_TEXT_SEARCH` -- mirrors `Components.Posts.fetchPosts`' own
+`searchText` param. Unlike `fetchPosts`, `timeFilter` is still sent either
+way -- `get_search_events` (the `EVENT_TEXT_SEARCH` branch of
+`backend/src/rpcs/events/get_events.rs`) still filters on it, so a search
+made while on the "Upcoming Events" tab only searches upcoming events, not
+every event ever.
 -}
 fetchEvents :
     AccountsPanel.Model
     -> AccountsPanel.MaybeAccountServer
     -> Maybe String
+    -> String
     -> Time.Posix
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
-fetchEvents accountsPanelModel maybeAccountServer authorUserId endsAfter =
+fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAfter =
     let
-        request =
+        trimmedSearchText =
+            String.trim searchText
+
+        baseRequest =
             { defaultGetEventsRequest
                 | authorUserId = authorUserId
                 , timeFilter = Just { defaultTimeFilter | endsAfter = Just (posixToTimestamp endsAfter) }
             }
+
+        request =
+            if String.isEmpty trimmedSearchText then
+                baseRequest
+
+            else
+                { baseRequest
+                    | listingType = EVENTTEXTSEARCH
+                    , searchText = Just trimmedSearchText
+                }
     in
     performWithOptionalAccountServer
         accountsPanelModel

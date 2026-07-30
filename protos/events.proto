@@ -44,6 +44,8 @@ message GetEventsRequest {
   optional string post_id = 8;
   // The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
   EventListingType listing_type = 10;
+  // Search text for full-text search.
+  optional string search_text = 11;
 }
 
 // Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
@@ -73,6 +75,9 @@ enum EventListingType {
   DIRECT_EVENTS = 3;
   // Returns events pending moderation by the server-level mods/admins.
   EVENTS_PENDING_MODERATION = 4;
+  // Returns posts matching the full-text `search_text` query, scoped the same way
+  // ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+  EVENT_TEXT_SEARCH = 5;
 
   // Returns events from a specific group. Requires group_id parameterRequires group_id parameter
   GROUP_EVENTS = 10;

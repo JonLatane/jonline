@@ -699,6 +699,30 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>(TODO) (Soft) deletes a Event. Returns the deleted version of the Event. <em>Authenticated.</em></td>
         </tr>
         <tr>
+          <td>GetEventSyncSources</td>
+          <td><a href="#jonline-User">User</a></td>
+          <td><a href="#jonline-GetEventSyncSourcesResponse">GetEventSyncSourcesResponse</a></td>
+          <td>Gets a user's EventSyncSources. <em>Authenticated</em> (self, or Admin for any user).</td>
+        </tr>
+        <tr>
+          <td>CreateEventSyncSource</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>Creates an EventSyncSource for the current user. <em>Authenticated</em>, requires <code>SYNCHRONIZE_EVENTS</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>UpdateEventSyncSource</td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
+          <td>Updates an EventSyncSource. <em>Authenticated</em> (owner, or Admin for any user's), requires <code>SYNCHRONIZE_EVENTS</code> (or Admin).</td>
+        </tr>
+        <tr>
+          <td>DeleteEventSyncSource</td>
+          <td><a href="#jonline-DeleteEventSyncSourceRequest">DeleteEventSyncSourceRequest</a></td>
+          <td><a href="#google-protobuf-Empty">.google.protobuf.Empty</a></td>
+          <td>Deletes an EventSyncSource. <em>Authenticated</em> (owner, or Admin).</td>
+        </tr>
+        <tr>
           <td>GetEventAttendances</td>
           <td><a href="#jonline-GetEventAttendancesRequest">GetEventAttendancesRequest</a></td>
           <td><a href="#jonline-EventAttendances">EventAttendances</a></td>
@@ -3690,6 +3714,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td></td>
           <td>The listing type, e.g. <code>ALL_ACCESSIBLE_EVENTS</code>, <code>FOLLOWING_EVENTS</code>, <code>MY_GROUPS_EVENTS</code>, <code>DIRECT_EVENTS</code>, <code>GROUP_EVENTS</code>, <code>GROUP_EVENTS_PENDING_MODERATION</code>.</td>
         </tr>
+        <tr>
+          <td>search_text</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Search text for full-text search.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetEventsResponse"></a></p>
@@ -3894,6 +3924,11 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>EVENTS_PENDING_MODERATION</td>
           <td>4</td>
           <td>Returns events pending moderation by the server-level mods/admins.</td>
+        </tr>
+        <tr>
+          <td>EVENT_TEXT_SEARCH</td>
+          <td>5</td>
+          <td>Returns posts matching the full-text <code>search_text</code> query, scoped the same way ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.</td>
         </tr>
         <tr>
           <td>GROUP_EVENTS</td>

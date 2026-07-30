@@ -24,6 +24,7 @@ const EventListingType$json = {
     {'1': 'MY_GROUPS_EVENTS', '2': 2},
     {'1': 'DIRECT_EVENTS', '2': 3},
     {'1': 'EVENTS_PENDING_MODERATION', '2': 4},
+    {'1': 'EVENT_TEXT_SEARCH', '2': 5},
     {'1': 'GROUP_EVENTS', '2': 10},
     {'1': 'GROUP_EVENTS_PENDING_MODERATION', '2': 11},
     {'1': 'NEWLY_ADDED_EVENTS', '2': 20},
@@ -34,8 +35,9 @@ const EventListingType$json = {
 final $typed_data.Uint8List eventListingTypeDescriptor = $convert.base64Decode(
     'ChBFdmVudExpc3RpbmdUeXBlEhkKFUFMTF9BQ0NFU1NJQkxFX0VWRU5UUxAAEhQKEEZPTExPV0'
     'lOR19FVkVOVFMQARIUChBNWV9HUk9VUFNfRVZFTlRTEAISEQoNRElSRUNUX0VWRU5UUxADEh0K'
-    'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIQCgxHUk9VUF9FVkVOVFMQChIjCh9HUk9VUF'
-    '9FVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAsSFgoSTkVXTFlfQURERURfRVZFTlRTEBQ=');
+    'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIVChFFVkVOVF9URVhUX1NFQVJDSBAFEhAKDE'
+    'dST1VQX0VWRU5UUxAKEiMKH0dST1VQX0VWRU5UU19QRU5ESU5HX01PREVSQVRJT04QCxIWChJO'
+    'RVdMWV9BRERFRF9FVkVOVFMQFA==');
 
 @$core.Deprecated('Use attendanceStatusDescriptor instead')
 const AttendanceStatus$json = {
@@ -137,6 +139,15 @@ const GetEventsRequest$json = {
       '6': '.jonline.EventListingType',
       '10': 'listingType'
     },
+    {
+      '1': 'search_text',
+      '3': 11,
+      '4': 1,
+      '5': 9,
+      '9': 7,
+      '10': 'searchText',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_event_id'},
@@ -146,6 +157,7 @@ const GetEventsRequest$json = {
     {'1': '_time_filter'},
     {'1': '_attendee_id'},
     {'1': '_post_id'},
+    {'1': '_search_text'},
   ],
 };
 
@@ -158,9 +170,10 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
     'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
     'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESPAoMbGlzdGluZ1'
-    '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglf'
-    'ZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdG'
-    'FuY2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZA==');
+    '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtz'
+    'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBQgsKCV9ldmVudF9pZEIRCg9fYXV0aG'
+    '9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQhQKEl9ldmVudF9pbnN0YW5jZV9pZEIOCgxfdGltZV9m'
+    'aWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoKCF9wb3N0X2lkQg4KDF9zZWFyY2hfdGV4dA==');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {

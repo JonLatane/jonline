@@ -320,6 +320,7 @@ pub fn create_event_sync_source_row(
 pub struct EventOpts {
     pub visibility: Visibility,
     pub moderation: Moderation,
+    pub title: Option<String>,
 }
 
 impl Default for EventOpts {
@@ -327,6 +328,7 @@ impl Default for EventOpts {
         EventOpts {
             visibility: Visibility::ServerPublic,
             moderation: Moderation::Unmoderated,
+            title: Some("Test Post".to_string()),
         }
     }
 }
@@ -346,6 +348,7 @@ pub fn create_event(
             visibility: opts.visibility,
             moderation: opts.moderation,
             context: PostContext::Event,
+            title: opts.title,
             ..Default::default()
         },
     );
@@ -367,6 +370,7 @@ pub struct EventInstanceOpts {
     pub moderation: Moderation,
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
+    pub title: Option<String>,
 }
 
 impl Default for EventInstanceOpts {
@@ -377,6 +381,7 @@ impl Default for EventInstanceOpts {
             moderation: Moderation::Unmoderated,
             starts_at,
             ends_at: starts_at + std::time::Duration::from_secs(3600),
+            title: Some("Test Post".to_string()),
         }
     }
 }
@@ -399,6 +404,7 @@ pub fn create_event_instance(
             visibility: opts.visibility,
             moderation: opts.moderation,
             context: PostContext::EventInstance,
+            title: opts.title,
             ..Default::default()
         },
     );
@@ -412,6 +418,7 @@ pub fn create_event_instance(
             location: None,
             event_sync_source_instance_id: None,
         })
+        .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)
         .expect("failed to create test event instance");
     (instance, post)

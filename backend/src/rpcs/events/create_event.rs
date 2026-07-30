@@ -193,6 +193,7 @@ pub fn create_event(
                     info: json!({}),
                     event_sync_source_instance_id: None,
                 })
+                .returning(models::EVENT_INSTANCE_COLUMNS)
                 .get_result::<models::EventInstance>(conn)?;
             let marshalable_instance = MarshalableEventInstance(
                 inserted_instance,
