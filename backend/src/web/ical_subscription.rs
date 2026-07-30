@@ -123,14 +123,7 @@ async fn ical_subscription(
             // Create event link
             let event_link = format!("https://{frontend_domain}/event/{instance_id}");
 
-            // Create description with "via:" link
-            let base_description = event_post.content.as_deref().unwrap_or("");
-            // let event_post_link = event_post.link.clone()).flatten();
-            let description = match &event_post.link {
-                Some(link) => format!("{base_description}\n\nvia: {link}"),
-                None => base_description.to_string(),
-            };
-            // format!("{base_description}\n\nvia: {event_link}");
+            let description = event_post.content.as_deref().unwrap_or("");
 
             // Create iCal event
             let mut ical_event = Event::new();

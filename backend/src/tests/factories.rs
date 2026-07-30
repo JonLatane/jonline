@@ -11,7 +11,10 @@ use crate::db_connection::{establish_test_pool, PgPool, PgPooledConnection, MIGR
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{follows, group_posts, groups, memberships, posts, users};
+use crate::schema::{
+    event_instances, event_sync_sources, events, follows, group_posts, groups, memberships, posts,
+    users,
+};
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
 /// binary process, since `Once`/`lazy_static` state doesn't cross the parallel test threads
@@ -291,4 +294,161 @@ pub fn create_follow_with_moderation(
         })
         .get_result::<models::Follow>(conn)
         .expect("failed to create test follow")
+}
+
+/// Inserts an `event_sync_sources` row directly (bypassing `rpcs::create_event_sync_source`, so
+/// no sync/HTTP fetch happens) -- for specs that only care about ownership/permission handling,
+/// not the actual sync. Specs exercising sync itself should go through the RPC/logic functions
+/// against a `serve_ics`-backed URL instead.
+pub fn create_event_sync_source_row(
+    conn: &mut PgPooledConnection,
+    user: &models::User,
+    ics_subscription_url: &str,
+) -> models::EventSyncSource {
+    insert_into(event_sync_sources::table)
+        .values(&models::NewEventSyncSource {
+            user_id: user.id,
+            sync_interval_seconds: 3600,
+            configuration: serde_json::json!({ "ics_subscription_url": ics_subscription_url }),
+        })
+        .get_result::<models::EventSyncSource>(conn)
+        .expect("failed to create test event sync source")
+}
+
+/// Options for `create_event`'s underlying container `Post` (context `EVENT`) - mirrors
+/// `PostOpts`, but only exposes the fields `get_events_tests` actually varies.
+pub struct EventOpts {
+    pub visibility: Visibility,
+    pub moderation: Moderation,
+    pub title: Option<String>,
+}
+
+impl Default for EventOpts {
+    fn default() -> Self {
+        EventOpts {
+            visibility: Visibility::ServerPublic,
+            moderation: Moderation::Unmoderated,
+            title: Some("Test Post".to_string()),
+        }
+    }
+}
+
+/// Inserts an `events` row directly (bypassing `rpcs::create_event`) along with its container
+/// `Post` (context `EVENT`, per `create_event.rs`). Returns both since `get_events` filters on
+/// the container post's visibility/moderation/user_id independently of any instance's own post.
+pub fn create_event(
+    conn: &mut PgPooledConnection,
+    author: &models::User,
+    opts: EventOpts,
+) -> (models::Event, models::Post) {
+    let post = create_post(
+        conn,
+        Some(author),
+        PostOpts {
+            visibility: opts.visibility,
+            moderation: opts.moderation,
+            context: PostContext::Event,
+            title: opts.title,
+            ..Default::default()
+        },
+    );
+    let event = insert_into(events::table)
+        .values(&models::NewEvent {
+            post_id: post.id,
+            info: serde_json::json!({}),
+            event_sync_source_id: None,
+        })
+        .get_result::<models::Event>(conn)
+        .expect("failed to create test event");
+    (event, post)
+}
+
+/// Options for `create_event_instance`'s underlying `Post` (context `EVENT_INSTANCE`) plus its
+/// `starts_at`/`ends_at`. Defaults to a one-hour instance starting a day from now.
+pub struct EventInstanceOpts {
+    pub visibility: Visibility,
+    pub moderation: Moderation,
+    pub starts_at: SystemTime,
+    pub ends_at: SystemTime,
+    pub title: Option<String>,
+}
+
+impl Default for EventInstanceOpts {
+    fn default() -> Self {
+        let starts_at = SystemTime::now() + std::time::Duration::from_secs(86400);
+        EventInstanceOpts {
+            visibility: Visibility::ServerPublic,
+            moderation: Moderation::Unmoderated,
+            starts_at,
+            ends_at: starts_at + std::time::Duration::from_secs(3600),
+            title: Some("Test Post".to_string()),
+        }
+    }
+}
+
+/// Inserts an `event_instances` row directly, along with its own `Post` (context
+/// `EVENT_INSTANCE`) - `get_events`' `query_visible_events!` requires *both* the parent event's
+/// post and the instance's own post to independently pass visibility/moderation, so tests need
+/// separate control over each. `author: None` mirrors `create_post`'s own `author: None` (e.g. an
+/// instance post left behind by a deleted user).
+pub fn create_event_instance(
+    conn: &mut PgPooledConnection,
+    event: &models::Event,
+    author: Option<&models::User>,
+    opts: EventInstanceOpts,
+) -> (models::EventInstance, models::Post) {
+    let post = create_post(
+        conn,
+        author,
+        PostOpts {
+            visibility: opts.visibility,
+            moderation: opts.moderation,
+            context: PostContext::EventInstance,
+            title: opts.title,
+            ..Default::default()
+        },
+    );
+    let instance = insert_into(event_instances::table)
+        .values(&models::NewEventInstance {
+            event_id: event.id,
+            post_id: post.id,
+            info: serde_json::json!({}),
+            starts_at: opts.starts_at,
+            ends_at: opts.ends_at,
+            location: None,
+            event_sync_source_instance_id: None,
+        })
+        .returning(models::EVENT_INSTANCE_COLUMNS)
+        .get_result::<models::EventInstance>(conn)
+        .expect("failed to create test event instance");
+    (instance, post)
+}
+
+/// Starts a background thread serving `ics_text` as `text/calendar` for every HTTP request it
+/// receives (looping for the life of the test process -- there's no teardown, same as any other
+/// test-scoped leaked thread), and returns the `http://127.0.0.1:<port>/...` URL to fetch it
+/// from. Keeps sync specs hermetic: real network calls in a test suite are flaky and slow, so
+/// `sync_event_sync_source` (which always does a real HTTP fetch, unlike
+/// `sync_event_sync_source_text`) is exercised against this instead of the public internet.
+pub fn serve_ics(ics_text: &str) -> String {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+
+    let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test ICS server");
+    let port = listener.local_addr().expect("failed to read test ICS server port").port();
+    let body = ics_text.to_string();
+    std::thread::spawn(move || {
+        for stream in listener.incoming() {
+            let Ok(mut stream) = stream else { continue };
+            let mut buf = [0u8; 2048];
+            let _ = stream.read(&mut buf);
+            let response = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: text/calendar\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+                body.len(),
+                body
+            );
+            let _ = stream.write_all(response.as_bytes());
+        }
+    });
+    format!("http://127.0.0.1:{port}/test.ics")
 }

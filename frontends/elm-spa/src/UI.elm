@@ -12,6 +12,7 @@ import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, s
 import Html.Keyed
 import Json.Decode as Decode
 import Page
+import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
 import Set
@@ -19,6 +20,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -118,19 +120,22 @@ headerNav shared currentRoute =
         [ div [ class "navbar-inner" ]
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
-                , eventsLink shared currentRoute
-                , peopleLink shared currentRoute
-                , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
-                    text ""
+                , div [ class "nav-links-scroll" ]
+                    [ if Set.isEmpty shared.starredPostsPanel.starredPostIds then
+                        text ""
 
-                  else
-                    starredPostsToggle shared
+                      else
+                        starredPostsToggle shared
+                    , eventsLink shared currentRoute
+                    , postsLink shared currentRoute
+                    , peopleLink shared currentRoute
+                    ]
                 ]
             , div [ class "nav-right" ] [ accountsMenu shared currentRoute ]
             ]
 
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
-        -- the full viewport width), not of `.admin-menu` (the toggle's own
+        -- the full viewport width), not of `.starred-posts-menu` (the toggle's own
         -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
         -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
         -- the toggle's left edge. See `starredPostsPanel`.
@@ -358,7 +363,7 @@ homeLinkContent shared =
             AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
 
         Nothing ->
-            text "Home"
+            text "🏠"
 
 
 {-| A circular icon nav link to the People page (`/people`), sitting between
@@ -414,6 +419,32 @@ eventsLink shared currentRoute =
         , title "Events"
         ]
         [ text "📅" ]
+
+
+{-| A circular icon nav link to the Posts page (`/posts`), sitting between
+`eventsLink` and `peopleLink` -- same styling/highlighting convention, just
+routed to `Route.Posts` with a 📝 glyph.
+-}
+postsLink : Shared.Model -> Route -> Html Shared.Msg
+postsLink shared currentRoute =
+    let
+        isCurrent =
+            currentRoute == Route.Posts
+    in
+    a
+        [ href (shared.basePath ++ Route.toHref Route.Posts)
+        , classes
+            ("nav-link"
+                :: (if isCurrent then
+                        [ hostnameToCSSClass shared.accountsPanel.mainFrontendHost, "background-color-nav" ]
+
+                    else
+                        []
+                   )
+            )
+        , title "Posts"
+        ]
+        [ text "📝" ]
 
 
 {-| Looks up a known server by `frontendHost` -- a thin wrapper around
@@ -810,15 +841,15 @@ accountsPanelTab shared tab label isNarrow =
 
 
 {-| How many Settings the Settings tab currently holds -- the "switch main
-server by tapping servers" and "Sign into other hosts with username/password"
-toggles (both admin-only) for now, but tracked as a count rather than a bare
-`Bool` so the tab can grow more (non-admin-gated) settings later without
-changing how its visibility is decided.
+server by tapping servers", "Sign into other hosts with username/password",
+and "Show all event layouts" toggles (all admin-only) for now, but tracked as
+a count rather than a bare `Bool` so the tab can grow more (non-admin-gated)
+settings later without changing how its visibility is decided.
 -}
 settingsCount : Shared.Model -> Int
 settingsCount shared =
     if AccountsPanel.hasAdminAccount shared.accountsPanel then
-        2
+        3
 
     else
         0
@@ -866,9 +897,11 @@ accountsAndServersTab shared currentRoute =
         ]
 
 
-{-| The "switch main server by tapping servers" (see `serverChip`) and "Sign
-into other hosts with username/password" (see `addAccountForm`) toggles --
-only shown (via `settingsCount`) while an admin account is signed in.
+{-| The "switch main server by tapping servers" (see `serverChip`), "Sign
+into other hosts with username/password" (see `addAccountForm`), and "Show
+all event layouts" (see `Components.Pages.EventsPage.modeButtonsView`)
+toggles -- only shown (via `settingsCount`) while an admin account is signed
+in.
 -}
 settingsTab : Shared.Model -> Html Shared.Msg
 settingsTab shared =
@@ -880,6 +913,10 @@ settingsTab shared =
         , label [ class "admin-switch-row" ]
             [ switchInput shared.adminPanel.allowUsernamePasswordForOtherHosts False (Shared.AdminPanelMsg AdminPanel.ToggleAllowUsernamePasswordForOtherHosts)
             , span [] [ text "Sign into other hosts with username/password" ]
+            ]
+        , label [ class "admin-switch-row" ]
+            [ switchInput shared.adminPanel.showAllEventLayouts False (Shared.AdminPanelMsg AdminPanel.ToggleShowAllEventLayouts)
+            , span [] [ text "Show all event layouts" ]
             ]
         ]
 
@@ -1938,6 +1975,21 @@ deleteConfirmationModal shared =
                             ( "Delete Media?"
                             , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
                             )
+
+                        Shared.ConfirmEventSyncSourceDelete source ->
+                            ( "Delete Event Sync Source?"
+                            , "Stop syncing from "
+                                ++ (case source.configuration of
+                                        Just (Configuration.IcsSubscriptionUrl url) ->
+                                            url
+
+                                        Nothing ->
+                                            "this source"
+                                   )
+                                ++ ", deleting the "
+                                ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                ++ " it synced? This can't be undone."
+                            )
             in
             UI.Modal.view
                 { class = "confirm-delete-modal"
@@ -2003,14 +2055,14 @@ policyMarkdown heading maybeText =
 `Shared.StarredPostsPanel.starKey`) -- only show the nav icon once there's
 something behind it. Just the toggle button -- unlike `accountsMenu`, its
 panel (`starredPostsPanel`) is rendered separately, as a direct child of
-`.navbar` itself rather than of this button's own `.admin-menu` wrapper, so it
+`.navbar` itself rather than of this button's own `.starred-posts-menu` wrapper, so it
 can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
 Uses `stopPropagationOn`, not plain `onClick`, so tapping it doesn't also
 trigger `headerNav`'s own tap-anywhere `Shared.ScrollToTop`.
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
-    div [ class "admin-menu" ]
+    div [ class "starred-posts-menu" ]
         [ button
             [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPostsPanel.showStarredPostsPanel ]
             , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel, True ))
@@ -2022,6 +2074,7 @@ starredPostsToggle shared =
                     [ "starred-posts-count-badge"
                     , hostnameToCSSClass shared.accountsPanel.mainFrontendHost
                     , "background-color-nav"
+                    , "border-color-primary-text"
                     ]
                 ]
                 [ text (String.fromInt (Set.size shared.starredPostsPanel.starredPostIds)) ]

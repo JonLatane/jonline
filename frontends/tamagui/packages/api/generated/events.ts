@@ -11,7 +11,7 @@ import { Location } from "./location";
 import { MediaReference } from "./media";
 import { Permission, permissionFromJSON, permissionToJSON } from "./permissions";
 import { Post } from "./posts";
-import { ContactMethod } from "./users";
+import { Author, ContactMethod } from "./users";
 import { Moderation, moderationFromJSON, moderationToJSON } from "./visibility_moderation";
 
 export const protobufPackage = "jonline";
@@ -32,6 +32,11 @@ export enum EventListingType {
   DIRECT_EVENTS = 3,
   /** EVENTS_PENDING_MODERATION - Returns events pending moderation by the server-level mods/admins. */
   EVENTS_PENDING_MODERATION = 4,
+  /**
+   * EVENT_TEXT_SEARCH - Returns posts matching the full-text `search_text` query, scoped the same way
+   * ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+   */
+  EVENT_TEXT_SEARCH = 5,
   /** GROUP_EVENTS - Returns events from a specific group. Requires group_id parameterRequires group_id parameter */
   GROUP_EVENTS = 10,
   /**
@@ -64,6 +69,9 @@ export function eventListingTypeFromJSON(object: any): EventListingType {
     case 4:
     case "EVENTS_PENDING_MODERATION":
       return EventListingType.EVENTS_PENDING_MODERATION;
+    case 5:
+    case "EVENT_TEXT_SEARCH":
+      return EventListingType.EVENT_TEXT_SEARCH;
     case 10:
     case "GROUP_EVENTS":
       return EventListingType.GROUP_EVENTS;
@@ -92,6 +100,8 @@ export function eventListingTypeToJSON(object: EventListingType): string {
       return "DIRECT_EVENTS";
     case EventListingType.EVENTS_PENDING_MODERATION:
       return "EVENTS_PENDING_MODERATION";
+    case EventListingType.EVENT_TEXT_SEARCH:
+      return "EVENT_TEXT_SEARCH";
     case EventListingType.GROUP_EVENTS:
       return "GROUP_EVENTS";
     case EventListingType.GROUP_EVENTS_PENDING_MODERATION:
@@ -215,6 +225,8 @@ export interface GetEventsRequest {
     | undefined;
   /** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
   listingType: EventListingType;
+  /** Search text for full-text search. */
+  searchText?: string | undefined;
 }
 
 /**
@@ -274,6 +286,58 @@ export interface Event {
     | undefined;
   /** A list of instances for the Event. *Events will only include all instances if the request is for a single event.* */
   instances: EventInstance[];
+  /** If the event was synced from a source (meaning it should not be editable) */
+  eventSyncSource?: EventSyncSource | undefined;
+}
+
+/** A user-owned source to sync events from. */
+export interface EventSyncSource {
+  /** Unique ID for the synchronization. */
+  id: string;
+  /** The user information for the owner of this event sync. */
+  owner:
+    | Author
+    | undefined;
+  /** How frequently the sync should happen in seconds. */
+  syncIntervalSeconds: number;
+  /** The time the EventSyncSource was created. */
+  createdAt:
+    | string
+    | undefined;
+  /** The time the EventSyncSource was last updated. */
+  updatedAt?:
+    | string
+    | undefined;
+  /** The time the EventSyncSource was last synced. */
+  lastSyncedAt?:
+    | string
+    | undefined;
+  /**
+   * The number of events total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventCount: number;
+  /**
+   * The number of event instances total associated with this EventSyncSource. Recomputed
+   * on each sync.
+   */
+  eventInstanceCount: number;
+  /** The iCal subscription URL for the calendar sync. */
+  icsSubscriptionUrl?: string | undefined;
+}
+
+export interface GetEventSyncSourcesResponse {
+  sources: EventSyncSource[];
+}
+
+/** Request to delete an EventSyncSource. */
+export interface DeleteEventSyncSourceRequest {
+  /** The source to be deleted. */
+  source:
+    | EventSyncSource
+    | undefined;
+  /** Whether to delete synced events. */
+  deleteSyncedEvents: boolean;
 }
 
 /**
@@ -336,7 +400,11 @@ export interface EventInstance {
     | string
     | undefined;
   /** The location of the event. */
-  location?: Location | undefined;
+  location?:
+    | Location
+    | undefined;
+  /** If this instance's `Event` was synced from an */
+  eventSyncSourceInstanceId?: string | undefined;
 }
 
 /**
@@ -495,6 +563,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     attendanceStatuses: [],
     postId: undefined,
     listingType: 0,
+    searchText: undefined,
   };
 }
 
@@ -528,6 +597,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     }
     if (message.listingType !== 0) {
       writer.uint32(80).int32(message.listingType);
+    }
+    if (message.searchText !== undefined) {
+      writer.uint32(90).string(message.searchText);
     }
     return writer;
   },
@@ -621,6 +693,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           message.listingType = reader.int32() as any;
           continue;
         }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.searchText = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -643,6 +723,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
         : [],
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
+      searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
     };
   },
 
@@ -675,6 +756,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.listingType !== 0) {
       obj.listingType = eventListingTypeToJSON(message.listingType);
     }
+    if (message.searchText !== undefined) {
+      obj.searchText = message.searchText;
+    }
     return obj;
   },
 
@@ -694,6 +778,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.attendanceStatuses = object.attendanceStatuses?.map((e) => e) || [];
     message.postId = object.postId ?? undefined;
     message.listingType = object.listingType ?? 0;
+    message.searchText = object.searchText ?? undefined;
     return message;
   },
 };
@@ -865,7 +950,7 @@ export const GetEventsResponse: MessageFns<GetEventsResponse> = {
 };
 
 function createBaseEvent(): Event {
-  return { id: "", post: undefined, info: undefined, instances: [] };
+  return { id: "", post: undefined, info: undefined, instances: [], eventSyncSource: undefined };
 }
 
 export const Event: MessageFns<Event> = {
@@ -881,6 +966,9 @@ export const Event: MessageFns<Event> = {
     }
     for (const v of message.instances) {
       EventInstance.encode(v!, writer.uint32(34).fork()).join();
+    }
+    if (message.eventSyncSource !== undefined) {
+      EventSyncSource.encode(message.eventSyncSource, writer.uint32(42).fork()).join();
     }
     return writer;
   },
@@ -924,6 +1012,14 @@ export const Event: MessageFns<Event> = {
           message.instances.push(EventInstance.decode(reader, reader.uint32()));
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.eventSyncSource = EventSyncSource.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -941,6 +1037,7 @@ export const Event: MessageFns<Event> = {
       instances: globalThis.Array.isArray(object?.instances)
         ? object.instances.map((e: any) => EventInstance.fromJSON(e))
         : [],
+      eventSyncSource: isSet(object.eventSyncSource) ? EventSyncSource.fromJSON(object.eventSyncSource) : undefined,
     };
   },
 
@@ -958,6 +1055,9 @@ export const Event: MessageFns<Event> = {
     if (message.instances?.length) {
       obj.instances = message.instances.map((e) => EventInstance.toJSON(e));
     }
+    if (message.eventSyncSource !== undefined) {
+      obj.eventSyncSource = EventSyncSource.toJSON(message.eventSyncSource);
+    }
     return obj;
   },
 
@@ -970,6 +1070,349 @@ export const Event: MessageFns<Event> = {
     message.post = (object.post !== undefined && object.post !== null) ? Post.fromPartial(object.post) : undefined;
     message.info = (object.info !== undefined && object.info !== null) ? EventInfo.fromPartial(object.info) : undefined;
     message.instances = object.instances?.map((e) => EventInstance.fromPartial(e)) || [];
+    message.eventSyncSource = (object.eventSyncSource !== undefined && object.eventSyncSource !== null)
+      ? EventSyncSource.fromPartial(object.eventSyncSource)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseEventSyncSource(): EventSyncSource {
+  return {
+    id: "",
+    owner: undefined,
+    syncIntervalSeconds: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+    lastSyncedAt: undefined,
+    eventCount: 0,
+    eventInstanceCount: 0,
+    icsSubscriptionUrl: undefined,
+  };
+}
+
+export const EventSyncSource: MessageFns<EventSyncSource> = {
+  encode(message: EventSyncSource, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.owner !== undefined) {
+      Author.encode(message.owner, writer.uint32(18).fork()).join();
+    }
+    if (message.syncIntervalSeconds !== 0) {
+      writer.uint32(24).uint64(message.syncIntervalSeconds);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(34).fork()).join();
+    }
+    if (message.updatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.updatedAt), writer.uint32(42).fork()).join();
+    }
+    if (message.lastSyncedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSyncedAt), writer.uint32(50).fork()).join();
+    }
+    if (message.eventCount !== 0) {
+      writer.uint32(56).uint64(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      writer.uint32(64).uint64(message.eventInstanceCount);
+    }
+    if (message.icsSubscriptionUrl !== undefined) {
+      writer.uint32(74).string(message.icsSubscriptionUrl);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EventSyncSource {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEventSyncSource();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.id = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.owner = Author.decode(reader, reader.uint32());
+          continue;
+        }
+        case 3: {
+          if (tag !== 24) {
+            break;
+          }
+
+          message.syncIntervalSeconds = longToNumber(reader.uint64());
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.updatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.lastSyncedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 7: {
+          if (tag !== 56) {
+            break;
+          }
+
+          message.eventCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 8: {
+          if (tag !== 64) {
+            break;
+          }
+
+          message.eventInstanceCount = longToNumber(reader.uint64());
+          continue;
+        }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.icsSubscriptionUrl = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EventSyncSource {
+    return {
+      id: isSet(object.id) ? globalThis.String(object.id) : "",
+      owner: isSet(object.owner) ? Author.fromJSON(object.owner) : undefined,
+      syncIntervalSeconds: isSet(object.syncIntervalSeconds) ? globalThis.Number(object.syncIntervalSeconds) : 0,
+      createdAt: isSet(object.createdAt) ? globalThis.String(object.createdAt) : undefined,
+      updatedAt: isSet(object.updatedAt) ? globalThis.String(object.updatedAt) : undefined,
+      lastSyncedAt: isSet(object.lastSyncedAt) ? globalThis.String(object.lastSyncedAt) : undefined,
+      eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : 0,
+      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : 0,
+      icsSubscriptionUrl: isSet(object.icsSubscriptionUrl) ? globalThis.String(object.icsSubscriptionUrl) : undefined,
+    };
+  },
+
+  toJSON(message: EventSyncSource): unknown {
+    const obj: any = {};
+    if (message.id !== "") {
+      obj.id = message.id;
+    }
+    if (message.owner !== undefined) {
+      obj.owner = Author.toJSON(message.owner);
+    }
+    if (message.syncIntervalSeconds !== 0) {
+      obj.syncIntervalSeconds = Math.round(message.syncIntervalSeconds);
+    }
+    if (message.createdAt !== undefined) {
+      obj.createdAt = message.createdAt;
+    }
+    if (message.updatedAt !== undefined) {
+      obj.updatedAt = message.updatedAt;
+    }
+    if (message.lastSyncedAt !== undefined) {
+      obj.lastSyncedAt = message.lastSyncedAt;
+    }
+    if (message.eventCount !== 0) {
+      obj.eventCount = Math.round(message.eventCount);
+    }
+    if (message.eventInstanceCount !== 0) {
+      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
+    }
+    if (message.icsSubscriptionUrl !== undefined) {
+      obj.icsSubscriptionUrl = message.icsSubscriptionUrl;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EventSyncSource>, I>>(base?: I): EventSyncSource {
+    return EventSyncSource.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EventSyncSource>, I>>(object: I): EventSyncSource {
+    const message = createBaseEventSyncSource();
+    message.id = object.id ?? "";
+    message.owner = (object.owner !== undefined && object.owner !== null)
+      ? Author.fromPartial(object.owner)
+      : undefined;
+    message.syncIntervalSeconds = object.syncIntervalSeconds ?? 0;
+    message.createdAt = object.createdAt ?? undefined;
+    message.updatedAt = object.updatedAt ?? undefined;
+    message.lastSyncedAt = object.lastSyncedAt ?? undefined;
+    message.eventCount = object.eventCount ?? 0;
+    message.eventInstanceCount = object.eventInstanceCount ?? 0;
+    message.icsSubscriptionUrl = object.icsSubscriptionUrl ?? undefined;
+    return message;
+  },
+};
+
+function createBaseGetEventSyncSourcesResponse(): GetEventSyncSourcesResponse {
+  return { sources: [] };
+}
+
+export const GetEventSyncSourcesResponse: MessageFns<GetEventSyncSourcesResponse> = {
+  encode(message: GetEventSyncSourcesResponse, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    for (const v of message.sources) {
+      EventSyncSource.encode(v!, writer.uint32(10).fork()).join();
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): GetEventSyncSourcesResponse {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseGetEventSyncSourcesResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.sources.push(EventSyncSource.decode(reader, reader.uint32()));
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): GetEventSyncSourcesResponse {
+    return {
+      sources: globalThis.Array.isArray(object?.sources)
+        ? object.sources.map((e: any) => EventSyncSource.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: GetEventSyncSourcesResponse): unknown {
+    const obj: any = {};
+    if (message.sources?.length) {
+      obj.sources = message.sources.map((e) => EventSyncSource.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<GetEventSyncSourcesResponse>, I>>(base?: I): GetEventSyncSourcesResponse {
+    return GetEventSyncSourcesResponse.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<GetEventSyncSourcesResponse>, I>>(object: I): GetEventSyncSourcesResponse {
+    const message = createBaseGetEventSyncSourcesResponse();
+    message.sources = object.sources?.map((e) => EventSyncSource.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseDeleteEventSyncSourceRequest(): DeleteEventSyncSourceRequest {
+  return { source: undefined, deleteSyncedEvents: false };
+}
+
+export const DeleteEventSyncSourceRequest: MessageFns<DeleteEventSyncSourceRequest> = {
+  encode(message: DeleteEventSyncSourceRequest, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.source !== undefined) {
+      EventSyncSource.encode(message.source, writer.uint32(10).fork()).join();
+    }
+    if (message.deleteSyncedEvents !== false) {
+      writer.uint32(16).bool(message.deleteSyncedEvents);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): DeleteEventSyncSourceRequest {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseDeleteEventSyncSourceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.source = EventSyncSource.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 16) {
+            break;
+          }
+
+          message.deleteSyncedEvents = reader.bool();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): DeleteEventSyncSourceRequest {
+    return {
+      source: isSet(object.source) ? EventSyncSource.fromJSON(object.source) : undefined,
+      deleteSyncedEvents: isSet(object.deleteSyncedEvents) ? globalThis.Boolean(object.deleteSyncedEvents) : false,
+    };
+  },
+
+  toJSON(message: DeleteEventSyncSourceRequest): unknown {
+    const obj: any = {};
+    if (message.source !== undefined) {
+      obj.source = EventSyncSource.toJSON(message.source);
+    }
+    if (message.deleteSyncedEvents !== false) {
+      obj.deleteSyncedEvents = message.deleteSyncedEvents;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<DeleteEventSyncSourceRequest>, I>>(base?: I): DeleteEventSyncSourceRequest {
+    return DeleteEventSyncSourceRequest.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<DeleteEventSyncSourceRequest>, I>>(object: I): DeleteEventSyncSourceRequest {
+    const message = createBaseDeleteEventSyncSourceRequest();
+    message.source = (object.source !== undefined && object.source !== null)
+      ? EventSyncSource.fromPartial(object.source)
+      : undefined;
+    message.deleteSyncedEvents = object.deleteSyncedEvents ?? false;
     return message;
   },
 };
@@ -1119,6 +1562,7 @@ function createBaseEventInstance(): EventInstance {
     startsAt: undefined,
     endsAt: undefined,
     location: undefined,
+    eventSyncSourceInstanceId: undefined,
   };
 }
 
@@ -1144,6 +1588,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     if (message.location !== undefined) {
       Location.encode(message.location, writer.uint32(58).fork()).join();
+    }
+    if (message.eventSyncSourceInstanceId !== undefined) {
+      writer.uint32(66).string(message.eventSyncSourceInstanceId);
     }
     return writer;
   },
@@ -1211,6 +1658,14 @@ export const EventInstance: MessageFns<EventInstance> = {
           message.location = Location.decode(reader, reader.uint32());
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.eventSyncSourceInstanceId = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1229,6 +1684,9 @@ export const EventInstance: MessageFns<EventInstance> = {
       startsAt: isSet(object.startsAt) ? globalThis.String(object.startsAt) : undefined,
       endsAt: isSet(object.endsAt) ? globalThis.String(object.endsAt) : undefined,
       location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
+      eventSyncSourceInstanceId: isSet(object.eventSyncSourceInstanceId)
+        ? globalThis.String(object.eventSyncSourceInstanceId)
+        : undefined,
     };
   },
 
@@ -1255,6 +1713,9 @@ export const EventInstance: MessageFns<EventInstance> = {
     if (message.location !== undefined) {
       obj.location = Location.toJSON(message.location);
     }
+    if (message.eventSyncSourceInstanceId !== undefined) {
+      obj.eventSyncSourceInstanceId = message.eventSyncSourceInstanceId;
+    }
     return obj;
   },
 
@@ -1274,6 +1735,7 @@ export const EventInstance: MessageFns<EventInstance> = {
     message.location = (object.location !== undefined && object.location !== null)
       ? Location.fromPartial(object.location)
       : undefined;
+    message.eventSyncSourceInstanceId = object.eventSyncSourceInstanceId ?? undefined;
     return message;
   },
 };
@@ -2210,6 +2672,17 @@ function fromTimestamp(t: Timestamp): string {
   let millis = (t.seconds || 0) * 1_000;
   millis += (t.nanos || 0) / 1_000_000;
   return new globalThis.Date(millis).toISOString();
+}
+
+function longToNumber(int64: { toString(): string }): number {
+  const num = globalThis.Number(int64.toString());
+  if (num > globalThis.Number.MAX_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  if (num < globalThis.Number.MIN_SAFE_INTEGER) {
+    throw new globalThis.Error("Value is smaller than Number.MIN_SAFE_INTEGER");
+  }
+  return num;
 }
 
 function isSet(value: any): boolean {

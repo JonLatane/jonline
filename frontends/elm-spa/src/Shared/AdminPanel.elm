@@ -10,10 +10,17 @@ username/password" flag (which lets the Account form's Username/Password/
 Login/Create Account controls show for any server, not just
 `AccountsPanel.isMainServer` ones -- see `UI.elm`'s `addAccountForm` -- though
 it never enables `signInFromButton`'s cross-server SSO hand-off for
-`browsingHost`/`mainFrontendHost` themselves), and `openAccountPanels` tracks
-which admin-capable accounts' "web UI" panels (see `UI.elm`'s
-`adminAccountPanel`) are expanded on the Admin tab -- future admin features
-(moderation, ...) land here too.
+`browsingHost`/`mainFrontendHost` themselves), `showAllEventLayouts` is its
+"Show all event layouts" flag (which un-hides `Components.Pages.EventsPage`'s
+List/Grid/Row mode buttons everywhere -- see that module's `modeButtonsView`
+for the default, flag-off visibility rules it overrides), and
+`openAccountPanels` tracks which admin-capable accounts' "web UI" panels (see
+`UI.elm`'s `adminAccountPanel`) are expanded on the Admin tab -- future admin
+features (moderation, ...) land here too.
+
+All three toggles are session-only, like the rest of this module's state --
+none of them are persisted, so they're back off after a page refresh (the
+Settings tab doc in `UI.elm` notes this too).
 
 The actual "set web UI" action lives in `Shared.AccountsPanel` (it needs that
 module's `Account`/`Server`/RPC machinery); this module only tracks which
@@ -33,6 +40,7 @@ type alias Model =
     { activeTab : AccountsPanelTab
     , allowMainServerSwitch : Bool
     , allowUsernamePasswordForOtherHosts : Bool
+    , showAllEventLayouts : Bool
     , openAccountPanels : Set String
     }
 
@@ -41,6 +49,7 @@ type Msg
     = TabSelected AccountsPanelTab
     | ToggleAllowMainServerSwitch
     | ToggleAllowUsernamePasswordForOtherHosts
+    | ToggleShowAllEventLayouts
     | ToggleAccountPanel String
 
 
@@ -49,6 +58,7 @@ init =
     { activeTab = AccountsAndServersTab
     , allowMainServerSwitch = False
     , allowUsernamePasswordForOtherHosts = False
+    , showAllEventLayouts = False
     , openAccountPanels = Set.empty
     }
 
@@ -69,6 +79,9 @@ update msg model =
 
         ToggleAllowUsernamePasswordForOtherHosts ->
             { model | allowUsernamePasswordForOtherHosts = not model.allowUsernamePasswordForOtherHosts }
+
+        ToggleShowAllEventLayouts ->
+            { model | showAllEventLayouts = not model.showAllEventLayouts }
 
         ToggleAccountPanel id ->
             { model

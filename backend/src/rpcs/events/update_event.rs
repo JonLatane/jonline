@@ -89,7 +89,7 @@ fn update_event_instances(
                 Ok(instance_id) => {
                     let instance_and_post = event_instances::table
                         .inner_join(posts::table.on(event_instances::post_id.eq(posts::id)))
-                        .select((event_instances::all_columns, models::POST_COLUMNS))
+                        .select((models::EVENT_INSTANCE_COLUMNS, models::POST_COLUMNS))
                         .filter(event_instances::id.eq(instance_id))
                         .first::<(models::EventInstance, models::Post)>(conn)
                         .ok();
@@ -172,6 +172,7 @@ fn update_event_instances(
                 println!("Updating instance: {:?}", updated_instance);
                 updated_instance = diesel::update(&updated_instance)
                     .set(&updated_instance)
+                    .returning(models::EVENT_INSTANCE_COLUMNS)
                     .get_result::<models::EventInstance>(conn)
                     .map_err(|e| {
                         log::error!("Failed to update event instance: {:?}", e);
@@ -290,7 +291,9 @@ pub fn create_instance(
                 .as_ref()
                 .map(|c| serde_json::to_value(c).unwrap()),
             info: json!({}),
+            event_sync_source_instance_id: None,
         })
+        .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)
         .map_err(|e| {
             log::error!("Failed to create event instance: {:?}", e);

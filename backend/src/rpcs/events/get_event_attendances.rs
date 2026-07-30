@@ -28,7 +28,7 @@ pub fn get_event_attendances(
             .select((
                 events::all_columns,
                 models::POST_COLUMNS,
-                event_instances::all_columns,
+                models::EVENT_INSTANCE_COLUMNS,
             ))
             .first::<(models::Event, models::Post, models::EventInstance)>(conn)
             .map_err(|_e| Status::new(Code::Internal, "invalid_event_instance_id"))?;

@@ -39,7 +39,7 @@ type alias Model =
 
 init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
-    EventsPage.init shared Nothing req.key req.url.path req.query
+    EventsPage.init shared Nothing req.key req.url.path req.query False
 
 
 
@@ -74,5 +74,5 @@ view shared req model =
         UI.layout shared
             req.route
             fromShared
-            [ EventsPage.view shared model ]
+            [ EventsPage.view shared False model ]
     }

@@ -1,4 +1,7 @@
-use super::{Author, Event, EventAttendance, EventInstance, Post, User, AUTHOR_COLUMNS, POST_COLUMNS};
+use super::{
+    Author, Event, EventAttendance, EventInstance, EventSyncSource, Post, User, AUTHOR_COLUMNS,
+    EVENT_INSTANCE_COLUMNS, POST_COLUMNS,
+};
 use diesel::{
     dsl::sql,
     sql_types::{Bool, Text},
@@ -9,8 +12,54 @@ use tonic::{Code, Status};
 use crate::{
     db_connection::PgPooledConnection,
     // protos::Author,
-    schema::{event_attendances, event_instances, events, follows, posts, users},
+    schema::{event_attendances, event_instances, event_sync_sources, events, follows, posts, users},
 };
+
+pub fn get_event_sync_source(
+    id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<EventSyncSource, Status> {
+    event_sync_sources::table
+        .select(event_sync_sources::all_columns)
+        .filter(event_sync_sources::id.eq(id))
+        .first::<EventSyncSource>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "event_sync_source_not_found"))
+}
+
+pub fn get_event_sync_sources_for_user(
+    user_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<(EventSyncSource, Author)>, Status> {
+    event_sync_sources::table
+        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
+        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(event_sync_sources::user_id.eq(user_id))
+        .order(event_sync_sources::created_at.desc())
+        .load::<(EventSyncSource, Author)>(conn)
+        .map_err(|e| {
+            log::error!(
+                "Failed to load event sync sources for user_id={}: {:?}",
+                user_id,
+                e
+            );
+            Status::new(Code::Internal, "failed_to_load_event_sync_sources")
+        })
+}
+
+pub fn get_event_sync_sources_by_ids(
+    ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Vec<(EventSyncSource, Author)> {
+    if ids.is_empty() {
+        return vec![];
+    }
+    event_sync_sources::table
+        .inner_join(users::table.on(event_sync_sources::user_id.eq(users::id)))
+        .select((event_sync_sources::all_columns, AUTHOR_COLUMNS))
+        .filter(event_sync_sources::id.eq_any(ids))
+        .load::<(EventSyncSource, Author)>(conn)
+        .unwrap_or_default()
+}
 
 pub fn get_event(
     event_id: i64,
@@ -30,7 +79,7 @@ pub fn get_event_instance(
     conn: &mut PgPooledConnection,
 ) -> Result<EventInstance, Status> {
     event_instances::table
-        .select(event_instances::all_columns)
+        .select(EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::id.eq(event_instance_id))
         .first::<EventInstance>(conn)
         .map_err(|_| Status::new(Code::NotFound, "event_instance_not_found"))
@@ -52,7 +101,7 @@ pub fn get_event_instances(
             )),
         )
         .select((
-            event_instances::all_columns,
+            EVENT_INSTANCE_COLUMNS,
             POST_COLUMNS,
             AUTHOR_COLUMNS.nullable(),
         ))

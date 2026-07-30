@@ -20,6 +20,7 @@ module Components.Posts exposing
     , postVisibilityText
     , repliesCountText
     , replyCard
+    , stripLinkScheme
     , timestampsText
     , updatePost
     , visibilityFromText

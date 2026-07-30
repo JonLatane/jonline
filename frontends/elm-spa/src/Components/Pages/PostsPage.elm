@@ -3,6 +3,7 @@ module Components.Pages.PostsPage exposing
     , Msg
     , fromShared
     , init
+    , searchTextChanged
     , subscriptions
     , update
     , view
@@ -438,6 +439,19 @@ fromShared =
     SharedMsg
 
 
+{-| Lets a sibling page (`Pages.Home_`, keeping its embedded `EventsPage`'s search box in sync
+with this module's own `model.searchText` behind the scenes -- see that module's own
+`searchTextChanged` and `Pages.Home_.update`'s cross-sync) feed a search-text change in from
+outside exactly as if the user had typed it into this module's own (on `Pages.Home_`, hidden --
+see `view`'s `showSearchRow`) search box -- same `SearchTextChanged`/`SearchDebounceElapsed`
+round-trip, same independent debounce timer, without exposing the `SearchTextChanged` constructor
+itself (and thus every other constructor of this otherwise-opaque `Msg`) outside this module.
+-}
+searchTextChanged : String -> Msg
+searchTextChanged =
+    SearchTextChanged
+
+
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
     let
@@ -552,11 +566,21 @@ subscriptions model =
 -- VIEW
 
 
-view : Shared.Model -> Model -> Html Msg
-view shared model =
+{-| `showSearchRow` hides `searchRowView` (the search box + POST/REPLY context chooser together)
+when `False` -- used by `Pages.Home_`, which shows its own `EventsPage`'s search box instead and
+keeps this module's `model.searchText` in sync with it behind the scenes (see
+`Pages.Home_.update`'s cross-sync) rather than showing two redundant boxes. Every other caller
+passes `True`, preserving the previous always-shown behavior.
+-}
+view : Shared.Model -> Bool -> Model -> Html Msg
+view shared showSearchRow model =
     div []
         [ authorHeadingView shared model.author model.context
-        , searchRowView model
+        , if showSearchRow then
+            searchRowView model
+
+          else
+            text ""
         , postsListView shared model
         ]
 

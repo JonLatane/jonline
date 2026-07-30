@@ -90,7 +90,7 @@ update shared req msg model =
                 Resolver.Loaded user ->
                     let
                         ( eventsModel, eventsEffect ) =
-                            EventsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query
+                            EventsPage.init shared (Just ( newResolver.targetHost, user )) req.key req.url.path req.query False
                     in
                     ( Events eventsModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, Effect.map EventsMsg eventsEffect ] )
 
@@ -152,6 +152,6 @@ view shared req model =
                     p [ class "posts-empty" ] [ text "Loading…" ]
 
                 Events eventsModel ->
-                    Html.map EventsMsg (EventsPage.view shared eventsModel)
+                    Html.map EventsMsg (EventsPage.view shared False eventsModel)
             ]
     }

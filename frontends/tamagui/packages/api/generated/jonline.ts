@@ -15,12 +15,15 @@ import {
   ResetPasswordRequest,
 } from "./authentication";
 import {
+  DeleteEventSyncSourceRequest,
   Event,
   EventAttendance,
   EventAttendances,
+  EventSyncSource,
   GetEventAttendancesRequest,
   GetEventsRequest,
   GetEventsResponse,
+  GetEventSyncSourcesResponse,
 } from "./events";
 import { FederatedAccount, GetServiceVersionResponse } from "./federation";
 import { Empty } from "./google/protobuf/empty";
@@ -521,6 +524,42 @@ export const JonlineDefinition = {
       responseStream: false,
       options: {},
     },
+    /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
+    getEventSyncSources: {
+      name: "GetEventSyncSources",
+      requestType: User,
+      requestStream: false,
+      responseType: GetEventSyncSourcesResponse,
+      responseStream: false,
+      options: {},
+    },
+    /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
+    createEventSyncSource: {
+      name: "CreateEventSyncSource",
+      requestType: EventSyncSource,
+      requestStream: false,
+      responseType: EventSyncSource,
+      responseStream: false,
+      options: {},
+    },
+    /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
+    updateEventSyncSource: {
+      name: "UpdateEventSyncSource",
+      requestType: EventSyncSource,
+      requestStream: false,
+      responseType: EventSyncSource,
+      responseStream: false,
+      options: {},
+    },
+    /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
+    deleteEventSyncSource: {
+      name: "DeleteEventSyncSource",
+      requestType: DeleteEventSyncSourceRequest,
+      requestStream: false,
+      responseType: Empty,
+      responseStream: false,
+      options: {},
+    },
     /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
     getEventAttendances: {
       name: "GetEventAttendances",
@@ -739,6 +778,26 @@ export interface JonlineServiceImplementation<CallContextExt = {}> {
   updateEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
   /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: Event, context: CallContext & CallContextExt): Promise<DeepPartial<Event>>;
+  /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
+  getEventSyncSources(
+    request: User,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<GetEventSyncSourcesResponse>>;
+  /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
+  createEventSyncSource(
+    request: EventSyncSource,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EventSyncSource>>;
+  /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
+  updateEventSyncSource(
+    request: EventSyncSource,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<EventSyncSource>>;
+  /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
+  deleteEventSyncSource(
+    request: DeleteEventSyncSourceRequest,
+    context: CallContext & CallContextExt,
+  ): Promise<DeepPartial<Empty>>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: GetEventAttendancesRequest,
@@ -912,6 +971,26 @@ export interface JonlineClient<CallOptionsExt = {}> {
   updateEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
   /** (TODO) (Soft) deletes a Event. Returns the deleted version of the Event. *Authenticated.* */
   deleteEvent(request: DeepPartial<Event>, options?: CallOptions & CallOptionsExt): Promise<Event>;
+  /** Gets a user's EventSyncSources. *Authenticated* (self, or Admin for any user). */
+  getEventSyncSources(
+    request: DeepPartial<User>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<GetEventSyncSourcesResponse>;
+  /** Creates an EventSyncSource for the current user. *Authenticated*, requires `SYNCHRONIZE_EVENTS` (or Admin). */
+  createEventSyncSource(
+    request: DeepPartial<EventSyncSource>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EventSyncSource>;
+  /** Updates an EventSyncSource. *Authenticated* (owner, or Admin for any user's), requires `SYNCHRONIZE_EVENTS` (or Admin). */
+  updateEventSyncSource(
+    request: DeepPartial<EventSyncSource>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<EventSyncSource>;
+  /** Deletes an EventSyncSource. *Authenticated* (owner, or Admin). */
+  deleteEventSyncSource(
+    request: DeepPartial<DeleteEventSyncSourceRequest>,
+    options?: CallOptions & CallOptionsExt,
+  ): Promise<Empty>;
   /** Gets EventAttendances for an EventInstance. *Publicly accessible **or** Authenticated.* */
   getEventAttendances(
     request: DeepPartial<GetEventAttendancesRequest>,

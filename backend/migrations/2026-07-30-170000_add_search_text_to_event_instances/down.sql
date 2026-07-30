@@ -1,0 +1,10 @@
+DROP INDEX IF EXISTS idx_event_instances_search_user_ends_at;
+DROP TRIGGER IF EXISTS users_propagate_search_text_to_event_instances_update ON users;
+DROP TRIGGER IF EXISTS posts_propagate_search_text_to_event_instances_update ON posts;
+DROP TRIGGER IF EXISTS event_instances_search_text_update ON event_instances;
+DROP FUNCTION IF EXISTS users_propagate_search_text_to_event_instances();
+DROP FUNCTION IF EXISTS posts_propagate_search_text_to_event_instances();
+DROP FUNCTION IF EXISTS event_instances_search_text_trigger();
+DROP FUNCTION IF EXISTS event_instances_build_search_text(VARCHAR, TEXT, VARCHAR, VARCHAR, VARCHAR, TEXT, VARCHAR, VARCHAR);
+ALTER TABLE event_instances DROP COLUMN user_id;
+ALTER TABLE event_instances DROP COLUMN search_text;

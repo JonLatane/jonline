@@ -297,6 +297,31 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_events, request)
     }
 
+    async fn get_event_sync_sources(
+        &self,
+        request: Request<User>,
+    ) -> Result<Response<GetEventSyncSourcesResponse>, Status> {
+        authenticated_rpc!(self, rpcs::get_event_sync_sources, request)
+    }
+    async fn create_event_sync_source(
+        &self,
+        request: Request<EventSyncSource>,
+    ) -> Result<Response<EventSyncSource>, Status> {
+        authenticated_rpc!(self, rpcs::create_event_sync_source, request)
+    }
+    async fn update_event_sync_source(
+        &self,
+        request: Request<EventSyncSource>,
+    ) -> Result<Response<EventSyncSource>, Status> {
+        authenticated_rpc!(self, rpcs::update_event_sync_source, request)
+    }
+    async fn delete_event_sync_source(
+        &self,
+        request: Request<DeleteEventSyncSourceRequest>,
+    ) -> Result<Response<()>, Status> {
+        authenticated_rpc!(self, rpcs::delete_event_sync_source, request)
+    }
+
     async fn upsert_event_attendance(
         &self,
         request: Request<EventAttendance>,

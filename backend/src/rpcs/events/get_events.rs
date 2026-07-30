@@ -1,4 +1,8 @@
 use diesel::*;
+use diesel_full_text_search::{
+    configuration::TsConfigurationByName, to_tsquery_with_search_config, ts_rank_cd,
+    TsVectorExtensions,
+};
 use log::info;
 use tonic::{Code, Status};
 
@@ -40,6 +44,7 @@ pub fn get_events(
         // TODO: implement the other listing types
         (_, Some(event_id), _, _, _) => get_event_by_id(&user, &event_id, conn)?,
         (_, _, Some(instance_id), _, _) => get_event_by_instance_id(&user, &instance_id, conn)?,
+        (EventListingType::EventTextSearch, _, _, _, _) => get_search_events(&request, &user, conn)?,
         (EventListingType::GroupEvents, _, _, _, _) => match request.group_id {
             Some(group_id) => get_group_events(
                 group_id.to_db_id_or_err("group_id")?,
@@ -106,7 +111,7 @@ macro_rules! query_visible_events {
                     .eq(instance_users.field(users::id).nullable())),
             )
             .select((
-                event_instances::all_columns,
+                models::EVENT_INSTANCE_COLUMNS,
                 events::all_columns,
                 models::POST_COLUMNS,
                 AUTHOR_COLUMNS.nullable(),
@@ -211,6 +216,105 @@ fn get_user_events(
 ) -> Result<Vec<MarshalableEvent>, Status> {
     let query = query_visible_events!(user, filter).filter(posts::user_id.eq(user_id));
     let binding = query.load::<EventLoadData>(conn).unwrap();
+    let event_data: Vec<&EventLoadData> = binding.iter().collect();
+
+    Ok(marshalable_event_data!(event_data))
+}
+
+// Full-text search across accessible EventInstances' own-Post and parent-Event-Post title/
+// content/author username/author real name (see event_instances.search_text's own doc,
+// backend/migrations/2026-07-30-170000_add_search_text_to_event_instances). Still respects
+// `request.time_filter` -- the caller's current Upcoming/After-date tab, same as every other
+// listing type here -- and, when scoped to an author, filters on the denormalized
+// `event_instances::user_id` -- matching the composite GIN index added alongside search_text, so
+// each of those filter combinations is served by a single index scan.
+fn get_search_events(
+    request: &GetEventsRequest,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalableEvent>, Status> {
+    let search_text = request
+        .search_text
+        .as_deref()
+        .map(str::trim)
+        .filter(|search_text| !search_text.is_empty())
+        .ok_or(Status::new(Code::InvalidArgument, "search_text_required"))?;
+    let prefix_query_text = prefix_tsquery_text(search_text);
+    if prefix_query_text.is_empty() {
+        return Err(Status::new(Code::InvalidArgument, "search_text_required"));
+    }
+    let author_user_id = request
+        .author_user_id
+        .as_ref()
+        .map(|author_user_id| author_user_id.to_db_id_or_err("author_user_id"))
+        .transpose()?;
+
+    // Prefix (not just whole/stemmed lexeme) matching, "simple" config -- mirrors
+    // get_search_posts's own tsquery setup (see that function's doc comment for why).
+    let search_query =
+        to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text.clone());
+    // A second, independent tsquery expression for the rank calculation below -- `search_query`
+    // above is consumed by `.matches(...)`, and the generated tsquery expression type isn't Clone.
+    let rank_query =
+        to_tsquery_with_search_config(TsConfigurationByName("simple"), prefix_query_text);
+
+    // `query_visible_events!`'s joins can produce more than one row per matching instance, so it
+    // applies `SELECT DISTINCT` -- which Postgres requires every ORDER BY expression to appear in
+    // the select list for. That's fine for the other GetEvents branches (they order by a plain
+    // column), but `ts_rank_cd(...)` takes a bind parameter that can't structurally match between
+    // a `.select(...)` and an `.order(...)` (see get_search_posts's own doc comment for the full
+    // explanation). So this resolves matching instance ids DISTINCT-ly first (a plain
+    // `event_instances::id` has no such problem), then ranks and orders the (already-unique)
+    // matches in a second, DISTINCT-free query.
+    // `query_visible_events!` bakes in `.order(event_instances::starts_at)` (for its own normal
+    // listing callers) ahead of its own `.distinct()` -- Postgres requires every ORDER BY
+    // expression to appear in the SELECT list under SELECT DISTINCT, so once `.select(...)` below
+    // narrows that list down to just `id`, the order has to be overridden to match (a plain `id`
+    // order is fine here regardless -- this query only collects ids, `binding` below is what's
+    // actually ordered by rank).
+    let mut matching_instance_ids = query_visible_events!(user, request.time_filter)
+        .select(event_instances::id)
+        .order(event_instances::id)
+        .filter(event_instances::search_text.matches(search_query))
+        .into_boxed();
+
+    if let Some(author_user_id) = author_user_id {
+        matching_instance_ids =
+            matching_instance_ids.filter(event_instances::user_id.eq(author_user_id));
+    }
+
+    let instance_posts = alias!(posts as instance_posts);
+    let instance_users = alias!(users as instance_users);
+
+    let binding: Vec<EventLoadData> = event_instances::table
+        .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
+        .inner_join(posts::table.on(posts::id.eq(events::post_id)))
+        .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
+        .inner_join(
+            instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
+        )
+        .left_join(
+            instance_users.on(instance_posts
+                .field(posts::user_id)
+                .eq(instance_users.field(users::id).nullable())),
+        )
+        .filter(event_instances::id.eq_any(matching_instance_ids))
+        .select((
+            models::EVENT_INSTANCE_COLUMNS,
+            events::all_columns,
+            models::POST_COLUMNS,
+            AUTHOR_COLUMNS.nullable(),
+            instance_posts.fields(models::POST_COLUMNS),
+            instance_users.fields(AUTHOR_COLUMNS).nullable(),
+        ))
+        // Search results are ordered by match quality first, falling back to start time to keep
+        // ordering stable across the (common, with prefix matching) rank ties -- mirrors
+        // get_search_posts's own recency fallback.
+        .order(ts_rank_cd(event_instances::search_text, rank_query).desc())
+        .then_order_by(event_instances::starts_at.desc())
+        .limit(PAGE_SIZE)
+        .load::<EventLoadData>(conn)
+        .map_err(|_| Status::new(Code::Internal, "error_loading_events"))?;
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
     Ok(marshalable_event_data!(event_data))
@@ -324,8 +428,9 @@ fn get_group_events(
                 .flatten();
             validate_group_permission(&group, &membership.as_ref(), user, Permission::ViewPosts)?;
 
-            let query =
-                query_visible_events!(user, filter).filter(group_posts::group_id.eq(group_id));
+            let query = query_visible_events!(user, filter)
+                .filter(group_posts::group_id.eq(group_id))
+                .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS));
             let binding = query.load::<EventLoadData>(conn).unwrap();
             let event_data: Vec<&EventLoadData> = binding.iter().collect();
 

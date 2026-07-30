@@ -24,6 +24,7 @@ const EventListingType$json = {
     {'1': 'MY_GROUPS_EVENTS', '2': 2},
     {'1': 'DIRECT_EVENTS', '2': 3},
     {'1': 'EVENTS_PENDING_MODERATION', '2': 4},
+    {'1': 'EVENT_TEXT_SEARCH', '2': 5},
     {'1': 'GROUP_EVENTS', '2': 10},
     {'1': 'GROUP_EVENTS_PENDING_MODERATION', '2': 11},
     {'1': 'NEWLY_ADDED_EVENTS', '2': 20},
@@ -34,8 +35,9 @@ const EventListingType$json = {
 final $typed_data.Uint8List eventListingTypeDescriptor = $convert.base64Decode(
     'ChBFdmVudExpc3RpbmdUeXBlEhkKFUFMTF9BQ0NFU1NJQkxFX0VWRU5UUxAAEhQKEEZPTExPV0'
     'lOR19FVkVOVFMQARIUChBNWV9HUk9VUFNfRVZFTlRTEAISEQoNRElSRUNUX0VWRU5UUxADEh0K'
-    'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIQCgxHUk9VUF9FVkVOVFMQChIjCh9HUk9VUF'
-    '9FVkVOVFNfUEVORElOR19NT0RFUkFUSU9OEAsSFgoSTkVXTFlfQURERURfRVZFTlRTEBQ=');
+    'GUVWRU5UU19QRU5ESU5HX01PREVSQVRJT04QBBIVChFFVkVOVF9URVhUX1NFQVJDSBAFEhAKDE'
+    'dST1VQX0VWRU5UUxAKEiMKH0dST1VQX0VWRU5UU19QRU5ESU5HX01PREVSQVRJT04QCxIWChJO'
+    'RVdMWV9BRERFRF9FVkVOVFMQFA==');
 
 @$core.Deprecated('Use attendanceStatusDescriptor instead')
 const AttendanceStatus$json = {
@@ -137,6 +139,15 @@ const GetEventsRequest$json = {
       '6': '.jonline.EventListingType',
       '10': 'listingType'
     },
+    {
+      '1': 'search_text',
+      '3': 11,
+      '4': 1,
+      '5': 9,
+      '9': 7,
+      '10': 'searchText',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_event_id'},
@@ -146,6 +157,7 @@ const GetEventsRequest$json = {
     {'1': '_time_filter'},
     {'1': '_attendee_id'},
     {'1': '_post_id'},
+    {'1': '_search_text'},
   ],
 };
 
@@ -158,9 +170,10 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'bWVGaWx0ZXKIAQESJAoLYXR0ZW5kZWVfaWQYBiABKAlIBVIKYXR0ZW5kZWVJZIgBARJKChNhdH'
     'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
     'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESPAoMbGlzdGluZ1'
-    '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZUILCglf'
-    'ZXZlbnRfaWRCEQoPX2F1dGhvcl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdG'
-    'FuY2VfaWRCDgoMX3RpbWVfZmlsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZA==');
+    '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtz'
+    'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBQgsKCV9ldmVudF9pZEIRCg9fYXV0aG'
+    '9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQhQKEl9ldmVudF9pbnN0YW5jZV9pZEIOCgxfdGltZV9m'
+    'aWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoKCF9wb3N0X2lkQg4KDF9zZWFyY2hfdGV4dA==');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {
@@ -267,6 +280,19 @@ const Event$json = {
       '6': '.jonline.EventInstance',
       '10': 'instances'
     },
+    {
+      '1': 'event_sync_source',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '9': 0,
+      '10': 'eventSyncSource',
+      '17': true
+    },
+  ],
+  '8': [
+    {'1': '_event_sync_source'},
   ],
 };
 
@@ -274,7 +300,144 @@ const Event$json = {
 final $typed_data.Uint8List eventDescriptor = $convert.base64Decode(
     'CgVFdmVudBIOCgJpZBgBIAEoCVICaWQSIQoEcG9zdBgCIAEoCzINLmpvbmxpbmUuUG9zdFIEcG'
     '9zdBImCgRpbmZvGAMgASgLMhIuam9ubGluZS5FdmVudEluZm9SBGluZm8SNAoJaW5zdGFuY2Vz'
-    'GAQgAygLMhYuam9ubGluZS5FdmVudEluc3RhbmNlUglpbnN0YW5jZXM=');
+    'GAQgAygLMhYuam9ubGluZS5FdmVudEluc3RhbmNlUglpbnN0YW5jZXMSSQoRZXZlbnRfc3luY1'
+    '9zb3VyY2UYBSABKAsyGC5qb25saW5lLkV2ZW50U3luY1NvdXJjZUgAUg9ldmVudFN5bmNTb3Vy'
+    'Y2WIAQFCFAoSX2V2ZW50X3N5bmNfc291cmNl');
+
+@$core.Deprecated('Use eventSyncSourceDescriptor instead')
+const EventSyncSource$json = {
+  '1': 'EventSyncSource',
+  '2': [
+    {'1': 'id', '3': 1, '4': 1, '5': 9, '10': 'id'},
+    {
+      '1': 'owner',
+      '3': 2,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.Author',
+      '10': 'owner'
+    },
+    {
+      '1': 'sync_interval_seconds',
+      '3': 3,
+      '4': 1,
+      '5': 4,
+      '10': 'syncIntervalSeconds'
+    },
+    {
+      '1': 'created_at',
+      '3': 4,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '10': 'createdAt'
+    },
+    {
+      '1': 'updated_at',
+      '3': 5,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 1,
+      '10': 'updatedAt',
+      '17': true
+    },
+    {
+      '1': 'last_synced_at',
+      '3': 6,
+      '4': 1,
+      '5': 11,
+      '6': '.google.protobuf.Timestamp',
+      '9': 2,
+      '10': 'lastSyncedAt',
+      '17': true
+    },
+    {'1': 'event_count', '3': 7, '4': 1, '5': 4, '10': 'eventCount'},
+    {
+      '1': 'event_instance_count',
+      '3': 8,
+      '4': 1,
+      '5': 4,
+      '10': 'eventInstanceCount'
+    },
+    {
+      '1': 'ics_subscription_url',
+      '3': 9,
+      '4': 1,
+      '5': 9,
+      '9': 0,
+      '10': 'icsSubscriptionUrl'
+    },
+  ],
+  '8': [
+    {'1': 'configuration'},
+    {'1': '_updated_at'},
+    {'1': '_last_synced_at'},
+  ],
+};
+
+/// Descriptor for `EventSyncSource`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List eventSyncSourceDescriptor = $convert.base64Decode(
+    'Cg9FdmVudFN5bmNTb3VyY2USDgoCaWQYASABKAlSAmlkEiUKBW93bmVyGAIgASgLMg8uam9ubG'
+    'luZS5BdXRob3JSBW93bmVyEjIKFXN5bmNfaW50ZXJ2YWxfc2Vjb25kcxgDIAEoBFITc3luY0lu'
+    'dGVydmFsU2Vjb25kcxI5CgpjcmVhdGVkX2F0GAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbW'
+    'VzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZWRfYXQYBSABKAsyGi5nb29nbGUucHJvdG9idWYu'
+    'VGltZXN0YW1wSAFSCXVwZGF0ZWRBdIgBARJFCg5sYXN0X3N5bmNlZF9hdBgGIAEoCzIaLmdvb2'
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIAlIMbGFzdFN5bmNlZEF0iAEBEh8KC2V2ZW50X2NvdW50'
+    'GAcgASgEUgpldmVudENvdW50EjAKFGV2ZW50X2luc3RhbmNlX2NvdW50GAggASgEUhJldmVudE'
+    'luc3RhbmNlQ291bnQSMgoUaWNzX3N1YnNjcmlwdGlvbl91cmwYCSABKAlIAFISaWNzU3Vic2Ny'
+    'aXB0aW9uVXJsQg8KDWNvbmZpZ3VyYXRpb25CDQoLX3VwZGF0ZWRfYXRCEQoPX2xhc3Rfc3luY2'
+    'VkX2F0');
+
+@$core.Deprecated('Use getEventSyncSourcesResponseDescriptor instead')
+const GetEventSyncSourcesResponse$json = {
+  '1': 'GetEventSyncSourcesResponse',
+  '2': [
+    {
+      '1': 'sources',
+      '3': 1,
+      '4': 3,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '10': 'sources'
+    },
+  ],
+};
+
+/// Descriptor for `GetEventSyncSourcesResponse`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List getEventSyncSourcesResponseDescriptor =
+    $convert.base64Decode(
+        'ChtHZXRFdmVudFN5bmNTb3VyY2VzUmVzcG9uc2USMgoHc291cmNlcxgBIAMoCzIYLmpvbmxpbm'
+        'UuRXZlbnRTeW5jU291cmNlUgdzb3VyY2Vz');
+
+@$core.Deprecated('Use deleteEventSyncSourceRequestDescriptor instead')
+const DeleteEventSyncSourceRequest$json = {
+  '1': 'DeleteEventSyncSourceRequest',
+  '2': [
+    {
+      '1': 'source',
+      '3': 1,
+      '4': 1,
+      '5': 11,
+      '6': '.jonline.EventSyncSource',
+      '10': 'source'
+    },
+    {
+      '1': 'delete_synced_events',
+      '3': 2,
+      '4': 1,
+      '5': 8,
+      '10': 'deleteSyncedEvents'
+    },
+  ],
+};
+
+/// Descriptor for `DeleteEventSyncSourceRequest`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List deleteEventSyncSourceRequestDescriptor =
+    $convert.base64Decode(
+        'ChxEZWxldGVFdmVudFN5bmNTb3VyY2VSZXF1ZXN0EjAKBnNvdXJjZRgBIAEoCzIYLmpvbmxpbm'
+        'UuRXZlbnRTeW5jU291cmNlUgZzb3VyY2USMAoUZGVsZXRlX3N5bmNlZF9ldmVudHMYAiABKAhS'
+        'EmRlbGV0ZVN5bmNlZEV2ZW50cw==');
 
 @$core.Deprecated('Use eventInfoDescriptor instead')
 const EventInfo$json = {
@@ -388,9 +551,19 @@ const EventInstance$json = {
       '10': 'location',
       '17': true
     },
+    {
+      '1': 'event_sync_source_instance_id',
+      '3': 8,
+      '4': 1,
+      '5': 9,
+      '9': 1,
+      '10': 'eventSyncSourceInstanceId',
+      '17': true
+    },
   ],
   '8': [
     {'1': '_location'},
+    {'1': '_event_sync_source_instance_id'},
   ],
 };
 
@@ -401,7 +574,9 @@ final $typed_data.Uint8List eventInstanceDescriptor = $convert.base64Decode(
     'b25saW5lLkV2ZW50SW5zdGFuY2VJbmZvUgRpbmZvEjcKCXN0YXJ0c19hdBgFIAEoCzIaLmdvb2'
     'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBSCHN0YXJ0c0F0EjMKB2VuZHNfYXQYBiABKAsyGi5nb29n'
     'bGUucHJvdG9idWYuVGltZXN0YW1wUgZlbmRzQXQSMgoIbG9jYXRpb24YByABKAsyES5qb25saW'
-    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBQgsKCV9sb2NhdGlvbg==');
+    '5lLkxvY2F0aW9uSABSCGxvY2F0aW9uiAEBEkUKHWV2ZW50X3N5bmNfc291cmNlX2luc3RhbmNl'
+    'X2lkGAggASgJSAFSGWV2ZW50U3luY1NvdXJjZUluc3RhbmNlSWSIAQFCCwoJX2xvY2F0aW9uQi'
+    'AKHl9ldmVudF9zeW5jX3NvdXJjZV9pbnN0YW5jZV9pZA==');
 
 @$core.Deprecated('Use eventInstanceInfoDescriptor instead')
 const EventInstanceInfo$json = {

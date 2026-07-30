@@ -1,6 +1,6 @@
 [package]
 name = "jonline"
-version = "0.5.546"
+version = "0.5.547"
 edition = "2021"
 
 authors = ["Jon Latané <jonlatane@gmail.com>"]
@@ -85,8 +85,13 @@ rand = "0.8.5"
 http = "1.1.0"
 base64 = "0.22.1"
 web-push = "0.10.2"
-icalendar = "0.16.7"
+icalendar = { version = "0.16.7", features = ["chrono-tz"] }
 diesel_full_text_search = "2.3.0"
+reqwest = { version = "0.12", default-features = false, features = [
+  "blocking",
+  "rustls-tls",
+] }
+rrule = "0.13"
 
 [features]
 static_pq = ["dep:pq-sys"]

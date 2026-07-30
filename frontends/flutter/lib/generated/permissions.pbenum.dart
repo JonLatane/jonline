@@ -137,6 +137,10 @@ class Permission extends $pb.ProtobufEnum {
   static const Permission RSVP_TO_EVENTS =
       Permission._(35, _omitEnumNames ? '' : 'RSVP_TO_EVENTS');
 
+  /// Allow the user to synchronize events from outside sources.
+  static const Permission SYNCHRONIZE_EVENTS =
+      Permission._(36, _omitEnumNames ? '' : 'SYNCHRONIZE_EVENTS');
+
   /// Allow the user to view media with `SERVER_PUBLIC` or higher visibility. *Not currently enforced.*
   /// Allow anonymous users to view media with `GLOBAL_PUBLIC` visibility (when configured as an anonymous user permission). *Not currently enforced.*
   static const Permission VIEW_MEDIA =
@@ -205,6 +209,7 @@ class Permission extends $pb.ProtobufEnum {
     PUBLISH_EVENTS_GLOBALLY,
     MODERATE_EVENTS,
     RSVP_TO_EVENTS,
+    SYNCHRONIZE_EVENTS,
     VIEW_MEDIA,
     CREATE_MEDIA,
     PUBLISH_MEDIA_LOCALLY,

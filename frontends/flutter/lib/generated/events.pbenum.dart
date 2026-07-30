@@ -38,6 +38,11 @@ class EventListingType extends $pb.ProtobufEnum {
   static const EventListingType EVENTS_PENDING_MODERATION =
       EventListingType._(4, _omitEnumNames ? '' : 'EVENTS_PENDING_MODERATION');
 
+  /// Returns posts matching the full-text `search_text` query, scoped the same way
+  /// ALL_ACCESSIBLE_POSTS is (plus author_user_id, if provided). Requires search_text parameter.
+  static const EventListingType EVENT_TEXT_SEARCH =
+      EventListingType._(5, _omitEnumNames ? '' : 'EVENT_TEXT_SEARCH');
+
   /// Returns events from a specific group. Requires group_id parameterRequires group_id parameter
   static const EventListingType GROUP_EVENTS =
       EventListingType._(10, _omitEnumNames ? '' : 'GROUP_EVENTS');
@@ -59,6 +64,7 @@ class EventListingType extends $pb.ProtobufEnum {
     MY_GROUPS_EVENTS,
     DIRECT_EVENTS,
     EVENTS_PENDING_MODERATION,
+    EVENT_TEXT_SEARCH,
     GROUP_EVENTS,
     GROUP_EVENTS_PENDING_MODERATION,
     NEWLY_ADDED_EVENTS,

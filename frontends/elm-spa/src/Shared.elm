@@ -26,12 +26,13 @@ import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (Media)
+import Proto.Jonline exposing (EventSyncSource, Media)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
+import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
@@ -68,6 +69,7 @@ type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
+    | ConfirmEventSyncSourceDelete EventSyncSource
 
 
 type alias Model =
@@ -78,6 +80,7 @@ type alias Model =
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
+    , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
     , systemPrefersDark : Bool
@@ -130,6 +133,7 @@ type Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | EventSyncSourcesPanelMsg EventSyncSourcesPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
     | ThemePreferenceClicked
@@ -301,6 +305,7 @@ init basePath req flags =
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
             , myMediaPanel = MyMediaPanel.init
+            , eventSyncSourcesPanel = EventSyncSourcesPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
             , systemPrefersDark = systemPrefersDark
@@ -561,6 +566,37 @@ updateImpl req msg model =
                 ]
             )
 
+        EventSyncSourcesPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
+                    EventSyncSourcesPanel.update model.accountsPanel subMsg model.eventSyncSourcesPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+
+                -- `EventSyncSourcesPanel.DeleteClicked`'s own request to open
+                -- the shared "are you sure?" dialog -- same pattern as
+                -- `MyMediaPanelMsg`'s own `confirmingDeleteFor` above.
+                confirmingDeleteFor =
+                    case maybeDeleteRequest of
+                        Just source ->
+                            Just (ConfirmEventSyncSourceDelete source)
+
+                        Nothing ->
+                            model.confirmingDeleteFor
+            in
+            ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+            , Cmd.batch
+                [ Cmd.map EventSyncSourcesPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                ]
+            )
+
         MyMediaPanelOpenForAccount account ->
             -- The media button on an Account chip (`UI.accountRow`) opens this
             -- panel for that account's server -- mirrors `HomeLinkClicked`'s own
@@ -659,6 +695,27 @@ updateImpl req msg model =
                     ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
                     , Cmd.batch
                         [ Cmd.map MyMediaPanelMsg subCmd
+                        , Cmd.map AccountsPanelMsg accountsPanelCmd
+                        ]
+                    )
+
+                -- Same shape as `ConfirmMediaDelete` just above.
+                Just (ConfirmEventSyncSourceDelete source) ->
+                    let
+                        ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
+                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source) model.eventSyncSourcesPanel
+
+                        ( accountsPanelModel, accountsPanelCmd ) =
+                            case maybeAccountsPanelMsg of
+                                Just accountsPanelMsg ->
+                                    AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                                Nothing ->
+                                    ( model.accountsPanel, Cmd.none )
+                    in
+                    ( { model | eventSyncSourcesPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = Nothing }
+                    , Cmd.batch
+                        [ Cmd.map EventSyncSourcesPanelMsg subCmd
                         , Cmd.map AccountsPanelMsg accountsPanelCmd
                         ]
                     )

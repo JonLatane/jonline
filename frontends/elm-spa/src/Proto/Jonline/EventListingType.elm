@@ -39,6 +39,9 @@ fieldNumbersEventListingType n_ =
         EVENTSPENDINGMODERATION ->
             4
 
+        EVENTTEXTSEARCH ->
+            5
+
         GROUPEVENTS ->
             10
 
@@ -82,6 +85,9 @@ encodeEventListingType value =
             EVENTSPENDINGMODERATION ->
                 4
 
+            EVENTTEXTSEARCH ->
+                5
+
             GROUPEVENTS ->
                 10
 
@@ -119,6 +125,9 @@ decodeEventListingType =
                     4 ->
                         EVENTSPENDINGMODERATION
 
+                    5 ->
+                        EVENTTEXTSEARCH
+
                     10 ->
                         GROUPEVENTS
 
@@ -142,6 +151,7 @@ type EventListingType
     | MYGROUPSEVENTS
     | DIRECTEVENTS
     | EVENTSPENDINGMODERATION
+    | EVENTTEXTSEARCH
     | GROUPEVENTS
     | GROUPEVENTSPENDINGMODERATION
     | NEWLYADDEDEVENTS

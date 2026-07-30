@@ -4,6 +4,7 @@ module Components.Pages.EventsPage exposing
     , Msg
     , fromShared
     , init
+    , searchTextChanged
     , subscriptions
     , update
     , view
@@ -45,9 +46,9 @@ import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, h2, input, p, text)
-import Html.Attributes exposing (class, href, id, style, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, a, button, div, h2, h3, input, p, text)
+import Html.Attributes exposing (class, href, id, placeholder, style, title, type_, value)
+import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -127,11 +128,26 @@ type alias Model =
     { eventsByServer : Dict String ServerFeed
     , eventAnimations : Dict String EventAnimation
     , mode : EventsDisplayMode
+
+    -- `True` for embedded copies of this model whose own default `mode` is
+    -- `HorizontalList`/"row" rather than `VerticalList`/"list" (currently
+    -- just `Pages.Home_`'s, passed via `init`'s own `embeddedRow` argument,
+    -- but meant to cover other embedded-row copies later, e.g. on user
+    -- profiles) -- changes `queryParams`' notion of `mode`'s default (see
+    -- `defaultMode`) so an embedded copy's own default doesn't round-trip
+    -- to an explicit `?display=row`.
+    , embeddedRow : Bool
     , measurementPhase : MeasurementPhase
     , author : Maybe ( String, User )
     , navKey : Browser.Navigation.Key
     , path : String
     , tab : EventsTab
+
+    -- The search box's text (see `searchRowView`), sent as `Components.Events.fetchEvents`' own
+    -- `searchText` -- mirrors `PostsPage.Model.searchText` exactly, including
+    -- `searchGeneration`'s debounce below.
+    , searchText : String
+    , searchGeneration : Int
 
     -- The cutoff actually sent as `Components.Events.fetchEvents`' own
     -- `endsAfter` -- `Nothing` only ever transiently, at startup, until
@@ -200,9 +216,15 @@ wait on anything. Without one, this starts on `UpcomingEvents` with
 `refetchServers`'s own guard) until the `Task.perform GotNow Time.now`
 below resolves and supplies a real cutoff; see `Model.endsAfter`'s own doc
 for why that matters.
+
+`embeddedRow` is `True` only for `Pages.Home_`'s own embedded copy of this
+model (see `Model.embeddedRow`'s own doc for why it's tracked at all) --
+`True` also flips `mode`'s own default to `HorizontalList` here (absent an
+explicit `?display=`), matching the layout that copy is fixed to.
+
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
-init shared author navKey path query =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
+init shared author navKey path query embeddedRow =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -216,12 +238,15 @@ init shared author navKey path query =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
-                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault VerticalList
+                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedRow)
+                , embeddedRow = embeddedRow
                 , measurementPhase = NotMeasuring
                 , author = author
                 , navKey = navKey
                 , path = path
                 , tab = tab
+                , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
+                , searchGeneration = 0
                 , endsAfter = endsAfter
                 , endsAfterInputGeneration = 0
                 }
@@ -267,6 +292,7 @@ fetchServerEffect shared model endsAfter server =
         , server.frontendHost
         )
         (model.author |> Maybe.map (Tuple.second >> .id))
+        model.searchText
         endsAfter
         |> Task.attempt (GotServerEvents server.frontendHost)
         |> Effect.fromCmd
@@ -306,6 +332,23 @@ refetchServers shared model serversToFetch =
             , Effect.batch (List.map (fetchServerEffect shared model endsAfter) serversToFetch)
             )
                 |> Tuple.mapFirst syncAnimations
+
+
+{-| Re-fetches every relevant server (unconditionally -- unlike
+`fetchNewServers`, a changed search has to override every already-Loaded
+feed, not just servers whose acting account changed) and persists the new
+`searchText` to the URL -- mirrors `Components.Pages.PostsPage.applySearchChange`
+exactly. The single path `SearchDebounceElapsed`/`ClearSearchClicked` both
+funnel through. A no-op fetch-wise (via `refetchServers`' own guard) while
+`model.endsAfter` is still `Nothing`, same as every other fetch on this page.
+-}
+applySearchChange : Shared.Model -> Model -> ( Model, Effect Msg )
+applySearchChange shared model =
+    let
+        ( refetchedModel, refetchEffect ) =
+            refetchServers shared model (relevantServers shared model)
+    in
+    ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
 
 {-| Mirrors `Components.Pages.PostsPage.fetchNewServers` exactly: same
@@ -426,9 +469,13 @@ visible. Capping the working set keeps every card's invert-offset small
 enough that this is far less likely to matter in practice, on top of just
 being less to measure/animate.
 -}
-maxDisplayedEvents : Int
-maxDisplayedEvents =
-    20
+maxDisplayedEvents : Model -> Int
+maxDisplayedEvents model =
+    if model.embeddedRow then
+        20
+
+    else
+        60
 
 
 {-| `model.eventAnimations`, soonest-first (mirrors `PostsPage.postsListView`'s
@@ -447,7 +494,7 @@ visibleAnimations model =
                     |> Maybe.withDefault (Time.millisToPosix 0)
                     |> Time.posixToMillis
             )
-        |> List.take maxDisplayedEvents
+        |> List.take (maxDisplayedEvents model)
 
 
 {-| A card's measured position/size (page coordinates, matching
@@ -568,6 +615,13 @@ type Msg
       -- already bumped `model.endsAfterInputGeneration` past this timer's
       -- own (i.e. this one's stale).
     | EndsAfterDebounceElapsed Int
+      -- The search box firing (see `searchRowView`) -- mirrors
+      -- `PostsPage.SearchTextChanged`/`SearchDebounceElapsed`/
+      -- `ClearSearchClicked` exactly, just against `Events.fetchEvents`'
+      -- `searchText` instead of `Posts.fetchPosts`'.
+    | SearchTextChanged String
+    | SearchDebounceElapsed Int
+    | ClearSearchClicked
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -577,6 +631,17 @@ mirrors `Components.Pages.PostsPage.fromShared`.
 fromShared : Shared.Msg -> Msg
 fromShared =
     SharedMsg
+
+
+{-| Lets a sibling page (`Pages.Home_`, keeping this module's search box in sync with its embedded
+`PostsPage`'s own `model.searchText` behind the scenes) feed a search-text change in from outside
+exactly as if the user had typed it into this module's own search box -- same
+`SearchTextChanged`/`SearchDebounceElapsed` round-trip, same independent debounce timer -- mirrors
+`Components.Pages.PostsPage.searchTextChanged` exactly.
+-}
+searchTextChanged : String -> Msg
+searchTextChanged =
+    SearchTextChanged
 
 
 accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
@@ -815,6 +880,29 @@ updateInner shared msg model =
                 -- past this timer's -- it's stale, ignore it.
                 ( model, Effect.none )
 
+        SearchTextChanged text ->
+            let
+                generation =
+                    model.searchGeneration + 1
+            in
+            ( { model | searchText = text, searchGeneration = generation }
+            , Process.sleep 311
+                |> Task.perform (\_ -> SearchDebounceElapsed generation)
+                |> Effect.fromCmd
+            )
+
+        SearchDebounceElapsed generation ->
+            if generation == model.searchGeneration then
+                applySearchChange shared model
+
+            else
+                -- A later edit (or ClearSearchClicked) already bumped
+                -- searchGeneration past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
+        ClearSearchClicked ->
+            applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
+
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
@@ -894,25 +982,51 @@ displayModeFromParam param =
             Nothing
 
 
+{-| The `EventsDisplayMode` an `embeddedRow` copy of this model defaults to
+absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
+embedded copy (`embeddedRow = True`), `VerticalList` everywhere else. Shared
+by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
+round-trips to/from absence entirely) so the two never drift apart.
+-}
+defaultMode : Bool -> EventsDisplayMode
+defaultMode embeddedRow =
+    if embeddedRow then
+        HorizontalList
+
+    else
+        VerticalList
+
+
 {-| Every query param this page persists, read fresh off `model` -- `display`
-(see `displayModeParam`) and `ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ`
-UTC timestamp, via `Shared.Conversions.isoUtcString`, only while
-`EventsAfterDate` is the active tab; `UpcomingEvents` -- the default -- omits
-it entirely, same "round-trip to/from absence" convention `display` already
-uses for its own default). Built as one combined list (rather than each
-concern pushing its own `replaceUrl` independently) because
-`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the *whole*
-query string -- two independent single-param pushes would each silently
-wipe out whatever the other had just set.
+(see `displayModeParam`; omitted while `model.mode` is whichever
+`EventsDisplayMode` `model.embeddedRow` makes _this_ copy's own default --
+`HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
+everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
+(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
+`ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
+`Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
+active tab; `UpcomingEvents` -- the default -- omits it entirely, same
+"round-trip to/from absence" convention `display` already uses for its own
+default). Built as one combined list (rather than each concern pushing its
+own `replaceUrl` independently) because
+`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
+query string -- independent single-param pushes would each silently wipe
+out whatever the others had just set.
 -}
 queryParams : Model -> List Url.Builder.QueryParameter
 queryParams model =
-    (if model.mode == VerticalList then
+    (if model.mode == defaultMode model.embeddedRow then
         []
 
      else
         [ Url.Builder.string "display" (displayModeParam model.mode) ]
     )
+        ++ (if String.isEmpty (String.trim model.searchText) then
+                []
+
+            else
+                [ Url.Builder.string "search_text" model.searchText ]
+           )
         ++ (case ( model.tab, model.endsAfter ) of
                 ( EventsAfterDate, Just endsAfter ) ->
                     [ Url.Builder.string "ends_after" (Conversions.isoUtcString endsAfter) ]
@@ -943,6 +1057,7 @@ still ends up correct even when there's no slide to wait on.
 
 Tab/`endsAfter` changes have no such animation to race, so `TabChanged`/
 `EndsAfterInputChanged` call `pushUrl` directly instead.
+
 -}
 pushUrlWhenIdle : Model -> Effect Msg
 pushUrlWhenIdle model =
@@ -967,13 +1082,21 @@ pushUrl model =
 -- VIEW
 
 
-view : Shared.Model -> Model -> Html Msg
-view shared model =
+{-| `homeEmbedded` is `True` only for `Pages.Home_`'s own copy of this view
+(rendered above its posts feed, fixed to `HorizontalList`/"Row" -- see
+`Model.embeddedRow`, passed as `init`'s own `embeddedRow` argument) -- it, together with
+`shared.adminPanel.showAllEventLayouts`, decides which (if any) of
+`modeButtonsView`'s layout buttons show; see that function's own doc for the
+full visibility rules.
+-}
+view : Shared.Model -> Bool -> Model -> Html Msg
+view shared homeEmbedded model =
     div []
         [ authorHeadingView shared model.author
         , div [ class "events-controls-row" ]
             [ tabsView shared model
-            , modeButtonsView model.mode
+            , searchRowView model
+            , modeButtonsView shared homeEmbedded model.mode
             ]
         , eventsListView shared model
         ]
@@ -1028,60 +1151,152 @@ rather than raw UTC.
 -}
 tabsView : Shared.Model -> Model -> Html Msg
 tabsView shared model =
-    div [ class "events-tabs" ]
-        [ button
-            [ classes
-                ("events-tab"
-                    :: "events-tab-primary"
-                    :: (if model.tab == UpcomingEvents then
-                            [ "background-color-primary" ]
+    if model.embeddedRow then
+        h3 [] [ text "Upcoming Events" ]
 
-                        else
-                            []
-                       )
-                )
-            , onClick (TabChanged UpcomingEvents)
-            ]
-            [ text "Upcoming Events" ]
-        , div
-            [ classes
-                ("events-tab"
-                    :: (if model.tab == EventsAfterDate then
-                            [ "background-color-primary" ]
+    else
+        div [ class "events-tabs" ]
+            [ button
+                [ classes
+                    ("events-tab"
+                        :: "events-tab-primary"
+                        :: (if model.tab == UpcomingEvents then
+                                [ "background-color-primary" ]
 
-                        else
-                            []
-                       )
-                )
-            , onClick (TabChanged EventsAfterDate)
-            ]
-            [ text "Events After "
-            , input
-                [ type_ "datetime-local"
-                , class "events-tab-date-input"
-                , value
-                    (BrowserTimeZone.formatDateTimeLocalInput
-                        shared.browserTimeZone.zone
-                        (Maybe.withDefault (Time.millisToPosix 0) model.endsAfter)
+                            else
+                                []
+                           )
                     )
-                , onInput EndsAfterInputChanged
+                , onClick (TabChanged UpcomingEvents)
+                ]
+                [ text "Upcoming Events" ]
+            , div
+                [ classes
+                    ("events-tab"
+                        :: (if model.tab == EventsAfterDate then
+                                [ "background-color-primary" ]
+
+                            else
+                                []
+                           )
+                    )
+                , onClick (TabChanged EventsAfterDate)
+                ]
+                [ text "Events After "
+                , input
+                    [ type_ "datetime-local"
+                    , class "events-tab-date-input"
+                    , value
+                        (BrowserTimeZone.formatDateTimeLocalInput
+                            shared.browserTimeZone.zone
+                            (Maybe.withDefault (Time.millisToPosix 0) model.endsAfter)
+                        )
+                    , onInput EndsAfterInputChanged
+                    ]
+                    []
+                ]
+            ]
+
+
+{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) -- sits between
+`tabsView` and `modeButtonsView` in `view`'s `events-controls-row`, so search still visibly
+respects whichever time-filter tab is active (see `Components.Events.fetchEvents`'s own doc for
+why the request itself still enforces that too, not just the UI placement). Mirrors
+`Components.Pages.PostsPage.searchRowView` closely, minus that module's POST/REPLY context
+chooser -- this listing has no equivalent.
+-}
+searchRowView : Model -> Html Msg
+searchRowView model =
+    div [ class "events-search-row" ]
+        [ div [ class "events-search-field" ]
+            [ input
+                [ type_ "text"
+                , class "events-search-input"
+                , placeholder <|
+                    case model.mode of
+                        HorizontalList ->
+                            "Search posts and events..."
+
+                        _ ->
+                            "Search events..."
+                , value model.searchText
+                , onInput SearchTextChanged
+                , onEscape ClearSearchClicked
                 ]
                 []
+            , if String.isEmpty model.searchText then
+                text ""
+
+              else
+                button
+                    [ type_ "button"
+                    , class "field-clear-button"
+                    , onClick ClearSearchClicked
+                    , title "Clear search"
+                    ]
+                    [ text "╳" ]
             ]
         ]
 
 
-{-| The 3 layout-switch buttons (see `EventsDisplayMode`), always all 3,
-highlighted (`background-color-nav` -- unlike `tabsView`'s own tabs, which
-use `background-color-primary`, so the two rows read as visually distinct
-kinds of control sharing one row) for `current`, and pushed to the row's
-right edge (see `events.css`'s `.events-controls-row`/`.events-mode-buttons`)
--- mirrors `Pages.Event.EventId_.historyButtonView`'s pill styling.
+{-| Fires `msg` (and suppresses the key's default effect) when Escape is pressed in a text input
+-- mirrors `Components.Pages.PostsPage.onEscape` exactly.
 -}
-modeButtonsView : EventsDisplayMode -> Html Msg
-modeButtonsView current =
-    div [ class "events-mode-buttons" ]
-        (List.map (modeButtonView current) [ VerticalList, Grid, HorizontalList ])
+onEscape : msg -> Html.Attribute msg
+onEscape msg =
+    preventDefaultOn "keydown"
+        (Decode.field "key" Decode.string
+            |> Decode.andThen
+                (\key ->
+                    if key == "Escape" then
+                        Decode.succeed ( msg, True )
+
+                    else
+                        Decode.fail "Not the Escape key"
+                )
+        )
+
+
+{-| The layout-switch buttons (see `EventsDisplayMode`), highlighted
+(`background-color-nav` -- unlike `tabsView`'s own tabs, which use
+`background-color-primary`, so the two rows read as visually distinct kinds
+of control sharing one row) for `current`, and pushed to the row's right edge
+(see `events.css`'s `.events-controls-row`/`.events-mode-buttons`) -- mirrors
+`Pages.Event.EventId_.historyButtonView`'s pill styling.
+
+Which buttons show (if any) depends on `homeEmbedded` (see `view`'s own doc)
+and the "Show all event layouts" admin setting
+(`shared.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
+
+  - The setting on: all 3, everywhere -- the same as this used to always
+    render, before `homeEmbedded`/the setting existed.
+  - `Pages.Home_`'s embedded copy, setting off: none at all -- that copy is
+    fixed to `HorizontalList`/"Row" (see `Pages.Home_.init`), so there's
+    nothing useful to switch between.
+  - Every other (standalone) page, setting off: `VerticalList`/`Grid` only --
+    "Row" is `Pages.Home_`'s own look; hidden elsewhere so it doesn't read as
+    an equally-supported standalone layout.
+
+-}
+modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
+modeButtonsView shared homeEmbedded current =
+    let
+        visibleModes =
+            if shared.adminPanel.showAllEventLayouts then
+                [ VerticalList, Grid, HorizontalList ]
+
+            else if homeEmbedded then
+                []
+
+            else
+                [ VerticalList, Grid ]
+    in
+    if List.isEmpty visibleModes then
+        text ""
+
+    else
+        div [ class "events-mode-buttons" ]
+            (List.map (modeButtonView current) visibleModes)
 
 
 modeButtonView : EventsDisplayMode -> EventsDisplayMode -> Html Msg
