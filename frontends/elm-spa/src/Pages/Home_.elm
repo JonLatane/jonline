@@ -7,12 +7,13 @@ which do all the actual work -- mirrors `Pages.User.UserId_`/
 this page adds its own "Recent Posts"/"Recent Replies" heading (see
 `heading`, which tracks `PostsPage`'s own POST/REPLY context chooser),
 renders an `EventsPage` above that (defaulted to `HorizontalList` mode --
-see `init`'s `defaultedEventsModel` -- rather than `EventsPage.init`'s own
-`VerticalList` default, so the home page's events read as a single row
-rather than competing with the posts feed below for vertical space, and
-passed `homeEmbedded = True` in `view`, which hides its List/Grid/Row mode
-buttons entirely -- see `EventsPage.modeButtonsView`'s own doc for the full
-visibility rules, including the "Show all event layouts" admin override),
+via `EventsPage.init`'s own `embeddedRow = True` argument, passed below --
+rather than `EventsPage.init`'s ordinary `VerticalList` default, so the
+home page's events read as a single row rather than competing with the
+posts feed below for vertical space, and passed `homeEmbedded = True` in
+`view`, which hides its List/Grid/Row mode buttons entirely -- see
+`EventsPage.modeButtonsView`'s own doc for the full visibility rules,
+including the "Show all event layouts" admin override),
 and passes `authorUserId = Nothing`/`author = Nothing` to both (an
 unfiltered feed, rather than one user's own posts/events) -- plus, unlike
 those other `PostsPage` callers, keeps `Shared.Breadcrumbs` pointed at
@@ -37,7 +38,6 @@ robustness/symmetry (e.g. a future `?search_text=` URL param divergence).
 
 import Components.Pages.EventsPage as EventsPage
 import Components.Pages.PostsPage as PostsPage
-import Dict
 import Effect exposing (Effect)
 import Gen.Params.Home_ exposing (Params)
 import Html exposing (h2, text)
@@ -77,20 +77,9 @@ init shared req =
             PostsPage.init shared Nothing req.key req.url.path req.query
 
         ( eventsModel, eventsEffect ) =
-            EventsPage.init shared Nothing req.key req.url.path req.query
-
-        -- `EventsPage.init` itself defaults `mode` to `VerticalList` (see its
-        -- own doc) absent a `?display=` query param -- overridden to
-        -- `HorizontalList` here (and only here) so an explicit `?display=`
-        -- (e.g. a shared/bookmarked link) still wins.
-        defaultedEventsModel =
-            if Dict.member "display" req.query then
-                eventsModel
-
-            else
-                { eventsModel | mode = EventsPage.HorizontalList }
+            EventsPage.init shared Nothing req.key req.url.path req.query True
     in
-    ( { posts = postsModel, events = defaultedEventsModel }
+    ( { posts = postsModel, events = eventsModel }
     , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect ]
     )
 

@@ -128,6 +128,15 @@ type alias Model =
     { eventsByServer : Dict String ServerFeed
     , eventAnimations : Dict String EventAnimation
     , mode : EventsDisplayMode
+
+    -- `True` for embedded copies of this model whose own default `mode` is
+    -- `HorizontalList`/"row" rather than `VerticalList`/"list" (currently
+    -- just `Pages.Home_`'s, passed via `init`'s own `embeddedRow` argument,
+    -- but meant to cover other embedded-row copies later, e.g. on user
+    -- profiles) -- changes `queryParams`' notion of `mode`'s default (see
+    -- `defaultMode`) so an embedded copy's own default doesn't round-trip
+    -- to an explicit `?display=row`.
+    , embeddedRow : Bool
     , measurementPhase : MeasurementPhase
     , author : Maybe ( String, User )
     , navKey : Browser.Navigation.Key
@@ -208,9 +217,14 @@ wait on anything. Without one, this starts on `UpcomingEvents` with
 below resolves and supplies a real cutoff; see `Model.endsAfter`'s own doc
 for why that matters.
 
+`embeddedRow` is `True` only for `Pages.Home_`'s own embedded copy of this
+model (see `Model.embeddedRow`'s own doc for why it's tracked at all) --
+`True` also flips `mode`'s own default to `HorizontalList` here (absent an
+explicit `?display=`), matching the layout that copy is fixed to.
+
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
-init shared author navKey path query =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
+init shared author navKey path query embeddedRow =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -224,7 +238,8 @@ init shared author navKey path query =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
-                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault VerticalList
+                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedRow)
+                , embeddedRow = embeddedRow
                 , measurementPhase = NotMeasuring
                 , author = author
                 , navKey = navKey
@@ -963,21 +978,40 @@ displayModeFromParam param =
             Nothing
 
 
+{-| The `EventsDisplayMode` an `embeddedRow` copy of this model defaults to
+absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
+embedded copy (`embeddedRow = True`), `VerticalList` everywhere else. Shared
+by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
+round-trips to/from absence entirely) so the two never drift apart.
+-}
+defaultMode : Bool -> EventsDisplayMode
+defaultMode embeddedRow =
+    if embeddedRow then
+        HorizontalList
+
+    else
+        VerticalList
+
+
 {-| Every query param this page persists, read fresh off `model` -- `display`
-(see `displayModeParam`), `search_text` (mirrors `PostsPage.pushSearchUrl`'s
-own omit-when-blank convention), and `ends_after` (a standard
-`YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via `Shared.Conversions.isoUtcString`,
-only while `EventsAfterDate` is the active tab; `UpcomingEvents` -- the
-default -- omits it entirely, same "round-trip to/from absence" convention
-`display` already uses for its own default). Built as one combined list
-(rather than each concern pushing its own `replaceUrl` independently)
-because `Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the
-_whole_ query string -- independent single-param pushes would each silently
-wipe out whatever the others had just set.
+(see `displayModeParam`; omitted while `model.mode` is whichever
+`EventsDisplayMode` `model.embeddedRow` makes _this_ copy's own default --
+`HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
+everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
+(mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
+`ends_after` (a standard `YYYY-MM-DDTHH:mm:ssZ` UTC timestamp, via
+`Shared.Conversions.isoUtcString`, only while `EventsAfterDate` is the
+active tab; `UpcomingEvents` -- the default -- omits it entirely, same
+"round-trip to/from absence" convention `display` already uses for its own
+default). Built as one combined list (rather than each concern pushing its
+own `replaceUrl` independently) because
+`Browser.Navigation.replaceUrl`/`Url.Builder.toQuery` replace the _whole_
+query string -- independent single-param pushes would each silently wipe
+out whatever the others had just set.
 -}
 queryParams : Model -> List Url.Builder.QueryParameter
 queryParams model =
-    (if model.mode == VerticalList then
+    (if model.mode == defaultMode model.embeddedRow then
         []
 
      else
@@ -1046,7 +1080,7 @@ pushUrl model =
 
 {-| `homeEmbedded` is `True` only for `Pages.Home_`'s own copy of this view
 (rendered above its posts feed, fixed to `HorizontalList`/"Row" -- see
-`Pages.Home_.init`'s `defaultedEventsModel`) -- it, together with
+`Model.embeddedRow`, passed as `init`'s own `embeddedRow` argument) -- it, together with
 `shared.adminPanel.showAllEventLayouts`, decides which (if any) of
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
