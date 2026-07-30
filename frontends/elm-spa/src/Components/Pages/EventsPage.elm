@@ -961,6 +961,18 @@ applyMeasurementFailure model =
             ( newModel, pushUrlWhenIdle newModel )
 
 
+{-| Unlike `Components.Pages.PostsPage.subscriptions`/`Components.Pages.UsersPage.subscriptions`
+(whose 30s `Poll` is just a distrustful account-change fallback, see
+`PostsPage.fetchNewServers`'s own doc -- normally a no-op), this page's `Poll`
+does real work every time on the default `UpcomingEvents` tab: it's what
+advances `model.endsAfter` to the live "now" (via `GotNow`) so the listing
+keeps dropping events as they pass, which also re-fetches every relevant
+server (see `GotNow`/`refetchServers`). 60s (rather than 30s) is deliberately
+slower here since that's a real, visible, unavoidable-per-tick network
+round-trip rather than a cheap local check -- see `refetchServers`'s own doc
+for how the same-account `status`-preserving departure it already has keeps
+even this from flickering the list.
+-}
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
