@@ -916,6 +916,9 @@ jobs:
             chmod +x "$PKG/${bin}"
           done
 
+          cp backend/background_jobs.sh "$PKG/background_jobs.sh"
+          chmod +x "$PKG/background_jobs.sh"
+
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/docs/protocol.html"
           mv "$PKG/jonline" "$PKG/jonline-server"
@@ -1074,6 +1077,9 @@ jobs:
             done
             mv "$PKG/jonline-${arch}" "$PKG/jonline-server-${arch}"
           done
+
+          cp backend/background_jobs.sh "$PKG/background_jobs.sh"
+          chmod +x "$PKG/background_jobs.sh"
 
           echo "${{ steps.vars.outputs.full_version }}" > "$PKG/version"
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"

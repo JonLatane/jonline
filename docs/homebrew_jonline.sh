@@ -72,7 +72,11 @@ Commands:
 
   Core/Lifecycle:
 
+    server_and_jobs          Run the Jonline server and background jobs together
+                             (forks server + jobs, see below)
     server                   Run the Jonline server (jonline-server)
+    jobs                     Run background jobs on a loop (@@JONLINE_ETC@@/jonline/background_jobs.sh) --
+                             delete_expired_tokens every 2m, delete_unowned_media every 8h, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
@@ -173,6 +177,23 @@ server() {
   _jonline_exec_bin jonline-server "$@"
 }
 
+# Runs background_jobs.sh (resolves its own job binaries -- see
+# backend/background_jobs.sh).
+jobs() {
+  cd "@@JONLINE_ETC@@/jonline" && exec ./background_jobs.sh "$@"
+}
+
+# Forks `server` and `jobs`, killing both if either the script exits or one
+# of them dies.
+server_and_jobs() {
+  jobs &
+  local jobs_pid=$!
+  server &
+  local server_pid=$!
+  trap 'kill "$jobs_pid" "$server_pid" 2>/dev/null || true' EXIT TERM INT
+  wait
+}
+
 version() {
   server --version
 }
@@ -239,7 +260,7 @@ case "$cmd" in
   help|-h|--help)
     jonline_help
     ;;
-  server|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl)
+  server_and_jobs|server|jobs|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl)
     "$cmd" "$@"
     ;;
   *)

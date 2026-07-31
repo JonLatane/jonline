@@ -1,0 +1,88 @@
+#!/bin/bash
+#
+# Runs Jonline's periodic background jobs, each in its own forked loop: sleep
+# the job's startup delay (if any), run the job's binary, sleep the job's
+# interval, repeat -- forever, one Unix fork per job.
+#
+# Copied verbatim into the Homebrew and Linux release packages, alongside the
+# other binaries (jonline-server, delete_expired_tokens, ...), by the
+# create_homebrew_release / create_linux_release jobs in
+# .github/workflows/server_ci_cd.yml. It's invoked by those packages'
+# `jonline jobs` / `jonline server_and_jobs` launcher commands (see
+# docs/linux_jonline.sh and docs/homebrew_jonline.sh) -- don't hand-edit a
+# shipped copy, edit this file instead.
+#
+# To add a job, append a "binary_name startup_delay_seconds interval_seconds"
+# entry to JOBS below -- binary_name must have a matching backend/src/bin/*.rs.
+# Each job's binary is resolved (in this order):
+#   1. ./binary_name                    (Homebrew macOS package; single-arch)
+#   2. ./binary_name-<amd64|arm64>      (Linux tarball; arch-suffixed binaries)
+#   3. cargo run --bin binary_name --   (running from a source checkout)
+#
+set -euo pipefail
+
+JOBS=(
+  "delete_expired_tokens 0 120"
+  "delete_unowned_media 10 28800"
+)
+
+cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
+
+# Prints "amd64" or "arm64" to match the Linux release's binary naming, or
+# nothing for architectures/platforms that scheme doesn't cover (e.g. macOS),
+# so callers just fall through to the next resolution step.
+_background_jobs_arch() {
+  case "$(uname -m)" in
+    x86_64|amd64) echo amd64 ;;
+    aarch64|arm64) echo arm64 ;;
+    *) echo "" ;;
+  esac
+}
+
+# Echoes the command (as a single, word-split-on-purpose string) that runs
+# the given job binary, trying each resolution step in turn.
+_background_jobs_resolve_bin() {
+  local name="$1"
+  if [ -x "./${name}" ]; then
+    echo "./${name}"
+    return
+  fi
+
+  local arch
+  arch="$(_background_jobs_arch)"
+  if [ -n "$arch" ] && [ -x "./${name}-${arch}" ]; then
+    echo "./${name}-${arch}"
+    return
+  fi
+
+  echo "cargo run --bin ${name} --"
+}
+
+_background_jobs_run_loop() {
+  local name="$1" delay="$2" interval="$3"
+
+  if [ "$delay" -gt 0 ]; then
+    sleep "$delay"
+  fi
+
+  while true; do
+    local bin
+    bin="$(_background_jobs_resolve_bin "$name")"
+    echo "[background_jobs] running ${name} (${bin})..."
+    if ! $bin; then
+      echo "[background_jobs] ${name} failed" >&2
+    fi
+    sleep "$interval"
+  done
+}
+
+pids=()
+for job in "${JOBS[@]}"; do
+  read -r name delay interval <<< "$job"
+  _background_jobs_run_loop "$name" "$delay" "$interval" &
+  pids+=("$!")
+done
+
+trap 'kill "${pids[@]}" 2>/dev/null || true' TERM INT
+
+wait
