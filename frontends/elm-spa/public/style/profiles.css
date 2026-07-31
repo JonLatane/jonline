@@ -96,6 +96,8 @@
   align-items: center;
   gap: 0.4rem;
   margin: 0;
+  word-break: break-word;
+
 }
 
 /* Components/Authors.elm's Admin/Run Bots badges -- `.author-badge` (verbose,
@@ -116,6 +118,7 @@
 
 .profile-real-name {
   color: var(--muted);
+  word-break: break-word;
 }
 
 .profile-real-name-edit {
