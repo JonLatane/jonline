@@ -676,12 +676,12 @@ timestampsText browserTimeZone post =
 Markdown editor panel via `onEditClicked`, supplied by the caller
 (`Pages.Post.PostId_`).
 -}
-editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
-editButton maybeAccount onEditClicked post =
+editContentButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+editContentButton maybeAccount onEditClicked post =
     case maybeAccount of
         Just account ->
             if isAuthor account post then
-                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit" ]
+                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit Content" ]
 
             else
                 text ""
@@ -704,7 +704,7 @@ mediaEditButton maybeAccount onMediaEditClicked post =
     case maybeAccount of
         Just account ->
             if isAuthor account post || List.member ADMIN account.permissions then
-                button [ class "post-media-edit-button", Html.Events.onClick onMediaEditClicked ] [ text "Edit" ]
+                button [ class "post-media-edit-button", Html.Events.onClick onMediaEditClicked ] [ text "Edit Media" ]
 
             else
                 text ""
@@ -1091,5 +1091,5 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
 
             Nothing ->
                 text ""
-        , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
+        , div [ class "post-detail-edit-row" ] [ editContentButton maybeAccount onEditClicked post ]
         ]

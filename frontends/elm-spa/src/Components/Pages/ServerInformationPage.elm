@@ -22,18 +22,26 @@ Almost everything shown lives in `Server.configuration` (a `ServerConfiguration`
 a page of users and filters for `ADMIN` client-side, same as the Tamagui
 screen does).
 
-Renaming, and editing the description/privacy policy/media policy, are the
-only mutations this page supports (all via `ConfigureServer`), and only for
-a signed-in account with `ADMIN` on this specific server. Renaming is routed
-through `Shared.AccountsPanel.RenameServerClicked` (not called directly) so
-the app's cached `Server` list stays in sync with the change, same as
-`UI.elm`'s web-UI toggle. The three Markdown fields instead go through the
-shared `Shared.MarkdownPanel` editor (`ServerDescription`/`ServerPrivacyPolicy`/
-`ServerMediaPolicy`, see `policySectionView`) -- same edit-in-panel/Save flow
-as post content on `Pages.Post.PostId_` -- which on a successful save
-dispatches `AccountsPanel.GotServerConfigSaveResult` to patch the cached
-`Server` the same way a rename does, so this page needs no refetch of its
-own to reflect the change.
+Renaming, editing the description/privacy policy/media policy, picking the
+Default Web UI, and editing the Anonymous/Default/Basic User Permissions
+sets are the mutations this page supports (all via `ConfigureServer`), and
+only for a signed-in account with `ADMIN` on this specific server. Renaming
+is routed through `Shared.AccountsPanel.RenameServerClicked` (not called
+directly) so the app's cached `Server` list stays in sync with the change.
+The Web UI picker directly reuses `UI.webUiToggleRow` -- the same control
+shown per-admin-account in the Accounts Panel's own `UI.adminAccountPanel`.
+The three Markdown fields instead go through the shared `Shared.MarkdownPanel`
+editor (`ServerDescription`/`ServerPrivacyPolicy`/`ServerMediaPolicy`, see
+`policySectionView`) -- same edit-in-panel/Save flow as post content on
+`Pages.Post.PostId_`. The permissions editors (`permissionsSection`, one per
+`ServerPermissionsSet`) mirror `Components.Pages.UserProfilePage`'s own
+Permissions editor, just reading/writing a `ServerConfiguration`'s
+`anonymousUserPermissions`/`defaultUserPermissions`/`basicUserPermissions`
+(via `AccountsPanel.updateServerConfig`) instead of a `User`'s `permissions`.
+Every one of these mutations, on a successful save, dispatches
+`AccountsPanel.GotServerConfigSaveResult` to patch the cached `Server` the
+same way a rename does, so this page needs no refetch of its own to reflect
+the change.
 
 -}
 
@@ -41,10 +49,10 @@ import Components.Markdown as Markdown
 import Components.Users as Users
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, button, div, h2, h3, img, input, label, li, p, span, text, ul)
-import Html.Attributes exposing (checked, class, disabled, src, style, type_, value)
+import Html exposing (Html, button, div, h2, h3, img, input, label, li, option, p, select, span, text, ul)
+import Html.Attributes exposing (checked, class, disabled, selected, src, style, title, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, User, defaultGetUsersRequest, defaultServerInfo)
+import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultGetUsersRequest, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
@@ -53,6 +61,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Task
+import UI
 import UI.Classes exposing (classes)
 import UI.ServerTheme as ServerTheme
 
@@ -103,6 +112,33 @@ type RenameStatus
     | Renaming String AccountsPanel.FormStatus
 
 
+{-| Which of `ServerConfiguration`'s three grantable-permission-list fields a
+`permissionsSection`/`PermissionsEdit` is for -- lets `settingsTab` reuse the
+exact same editing machinery for all three (Anonymous/Default/Basic) rather
+than tripling it, the way `Components.Pages.UserProfilePage` doesn't need to
+since it only ever edits one user's own `permissions`.
+-}
+type ServerPermissionsSet
+    = AnonymousPermissions
+    | DefaultPermissions
+    | BasicPermissions
+
+
+{-| Live only while one of the three server-wide permission sets (see
+`ServerPermissionsSet`) is being edited by an admin -- otherwise mirrors
+`Components.Pages.UserProfilePage`'s own `PermissionsEdit` exactly: `pending`
+is the in-progress set, `addSelection` is whatever the "Add Permission"
+`<select>` currently has chosen (always one of
+`Components.Users.configurableServerPermissions` not already in `pending`,
+see `resolveAddSelection`).
+-}
+type alias PermissionsEdit =
+    { pending : List Permission
+    , addSelection : Maybe Permission
+    , status : AccountsPanel.FormStatus
+    }
+
+
 type alias Model =
     { targetHost : String
     , isSecure : Bool
@@ -111,6 +147,9 @@ type alias Model =
     , adminsStatus : AdminsStatus
     , versionStatus : VersionStatus
     , renameStatus : RenameStatus
+    , anonymousPermissionsEdit : Maybe PermissionsEdit
+    , defaultPermissionsEdit : Maybe PermissionsEdit
+    , basicPermissionsEdit : Maybe PermissionsEdit
     }
 
 
@@ -131,6 +170,9 @@ init shared pageIsSecure targetHost =
             , adminsStatus = AdminsNotLoaded
             , versionStatus = VersionNotLoaded
             , renameStatus = NotRenaming
+            , anonymousPermissionsEdit = Nothing
+            , defaultPermissionsEdit = Nothing
+            , basicPermissionsEdit = Nothing
             }
 
         ( fetchedModel, fetchEffect ) =
@@ -262,6 +304,118 @@ adminAccountFor shared model =
             )
 
 
+{-| `model`'s in-progress `PermissionsEdit` for one `ServerPermissionsSet`,
+alongside its setter `setPermissionsEditFor` just below -- lets `update`/
+`view` treat all three sections generically instead of a `case` per Msg per
+section.
+-}
+permissionsEditFor : ServerPermissionsSet -> Model -> Maybe PermissionsEdit
+permissionsEditFor set model =
+    case set of
+        AnonymousPermissions ->
+            model.anonymousPermissionsEdit
+
+        DefaultPermissions ->
+            model.defaultPermissionsEdit
+
+        BasicPermissions ->
+            model.basicPermissionsEdit
+
+
+setPermissionsEditFor : ServerPermissionsSet -> Maybe PermissionsEdit -> Model -> Model
+setPermissionsEditFor set edit model =
+    case set of
+        AnonymousPermissions ->
+            { model | anonymousPermissionsEdit = edit }
+
+        DefaultPermissions ->
+            { model | defaultPermissionsEdit = edit }
+
+        BasicPermissions ->
+            { model | basicPermissionsEdit = edit }
+
+
+{-| One `ServerPermissionsSet`'s current list out of a `ServerConfiguration`,
+alongside its writer `applyPermissionsFor` just below.
+-}
+permissionsFor : ServerPermissionsSet -> ServerConfiguration -> List Permission
+permissionsFor set config =
+    case set of
+        AnonymousPermissions ->
+            config.anonymousUserPermissions
+
+        DefaultPermissions ->
+            config.defaultUserPermissions
+
+        BasicPermissions ->
+            config.basicUserPermissions
+
+
+applyPermissionsFor : ServerPermissionsSet -> List Permission -> ServerConfiguration -> ServerConfiguration
+applyPermissionsFor set permissions config =
+    case set of
+        AnonymousPermissions ->
+            { config | anonymousUserPermissions = permissions }
+
+        DefaultPermissions ->
+            { config | defaultUserPermissions = permissions }
+
+        BasicPermissions ->
+            { config | basicUserPermissions = permissions }
+
+
+{-| Starts a `PermissionsEdit` off `currentPermissions` (that set's own, as
+currently configured) -- `addSelection` defaults to the first grantable
+permission not already in that list, same as `resolveAddSelection` picks
+after every add/remove. Mirrors `Components.Pages.UserProfilePage.newPermissionsEdit`.
+-}
+newPermissionsEdit : List Permission -> PermissionsEdit
+newPermissionsEdit currentPermissions =
+    { pending = currentPermissions
+    , addSelection = resolveAddSelection Nothing currentPermissions
+    , status = AccountsPanel.Idle
+    }
+
+
+{-| Keeps the "Add Permission" `<select>`'s selection valid as `pending`
+changes: keeps `current` if it's still addable (not already in `pending`),
+otherwise falls back to the first still-addable permission (`Nothing` if
+every permission's already been added). Mirrors `UserProfilePage`'s own.
+-}
+resolveAddSelection : Maybe Permission -> List Permission -> Maybe Permission
+resolveAddSelection current pending =
+    let
+        available =
+            addablePermissions pending
+    in
+    case current of
+        Just permission ->
+            if List.member permission available then
+                Just permission
+
+            else
+                List.head available
+
+        Nothing ->
+            List.head available
+
+
+addablePermissions : List Permission -> List Permission
+addablePermissions pending =
+    Users.configurableServerPermissions |> List.filter (\permission -> not (List.member permission pending))
+
+
+{-| Turns a `Maybe AccountsPanel.Msg` (as returned by `AccountsPanel.updateServerConfig`,
+if a token refresh happened) into an `Effect` to forward it, `Effect.none`
+otherwise. Mirrors `UserProfilePage.accountsPanelEffect`.
+-}
+accountsPanelEffect : Maybe AccountsPanel.Msg -> Effect Msg
+accountsPanelEffect maybeAccountsPanelMsg =
+    maybeAccountsPanelMsg
+        |> Maybe.map (Shared.AccountsPanelMsg >> Effect.fromShared)
+        |> Maybe.withDefault Effect.none
+
+
 
 -- UPDATE
 
@@ -279,6 +433,13 @@ type Msg
     | EditDescriptionClicked AccountsPanel.Server
     | EditPrivacyPolicyClicked AccountsPanel.Server
     | EditMediaPolicyClicked AccountsPanel.Server
+    | PermissionsEditClicked ServerPermissionsSet
+    | PermissionRemoveClicked ServerPermissionsSet Permission
+    | PermissionAddSelectionChanged ServerPermissionsSet String
+    | PermissionAddClicked ServerPermissionsSet
+    | PermissionsCancelClicked ServerPermissionsSet
+    | PermissionsSaveClicked ServerPermissionsSet
+    | GotPermissionsSaveResult ServerPermissionsSet (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
     | SharedMsg Shared.Msg
 
 
@@ -367,6 +528,92 @@ updateInner shared msg model =
 
         EditMediaPolicyClicked server ->
             ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.ServerMediaPolicy server) model.targetHost)) )
+
+        PermissionsEditClicked set ->
+            case effectiveServer shared model of
+                Just server ->
+                    let
+                        currentPermissions =
+                            permissionsFor set (AccountsPanel.configurationOf server)
+                    in
+                    ( setPermissionsEditFor set (Just (newPermissionsEdit currentPermissions)) model, Effect.none )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        PermissionRemoveClicked set permission ->
+            ( setPermissionsEditFor set
+                (permissionsEditFor set model
+                    |> Maybe.map
+                        (\edit ->
+                            let
+                                pending =
+                                    List.filter ((/=) permission) edit.pending
+                            in
+                            { edit | pending = pending, addSelection = resolveAddSelection edit.addSelection pending }
+                        )
+                )
+                model
+            , Effect.none
+            )
+
+        PermissionAddSelectionChanged set text ->
+            ( setPermissionsEditFor set
+                (permissionsEditFor set model |> Maybe.map (\edit -> { edit | addSelection = Users.permissionFromText text }))
+                model
+            , Effect.none
+            )
+
+        PermissionAddClicked set ->
+            ( setPermissionsEditFor set
+                (permissionsEditFor set model
+                    |> Maybe.map
+                        (\edit ->
+                            case edit.addSelection of
+                                Just permission ->
+                                    let
+                                        pending =
+                                            edit.pending ++ [ permission ]
+                                    in
+                                    { edit | pending = pending, addSelection = resolveAddSelection Nothing pending }
+
+                                Nothing ->
+                                    edit
+                        )
+                )
+                model
+            , Effect.none
+            )
+
+        PermissionsCancelClicked set ->
+            ( setPermissionsEditFor set Nothing model, Effect.none )
+
+        PermissionsSaveClicked set ->
+            case ( permissionsEditFor set model, adminAccountFor shared model ) of
+                ( Just edit, Just account ) ->
+                    ( setPermissionsEditFor set (Just { edit | status = AccountsPanel.Submitting }) model
+                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyPermissionsFor set edit.pending)
+                        |> Task.attempt (GotPermissionsSaveResult set)
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotPermissionsSaveResult set (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( setPermissionsEditFor set Nothing model
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult model.targetHost newConfig))
+                ]
+            )
+
+        GotPermissionsSaveResult set (Err err) ->
+            ( setPermissionsEditFor set
+                (permissionsEditFor set model |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }))
+                model
+            , Effect.none
+            )
 
         SharedMsg subMsg ->
             let
@@ -488,7 +735,7 @@ tabContent shared model server =
             themeTab server
 
         SettingsTab ->
-            settingsTab server
+            settingsTab shared model server
 
         FederationTab ->
             federationTab server
@@ -709,23 +956,38 @@ colorSwatchRow label_ colorMeta =
 -- SETTINGS TAB
 
 
-settingsTab : AccountsPanel.Server -> Html Msg
-settingsTab server =
+{-| The Default Web UI picker reuses `UI.webUiToggleRow` -- the same
+Flutter/React/Elm toggle shown per-admin-account in the Accounts Panel's own
+`UI.adminAccountPanel` -- rather than duplicating it, so an admin sees (and
+can change) the exact same control here as in that panel. Only shown to a
+signed-in admin (`adminAccountFor`); anyone else just sees the current
+choice as plain text, same as before this was editable.
+-}
+settingsTab : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
+settingsTab shared model server =
     let
         config =
             AccountsPanel.configurationOf server
 
         webUi =
             config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
+
+        maybeAdminAccount =
+            adminAccountFor shared model
     in
     div [ class "server-details-tab-content server-details-settings" ]
         [ div [ class "server-details-setting" ]
             [ h3 [] [ text "Default Web UI" ]
-            , p [] [ text (webUserInterfaceText webUi) ]
+            , case maybeAdminAccount of
+                Just account ->
+                    Html.map SharedMsg (UI.webUiToggleRow (AccountsPanel.accountId account) server.frontendHost webUi)
+
+                Nothing ->
+                    p [] [ text (webUserInterfaceText webUi) ]
             ]
-        , permissionsSection "Anonymous User Permissions" config.anonymousUserPermissions
-        , permissionsSection "Default User Permissions" config.defaultUserPermissions
-        , permissionsSection "Basic User Permissions" config.basicUserPermissions
+        , permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
+        , permissionsSection DefaultPermissions "Default User Permissions" maybeAdminAccount model.defaultPermissionsEdit config.defaultUserPermissions
+        , permissionsSection BasicPermissions "Basic User Permissions" maybeAdminAccount model.basicPermissionsEdit config.basicUserPermissions
         ]
 
 
@@ -748,17 +1010,107 @@ webUserInterfaceText ui =
             "Unknown"
 
 
-permissionsSection : String -> List Permission -> Html Msg
-permissionsSection label_ permissions =
-    div [ class "server-details-permissions" ]
-        [ h3 [ class "section-title" ] [ text label_ ]
-        , if List.isEmpty permissions then
-            p [] [ text "None." ]
+{-| One of the three server-wide permission sections (Anonymous/Default/Basic,
+distinguished by `set`) -- plain badges (plus an Edit button, for an admin)
+when this section has no in-progress `PermissionsEdit`, or the
+removable-badges + Add Permission + Save/Cancel editor while being edited.
+Mirrors `Components.Pages.UserProfilePage.permissionsSection` exactly, just
+over a `ServerConfiguration`'s permission list instead of a `User`'s.
+-}
+permissionsSection : ServerPermissionsSet -> String -> Maybe AccountsPanel.Account -> Maybe PermissionsEdit -> List Permission -> Html Msg
+permissionsSection set label_ maybeAdminAccount maybeEdit permissions =
+    case maybeEdit of
+        Just edit ->
+            div [ class "server-details-permissions server-details-permissions-edit" ]
+                [ h3 [ class "section-title" ] [ text label_ ]
+                , div [ class "permission-badges" ] (edit.pending |> List.map (permissionEditBadge set))
+                , div [ class "server-details-permissions-add" ]
+                    [ select [ onInput (PermissionAddSelectionChanged set) ]
+                        (addablePermissions edit.pending
+                            |> List.map
+                                (\permission ->
+                                    option
+                                        [ value (Users.permissionText permission)
+                                        , selected (edit.addSelection == Just permission)
+                                        ]
+                                        [ text (Users.permissionText permission) ]
+                                )
+                        )
+                    , button
+                        [ class "server-details-rename-button"
+                        , onClick (PermissionAddClicked set)
+                        , disabled (edit.addSelection == Nothing || edit.status == AccountsPanel.Submitting)
+                        ]
+                        [ text "Add Permission" ]
+                    ]
+                , div [ class "server-details-permissions-actions" ]
+                    [ editSaveButton (PermissionsSaveClicked set) edit.status
+                    , editCancelButton (PermissionsCancelClicked set) edit.status
+                    ]
+                , editErrorView edit.status
+                ]
 
-          else
-            div [ class "permission-badges" ]
-                (permissions |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ]))
+        Nothing ->
+            div [ class "server-details-permissions" ]
+                [ h3 [ class "section-title" ] [ text label_ ]
+                , if List.isEmpty permissions then
+                    p [] [ text "None." ]
+
+                  else
+                    div [ class "permission-badges" ]
+                        (permissions |> List.map (\permission -> span [ class "permission-badge" ] [ text (Users.permissionText permission) ]))
+                , case maybeAdminAccount of
+                    Just _ ->
+                        button [ class "server-details-rename-button", onClick (PermissionsEditClicked set) ] [ text "Edit" ]
+
+                    Nothing ->
+                        text ""
+                ]
+
+
+permissionEditBadge : ServerPermissionsSet -> Permission -> Html Msg
+permissionEditBadge set permission =
+    span [ class "permission-badge editable" ]
+        [ text (Users.permissionText permission)
+        , button
+            [ class "permission-remove"
+            , onClick (PermissionRemoveClicked set permission)
+            , title ("Remove " ++ Users.permissionText permission)
+            ]
+            [ text "×" ]
         ]
+
+
+editSaveButton : Msg -> AccountsPanel.FormStatus -> Html Msg
+editSaveButton onSave status =
+    button
+        [ classes [ "server-details-rename-save", "background-color-primary" ]
+        , onClick onSave
+        , disabled (status == AccountsPanel.Submitting)
+        ]
+        [ text
+            (if status == AccountsPanel.Submitting then
+                "Saving…"
+
+             else
+                "Save"
+            )
+        ]
+
+
+editCancelButton : Msg -> AccountsPanel.FormStatus -> Html Msg
+editCancelButton onCancel status =
+    button [ class "server-details-rename-cancel", onClick onCancel, disabled (status == AccountsPanel.Submitting) ] [ text "Cancel" ]
+
+
+editErrorView : AccountsPanel.FormStatus -> Html msg
+editErrorView status =
+    case status of
+        AccountsPanel.Errored err ->
+            span [ class "server-details-rename-error" ] [ text err ]
+
+        _ ->
+            text ""
 
 
 

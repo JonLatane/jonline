@@ -20,15 +20,18 @@
   border-bottom: 1px solid var(--border);
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
      descendant .nav-panel elements -- Accounts, Starred Posts) is never
-     blurred/covered/click-intercepted by the backdrop. Also above
-     .markdown-panel (26, see markdown_panel.css) -- a sibling of .navbar, not
-     a descendant, so it's *this* z-index (not its own, lower one) that
-     decides whether Accounts/Starred Posts, opened on top of an already-open
-     Markdown panel, actually render above it. Below .my-media-panel (29, see
-     my_media_panel.css) and .media-viewer-panel (30, see
-     media_viewer_panel.css) though -- opening the My Media panel from an
-     Accounts Panel chip should cover that panel rather than getting buried
-     behind it, and a fullscreen lightbox should stay on top of both. */
+     blurred/covered/click-intercepted by the backdrop. Below
+     .create-new-panel (29, see create_new_panel.css) -- a sibling of
+     .navbar, not a descendant, so it's *this* z-index (not its own, lower
+     one) that decides that. `.create-new-panel` sits at the same vertical
+     position as the Accounts/Starred Posts panels (see its own `top`
+     comment), so it needs to win this particular overlap the way those two
+     never have to (they're .navbar descendants, not siblings). Below
+     .markdown-panel (30, see markdown_panel.css), .my-media-panel (31, see
+     my_media_panel.css) and .media-viewer-panel (32, see
+     media_viewer_panel.css) too, for the same reason -- opening any of those
+     from an Accounts Panel chip or the New Post panel should cover it rather
+     than getting buried behind it. */
   z-index: 28;
 }
 

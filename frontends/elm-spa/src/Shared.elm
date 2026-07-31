@@ -32,6 +32,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
@@ -80,6 +81,7 @@ type alias Model =
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
+    , createNewPanel : CreateNewPanel.Model
     , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
@@ -133,6 +135,7 @@ type Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | CreateNewPanelMsg CreateNewPanel.Msg
     | EventSyncSourcesPanelMsg EventSyncSourcesPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
@@ -305,6 +308,7 @@ init basePath req flags =
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
             , myMediaPanel = MyMediaPanel.init
+            , createNewPanel = CreateNewPanel.init
             , eventSyncSourcesPanel = EventSyncSourcesPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
@@ -480,12 +484,43 @@ updateImpl req msg model =
 
                     else
                         ( accountsPanelModel, Cmd.none )
+
+                -- Unlike `shouldCloseAccountsPanel` above, unconditional --
+                -- not just narrow screens -- since the New Post panel opens
+                -- at this same vertical position (see
+                -- create_new_panel.css's own `top` comment) rather than as
+                -- one of `.navbar`'s own dropdowns, so the two would visually
+                -- collide at any width.
+                shouldCloseCreateNewPanel =
+                    case subMsg of
+                        StarredPostsPanel.ToggleStarredPostsPanel ->
+                            subModel.showStarredPostsPanel
+
+                        _ ->
+                            False
+
+                ( closedCreateNewPanelModel, closeCreateNewCmd ) =
+                    if shouldCloseCreateNewPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                CreateNewPanel.update closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.createNewPanel, Cmd.none )
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = closedAccountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
+            ( { model
+                | starredPostsPanel = subModel
+                , accountsPanel = closedAccountsPanelModel
+                , mediaViewerPanel = mediaViewerPanelModel
+                , createNewPanel = closedCreateNewPanelModel
+              }
             , Cmd.batch
                 [ Cmd.map StarredPostsPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map AccountsPanelMsg closeCmd
+                , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
 
@@ -506,6 +541,22 @@ updateImpl req msg model =
 
         MarkdownPanelMsg subMsg ->
             let
+                -- `Shared.CreateNewPanel`'s own draft content, if this exact
+                -- `SaveClicked` is the one closing out its
+                -- `MarkdownPanel.NewPostContent` edit -- read off
+                -- `model.markdownPanel.content` *before* `MarkdownPanel.update`
+                -- (below) resets it back to `init`, since `MarkdownPanel`
+                -- itself has no Post to save this to (see `TargetType`'s own
+                -- doc on `NewPostContent`) and so never hands it back on its
+                -- own `Msg`.
+                savedNewPostContent =
+                    case ( subMsg, model.markdownPanel.target ) of
+                        ( MarkdownPanel.SaveClicked, Just (MarkdownPanel.NewPostContent _) ) ->
+                            Just model.markdownPanel.content
+
+                        _ ->
+                            Nothing
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
                     MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
 
@@ -523,17 +574,49 @@ updateImpl req msg model =
 
                     else
                         Cmd.none
+
+                ( createNewPanelModel, createNewPanelCmd ) =
+                    case savedNewPostContent of
+                        Just content ->
+                            let
+                                ( m, cmd, _ ) =
+                                    CreateNewPanel.update model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.createNewPanel, Cmd.none )
             in
-            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel }
+            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel, createNewPanel = createNewPanelModel }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , scrollPreserverCmd
+                , Cmd.map CreateNewPanelMsg createNewPanelCmd
                 ]
             )
 
         MyMediaPanelMsg subMsg ->
             let
+                -- `Shared.CreateNewPanel`'s own picked media, if this exact
+                -- `SaveMediaClicked` is the one closing out the `MultiSelect`
+                -- it opened (`EditMediaClicked`) -- gated on it currently
+                -- being open, same "am I mid-edit" reasoning
+                -- `Pages.Post.PostId_.mediaEditActive` uses for its own,
+                -- page-level `MultiSelect` consumer (see `MyMediaPanel`'s own
+                -- module doc).
+                savedMedia =
+                    case subMsg of
+                        MyMediaPanel.SaveMediaClicked media ->
+                            if CreateNewPanel.isOpen model.createNewPanel then
+                                Just media
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
                     MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
 
@@ -558,11 +641,104 @@ updateImpl req msg model =
 
                         Nothing ->
                             model.confirmingDeleteFor
+
+                ( createNewPanelModel, createNewPanelCmd ) =
+                    case savedMedia of
+                        Just media ->
+                            let
+                                ( m, cmd, _ ) =
+                                    CreateNewPanel.update model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.createNewPanel, Cmd.none )
             in
-            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                ]
+            )
+
+        CreateNewPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
+                    CreateNewPanel.update model.accountsPanel subMsg model.createNewPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+
+                -- `CreateNewPanel.EditContentClicked`/`EditMediaClicked`'s own
+                -- request (see its module doc) to actually open
+                -- `MarkdownPanel`/`MyMediaPanel` on its behalf -- it can't
+                -- dispatch either directly without importing `Shared`, which
+                -- would cycle.
+                ( markdownPanelModel, markdownPanelCmd ) =
+                    case maybeMarkdownPanelMsg of
+                        Just markdownPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg model.markdownPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.markdownPanel, Cmd.none )
+
+                ( myMediaPanelModel, myMediaPanelCmd ) =
+                    case maybeMyMediaPanelMsg of
+                        Just myMediaPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg model.myMediaPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.myMediaPanel, Cmd.none )
+
+                -- Mirrors `StarredPostsPanelMsg`'s own
+                -- `shouldCloseCreateNewPanel`, in the other direction --
+                -- unconditional (not narrow-screen-gated), same reasoning.
+                shouldCloseStarredPostsPanel =
+                    case subMsg of
+                        CreateNewPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedStarredPostsPanelModel, closeStarredPostsCmd ) =
+                    if shouldCloseStarredPostsPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                StarredPostsPanel.update accountsPanelModel StarredPostsPanel.CloseStarredPostsPanel model.starredPostsPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.starredPostsPanel, Cmd.none )
+            in
+            ( { model
+                | createNewPanel = subModel
+                , accountsPanel = accountsPanelModel
+                , markdownPanel = markdownPanelModel
+                , myMediaPanel = myMediaPanelModel
+                , starredPostsPanel = closedStarredPostsPanelModel
+              }
+            , Cmd.batch
+                [ Cmd.map CreateNewPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map MarkdownPanelMsg markdownPanelCmd
+                , Cmd.map MyMediaPanelMsg myMediaPanelCmd
+                , Cmd.map StarredPostsPanelMsg closeStarredPostsCmd
                 ]
             )
 
@@ -628,8 +804,11 @@ updateImpl req msg model =
 
                 ( closedStarredModel, closeStarredCmd ) =
                     updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) closedAccountsModel
+
+                ( closedCreateNewModel, closeCreateNewCmd ) =
+                    updateImpl req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
             in
-            ( closedStarredModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd ] )
+            ( closedCreateNewModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd ] )
 
         ThemePreferenceClicked ->
             let

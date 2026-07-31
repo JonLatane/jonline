@@ -44,6 +44,7 @@ module Shared.AccountsPanel exposing
     , performWithAccountServer
     , performWithOptionalAccountServer
     , serverChipDomId
+    , updateServerConfig
     , serverForHost
     , serverHasAccounts
     , serverInfoOf
@@ -2876,6 +2877,44 @@ renameServer server account newName =
                             )
                 )
                 |> Task.attempt (GotRenameServerResult (accountId account))
+
+
+{-| Re-fetches `maybeAccountServer`'s server configuration fresh
+(`GetServerConfiguration`) and writes back whatever `updateFn` makes of it
+(via `ConfigureServer`) -- the same "reload, then write" dance
+`Components.Users.updateUser`/`Shared.MarkdownPanel.saveServerInfoField` use
+for a `User`/`ServerInfo` field, generalized here to the whole
+`ServerConfiguration` since callers like
+`Components.Pages.ServerInformationPage`'s permissions editors change a
+top-level field (`anonymousUserPermissions`/`defaultUserPermissions`/
+`basicUserPermissions`), not one nested in `serverInfo`. Returns a `Msg` to
+dispatch if a token refresh happened, alongside the newly written
+`ServerConfiguration` -- callers should patch it into `model.servers`
+themselves via `GotServerConfigSaveResult`, same as a rename or `serverInfo`
+field save.
+-}
+updateServerConfig :
+    Model
+    -> MaybeAccountServer
+    -> (ServerConfiguration -> ServerConfiguration)
+    -> Task Grpc.Error ( Maybe Msg, ServerConfiguration )
+updateServerConfig accountsPanelModel maybeAccountServer updateFn =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.getServerConfiguration {}
+                |> Grpc.setHost (serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+                |> Task.andThen
+                    (\freshConfig ->
+                        Grpc.new Jonline.configureServer (updateFn freshConfig)
+                            |> Grpc.setHost (serverUrl server)
+                            |> withAccessToken (Just token)
+                            |> Grpc.toTask
+                    )
+        )
 
 
 {-| A server's configuration can declare (via `externalCdnConfig`) that it's

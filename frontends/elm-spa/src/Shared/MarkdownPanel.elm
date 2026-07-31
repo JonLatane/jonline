@@ -52,6 +52,7 @@ opened for a signed-in account with `ADMIN` on that server (see `resolve`).
 type TargetType
     = PostContent Post
     | NewReply Post
+    | NewPostContent String
     | UserBio User
     | ServerDescription AccountsPanel.Server
     | ServerPrivacyPolicy AccountsPanel.Server
@@ -151,6 +152,15 @@ update accountsPanelModel msg model =
 
         SaveClicked ->
             case model.target of
+                -- No RPC to make -- there's no Post yet (see `TargetType`'s
+                -- own doc on `NewPostContent`). `Shared.update`'s own
+                -- `MarkdownPanelMsg` branch is what actually hands
+                -- `model.content` back to `Shared.NewPostPanel`, reading it
+                -- off this exact `SaveClicked` before `update` (here) resets
+                -- it back to `init` below.
+                Just (NewPostContent _) ->
+                    ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
+
                 Just target ->
                     case resolve accountsPanelModel target model.targetHost of
                         Ok resolved ->
@@ -181,6 +191,9 @@ initialContent target =
 
         NewReply _ ->
             ""
+
+        NewPostContent content ->
+            content
 
         UserBio user ->
             user.bio
@@ -243,6 +256,13 @@ resolve accountsPanelModel target host =
 
                                 else
                                     Err "You don't have permission to reply."
+
+                            NewPostContent _ ->
+                                if List.member CREATEPOSTS account.permissions || AccountsPanel.isAdmin account then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You don't have permission to create posts."
 
                             UserBio user ->
                                 if account.userId == user.id || List.member ADMIN account.permissions then
@@ -331,6 +351,12 @@ saveTask accountsPanelModel maybeAccountServer target content =
                         |> Grpc.toTask
                 )
                 |> Task.map Tuple.first
+
+        -- Unreachable in practice -- `SaveClicked` (see its own doc) never
+        -- calls `saveTask` at all for this target, short-circuiting straight
+        -- back to `init` instead. Still needs a branch here for exhaustiveness.
+        NewPostContent _ ->
+            Task.fail Grpc.NetworkError
 
         UserBio user ->
             Users.updateUser accountsPanelModel maybeAccountServer user.id (\freshUser -> { freshUser | bio = content })
@@ -563,6 +589,9 @@ verbFor target =
     case target of
         Just (NewReply _) ->
             "Posting as "
+
+        Just (NewPostContent _) ->
+            "Writing as "
 
         _ ->
             "Editing as "

@@ -160,6 +160,43 @@
   margin-bottom: 1.25rem;
 }
 
+/* Editable Anonymous/Default/Basic permission sections -- see
+   Components/Pages/ServerInformationPage.elm's `permissionsSection`. Mirrors
+   profiles.css's `.profile-permissions-edit`/`.profile-permissions-add`/
+   `.profile-permissions-actions`; `.section-title`/`.permission-badges`/
+   `.permission-badge` (+ `.editable`)/`.permission-remove` are shared via
+   main.css. */
+.server-details-permissions-edit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.server-details-permissions-add {
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.server-details-permissions-add select {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+}
+
+.server-details-permissions-actions {
+  flex-basis: 100%;
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
 .server-details-federated-server {
   display: flex;
   align-items: center;

@@ -1,0 +1,175 @@
+/* The app-wide "New Post" composer (see Shared/CreateNewPanel.elm) -- unlike
+   the Markdown/My Media panels (large overlays centered against the bottom
+   of the screen), this one opens from just under the top nav, matching the
+   Accounts/Starred Posts panels' own vertical position and general look
+   (rounded on every corner, `--panel-bg`/border/shadow, the same subtle
+   fade+shift closed state -- all inherited from the `.nav-panel` base rule,
+   see accounts_panel.css) -- just centered, at this panel's own wider
+   `min(90vw, 700px)`, rather than right-anchored at their fixed 320px, since
+   it's a full form rather than a short list/dropdown. */
+.create-new-panel.nav-panel {
+  position: fixed;
+
+  /* Same vertical position as the Accounts/Starred Posts panels' own `top`
+     (see starred_posts_panel.css's `.starred-posts-panel` -- `12px` is the
+     nav toggle's own vertical centering inset, `var(--nav-toggle-height)` its
+     height): those are positioned relative to `.navbar` itself (a `position:
+     sticky` ancestor pinned to `env(safe-area-inset-top)` from the real
+     viewport top), so this `position: fixed` panel reaches the same spot by
+     just adding that same inset back in directly. */
+  top: calc(env(safe-area-inset-top) + 12px + var(--nav-toggle-height) - 1px);
+  bottom: auto;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  width: min(90vw, 700px);
+  max-height: calc(100vh - env(safe-area-inset-top) - 12px - var(--nav-toggle-height) + 1px - 16px);
+
+  /* Above `.navbar` itself (28, see nav.css) -- since this panel sits at the
+     same vertical position as the Accounts/Starred Posts panels (see the
+     `top` comment above), it would otherwise visually overlap `.navbar`'s
+     own lower edge and lose that overlap (`.navbar` painting over this
+     panel's rounded top corners), the way a `.navbar` *descendant* like
+     those two never has to worry about. Still below both `.markdown-panel`
+     (30) and `.my-media-panel` (31) -- either can be opened *from* this
+     panel (`CreateNewPanel.EditContentClicked`/`EditMediaClicked`), and
+     should reasonably win over the composer that opened them rather than
+     getting buried behind it. */
+  z-index: 29;
+}
+
+/* Keeps `.nav-panel.is-closed`'s own subtle fade+shift (accounts_panel.css)
+   but preserves this panel's own horizontal centering through it -- a bare
+   `transform: translateY(-8px)` would otherwise replace, not add to,
+   `translateX(-50%)` above. */
+.create-new-panel.nav-panel.is-closed {
+  transform: translateX(-50%) translateY(-8px);
+}
+
+.create-new-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.create-new-panel-title {
+  font-weight: 700;
+}
+
+.create-new-panel-account {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.create-new-panel-account-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.create-new-panel-account-avatar.placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--chip-bg);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.create-new-panel-account-select {
+  max-width: 220px;
+  font-size: 0.8rem;
+  background: var(--chip-bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.4rem;
+}
+
+/* Scrollable middle -- the header above and the actions row below (see
+   `.create-new-panel-actions`) stay fixed in place regardless of how tall
+   the form gets, same "fixed header/footer, scrolling middle" shape
+   `.my-media-panel-content`'s own grid uses within `.my-media-panel`. */
+.create-new-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.create-new-panel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.create-new-panel-field-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.create-new-panel-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.create-new-panel-title-input,
+.create-new-panel-link-input {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.95rem;
+}
+
+.create-new-panel-edit-button {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.75rem;
+  padding: 0.15rem 0.6rem;
+}
+
+.create-new-panel-content-preview {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem;
+  background: var(--chip-bg);
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.create-new-panel-error {
+  color: var(--danger);
+  flex: 0 0 auto;
+}
+
+.create-new-panel-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.create-new-panel-actions button {
+  flex: 1;
+}
+
+/* `.create-new-panel-save`'s actual color comes from the emitted per-server
+   `background-color-primary` utility class (see UI/EmittedStylesheet.elm) --
+   added alongside it in Shared/CreateNewPanel.elm's `view`, keyed by the
+   posting-as account's own server, same convention as
+   `.markdown-panel-save`/`.my-media-panel-save`. */

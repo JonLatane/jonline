@@ -1,4 +1,4 @@
-module UI exposing (imageOrInitial, layout, page, pageTitle)
+module UI exposing (imageOrInitial, layout, page, pageTitle, webUiToggleRow)
 
 import Components.Markdown as Markdown
 import Components.Posts as Posts
@@ -20,6 +20,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
@@ -77,6 +78,7 @@ layout shared currentRoute toMsg children =
     , Html.map toMsg (createAccountConfirmationModal shared)
     , Html.map toMsg (deleteConfirmationBackdrop shared)
     , Html.map toMsg (deleteConfirmationModal shared)
+    , Html.map toMsg (createNewPanel shared)
     , Html.map toMsg (markdownPanel shared)
     , Html.map toMsg (myMediaPanel shared)
     , Html.map toMsg (mediaViewerPanel shared)
@@ -126,6 +128,11 @@ headerNav shared currentRoute =
 
                       else
                         starredPostsToggle shared
+                    , if CreateNewPanel.hasEligibleAccount shared.accountsPanel then
+                        newPostToggle shared
+
+                      else
+                        text ""
                     , eventsLink shared currentRoute
                     , postsLink shared currentRoute
                     , peopleLink shared currentRoute
@@ -182,8 +189,8 @@ type alias BackdropPanel =
 {-| Covers everything except the top nav (which sits in its own, higher
 stacking context -- see `.navbar` in nav.css) for every panel that closes
 via a background tap -- currently the Starred Posts panel, the Accounts
-Panel, the Breadcrumbs reply viewer and the Markdown panel, with more
-expected to join this list later. Always rendered, like the panels
+Panel, the Breadcrumbs reply viewer, the Markdown panel and the New Post
+panel, with more expected to join this list later. Always rendered, like the panels
 themselves, so opening/closing (and the blur) is a plain CSS transition
 rather than the element appearing/disappearing outright, and only receives
 clicks (`pointer-events`) while at least one listed panel is open.
@@ -202,23 +209,25 @@ Listed nearest-first: when several panels are open at once, a background tap
 closes only the first one in this list (see `topmostOpenPanel`) -- one tap per
 panel to peel them off in order, front-to-back, rather than closing everything
 at once. Right now that means tapping the background closes the My Media panel
-first, then the Starred Posts panel, then the Accounts Panel, then the
-Breadcrumbs reply viewer, then (on a fifth tap) the Markdown panel behind all
-four -- matching the actual paint order. `.my-media-panel` (29, see
-my\_media\_panel.css) is a `.navbar` _sibling_ with a higher z-index than
-`.navbar`'s own (28), so it renders above the whole thing -- `.navbar` and
-every one of its descendants (`.breadcrumb-reply-panel`, the Accounts/Starred
-Posts panels) alike, regardless of their own individual z-indices.
-_Within_ `.navbar`, `.breadcrumb-reply-panel`'s lower z-index (see nav.css) is
-what then keeps it under the Accounts/Starred Posts panels specifically.
-`.markdown-panel`'s own 26 (see markdown\_panel.css), the lowest of the lot, is
-what keeps it below `.navbar` and so below all three of its descendants too.
-Swap their order here to change that priority. Only blurs/tints the page while
-a panel with `blurs = True` is open (currently the Accounts Panel, the
-Breadcrumbs reply viewer, the My Media panel and the Markdown panel, all of
-which block interaction with the rest of the page while open); the Starred
-Posts panel doesn't, since starring/unstarring posts while it's open is an
-expected, encouraged interaction rather than something to block.
+first, then the Markdown panel, then the New Post panel, then the Starred
+Posts panel, then the Accounts Panel, then (on a sixth tap) the Breadcrumbs
+reply viewer behind all five -- matching the actual paint order.
+`.my-media-panel` (31, see my\_media\_panel.css), `.markdown-panel` (30, see
+markdown\_panel.css) and `.create-new-panel` (29, see create\_new\_panel.css)
+are all `.navbar` _siblings_ with a higher z-index than `.navbar`'s own (28),
+so all three render above the whole thing -- `.navbar` and every one of its
+descendants (`.breadcrumb-reply-panel`, the Accounts/Starred Posts panels)
+alike, regardless of their own individual z-indices -- in that relative order
+(31 > 30 > 29): both the Markdown and My Media panels can be opened _from_
+the New Post panel (`CreateNewPanel.EditContentClicked`/`EditMediaClicked`),
+and should win over it while open. _Within_ `.navbar`, `.breadcrumb-reply-panel`'s
+lower z-index (see nav.css) is what keeps it under the Accounts/Starred Posts
+panels specifically. Swap their order here to change any of this priority.
+Only blurs/tints the page while a panel with `blurs = True` is open (currently
+every one of these except the Starred Posts panel, which doesn't block
+interaction with the rest of the page since starring/unstarring posts while
+it's open is an expected, encouraged interaction rather than something to
+block).
 
 -}
 sharedBackdrop : Shared.Model -> Html Shared.Msg
@@ -228,6 +237,21 @@ sharedBackdrop shared =
         panels =
             [ { isOpen = MyMediaPanel.isOpen shared.myMediaPanel
               , closeMsg = Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked
+              , blurs = True
+              }
+            , { isOpen = shared.markdownPanel.target /= Nothing
+              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
+              , blurs = True
+              }
+
+            -- Both `MarkdownPanel`/`MyMediaPanel` above can be opened *from*
+            -- this panel (`CreateNewPanel.EditContentClicked`/
+            -- `EditMediaClicked`), and must render on top of it while they
+            -- are (see create_new_panel.css's own z-index comment), so a
+            -- background tap while either's open should close that one
+            -- first, not this one underneath it.
+            , { isOpen = CreateNewPanel.isOpen shared.createNewPanel
+              , closeMsg = Shared.CreateNewPanelMsg CreateNewPanel.CloseClicked
               , blurs = True
               }
             , { isOpen = shared.starredPostsPanel.showStarredPostsPanel
@@ -240,10 +264,6 @@ sharedBackdrop shared =
               }
             , { isOpen = shared.breadcrumbs.viewingPost /= Nothing || shared.breadcrumbs.viewingHost
               , closeMsg = Shared.BreadcrumbsMsg Breadcrumbs.CloseViewer
-              , blurs = True
-              }
-            , { isOpen = shared.markdownPanel.target /= Nothing
-              , closeMsg = Shared.MarkdownPanelMsg MarkdownPanel.CancelClicked
               , blurs = True
               }
             ]
@@ -2066,6 +2086,33 @@ policyMarkdown heading maybeText =
 
 
 
+-- NEW POST TOGGLE
+
+
+{-| Opens `Shared.CreateNewPanel` -- only shown at all once at least one
+signed-in account is actually eligible to create a Post (see
+`CreateNewPanel.hasEligibleAccount`), same "no point showing chrome for
+something nobody here could use" reasoning as the Starred Posts toggle's own
+gate below. Styled exactly like that toggle (`.nav-menu-toggle.circular`,
+accounts\_panel.css) -- same fixed circular size, and the same
+`transition: border-radius` on `openClosedClass` squaring its bottom corners
+off while its panel is open -- rather than `.nav-link`'s route-highlight
+look, since this is a plain panel toggle with nowhere to navigate to, not a
+page link. `stopPropagationOn`, not plain `onClick`, for the same reason
+`starredPostsToggle` uses it -- tapping it shouldn't also trigger
+`headerNav`'s own tap-anywhere `Shared.ScrollToTop`.
+-}
+newPostToggle : Shared.Model -> Html Shared.Msg
+newPostToggle shared =
+    button
+        [ classes [ "nav-menu-toggle", "circular", openClosedClass (CreateNewPanel.isOpen shared.createNewPanel) ]
+        , stopPropagationOn "click" (Decode.succeed ( Shared.CreateNewPanelMsg CreateNewPanel.ToggleOpen, True ))
+        , title "New Post"
+        ]
+        [ text "+" ]
+
+
+
 -- STARRED POSTS TOGGLE
 
 
@@ -2214,14 +2261,31 @@ adminAccountPanel shared account =
         ]
 
 
+{-| The "New Post" composer (see `Shared.CreateNewPanel`) -- toggled from its
+own nav icon (`newPostToggle`, below), like the Accounts/Starred Posts panels,
+rather than opened contextually. Mounted directly in `layout` (not inside
+`headerNav`) since -- unlike those two -- it opens from just under the top nav
+as a `.navbar` _sibling_ rather than one of its dropdowns (see
+`create_new_panel.css`'s own `top` comment for why), so it needs its own
+z-index above `.navbar` to avoid `.navbar` painting over it, yet still below
+both `markdownPanel`/`myMediaPanel` below since either can be opened _from_
+it (see `create_new_panel.css`'s own z-index comment).
+-}
+createNewPanel : Shared.Model -> Html Shared.Msg
+createNewPanel shared =
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.accountsPanel shared.createNewPanel)
+
+
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
 Accounts/Starred Posts panels, it isn't toggled from a nav icon of its own;
-it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons) via
+it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons, or
+`CreateNewPanel`'s own Edit button) via
 `Shared.MarkdownPanelMsg (MarkdownPanel.Open ...)`, so it's mounted directly in
-`layout` rather than inside `headerNav`. Given the lowest z-index of the
-panels mounted here (see `markdown_panel.css`) -- if a post's Edit button is
-used while the Accounts/Starred Posts panel, or the Media Viewer panel, also
-happens to be open, those still layer above it rather than being hidden
+`layout` rather than inside `headerNav`. Above `createNewPanel` and `.navbar`
+itself (and, with it, the Accounts/Starred Posts panels -- see
+`markdown_panel.css`'s own z-index comment) but below `myMediaPanel`/the
+Media Viewer panel -- if a post's Edit button is used while either of those
+also happens to be open, they still layer above it rather than being hidden
 behind it.
 -}
 markdownPanel : Shared.Model -> Html Shared.Msg
@@ -2232,11 +2296,12 @@ markdownPanel shared =
 {-| The "My Media" panel (see `Shared.MyMediaPanel`) -- opened from a
 signed-in Account chip's media button (`accountRow`, below), not a nav icon,
 so it's mounted directly in `layout` too, same as `markdownPanel`. Sits above
-both the Markdown panel and `.navbar` itself -- and, with it, the
+the Markdown/New Post panels and `.navbar` itself -- and, with it, the
 Accounts/Starred Posts panels (see `my_media_panel.css`'s z-index) -- browsing
-your own media reasonably wins over a stale editor left open behind it, and
-should cover the very Accounts Panel it was opened from rather than getting
-buried behind it. Still below the Media Viewer panel and `.modal`, though.
+your own media reasonably wins over a stale editor/composer left open behind
+it, and should cover the very Accounts Panel it was opened from rather than
+getting buried behind it. Still below the Media Viewer panel and `.modal`,
+though.
 -}
 myMediaPanel : Shared.Model -> Html Shared.Msg
 myMediaPanel shared =
@@ -2268,10 +2333,11 @@ breadcrumbsReplyPanel shared =
 {-| The app-wide fullscreen image/video viewer (see `Shared.MediaViewerPanel`)
 -- opened contextually, same as `markdownPanel` above, by tapping a Post's
 media (`Components.PostCard`'s `onMediaClicked`), not from a nav icon, so it's
-mounted directly in `layout` too. Sits above both the Markdown panel and the
-Accounts/Starred Posts panels (see `media_viewer_panel.css`'s z-index) -- a
-fullscreen image reasonably wins over a stale editor left open behind it, and
-stays on top even if the nav's own dropdowns are then opened over it.
+mounted directly in `layout` too. Sits above the New Post/Markdown/My Media
+panels and the Accounts/Starred Posts panels alike (see
+`media_viewer_panel.css`'s z-index) -- a fullscreen image reasonably wins over
+a stale editor/composer left open behind it, and stays on top even if the
+nav's own dropdowns are then opened over it.
 -}
 mediaViewerPanel : Shared.Model -> Html Shared.Msg
 mediaViewerPanel shared =
