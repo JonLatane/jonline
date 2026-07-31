@@ -2107,7 +2107,7 @@ newPostToggle shared =
     button
         [ classes [ "nav-menu-toggle", "circular", openClosedClass (CreateNewPanel.isOpen shared.createNewPanel) ]
         , stopPropagationOn "click" (Decode.succeed ( Shared.CreateNewPanelMsg CreateNewPanel.ToggleOpen, True ))
-        , title "New Post"
+        , title "Create New"
         ]
         [ text "+" ]
 
@@ -2273,7 +2273,7 @@ it (see `create_new_panel.css`'s own z-index comment).
 -}
 createNewPanel : Shared.Model -> Html Shared.Msg
 createNewPanel shared =
-    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.accountsPanel shared.createNewPanel)
+    Html.map Shared.CreateNewPanelMsg (CreateNewPanel.view shared.browserTimeZone.zone shared.accountsPanel shared.createNewPanel)
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the

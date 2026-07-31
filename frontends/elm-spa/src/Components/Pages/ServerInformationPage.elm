@@ -252,7 +252,7 @@ init shared pageIsSecure targetHost =
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known
-*and* actually connected (see `AccountsPanel.knownConnectedServer`) -- a
+_and_ actually connected (see `AccountsPanel.knownConnectedServer`) -- a
 known-but-disconnected entry is treated the same as not known at all, so this
 page falls back to its own probe (just like a never-added host) rather than
 trying to show configuration/admins/version for a server it can't currently

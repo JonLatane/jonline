@@ -359,6 +359,31 @@
   margin: 4px;
 }
 
+/* `.events-grid`/`.events-strip` (below) both deliberately "break out" past
+   `.container`'s own 800px max-width, up to 95% of the viewport -- the
+   filters row above (`.events-controls-row`) and, on `Pages.Home_`, the post
+   listing below both stay at `.container`'s normal 800px/centered, only the
+   actual card grid/strip goes wide, so more tiles fit per row without the
+   rest of the page's text-focused content stretching to match. `width: 95vw`
+   sets the box's actual size (viewport-relative, so ancestor padding/max-width
+   doesn't factor in); `margin-left`'s `-47.5vw` (half of `95vw`) shifts that
+   box left by a fixed viewport fraction while `+ 50%` (a *containing-block*-
+   relative percentage, unlike `vw`) shifts it back right by half of whatever
+   `.container`'s narrower box actually measures here -- together they land
+   this box's left edge at "2.5vw from the viewport's own left edge" no
+   matter how wide `.container` currently is, *as long as* every ancestor
+   between this element and `body` (`.container` itself, `main`'s `padding`)
+   stays horizontally centered/symmetric, which they are. This only works
+   because `.container` no longer clips horizontal overflow (see main.css's
+   own `.container`/`body` comments) -- `overflow-x: hidden` there would've
+   clipped this breakout right back down to 800px. */
+.events-grid,
+.events-strip {
+  width: 95vw;
+  max-width: 95vw;
+  margin-left: calc(-47.5vw + 50%);
+}
+
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;

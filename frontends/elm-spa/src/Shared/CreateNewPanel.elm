@@ -1,23 +1,32 @@
-module Shared.CreateNewPanel exposing (Model, Msg(..), eligibleAccounts, hasEligibleAccount, init, isOpen, update, view)
+module Shared.CreateNewPanel exposing (Mode(..), Model, Msg(..), eligibleAccounts, hasEligibleAccount, init, isOpen, update, view)
 
-{-| A single, app-wide "New Post" composer -- title (the only required
-field), an optional link, optional media (picked via `Shared.MyMediaPanel`'s
-`MultiSelect` mode), and optional Markdown content (edited via
-`Shared.MarkdownPanel`, shown here only as a rendered preview + an Edit
-button). Wired into `Shared.Model`/`UI.elm` the same way `Shared.MarkdownPanel`/
+{-| A single, app-wide "New Post"/"New Event" composer -- title (the only
+field required in both modes), an optional link, optional media (picked via
+`Shared.MyMediaPanel`'s `MultiSelect` mode), and optional Markdown content
+(edited via `Shared.MarkdownPanel`, shown here only as a rendered preview + an
+Edit button), plus -- in `EventMode` only -- a required start/end date/time
+pair. Wired into `Shared.Model`/`UI.elm` the same way `Shared.MarkdownPanel`/
 `Shared.MyMediaPanel` are, but toggled open/closed like the Accounts/Starred
 Posts panels (`ToggleOpen`) rather than opened for a specific already-in-hand
-entity -- there's no Post yet, this panel _is_ the not-yet-created draft.
+entity -- there's no Post/Event yet, this panel _is_ the not-yet-created
+draft.
 
-Named `CreateNewPanel` rather than something Post-specific since it's
-expected to grow a second "New Event" mode later, sharing this same toggle/
-draft-retention/cross-panel-handoff machinery rather than duplicating it in a
-sibling module -- today, though, every field/`Msg` here is still Post-only.
+`Model.mode` (switched via the header's "New Post"/"New Event" tabs, see
+`modeTabsView`) picks which RPC `SaveClicked` actually calls
+(`Jonline.createPost` vs `Jonline.createEvent`) and which permission
+(`CREATEPOSTS` vs `CREATEEVENTS`) gates `postingAsSelector`/`resolve` --
+title/link/media/content are shared by both modes, submitted as-is either as
+the Post itself (`PostMode`) or as the `Event`'s own underlying Post
+(`EventMode`). An `EventMode` save always creates exactly one `EventInstance`
+(`startsAt`/`endsAt`, the two extra fields), with no `Post` of its own --
+its `visibility` is inherited from the `Event`'s own Post by the backend
+(`create_event.rs`) leaving `EventInstance.post` unset, so there's nothing
+else for this panel to set on it.
 
 Cancel/the shared backdrop/`CloseAllPanels` all just close this panel
-(`CloseClicked`) without touching any of `title`/`link`/`media`/`content` --
-the draft is retained across opens until an actual `SaveClicked` succeeds, so
-accidentally tapping outside or hitting Cancel can't lose it.
+(`CloseClicked`) without touching any of the draft fields -- the draft is
+retained across opens until an actual `SaveClicked` succeeds, so accidentally
+tapping outside or hitting Cancel can't lose it.
 
 Since editing the Markdown content or picking media both hand off to another
 app-wide panel (`Shared.MarkdownPanel`/`Shared.MyMediaPanel`) rather than
@@ -41,15 +50,18 @@ import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Proto.Jonline exposing (MediaReference, defaultPost)
+import Proto.Jonline exposing (MediaReference, defaultEvent, defaultEventInfo, defaultEventInstance, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
+import Shared.BrowserTimeZone as BrowserTimeZone
+import Shared.Conversions exposing (posixToTimestamp)
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Task exposing (Task)
+import Time
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 
 
@@ -59,8 +71,17 @@ type SubmitStatus
     | SubmitFailed String
 
 
+{-| Which kind of thing this panel's draft is right now -- switched via the
+header's tabs (`modeTabsView`). See module doc.
+-}
+type Mode
+    = PostMode
+    | EventMode
+
+
 type alias Model =
     { open : Bool
+    , mode : Mode
 
     -- `Just (AccountsPanel.accountId account)` once the user's explicitly
     -- switched who they're posting as (see `postingAsSelector`) -- `Nothing`
@@ -71,6 +92,10 @@ type alias Model =
     , link : String
     , media : List MediaReference
     , content : String
+
+    -- `EventMode`-only, both required -- see module doc.
+    , startsAt : Maybe Time.Posix
+    , endsAt : Maybe Time.Posix
     , status : SubmitStatus
     }
 
@@ -78,11 +103,14 @@ type alias Model =
 init : Model
 init =
     { open = False
+    , mode = PostMode
     , postingAs = Nothing
     , title = ""
     , link = ""
     , media = []
     , content = ""
+    , startsAt = Nothing
+    , endsAt = Nothing
     , status = Idle
     }
 
@@ -96,8 +124,11 @@ type Msg
     = ToggleOpen
     | CloseClicked
     | CancelClicked
+    | ModeChanged Mode
     | TitleChanged String
     | LinkChanged String
+    | StartsAtChanged String
+    | EndsAtChanged String
     | PostingAsSelected String
     | EditContentClicked
     | EditMediaClicked
@@ -119,9 +150,15 @@ noForward =
 `AccountsPanel.Msg` (a token refresh mid-`SaveClicked`, same convention as
 every other panel here) but also a possible `MarkdownPanel.Msg`/
 `MyMediaPanel.Msg` for `Shared.update` to dispatch on this panel's behalf.
+
+Takes the viewer's own `Time.Zone` (`Shared.Model.browserTimeZone.zone`)
+purely to parse `StartsAtChanged`/`EndsAtChanged`'s raw `<input
+type="datetime-local">` strings (always local wall-clock time, no timezone of
+their own) back into absolute `Time.Posix` -- see
+`Shared.BrowserTimeZone.posixFromDateTimeLocalInput`.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
-update accountsPanelModel msg model =
+update : Time.Zone -> AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe MarkdownPanel.Msg, Maybe MyMediaPanel.Msg ) )
+update zone accountsPanelModel msg model =
     case msg of
         ToggleOpen ->
             ( { model | open = not model.open }, Cmd.none, noForward )
@@ -132,11 +169,20 @@ update accountsPanelModel msg model =
         CancelClicked ->
             ( { model | open = False }, Cmd.none, noForward )
 
+        ModeChanged mode ->
+            ( { model | mode = mode }, Cmd.none, noForward )
+
         TitleChanged title ->
             ( { model | title = title }, Cmd.none, noForward )
 
         LinkChanged link ->
             ( { model | link = link }, Cmd.none, noForward )
+
+        StartsAtChanged raw ->
+            ( { model | startsAt = BrowserTimeZone.posixFromDateTimeLocalInput zone raw }, Cmd.none, noForward )
+
+        EndsAtChanged raw ->
+            ( { model | endsAt = BrowserTimeZone.posixFromDateTimeLocalInput zone raw }, Cmd.none, noForward )
 
         PostingAsSelected accountId ->
             ( { model | postingAs = Just accountId }, Cmd.none, noForward )
@@ -180,38 +226,56 @@ update accountsPanelModel msg model =
             ( { model | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, noForward )
 
 
-{-| Signed-in accounts that could actually create a Post somewhere --
-`ADMIN` or `CREATEPOSTS`, mirroring `backend/src/rpcs/posts/create_post.rs`'s
-own `validate_permission(CreatePosts)` (which -- like every permission check
-there -- also accepts `ADMIN` as a blanket bypass). What `postingAsSelector`
-lists, and what `resolvedAccount` picks a default from.
+{-| The permission (`CREATEPOSTS`/`CREATEEVENTS`) `eligibleAccounts` requires
+for `mode`, mirroring `backend/src/rpcs/posts/create_post.rs`'s/
+`backend/src/rpcs/events/create_event.rs`'s own `validate_permission` calls.
 -}
-eligibleAccounts : AccountsPanel.Model -> List AccountsPanel.Account
-eligibleAccounts accountsPanelModel =
+requiredPermission : Mode -> Permission
+requiredPermission mode =
+    case mode of
+        PostMode ->
+            CREATEPOSTS
+
+        EventMode ->
+            CREATEEVENTS
+
+
+{-| Signed-in accounts that could actually create a Post/Event (per `mode`)
+somewhere -- `ADMIN` or `requiredPermission mode`, which -- like every
+permission check on the backend -- also accepts `ADMIN` as a blanket bypass.
+What `postingAsSelector` lists, and what `resolvedAccount` picks a default
+from.
+-}
+eligibleAccounts : Mode -> AccountsPanel.Model -> List AccountsPanel.Account
+eligibleAccounts mode accountsPanelModel =
     AccountsPanel.enabledAccounts accountsPanelModel
-        |> List.filter (\account -> AccountsPanel.isAdmin account || List.member CREATEPOSTS account.permissions)
+        |> List.filter (\account -> AccountsPanel.isAdmin account || List.member (requiredPermission mode) account.permissions)
 
 
-{-| Whether the New Post nav toggle should even show -- no point offering a
-composer nobody signed in could actually submit.
+{-| Whether the New Post/Event nav toggle should even show -- no point
+offering a composer nobody signed in could actually submit, in either mode.
 -}
 hasEligibleAccount : AccountsPanel.Model -> Bool
 hasEligibleAccount accountsPanelModel =
-    not (List.isEmpty (eligibleAccounts accountsPanelModel))
+    not (List.isEmpty (eligibleAccounts PostMode accountsPanelModel))
+        || not (List.isEmpty (eligibleAccounts EventMode accountsPanelModel))
 
 
-{-| `model.postingAs`, resolved against the current `eligibleAccounts` --
-falls back to the first eligible account whenever `postingAs` is unset, or no
-longer resolves to one (e.g. that account was signed out since it was
-picked), so this panel always has _some_ sensible account to show/post as
-whenever at least one exists, without `update` needing to eagerly keep
-`postingAs` in sync with every account list change itself.
+{-| `model.postingAs`, resolved against `model.mode`'s current
+`eligibleAccounts` -- falls back to the first eligible account whenever
+`postingAs` is unset, or no longer resolves to one (e.g. that account was
+signed out since it was picked, or the user just switched `mode` to one that
+account isn't eligible for), so this panel always has _some_ sensible account
+to show/post as whenever at least one exists for the current mode, without
+`update` needing to eagerly keep `postingAs` in sync with every account list
+(or `mode`) change itself -- this is the only coordination `ModeChanged`
+needs with the account selector.
 -}
 resolvedAccount : AccountsPanel.Model -> Model -> Maybe AccountsPanel.Account
 resolvedAccount accountsPanelModel model =
     let
         eligible =
-            eligibleAccounts accountsPanelModel
+            eligibleAccounts model.mode accountsPanelModel
     in
     case model.postingAs |> Maybe.andThen (\id -> List.filter (\account -> AccountsPanel.accountId account == id) eligible |> List.head) of
         Just account ->
@@ -240,11 +304,12 @@ type alias Resolved =
 
 
 {-| Verifies a `SaveClicked` is actually submittable right now: `title` isn't
-blank (the one required field), there's an eligible account to post as, and
-its server is still connected/enabled. Used both by `SaveClicked` (to gate
-the RPC) and by `view` (to show the same problem inline, and disable Save,
-before the user even tries) -- mirrors `MarkdownPanel.resolve`/
-`MyMediaPanel.resolve`'s own dual use.
+blank (the one field required in both modes), `EventMode` also has both
+`startsAt`/`endsAt` set with `endsAt` after `startsAt`, there's an eligible
+account (for `model.mode`) to post as, and its server is still connected/
+enabled. Used both by `SaveClicked` (to gate the RPC) and by `view` (to show
+the same problem inline, and disable Save, before the user even tries) --
+mirrors `MarkdownPanel.resolve`/`MyMediaPanel.resolve`'s own dual use.
 -}
 resolve : AccountsPanel.Model -> Model -> Result String Resolved
 resolve accountsPanelModel model =
@@ -252,36 +317,74 @@ resolve accountsPanelModel model =
         Err "A title is required."
 
     else
-        case resolvedAccount accountsPanelModel model of
-            Nothing ->
-                Err "You're not signed in anywhere with permission to create posts."
+        case model.mode of
+            PostMode ->
+                resolveAccount accountsPanelModel model
 
-            Just account ->
-                case AccountsPanel.serverForHost accountsPanelModel.servers account.server of
-                    Nothing ->
-                        Err "That server isn't connected."
+            EventMode ->
+                case ( model.startsAt, model.endsAt ) of
+                    ( Nothing, _ ) ->
+                        Err "A start date/time is required."
 
-                    Just server ->
-                        if not server.enabled then
-                            Err (server.frontendHost ++ " is disabled.")
+                    ( _, Nothing ) ->
+                        Err "An end date/time is required."
+
+                    ( Just startsAt, Just endsAt ) ->
+                        if Time.posixToMillis endsAt <= Time.posixToMillis startsAt then
+                            Err "The end date/time must be after the start date/time."
 
                         else
-                            Ok { server = server, account = account }
+                            resolveAccount accountsPanelModel model
+
+
+resolveAccount : AccountsPanel.Model -> Model -> Result String Resolved
+resolveAccount accountsPanelModel model =
+    case resolvedAccount accountsPanelModel model of
+        Nothing ->
+            case model.mode of
+                PostMode ->
+                    Err "You're not signed in anywhere with permission to create posts."
+
+                EventMode ->
+                    Err "You're not signed in anywhere with permission to create events."
+
+        Just account ->
+            case AccountsPanel.serverForHost accountsPanelModel.servers account.server of
+                Nothing ->
+                    Err "That server isn't connected."
+
+                Just server ->
+                    if not server.enabled then
+                        Err (server.frontendHost ++ " is disabled.")
+
+                    else
+                        Ok { server = server, account = account }
 
 
 {-| `SERVERPUBLIC`/`GLOBALPUBLIC` each need their own extra publish
-permission (`backend/src/rpcs/posts/create_post.rs`), same `ADMIN`-bypasses-
-everything reasoning as `eligibleAccounts` -- mirrors
+permission, `PUBLISHPOSTSGLOBALLY`/`PUBLISHPOSTSLOCALLY` in `PostMode` or
+`PUBLISHEVENTSGLOBALLY`/`PUBLISHEVENTSLOCALLY` in `EventMode`
+(`backend/src/rpcs/posts/create_post.rs`/`backend/src/rpcs/events/create_event.rs`),
+same `ADMIN`-bypasses-everything reasoning as `eligibleAccounts` -- mirrors
 `frontends/tamagui`'s `base_create_post_sheet.tsx` picking the most-public
 default visibility `account` can actually publish at, since this panel (unlike
 that one) has no visibility picker of its own to ask the user instead.
 -}
-defaultVisibilityFor : AccountsPanel.Account -> Visibility
-defaultVisibilityFor account =
-    if AccountsPanel.isAdmin account || List.member PUBLISHPOSTSGLOBALLY account.permissions then
+defaultVisibilityFor : Mode -> AccountsPanel.Account -> Visibility
+defaultVisibilityFor mode account =
+    let
+        ( globalPermission, localPermission ) =
+            case mode of
+                PostMode ->
+                    ( PUBLISHPOSTSGLOBALLY, PUBLISHPOSTSLOCALLY )
+
+                EventMode ->
+                    ( PUBLISHEVENTSGLOBALLY, PUBLISHEVENTSLOCALLY )
+    in
+    if AccountsPanel.isAdmin account || List.member globalPermission account.permissions then
         GLOBALPUBLIC
 
-    else if List.member PUBLISHPOSTSLOCALLY account.permissions then
+    else if List.member localPermission account.permissions then
         SERVERPUBLIC
 
     else
@@ -301,24 +404,56 @@ nonEmptyTrimmed value =
         Just trimmed
 
 
+{-| `PostMode` calls `Jonline.createPost` exactly as before; `EventMode`
+calls `Jonline.createEvent` with a single `EventInstance` (`startsAt`/
+`endsAt`, this panel's own two date fields) and no `Post` of its own -- see
+module doc for why that instance needs no visibility of its own. Both
+branches discard their own RPC's response (`Task.map (\\_ -> ())`) since
+there's nothing further to do with the created Post/Event beyond resetting
+this panel's draft (`GotSaveResult`) -- needed so both branches of this
+`case` agree on a single result type for `performWithAccountServer`'s own
+callback.
+-}
 saveTask : AccountsPanel.Model -> Resolved -> Model -> Task Grpc.Error (Maybe AccountsPanel.Msg)
 saveTask accountsPanelModel resolved model =
     AccountsPanel.performWithAccountServer
         accountsPanelModel
         ( Just resolved.account.userId, resolved.server.frontendHost )
         (\server token ->
-            Grpc.new Jonline.createPost
-                { defaultPost
-                    | title = Just (String.trim model.title)
-                    , link = nonEmptyTrimmed model.link
-                    , content = nonEmptyTrimmed model.content
-                    , media = model.media
-                    , context = POST
-                    , visibility = defaultVisibilityFor resolved.account
-                }
-                |> Grpc.setHost (AccountsPanel.serverUrl server)
-                |> withAccessToken (Just token)
-                |> Grpc.toTask
+            let
+                post =
+                    { defaultPost
+                        | title = Just (String.trim model.title)
+                        , link = nonEmptyTrimmed model.link
+                        , content = nonEmptyTrimmed model.content
+                        , media = model.media
+                        , visibility = defaultVisibilityFor model.mode resolved.account
+                    }
+            in
+            case model.mode of
+                PostMode ->
+                    Grpc.new Jonline.createPost { post | context = POST }
+                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> withAccessToken (Just token)
+                        |> Grpc.toTask
+                        |> Task.map (\_ -> ())
+
+                EventMode ->
+                    Grpc.new Jonline.createEvent
+                        { defaultEvent
+                            | post = Just { post | context = EVENT }
+                            , info = Just defaultEventInfo
+                            , instances =
+                                [ { defaultEventInstance
+                                    | startsAt = Maybe.map posixToTimestamp model.startsAt
+                                    , endsAt = Maybe.map posixToTimestamp model.endsAt
+                                  }
+                                ]
+                        }
+                        |> Grpc.setHost (AccountsPanel.serverUrl server)
+                        |> withAccessToken (Just token)
+                        |> Grpc.toTask
+                        |> Task.map (\_ -> ())
         )
         |> Task.map Tuple.first
 
@@ -332,8 +467,8 @@ saveTask accountsPanelModel resolved model =
 `hostnameToCSSClass` (see module doc) so its Save button/mode chrome matches
 the server the draft will actually be posted to.
 -}
-view : AccountsPanel.Model -> Model -> Html Msg
-view accountsPanelModel model =
+view : Time.Zone -> AccountsPanel.Model -> Model -> Html Msg
+view zone accountsPanelModel model =
     let
         host =
             postingAsHost accountsPanelModel model
@@ -364,15 +499,24 @@ view accountsPanelModel model =
     in
     div [ classes [ "create-new-panel", "nav-panel", openClosedClass model.open, hostnameToCSSClass host ] ]
         [ div [ class "create-new-panel-header" ]
-            [ span [ class "create-new-panel-title" ] [ text "New Post" ]
+            [ modeTabsView model
             , postingAsSelector accountsPanelModel model
             ]
         , div [ class "create-new-panel-body" ]
-            [ titleField model
-            , linkField model
-            , mediaField accountsPanelModel model host
-            , contentField model
-            ]
+            (List.concat
+                [ [ titleField model ]
+                , case model.mode of
+                    PostMode ->
+                        []
+
+                    EventMode ->
+                        [ startsAtField zone model, endsAtField zone model ]
+                , [ linkField model
+                  , mediaField accountsPanelModel model host
+                  , contentField model
+                  ]
+                ]
+            )
         , case errorMessage of
             Just err ->
                 div [ class "create-new-panel-error" ] [ text err ]
@@ -392,15 +536,55 @@ view accountsPanelModel model =
                 , disabled (model.status == Submitting || not canSave)
                 ]
                 [ text
-                    (if model.status == Submitting then
-                        "Posting…"
+                    (case ( model.status == Submitting, model.mode ) of
+                        ( True, PostMode ) ->
+                            "Posting…"
 
-                     else
-                        "Post"
+                        ( True, EventMode ) ->
+                            "Creating…"
+
+                        ( False, PostMode ) ->
+                            "Post"
+
+                        ( False, EventMode ) ->
+                            "Create Event"
                     )
                 ]
             ]
         ]
+
+
+{-| "New Post"/"New Event" -- replaces what used to be a static title, now
+that this panel has two modes (see module doc). Both tabs always show
+regardless of which the signed-in accounts here are actually eligible for --
+picking an ineligible one just surfaces `resolve`'s own inline error (e.g.
+"You're not signed in anywhere with permission to create events."), same as
+picking one with no eligible account at all already did before `EventMode`
+existed.
+-}
+modeTabsView : Model -> Html Msg
+modeTabsView model =
+    div [ class "create-new-panel-tabs" ]
+        [ modeTabView model PostMode "New Post"
+        , modeTabView model EventMode "New Event"
+        ]
+
+
+modeTabView : Model -> Mode -> String -> Html Msg
+modeTabView model mode label_ =
+    span
+        [ classes
+            ("create-new-panel-tab"
+                :: (if model.mode == mode then
+                        [ "create-new-panel-tab-selected" ]
+
+                    else
+                        []
+                   )
+            )
+        , onClick (ModeChanged mode)
+        ]
+        [ text label_ ]
 
 
 titleField : Model -> Html Msg
@@ -413,6 +597,35 @@ titleField model =
             , value model.title
             , onInput TitleChanged
             , placeholder "What's this about?"
+            ]
+            []
+        ]
+
+
+{-| `EventMode`-only, both required -- see module doc. Blank (rather than
+falling back to e.g. the current time) whenever `Nothing`, so a not-yet-picked
+required field actually reads as empty instead of a misleadingly already-filled-in
+default the user might not notice needs changing.
+-}
+startsAtField : Time.Zone -> Model -> Html Msg
+startsAtField zone model =
+    dateField zone "Starts" model.startsAt StartsAtChanged
+
+
+endsAtField : Time.Zone -> Model -> Html Msg
+endsAtField zone model =
+    dateField zone "Ends" model.endsAt EndsAtChanged
+
+
+dateField : Time.Zone -> String -> Maybe Time.Posix -> (String -> Msg) -> Html Msg
+dateField zone labelText posix toMsg =
+    div [ class "create-new-panel-field" ]
+        [ label [ class "create-new-panel-label" ] [ text labelText ]
+        , input
+            [ type_ "datetime-local"
+            , class "create-new-panel-date-input"
+            , value (posix |> Maybe.map (BrowserTimeZone.formatDateTimeLocalInput zone) |> Maybe.withDefault "")
+            , onInput toMsg
             ]
             []
         ]
@@ -496,16 +709,17 @@ contentField model =
 
 
 {-| "Posting as <avatar> username" when there's exactly one eligible account
-(no point offering a one-item dropdown), or a `<select>` of every eligible
-account (see `eligibleAccounts`) once there's more than one to switch
-between -- e.g. an admin signed into several servers, or with two accounts on
-the same one. Blank if there's no eligible account at all (`resolve`'s own
-"You're not signed in anywhere..." error, shown inline below, already covers
-that case).
+(no point offering a one-item dropdown), or an avatar for the currently
+`resolvedAccount` plus a `<select>` of every eligible account (see
+`eligibleAccounts`) once there's more than one to switch between -- e.g. an
+admin signed into several servers, or with two accounts on the same one.
+Blank if there's no eligible account (for `model.mode`) at all (`resolve`'s
+own "You're not signed in anywhere..." error, shown inline below, already
+covers that case).
 -}
 postingAsSelector : AccountsPanel.Model -> Model -> Html Msg
 postingAsSelector accountsPanelModel model =
-    case eligibleAccounts accountsPanelModel of
+    case eligibleAccounts model.mode accountsPanelModel of
         [] ->
             text ""
 
@@ -518,22 +732,31 @@ postingAsSelector accountsPanelModel model =
 
         eligible ->
             let
-                selectedId =
+                selectedAccount =
                     resolvedAccount accountsPanelModel model
-                        |> Maybe.map AccountsPanel.accountId
-                        |> Maybe.withDefault ""
+
+                selectedId =
+                    selectedAccount |> Maybe.map AccountsPanel.accountId |> Maybe.withDefault ""
             in
-            select [ class "create-new-panel-account-select", onInput PostingAsSelected ]
-                (List.map
-                    (\account ->
-                        option
-                            [ value (AccountsPanel.accountId account)
-                            , selected (AccountsPanel.accountId account == selectedId)
-                            ]
-                            [ text (AccountsPanel.displayName account ++ " on " ++ account.server) ]
+            div [ class "create-new-panel-account" ]
+                [ case selectedAccount of
+                    Just account ->
+                        accountAvatar accountsPanelModel.servers account
+
+                    Nothing ->
+                        text ""
+                , select [ class "create-new-panel-account-select", onInput PostingAsSelected ]
+                    (List.map
+                        (\account ->
+                            option
+                                [ value (AccountsPanel.accountId account)
+                                , selected (AccountsPanel.accountId account == selectedId)
+                                ]
+                                [ text (AccountsPanel.displayName account ++ " on " ++ account.server) ]
+                        )
+                        eligible
                     )
-                    eligible
-                )
+                ]
 
 
 {-| A trimmed-down copy of `UI.imageOrInitial`/`MarkdownPanel.accountAvatar` --

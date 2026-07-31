@@ -58,6 +58,32 @@
   font-weight: 700;
 }
 
+/* "New Post"/"New Event" -- see `CreateNewPanel.modeTabsView`. Mirrors
+   `.events-tabs`/`.events-tab` (events.css)'s own pill-tab look, kept as its
+   own copy rather than shared since this panel's stylesheet otherwise has no
+   dependency on events.css. */
+.create-new-panel-tabs {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.create-new-panel-tab {
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.create-new-panel-tab-selected {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
 .create-new-panel-account {
   display: flex;
   align-items: center;
@@ -126,7 +152,8 @@
 }
 
 .create-new-panel-title-input,
-.create-new-panel-link-input {
+.create-new-panel-link-input,
+.create-new-panel-date-input {
   background: var(--bg);
   color: var(--fg);
   border: 1px solid var(--border);

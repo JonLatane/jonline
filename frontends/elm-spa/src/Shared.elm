@@ -428,12 +428,39 @@ updateImpl req msg model =
 
                     else
                         ( refreshedStarredPanel, Cmd.none )
+
+                -- Unlike `shouldCloseStarredPanel` above, unconditional --
+                -- not just narrow screens -- since the New Post/Event panel
+                -- opens at this same vertical position (see
+                -- create_new_panel.css's own `top` comment) rather than as
+                -- one of `.navbar`'s own dropdowns, so the two would
+                -- visually collide at any width. Mirrors `CreateNewPanelMsg`'s
+                -- own `shouldCloseAccountsPanel`, in the other direction.
+                shouldCloseCreateNewPanel =
+                    case subMsg of
+                        AccountsPanel.ToggleAccountsPanel ->
+                            subModel.showAccountsPanel
+
+                        _ ->
+                            False
+
+                ( closedCreateNewPanel, closeCreateNewCmd ) =
+                    if shouldCloseCreateNewPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                CreateNewPanel.update model.browserTimeZone.zone subModel CreateNewPanel.CloseClicked model.createNewPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.createNewPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel }
+            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
                 , Cmd.map StarredPanelMsg refreshCmd
                 , Cmd.map StarredPanelMsg closeCmd
+                , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
 
@@ -503,7 +530,7 @@ updateImpl req msg model =
                     if shouldCloseCreateNewPanel then
                         let
                             ( m, cmd, _ ) =
-                                CreateNewPanel.update closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
+                                CreateNewPanel.update model.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
                         in
                         ( m, cmd )
 
@@ -580,7 +607,7 @@ updateImpl req msg model =
                         Just content ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
+                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
                             in
                             ( m, cmd )
 
@@ -647,7 +674,7 @@ updateImpl req msg model =
                         Just media ->
                             let
                                 ( m, cmd, _ ) =
-                                    CreateNewPanel.update model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
+                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
                             in
                             ( m, cmd )
 
@@ -665,7 +692,7 @@ updateImpl req msg model =
         CreateNewPanelMsg subMsg ->
             let
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
-                    CreateNewPanel.update model.accountsPanel subMsg model.createNewPanel
+                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel subMsg model.createNewPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -725,10 +752,27 @@ updateImpl req msg model =
 
                     else
                         ( model.starredPanel, Cmd.none )
+
+                -- Mirrors `AccountsPanelMsg`'s own `shouldCloseCreateNewPanel`,
+                -- in the other direction -- see its own doc.
+                shouldCloseAccountsPanel =
+                    case subMsg of
+                        CreateNewPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedAccountsPanelModel, closeAccountsCmd ) =
+                    if shouldCloseAccountsPanel then
+                        AccountsPanel.update req AccountsPanel.CloseAccountsPanel accountsPanelModel
+
+                    else
+                        ( accountsPanelModel, Cmd.none )
             in
             ( { model
                 | createNewPanel = subModel
-                , accountsPanel = accountsPanelModel
+                , accountsPanel = closedAccountsPanelModel
                 , markdownPanel = markdownPanelModel
                 , myMediaPanel = myMediaPanelModel
                 , starredPanel = closedStarredPanelModel
@@ -736,6 +780,7 @@ updateImpl req msg model =
             , Cmd.batch
                 [ Cmd.map CreateNewPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map AccountsPanelMsg closeAccountsCmd
                 , Cmd.map MarkdownPanelMsg markdownPanelCmd
                 , Cmd.map MyMediaPanelMsg myMediaPanelCmd
                 , Cmd.map StarredPanelMsg closeStarredPostsCmd
