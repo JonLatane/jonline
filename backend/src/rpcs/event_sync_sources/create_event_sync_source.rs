@@ -10,6 +10,7 @@ use crate::rpcs::validate_permission;
 use crate::schema::event_sync_sources;
 
 const DEFAULT_SYNC_INTERVAL_SECONDS: i64 = 3600;
+const MIN_SYNC_INTERVAL_SECONDS: i64 = 60;
 
 pub fn create_event_sync_source(
     request: EventSyncSource,
@@ -33,6 +34,8 @@ pub fn create_event_sync_source(
 
     let sync_interval_seconds = if request.sync_interval_seconds == 0 {
         DEFAULT_SYNC_INTERVAL_SECONDS
+    } else if (request.sync_interval_seconds as i64) < MIN_SYNC_INTERVAL_SECONDS {
+        return Err(Status::new(Code::InvalidArgument, "sync_interval_seconds_too_short"));
     } else {
         request.sync_interval_seconds as i64
     };

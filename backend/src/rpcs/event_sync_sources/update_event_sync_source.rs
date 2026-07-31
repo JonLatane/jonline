@@ -11,6 +11,8 @@ use crate::protos::*;
 use crate::rpcs::validate_permission;
 use crate::schema::event_sync_sources;
 
+const MIN_SYNC_INTERVAL_SECONDS: i64 = 60;
+
 pub fn update_event_sync_source(
     request: EventSyncSource,
     current_user: &models::User,
@@ -26,6 +28,12 @@ pub fn update_event_sync_source(
     }
 
     if request.sync_interval_seconds > 0 {
+        if (request.sync_interval_seconds as i64) < MIN_SYNC_INTERVAL_SECONDS {
+            return Err(Status::new(
+                tonic::Code::InvalidArgument,
+                "sync_interval_seconds_too_short",
+            ));
+        }
         existing.sync_interval_seconds = request.sync_interval_seconds as i64;
     }
     if request.configuration.is_some() {
