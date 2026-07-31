@@ -44,7 +44,7 @@ init shared req =
         ( userId, targetHost ) =
             Users.parseUserRouteId shared.accountsPanel.mainFrontendHost req.params.userId
     in
-    UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ById userId)
+    UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ById userId) req.key req.url.path req.query
 
 
 

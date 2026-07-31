@@ -40,7 +40,7 @@ import Gen.Route as Route
 import Html exposing (Html, a, button, div, h1, img, span, text)
 import Html.Attributes exposing (alt, class, href, src, title)
 import Html.Events exposing (onClick)
-import Proto.Jonline exposing (Event, EventInstance, Post, User, defaultServerInfo)
+import Proto.Jonline exposing (Event, EventInstance, Post, User)
 import Shared.AccountsPanel as AccountsPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
@@ -281,6 +281,10 @@ serverSegment : AccountsPanel.Model -> String -> Bool -> Html Msg
 serverSegment accountsPanelModel host viewingHost =
     case AccountsPanel.serverForHost accountsPanelModel.servers host of
         Just server ->
+            let
+                branding =
+                    AccountsPanel.brandingOf server
+            in
             button
                 [ onClick <|
                     if viewingHost then
@@ -299,8 +303,8 @@ serverSegment accountsPanelModel host viewingHost =
                         "background-color-primary"
                     ]
                 ]
-                [ serverSegmentLogo server.branding
-                , span [ class "breadcrumb-server-name" ] [ text server.branding.name ]
+                [ serverSegmentLogo branding
+                , span [ class "breadcrumb-server-name" ] [ text branding.name ]
                 ]
 
         Nothing ->
@@ -416,7 +420,7 @@ serverOverviewView basePath accountsPanelModel model =
         Just server ->
             let
                 info =
-                    Maybe.withDefault defaultServerInfo server.configuration.serverInfo
+                    AccountsPanel.serverInfoOf server
             in
             div [ class "breadcrumb-server-overview" ]
                 [ div [ class "breadcrumb-server-overview-header" ]
@@ -444,8 +448,10 @@ Panel on click, same `stopPropagationAndPreventDefaultOnClick` reasoning
 serverOverviewInfoButton : String -> AccountsPanel.Server -> Html Msg
 serverOverviewInfoButton basePath server =
     let
+        -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
+        -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
         serverIdentifier =
-            (if server.tls then
+            (if server.connected |> Maybe.map .tls |> Maybe.withDefault True then
                 "https:"
 
              else

@@ -582,6 +582,7 @@ jobs:
           mv backend/target/release/disable_cdn_grpc backend/target/release/disable_cdn_grpc__server_release &&
           mv backend/target/release/delete_expired_tokens backend/target/release/delete_expired_tokens__server_release &&
           mv backend/target/release/delete_unowned_media backend/target/release/delete_unowned_media__server_release &&
+          mv backend/target/release/sync_event_sync_sources backend/target/release/sync_event_sync_sources__server_release &&
           mv backend/target/release/generate_preview_images backend/target/release/generate_preview_images__server_release &&
           mv backend/target/release/delete_preview_images backend/target/release/delete_preview_images__server_release &&
           mv backend/target/release/set_permission backend/target/release/set_permission__server_release &&
@@ -911,10 +912,14 @@ jobs:
           mkdir -p "$PKG/docs"
 
           for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
-                     generate_preview_images delete_preview_images set_permission to_db_id to_proto_id; do
+                     sync_event_sync_sources generate_preview_images delete_preview_images \
+                     set_permission to_db_id to_proto_id; do
             cp "backend/target/release/${bin}" "$PKG/${bin}"
             chmod +x "$PKG/${bin}"
           done
+
+          cp backend/background_jobs.sh "$PKG/background_jobs.sh"
+          chmod +x "$PKG/background_jobs.sh"
 
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
           cp docs/protocol.html "$PKG/docs/protocol.html"
@@ -1068,12 +1073,16 @@ jobs:
           for arch in amd64 arm64; do
             src="backend/target/release-${arch}"
             for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
-                       generate_preview_images delete_preview_images set_permission to_db_id to_proto_id; do
+                       sync_event_sync_sources generate_preview_images delete_preview_images \
+                       set_permission to_db_id to_proto_id; do
               cp "${src}/${bin}" "$PKG/${bin}-${arch}"
               chmod +x "$PKG/${bin}-${arch}"
             done
             mv "$PKG/jonline-${arch}" "$PKG/jonline-server-${arch}"
           done
+
+          cp backend/background_jobs.sh "$PKG/background_jobs.sh"
+          chmod +x "$PKG/background_jobs.sh"
 
           echo "${{ steps.vars.outputs.full_version }}" > "$PKG/version"
           cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"

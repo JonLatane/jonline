@@ -30,9 +30,9 @@ or a server being disabled -- via `UI.Flip`.
 
 import Animation
 import Browser.Navigation
-import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users as Users
 import Components.Users.FollowStatusAndButton as FollowStatusAndButton
+import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -137,7 +137,11 @@ init shared target navKey path query =
                 , searchGeneration = 0
                 }
     in
-    ( fetchedModel, Effect.batch [ fetchEffect, setBreadcrumbsRoot shared fetchedModel ] )
+    -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally on
+    -- load -- mirrors `Components.Pages.PostsPage.init`'s own unconditional
+    -- close, see its doc comment for why `setBreadcrumbsRoot` alone isn't
+    -- enough here.
+    ( fetchedModel, Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsRoot shared fetchedModel ] )
 
 
 {-| Which servers this listing should ever fetch from: every enabled server,
@@ -612,7 +616,7 @@ onEscape msg =
 {-| "Following"/"Followers"/"Friends" alone once there's a `target` to filter
 by (even before that `User` -- already resolved by the caller, see `init` --
 has actually rendered), upgraded to e.g. "Following | &lt;name&gt;" via
-`Components.Pages.UserProfilePage.nameHeader` -- absent entirely for
+`Components.Users.ProfileHeading.nameHeader` -- absent entirely for
 `Pages.People`'s unfiltered listing (`target == Nothing`), which supplies its
 own "People" heading instead. Mirrors
 `Components.Pages.PostsPage.authorHeadingView` exactly.
@@ -633,10 +637,10 @@ targetHeadingView shared maybeTarget =
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
                     [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
                         Just server ->
-                            UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) targetUser
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) targetUser
 
                         Nothing ->
-                            UserProfilePage.usernameHeading targetUser
+                            ProfileHeading.usernameHeading targetUser
                     ]
                 ]
 

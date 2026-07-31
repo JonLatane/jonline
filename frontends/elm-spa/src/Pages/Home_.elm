@@ -191,9 +191,9 @@ view shared req model =
         UI.layout shared
             req.route
             fromShared
-            [ Html.map EventsMsg (EventsPage.view shared True model.events)
+            [ Html.map EventsMsg (EventsPage.view shared True True model.events)
             , h3 [] [ text (heading model.posts.context) ]
-            , Html.map PostsMsg (PostsPage.view shared False model.posts)
+            , Html.map PostsMsg (PostsPage.view shared False True model.posts)
             ]
     }
 

@@ -483,7 +483,7 @@ the brief window before that server's finished connecting (see `mainServer`).
 serverName : Shared.Model -> String
 serverName shared =
     mainServer shared
-        |> Maybe.map (.branding >> .name)
+        |> Maybe.map (AccountsPanel.brandingOf >> .name)
         |> Maybe.withDefault shared.accountsPanel.mainFrontendHost
 
 
@@ -510,8 +510,10 @@ server can be inspected the same way.
 serverInfoButton : Shared.Model -> AccountsPanel.Server -> Html Shared.Msg
 serverInfoButton shared server =
     let
+        -- Disconnected servers (see `AccountsPanel.Server.connected`) default to
+        -- `https:` -- `ServerInformationPage`'s own probe re-negotiates anyway.
         serverIdentifier =
-            (if server.tls then
+            (if server.connected |> Maybe.map .tls |> Maybe.withDefault True then
                 "https:"
 
              else
@@ -1015,6 +1017,9 @@ serverChip shared count index server =
         isMainServer =
             server.frontendHost == accountsPanelModel.mainFrontendHost
 
+        isDisconnected =
+            server.connected == Nothing
+
         hasAccounts =
             AccountsPanel.serverHasAccounts accountsPanelModel.accounts server.frontendHost
 
@@ -1087,7 +1092,7 @@ serverChip shared count index server =
     in
     div
         (id (AccountsPanel.serverChipDomId server.frontendHost)
-            :: class "server-chip"
+            :: classList [ ( "server-chip", True ), ( "server-chip-disconnected", isDisconnected ) ]
             :: moveAttrs
         )
         [ div topAttrs
@@ -1100,6 +1105,11 @@ serverChip shared count index server =
                 [ div [ class "server-chip-host" ] [ text server.frontendHost ]
                 , serverInfoButton shared server
                 ]
+            , if isDisconnected then
+                div [ class "server-chip-disconnected-badge" ] [ text "Disconnected" ]
+
+              else
+                text ""
 
             -- , if isMainServer then
             --     div [ class "server-chip-main-badge" ] [ text "★ Main" ]
@@ -1108,7 +1118,15 @@ serverChip shared count index server =
             ]
         , div [ classes [ "server-chip-bottom", hostnameToCSSClass server.frontendHost, "background-color-nav" ] ]
             [ switchInput server.enabled False (Shared.AccountsPanelMsg (AccountsPanel.ToggleServerEnabled server.frontendHost))
-            , if server.frontendHost /= accountsPanelModel.browsingHost then
+            , if isDisconnected then
+                button
+                    [ class "reconnect-btn"
+                    , onClick (Shared.AccountsPanelMsg (AccountsPanel.ReconnectServerClicked server.frontendHost))
+                    , title ("Try reconnecting to " ++ server.frontendHost)
+                    ]
+                    [ text "⟳ Reconnect" ]
+
+              else if server.frontendHost /= accountsPanelModel.browsingHost then
                 a
                     [ class "external-link-btn"
                     , href ("https://" ++ server.frontendHost)
@@ -2138,19 +2156,23 @@ adminAccountPanel shared account =
 
         currentUi =
             adminServer
-                |> Maybe.andThen (\s -> s.configuration.serverInfo)
+                |> Maybe.map AccountsPanel.serverInfoOf
                 |> Maybe.andThen .webUserInterface
                 |> Maybe.withDefault REACTTAMAGUI
 
         adminServerName =
             adminServer
-                |> Maybe.map (\s -> s.branding.name)
+                |> Maybe.map (AccountsPanel.brandingOf >> .name)
                 |> Maybe.withDefault ""
 
         adminServerLogo =
             case adminServer of
                 Just s ->
-                    imageOrInitial [ "admin-account-server-logo" ] s.branding.name s.branding.logoUrl
+                    let
+                        branding =
+                            AccountsPanel.brandingOf s
+                    in
+                    imageOrInitial [ "admin-account-server-logo" ] branding.name branding.logoUrl
 
                 Nothing ->
                     text ""

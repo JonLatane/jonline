@@ -102,7 +102,7 @@ url : AccountsPanel.Server -> Maybe AccountsPanel.Account -> MediaReference -> S
 url server maybeAccount media =
     let
         base =
-            AccountsPanel.mediaUrl server media.id
+            AccountsPanel.mediaUrl server media.id |> Maybe.withDefault ""
     in
     case maybeAccount of
         Just account ->

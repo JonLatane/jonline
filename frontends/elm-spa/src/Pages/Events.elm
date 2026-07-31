@@ -74,5 +74,5 @@ view shared req model =
         UI.layout shared
             req.route
             fromShared
-            [ EventsPage.view shared False model ]
+            [ EventsPage.view shared False True model ]
     }

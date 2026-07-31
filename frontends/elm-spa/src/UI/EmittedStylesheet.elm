@@ -90,6 +90,9 @@ serverRules darkMode mainTheme mainFrontendHost server =
         theme =
             AccountsPanel.serverThemeOf darkMode server
 
+        branding =
+            AccountsPanel.brandingOf server
+
         selector =
             "." ++ hostnameToCSSClass server.frontendHost
 
@@ -100,7 +103,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
         -- -- same idea as that rule's `.account-row` override, but keyed off
         -- this server's navColor lightness instead of darkMode.
         switchOnColor =
-            if server.branding.nav.isDark then
+            if branding.nav.isDark then
                 mainTheme.primaryDarkColor
 
             else
@@ -113,7 +116,7 @@ serverRules darkMode mainTheme mainFrontendHost server =
         -- override, which uses navAnchorColor rather than this
         -- light/dark-of-primaryColor logic.
         accountSwitchOnColor =
-            if server.branding.primary.isDark then
+            if branding.primary.isDark then
                 mainTheme.primaryDarkColor
 
             else

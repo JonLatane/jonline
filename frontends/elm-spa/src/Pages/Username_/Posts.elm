@@ -154,6 +154,6 @@ view shared req model =
                     p [ class "posts-empty" ] [ text "Loading…" ]
 
                 Posts postsModel ->
-                    Html.map PostsMsg (PostsPage.view shared True postsModel)
+                    Html.map PostsMsg (PostsPage.view shared True True postsModel)
             ]
     }

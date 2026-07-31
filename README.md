@@ -58,8 +58,8 @@ jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those databa
 jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
 jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"credentials.
 
-# Launch the server. HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
-jonline server
+# Launch the server (and its background jobs). HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
+jonline server_and_jobs
 
 # Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.
@@ -117,8 +117,8 @@ jonline edit_environment # literally just: $EDITOR ~/.jonline. Edit those databa
 jonline local_db_create # Requires a local Postgres instance. literally just: createdb jonline_dev
 jonline local_minio_start # literally "just": docker start jonline-dev-minio || docker run -d -p 9000:9000 -p 9090:9090 --name jonline-dev-minio -v $(MAKEFILE_DIR)/.minio-data:/data -e "MINIO_ROOT_USER=ROOTNAME" -e "MINIO_ROOT_PASSWORD=CHANGEME123" minio/minio server /data --console-address ":9090"credentials.
 
-# Launch the server. HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
-jonline server
+# Launch the server (and its background jobs). HTTP on ports 80 and 8000, 27707 (gRPC), and HTTPS on 443 if TLS is configured.
+jonline server_and_jobs
 
 # Once the server is running (presumably in another tab, or the background, or a daemon),
 # you can set up an admin user.
