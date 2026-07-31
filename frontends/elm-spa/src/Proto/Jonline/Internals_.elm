@@ -4478,10 +4478,12 @@ fieldNumbersProto__Jonline__User :
     , defaultFollowModeration : Int
     , followerCount : Int
     , followingCount : Int
+    , friendCount : Int
     , groupCount : Int
     , postCount : Int
     , responseCount : Int
     , eventCount : Int
+    , eventInstanceCount : Int
     , currentUserFollow : Int
     , targetCurrentUserFollow : Int
     , currentGroupMembership : Int
@@ -4504,10 +4506,12 @@ fieldNumbersProto__Jonline__User =
     , defaultFollowModeration = 30
     , followerCount = 31
     , followingCount = 32
-    , groupCount = 33
-    , postCount = 34
-    , responseCount = 35
-    , eventCount = 36
+    , friendCount = 33
+    , groupCount = 34
+    , postCount = 35
+    , responseCount = 36
+    , eventCount = 37
+    , eventInstanceCount = 38
     , currentUserFollow = 50
     , targetCurrentUserFollow = 51
     , currentGroupMembership = 52
@@ -4536,10 +4540,12 @@ defaultProto__Jonline__User =
     , defaultFollowModeration = Proto.Jonline.Moderation.defaultModeration
     , followerCount = Nothing
     , followingCount = Nothing
+    , friendCount = Nothing
     , groupCount = Nothing
     , postCount = Nothing
     , responseCount = Nothing
     , eventCount = Nothing
+    , eventInstanceCount = Nothing
     , currentUserFollow = Nothing
     , targetCurrentUserFollow = Nothing
     , currentGroupMembership = Nothing
@@ -4592,13 +4598,18 @@ decodeProto__Jonline__User =
             32
             (Protobuf.Decode.map Just Protobuf.Decode.int32)
             (\a r -> { r | followingCount = a })
-        , Protobuf.Decode.optional 33 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | groupCount = a })
-        , Protobuf.Decode.optional 34 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | postCount = a })
+        , Protobuf.Decode.optional 33 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | friendCount = a })
+        , Protobuf.Decode.optional 34 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | groupCount = a })
+        , Protobuf.Decode.optional 35 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | postCount = a })
         , Protobuf.Decode.optional
-            35
+            36
             (Protobuf.Decode.map Just Protobuf.Decode.int32)
             (\a r -> { r | responseCount = a })
-        , Protobuf.Decode.optional 36 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | eventCount = a })
+        , Protobuf.Decode.optional 37 (Protobuf.Decode.map Just Protobuf.Decode.int32) (\a r -> { r | eventCount = a })
+        , Protobuf.Decode.optional
+            38
+            (Protobuf.Decode.map Just Protobuf.Decode.int32)
+            (\a r -> { r | eventInstanceCount = a })
         , Protobuf.Decode.optional
             50
             (Protobuf.Decode.map Just decodeProto__Jonline__Follow)
@@ -4647,10 +4658,12 @@ encodeProto__Jonline__User value =
         , ( 30, Proto.Jonline.Moderation.encodeModeration value.defaultFollowModeration )
         , ( 31, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.followerCount )
         , ( 32, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.followingCount )
-        , ( 33, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.groupCount )
-        , ( 34, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.postCount )
-        , ( 35, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.responseCount )
-        , ( 36, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.eventCount )
+        , ( 33, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.friendCount )
+        , ( 34, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.groupCount )
+        , ( 35, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.postCount )
+        , ( 36, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.responseCount )
+        , ( 37, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.eventCount )
+        , ( 38, (Maybe.map Protobuf.Encode.int32 >> Maybe.withDefault Protobuf.Encode.none) value.eventInstanceCount )
         , ( 50
           , (Maybe.map encodeProto__Jonline__Follow >> Maybe.withDefault Protobuf.Encode.none) value.currentUserFollow
           )
@@ -4696,10 +4709,12 @@ type alias Proto__Jonline__User =
     , defaultFollowModeration : Proto.Jonline.Moderation.Moderation
     , followerCount : Maybe Int
     , followingCount : Maybe Int
+    , friendCount : Maybe Int
     , groupCount : Maybe Int
     , postCount : Maybe Int
     , responseCount : Maybe Int
     , eventCount : Maybe Int
+    , eventInstanceCount : Maybe Int
     , currentUserFollow : Maybe Proto__Jonline__Follow
     , targetCurrentUserFollow : Maybe Proto__Jonline__Follow
     , currentGroupMembership : Maybe Proto__Jonline__Membership

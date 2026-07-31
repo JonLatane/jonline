@@ -388,6 +388,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
+  padding-left: 0.5rem;
 }
 
 .event-sync-source-url {

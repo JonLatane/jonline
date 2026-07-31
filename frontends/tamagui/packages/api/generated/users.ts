@@ -178,6 +178,10 @@ export interface User {
   followingCount?:
     | number
     | undefined;
+  /** The number of users this user mutually follows (and is followed by). */
+  friendCount?:
+    | number
+    | undefined;
   /** The number of groups this user is a member of. */
   groupCount?:
     | number
@@ -192,6 +196,10 @@ export interface User {
     | undefined;
   /** The number of events this user has created. */
   eventCount?:
+    | number
+    | undefined;
+  /** The number of event instances this user has created (across all of their events). */
+  eventInstanceCount?:
     | number
     | undefined;
   /**
@@ -370,10 +378,12 @@ function createBaseUser(): User {
     defaultFollowModeration: 0,
     followerCount: undefined,
     followingCount: undefined,
+    friendCount: undefined,
     groupCount: undefined,
     postCount: undefined,
     responseCount: undefined,
     eventCount: undefined,
+    eventInstanceCount: undefined,
     currentUserFollow: undefined,
     targetCurrentUserFollow: undefined,
     currentGroupMembership: undefined,
@@ -427,17 +437,23 @@ export const User: MessageFns<User> = {
     if (message.followingCount !== undefined) {
       writer.uint32(256).int32(message.followingCount);
     }
+    if (message.friendCount !== undefined) {
+      writer.uint32(264).int32(message.friendCount);
+    }
     if (message.groupCount !== undefined) {
-      writer.uint32(264).int32(message.groupCount);
+      writer.uint32(272).int32(message.groupCount);
     }
     if (message.postCount !== undefined) {
-      writer.uint32(272).int32(message.postCount);
+      writer.uint32(280).int32(message.postCount);
     }
     if (message.responseCount !== undefined) {
-      writer.uint32(280).int32(message.responseCount);
+      writer.uint32(288).int32(message.responseCount);
     }
     if (message.eventCount !== undefined) {
-      writer.uint32(288).int32(message.eventCount);
+      writer.uint32(296).int32(message.eventCount);
+    }
+    if (message.eventInstanceCount !== undefined) {
+      writer.uint32(304).int32(message.eventInstanceCount);
     }
     if (message.currentUserFollow !== undefined) {
       Follow.encode(message.currentUserFollow, writer.uint32(402).fork()).join();
@@ -589,7 +605,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.groupCount = reader.int32();
+          message.friendCount = reader.int32();
           continue;
         }
         case 34: {
@@ -597,7 +613,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.postCount = reader.int32();
+          message.groupCount = reader.int32();
           continue;
         }
         case 35: {
@@ -605,7 +621,7 @@ export const User: MessageFns<User> = {
             break;
           }
 
-          message.responseCount = reader.int32();
+          message.postCount = reader.int32();
           continue;
         }
         case 36: {
@@ -613,7 +629,23 @@ export const User: MessageFns<User> = {
             break;
           }
 
+          message.responseCount = reader.int32();
+          continue;
+        }
+        case 37: {
+          if (tag !== 296) {
+            break;
+          }
+
           message.eventCount = reader.int32();
+          continue;
+        }
+        case 38: {
+          if (tag !== 304) {
+            break;
+          }
+
+          message.eventInstanceCount = reader.int32();
           continue;
         }
         case 50: {
@@ -700,10 +732,12 @@ export const User: MessageFns<User> = {
         : 0,
       followerCount: isSet(object.followerCount) ? globalThis.Number(object.followerCount) : undefined,
       followingCount: isSet(object.followingCount) ? globalThis.Number(object.followingCount) : undefined,
+      friendCount: isSet(object.friendCount) ? globalThis.Number(object.friendCount) : undefined,
       groupCount: isSet(object.groupCount) ? globalThis.Number(object.groupCount) : undefined,
       postCount: isSet(object.postCount) ? globalThis.Number(object.postCount) : undefined,
       responseCount: isSet(object.responseCount) ? globalThis.Number(object.responseCount) : undefined,
       eventCount: isSet(object.eventCount) ? globalThis.Number(object.eventCount) : undefined,
+      eventInstanceCount: isSet(object.eventInstanceCount) ? globalThis.Number(object.eventInstanceCount) : undefined,
       currentUserFollow: isSet(object.currentUserFollow) ? Follow.fromJSON(object.currentUserFollow) : undefined,
       targetCurrentUserFollow: isSet(object.targetCurrentUserFollow)
         ? Follow.fromJSON(object.targetCurrentUserFollow)
@@ -761,6 +795,9 @@ export const User: MessageFns<User> = {
     if (message.followingCount !== undefined) {
       obj.followingCount = Math.round(message.followingCount);
     }
+    if (message.friendCount !== undefined) {
+      obj.friendCount = Math.round(message.friendCount);
+    }
     if (message.groupCount !== undefined) {
       obj.groupCount = Math.round(message.groupCount);
     }
@@ -772,6 +809,9 @@ export const User: MessageFns<User> = {
     }
     if (message.eventCount !== undefined) {
       obj.eventCount = Math.round(message.eventCount);
+    }
+    if (message.eventInstanceCount !== undefined) {
+      obj.eventInstanceCount = Math.round(message.eventInstanceCount);
     }
     if (message.currentUserFollow !== undefined) {
       obj.currentUserFollow = Follow.toJSON(message.currentUserFollow);
@@ -821,10 +861,12 @@ export const User: MessageFns<User> = {
     message.defaultFollowModeration = object.defaultFollowModeration ?? 0;
     message.followerCount = object.followerCount ?? undefined;
     message.followingCount = object.followingCount ?? undefined;
+    message.friendCount = object.friendCount ?? undefined;
     message.groupCount = object.groupCount ?? undefined;
     message.postCount = object.postCount ?? undefined;
     message.responseCount = object.responseCount ?? undefined;
     message.eventCount = object.eventCount ?? undefined;
+    message.eventInstanceCount = object.eventInstanceCount ?? undefined;
     message.currentUserFollow = (object.currentUserFollow !== undefined && object.currentUserFollow !== null)
       ? Follow.fromPartial(object.currentUserFollow)
       : undefined;

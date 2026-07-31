@@ -264,11 +264,73 @@
   margin-right: 10px;
 }
 
+/* Groups `.events-mode-buttons` and `.events-export` as one unit pinned to
+   `.events-controls-row`'s right edge -- they're wrapped in this shared
+   container (see `EventsPage.view`) rather than each carrying its own
+   `margin-left: auto`, since two adjacent auto-margined flex items split
+   the row's free space *between* them (a visible gap), not just before the
+   first one. Wrapping the whole line (when `.events-mode-buttons` is empty/
+   absent too, e.g. `homeEmbedded` without the admin "show all layouts"
+   setting) still keeps `.events-export` correctly right-aligned on its own,
+   since it's this container -- not the button itself -- that's pushed. */
+.events-controls-trailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
 .events-mode-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-left: auto;
+}
+
+/* `EventsPage.exportButtonView` -- always shown at the end of
+   `.events-controls-trailing`, unlike `.events-mode-buttons` not gated by
+   `homeEmbedded`. Anchoring/backdrop/fade+slide-open transition is all
+   `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`
+   -- these rules are just this popover's own content sizing/spacing on top
+   of that. */
+.events-export-button {
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.events-export-popover {
+  width: max(16rem, 100%);
+  max-width: 22rem;
+}
+
+.events-export-popover-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.events-export-popover-link {
+  overflow-wrap: break-word;
+  font-size: 0.85rem;
+}
+
+.events-export-popover-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.events-export-popover-copy-icon {
+  font-size: 1.4em;
+  line-height: 1;
 }
 
 /* Mirrors `.event-instance-history-button` (above). */
@@ -403,6 +465,12 @@
    reverts automatically the instant every card settles. */
 .events-strip.events-mode-transitioning {
   overflow: visible;
+}
+
+.profile-detail .events-strip {
+  /* background-color: #42424288; */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 /* Mirrors `.event-instance-grid` (above). */
@@ -570,9 +638,9 @@
   pointer-events: none;
 }
 
-.events-strip.flip-animated-row {
+/* .events-strip.flip-animated-row {
   max-height: 300px;
-}
+} */
 
 /* .events-strip.flip-animated-row .event-card {
   max-height: 300px;
@@ -621,4 +689,23 @@
 .event-card-meta a,
 .event-card-meta .post-star {
   pointer-events: auto;
+}
+
+/* The Starred panel entry for the Event Instance currently being viewed (see
+   `Shared.StarredPanel.view`/`UI.elm`'s `currentStarredEventInstanceKey`) --
+   mirrors `posts.css`'s `.post-card-current .post-card-meta` exactly:
+   `.event-card`'s own `background-color-primary` utility class (added
+   alongside this marker class, see `Components.Events.eventCard`) already
+   fills the card with its server's primaryColor/primaryTextColor; this just
+   stops `.event-card-meta`/`.event-card-instance-note`'s `var(--muted)` from
+   fighting that fill. The star button's own contrast fix is
+   `UI.EmittedStylesheet`'s `.event-card-current .post-star` rule. */
+.event-card-current .event-card-meta,
+.event-card-current .event-card-instance-note {
+  color: inherit;
+}
+
+.event-card-current .post-star {
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
 }

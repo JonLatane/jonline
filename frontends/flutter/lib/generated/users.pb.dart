@@ -43,10 +43,12 @@ class User extends $pb.GeneratedMessage {
     $4.Moderation? defaultFollowModeration,
     $core.int? followerCount,
     $core.int? followingCount,
+    $core.int? friendCount,
     $core.int? groupCount,
     $core.int? postCount,
     $core.int? responseCount,
     $core.int? eventCount,
+    $core.int? eventInstanceCount,
     Follow? currentUserFollow,
     Follow? targetCurrentUserFollow,
     Membership? currentGroupMembership,
@@ -70,10 +72,13 @@ class User extends $pb.GeneratedMessage {
       result.defaultFollowModeration = defaultFollowModeration;
     if (followerCount != null) result.followerCount = followerCount;
     if (followingCount != null) result.followingCount = followingCount;
+    if (friendCount != null) result.friendCount = friendCount;
     if (groupCount != null) result.groupCount = groupCount;
     if (postCount != null) result.postCount = postCount;
     if (responseCount != null) result.responseCount = responseCount;
     if (eventCount != null) result.eventCount = eventCount;
+    if (eventInstanceCount != null)
+      result.eventInstanceCount = eventInstanceCount;
     if (currentUserFollow != null) result.currentUserFollow = currentUserFollow;
     if (targetCurrentUserFollow != null)
       result.targetCurrentUserFollow = targetCurrentUserFollow;
@@ -123,10 +128,12 @@ class User extends $pb.GeneratedMessage {
         enumValues: $4.Moderation.values)
     ..aI(31, _omitFieldNames ? '' : 'followerCount')
     ..aI(32, _omitFieldNames ? '' : 'followingCount')
-    ..aI(33, _omitFieldNames ? '' : 'groupCount')
-    ..aI(34, _omitFieldNames ? '' : 'postCount')
-    ..aI(35, _omitFieldNames ? '' : 'responseCount')
-    ..aI(36, _omitFieldNames ? '' : 'eventCount')
+    ..aI(33, _omitFieldNames ? '' : 'friendCount')
+    ..aI(34, _omitFieldNames ? '' : 'groupCount')
+    ..aI(35, _omitFieldNames ? '' : 'postCount')
+    ..aI(36, _omitFieldNames ? '' : 'responseCount')
+    ..aI(37, _omitFieldNames ? '' : 'eventCount')
+    ..aI(38, _omitFieldNames ? '' : 'eventInstanceCount')
     ..aOM<Follow>(50, _omitFieldNames ? '' : 'currentUserFollow',
         subBuilder: Follow.create)
     ..aOM<Follow>(51, _omitFieldNames ? '' : 'targetCurrentUserFollow',
@@ -296,93 +303,113 @@ class User extends $pb.GeneratedMessage {
   @$pb.TagNumber(32)
   void clearFollowingCount() => $_clearField(32);
 
+  /// The number of users this user mutually follows (and is followed by).
+  @$pb.TagNumber(33)
+  $core.int get friendCount => $_getIZ(13);
+  @$pb.TagNumber(33)
+  set friendCount($core.int value) => $_setSignedInt32(13, value);
+  @$pb.TagNumber(33)
+  $core.bool hasFriendCount() => $_has(13);
+  @$pb.TagNumber(33)
+  void clearFriendCount() => $_clearField(33);
+
   /// The number of groups this user is a member of.
-  @$pb.TagNumber(33)
-  $core.int get groupCount => $_getIZ(13);
-  @$pb.TagNumber(33)
-  set groupCount($core.int value) => $_setSignedInt32(13, value);
-  @$pb.TagNumber(33)
-  $core.bool hasGroupCount() => $_has(13);
-  @$pb.TagNumber(33)
-  void clearGroupCount() => $_clearField(33);
+  @$pb.TagNumber(34)
+  $core.int get groupCount => $_getIZ(14);
+  @$pb.TagNumber(34)
+  set groupCount($core.int value) => $_setSignedInt32(14, value);
+  @$pb.TagNumber(34)
+  $core.bool hasGroupCount() => $_has(14);
+  @$pb.TagNumber(34)
+  void clearGroupCount() => $_clearField(34);
 
   /// The number of posts this user has made.
-  @$pb.TagNumber(34)
-  $core.int get postCount => $_getIZ(14);
-  @$pb.TagNumber(34)
-  set postCount($core.int value) => $_setSignedInt32(14, value);
-  @$pb.TagNumber(34)
-  $core.bool hasPostCount() => $_has(14);
-  @$pb.TagNumber(34)
-  void clearPostCount() => $_clearField(34);
+  @$pb.TagNumber(35)
+  $core.int get postCount => $_getIZ(15);
+  @$pb.TagNumber(35)
+  set postCount($core.int value) => $_setSignedInt32(15, value);
+  @$pb.TagNumber(35)
+  $core.bool hasPostCount() => $_has(15);
+  @$pb.TagNumber(35)
+  void clearPostCount() => $_clearField(35);
 
   /// The number of responses to `Post`s and `Event`s this user has made.
-  @$pb.TagNumber(35)
-  $core.int get responseCount => $_getIZ(15);
-  @$pb.TagNumber(35)
-  set responseCount($core.int value) => $_setSignedInt32(15, value);
-  @$pb.TagNumber(35)
-  $core.bool hasResponseCount() => $_has(15);
-  @$pb.TagNumber(35)
-  void clearResponseCount() => $_clearField(35);
+  @$pb.TagNumber(36)
+  $core.int get responseCount => $_getIZ(16);
+  @$pb.TagNumber(36)
+  set responseCount($core.int value) => $_setSignedInt32(16, value);
+  @$pb.TagNumber(36)
+  $core.bool hasResponseCount() => $_has(16);
+  @$pb.TagNumber(36)
+  void clearResponseCount() => $_clearField(36);
 
   /// The number of events this user has created.
-  @$pb.TagNumber(36)
-  $core.int get eventCount => $_getIZ(16);
-  @$pb.TagNumber(36)
-  set eventCount($core.int value) => $_setSignedInt32(16, value);
-  @$pb.TagNumber(36)
-  $core.bool hasEventCount() => $_has(16);
-  @$pb.TagNumber(36)
-  void clearEventCount() => $_clearField(36);
+  @$pb.TagNumber(37)
+  $core.int get eventCount => $_getIZ(17);
+  @$pb.TagNumber(37)
+  set eventCount($core.int value) => $_setSignedInt32(17, value);
+  @$pb.TagNumber(37)
+  $core.bool hasEventCount() => $_has(17);
+  @$pb.TagNumber(37)
+  void clearEventCount() => $_clearField(37);
+
+  /// The number of event instances this user has created (across all of their events).
+  @$pb.TagNumber(38)
+  $core.int get eventInstanceCount => $_getIZ(18);
+  @$pb.TagNumber(38)
+  set eventInstanceCount($core.int value) => $_setSignedInt32(18, value);
+  @$pb.TagNumber(38)
+  $core.bool hasEventInstanceCount() => $_has(18);
+  @$pb.TagNumber(38)
+  void clearEventInstanceCount() => $_clearField(38);
 
   /// Presence indicates the current user is following
   /// or has a pending follow request for this user.
   @$pb.TagNumber(50)
-  Follow get currentUserFollow => $_getN(17);
+  Follow get currentUserFollow => $_getN(19);
   @$pb.TagNumber(50)
   set currentUserFollow(Follow value) => $_setField(50, value);
   @$pb.TagNumber(50)
-  $core.bool hasCurrentUserFollow() => $_has(17);
+  $core.bool hasCurrentUserFollow() => $_has(19);
   @$pb.TagNumber(50)
   void clearCurrentUserFollow() => $_clearField(50);
   @$pb.TagNumber(50)
-  Follow ensureCurrentUserFollow() => $_ensure(17);
+  Follow ensureCurrentUserFollow() => $_ensure(19);
 
   /// Presence indicates this user is following or has
   /// a pending follow request for the current user.
   @$pb.TagNumber(51)
-  Follow get targetCurrentUserFollow => $_getN(18);
+  Follow get targetCurrentUserFollow => $_getN(20);
   @$pb.TagNumber(51)
   set targetCurrentUserFollow(Follow value) => $_setField(51, value);
   @$pb.TagNumber(51)
-  $core.bool hasTargetCurrentUserFollow() => $_has(18);
+  $core.bool hasTargetCurrentUserFollow() => $_has(20);
   @$pb.TagNumber(51)
   void clearTargetCurrentUserFollow() => $_clearField(51);
   @$pb.TagNumber(51)
-  Follow ensureTargetCurrentUserFollow() => $_ensure(18);
+  Follow ensureTargetCurrentUserFollow() => $_ensure(20);
 
   /// Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s.
   /// The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest),
   /// providing whether the user is a member of that `Group`, has been invited, requested to join, etc..
   @$pb.TagNumber(52)
-  Membership get currentGroupMembership => $_getN(19);
+  Membership get currentGroupMembership => $_getN(21);
   @$pb.TagNumber(52)
   set currentGroupMembership(Membership value) => $_setField(52, value);
   @$pb.TagNumber(52)
-  $core.bool hasCurrentGroupMembership() => $_has(19);
+  $core.bool hasCurrentGroupMembership() => $_has(21);
   @$pb.TagNumber(52)
   void clearCurrentGroupMembership() => $_clearField(52);
   @$pb.TagNumber(52)
-  Membership ensureCurrentGroupMembership() => $_ensure(19);
+  Membership ensureCurrentGroupMembership() => $_ensure(21);
 
   /// Indicates that `federated_profiles` has been loaded.
   @$pb.TagNumber(80)
-  $core.bool get hasAdvancedData => $_getBF(20);
+  $core.bool get hasAdvancedData => $_getBF(22);
   @$pb.TagNumber(80)
-  set hasAdvancedData($core.bool value) => $_setBool(20, value);
+  set hasAdvancedData($core.bool value) => $_setBool(22, value);
   @$pb.TagNumber(80)
-  $core.bool hasHasAdvancedData() => $_has(20);
+  $core.bool hasHasAdvancedData() => $_has(22);
   @$pb.TagNumber(80)
   void clearHasAdvancedData() => $_clearField(80);
 
@@ -390,31 +417,31 @@ class User extends $pb.GeneratedMessage {
   /// that the user has connected to their account. Managed by the user via
   /// `Federate`
   @$pb.TagNumber(81)
-  $pb.PbList<$1.FederatedAccount> get federatedProfiles => $_getList(21);
+  $pb.PbList<$1.FederatedAccount> get federatedProfiles => $_getList(23);
 
   /// The time the user was created.
   @$pb.TagNumber(100)
-  $2.Timestamp get createdAt => $_getN(22);
+  $2.Timestamp get createdAt => $_getN(24);
   @$pb.TagNumber(100)
   set createdAt($2.Timestamp value) => $_setField(100, value);
   @$pb.TagNumber(100)
-  $core.bool hasCreatedAt() => $_has(22);
+  $core.bool hasCreatedAt() => $_has(24);
   @$pb.TagNumber(100)
   void clearCreatedAt() => $_clearField(100);
   @$pb.TagNumber(100)
-  $2.Timestamp ensureCreatedAt() => $_ensure(22);
+  $2.Timestamp ensureCreatedAt() => $_ensure(24);
 
   /// The time the user was last updated.
   @$pb.TagNumber(101)
-  $2.Timestamp get updatedAt => $_getN(23);
+  $2.Timestamp get updatedAt => $_getN(25);
   @$pb.TagNumber(101)
   set updatedAt($2.Timestamp value) => $_setField(101, value);
   @$pb.TagNumber(101)
-  $core.bool hasUpdatedAt() => $_has(23);
+  $core.bool hasUpdatedAt() => $_has(25);
   @$pb.TagNumber(101)
   void clearUpdatedAt() => $_clearField(101);
   @$pb.TagNumber(101)
-  $2.Timestamp ensureUpdatedAt() => $_ensure(23);
+  $2.Timestamp ensureUpdatedAt() => $_ensure(25);
 }
 
 /// Post/authorship-centric version of User. UI can cross-reference user details

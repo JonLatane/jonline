@@ -1,5 +1,6 @@
 module Components.Posts exposing
-    ( allVisibilities
+    ( allModerations
+    , allVisibilities
     , allowedVisibilities
     , commentCountText
     , contentPreviewFadeThreshold
@@ -24,6 +25,8 @@ module Components.Posts exposing
     , starButton
     , stripLinkScheme
     , timestampsText
+    , deletePost
+    , moderationFromText
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -41,13 +44,15 @@ route's `id` or `id@host` segment.
 import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
+import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, style, target, title)
 import Html.Events
-import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
+import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.PostListingType exposing (PostListingType(..))
@@ -257,6 +262,29 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
         )
 
 
+{-| Deletes `postId` outright (`DeletePost`, owner-or-Admin gated
+server-side, see `backend/src/rpcs/posts/delete_post.rs`) -- unlike
+`updatePost`, there's nothing to overlay onto a fresh copy first, so this
+just sends the id straight through. Used by `Pages.Post.PostId_`'s own
+Delete button, via `Shared.ConfirmPostDelete`.
+-}
+deletePost :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Post )
+deletePost accountsPanelModel maybeAccountServer postId =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deletePost { defaultPost | id = postId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
 
 -- ROUTE / LINKS
 
@@ -430,6 +458,24 @@ from `allVisibilities` in the first place).
 visibilityFromText : String -> Maybe Visibility
 visibilityFromText text =
     allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
+
+
+{-| The moderation-status options offered by a moderation-editing `<select>`
+(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
+-- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
+the proto's own declaration order.
+-}
+allModerations : List Moderation
+allModerations =
+    [ UNMODERATED, PENDING, APPROVED, REJECTED ]
+
+
+{-| The reverse of `Components.Users.moderationText` -- same `<select>`-value
+round-trip `visibilityFromText` does for `Visibility`.
+-}
+moderationFromText : String -> Maybe Moderation
+moderationFromText text =
+    allModerations |> List.filter (\moderation -> Users.moderationText moderation == text) |> List.head
 
 
 {-| Which of `allVisibilities` `account` may pick for a Post/Event/etc. of
@@ -1034,11 +1080,13 @@ text (the common case) or an in-progress `<select>` editor, entirely up to
 the caller (`Pages.Post.PostId_`, which owns the editing state/permission
 gating for it, the same way it owns `onEditClicked`) -- this just slots
 whatever `Html` it's given in after the author link, in place of what used to
-be a bare `postVisibilityText post` text node.
+be a bare `postVisibilityText post` text node. `moderationView` is the same
+idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
+moderation-status segment.
 
 -}
-postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
-postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView post =
+postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
+postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView moderationView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1079,6 +1127,7 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                 , text " · "
                 , visibilityView
+                , moderationView
                 ]
             , span [ class "post-meta-right" ]
                 [ timestampsText browserTimeZone post

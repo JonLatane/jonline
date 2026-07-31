@@ -1885,6 +1885,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>The number of users this user is following.</td>
         </tr>
         <tr>
+          <td>friend_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td>The number of users this user mutually follows (and is followed by).</td>
+        </tr>
+        <tr>
           <td>group_count</td>
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
@@ -1907,6 +1913,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#int32">int32</a></td>
           <td>optional</td>
           <td>The number of events this user has created.</td>
+        </tr>
+        <tr>
+          <td>event_instance_count</td>
+          <td><a href="#int32">int32</a></td>
+          <td>optional</td>
+          <td>The number of event instances this user has created (across all of their events).</td>
         </tr>
         <tr>
           <td>current_user_follow</td>

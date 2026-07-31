@@ -1,6 +1,7 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle, webUiToggleRow)
 
 import Components.Markdown as Markdown
+import Components.Events as Events
 import Components.Posts as Posts
 import Components.Users as Users
 import Dict
@@ -2014,19 +2015,42 @@ deleteConfirmationModal shared =
                             , "Delete " ++ Maybe.withDefault "this media item" media.name ++ "? This can't be undone."
                             )
 
-                        Shared.ConfirmEventSyncSourceDelete source ->
-                            ( "Delete Event Sync Source?"
-                            , "Stop syncing from "
-                                ++ (case source.configuration of
+                        Shared.ConfirmEventSyncSourceDelete source deleteSyncedEvents ->
+                            let
+                                sourceLabel =
+                                    case source.configuration of
                                         Just (Configuration.IcsSubscriptionUrl url) ->
                                             url
 
                                         Nothing ->
                                             "this source"
-                                   )
-                                ++ ", deleting the "
-                                ++ EventSyncSourcesPanel.syncedCountsLabel source
-                                ++ " it synced? This can't be undone."
+                            in
+                            ( "Delete Event Sync Source?"
+                            , if deleteSyncedEvents then
+                                "Stop syncing from "
+                                    ++ sourceLabel
+                                    ++ ", deleting the "
+                                    ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                    ++ " it synced? This can't be undone."
+
+                              else
+                                "Stop syncing from "
+                                    ++ sourceLabel
+                                    ++ "? This will leave the "
+                                    ++ EventSyncSourcesPanel.syncedCountsLabel source
+                                    ++ " it synced on your profile, no longer associated with a source."
+                            )
+
+                        Shared.ConfirmPostDelete post _ ->
+                            ( "Delete Post?"
+                            , "Delete \"" ++ Posts.postTitleText post ++ "\"? This can't be undone."
+                            )
+
+                        Shared.ConfirmEventDelete event _ ->
+                            ( "Delete Event?"
+                            , "Delete \""
+                                ++ (event.post |> Maybe.map Posts.postTitleText |> Maybe.withDefault "this event")
+                                ++ "\"? This can't be undone."
                             )
             in
             UI.Modal.view
@@ -2158,7 +2182,14 @@ so it's mapped into `Shared.Msg` here instead.
 starredPanel : Shared.Model -> Route -> Html Shared.Msg
 starredPanel shared currentRoute =
     Html.map Shared.StarredPanelMsg
-        (StarredPanel.view shared.browserTimeZone shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPanel)
+        (StarredPanel.view
+            shared.browserTimeZone
+            shared.basePath
+            shared.accountsPanel
+            (currentStarredPostKey shared currentRoute)
+            (currentStarredEventInstanceKey shared currentRoute)
+            shared.starredPanel
+        )
 
 
 {-| The `starKey` of the Post currently being viewed (see
@@ -2176,6 +2207,27 @@ currentStarredPostKey shared currentRoute =
                     Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
             in
             Just (StarredPanel.rawKey postId host)
+
+        _ ->
+            Nothing
+
+
+{-| The `EventInstance.id` currently being viewed (see
+`Pages.Event.EventId_`), if `currentRoute` is that page -- mirrors
+`currentStarredPostKey` exactly, just for `Shared.StarredPanel`'s Event
+highlighting (see `Components.Events.eventCard`'s own `current` param).
+`params.eventId` is, despite its name, an `EventInstance.id`, not an
+`Event.id` -- see `Components.Events.parseEventRouteId`'s own doc.
+-}
+currentStarredEventInstanceKey : Shared.Model -> Route -> Maybe String
+currentStarredEventInstanceKey shared currentRoute =
+    case currentRoute of
+        Route.Event__EventId_ params ->
+            let
+                ( instanceId, _ ) =
+                    Events.parseEventRouteId shared.accountsPanel.mainFrontendHost params.eventId
+            in
+            Just instanceId
 
         _ ->
             Nothing

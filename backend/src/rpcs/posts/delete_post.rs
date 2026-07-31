@@ -11,8 +11,6 @@ use crate::models;
 use crate::protos::*;
 use crate::rpcs;
 use crate::schema::posts;
-use crate::schema::users;
-// use crate::schema::users;
 
 use crate::rpcs::validations::*;
 
@@ -45,6 +43,11 @@ pub fn delete_post(
         }
         None => None,
     };
+
+    // Captured before the post is soft-deleted below (which nulls `existing_post.user_id`) --
+    // counts must be refreshed for the post's actual author, not necessarily `current_user`
+    // (an admin can delete another user's post).
+    let post_author_id = existing_post.user_id;
 
     let self_update = existing_post.user_id == Some(current_user.id);
     log::info!(
@@ -89,23 +92,20 @@ pub fn delete_post(
                         // posts::last_activity_at.eq(inserted_post.created_at),
                     ))
                     .execute(conn)?;
-                update(users::table)
-                    .filter(users::id.eq(current_user.id))
-                    .set(users::response_count.eq(users::response_count - 1))
-                    .execute(conn)?;
-            } else if existing_post.context == PostContext::Post.to_string_post_context() {
-                update(users::table)
-                    .filter(users::id.eq(current_user.id))
-                    .set(users::post_count.eq(users::post_count - 1))
-                    .execute(conn)?;
             }
 
             log::info!("Soft deleting post: {:?}", existing_post);
-            match diesel::update(posts::table)
+            let update_result = diesel::update(posts::table)
                 .filter(posts::id.eq(&existing_post.id))
                 .set(&existing_post)
-                .execute(conn)
-            {
+                .execute(conn);
+
+            // Recomputed after the soft-delete above, so it no longer counts the just-deleted post.
+            if let Some(author_id) = post_author_id {
+                crate::logic::update_post_counts(author_id, conn)?;
+            }
+
+            match update_result {
                 Ok(_) => Ok(existing_post),
                 Err(e) => Err(e),
             }

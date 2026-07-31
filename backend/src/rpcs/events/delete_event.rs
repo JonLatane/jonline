@@ -7,7 +7,7 @@ use crate::{
     models::{self, get_event},
     protos::*,
     rpcs::validate_permission,
-    schema::{events, posts, users},
+    schema::{events, posts},
 };
 
 pub fn delete_event(
@@ -29,16 +29,19 @@ pub fn delete_event(
         return Err(Status::new(Code::PermissionDenied, "permission_denied"));
     }
 
+    // Captured before the delete -- refresh the actual owner's counts, not necessarily
+    // `current_user` (an admin can delete another user's event).
+    let event_owner_id = event_post.user_id;
+
     let transaction_result: Result<(), diesel::result::Error> = conn
         .transaction::<(), diesel::result::Error, _>(|conn| {
-            let deleted_count = diesel::delete(events::table)
+            diesel::delete(events::table)
                 .filter(events::id.eq(event.id))
-                .execute(conn)? as i32;
-
-            update(users::table)
-                .filter(users::id.eq(current_user.id))
-                .set(users::event_count.eq(users::event_count - deleted_count))
                 .execute(conn)?;
+
+            if let Some(owner_id) = event_owner_id {
+                crate::logic::update_event_counts(owner_id, conn)?;
+            }
             Ok(())
         });
 

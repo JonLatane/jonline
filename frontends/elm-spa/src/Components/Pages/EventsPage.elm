@@ -46,8 +46,8 @@ import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, h2, h3, input, p, text)
-import Html.Attributes exposing (class, href, id, placeholder, style, title, type_, value)
+import Html exposing (Html, a, button, div, h2, h3, input, p, span, text)
+import Html.Attributes exposing (class, href, id, placeholder, style, target, title, type_, value)
 import Html.Events exposing (onClick, onInput, preventDefaultOn)
 import Html.Keyed
 import Json.Decode as Decode
@@ -64,7 +64,7 @@ import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Task
 import Time
-import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 import Url.Builder
 
@@ -168,6 +168,24 @@ type alias Model =
     -- fires after a later edit already moved this past it knows to ignore
     -- itself as stale.
     , endsAfterInputGeneration : Int
+
+    -- Whether the "Export" button's ICS-subscription-link popover (see
+    -- `exportButtonView`) is currently open -- closed by clicking its own
+    -- backdrop (`ExportPopoverClosed`), same "backdrop closes it" idea
+    -- `UI.Modal` uses for full dialogs, just anchored under the button
+    -- instead of centered.
+    , exportPopoverOpen : Bool
+
+    -- Whether `CopyLinkClicked` most recently fired within the last 5s --
+    -- `exportButtonView`'s "Copy Link" button reads this to show "Link
+    -- Copied!" for that stretch instead. `copyLinkGeneration` mirrors
+    -- `searchGeneration`'s own debounce convention: bumped on every click, so
+    -- a `CopyLinkCopyTimeoutElapsed` timer from an earlier click (superseded
+    -- by clicking Copy Link again before its own 5s was up) knows to leave
+    -- the flag alone rather than clearing a copy that hasn't actually been
+    -- showing for 5s yet.
+    , copyLinkCopied : Bool
+    , copyLinkGeneration : Int
     }
 
 
@@ -250,6 +268,9 @@ init shared author navKey path query embeddedRow =
                 , searchGeneration = 0
                 , endsAfter = endsAfter
                 , endsAfterInputGeneration = 0
+                , exportPopoverOpen = False
+                , copyLinkCopied = False
+                , copyLinkGeneration = 0
                 }
     in
     ( fetchedModel
@@ -305,7 +326,7 @@ fetchServerEffect shared model endsAfter server =
 
 
 {-| Mirrors `Components.Pages.PostsPage.refetchServers`, with one deliberate
-departure: a server already `Loaded` under the *same* acting account keeps
+departure: a server already `Loaded` under the _same_ acting account keeps
 showing its last-known events (`status` untouched) while the re-fetch is in
 flight, rather than being reset to `Loading` first. `Loading` isn't rendered
 as its own state anywhere in this module -- the only thing it actually does
@@ -657,6 +678,17 @@ type Msg
     | SearchTextChanged String
     | SearchDebounceElapsed Int
     | ClearSearchClicked
+      -- Opens/closes the "Export" button's ICS-subscription-link popover
+      -- (see `exportButtonView`).
+    | ExportClicked
+    | ExportPopoverClosed
+      -- Copies `icsUrl`'s link to the clipboard via `Ports.copyToClipboard`
+      -- and shows "Link Copied!" (`model.copyLinkCopied`) for 5s.
+    | CopyLinkClicked
+      -- That 5s elapsing -- mirrors `EndsAfterDebounceElapsed`'s own stale-
+      -- generation guard: a no-op if a later `CopyLinkClicked` already bumped
+      -- `copyLinkGeneration` past this timer's own.
+    | CopyLinkCopyTimeoutElapsed Int
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -938,6 +970,33 @@ updateInner shared msg model =
         ClearSearchClicked ->
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
+        ExportClicked ->
+            ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
+
+        ExportPopoverClosed ->
+            ( { model | exportPopoverOpen = False }, Effect.none )
+
+        CopyLinkClicked ->
+            let
+                generation =
+                    model.copyLinkGeneration + 1
+            in
+            ( { model | copyLinkCopied = True, copyLinkGeneration = generation }
+            , Effect.batch
+                [ Ports.copyToClipboard (icsUrl shared model) |> Effect.fromCmd
+                , Process.sleep 5000
+                    |> Task.perform (\_ -> CopyLinkCopyTimeoutElapsed generation)
+                    |> Effect.fromCmd
+                ]
+            )
+
+        CopyLinkCopyTimeoutElapsed generation ->
+            if generation == model.copyLinkGeneration then
+                ( { model | copyLinkCopied = False }, Effect.none )
+
+            else
+                ( model, Effect.none )
+
 
 {-| `GotMeasuredRects`'s fallback for a payload that failed to decode (should
 never actually happen -- `Ports.measureElements`'s JS side always sends a
@@ -1142,6 +1201,7 @@ this module in its own `HorizontalList` row, a level below its own already-shown
 username/avatar header (see `profileDetail`), so a second copy of the same name would be
 redundant. Every other caller passes `True`, preserving the previous always-shown (whenever
 `model.author` is `Just`) behavior.
+
 -}
 view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
 view shared homeEmbedded showAuthorHeading model =
@@ -1154,7 +1214,10 @@ view shared homeEmbedded showAuthorHeading model =
         , div [ class "events-controls-row" ]
             [ tabsView shared model
             , searchRowView model
-            , modeButtonsView shared homeEmbedded model.mode
+            , div [ class "events-controls-trailing" ]
+                [ modeButtonsView shared homeEmbedded model.mode
+                , exportButtonView shared model
+                ]
             ]
         , eventsListView shared model
         ]
@@ -1387,6 +1450,78 @@ modeLabel mode =
             "Row"
 
 
+{-| The backend's iCalendar/RFC5545 subscription endpoint
+(`GET /calendar.ics`, `GET /calendar.ics?user_id={id}` -- see
+`backend/src/web/ical_subscription.rs`) for whatever this listing is
+currently showing: `model.author`'s own host + that user's id when this is a
+per-user feed, or `shared.accountsPanel.mainFrontendHost` (no `user_id`) for
+the unfiltered feed -- mirrors `UI.elm`'s own `"https://" ++ server.frontendHost`
+convention for linking to a Jonline server's own pages.
+-}
+icsUrl : Shared.Model -> Model -> String
+icsUrl shared model =
+    case model.author of
+        Just ( host, user ) ->
+            "https://" ++ host ++ "/calendar.ics" ++ Url.Builder.toQuery [ Url.Builder.string "user_id" user.id ]
+
+        Nothing ->
+            "https://" ++ shared.accountsPanel.mainFrontendHost ++ "/calendar.ics"
+
+
+{-| The "Export" icon button always shown at the end of `events-controls-row`
+(next to `modeButtonsView`, unlike that one not gated by `homeEmbedded` -- it
+belongs on every copy of this listing, embedded or not, per its own request).
+Toggles a small popover (`ExportClicked`/`ExportPopoverClosed`) anchored
+under the button showing `icsUrl`'s link and a "Copy Link" button
+(`CopyLinkClicked`, via `Ports.copyToClipboard`, showing "Link Copied!" for
+5s afterward -- see `Model.copyLinkCopied`) -- built on `ui/popover.css`'s
+generic `.popover-anchor`/`.popover-toggle`/`.popover`/`.popover-backdrop`
+(always rendered, `openClosedClass`-driven fade+slide-down transition, button
+corners squaring off to meet the popover -- see that stylesheet's own doc),
+so any later button that wants a small anchored popover under itself can
+reuse the same pieces. The backdrop `div` behind it closes it on click, same
+"backdrop closes an open panel" idea `UI.Modal` uses for full-screen dialogs,
+just anchored instead of centered.
+-}
+exportButtonView : Shared.Model -> Model -> Html Msg
+exportButtonView shared model =
+    div [ classes [ "events-export", "popover-anchor" ] ]
+        [ button
+            [ classes [ "events-export-button", "popover-toggle", "background-color-nav", openClosedClass model.exportPopoverOpen ]
+            , onClick ExportClicked
+            , title "Export calendar (ICS)"
+            , type_ "button"
+            ]
+            [ text "⤓" ]
+        , div [ classes [ "popover-backdrop", openClosedClass model.exportPopoverOpen ], onClick ExportPopoverClosed ] []
+        , div [ classes [ "events-export-popover", "popover", openClosedClass model.exportPopoverOpen ] ]
+            [ h3 [ class "events-export-popover-heading" ]
+                [ text "Subscribe with iCal" ]
+            , p [] [ text "Works with Google Calendar, macOS Calendar, and more." ]
+            , a
+                [ href (icsUrl shared model)
+                , target "_blank"
+                , class "events-export-popover-link"
+                ]
+                [ text (icsUrl shared model) ]
+            , button
+                [ classes [ "events-export-popover-copy", "background-color-primary" ]
+                , onClick CopyLinkClicked
+                , type_ "button"
+                ]
+                [ span [ class "events-export-popover-copy-icon" ] [ text "⎘" ]
+                , text
+                    (if model.copyLinkCopied then
+                        "Link Copied!"
+
+                     else
+                        "Copy Link"
+                    )
+                ]
+            ]
+        ]
+
+
 {-| `model.mode`'s own container class + `UI.Flip.Axis` -- `VerticalList`
 collapses/reflows vertically (mirrors `PostsPage.postsListView`'s own
 `.flip-animated-column`), `Grid`/`HorizontalList` both collapse/reflow
@@ -1531,5 +1666,6 @@ eventCardView shared ( host, event, instance ) =
         onMediaClicked
         starred
         onStarClicked
+        False
         event
         displayInstance

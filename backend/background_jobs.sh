@@ -21,10 +21,19 @@
 #
 set -euo pipefail
 
+# Job control: makes each `&`-launched loop below its own process group
+# leader, so `kill -TERM -- "-$pid"` in the trap can reach not just the loop
+# itself but whatever it's currently running too -- notably `cargo run`,
+# which forks the actual job binary as a child that a plain `kill $pid`
+# would otherwise orphan (bash only kills the loop's shell, not its
+# grandchildren).
+set -m
+
 JOBS=(
   "delete_expired_tokens 0 120"
   "delete_unowned_media 10 28800"
   "sync_event_sync_sources 5 60"
+  "update_user_counts 15 3600"
 )
 
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
@@ -84,6 +93,10 @@ for job in "${JOBS[@]}"; do
   pids+=("$!")
 done
 
-trap 'kill "${pids[@]}" 2>/dev/null || true' TERM INT
+trap '
+  for pid in "${pids[@]}"; do
+    kill -TERM -- "-${pid}" 2>/dev/null || true
+  done
+' TERM INT
 
 wait

@@ -44,6 +44,7 @@
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/switch.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/flip.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/reordering.css">');
+    document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/ui/popover.css">');
 
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/media.css">');
     document.write('<link rel="stylesheet" href="' + jonlineBasePath + '/style/profiles.css">');
@@ -198,6 +199,12 @@
       document.querySelectorAll('meta[name="theme-color"]').forEach(function (m) {
         m.setAttribute("content", color);
       });
+    });
+
+    app.ports.copyToClipboard.subscribe(function (text) {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+      }
     });
 
     // See Ports.elm's scrollElementLeft doc comment: Browser.Dom.setViewportOf

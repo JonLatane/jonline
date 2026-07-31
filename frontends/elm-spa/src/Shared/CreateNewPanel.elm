@@ -179,10 +179,49 @@ update zone accountsPanelModel msg model =
             ( { model | link = link }, Cmd.none, noForward )
 
         StartsAtChanged raw ->
-            ( { model | startsAt = BrowserTimeZone.posixFromDateTimeLocalInput zone raw }, Cmd.none, noForward )
+            let
+                newStartsAt =
+                    BrowserTimeZone.posixFromDateTimeLocalInput zone raw
+
+                -- Keeps `endsAt` sane relative to the new `startsAt`: if
+                -- there was already a valid start/end pair, shift `endsAt` by
+                -- the same delta so the event's duration is preserved --
+                -- otherwise (the first time a start is picked, or no end was
+                -- set yet) default `endsAt` to an hour after the new start,
+                -- so a not-yet-touched end never reads as blank/before the
+                -- start once a start exists.
+                newEndsAt =
+                    case ( newStartsAt, model.startsAt, model.endsAt ) of
+                        ( Just newStart, Just oldStart, Just oldEnd ) ->
+                            Just (Time.millisToPosix (Time.posixToMillis oldEnd + (Time.posixToMillis newStart - Time.posixToMillis oldStart)))
+
+                        ( Just newStart, _, _ ) ->
+                            Just (Time.millisToPosix (Time.posixToMillis newStart + 3600000))
+
+                        ( Nothing, _, _ ) ->
+                            model.endsAt
+            in
+            ( { model | startsAt = newStartsAt, endsAt = newEndsAt }, Cmd.none, noForward )
 
         EndsAtChanged raw ->
-            ( { model | endsAt = BrowserTimeZone.posixFromDateTimeLocalInput zone raw }, Cmd.none, noForward )
+            let
+                newEndsAt =
+                    BrowserTimeZone.posixFromDateTimeLocalInput zone raw
+
+                -- Enforces `endsAt` is always at least a minute after
+                -- `startsAt` (when one's set) -- clamps rather than rejecting
+                -- outright, so picking an end too close to (or before) the
+                -- start still lands on the nearest valid value instead of
+                -- silently not applying the change.
+                clampedEndsAt =
+                    case ( newEndsAt, model.startsAt ) of
+                        ( Just newEnd, Just startsAt ) ->
+                            Just (Time.millisToPosix (max (Time.posixToMillis newEnd) (Time.posixToMillis startsAt + 60000)))
+
+                        _ ->
+                            newEndsAt
+            in
+            ( { model | endsAt = clampedEndsAt }, Cmd.none, noForward )
 
         PostingAsSelected accountId ->
             ( { model | postingAs = Just accountId }, Cmd.none, noForward )
@@ -330,8 +369,8 @@ resolve accountsPanelModel model =
                         Err "An end date/time is required."
 
                     ( Just startsAt, Just endsAt ) ->
-                        if Time.posixToMillis endsAt <= Time.posixToMillis startsAt then
-                            Err "The end date/time must be after the start date/time."
+                        if Time.posixToMillis endsAt < Time.posixToMillis startsAt + 60000 then
+                            Err "The end date/time must be at least a minute after the start date/time."
 
                         else
                             resolveAccount accountsPanelModel model

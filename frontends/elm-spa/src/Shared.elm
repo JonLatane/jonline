@@ -22,11 +22,14 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
+import Components.Events as Events
+import Components.Posts as Posts
+import Grpc
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (EventSyncSource, Media)
+import Proto.Jonline exposing (Event, EventSyncSource, Media, Post)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
@@ -70,7 +73,14 @@ type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
-    | ConfirmEventSyncSourceDelete EventSyncSource
+    | ConfirmEventSyncSourceDelete EventSyncSource Bool
+      -- The trailing `String` is the acting `targetHost` (the Post/Event
+      -- isn't itself paired with one) -- resolved back to a signed-in
+      -- `Account` (if any) in `ConfirmDelete`'s own handling, the same way
+      -- `EventSyncSourcesPanel.performForOwner` resolves one from a bare
+      -- host.
+    | ConfirmPostDelete Post String
+    | ConfirmEventDelete Event String
 
 
 type alias Model =
@@ -144,6 +154,16 @@ type Msg
     | RequestDelete DeleteConfirmation
     | CancelDelete
     | ConfirmDelete
+      -- `ConfirmDelete`'s own handling of `ConfirmPostDelete`/
+      -- `ConfirmEventDelete` fires the `DeletePost`/`DeleteEvent` RPC
+      -- directly (unlike every other `DeleteConfirmation`, a Post/Event
+      -- delete isn't owned by any Shared-owned panel `Shared.update` could
+      -- delegate to) -- this is its result. Forwarded, like every
+      -- `Shared.Msg`, into whichever page is active (`Main.notifyPageOfSharedMsg`),
+      -- so `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own `SharedMsg`
+      -- handling can navigate away on success.
+    | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+    | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
     | ShowScrollPreserver
     | HideScrollPreserver
     | HomeLinkClicked Bool
@@ -805,8 +825,8 @@ updateImpl req msg model =
                 -- `MyMediaPanelMsg`'s own `confirmingDeleteFor` above.
                 confirmingDeleteFor =
                     case maybeDeleteRequest of
-                        Just source ->
-                            Just (ConfirmEventSyncSourceDelete source)
+                        Just ( source, deleteSyncedEvents ) ->
+                            Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents)
 
                         Nothing ->
                             model.confirmingDeleteFor
@@ -924,10 +944,10 @@ updateImpl req msg model =
                     )
 
                 -- Same shape as `ConfirmMediaDelete` just above.
-                Just (ConfirmEventSyncSourceDelete source) ->
+                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents) ->
                     let
                         ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source) model.eventSyncSourcesPanel
+                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source deleteSyncedEvents) model.eventSyncSourcesPanel
 
                         ( accountsPanelModel, accountsPanelCmd ) =
                             case maybeAccountsPanelMsg of
@@ -944,8 +964,63 @@ updateImpl req msg model =
                         ]
                     )
 
+                -- Unlike every branch above, a Post/Event delete isn't owned
+                -- by any Shared-owned panel to delegate a `DeleteConfirmed`
+                -- into -- fires the RPC directly instead, resolving the
+                -- acting account from the carried `targetHost` the same way
+                -- `EventSyncSourcesPanel.performForOwner` does from a bare
+                -- host. Its result (`GotPostDeleteResult`) is picked up by
+                -- whichever page is active, same as any other `Shared.Msg`.
+                Just (ConfirmPostDelete post host) ->
+                    ( { model | confirmingDeleteFor = Nothing }
+                    , Posts.deletePost
+                        model.accountsPanel
+                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        post.id
+                        |> Task.attempt GotPostDeleteResult
+                    )
+
+                Just (ConfirmEventDelete event host) ->
+                    ( { model | confirmingDeleteFor = Nothing }
+                    , Events.deleteEvent
+                        model.accountsPanel
+                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        event.id
+                        |> Task.attempt GotEventDeleteResult
+                    )
+
                 Nothing ->
                     ( model, Cmd.none )
+
+        GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotPostDeleteResult (Err _) ->
+            ( model, Cmd.none )
+
+        GotEventDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventDeleteResult (Err _) ->
+            ( model, Cmd.none )
 
         ShowScrollPreserver ->
             ( { model | scrollPreserverVisible = True }

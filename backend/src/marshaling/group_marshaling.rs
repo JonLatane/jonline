@@ -10,7 +10,6 @@ use crate::protos::*;
 use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::groups;
 use crate::schema::memberships;
-use crate::schema::users;
 
 pub trait ToProtoGroup {
     fn to_proto_with(
@@ -110,17 +109,7 @@ impl ToProtoMembership for models::Membership {
             .execute(conn)
             .map_err(|_| Status::new(Code::Internal, "error_updating_member_count"))?;
 
-        let group_count = memberships::table
-            .count()
-            .filter(memberships::user_id.eq(self.user_id))
-            .filter(memberships::group_moderation.eq_any(PASSING_MODERATIONS))
-            .filter(memberships::user_moderation.eq_any(PASSING_MODERATIONS))
-            .first::<i64>(conn)
-            .unwrap() as i32;
-        diesel::update(users::table)
-            .filter(users::id.eq(self.user_id))
-            .set(users::group_count.eq(group_count))
-            .execute(conn)
+        crate::logic::update_group_count(self.user_id, conn)
             .map_err(|_| Status::new(Code::Internal, "error_updating_user_group_count"))?;
 
         Ok(())

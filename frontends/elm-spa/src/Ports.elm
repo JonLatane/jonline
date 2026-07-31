@@ -1,6 +1,7 @@
 port module Ports exposing
     ( accountsAndServersUpdated
     , clearFederatedAuthKeyPair
+    , copyToClipboard
     , elementsMeasured
     , federatedAuthDecrypt
     , federatedAuthDecrypted
@@ -137,6 +138,13 @@ actually changes -- `mainFrontendHost` switching, or its `Server`'s branding
 being (re)populated.
 -}
 port setNavBarColor : String -> Cmd msg
+
+
+{-| Writes `text` to the system clipboard via `navigator.clipboard.writeText`
+-- see `Components.Pages.EventsPage`'s "Export" popover, the only current
+caller.
+-}
+port copyToClipboard : String -> Cmd msg
 
 
 {-| Fires when the OS-level dark/light preference changes while the app is

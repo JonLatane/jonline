@@ -31,7 +31,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions
 import Task
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 
 
 type SubmitStatus
@@ -109,13 +109,17 @@ type Msg
     | AddIntervalChanged Int
     | AddClicked
     | GotAddResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, EventSyncSource ))
-      -- Doesn't delete anything itself -- bubbles `source` up through
-      -- `update`'s own extra return value for `Shared.update` to turn into a
-      -- `Shared.RequestDelete`, same as `MyMediaPanel.DeleteClicked`.
-    | DeleteClicked EventSyncSource
+      -- Doesn't delete anything itself -- bubbles `( source, deleteSyncedEvents )`
+      -- up through `update`'s own extra return value for `Shared.update` to
+      -- turn into a `Shared.RequestDelete`, same as `MyMediaPanel.DeleteClicked`.
+      -- `deleteSyncedEvents` is `True` for the row's "Delete along with N
+      -- events" button, `False` for the plain "Delete" button that leaves the
+      -- already-synced events/instances on the profile, no longer associated
+      -- with a source.
+    | DeleteClicked EventSyncSource Bool
       -- Fired back from `Shared.update`'s `ConfirmDelete` once the user's
       -- confirmed -- this is what actually calls `DeleteEventSyncSource`.
-    | DeleteConfirmed EventSyncSource
+    | DeleteConfirmed EventSyncSource Bool
     | GotDeleteResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, () ))
 
 
@@ -126,7 +130,7 @@ sources -- see `resolve`), and can surface an `AccountsPanel.Msg` (a token
 refresh) alongside a `DeleteClicked` request for `Shared.update` to
 dispatch.
 -}
-update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe EventSyncSource ) )
+update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe ( EventSyncSource, Bool ) ) )
 update accountsPanelModel msg model =
     case msg of
         Fetch host userId ->
@@ -226,12 +230,12 @@ update accountsPanelModel msg model =
         GotAddResult (Err err) ->
             ( { model | addForm = setField (\f -> { f | status = SubmitFailed (AccountsPanel.grpcErrorToString err) }) model.addForm }, Cmd.none, ( Nothing, Nothing ) )
 
-        DeleteClicked source ->
-            ( model, Cmd.none, ( Nothing, Just source ) )
+        DeleteClicked source deleteSyncedEvents ->
+            ( model, Cmd.none, ( Nothing, Just ( source, deleteSyncedEvents ) ) )
 
-        DeleteConfirmed source ->
+        DeleteConfirmed source deleteSyncedEvents ->
             ( { model | deletingIds = Set.insert source.id model.deletingIds }
-            , performForOwner accountsPanelModel model (\accountServer -> EventSyncSources.deleteEventSyncSource accountsPanelModel accountServer source True)
+            , performForOwner accountsPanelModel model (\accountServer -> EventSyncSources.deleteEventSyncSource accountsPanelModel accountServer source deleteSyncedEvents)
                 |> Task.attempt (GotDeleteResult source.id)
             , ( Nothing, Nothing )
             )
@@ -323,10 +327,12 @@ isDirty source edit =
     edit.pendingUrl /= icsUrl source || edit.pendingIntervalSeconds /= Conversions.int64ToInt source.syncIntervalSeconds
 
 
-{-| Labels the row's delete button with exactly what it'll take with it --
-`DeleteConfirmed` always sends `deleteSyncedEvents = True`, so this doubles as
-the only warning the user gets before those rows are gone for good. Also used
-(via `syncedCountsLabel`) in `UI`'s confirmation dialog for the same source.
+{-| Labels the row's "delete along with its events" button with exactly what
+it'll take with it, so this doubles as the only warning the user gets before
+those rows are gone for good. Also used (via `syncedCountsLabel`) in `UI`'s
+confirmation dialog for the same source. The row's other, plain "Delete"
+button (see `rowView`) leaves those events/instances alone -- see
+`UI.deleteConfirmationModal`'s own message for that case.
 -}
 deleteButtonLabel : EventSyncSource -> String
 deleteButtonLabel source =
@@ -390,7 +396,7 @@ view browserTimeZone { canManage, canAdd } model =
              , div [ class "event-sync-sources-list" ] (contentView browserTimeZone model)
              ]
                 ++ (if canAdd then
-                        [ addRowView model.addForm ]
+                        [ addRowView model.targetHost model.addForm ]
 
                     else
                         []
@@ -441,7 +447,7 @@ rowView browserTimeZone model source =
                 Nothing ->
                     "Never"
     in
-    div [ class "event-sync-source-row" ]
+    div [ classes [ "event-sync-source-row", hostnameToCSSClass model.targetHost, "border-left-thick-color-primary" ] ]
         [ input
             [ class "event-sync-source-url"
             , type_ "text"
@@ -478,7 +484,17 @@ rowView browserTimeZone model source =
                         )
                     ]
             , button
-                [ class "event-sync-source-delete", onClick (DeleteClicked source), disabled deleting ]
+                [ class "event-sync-source-delete-plain", onClick (DeleteClicked source False), disabled deleting ]
+                [ text
+                    (if deleting then
+                        "Deleting…"
+
+                     else
+                        "Delete"
+                    )
+                ]
+            , button
+                [ class "event-sync-source-delete", onClick (DeleteClicked source True), disabled deleting ]
                 [ text
                     (if deleting then
                         "Deleting…"
@@ -497,9 +513,9 @@ rowView browserTimeZone model source =
         ]
 
 
-addRowView : AddForm -> Html Msg
-addRowView addForm =
-    div [ class "event-sync-source-row", class "event-sync-source-add-row" ]
+addRowView : String -> AddForm -> Html Msg
+addRowView targetHost addForm =
+    div [ classes [ "event-sync-source-row", "event-sync-source-add-row", hostnameToCSSClass targetHost, "border-left-thick-color-primary" ] ]
         [ input
             [ class "event-sync-source-url"
             , type_ "text"

@@ -1,0 +1,86 @@
+/* Generic small anchored popover -- a toggle button opens a fading/
+   sliding-down box anchored underneath it, closed by an invisible full-screen
+   backdrop click-catcher behind it. Mirrors `.nav-panel`/
+   `.accounts-menu-toggle.is-open` (shared/accounts_panel.css)'s own "always
+   rendered, `is-open`/`is-closed` drives the transition" + "toggle's bottom
+   corners square off to meet the panel" pair, generalized into a standalone
+   component not anchored to the navbar -- first used by
+   `EventsPage.exportButtonView`, meant for any future button that opens a
+   small popover under itself. A caller supplies its own class alongside
+   `.popover`/`.popover-toggle` (e.g. `.events-export-popover`) for
+   content-specific sizing/spacing; this file only owns the anchoring/
+   backdrop/open-closed transition.
+
+   z-index 90/91 is deliberately above every other overlay in this app
+   (navbar 28, panels 20-32, modals 33/34) -- a popover is the most
+   "transient, on top of everything" kind of overlay there is, so it should
+   never end up tucked behind an already-open panel or modal. */
+
+.popover-anchor {
+  position: relative;
+}
+
+/* Animates a toggle's bottom corners squaring off/rounding back as its
+   popover opens/closes, same "read as one continuous shape" idea
+   `.accounts-menu-toggle.is-open` uses for the Accounts Panel -- add this
+   class (plus `UI.Classes.openClosedClass`) to whichever button opens the
+   popover. */
+.popover-toggle {
+  transition: border-radius 0.15s ease;
+}
+
+.popover-toggle.is-open {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Always rendered (never conditionally removed from the DOM) so opening/
+   closing is a plain CSS transition rather than the element abruptly
+   appearing/disappearing -- see `UI.Classes.openClosedClass`'s own doc.
+   Invisible and non-interactive while closed; a full-screen click-catcher
+   while open, so clicking anywhere outside the popover itself closes it. */
+.popover-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+}
+
+.popover-backdrop.is-open {
+  pointer-events: auto;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% - 1px);
+  right: 0;
+  z-index: 91;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  /* Squared to match `.popover-toggle.is-open`'s own squared bottom-right
+     corner (assumes the default right-anchored placement above -- a caller
+     anchoring its popover to the left instead should override this to
+     `border-top-left-radius: 0` alongside its own `left: 0`) -- must come
+     after the `border-radius` shorthand above, which would otherwise reset
+     this corner back. */
+  border-top-right-radius: 0;
+  box-shadow: 0 0.3rem 1rem rgba(0, 0, 0, 0.25);
+  padding: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.popover.is-closed {
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+}
+
+.popover.is-closed * {
+  pointer-events: none;
+}

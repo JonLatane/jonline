@@ -3467,10 +3467,12 @@ fieldNumbersUser :
     , defaultFollowModeration : Int
     , followerCount : Int
     , followingCount : Int
+    , friendCount : Int
     , groupCount : Int
     , postCount : Int
     , responseCount : Int
     , eventCount : Int
+    , eventInstanceCount : Int
     , currentUserFollow : Int
     , targetCurrentUserFollow : Int
     , currentGroupMembership : Int

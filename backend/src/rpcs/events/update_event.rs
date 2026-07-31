@@ -214,12 +214,31 @@ fn update_event_instances(
         .filter(|(instance, _, _)| !result_instances.contains_key(&instance.id))
         .map(|(instance, _, _)| instance.id)
         .collect();
+    // Instances owned by users other than `current_user` (e.g. an admin editing someone else's
+    // event) that are about to be deleted -- their `event_instance_count` needs refreshing too.
+    let removed_instance_owner_ids: Vec<i64> = existing_instance_data
+        .iter()
+        .filter(|(instance, _, _)| removed_instance_ids.contains(&instance.id))
+        .filter_map(|(_, post, _)| post.user_id)
+        .collect();
+
     diesel::delete(event_instances::table.filter(event_instances::id.eq_any(removed_instance_ids)))
         .execute(conn)
         .map_err(|e| {
             log::error!("Failed to delete event instances: {:?}", e);
             Status::new(Code::Internal, "failed_to_delete_event_instances")
         })?;
+
+    // New instances (via `create_instance`, above) are always owned by `current_user`; refresh
+    // their `event_instance_count` too, plus anyone who owned a just-deleted instance.
+    let mut affected_user_ids = removed_instance_owner_ids;
+    affected_user_ids.push(current_user.id);
+    affected_user_ids.sort_unstable();
+    affected_user_ids.dedup();
+    for user_id in affected_user_ids {
+        crate::logic::update_event_counts(user_id, conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_event_counts"))?;
+    }
 
     // Ok(Event {
     //     instances: result_instance_data,

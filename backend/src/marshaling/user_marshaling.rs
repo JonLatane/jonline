@@ -3,9 +3,6 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::rpcs::get_federated_users;
-use crate::rpcs::validations::PASSING_MODERATIONS;
-use crate::schema::{follows, users};
-use diesel::*;
 use tonic::Code;
 use tonic::Status;
 
@@ -60,9 +57,11 @@ impl ToProtoUser for models::User {
             moderation: self.moderation.to_proto_moderation().unwrap() as i32,
             follower_count: Some(self.follower_count),
             following_count: Some(self.following_count),
+            friend_count: Some(self.friend_count),
             group_count: Some(self.group_count),
             post_count: Some(self.post_count),
             event_count: Some(self.event_count),
+            event_instance_count: Some(self.event_instance_count),
             response_count: Some(self.response_count),
             default_follow_moderation: self
                 .default_follow_moderation
@@ -151,31 +150,7 @@ impl ToProtoFollow for models::Follow {
     }
 
     fn update_related_counts(&self, conn: &mut PgPooledConnection) -> Result<(), Status> {
-        let following_count = follows::table
-            .count()
-            .filter(follows::user_id.eq(self.user_id))
-            .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
-            .first::<i64>(conn)
-            .unwrap() as i32;
-
-        diesel::update(users::table)
-            .filter(users::id.eq(self.user_id))
-            .set(users::following_count.eq(following_count))
-            .execute(conn)
-            .map_err(|_| Status::new(Code::Internal, "error_updating_following_count"))?;
-
-        let target_follower_count = follows::table
-            .count()
-            .filter(follows::target_user_id.eq(self.target_user_id))
-            .filter(follows::target_user_moderation.eq_any(PASSING_MODERATIONS))
-            .first::<i64>(conn)
-            .unwrap() as i32;
-
-        diesel::update(users::table)
-            .filter(users::id.eq(self.target_user_id))
-            .set(users::follower_count.eq(target_follower_count))
-            .execute(conn)
-            .map_err(|_| Status::new(Code::Internal, "error_updating_follower_count"))?;
-        Ok(())
+        crate::logic::update_follow_counts(self.user_id, self.target_user_id, conn)
+            .map_err(|_| Status::new(Code::Internal, "error_updating_follow_counts"))
     }
 }

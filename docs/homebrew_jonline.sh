@@ -60,7 +60,7 @@ JONLINE_COMMANDS=(
   environment edit_environment
   local_db_create local_db_drop local_db_reset local_db_connect
   local_minio_start local_minio_create local_minio_delete
-  delete_expired_tokens delete_unowned_media sync_event_sync_sources generate_preview_images
+  delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts generate_preview_images
   set_permission delete_preview_images disable_cdn_grpc
   to_db_id to_proto_id grpcurl
   completion
@@ -93,7 +93,7 @@ Commands:
     server                   Run the Jonline server (jonline-server)
     jobs                     Run background jobs on a loop (@@JONLINE_ETC@@/jonline/background_jobs.sh) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
-                             sync_event_sync_sources every 1m, ...
+                             sync_event_sync_sources every 1m, update_user_counts every 1h, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
@@ -120,6 +120,8 @@ Commands:
     delete_unowned_media     Delete media no longer referenced by any post/user/etc.
     sync_event_sync_sources  Sync any EventSyncSource (ICS subscription) that's due, per its
                              sync_interval_seconds/last_synced_at
+    update_user_counts       Recompute follower/following/friend/group/post/response/event/
+                             event_instance counts for every User, correcting any drift
     generate_preview_images  Generate media preview images -- NOT currently supported on
                              macOS: it launches a browser hardcoded to /usr/bin/brave-browser,
                              a Linux path that Homebrew's Brave cask doesn't populate (and
@@ -241,6 +243,10 @@ delete_unowned_media() {
 
 sync_event_sync_sources() {
   _jonline_exec_bin sync_event_sync_sources "$@"
+}
+
+update_user_counts() {
+  _jonline_exec_bin update_user_counts "$@"
 }
 
 # Renders media preview images headlessly via a browser hardcoded to

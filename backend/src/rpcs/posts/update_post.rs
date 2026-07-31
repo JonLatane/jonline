@@ -24,7 +24,24 @@ pub fn update_post(
     // validate_post(&request)?;
 
     let admin = validate_permission(&Some(user), Permission::Admin).is_ok();
-    let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok();
+
+    let mut existing_post = posts::table
+        .select(models::POST_COLUMNS)
+        .filter(posts::id.eq(request.id.to_db_id_or_err("id")?))
+        .first::<models::Post>(conn)
+        .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
+
+    let is_event_context = vec![PostContext::Event, PostContext::EventInstance]
+        .iter()
+        .map(|c| c.to_string_post_context())
+        .any(|s| s == existing_post.context);
+
+    // A plain Post/Reply's moderator needs `ModeratePosts`; an Event/
+    // EventInstance's own Post needs `ModerateEvents` instead -- mirrors the
+    // `PublishEvents*`/`PublishPosts*` split just below, for the same reason
+    // (this Post's `context` decides which permission family governs it).
+    let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok()
+        || (is_event_context && validate_permission(&Some(user), Permission::ModerateEvents).is_ok());
 
     let moderator_accessible_moderations = [
         Moderation::Approved,
@@ -42,12 +59,6 @@ pub fn update_post(
         _ => None,
     };
 
-    let mut existing_post = posts::table
-        .select(models::POST_COLUMNS)
-        .filter(posts::id.eq(request.id.to_db_id_or_err("id")?))
-        .first::<models::Post>(conn)
-        .map_err(|_| Status::new(Code::NotFound, "post_not_found"))?;
-
     let self_update = existing_post.user_id == Some(user.id);
     log::info!(
         "self_update: {}, admin: {}, moderator: {}",
@@ -57,17 +68,14 @@ pub fn update_post(
     );
 
     if !self_update {
-        validate_any_permission(
-            &Some(user),
-            vec![Permission::Admin, Permission::ModeratePosts],
-        )?;
+        let mut required_permissions = vec![Permission::Admin, Permission::ModeratePosts];
+        if is_event_context {
+            required_permissions.push(Permission::ModerateEvents);
+        }
+        validate_any_permission(&Some(user), required_permissions)?;
     }
 
     if admin || self_update {
-        let is_event_context = vec![PostContext::Event, PostContext::EventInstance]
-            .iter()
-            .map(|c| c.to_string_post_context())
-            .any(|s| s == existing_post.context);
         match request.visibility() {
             Visibility::GlobalPublic => validate_permission(
                 &Some(user),

@@ -12,3 +12,6 @@ pub use visibility_logic::*;
 
 mod event_sync;
 pub use event_sync::*;
+
+mod user_counts;
+pub use user_counts::*;

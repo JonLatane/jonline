@@ -1,5 +1,6 @@
 module Components.Events exposing
-    ( eventCard
+    ( deleteEvent
+    , eventCard
     , eventInstanceHref
     , eventInstancePairs
     , fetchEvent
@@ -34,7 +35,7 @@ import Gen.Route
 import Grpc
 import Html exposing (Html, a, div, h1, h2, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, target)
-import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultGetEventsRequest, defaultTimeFilter)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, Location, Post, defaultEvent, defaultGetEventsRequest, defaultTimeFilter)
 import Proto.Jonline.EventListingType exposing (EventListingType(..))
 import Proto.Jonline.Jonline as Jonline
 import Shared.AccountsPanel as AccountsPanel exposing (performWithOptionalAccountServer, withAccessToken)
@@ -65,6 +66,30 @@ fetchEvent accountsPanelModel maybeAccountServer eventInstanceId =
             Grpc.new Jonline.getEvents { defaultGetEventsRequest | eventInstanceId = Just eventInstanceId }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Deletes `eventId` (the `Event`'s own id, not an `EventInstance`'s)
+outright (`DeleteEvent`, owner-or-Admin gated server-side, see
+`backend/src/rpcs/events/delete_event.rs`) -- nothing to overlay onto a fresh
+copy first, so this just sends the id straight through, mirroring
+`Components.Posts.deletePost`. Used by `Pages.Event.EventId_`'s own Delete
+button, via `Shared.ConfirmEventDelete`.
+-}
+deleteEvent :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Event )
+deleteEvent accountsPanelModel maybeAccountServer eventId =
+    AccountsPanel.performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deleteEvent { defaultEvent | id = eventId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
                 |> Grpc.toTask
         )
 
@@ -329,8 +354,16 @@ there's no title-vs-context-chip branching here: both an `Event`'s and an
 `EventInstance`'s `Post` carry a real name of their own (see `events.proto`'s
 doc on `EventInstance.post`), not a generic reply/thread entry, so both
 always get a real heading. Deliberately lighter than `postDetail` otherwise
-too -- no star/edit/reply affordances, since `Pages.Event.EventId_` is a
-read-only invitation-style view, not a full post management page.
+too -- no star/edit/reply affordances baked in here, since this was
+originally a read-only invitation-style view -- `moderationView` is the one
+exception (see its own doc just below), everything else `Pages.Event.EventId_`
+needs to edit (title/link/content, delete) is composed around this function
+rather than plumbed through it.
+
+`moderationView` sits right after the visibility text in the byline --
+`Pages.Event.EventId_`'s moderation selector for the primary (`Event`)
+section, `text ""` for the secondary (`EventInstance`) section (mirrors
+`extraContent`'s own split just below).
 
 `extraContent` sits right after the byline and before media -- e.g.
 `Pages.Event.EventId_` slots the currently-viewed `EventInstance`'s own
@@ -349,9 +382,10 @@ postSection :
     -> (String -> msg)
     -> Bool
     -> Html msg
+    -> Html msg
     -> Post
     -> Html msg
-postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary extraContent post =
+postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary moderationView extraContent post =
     div
         [ classes
             [ "event-post-section"
@@ -384,6 +418,7 @@ postSection browserTimeZone basePath viewingServerHost postServerHost maybeServe
             [ text "by "
             , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
             , text (" · " ++ Posts.postVisibilityText post)
+            , moderationView
             ]
         , extraContent
         , case maybeServer of
@@ -447,6 +482,14 @@ each one gets its own `Post` row in the database (see `events.proto`'s own
 doc). Renders neither the star button nor the comment count if
 `instance.post` is unset (shouldn't happen in practice, same as `event.post`
 above, but the field is optional on the wire).
+
+`current` mirrors `Components.Posts.postCard`'s own -- `True` swaps the card's
+background for `background-color-primary` (plus an `event-card-current`
+class, mirroring `post-card-current`) instead of the default
+`background-color-primary-5`, highlighting the one matching whatever
+`EventInstance` the viewer is already on. `Shared.StarredPanel` is the only
+caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
+`Components.Pages.EventsPage`'s own listing always passes `False`.
 -}
 eventCard :
     BrowserTimeZone
@@ -458,10 +501,11 @@ eventCard :
     -> (String -> msg)
     -> Bool
     -> Maybe msg
+    -> Bool
     -> Event
     -> EventInstance
     -> Html msg
-eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked event instance =
+eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked current event instance =
     case event.post of
         Nothing ->
             text ""
@@ -469,12 +513,18 @@ eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer
         Just eventPost ->
             div
                 [ classes
-                    [ "event-card"
-                    , hostnameToCSSClass eventServerHost
-                    , "border-color-primary-anchor-50"
-                    , "hover-border-color-primary-anchor"
-                    , "background-color-primary-5"
-                    ]
+                    ([ "event-card"
+                     , hostnameToCSSClass eventServerHost
+                     , "border-color-primary-anchor-50"
+                     , "hover-border-color-primary-anchor"
+                     ]
+                        ++ (if current then
+                                [ "event-card-current", "background-color-primary" ]
+
+                            else
+                                [ "background-color-primary-5" ]
+                           )
+                    )
                 ]
                 [ a
                     [ href (eventInstanceHref basePath viewingServerHost eventServerHost instance)
