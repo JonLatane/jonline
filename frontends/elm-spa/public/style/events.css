@@ -470,8 +470,8 @@
    380px keeps it laid out exactly as it'll render at rest the whole time;
    `.flip-animated-item`'s own `overflow: hidden` (flip.css) clips it to the
    actually-animating width instead, like a blind drawn over static content. */
-.events-grid .flip-animated-item > *,
-.events-strip .flip-animated-item > * {
+.events-grid .flip-animated-item>*,
+.events-strip .flip-animated-item>* {
   width: 380px;
 }
 
@@ -498,16 +498,8 @@
   color: inherit;
   text-decoration: none;
   transition: border-color 0.2s ease;
-}
-
-/* `.flip-animated-item.flip-moving` (see `UI.Flip.itemAttributes`) is only
-   present on a card's outer wrapper for the real duration of its own
-   `DisplayModeChanged` slide -- not every card in a `.events-mode-transitioning`
-   container, just the ones actually still mid-flight -- so this blurs each
-   one only while it's actually moving/resizing, clearing on its own as soon
-   as that card settles. */
-.flip-moving .event-card {
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .event-card-link-overlay {
