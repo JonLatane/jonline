@@ -43,6 +43,7 @@ module Shared.AccountsPanel exposing
     , mediaUrl
     , performWithAccountServer
     , performWithOptionalAccountServer
+    , recommendedFederatedServers
     , serverChipDomId
     , updateServerConfig
     , serverForHost
@@ -76,7 +77,7 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
+import Proto.Jonline exposing (AccessTokenResponse, ExpirableToken, FederatedServer, RefreshTokenResponse, ServerConfiguration, ServerInfo, User, defaultServerInfo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..), fieldNumbersPermission)
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface)
@@ -269,6 +270,28 @@ type alias Model =
     , addServerForm : AddServerForm
     , showAccountsPanel : Bool
 
+    -- Whether the "X Recommended Servers..." button (see `UI.recommendedServersStrip`)
+    -- has been expanded into its horizontally-scrollable strip of chips.
+    -- Purely session-transient UI state, not persisted -- reset to `False`
+    -- whenever the Accounts Panel closes (`CloseAccountsPanel`/
+    -- `ToggleAccountsPanel`), so it always starts collapsed again next time
+    -- the panel opens, same as `addAccountFormExpanded` starting points but
+    -- unconditionally rather than only-if-idle.
+    , recommendedServersExpanded : Bool
+
+    -- Once-fetched `ServerConfiguration`s (as `Server`s, so the same
+    -- `serverNameAndLogo`/branding machinery renders them) for hosts
+    -- currently recommended via `recommendedFederatedServers` -- keyed by
+    -- `frontendHost`, populated lazily by `ToggleRecommendedServersExpanded`
+    -- (a fresh disconnected placeholder inserted immediately, replaced once
+    -- `GotRecommendedServerConfig` resolves) rather than eagerly for every
+    -- federated server up front. Left in place (not cleared) once a host
+    -- stops being recommended (because it's just been added -- see
+    -- `RecommendedServerClicked`/`GotRecommendedServerAddResult`) or the
+    -- panel closes -- harmless, and means reopening the strip doesn't
+    -- re-fetch hosts it already has cached.
+    , recommendedServerConnections : Dict String Server
+
     -- Whether the "Add Account/Server" form (Server/Username/Password/etc.)
     -- is expanded, once there's at least one account already -- see
     -- `shouldShowAddAccountForm`. Irrelevant (the form always shows) when
@@ -395,6 +418,10 @@ type Msg
     | ReconnectServerClicked String
     | AddServerClicked
     | GotNewServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | ToggleRecommendedServersExpanded
+    | GotRecommendedServerConfig String (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | RecommendedServerClicked String
+    | GotRecommendedServerAddResult String (Result Grpc.Error ( Connection, ServerConfiguration ))
     | RemoveServerClicked String
     | ToggleAccountsPanel
     | CloseAccountsPanel
@@ -1125,6 +1152,8 @@ init req flags =
       , accountForm = { emptyForm | server = browsingHost }
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
+      , recommendedServersExpanded = False
+      , recommendedServerConnections = Dict.empty
       , addAccountFormExpanded = False
       , newAccountType = Nothing
       , createAccountConfirmation = Nothing
@@ -1965,6 +1994,91 @@ updateHelp req msg model =
                     , Cmd.none
                     )
 
+        ToggleRecommendedServersExpanded ->
+            let
+                newlyExpanded =
+                    not model.recommendedServersExpanded
+
+                -- Only fetch hosts we haven't already cached (see
+                -- `recommendedServerConnections`'s own doc) -- reopening the
+                -- strip after having already expanded it once this session
+                -- shouldn't re-fetch everything from scratch.
+                hostsToFetch =
+                    if newlyExpanded then
+                        recommendedFederatedServers model
+                            |> List.map .host
+                            |> List.filter (\host -> not (Dict.member host model.recommendedServerConnections))
+
+                    else
+                        []
+
+                newModel =
+                    { model
+                        | recommendedServersExpanded = newlyExpanded
+
+                        -- Seeded disconnected immediately (same idea as `init`'s own
+                        -- `disconnectedServer` seeding), so each chip has something to
+                        -- render -- a "loading" look, via the same
+                        -- `server-chip-disconnected` styling -- the instant the strip
+                        -- expands, rather than staying blank until its fetch resolves.
+                        , recommendedServerConnections =
+                            List.foldl
+                                (\host -> Dict.insert host (disconnectedServer { frontendHost = host, enabled = False }))
+                                model.recommendedServerConnections
+                                hostsToFetch
+                    }
+            in
+            ( newModel
+            , hostsToFetch
+                |> List.map
+                    (\host ->
+                        negotiateServerConfig (isSecure req) host
+                            |> Task.attempt (GotRecommendedServerConfig host)
+                    )
+                |> Cmd.batch
+            )
+
+        GotRecommendedServerConfig host result ->
+            case result of
+                Ok ( connection, config ) ->
+                    ( { model | recommendedServerConnections = Dict.insert host (serverFrom connection False config) model.recommendedServerConnections }
+                    , Cmd.none
+                    )
+
+                Err _ ->
+                    -- Leaves the disconnected placeholder `ToggleRecommendedServersExpanded`
+                    -- already inserted in place -- same "still shows, just dimmed" treatment
+                    -- as any other unreachable server chip.
+                    ( model, Cmd.none )
+
+        RecommendedServerClicked host ->
+            -- Reuses the connection already cached in `recommendedServerConnections`
+            -- (see `resolveHost`) if its fetch already resolved, rather than
+            -- renegotiating one from scratch.
+            ( model
+            , resolveHost (isSecure req) (Dict.values model.recommendedServerConnections) host
+                |> Task.attempt (GotRecommendedServerAddResult host)
+            )
+
+        GotRecommendedServerAddResult host result ->
+            case result of
+                Ok ( connection, config ) ->
+                    let
+                        -- An explicit tap on a recommended-server chip is exactly the
+                        -- same kind of deliberate "add this server" action as
+                        -- `GotNewServerResult`'s manual Add Server flow -- enabled
+                        -- immediately, same as that.
+                        newModel =
+                            { model
+                                | servers = upsertServer (serverFrom connection True config) model.servers
+                                , recommendedServerConnections = Dict.remove host model.recommendedServerConnections
+                            }
+                    in
+                    ( newModel, persist newModel )
+
+                Err _ ->
+                    ( model, Cmd.none )
+
         RemoveServerClicked frontendHost ->
             -- Same "fade first, actually remove once that finishes" deferral as
             -- `RemoveAccountClicked` -- see `serverAnimations`.
@@ -2002,13 +2116,13 @@ updateHelp req msg model =
                 repopulateBlankServerField newModel
 
               else
-                collapseAddAccountFormIfIdle newModel
+                collapseAddAccountFormIfIdle { newModel | recommendedServersExpanded = False }
             , Cmd.none
             )
 
         CloseAccountsPanel ->
             ( collapseAddAccountFormIfIdle
-                { model | showAccountsPanel = False, createAccountConfirmation = Nothing }
+                { model | showAccountsPanel = False, createAccountConfirmation = Nothing, recommendedServersExpanded = False }
             , Cmd.none
             )
 
@@ -2270,6 +2384,24 @@ Account should be enabled, or whether "Add Server" should be offered instead
 isKnownServer : Model -> String -> Bool
 isKnownServer model frontendHost =
     List.any (\s -> s.frontendHost == String.trim frontendHost) model.servers
+
+
+{-| The `mainFrontendHost` server's own `federation_info.servers` (see
+`federation.proto`'s `FederatedServer`) that aren't already in `model.servers`
+-- in practice, the ones that weren't `configured_by_default` (see
+`GotMainServerResult`), so never got auto-added in the first place. Drives
+`UI.recommendedServersStrip`'s "X Recommended Servers..." button; empty (so
+that button never shows) once there's no main server yet, the main server has
+no federation info, or every federated server it names is already known.
+-}
+recommendedFederatedServers : Model -> List FederatedServer
+recommendedFederatedServers model =
+    serverForHost model.servers model.mainFrontendHost
+        |> Maybe.map configurationOf
+        |> Maybe.andThen .federationInfo
+        |> Maybe.map .servers
+        |> Maybe.withDefault []
+        |> List.filter (\fs -> not (isKnownServer model fs.host))
 
 
 {-| Whether `frontendHost` (trimmed) is this app's own "home" server --

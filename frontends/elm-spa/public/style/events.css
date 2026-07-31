@@ -307,6 +307,12 @@
   max-width: 22rem;
 }
 
+.events-export-popover p {
+  font-size: 0.8rem;
+  padding: 0;
+  margin: 4px;
+}
+
 .events-export-popover-heading {
   margin: 0;
   font-size: 1rem;
@@ -329,8 +335,9 @@
 }
 
 .events-export-popover-copy-icon {
-  font-size: 1.4em;
-  line-height: 1;
+  /* font-size: 1.4em;
+  line-height: 1; */
+  transform: translate(0, -1.5px) scale(2);
 }
 
 /* Mirrors `.event-instance-history-button` (above). */

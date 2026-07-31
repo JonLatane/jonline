@@ -5,8 +5,11 @@ render (so it updates automatically any time a server is added/removed, or
 the current server/dark-light mode changes): `mainFrontendServerRules` (root
 element rules -- `a`, switches, buttons -- driven by `mainFrontendHost`'s
 theme, standing in for what used to be the static `--accent` CSS var), plus,
-for each known server, a handful of color "utility class" pairs so any
-element can be given that server's colors just by adding two classes -- e.g.
+for each known server -- `shared.accountsPanel.servers`, plus (so
+`UI.recommendedServerChip` can tint itself with its own brand color before
+it's actually been added) `shared.accountsPanel.recommendedServerConnections`
+-- a handful of color "utility class" pairs so any element can be given that
+server's colors just by adding two classes -- e.g.
 `class="jonline.io background-color-primary"` -- rather than needing that
 server's `ServerTheme` threaded in as a view-function argument.
 
@@ -27,6 +30,7 @@ color math is already cached in `Shared.Branding`.
 
 -}
 
+import Dict
 import Html exposing (Html, node, text)
 import Html.Attributes exposing (id)
 import Shared
@@ -52,7 +56,7 @@ css shared =
     mainFrontendServerRules mainTheme shared.accountsPanel
         ++ String.concat
             (List.map (serverRules darkMode mainTheme shared.accountsPanel.mainFrontendHost)
-                shared.accountsPanel.servers
+                (shared.accountsPanel.servers ++ Dict.values shared.accountsPanel.recommendedServerConnections)
             )
 
 

@@ -1497,7 +1497,7 @@ exportButtonView shared model =
         , div [ classes [ "events-export-popover", "popover", openClosedClass model.exportPopoverOpen ] ]
             [ h3 [ class "events-export-popover-heading" ]
                 [ text "Subscribe with iCal" ]
-            , p [] [ text "Works with Google Calendar, macOS Calendar, and more." ]
+            , p [] [ text "Works with Google Calendar, macOS Calendar, Outlook, and more." ]
             , a
                 [ href (icsUrl shared model)
                 , target "_blank"

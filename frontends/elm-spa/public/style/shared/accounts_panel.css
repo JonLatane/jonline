@@ -417,10 +417,10 @@
   /* Otherwise flex's default `stretch` forces every chip to the height of
      the tallest one in the row, leaving blank space below the shorter ones'
      content (their border/background still fills the stretched box). */
-  align-items: flex-start;
+  align-items: center;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-bottom: 0.35rem;
+  /* padding-bottom: 0.35rem; */
   /* This strip sets `overflow-x`/`overflow-y`, which makes its automatic
      minimum size (as a flex item in .nav-panel's column) 0 instead of
      content-based -- without flex-shrink: 0, that lets it get squashed
@@ -687,6 +687,82 @@
   color: var(--muted);
   font-size: 0.8rem;
   padding: 0.2rem 0;
+}
+
+/* Recommended servers: the main server's federated-but-not-added servers
+   (see AccountsPanel.recommendedFederatedServers), tucked behind this
+   text-link-styled button until tapped -- deliberately understated (no
+   border/background of its own) so it doesn't compete with .servers-strip
+   above it. */
+.recommended-servers-toggle {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0.2rem 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-decoration: underline;
+}
+
+.recommended-servers-toggle:hover {
+  color: var(--fg);
+}
+
+/* Same horizontally-scrolling row treatment as .servers-strip, once expanded
+   -- except centered (rather than hugging the left edge) whenever there are
+   few enough chips that the row doesn't actually need to scroll. Declared
+   twice: plain `center` first as a fallback for browsers that don't
+   understand the `safe` keyword (which would otherwise just ignore the whole
+   declaration and fall through to flexbox's `flex-start` default), then
+   `safe center` to actually take over everywhere that does -- "safe"
+   specifically means it only centers while every chip still fits; once they
+   overflow and scrolling actually kicks in, it falls back to `start`
+   alignment instead of centering to the point of clipping the first chip(s)
+   off the left edge (plain `center` -- and this rule's own fallback -- would
+   do exactly that). */
+.recommended-servers-strip {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  justify-content: safe center;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  flex-shrink: 0;
+}
+
+/* Reuses .server-chip's own look (see below) for a single whole-chip
+   `<button>` rather than a div with its own top/bottom click targets --
+   tapping anywhere adds the server, so there's no separate switch/reorder/
+   remove controls to make room for. `button`'s own reset (main.css) already
+   covers font/cursor; only its default padding needs clearing here, since
+   .server-chip-top/.server-chip-bottom supply their own. Deliberately
+   narrower than an added server's own `.server-chip` (120px) -- 20% less,
+   96px -- so this still-unadded, less-committal strip reads as visually
+   lighter-weight than `.servers-strip` above it. */
+.recommended-server-chip {
+  display: block;
+  width: 96px;
+  padding: 0;
+  text-align: left;
+  background: none;
+}
+
+.recommended-server-add-row {
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* `.server-chip-logo-row`'s `justify-content: space-between` (reordering.css)
+   is there to pin `serverChip`'s reorder arrows to the row's outer edges,
+   centering the logo/name between them as a side effect -- this chip has no
+   arrows to flank it with, so that same rule just shoves the logo to the
+   row's start instead. Centered directly here since there's nothing else in
+   the row to center it. */
+.recommended-server-chip .server-chip-logo-row {
+  justify-content: center;
 }
 
 .account-row {

@@ -1,7 +1,7 @@
 module UI exposing (imageOrInitial, layout, page, pageTitle, webUiToggleRow)
 
-import Components.Markdown as Markdown
 import Components.Events as Events
+import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Components.Users as Users
 import Dict
@@ -13,6 +13,7 @@ import Html.Events exposing (on, onClick, onInput, onSubmit, preventDefaultOn, s
 import Html.Keyed
 import Json.Decode as Decode
 import Page
+import Proto.Jonline exposing (FederatedServer)
 import Proto.Jonline.EventSyncSource.Configuration as Configuration
 import Proto.Jonline.WebUserInterface exposing (WebUserInterface(..))
 import Request
@@ -913,6 +914,7 @@ accountsAndServersTab shared currentRoute =
     div [ class "accounts-panel-tab-content" ]
         [ serversStrip shared
         , unreachableServersWarning shared
+        , recommendedServersStrip shared
         , div [ class "panel-divider" ] []
         , accountsList shared
         , div [ class "panel-divider" ] []
@@ -1219,6 +1221,80 @@ unreachableServersWarning shared =
     else
         div [ class "servers-unreachable-warning" ]
             [ text ("Couldn't reach: " ++ String.join ", " hosts) ]
+
+
+{-| The main server's federated-but-not-yet-added servers (see
+`AccountsPanel.recommendedFederatedServers`), tucked behind a single "X
+Recommended Servers..." button rather than shown outright -- collapsed by
+default, and re-collapsed every time the Accounts Panel closes (see
+`AccountsPanel.recommendedServersExpanded`'s own doc), so it doesn't compete
+with `serversStrip` for a first-time visitor's attention. Its own
+`panel-divider` sits above it, packaged into this same `Bool`-gated block so
+it only shows up alongside the section itself -- `accountsAndServersTab`'s
+own (unconditional) divider right after this one already serves as this
+section's *bottom* divider, whether or not this one renders anything above
+it. Renders nothing at all once there's nothing left to recommend.
+-}
+recommendedServersStrip : Shared.Model -> Html Shared.Msg
+recommendedServersStrip shared =
+    let
+        recommended =
+            AccountsPanel.recommendedFederatedServers shared.accountsPanel
+    in
+    if List.isEmpty recommended then
+        text ""
+
+    else
+        div [ class "recommended-servers-section" ]
+            [ div [ class "panel-divider" ] []
+            , if not shared.accountsPanel.recommendedServersExpanded then
+                button
+                    [ class "recommended-servers-toggle"
+                    , onClick (Shared.AccountsPanelMsg AccountsPanel.ToggleRecommendedServersExpanded)
+                    ]
+                    [ text (String.fromInt (List.length recommended) ++ " Recommended Servers...")
+                    ]
+
+              else
+                div [ class "recommended-servers-strip" ]
+                    (List.map (\fs -> recommendedServerChip shared fs) recommended)
+            ]
+
+
+{-| A single recommended-server button -- visually the same "logo/name over
+host, tinted with that server's own brand color" top portion as `serverChip`,
+just without any of its reorder/enable/remove controls, since the whole chip
+is instead one big "add this server" button (`RecommendedServerClicked`).
+Branding comes from `AccountsPanel.recommendedServerConnections`, fetched
+on-demand by `ToggleRecommendedServersExpanded` -- falls back to a bare,
+disconnected-looking placeholder for the brief window before that fetch
+resolves (or if it hasn't been kicked off yet at all).
+-}
+recommendedServerChip : Shared.Model -> FederatedServer -> Html Shared.Msg
+recommendedServerChip shared federatedServer =
+    let
+        host =
+            federatedServer.host
+
+        server =
+            Dict.get host shared.accountsPanel.recommendedServerConnections
+                |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
+
+        isDisconnected =
+            server.connected == Nothing
+    in
+    button
+        [ classList [ ( "server-chip", True ), ( "recommended-server-chip", True ), ( "server-chip-disconnected", isDisconnected ), ( hostnameToCSSClass host, True ) ]
+        , onClick (Shared.AccountsPanelMsg (AccountsPanel.RecommendedServerClicked host))
+        , title ("Add " ++ host)
+        ]
+        [ div [ classes [ "server-chip-top", hostnameToCSSClass host, "background-color-primary" ] ]
+            [ div [ class "server-chip-logo-row" ] [ AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", "recommended-server-add-row", hostnameToCSSClass host, "background-color-nav" ] ]
+            [ text "+ Add" ]
+        ]
 
 
 
