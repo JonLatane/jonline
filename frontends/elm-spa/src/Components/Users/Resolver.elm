@@ -68,7 +68,7 @@ Name/bio/permissions save succeeds).
 -}
 fetchTask : Shared.Model -> Model -> Maybe (Task.Task Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetUsersResponse ))
 fetchTask shared model =
-    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
+    AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost
         |> Maybe.map
             (\_ ->
                 let

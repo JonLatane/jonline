@@ -59,6 +59,15 @@
   overflow-wrap: break-word;
 }
 
+/* `Components.Posts.mediaEditButton`'s own row, directly below the primary
+   (`Event`) `postSection`'s media -- see `Pages.Event.EventId_.eventDetailView`
+   -- same treatment as `Components.Posts`' own `.post-detail-media-edit-row`. */
+.event-post-media-edit-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.3rem;
+}
+
 .event-post-content>*:first-child {
   margin-top: 0;
 }

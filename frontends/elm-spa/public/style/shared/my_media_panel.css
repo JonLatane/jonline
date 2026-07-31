@@ -202,12 +202,23 @@
   row-gap: 0.75rem;
 }
 
+/* The whole tile is clickable (see `mediaItemView`'s own `onClick`) -- a thin
+   `padding` (recovered from `--my-media-zoom-size` via `box-sizing:
+   border-box`, so a tile's total footprint still matches the zoom slider's
+   own size exactly, same as before this existed) turns that into a visible
+   affordance around the preview too, not just the name/type text below it
+   (already full-width block-level `div`s, clickable on their own either
+   way). */
 .my-media-panel-item {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
   width: var(--my-media-zoom-size, 238px);
   max-width: 100%;
+  box-sizing: border-box;
+  padding: 0.3rem;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 /* Wraps the preview so `.my-media-panel-item-delete` (below) can be
@@ -228,11 +239,17 @@
    fixed 3:4 portrait box and crops to fill it (`object-fit: cover`) so the
    grid reads as a uniform wall of tiles regardless of each item's own
    width/height -- landscape photos/videos get center-cropped the same way a
-   phone's photo grid does. */
+   phone's photo grid does. `width: 100%` (of `.my-media-panel-item-preview`,
+   which stretches to `.my-media-panel-item`'s own padded content box -- see
+   its doc) rather than repeating `--my-media-zoom-size` directly, so the
+   preview shrinks to fit inside that tile's own thin padding instead of
+   overflowing past it now that padding exists at all; `height` stays keyed
+   to the zoom var itself (unaffected by padding either way) so every tile's
+   crop ratio -- and the grid's own row height -- stays put regardless. */
 .my-media-panel-item-preview .media-renderer-extra-small.media-renderer-image,
 .my-media-panel-item-preview .media-renderer-extra-small.media-renderer-video {
   display: block;
-  width: var(--my-media-zoom-size, 238px);
+  width: 100%;
   height: calc(var(--my-media-zoom-size, 238px) * 4 / 3);
   max-width: none;
   max-height: none;
@@ -240,7 +257,7 @@
 }
 
 .my-media-panel-item-preview .media-renderer-extra-small.media-renderer-object {
-  width: var(--my-media-zoom-size, 238px);
+  width: 100%;
   height: calc(var(--my-media-zoom-size, 238px) * 4 / 3);
 }
 
@@ -268,9 +285,10 @@
 }
 
 /* The bottom-right zoom slider (see `zoomSliderView`) -- `position: absolute`
-   within `.my-media-panel.nav-panel`'s own `position: fixed` (above) so it
-   floats at a constant spot over `.my-media-panel-content`'s scrolling grid
-   rather than scrolling away with it. */
+   within `.my-media-panel.nav-panel`'s own `position: fixed` (above), a plain
+   *sibling* of `.my-media-panel-content` rather than nested inside it, so it
+   floats at a constant spot over that content's scrolling grid rather than
+   scrolling away along with it. */
 .my-media-panel-zoom {
   position: absolute;
   right: 0.75rem;
@@ -285,6 +303,16 @@
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 
+/* While `.my-media-panel-multi-select-actions` exists (`MultiSelect` mode --
+   see its own doc) it's this slider's very next sibling (see
+   `Shared.MyMediaPanel.view`) -- `:has()` picks that up CSS-only, with no
+   Elm-side state needed, pushing the slider up clear of that row's own
+   height, which the `.nav-panel` flex column's own `gap` alone doesn't leave
+   enough room for. */
+.my-media-panel-zoom:has(+ .my-media-panel-multi-select-actions) {
+  bottom: 3.25rem;
+}
+
 .my-media-panel-zoom-icon {
   font-size: 0.8rem;
   line-height: 1;
@@ -293,3 +321,80 @@
 .my-media-panel-zoom input[type="range"] {
   width: 240px;
 }
+
+/* The top "selected media" strip, shown only in `MultiSelect` mode (see
+   `Shared.MyMediaPanel.selectedMediaStripView`) -- a short horizontally-
+   scrolling row above `.my-media-panel-content`, same layout family as
+   Accounts' own `.servers-strip`. `.flip-animated-row` (flip.css) supplies
+   `display: flex; flex-direction: row` plus every item's own FLIP enter/
+   leave/reorder-slide behavior. */
+.my-media-panel-selected-strip {
+  align-items: flex-start;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 0.5rem;
+  padding: 0 0 0.5rem;
+  flex: 0 0 auto;
+}
+
+.my-media-panel-selected-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 0 0 auto;
+}
+
+.my-media-panel-selected-item-preview {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.my-media-panel-selected-item-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* No fixed "main item" pins one end the way Servers' main server does (see
+   `Shared.MyMediaPanel.selectedMediaItemView`'s own doc) -- both arrows are
+   just gated by `index`/`count`, same `.reorder-arrow`/`.reorder-arrow-hidden`
+   fade-not-disappear treatment `serverChip` uses (reordering.css) so the
+   item's own width doesn't jump depending on position. */
+.my-media-panel-selected-item-controls .reorder-arrow {
+  display: flex;
+}
+
+/* The bottom "Cancel"/"Save Media" row, shown only in `MultiSelect` mode
+   (see `Shared.MyMediaPanel.multiSelectActionsView`) -- pinned to the very
+   bottom of `.my-media-panel.nav-panel`'s own column flex layout, below
+   `.my-media-panel-content`'s scrolling grid. */
+.my-media-panel-multi-select-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.my-media-panel-cancel,
+.my-media-panel-save {
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.my-media-panel-cancel {
+  background: var(--chip-bg);
+  color: var(--fg);
+}
+
+/* `.my-media-panel-item.background-color-primary` (see
+   `Shared.MyMediaPanel.mediaItemView`'s own `selected` doc) tints an
+   already-selected grid tile with the same utility class `serverChip`'s
+   selected state and `postCardView`'s `current` card use -- needs no extra
+   rule of its own beyond the class itself: `.my-media-panel-item`'s own
+   padding (above) already gives the fill a visible margin all the way
+   around the preview/name/type column, rather than it only showing in the
+   thin gaps between them. */

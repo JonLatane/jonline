@@ -629,7 +629,7 @@ updateInner shared msg model =
 
         AvatarEditClicked ->
             case model.resolver.status of
-                Resolver.Loaded _ ->
+                Resolver.Loaded user ->
                     ( { model
                         | avatarEdit =
                             -- Preserves an already-in-progress `choice`/`status`
@@ -647,7 +647,7 @@ updateInner shared msg model =
                     , Effect.fromShared
                         (Shared.MyMediaPanelMsg
                             (MyMediaPanel.Open
-                                (Just (MyMediaPanel.SingleSelect { imagesOnly = True }))
+                                (Just (MyMediaPanel.SingleSelect { imagesOnly = True, initialSelection = user.avatar }))
                                 model.resolver.targetHost
                             )
                         )
