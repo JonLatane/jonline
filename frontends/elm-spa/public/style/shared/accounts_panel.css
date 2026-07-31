@@ -161,6 +161,7 @@
   height: var(--nav-toggle-height);
   padding: 0;
   border-radius: 50%;
+  flex-shrink: 0;
 }
 
 /* While its panel is open (see `openClosedClass`), a toggle's bottom corners
