@@ -134,7 +134,7 @@ init shared pageIsSecure targetHost =
             }
 
         ( fetchedModel, fetchEffect ) =
-            case AccountsPanel.serverForHost shared.accountsPanel.servers targetHost of
+            case knownConnectedServer shared targetHost of
                 Just server ->
                     ( { model0 | ownServerStatus = OwnServerNotNeeded, adminsStatus = LoadingAdmins, versionStatus = LoadingVersion }
                     , Effect.batch [ fetchAdmins server, fetchVersion server ]
@@ -156,14 +156,34 @@ init shared pageIsSecure targetHost =
     )
 
 
+{-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known
+*and* actually connected -- a known-but-disconnected entry (see
+`AccountsPanel.Server.connected`) is treated the same as not known at all, so
+this page falls back to its own probe (just like a never-added host) rather
+than trying to show configuration/admins/version for a server it can't
+currently reach.
+-}
+knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
+knownConnectedServer shared targetHost =
+    AccountsPanel.serverForHost shared.accountsPanel.servers targetHost
+        |> Maybe.andThen
+            (\server ->
+                if server.connected /= Nothing then
+                    Just server
+
+                else
+                    Nothing
+            )
+
+
 {-| The `Server` to actually show details for -- whichever the app already
-knows about (from `Shared.AccountsPanel`, if this server's been added to
-Accounts & Servers already), falling back to this page's own probe
-(`ownServerStatus`) otherwise.
+knows about and is connected to (from `Shared.AccountsPanel`, if this
+server's been added to Accounts & Servers already), falling back to this
+page's own probe (`ownServerStatus`) otherwise.
 -}
 effectiveServer : Shared.Model -> Model -> Maybe AccountsPanel.Server
 effectiveServer shared model =
-    case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
+    case knownConnectedServer shared model.targetHost of
         Just server ->
             Just server
 
@@ -178,7 +198,7 @@ effectiveServer shared model =
 
 isKnownServer : Shared.Model -> Model -> Bool
 isKnownServer shared model =
-    AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost /= Nothing
+    knownConnectedServer shared model.targetHost /= Nothing
 
 
 {-| `model.targetHost`/`isSecure` reassembled into the `[http|https]:hostname`
@@ -393,7 +413,7 @@ titleFor : Shared.Model -> Model -> String
 titleFor shared model =
     case effectiveServer shared model of
         Just server ->
-            server.branding.name
+            (AccountsPanel.brandingOf server).name
 
         Nothing ->
             model.targetHost
@@ -493,7 +513,7 @@ aboutTab : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
 aboutTab shared model server =
     let
         info =
-            Maybe.withDefault defaultServerInfo server.configuration.serverInfo
+            AccountsPanel.serverInfoOf server
 
         name =
             Maybe.withDefault server.frontendHost info.name
@@ -658,7 +678,7 @@ themeTab : AccountsPanel.Server -> Html Msg
 themeTab server =
     let
         info =
-            Maybe.withDefault defaultServerInfo server.configuration.serverInfo
+            AccountsPanel.serverInfoOf server
 
         primary =
             info.colors |> Maybe.andThen .primary |> Maybe.map ServerTheme.colorMetaFromArgb |> Maybe.withDefault ServerTheme.neutralColorMeta
@@ -674,9 +694,9 @@ themeTab server =
         , colorSwatchRow "Navigation Color" nav
         , div [ class "server-details-logo" ]
             [ h3 [] [ text "Server Image" ]
-            , case squareMediaId of
-                Just mediaId ->
-                    img [ class "server-details-logo-image", src (AccountsPanel.mediaUrl server mediaId) ] []
+            , case squareMediaId |> Maybe.andThen (AccountsPanel.mediaUrl server) of
+                Just url ->
+                    img [ class "server-details-logo-image", src url ] []
 
                 Nothing ->
                     p [] [ text "No server image set." ]
@@ -701,7 +721,7 @@ settingsTab : AccountsPanel.Server -> Html Msg
 settingsTab server =
     let
         config =
-            server.configuration
+            AccountsPanel.configurationOf server
 
         webUi =
             config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
@@ -757,7 +777,7 @@ federationTab : AccountsPanel.Server -> Html Msg
 federationTab server =
     let
         federatedServers =
-            server.configuration.federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
     in
     div [ class "server-details-tab-content server-details-federation" ]
         [ h3 [] [ text "Federated Servers" ]
@@ -795,7 +815,7 @@ cdnTab : AccountsPanel.Server -> Html Msg
 cdnTab server =
     let
         cdnConfig =
-            server.configuration.externalCdnConfig
+            (AccountsPanel.configurationOf server).externalCdnConfig
     in
     div [ class "server-details-tab-content server-details-cdn" ]
         [ div [ class "server-details-cdn-row" ]

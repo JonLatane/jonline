@@ -463,6 +463,37 @@
   opacity: 0.85;
 }
 
+/* A server known (persisted) but not currently reachable -- see
+   AccountsPanel.Server.connected. Dimmed rather than danger-colored: this
+   isn't necessarily an error the user needs to act on, just a server that's
+   temporarily unreachable, still showing its last-known name/logo/theme. */
+.server-chip.server-chip-disconnected {
+  opacity: 0.6;
+}
+
+.server-chip-disconnected-badge {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.reconnect-btn {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.reconnect-btn:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
 .server-chip-logo {
   width: 32px;
   height: 32px;

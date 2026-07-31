@@ -173,7 +173,7 @@ update shared msg model =
                 browsingHost =
                     shared.accountsPanel.browsingHost
             in
-            case ( AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost, model.publicKey ) of
+            case ( AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected, model.publicKey ) of
                 ( Just server, Just publicKey ) ->
                     ( { model | status = Submitting }
                     , loginTask server (effectiveUsername shared model) model.password
@@ -193,7 +193,7 @@ update shared msg model =
                     browsingHost =
                         shared.accountsPanel.browsingHost
                 in
-                case AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost of
+                case AccountsPanel.serverForHost shared.accountsPanel.servers browsingHost |> Maybe.andThen ifConnected of
                     Just server ->
                         ( { model | pendingTransferAccount = Just ( account, publicKey ) }
                         , loginTask server (effectiveUsername shared model) model.password
@@ -285,17 +285,37 @@ effectiveUsername shared model =
             model.username
 
 
+{-| `Just server` only while actually connected (see `AccountsPanel.Server.connected`)
+-- `loginTask` needs a live connection, so a known-but-disconnected server
+(`serverForHost` matches those too) counts the same as not being signed in.
+-}
+ifConnected : AccountsPanel.Server -> Maybe AccountsPanel.Server
+ifConnected server =
+    if server.connected == Nothing then
+        Nothing
+
+    else
+        Just server
+
+
 loginTask : AccountsPanel.Server -> String -> String -> Task Grpc.Error RefreshTokenResponse
 loginTask server username password =
-    Grpc.new Jonline.login
-        { username = username
-        , password = password
-        , expiresAt = Nothing
-        , deviceName = Nothing
-        , userId = Nothing
-        }
-        |> Grpc.setHost (AccountsPanel.connectionUrl (AccountsPanel.connectionOf server))
-        |> Grpc.toTask
+    case AccountsPanel.connectionOf server of
+        -- Both call sites only ever pass a `server` that just passed `ifConnected`
+        -- -- unreachable in practice.
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+        Just connection ->
+            Grpc.new Jonline.login
+                { username = username
+                , password = password
+                , expiresAt = Nothing
+                , deviceName = Nothing
+                , userId = Nothing
+                }
+                |> Grpc.setHost (AccountsPanel.connectionUrl connection)
+                |> Grpc.toTask
 
 
 encryptAndSendEffect : FederatedAuth.PublicKey -> Account -> Effect Msg

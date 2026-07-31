@@ -18,6 +18,8 @@ module Shared.AccountsPanel exposing
     , accountId
     , accountRowDomId
     , brandingFor
+    , brandingOf
+    , configurationOf
     , connectToServer
     , connectionOf
     , connectionUrl
@@ -117,27 +119,43 @@ type alias Account =
     }
 
 
-{-| A server the app knows how to talk to. A `Server` only ever exists once
-we've actually connected to it (see `negotiateServerConfig`), so `backendHost`/
-`port_`/`tls` are always the combination that's known to work, and
-`configuration` is always real data -- never a placeholder.
-
-`frontendHost` is the server's public identity, e.g. "jonline.io" -- what a
-user types in and what accounts are keyed by. `backendHost` is where its gRPC
-API actually lives, e.g. "jonline.io.getj.online" behind a CDN -- discovered
-via `GET {frontendHost}/backend_host` (see `discoverBackendHost`). They're
-often the same host.
+{-| A server the app knows about -- either from a persisted server list entry
+or an account signed into it. `frontendHost` is the server's public identity,
+e.g. "jonline.io" -- what a user types in and what accounts are keyed by.
 
 `enabled` controls whether the server's (eventually public) data is included
-when aggregating data across servers.
+when aggregating data across servers. It's tracked here (rather than only on
+`connected`) because it's meaningful -- and persisted (see
+`encodePersistedServer`) -- even while disconnected.
+
+`connected` is everything that's only known once we've actually negotiated
+with the server (see `negotiateServerConfig`): `Nothing` for a server that's
+currently unreachable (down, moved, or just not tried yet this session) --
+see `disconnectedServer`/`ReconnectServerClicked`. A server keeps its place in
+`Model.servers` (and so its position in the persisted list/UI) whether or not
+it's currently connected -- only `FinishRemoveServer` (an explicit user
+delete) removes an entry outright.
 
 -}
 type alias Server =
     { frontendHost : String
-    , backendHost : String
+    , enabled : Bool
+    , connected : Maybe ConnectedServer
+    }
+
+
+{-| Everything about a `Server` that's only known once we've actually
+connected to it: `backendHost`/`port_`/`tls` are the combination that's known
+to work (`backendHost` is where its gRPC API actually lives, e.g.
+"jonline.io.getj.online" behind a CDN -- discovered via
+`GET {frontendHost}/backend_host`, see `discoverBackendHost` -- often the same
+as `frontendHost`), and `configuration`/`branding` are real data, never a
+placeholder.
+-}
+type alias ConnectedServer =
+    { backendHost : String
     , port_ : Int
     , tls : Bool
-    , enabled : Bool
     , configuration : ServerConfiguration
     , branding : Branding
     }
@@ -366,12 +384,13 @@ type Msg
     | CancelCreateAccountClicked
     | GotAuthResult (Result Grpc.Error ( Connection, ServerConfiguration, RefreshTokenResponse ))
     | FederatedAccountReceived Account
-    | GotReconnectResult Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | GotReconnectResult String Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | AccountsAndServersBroadcastReceived Decode.Value
     | ToggleAccountEnabled String
     | RemoveAccountClicked String
     | ToggleServerEnabled String
+    | ReconnectServerClicked String
     | AddServerClicked
     | GotNewServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | RemoveServerClicked String
@@ -666,28 +685,32 @@ accountAvatarUrl servers account =
         |> Maybe.andThen
             (\id ->
                 serverForHost servers account.server
-                    |> Maybe.map (\s -> mediaUrl s id ++ "?authorization=" ++ account.accessToken.token)
+                    |> Maybe.andThen (\s -> mediaUrl s id)
+                    |> Maybe.map (\url -> url ++ "?authorization=" ++ account.accessToken.token)
             )
 
 
 {-| The (unauthorized) base URL for a piece of media by `id` on `server` --
 e.g. avatars belonging to some other user (see `Components.Users.avatarUrl`),
 which the caller may still need to append its own `?authorization=` to if
-that media turns out to be visibility-restricted.
+that media turns out to be visibility-restricted. `Nothing` if `server` is
+currently disconnected -- there's no host to fetch it from.
 -}
-mediaUrl : Server -> String -> String
+mediaUrl : Server -> String -> Maybe String
 mediaUrl server id =
-    mediaBaseUrl (connectionOf server) ++ "/media/" ++ id
+    connectionOf server
+        |> Maybe.map (\connection -> mediaBaseUrl connection ++ "/media/" ++ id)
 
 
 {-| A server's branding, looked up by its `frontendHost` (for e.g. an
 account's `server` field, cross-referenced against the server list), falling
-back to the bare hostname and neutral colors if that server isn't known.
+back to the bare hostname and neutral colors if that server isn't known, or
+is known but currently disconnected (see `Server.connected`).
 -}
 brandingFor : List Server -> String -> Branding
 brandingFor servers frontendHost =
     serverForHost servers frontendHost
-        |> Maybe.map .branding
+        |> Maybe.map brandingOf
         |> Maybe.withDefault (defaultBranding frontendHost)
 
 
@@ -700,13 +723,29 @@ defaultBranding frontendHost =
     }
 
 
+{-| A `Server`'s branding, falling back to the bare hostname and neutral
+colors while it's disconnected (see `Server.connected`) -- `brandingFor`'s
+same fallback, for callers that already have the `Server` in hand rather
+than just its `frontendHost`.
+-}
+brandingOf : Server -> Branding
+brandingOf server =
+    server.connected
+        |> Maybe.map .branding
+        |> Maybe.withDefault (defaultBranding server.frontendHost)
+
+
 {-| The full color theme for a server, combining its cached `branding` with
 the app's current dark/light mode (`Shared.effectiveDarkMode`). Cheap -- fine
 to call on every render.
 -}
 serverThemeOf : Bool -> Server -> UI.ServerTheme.ServerTheme
 serverThemeOf darkMode server =
-    UI.ServerTheme.fromColorMetas darkMode server.branding.primary server.branding.nav
+    let
+        branding =
+            brandingOf server
+    in
+    UI.ServerTheme.fromColorMetas darkMode branding.primary branding.nav
 
 
 {-| Like `serverThemeOf`, but looks a server up by `frontendHost` (for e.g. an
@@ -758,7 +797,7 @@ serverNameAndLogo : Server -> ServerLogoSize -> Html msg
 serverNameAndLogo server size =
     let
         branding =
-            server.branding
+            brandingOf server
 
         ( namePrefix, emoji, nameSuffix ) =
             splitOnFirstEmoji True branding.name
@@ -1022,7 +1061,7 @@ init req flags =
             List.map
                 (\ps ->
                     negotiateServerConfig pageIsSecure ps.frontendHost
-                        |> Task.attempt (GotReconnectResult ps.enabled)
+                        |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled)
                 )
                 persisted.servers
 
@@ -1045,7 +1084,7 @@ init req flags =
             List.map
                 (\host ->
                     negotiateServerConfig pageIsSecure host
-                        |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
                 )
                 missingServerHosts
 
@@ -1062,7 +1101,25 @@ init req flags =
                 + List.length missingServerHosts
     in
     ( { accounts = persisted.accounts
-      , servers = []
+
+      -- Seeded disconnected (see `Server.connected`/`disconnectedServer`), in
+      -- persisted order, rather than starting empty -- so a server stays in
+      -- its place (and keeps showing, as disconnected, rather than just
+      -- vanishing) if `reconnectCmds`/`missingServerCmds` below never bring
+      -- it back this session. Each entry gets replaced in place (see
+      -- `upsertServer`) once/if its own reconnect actually succeeds
+      -- (`GotReconnectResult`).
+      , servers =
+            (persisted.servers |> List.map disconnectedServer)
+                ++ (missingServerHosts
+                        |> List.map
+                            (\host ->
+                                disconnectedServer
+                                    { frontendHost = host
+                                    , enabled = List.any (\a -> a.server == host && a.enabled) persisted.accounts
+                                    }
+                            )
+                   )
       , accountForm = { emptyForm | server = browsingHost }
       , addServerForm = emptyAddServerForm
       , showAccountsPanel = False
@@ -1283,25 +1340,29 @@ updateHelp req msg model =
                     ( model, Cmd.none )
 
                 Just pending ->
-                    let
-                        connection =
-                            connectionOf pending.server
-                    in
-                    ( { model | createAccountConfirmation = Nothing }
-                        |> updateForm (\f -> { f | status = Submitting })
-                    , Grpc.new Jonline.createAccount
-                        { username = pending.username
-                        , password = pending.password
-                        , email = Nothing
-                        , phone = Nothing
-                        , expiresAt = Nothing
-                        , deviceName = Nothing
-                        }
-                        |> Grpc.setHost (connectionUrl connection)
-                        |> Grpc.toTask
-                        |> Task.map (\resp -> ( connection, pending.server.configuration, resp ))
-                        |> Task.attempt GotAuthResult
-                    )
+                    case ( connectionOf pending.server, pending.server.connected ) of
+                        ( Just connection, Just { configuration } ) ->
+                            ( { model | createAccountConfirmation = Nothing }
+                                |> updateForm (\f -> { f | status = Submitting })
+                            , Grpc.new Jonline.createAccount
+                                { username = pending.username
+                                , password = pending.password
+                                , email = Nothing
+                                , phone = Nothing
+                                , expiresAt = Nothing
+                                , deviceName = Nothing
+                                }
+                                |> Grpc.setHost (connectionUrl connection)
+                                |> Grpc.toTask
+                                |> Task.map (\resp -> ( connection, configuration, resp ))
+                                |> Task.attempt GotAuthResult
+                            )
+
+                        -- `pending.server` was built by `serverFrom` (see
+                        -- `GotCreateAccountServerInfo`), which is always connected --
+                        -- unreachable in practice.
+                        _ ->
+                            ( { model | createAccountConfirmation = Nothing }, Cmd.none )
 
         GotAuthResult (Ok ( connection, config, resp )) ->
             case ( resp.user, resp.refreshToken, resp.accessToken ) of
@@ -1320,23 +1381,12 @@ updateHelp req msg model =
                             , needsPassword = False
                             }
 
-                        alreadyKnown =
-                            List.any (\s -> s.frontendHost == connection.frontendHost) model.servers
-
                         newModel =
                             { model
                                 | accounts =
                                     upsertAccount account model.accounts
                                         |> disableOtherAccountsOnServer (accountId account) account.server
-                                , servers =
-                                    if alreadyKnown then
-                                        model.servers
-
-                                    else
-                                        -- TODO: temporarily prepending (not appending) so newly-added
-                                        -- servers are visible without scrolling, to see their FLIP
-                                        -- entrance animation -- revisit ordering later.
-                                        serverFrom connection True config :: model.servers
+                                , servers = upsertServer (serverFrom connection True config) model.servers
                                 , accountForm =
                                     let
                                         form =
@@ -1375,16 +1425,17 @@ updateHelp req msg model =
                                 |> disableOtherAccountsOnServer (accountId enabledAccount) enabledAccount.server
                     }
 
-                -- The account's server may not be known on this origin yet --
-                -- same situation `init`'s `missingServerHosts` handles for
-                -- accounts surviving from stale/corrupted localStorage.
+                -- The account's server may not be known (or may be known but
+                -- disconnected) on this origin yet -- same situation `init`'s
+                -- `missingServerHosts` handles for accounts surviving from stale/
+                -- corrupted localStorage.
                 reconnectCmd =
-                    if List.any (\s -> s.frontendHost == enabledAccount.server) model.servers then
+                    if List.any (\s -> s.frontendHost == enabledAccount.server && s.connected /= Nothing) model.servers then
                         Cmd.none
 
                     else
                         negotiateServerConfig (isSecure req) enabledAccount.server
-                            |> Task.attempt (GotReconnectResult True)
+                            |> Task.attempt (GotReconnectResult enabledAccount.server True)
             in
             ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
 
@@ -1420,7 +1471,7 @@ updateHelp req msg model =
             in
             ( newModel, persist newModel )
 
-        GotReconnectResult enabled result ->
+        GotReconnectResult frontendHost enabled result ->
             case result of
                 Ok ( connection, config ) ->
                     let
@@ -1428,32 +1479,41 @@ updateHelp req msg model =
                             serverFrom connection enabled config
 
                         newModel =
-                            { model
-                                | servers =
-                                    List.filter (\s -> s.frontendHost /= server.frontendHost) model.servers
-                                        ++ [ server ]
-                            }
+                            { model | servers = upsertServer server model.servers }
                     in
-                    -- Replaces (rather than just skipping) any existing entry for this host --
-                    -- this fires on every reconnect (app startup/reload, `init`'s
-                    -- `reconnectCmds`), so an unconditional append here would otherwise
-                    -- duplicate the server on each successful reconnect. Also refresh
-                    -- permissions for any of its accounts now that we can actually reach it --
-                    -- this is what makes permissions (and access tokens -- see `needsPassword`)
-                    -- current on app startup/reload, not just after a fresh login.
-                    -- `refreshPermissionsForServer` itself persists (this server's own addition
-                    -- included) once that settles -- see its own doc.
+                    -- Replaces (rather than just skipping) any existing entry for this host,
+                    -- keeping its place in the list (see `upsertServer`) -- this fires on
+                    -- every reconnect (app startup/reload, `init`'s `reconnectCmds`), so an
+                    -- unconditional append here would otherwise duplicate the server on each
+                    -- successful reconnect. Also refresh permissions for any of its accounts
+                    -- now that we can actually reach it -- this is what makes permissions
+                    -- (and access tokens -- see `needsPassword`) current on app startup/
+                    -- reload, not just after a fresh login. `refreshPermissionsForServer`
+                    -- itself persists (this server's own addition included) once that
+                    -- settles -- see its own doc.
                     ( newModel
                     , refreshPermissionsForServer server newModel.accounts
                     )
 
                 Err _ ->
-                    -- Couldn't reconnect (server's down, moved, etc.); leave it out of the
-                    -- list rather than showing a permanently-broken entry. Its host/enabled
-                    -- flag is still safe in localStorage in case it comes back. Still settles
-                    -- this server's startup-sweep unit, if one's pending -- see
-                    -- `settleStartupUnit`.
-                    settleStartupUnit model
+                    -- Couldn't reconnect (server's down, moved, etc.). Rather than dropping it
+                    -- (which would silently erase it from what's persisted, see
+                    -- `encodePersistedServer`, the very next time `persist` fires), mark/keep
+                    -- it disconnected in place -- `disconnectedServer` if this host has no
+                    -- entry yet at all (e.g. a federated server whose very first negotiation
+                    -- failed), otherwise leave any existing entry (already disconnected, or
+                    -- about to be replaced by a still-in-flight reconnect for the same host)
+                    -- untouched. Still settles this server's startup-sweep unit, if one's
+                    -- pending -- see `settleStartupUnit`.
+                    let
+                        newModel =
+                            if List.any (\s -> s.frontendHost == frontendHost) model.servers then
+                                model
+
+                            else
+                                { model | servers = upsertServer (disconnectedServer { frontendHost = frontendHost, enabled = enabled }) model.servers }
+                    in
+                    settleStartupUnit newModel
 
         GotMainServerResult result ->
             case result of
@@ -1470,23 +1530,13 @@ updateHelp req msg model =
                         correctedConnection =
                             { connection | frontendHost = resolvedFrontend }
 
-                        alreadyKnown =
-                            List.any (\s -> s.frontendHost == resolvedFrontend) model.servers
-
                         server =
                             serverFrom correctedConnection True config
 
                         newModel =
                             { model
                                 | mainFrontendHost = resolvedFrontend
-                                , servers =
-                                    if alreadyKnown then
-                                        model.servers
-
-                                    else
-                                        -- TODO: temporarily prepending -- see the identical note in
-                                        -- `GotAuthResult`.
-                                        server :: model.servers
+                                , servers = upsertServer server model.servers
                             }
 
                         -- The base host may recommend other servers to federate with (see
@@ -1507,7 +1557,7 @@ updateHelp req msg model =
                                 |> List.map
                                     (\fs ->
                                         negotiateServerConfig (isSecure req) fs.host
-                                            |> Task.attempt (GotReconnectResult (Maybe.withDefault False fs.pinnedByDefault))
+                                            |> Task.attempt (GotReconnectResult fs.host (Maybe.withDefault False fs.pinnedByDefault))
                                     )
                     in
                     -- `refreshPermissionsForServer` persists (this server's own addition/
@@ -1528,32 +1578,37 @@ updateHelp req msg model =
 
                 Ok persisted ->
                     let
-                        -- Servers this tab already has a live connection for -- just adopt
-                        -- the broadcasting tab's `enabled` flag for those; drop any this tab
-                        -- knows about that the broadcast no longer lists (removed there via
-                        -- `RemoveServerClicked`).
+                        -- Every host the broadcast still lists, keeping this tab's existing
+                        -- entry (connected or disconnected -- see `Server.connected`) in place
+                        -- if it has one, adopting the broadcasting tab's `enabled` flag;
+                        -- otherwise seeding a fresh disconnected placeholder (e.g. a server
+                        -- added in another tab this one hasn't reconnected to yet -- mirrors
+                        -- `init`'s own seeding). Drops any host this tab knows about that the
+                        -- broadcast no longer lists (removed there via `RemoveServerClicked`).
                         keptServers =
-                            model.servers
-                                |> List.filterMap
-                                    (\server ->
-                                        persisted.servers
-                                            |> List.filter (\ps -> ps.frontendHost == server.frontendHost)
+                            persisted.servers
+                                |> List.map
+                                    (\ps ->
+                                        model.servers
+                                            |> List.filter (\s -> s.frontendHost == ps.frontendHost)
                                             |> List.head
-                                            |> Maybe.map (\ps -> { server | enabled = ps.enabled })
+                                            |> Maybe.map (\s -> { s | enabled = ps.enabled })
+                                            |> Maybe.withDefault (disconnectedServer ps)
                                     )
 
-                        knownHosts =
-                            List.map .frontendHost keptServers
+                        -- Hosts already connected -- no need to attempt another reconnect for
+                        -- those; anything else (never known, or known but still disconnected)
+                        -- gets one, mirroring `init`'s `reconnectCmds`.
+                        connectedHosts =
+                            keptServers |> List.filter (\s -> s.connected /= Nothing) |> List.map .frontendHost
 
-                        -- Servers the broadcast knows about that this tab has no live
-                        -- connection for yet -- mirrors `init`'s `reconnectCmds`.
                         newServerCmds =
                             persisted.servers
-                                |> List.filter (\ps -> not (List.member ps.frontendHost knownHosts))
+                                |> List.filter (\ps -> not (List.member ps.frontendHost connectedHosts))
                                 |> List.map
                                     (\ps ->
                                         negotiateServerConfig (isSecure req) ps.frontendHost
-                                            |> Task.attempt (GotReconnectResult ps.enabled)
+                                            |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled)
                                     )
 
                         -- Same as `init`'s `missingServerHosts`/`missingServerCmds`: accounts
@@ -1571,7 +1626,7 @@ updateHelp req msg model =
                             List.map
                                 (\host ->
                                     negotiateServerConfig (isSecure req) host
-                                        |> Task.attempt (GotReconnectResult (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
                                 )
                                 missingServerHosts
 
@@ -1841,6 +1896,24 @@ updateHelp req msg model =
             in
             ( newModel, persist newModel )
 
+        ReconnectServerClicked frontendHost ->
+            -- Manual retry for a disconnected server (see `Server.connected`) --
+            -- functionally identical to `init`'s own `reconnectCmds`, just fired
+            -- on demand rather than at startup. Keeps whatever `enabled` this
+            -- host currently has; `GotReconnectResult` replaces the placeholder
+            -- in place (preserving its position) on success, or leaves it
+            -- disconnected on failure.
+            let
+                enabled =
+                    serverForHost model.servers frontendHost
+                        |> Maybe.map .enabled
+                        |> Maybe.withDefault False
+            in
+            ( model
+            , negotiateServerConfig (isSecure req) frontendHost
+                |> Task.attempt (GotReconnectResult frontendHost enabled)
+            )
+
         AddServerClicked ->
             let
                 host =
@@ -1849,7 +1922,7 @@ updateHelp req msg model =
             if String.isEmpty host then
                 ( model, Cmd.none )
 
-            else if List.any (\s -> s.frontendHost == host) model.servers then
+            else if List.any (\s -> s.frontendHost == host && s.connected /= Nothing) model.servers then
                 ( model
                     |> updateAddServerForm (\f -> { f | status = Errored "That server is already in your list." })
                     |> updateForm (\f -> { f | status = clearErrored f.status })
@@ -1857,6 +1930,10 @@ updateHelp req msg model =
                 )
 
             else
+                -- Also reached for a host that's already in the list but currently
+                -- disconnected (see `Server.connected`) -- functions as that
+                -- placeholder's "Reconnect" (see `ReconnectServerClicked`), just via
+                -- the Add Server form instead of a dedicated button.
                 ( model
                     |> updateAddServerForm (\f -> { f | status = Submitting })
                     |> updateForm (\f -> { f | status = clearErrored f.status })
@@ -1870,9 +1947,7 @@ updateHelp req msg model =
                     let
                         newModel =
                             { model
-                              -- TODO: temporarily prepending -- see the identical note in
-                              -- `GotAuthResult`.
-                                | servers = serverFrom connection True config :: model.servers
+                                | servers = upsertServer (serverFrom connection True config) model.servers
                                 , addServerForm = emptyAddServerForm
                             }
                     in
@@ -2032,7 +2107,7 @@ updateHelp req msg model =
                                     List.map
                                         (\s ->
                                             if s.frontendHost == refreshedAccount.server then
-                                                { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+                                                updateServerConfiguration newConfig s
 
                                             else
                                                 s
@@ -2074,7 +2149,7 @@ updateHelp req msg model =
                                     List.map
                                         (\s ->
                                             if s.frontendHost == refreshedAccount.server then
-                                                { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+                                                updateServerConfiguration newConfig s
 
                                             else
                                                 s
@@ -2098,7 +2173,7 @@ updateHelp req msg model =
                             List.map
                                 (\s ->
                                     if s.frontendHost == host then
-                                        { s | configuration = newConfig, branding = brandingFromConfig (connectionOf s) newConfig }
+                                        updateServerConfiguration newConfig s
 
                                     else
                                         s
@@ -2123,15 +2198,13 @@ updateHelp req msg model =
             ( clearedModel, Cmd.batch [ clearCmd, Task.attempt (\_ -> NoOp) (Dom.focus domId) ] )
 
         ServerConnected server ->
-            if List.any (\s -> s.frontendHost == server.frontendHost) model.servers then
+            if List.any (\s -> s.frontendHost == server.frontendHost && s.connected /= Nothing) model.servers then
                 ( model, Cmd.none )
 
             else
                 let
                     newModel =
-                        -- TODO: temporarily prepending -- see the identical note in
-                        -- `GotAuthResult`.
-                        { model | servers = server :: model.servers }
+                        { model | servers = upsertServer server model.servers }
                 in
                 ( newModel, persist newModel )
 
@@ -2161,17 +2234,27 @@ serverHasAccounts accounts frontendHost =
     List.any (\a -> a.server == frontendHost) accounts
 
 
-{-| Hosts of accounts we're keeping around but currently have no `Server` entry
-for -- e.g. the server's down, moved, or otherwise unreachable right now (see
-`GotReconnectResult`'s `Err` branch, which leaves a failed-to-reconnect server
-out of `model.servers` without dropping its accounts). Deduplicated, for a
-"Couldn't reach: host1, host2" warning below the Servers strip.
+{-| Hosts of accounts we're keeping around but that are currently disconnected
+(see `Server.connected`) -- e.g. the server's down, moved, or otherwise
+unreachable right now (see `GotReconnectResult`'s `Err` branch, which marks a
+failed-to-reconnect server disconnected in place rather than dropping its
+accounts). Also includes any host with no `Server` entry at all, though that
+should only ever be transient (see `init`'s `missingServerHosts`, which seeds
+one for every account's host). Deduplicated, for a "Couldn't reach: host1,
+host2" warning below the Servers strip.
 -}
 unreachableAccountHosts : Model -> List String
 unreachableAccountHosts model =
     model.accounts
         |> List.map .server
-        |> List.filter (\host -> not (List.any (\s -> s.frontendHost == host) model.servers))
+        |> List.filter
+            (\host ->
+                model.servers
+                    |> List.filter (\s -> s.frontendHost == host)
+                    |> List.head
+                    |> Maybe.map (\s -> s.connected == Nothing)
+                    |> Maybe.withDefault True
+            )
         |> Set.fromList
         |> Set.toList
 
@@ -2270,11 +2353,13 @@ enabledAccountForServer accounts frontendHost =
 
 
 {-| Servers whose data should be included when aggregating across all of
-them -- e.g. the Home page's recent-posts feed.
+them -- e.g. the Home page's recent-posts feed. Excludes disabled servers, as
+well as ones that are currently disconnected (see `Server.connected`) --
+there's nothing to aggregate from a server that can't be reached right now.
 -}
 enabledServers : Model -> List Server
 enabledServers model =
-    List.filter .enabled model.servers
+    List.filter (\s -> s.enabled && s.connected /= Nothing) model.servers
 
 
 {-| A server's full base URL, for making requests against it directly (e.g.
@@ -2282,7 +2367,14 @@ enabledServers model =
 -}
 serverUrl : Server -> String
 serverUrl server =
-    connectionUrl (connectionOf server)
+    -- Every caller reaches `server` via `resolveAccountServer`/`enabledServers`,
+    -- both of which only ever hand back a connected `Server` -- see
+    -- `Server.connected`. The empty-string fallback is unreachable in
+    -- practice; `serverUrl` stays total rather than pushing a `Maybe` onto
+    -- the many call sites that already know they're on solid ground.
+    connectionOf server
+        |> Maybe.map connectionUrl
+        |> Maybe.withDefault ""
 
 
 {-| Connects to a server given only its hostname, same as adding one via the
@@ -2447,18 +2539,95 @@ insertAfterSameServer account accounts =
 serverFrom : Connection -> Bool -> ServerConfiguration -> Server
 serverFrom connection enabled config =
     { frontendHost = connection.frontendHost
-    , backendHost = connection.backendHost
-    , port_ = connection.port_
-    , tls = connection.tls
     , enabled = enabled
-    , configuration = config
-    , branding = brandingFromConfig connection config
+    , connected =
+        Just
+            { backendHost = connection.backendHost
+            , port_ = connection.port_
+            , tls = connection.tls
+            , configuration = config
+            , branding = brandingFromConfig connection config
+            }
     }
 
 
-connectionOf : Server -> Connection
+{-| A server known only from a persisted server-list entry (or an account
+signed into it), not yet (re)connected this session -- see `Server.connected`.
+Keeps `frontendHost`/`enabled` (the only two fields that get persisted) so it
+still has its place in `Model.servers`, and so its `PersistedServer` entry
+survives a failed/never-attempted reconnect (see `GotReconnectResult`'s `Err`
+branch) exactly as it would if nothing had gone wrong.
+-}
+disconnectedServer : PersistedServer -> Server
+disconnectedServer persisted =
+    { frontendHost = persisted.frontendHost
+    , enabled = persisted.enabled
+    , connected = Nothing
+    }
+
+
+{-| Adds/updates `server` in `servers` by `frontendHost`, keeping its existing
+position (and existing `enabled` flag, if any -- see below) rather than
+moving it to the front/back -- the reordering (`MoveServerLeftClicked`/
+`RightClicked`) or disconnection (`GotReconnectResult`'s `Err` branch)
+already applied to that slot shouldn't be undone just because a fresh
+connection/login/rename came in for it. Prepends if there's no existing entry
+for this host at all (a genuinely new server).
+
+Deliberately keeps the *existing* entry's `enabled` over `server`'s own --
+`enabled` is a persisted user preference, independent of whether we're
+currently connected, so a fresh reconnect (whose caller may only know the
+`enabled` its host had at the *start* of `init`'s startup sweep, see
+`reconnectCmds`) should never clobber a more recent in-session toggle
+(`ToggleServerEnabled`/`ToggleAccountEnabled`) applied to the same host's
+placeholder while that reconnect was still in flight.
+-}
+upsertServer : Server -> List Server -> List Server
+upsertServer server servers =
+    case List.filter (\s -> s.frontendHost == server.frontendHost) servers |> List.head of
+        Just existing ->
+            List.map
+                (\s ->
+                    if s.frontendHost == server.frontendHost then
+                        { server | enabled = existing.enabled }
+
+                    else
+                        s
+                )
+                servers
+
+        Nothing ->
+            server :: servers
+
+
+{-| Patches a server's cached `configuration` (and re-derives `branding` from
+it) in place after a config-changing RPC succeeds (rename, web-UI toggle,
+settings save) -- shared by `GotSetWebUserInterfaceResult`/
+`GotRenameServerResult`/`GotServerConfigSaveResult`. A no-op if `server` is
+currently disconnected (see `Server.connected`) -- unreachable in practice,
+since all three only fire after an RPC that itself required a live
+connection.
+-}
+updateServerConfiguration : ServerConfiguration -> Server -> Server
+updateServerConfiguration newConfig server =
+    case connectionOf server of
+        Nothing ->
+            server
+
+        Just connection ->
+            { server
+                | connected =
+                    Maybe.map
+                        (\c -> { c | configuration = newConfig, branding = brandingFromConfig connection newConfig })
+                        server.connected
+            }
+
+
+connectionOf : Server -> Maybe Connection
 connectionOf server =
-    { frontendHost = server.frontendHost, backendHost = server.backendHost, port_ = server.port_, tls = server.tls }
+    server.connected
+        |> Maybe.map
+            (\c -> { frontendHost = server.frontendHost, backendHost = c.backendHost, port_ = c.port_, tls = c.tls })
 
 
 {-| The bare `Task` behind `refreshPermissions`/`refreshPermissionsForServer` --
@@ -2468,15 +2637,24 @@ needed -- see `performWithAccount`.
 -}
 refreshPermissionsTask : Server -> Account -> Task Grpc.Error ( Account, User )
 refreshPermissionsTask server account =
-    performWithAccount
-        (connectionOf server)
-        account
-        (\accessToken ->
-            Grpc.new Jonline.getCurrentUser {}
-                |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> withAccessToken (Just accessToken)
-                |> Grpc.toTask
-        )
+    case connectionOf server of
+        -- `server` is disconnected (see `Server.connected`) -- nothing to refresh
+        -- against right now; callers (e.g. `ToggleAccountEnabled` re-enabling an
+        -- account on a server that's since gone unreachable) just leave the
+        -- account's existing permissions/token alone.
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+        Just connection ->
+            performWithAccount
+                connection
+                account
+                (\accessToken ->
+                    Grpc.new Jonline.getCurrentUser {}
+                        |> Grpc.setHost (connectionUrl connection)
+                        |> withAccessToken (Just accessToken)
+                        |> Grpc.toTask
+                )
 
 
 {-| Folds one account's `GetCurrentUser`/access-token-refresh result (see
@@ -2598,26 +2776,31 @@ field, so this starts from the server's actual last-known `configuration`
 -}
 setWebUserInterface : Server -> Account -> WebUserInterface -> Cmd Msg
 setWebUserInterface server account ui =
-    let
-        config =
-            server.configuration
+    case ( connectionOf server, server.connected ) of
+        ( Just connection, Just { configuration } ) ->
+            let
+                info =
+                    Maybe.withDefault Proto.Jonline.defaultServerInfo configuration.serverInfo
 
-        info =
-            Maybe.withDefault Proto.Jonline.defaultServerInfo config.serverInfo
+                newConfig =
+                    { configuration | serverInfo = Just { info | webUserInterface = Just ui } }
+            in
+            performWithAccount
+                connection
+                account
+                (\accessToken ->
+                    Grpc.new Jonline.configureServer newConfig
+                        |> Grpc.setHost (connectionUrl connection)
+                        |> withAccessToken (Just accessToken)
+                        |> Grpc.toTask
+                )
+                |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
 
-        newConfig =
-            { config | serverInfo = Just { info | webUserInterface = Just ui } }
-    in
-    performWithAccount
-        (connectionOf server)
-        account
-        (\accessToken ->
-            Grpc.new Jonline.configureServer newConfig
-                |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> withAccessToken (Just accessToken)
-                |> Grpc.toTask
-        )
-        |> Task.attempt (GotSetWebUserInterfaceResult (accountId account))
+        -- `server` is disconnected (see `Server.connected`) -- callers only ever
+        -- reach this for a server the account panel shows as connected, so
+        -- this is unreachable in practice.
+        _ ->
+            Cmd.none
 
 
 {-| Sets `server`'s display name via `ConfigureServer`, authenticated as
@@ -2634,30 +2817,38 @@ changing `serverInfo.name`.
 -}
 renameServer : Server -> Account -> String -> Cmd Msg
 renameServer server account newName =
-    performWithAccount
-        (connectionOf server)
-        account
-        (\accessToken ->
-            Grpc.new Jonline.getServerConfiguration {}
-                |> Grpc.setHost (connectionUrl (connectionOf server))
-                |> withAccessToken (Just accessToken)
-                |> Grpc.toTask
-                |> Task.andThen
-                    (\freshConfig ->
-                        let
-                            info =
-                                Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+    case connectionOf server of
+        -- `server` is disconnected (see `Server.connected`) -- callers only ever
+        -- reach this for a server the account panel shows as connected, so
+        -- this is unreachable in practice.
+        Nothing ->
+            Cmd.none
 
-                            newConfig =
-                                { freshConfig | serverInfo = Just { info | name = Just newName } }
-                        in
-                        Grpc.new Jonline.configureServer newConfig
-                            |> Grpc.setHost (connectionUrl (connectionOf server))
-                            |> withAccessToken (Just accessToken)
-                            |> Grpc.toTask
-                    )
-        )
-        |> Task.attempt (GotRenameServerResult (accountId account))
+        Just connection ->
+            performWithAccount
+                connection
+                account
+                (\accessToken ->
+                    Grpc.new Jonline.getServerConfiguration {}
+                        |> Grpc.setHost (connectionUrl connection)
+                        |> withAccessToken (Just accessToken)
+                        |> Grpc.toTask
+                        |> Task.andThen
+                            (\freshConfig ->
+                                let
+                                    info =
+                                        Maybe.withDefault Proto.Jonline.defaultServerInfo freshConfig.serverInfo
+
+                                    newConfig =
+                                        { freshConfig | serverInfo = Just { info | name = Just newName } }
+                                in
+                                Grpc.new Jonline.configureServer newConfig
+                                    |> Grpc.setHost (connectionUrl connection)
+                                    |> withAccessToken (Just accessToken)
+                                    |> Grpc.toTask
+                            )
+                )
+                |> Task.attempt (GotRenameServerResult (accountId account))
 
 
 {-| A server's configuration can declare (via `externalCdnConfig`) that it's
@@ -2705,10 +2896,12 @@ configuration if we have one; otherwise negotiates a fresh connection.
 -}
 resolveHost : Bool -> List Server -> String -> Task Grpc.Error ( Connection, ServerConfiguration )
 resolveHost pageIsSecure servers frontendHost =
-    case serverForHost servers frontendHost of
-        Just server ->
-            Task.succeed ( connectionOf server, server.configuration )
+    case serverForHost servers frontendHost |> Maybe.andThen .connected of
+        Just connected ->
+            Task.succeed ( { frontendHost = frontendHost, backendHost = connected.backendHost, port_ = connected.port_, tls = connected.tls }, connected.configuration )
 
+        -- Not known, or known but currently disconnected (see `Server.connected`)
+        -- -- either way, there's no cached connection to reuse.
         Nothing ->
             negotiateServerConfig pageIsSecure frontendHost
 
@@ -2861,7 +3054,21 @@ showing the description/privacy policy/media policy during account creation.
 -}
 serverInfoOf : Server -> ServerInfo
 serverInfoOf server =
-    Maybe.withDefault defaultServerInfo server.configuration.serverInfo
+    server.connected
+        |> Maybe.andThen (\connected -> connected.configuration.serverInfo)
+        |> Maybe.withDefault defaultServerInfo
+
+
+{-| A server's raw `ServerConfiguration`, falling back to
+`Proto.Jonline.defaultServerConfiguration` while disconnected (see
+`Server.connected`) -- for callers (e.g. `Components.Pages.ServerInformationPage`)
+that need more of it than `serverInfoOf`'s `ServerInfo` carries.
+-}
+configurationOf : Server -> ServerConfiguration
+configurationOf server =
+    server.connected
+        |> Maybe.map .configuration
+        |> Maybe.withDefault Proto.Jonline.defaultServerConfiguration
 
 
 brandingFromConfig : Connection -> ServerConfiguration -> Branding
@@ -3348,12 +3555,22 @@ type alias MaybeAccountServer =
 resolveAccountServer : Model -> MaybeAccountServer -> Maybe ( Maybe Account, Server )
 resolveAccountServer model ( maybeUserId, host ) =
     serverForHost model.servers host
-        |> Maybe.map
+        |> Maybe.andThen
             (\server ->
-                ( maybeUserId
-                    |> Maybe.andThen (\userId -> model.accounts |> List.filter (\a -> a.userId == userId && a.server == host) |> List.head)
-                , server
-                )
+                -- A known-but-disconnected server (see `Server.connected`) can't
+                -- actually be reached, so treat it the same as `host` not being a
+                -- known server at all -- both end up failing with
+                -- `Grpc.NetworkError` in `performWithAccountServer`/
+                -- `performWithOptionalAccountServer`.
+                if server.connected == Nothing then
+                    Nothing
+
+                else
+                    Just
+                        ( maybeUserId
+                            |> Maybe.andThen (\userId -> model.accounts |> List.filter (\a -> a.userId == userId && a.server == host) |> List.head)
+                        , server
+                        )
             )
 
 
@@ -3376,11 +3593,18 @@ performWithAccountServer :
 performWithAccountServer model maybeAccountServer req =
     case resolveAccountServer model maybeAccountServer of
         Just ( Just account, server ) ->
-            performWithAccountNotifying (connectionOf server) account (req server)
-                |> Task.map
-                    (\( refreshedAccount, maybeResponse, result ) ->
-                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
-                    )
+            case connectionOf server of
+                -- `resolveAccountServer` only ever resolves to a connected `Server`
+                -- (see `Server.connected`), so this is unreachable in practice.
+                Nothing ->
+                    Task.fail Grpc.NetworkError
+
+                Just connection ->
+                    performWithAccountNotifying connection account (req server)
+                        |> Task.map
+                            (\( refreshedAccount, maybeResponse, result ) ->
+                                ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                            )
 
         _ ->
             Task.fail Grpc.NetworkError
@@ -3401,11 +3625,18 @@ performWithOptionalAccountServer :
 performWithOptionalAccountServer model maybeAccountServer req =
     case resolveAccountServer model maybeAccountServer of
         Just ( Just account, server ) ->
-            performWithAccountNotifying (connectionOf server) account (Just >> req server)
-                |> Task.map
-                    (\( refreshedAccount, maybeResponse, result ) ->
-                        ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
-                    )
+            case connectionOf server of
+                -- `resolveAccountServer` only ever resolves to a connected `Server`
+                -- (see `Server.connected`), so this is unreachable in practice.
+                Nothing ->
+                    Task.fail Grpc.NetworkError
+
+                Just connection ->
+                    performWithAccountNotifying connection account (Just >> req server)
+                        |> Task.map
+                            (\( refreshedAccount, maybeResponse, result ) ->
+                                ( Maybe.map (AccessTokenResponseReceived refreshedAccount) maybeResponse, result )
+                            )
 
         Just ( Nothing, server ) ->
             req server Nothing |> Task.map (Tuple.pair Nothing)

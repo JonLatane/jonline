@@ -569,17 +569,24 @@ sets `Content-Type` from `file`'s own MIME type, so only `Authorization`/
 -}
 postMediaTask : AccountsPanel.Server -> String -> File -> Task Grpc.Error String
 postMediaTask server token file =
-    Http.task
-        { method = "POST"
-        , headers =
-            [ Http.header "Authorization" token
-            , Http.header "Filename" (File.name file)
-            ]
-        , url = AccountsPanel.mediaBaseUrl (AccountsPanel.connectionOf server) ++ "/media"
-        , body = Http.fileBody file
-        , resolver = Http.stringResolver toGrpcResult
-        , timeout = Nothing
-        }
+    case AccountsPanel.connectionOf server of
+        -- `server` is reached via `performWithAccountServer`, which only ever
+        -- resolves to a connected server -- unreachable in practice.
+        Nothing ->
+            Task.fail Grpc.NetworkError
+
+        Just connection ->
+            Http.task
+                { method = "POST"
+                , headers =
+                    [ Http.header "Authorization" token
+                    , Http.header "Filename" (File.name file)
+                    ]
+                , url = AccountsPanel.mediaBaseUrl connection ++ "/media"
+                , body = Http.fileBody file
+                , resolver = Http.stringResolver toGrpcResult
+                , timeout = Nothing
+                }
 
 
 {-| Recast as a `Grpc.Error` (rather than `Http.Error`) purely so `update` can

@@ -443,18 +443,18 @@ authorAvatarUrl server maybeAccount author =
 mediaReferenceUrl : AccountsPanel.Server -> Maybe AccountsPanel.Account -> Maybe Proto.Jonline.MediaReference -> Maybe String
 mediaReferenceUrl server maybeAccount maybeMedia =
     maybeMedia
-        |> Maybe.map
+        |> Maybe.andThen
             (\media ->
-                let
-                    base =
-                        AccountsPanel.mediaUrl server media.id
-                in
-                case maybeAccount of
-                    Just account ->
-                        base ++ "?authorization=" ++ account.accessToken.token
+                AccountsPanel.mediaUrl server media.id
+                    |> Maybe.map
+                        (\base ->
+                            case maybeAccount of
+                                Just account ->
+                                    base ++ "?authorization=" ++ account.accessToken.token
 
-                    Nothing ->
-                        base
+                                Nothing ->
+                                    base
+                        )
             )
 
 
