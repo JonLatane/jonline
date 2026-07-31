@@ -467,6 +467,26 @@
   margin-top: 0.4rem;
 }
 
+/* `Components.Posts.mediaEditButton`'s own row, directly below
+   `MultiMediaRenderer.view` in `postDetail` -- same small-button vocabulary
+   as `.post-edit-button`, just left-aligned (there's no meta line/other
+   content sharing this row the way `.post-detail-edit-row` has) and closer
+   to the media above it than that row's own `margin-top`. */
+.post-detail-media-edit-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 0.3rem;
+}
+
+.post-media-edit-button {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.8rem;
+}
+
 /* Visibility picker -- `Pages.Post.PostId_`'s `visibilityView`, shown in
    `postDetail`'s meta line in place of the plain-text visibility (see
    `Components.PostCard.postDetail`'s own `visibilityView` parameter). Same

@@ -44,6 +44,7 @@ pair, not worth the added complexity here).
 -}
 
 import Animation
+import Browser.Dom as Dom
 import Bytes.Encode
 import Components.MediaRenderer as MediaRenderer
 import Dict exposing (Dict)
@@ -51,8 +52,8 @@ import File exposing (File)
 import File.Select
 import Grpc
 import Html exposing (Html, button, div, img, input, span, text)
-import Html.Attributes exposing (alt, attribute, class, disabled, src, step, style, title, type_, value)
-import Html.Events exposing (on, onClick, onInput, preventDefaultOn)
+import Html.Attributes exposing (alt, attribute, class, classList, disabled, id, src, step, style, title, type_, value)
+import Html.Events exposing (on, onClick, onInput, preventDefaultOn, stopPropagationOn)
 import Html.Keyed
 import Http
 import Json.Decode as Decode
@@ -63,7 +64,7 @@ import Shared.AccountsPanel as AccountsPanel exposing (withAccessToken)
 import Shared.Conversions exposing (timestampToPosix)
 import Task exposing (Task)
 import Time
-import UI.Classes exposing (classes, openClosedClass)
+import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 
 
@@ -72,12 +73,26 @@ doc. `SingleSelect`'s `imagesOnly` restricts the grid to image media only
 (hiding videos/PDFs/etc that couldn't be tapped-to-select anyway --
 `Components.MediaRenderer.view` only ever attaches `onImageClicked` for
 images in the first place, see its own doc) -- `False` for a future chooser
-that's fine picking any media type. `MultiSelect` is a stub -- no fields yet,
-not wired to any behavior below.
+that's fine picking any media type. Its `initialSelection` (e.g.
+`Components.Pages.UserProfilePage`'s `user.avatar`) seeds `Model.selectedMedia`
+(see `Open`) purely so the grid item it matches renders pre-highlighted (see
+`mediaItemView`'s `selected`) -- `SingleSelect` never adds to/reorders that
+list the way `MultiSelect` does, tapping a grid item still just closes the
+panel outright (see `MediaItemClicked`).
+
+`MultiSelect`'s own `initialSelection` seeds the same `Model.selectedMedia` --
+e.g. a `Post`'s current `media`, so re-opening the picker to edit an
+already-published post's media starts from what's already there rather than
+empty. Tapping a grid item while this is the active `selectionType` doesn't
+close the panel like `SingleSelect` does -- it prepends to `selectedMedia`
+instead (see `MediaItemClicked`), which the top "selected media" strip (see
+`selectedMediaStripView`) renders reorderably; `SaveMediaClicked`/`CloseClicked`
+are this mode's own Save/Cancel, at the bottom of `view`.
+
 -}
 type SelectionType
-    = SingleSelect { imagesOnly : Bool }
-    | MultiSelect
+    = SingleSelect { imagesOnly : Bool, initialSelection : Maybe MediaReference }
+    | MultiSelect { initialSelection : List MediaReference }
 
 
 type FetchStatus
@@ -147,6 +162,43 @@ type alias Model =
     -- fades/collapses out instead of disappearing outright. Mirrors
     -- `Components.Pages.UsersPage.userAnimations` -- see its own doc.
     , mediaAnimations : Dict String MediaAnimation
+
+    -- `MultiSelect`'s own picked-media list, in display order -- a plain,
+    -- caller-owned order (like `AccountsPanel.servers`/`.accounts`, not
+    -- resorted by any property of the `MediaReference`s themselves), so a
+    -- reorder/prepend just edits this list directly rather than deriving
+    -- order from a timestamp the way `mediaAnimations`' own grid does.
+    -- Seeded from `MultiSelect.initialSelection` by `Open`; empty in every
+    -- other `selectionType`.
+    , selectedMedia : List MediaReference
+
+    -- `selectedMedia`'s own enter/leave fade, keyed by `MediaReference.id` --
+    -- mirrors `accountAnimations`/`serverAnimations` (bare `UI.Flip.State`,
+    -- not wrapped in a per-item record) rather than `mediaAnimations`'
+    -- `MediaAnimation`, since `selectedMedia` already carries each item's own
+    -- data -- there's nothing else worth stashing alongside the flip state.
+    -- `RemoveSelectedMediaClicked` starts a removing-fade here *without*
+    -- touching `selectedMedia` itself (same "keep a removing item at its
+    -- exact existing slot" reasoning `UI.Flip.remove` documents) --
+    -- `RemoveSelectedMediaAnimation` is what actually drops it from both once
+    -- the fade finishes.
+    , selectedMediaAnimations : Dict String (UI.Flip.State Msg)
+
+    -- In-flight/settling FLIP slide animations for `selectedMedia` items just
+    -- reordered via `MoveSelectedMediaLeftClicked`/`MoveSelectedMediaRightClicked`
+    -- -- mirrors `AccountsPanel.serverMoveAnimations` exactly, just scoped to
+    -- this panel's own selected-media strip instead of the Servers strip.
+    , selectedMediaMoveAnimations : Dict String (UI.Flip.MoveState Msg)
+
+    -- The id of a just-uploaded item awaiting its post-upload refetch, while
+    -- `selectionType` is `Just (MultiSelect _)` -- `GotUploadResult` stashes
+    -- it here (there's nothing else to key it by, `POST /media`'s response is
+    -- just a plaintext id, not a full `Media`/`MediaReference` `view` could
+    -- render), and `GotMediaResult` consumes it once the refetch actually
+    -- lands (with the full `Media` this id refers to), prepending it to
+    -- `selectedMedia` the same as a tapped grid item. `Nothing` the rest of
+    -- the time, including every upload outside `MultiSelect`.
+    , pendingUploadSelection : Maybe String
     }
 
 
@@ -165,7 +217,20 @@ type alias MediaAnimation =
 
 init : Model
 init =
-    { targetHost = "", selectionType = Nothing, status = NotFetched, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = 238, mediaAnimations = Dict.empty }
+    { targetHost = ""
+    , selectionType = Nothing
+    , status = NotFetched
+    , uploadStatus = NotUploading
+    , isDraggingOver = False
+    , deletingIds = Set.empty
+    , deleteError = Nothing
+    , zoom = 238
+    , mediaAnimations = Dict.empty
+    , selectedMedia = []
+    , selectedMediaAnimations = Dict.empty
+    , selectedMediaMoveAnimations = Dict.empty
+    , pendingUploadSelection = Nothing
+    }
 
 
 {-| Whether the panel is currently open -- drives `openClosedClass` and
@@ -220,6 +285,47 @@ type Msg
       -- The bottom-right zoom slider (see `zoomSliderView`) -- `Float` since
       -- that's what an `input[type=range]`'s value parses as.
     | ZoomChanged Float
+      -- `MoveSelectedMediaLeftClicked`/`-RightClicked` (see
+      -- `selectedMediaItemView`'s reorder buttons) kick off a reorder slide
+      -- for `selectedMedia`, exactly mirroring
+      -- `AccountsPanel.MoveServerLeftClicked`/`-RightClicked`'s own
+      -- `beginReorder`/`GotPreMoveServerPositions`/`applyReorder`/
+      -- `ServerMoveSettled` chain -- see that module for the full FLIP
+      -- reorder story, just scoped to this panel's own `selectedMedia`/
+      -- `selectedMediaMoveAnimations` in place of its `servers`/
+      -- `serverMoveAnimations`.
+    | MoveSelectedMediaLeftClicked String
+    | MoveSelectedMediaRightClicked String
+    | GotPreMoveSelectedMediaPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | AnimateSelectedMediaMove Animation.Msg
+    | SelectedMediaMoveSettled String
+      -- The delete button on a selected-media strip item (see
+      -- `selectedMediaItemView`) -- unlike the browse grid's own
+      -- `DeleteClicked`, this doesn't call `DeleteMedia` at all (it's only
+      -- dropping this item from *this post's* selection, not deleting the
+      -- underlying media from the account), so it needs no confirmation and
+      -- starts its removing-fade immediately.
+    | RemoveSelectedMediaClicked String
+      -- Fired once a removed selected-media item's fade-out finishes (see
+      -- `UI.Flip.remove`) -- actually drops it from `selectedMedia`/
+      -- `selectedMediaAnimations`/`selectedMediaMoveAnimations` for good.
+    | RemoveSelectedMediaAnimation String
+      -- The bottom "Save Media"/"Cancel" row shown only while `selectionType`
+      -- is `Just (MultiSelect _)` (see `multiSelectActionsView`) --
+      -- "Cancel" is just `CloseClicked` itself, reused as-is. The final,
+      -- in-order `List MediaReference` is built by the view (from
+      -- `selectedMedia`, filtering out anything still mid removing-fade) and
+      -- carried on the message itself, not re-read from `model` -- by the
+      -- time whichever page opened this panel gets to react to the very same
+      -- `Shared.Msg` value (see module doc's note on `MediaItemClicked`'s own
+      -- delivery), this panel may already have reset itself back to `init`.
+    | SaveMediaClicked (List MediaReference)
+      -- The selected-media strip's own thumbnail (see `selectedMediaItemView`)
+      -- needs an `onImageClicked` for `Components.MediaRenderer.view` to
+      -- attach (same as every other caller), but tapping an already-selected
+      -- item's image isn't a meaningful action here -- reordering/removing
+      -- each have their own explicit button instead.
+    | NoOp
 
 
 {-| Needs `AccountsPanel.Model` (to resolve `targetHost` to a connected
@@ -238,8 +344,45 @@ update accountsPanelModel msg model =
     case msg of
         Open selectionType host ->
             let
+                initialSelection =
+                    case selectionType of
+                        Just (MultiSelect multiSelect) ->
+                            multiSelect.initialSelection
+
+                        Just (SingleSelect singleSelect) ->
+                            singleSelect.initialSelection
+                                |> Maybe.map List.singleton
+                                |> Maybe.withDefault []
+
+                        Nothing ->
+                            []
+
                 opened =
-                    { targetHost = host, selectionType = selectionType, status = Fetching, uploadStatus = NotUploading, isDraggingOver = False, deletingIds = Set.empty, deleteError = Nothing, zoom = model.zoom, mediaAnimations = Dict.empty }
+                    { targetHost = host
+                    , selectionType = selectionType
+                    , status = Fetching
+                    , uploadStatus = NotUploading
+                    , isDraggingOver = False
+                    , deletingIds = Set.empty
+                    , deleteError = Nothing
+                    , zoom = model.zoom
+                    , mediaAnimations = Dict.empty
+                    , selectedMedia = initialSelection
+
+                    -- `restingState`, not `enter` -- these are already-there
+                    -- (a Post's already-published media), not freshly
+                    -- picked, so they shouldn't replay an entrance animation
+                    -- every time the picker's reopened. Mirrors `init`'s own
+                    -- reasoning for why a caller with pre-existing persisted
+                    -- items pre-seeds `restingState` rather than starting
+                    -- from empty -- see `UI.Flip.syncEnter`'s doc.
+                    , selectedMediaAnimations =
+                        initialSelection
+                            |> List.map (\media -> ( media.id, UI.Flip.restingState ))
+                            |> Dict.fromList
+                    , selectedMediaMoveAnimations = Dict.empty
+                    , pendingUploadSelection = Nothing
+                    }
             in
             case resolve accountsPanelModel host of
                 Ok resolved ->
@@ -267,12 +410,39 @@ update accountsPanelModel msg model =
             -- the grid had been unmounted in between, that tile would have
             -- no prior on-screen frame to fade *from*, and would just appear
             -- already-collapsed instead of animating.
-            ( syncMediaAnimations { model | status = Fetched response.media }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+            --
+            -- `pendingUploadSelection`, if set (a just-uploaded item, see
+            -- `GotUploadResult`), is consumed here too: this is the first
+            -- point this panel actually has the full `Media` (name/content
+            -- type) that id refers to, needed to prepend it to
+            -- `selectedMedia` the same as a tapped grid item.
+            let
+                syncedModel =
+                    syncMediaAnimations { model | status = Fetched response.media }
+
+                selectedModel =
+                    case syncedModel.pendingUploadSelection of
+                        Just uploadedId ->
+                            let
+                                withoutPending =
+                                    { syncedModel | pendingUploadSelection = Nothing }
+                            in
+                            case List.filter (\media -> media.id == uploadedId) response.media |> List.head of
+                                Just media ->
+                                    addSelectedMedia (toMediaReference media) withoutPending
+
+                                Nothing ->
+                                    withoutPending
+
+                        Nothing ->
+                            syncedModel
+            in
+            ( selectedModel, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
 
         GotMediaResult (Err err) ->
             ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
 
-        MediaItemClicked _ ->
+        MediaItemClicked mediaId ->
             case model.selectionType of
                 Just (SingleSelect _) ->
                     -- The tapped id itself isn't needed here -- `Main.elm`
@@ -282,7 +452,15 @@ update accountsPanelModel msg model =
                     -- "selection made" feedback.
                     ( { init | zoom = model.zoom }, Cmd.none, ( Nothing, Nothing ) )
 
-                _ ->
+                Just (MultiSelect _) ->
+                    case Dict.get mediaId model.mediaAnimations of
+                        Just anim ->
+                            ( addSelectedMedia (toMediaReference anim.media) model, Cmd.none, ( Nothing, Nothing ) )
+
+                        Nothing ->
+                            ( model, Cmd.none, ( Nothing, Nothing ) )
+
+                Nothing ->
                     ( model, Cmd.none, ( Nothing, Nothing ) )
 
         AddClicked ->
@@ -305,7 +483,7 @@ update accountsPanelModel msg model =
         DragLeave ->
             ( { model | isDraggingOver = False }, Cmd.none, ( Nothing, Nothing ) )
 
-        GotUploadResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+        GotUploadResult (Ok ( maybeAccountsPanelMsg, uploadedMediaId )) ->
             -- Re-fetch to show the new item -- cheaper to just re-run the
             -- same `GetMedia` `Open` already does than to splice a new `Media`
             -- into `Fetched`'s list, since `POST /media`'s response is just a
@@ -313,15 +491,30 @@ update accountsPanelModel msg model =
             -- Deliberately leaves `status` (and so the still-`Fetched` grid
             -- `contentView` renders from it) alone rather than bouncing it
             -- through `Fetching` -- see `GotMediaResult`'s own doc on why.
+            --
+            -- While `MultiSelect`, stashes `uploadedMediaId` in
+            -- `pendingUploadSelection` for `GotMediaResult` (below, once the
+            -- refetch it kicks off here actually lands) to prepend to
+            -- `selectedMedia` -- a freshly-uploaded item should land in the
+            -- selection the same as tapping an already-there grid item would.
+            let
+                pendingUploadSelection =
+                    case model.selectionType of
+                        Just (MultiSelect _) ->
+                            Just uploadedMediaId
+
+                        _ ->
+                            Nothing
+            in
             case resolve accountsPanelModel model.targetHost of
                 Ok resolved ->
-                    ( { model | uploadStatus = NotUploading }
+                    ( { model | uploadStatus = NotUploading, pendingUploadSelection = pendingUploadSelection }
                     , fetchTask accountsPanelModel resolved.account |> Task.attempt GotMediaResult
                     , ( maybeAccountsPanelMsg, Nothing )
                     )
 
                 Err _ ->
-                    ( { model | uploadStatus = NotUploading }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+                    ( { model | uploadStatus = NotUploading, pendingUploadSelection = pendingUploadSelection }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
 
         GotUploadResult (Err err) ->
             case model.uploadStatus of
@@ -386,10 +579,26 @@ update accountsPanelModel msg model =
                     in
                     ( Dict.insert id { anim | flip = newFlip } animations, cmd :: accCmds )
 
-                ( newMediaAnimations, cmds ) =
+                ( newMediaAnimations, mediaCmds ) =
                     Dict.foldl step ( Dict.empty, [] ) model.mediaAnimations
+
+                -- Steps `selectedMediaAnimations` forward in the same pass --
+                -- mirrors `AccountsPanel.AnimateItemFlip` stepping both
+                -- `accountAnimations` and `serverAnimations` off one `Sub`.
+                stepFlip id flip ( flips, accCmds ) =
+                    let
+                        ( newFlip, cmd ) =
+                            UI.Flip.animate animMsg flip
+                    in
+                    ( Dict.insert id newFlip flips, cmd :: accCmds )
+
+                ( newSelectedMediaAnimations, selectedCmds ) =
+                    Dict.foldl stepFlip ( Dict.empty, [] ) model.selectedMediaAnimations
             in
-            ( { model | mediaAnimations = newMediaAnimations }, Cmd.batch cmds, ( Nothing, Nothing ) )
+            ( { model | mediaAnimations = newMediaAnimations, selectedMediaAnimations = newSelectedMediaAnimations }
+            , Cmd.batch (mediaCmds ++ selectedCmds)
+            , ( Nothing, Nothing )
+            )
 
         RemoveMediaAnimation id ->
             ( { model | mediaAnimations = Dict.remove id model.mediaAnimations }
@@ -399,6 +608,118 @@ update accountsPanelModel msg model =
 
         ZoomChanged zoom ->
             ( { model | zoom = zoom }, Cmd.none, ( Nothing, Nothing ) )
+
+        MoveSelectedMediaLeftClicked mediaId ->
+            ( model
+            , UI.Flip.beginReorder .id selectedMediaDomId GotPreMoveSelectedMediaPositions -1 mediaId model.selectedMedia
+            , ( Nothing, Nothing )
+            )
+
+        MoveSelectedMediaRightClicked mediaId ->
+            ( model
+            , UI.Flip.beginReorder .id selectedMediaDomId GotPreMoveSelectedMediaPositions 1 mediaId model.selectedMedia
+            , ( Nothing, Nothing )
+            )
+
+        GotPreMoveSelectedMediaPositions mediaId _ offset (Err _) ->
+            ( { model | selectedMedia = UI.Flip.moveListItemBy .id offset mediaId model.selectedMedia }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        GotPreMoveSelectedMediaPositions mediaId neighborId offset (Ok ( movedEl, neighborEl )) ->
+            let
+                newModel =
+                    { model | selectedMedia = UI.Flip.moveListItemBy .id offset mediaId model.selectedMedia }
+            in
+            ( { newModel
+                | selectedMediaMoveAnimations =
+                    UI.Flip.applyReorder UI.Flip.Horizontal SelectedMediaMoveSettled mediaId neighborId movedEl neighborEl newModel.selectedMediaMoveAnimations
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        AnimateSelectedMediaMove animMsg ->
+            let
+                step key state ( states, accCmds ) =
+                    let
+                        ( newState, cmd ) =
+                            UI.Flip.moveAnimate animMsg state
+                    in
+                    ( Dict.insert key newState states, cmd :: accCmds )
+
+                ( newSelectedMediaMoveAnimations, cmds ) =
+                    Dict.foldl step ( Dict.empty, [] ) model.selectedMediaMoveAnimations
+            in
+            ( { model | selectedMediaMoveAnimations = newSelectedMediaMoveAnimations }, Cmd.batch cmds, ( Nothing, Nothing ) )
+
+        SelectedMediaMoveSettled mediaId ->
+            ( { model
+                | selectedMediaMoveAnimations =
+                    Dict.update mediaId (Maybe.map (\state -> { state | moving = False })) model.selectedMediaMoveAnimations
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        RemoveSelectedMediaClicked mediaId ->
+            ( { model
+                | selectedMediaAnimations =
+                    Dict.update mediaId (Maybe.map (UI.Flip.remove (RemoveSelectedMediaAnimation mediaId))) model.selectedMediaAnimations
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        RemoveSelectedMediaAnimation mediaId ->
+            ( { model
+                | selectedMedia = List.filter (\media -> media.id /= mediaId) model.selectedMedia
+                , selectedMediaAnimations = Dict.remove mediaId model.selectedMediaAnimations
+                , selectedMediaMoveAnimations = Dict.remove mediaId model.selectedMediaMoveAnimations
+              }
+            , Cmd.none
+            , ( Nothing, Nothing )
+            )
+
+        SaveMediaClicked _ ->
+            -- The saved `List MediaReference` travels on the message itself
+            -- (see its own doc) -- nothing here needs it, this just closes
+            -- the panel as the visible "saved" feedback, same as
+            -- `MediaItemClicked`'s `SingleSelect` branch above.
+            ( { init | zoom = model.zoom }, Cmd.none, ( Nothing, Nothing ) )
+
+        NoOp ->
+            ( model, Cmd.none, ( Nothing, Nothing ) )
+
+
+{-| Prepends `mediaRef` to `model.selectedMedia` (seeding a fresh `enter` fade
+for it in `selectedMediaAnimations`) -- shared by `MediaItemClicked`'s
+`MultiSelect` branch (a tapped grid item) and `GotMediaResult`'s
+`pendingUploadSelection` consumption (a just-uploaded item). A no-op if
+`mediaRef` is already selected -- re-tapping an already-picked grid item (or,
+in principle, re-uploading the exact same already-there id, which can't
+actually happen) shouldn't duplicate it in the strip.
+-}
+addSelectedMedia : MediaReference -> Model -> Model
+addSelectedMedia mediaRef model =
+    if List.any (\selected -> selected.id == mediaRef.id) model.selectedMedia then
+        model
+
+    else
+        { model
+            | selectedMedia = mediaRef :: model.selectedMedia
+            , selectedMediaAnimations = Dict.insert mediaRef.id UI.Flip.enter model.selectedMediaAnimations
+        }
+
+
+{-| DOM id for a selected-media strip item (see `selectedMediaItemView`) --
+what `UI.Flip.beginReorder`/`applyReorder` measure pre-swap rects against,
+mirroring `AccountsPanel.serverChipDomId`.
+-}
+selectedMediaDomId : String -> String
+selectedMediaDomId mediaId =
+    "my-media-panel-selected-" ++ mediaId
 
 
 {-| Reconciles `mediaAnimations` with `status`'s current `Fetched` list:
@@ -446,7 +767,11 @@ sub, this panel's tiles only ever render while it's open, so nothing outside
 subscriptions : Model -> Sub Msg
 subscriptions model =
     if isOpen model then
-        UI.Flip.subscription AnimateItemFlip (Dict.values model.mediaAnimations |> List.map .flip)
+        Sub.batch
+            [ UI.Flip.subscription AnimateItemFlip
+                (List.map .flip (Dict.values model.mediaAnimations) ++ Dict.values model.selectedMediaAnimations)
+            , UI.Flip.moveSubscription AnimateSelectedMediaMove (Dict.values model.selectedMediaMoveAnimations)
+            ]
 
     else
         Sub.none
@@ -690,12 +1015,14 @@ view accountsPanelModel model =
                 , button [ class "my-media-panel-close", onClick CloseClicked ] [ text "✕" ]
                 ]
             ]
+        , selectedMediaStripView accountsPanelModel model
         , div [ class "my-media-panel-content" ] (contentView accountsPanelModel model)
         , if hasMedia model then
             zoomSliderView model
 
           else
             text ""
+        , multiSelectActionsView model
         ]
 
 
@@ -736,7 +1063,7 @@ mediaAllowed selectionType media =
         Just (SingleSelect { imagesOnly }) ->
             not imagesOnly || String.startsWith "image/" media.contentType
 
-        Just MultiSelect ->
+        Just (MultiSelect _) ->
             True
 
         Nothing ->
@@ -952,25 +1279,63 @@ mediaAnimationView server account model ( mediaId, anim ) =
 
             else
                 []
+
+        selected =
+            List.any (\m -> m.id == mediaId) model.selectedMedia
     in
     ( mediaId
     , div (UI.Flip.itemAttributes UI.Flip.Horizontal anim.flip False)
-        [ div pointerEventsAttr [ mediaItemView server account model.deletingIds anim.media ] ]
+        [ div pointerEventsAttr [ mediaItemView server account model.targetHost model.deletingIds selected anim.media ] ]
     )
 
 
-mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Set String -> Media -> Html Msg
-mediaItemView server account deletingIds media =
+{-| `selected` (true while this grid item's id is currently in
+`model.selectedMedia`, i.e. `MultiSelect` mode's own picked list -- always
+`False` outside that mode, nothing else ever sets it) tints the tile with
+`background-color-primary` (the same utility class `serverChip`'s own
+selected-state and `postCardView`'s `current` card use for "this one's
+picked/active") so a glance at the grid shows what's already in the strip
+above without needing to scan it -- picking the same already-selected item
+again is a no-op (see `MediaItemClicked`'s `MultiSelect` branch), so this is
+purely a "you already have this" signal, not a toggle indicator. That utility
+class is per-server (see `UI.EmittedStylesheet`), so it only takes effect
+paired with `targetHost`'s own `hostnameToCSSClass` on the very same element
+-- omitted entirely while `not selected`, rather than always present, so this
+tile doesn't pick up any of that server's _other_ `hostnameToCSSClass`-scoped
+rules (e.g. anchor-colored links) it has no reason to.
+
+The whole tile is clickable (`onClick`, below) -- not just `MediaRenderer.view`'s
+own image click, which alone would leave the name/type text and the tile's own
+thin padding (`my_media_panel.css`) dead to the touch. Firing the same
+`MediaItemClicked` from both is harmless: `update`'s `MultiSelect` branch
+already no-ops re-adding an already-selected id, and `SingleSelect` already
+closes the panel on the first of the two, making the second (bubbled) dispatch
+land back in `selectionType == Nothing` -- also a no-op. The delete button
+still needs `stopPropagationOn` -- without it, a click there would bubble up
+into this same handler and select/re-add the very item just deleted.
+
+-}
+mediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> String -> Set String -> Bool -> Media -> Html Msg
+mediaItemView server account targetHost deletingIds selected media =
     let
         deleting =
             Set.member media.id deletingIds
+
+        itemClasses =
+            "my-media-panel-item"
+                :: (if selected then
+                        [ hostnameToCSSClass targetHost, "background-color-primary" ]
+
+                    else
+                        []
+                   )
     in
-    div [ class "my-media-panel-item" ]
+    div [ classes itemClasses, onClick (MediaItemClicked media.id) ]
         [ div [ class "my-media-panel-item-preview" ]
             [ MediaRenderer.view MediaRenderer.ExtraSmall server (Just account) MediaItemClicked (toMediaReference media)
             , button
                 [ classes [ "remove-btn", "my-media-panel-item-delete" ]
-                , onClick (DeleteClicked media)
+                , stopPropagationOn "click" (Decode.succeed ( DeleteClicked media, True ))
                 , disabled deleting
                 , title "Delete this media"
                 ]
@@ -989,13 +1354,166 @@ mediaItemView server account deletingIds media =
         ]
 
 
+
+-- SELECTED MEDIA (MultiSelect)
+
+
+{-| The top "selected media" strip -- only rendered while `selectionType` is
+`Just (MultiSelect _)` (`text ""` otherwise, same as `multiSelectActionsView`
+below), and only once `resolve` succeeds (needed to render each item's own
+`MediaRenderer.view`, same requirement `contentView`'s grid has). Left to
+right in `model.selectedMedia`'s own order (see its own doc on why that's a
+plain, caller-owned list rather than something re-derived/sorted) via
+`Html.Keyed`, same `.flip-animated-row` layout `UI.serversStrip` uses for the
+Servers strip.
+-}
+selectedMediaStripView : AccountsPanel.Model -> Model -> Html Msg
+selectedMediaStripView accountsPanelModel model =
+    case ( model.selectionType, resolve accountsPanelModel model.targetHost ) of
+        ( Just (MultiSelect _), Ok resolved ) ->
+            let
+                count =
+                    List.length model.selectedMedia
+            in
+            Html.Keyed.node "div"
+                [ classes [ "my-media-panel-selected-strip", "flip-animated-row" ] ]
+                (List.indexedMap
+                    (\index media -> ( media.id, selectedMediaItemFlip resolved.server resolved.account model count index media ))
+                    model.selectedMedia
+                )
+
+        _ ->
+            text ""
+
+
+{-| Wraps `selectedMediaItemView` in a fading/scaling/collapsing animated
+outer `div` (entering when freshly added, removing when its own Delete button
+is clicked) plus its independent reorder-slide -- exactly mirrors
+`UI.serverChipFlip`/`serverChip`'s own two-layer split (see its doc for the
+full reasoning), `UI.Flip.Horizontal` to match this strip's own left-to-right
+flow.
+-}
+selectedMediaItemFlip : AccountsPanel.Server -> AccountsPanel.Account -> Model -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemFlip server account model count index media =
+    let
+        flipState =
+            Dict.get media.id model.selectedMediaAnimations |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving =
+            Dict.get media.id model.selectedMediaMoveAnimations |> Maybe.map .moving |> Maybe.withDefault False
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
+        [ div pointerEventsAttr [ selectedMediaItemView server account model.selectedMediaMoveAnimations count index media ] ]
+
+
+{-| One selected-media strip item: an `ExtraSmall` preview (tapping it is a
+no-op, see `NoOp`'s own doc), flanked by a ◀/▶ reorder pair (mirroring
+`serverChip`'s own, disabled/hidden at whichever end `index` can't move
+past -- there's no fixed "main" item pinning one end the way Servers' main
+server does, so unlike `serverChip` both ends are only ever gated by
+`index`/`count`) and a `Delete` button that removes this item from the
+selection outright (`RemoveSelectedMediaClicked`) -- no confirmation, see
+that message's own doc for why.
+-}
+selectedMediaItemView : AccountsPanel.Server -> AccountsPanel.Account -> Dict String (UI.Flip.MoveState Msg) -> Int -> Int -> MediaReference -> Html Msg
+selectedMediaItemView server account moveAnimations count index media =
+    let
+        moveAttrs =
+            moveAnimations |> Dict.get media.id |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
+
+        canMoveBackward =
+            index > 0
+
+        canMoveForward =
+            index < count - 1
+
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = onClick (MoveSelectedMediaLeftClicked media.id)
+                , moveForward = onClick (MoveSelectedMediaRightClicked media.id)
+                , canMoveBackward = canMoveBackward
+                , canMoveForward = canMoveForward
+                }
+    in
+    div
+        (id (selectedMediaDomId media.id) :: class "my-media-panel-selected-item" :: moveAttrs)
+        [ div [ class "my-media-panel-selected-item-preview" ]
+            [ MediaRenderer.view MediaRenderer.ExtraSmall server (Just account) (\_ -> NoOp) media ]
+        , div [ class "my-media-panel-selected-item-controls" ]
+            [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveBackward ) ] ] [ reorderPair.backward ]
+            , button
+                [ classes [ "remove-btn", "my-media-panel-selected-item-delete" ]
+                , onClick (RemoveSelectedMediaClicked media.id)
+                , title "Remove from selection"
+                ]
+                [ text "╳" ]
+            , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not canMoveForward ) ] ] [ reorderPair.forward ]
+            ]
+        ]
+
+
+{-| `model.selectedMedia`, minus anything still mid removing-fade (see
+`RemoveSelectedMediaClicked`'s own doc) -- what `multiSelectActionsView`'s
+Save button actually sends on `SaveMediaClicked`, so a fast double-click
+right after removing an item can't resurrect it in the saved result just
+because its fade hadn't finished yet.
+-}
+currentSelectedMedia : Model -> List MediaReference
+currentSelectedMedia model =
+    model.selectedMedia
+        |> List.filter
+            (\media ->
+                Dict.get media.id model.selectedMediaAnimations
+                    |> Maybe.map (\flip -> not flip.removing)
+                    |> Maybe.withDefault True
+            )
+
+
+{-| The bottom "Cancel"/"Save Media" row, shown only while `selectionType` is
+`Just (MultiSelect _)` -- "Cancel" is just `CloseClicked` reused as-is (same
+as the header's own ✕), "Save Media" fires `SaveMediaClicked` carrying
+`currentSelectedMedia`'s own in-order list. See `SaveMediaClicked`'s own doc
+for why the list travels on the message rather than being re-read from
+`model` by whichever page picks this up.
+-}
+multiSelectActionsView : Model -> Html Msg
+multiSelectActionsView model =
+    case model.selectionType of
+        Just (MultiSelect _) ->
+            div [ class "my-media-panel-multi-select-actions" ]
+                [ button [ class "my-media-panel-cancel", onClick CloseClicked ] [ text "Cancel" ]
+                , button
+                    [ classes [ "my-media-panel-save", "background-color-primary" ]
+                    , onClick (SaveMediaClicked (currentSelectedMedia model))
+                    ]
+                    [ text "Save Media" ]
+                ]
+
+        _ ->
+            text ""
+
+
 {-| Floats over `.my-media-panel-content`'s own scrolling (see
 `my_media_panel.css`'s `.my-media-panel-zoom`, `position: absolute` within
 this panel's `position: fixed` root) rather than sitting inline in the
 header/content flow, so it stays reachable at a constant spot regardless of
-how far the grid's scrolled. Drives every item's size via a CSS custom
-property rather than each `input` event re-rendering the whole grid through
-`Sizing` -- see `contentView`'s `Fetched` branch.
+how far the grid's scrolled -- a plain sibling of `.my-media-panel-content`,
+deliberately not nested inside it: nesting it there would make it scroll away
+with that content instead of staying put, since `position: absolute` is
+relative to (and scrolls along with) the nearest positioned _scrolling_
+ancestor, not just the nearest positioned one outright. `my_media_panel.css`
+shifts it up clear of `multiSelectActionsView`'s row once that exists, purely
+via a `:has()` sibling selector -- no Elm-side state needed for that. Drives
+every item's size via a CSS custom property rather than each `input` event
+re-rendering the whole grid through `Sizing` -- see `contentView`'s `Fetched`
+branch.
 -}
 zoomSliderView : Model -> Html Msg
 zoomSliderView model =

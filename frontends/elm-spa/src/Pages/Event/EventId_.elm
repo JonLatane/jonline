@@ -39,6 +39,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Task
 import Time
 import UI
@@ -121,6 +122,12 @@ type alias Model =
     , instanceHistoryDisplay : InstanceHistoryDisplay
     , instanceLayout : InstanceLayout
     , instanceAnimations : Dict String InstanceAnimation
+
+    -- Set by `MediaEditClicked`, until the `Shared.MyMediaPanel` it opens
+    -- reports back a `SaveMediaClicked`/`CloseClicked` -- mirrors
+    -- `Pages.Post.PostId_.Model.mediaEditActive` exactly, see its own doc for
+    -- why this gating is needed at all.
+    , mediaEditActive : Bool
     }
 
 
@@ -141,6 +148,7 @@ init shared params =
                 , instanceHistoryDisplay = OnlyFuture
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
+                , mediaEditActive = False
                 }
     in
     ( fetchedModel
@@ -153,7 +161,9 @@ init shared params =
 
 
 {-| Mirrors `Pages.Post.PostId_.fetchIfReady` exactly -- kicks off the actual
-`GetEvents` fetch the first time `targetHost` is a known, connected server.
+`GetEvents` fetch the first time `targetHost` is a known, connected server
+(see `AccountsPanel.knownConnectedServer` -- a known-but-still-connecting
+`targetHost`, e.g. right after startup, doesn't count).
 -}
 fetchIfReady : Shared.Model -> Model -> ( Model, Effect Msg )
 fetchIfReady shared model =
@@ -161,7 +171,7 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
+        case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True }
                 , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventId
@@ -180,6 +190,37 @@ maybeAccountServerFor shared model =
     )
 
 
+{-| The connected `Server`/signed-in `Account` for `model.targetHost`, if
+both exist -- what `MediaEditClicked`'s own save (via `Shared.MyMediaPanel`'s
+`SaveMediaClicked`) needs to actually submit its `Posts.updatePost` task.
+Mirrors `Pages.Post.PostId_.serverAndAccount`.
+-}
+serverAndAccount : Shared.Model -> Model -> Maybe ( AccountsPanel.Server, AccountsPanel.Account )
+serverAndAccount shared model =
+    Maybe.map2 Tuple.pair
+        (AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost)
+        (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost)
+
+
+{-| Applies a just-saved `updatedPost` to the currently-loaded `Event`'s own
+`post` field (the only one `MediaEditClicked` ever opens the picker for, not
+`instance.post`) -- a no-op if the `Event` isn't loaded at all, which
+shouldn't happen in practice (this is only ever called from
+`GotMediaUpdateResult`, itself only reachable once `MediaEditClicked` has
+already rendered from a loaded `Event`). Mirrors
+`Pages.Post.PostId_.applyUpdatedPost`, just updating a nested field rather
+than `Model`'s own top-level `postStatus`.
+-}
+applyUpdatedEventPost : Model -> Post -> Model
+applyUpdatedEventPost model updatedPost =
+    case model.eventStatus of
+        EventLoaded event instance ->
+            { model | eventStatus = EventLoaded { event | post = Just updatedPost } instance }
+
+        _ ->
+            model
+
+
 
 -- UPDATE
 
@@ -188,6 +229,16 @@ type Msg
     = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
     | GotNow Time.Posix
     | MediaClicked Post String
+      -- The Event's own `Post`'s media-edit button (see `eventDetailView`) --
+      -- opens the shared `Shared.MyMediaPanel` chooser in `MultiSelect` mode,
+      -- mirroring `Pages.Post.PostId_.MediaEditClicked` exactly, including
+      -- reusing plain `UpdatePost` (via `Posts.updatePost`) to save -- the
+      -- backend's `update_post.rs` already updates `media` unconditionally
+      -- for `admin || self_update` regardless of the post's own context
+      -- (`Post`, `Event`, `EventInstance`, ...), so nothing about `UpdateEvent`
+      -- is needed just to change which media this Post carries.
+    | MediaEditClicked Post
+    | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
@@ -513,6 +564,23 @@ update shared req msg model =
         MediaClicked post mediaId ->
             ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
 
+        MediaEditClicked post ->
+            ( { model | mediaEditActive = True }
+            , Effect.fromShared
+                (Shared.MyMediaPanelMsg
+                    (MyMediaPanel.Open
+                        (Just (MyMediaPanel.MultiSelect { initialSelection = post.media }))
+                        model.targetHost
+                    )
+                )
+            )
+
+        GotMediaUpdateResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            ( applyUpdatedEventPost model updatedPost, accountsPanelEffect maybeAccountsPanelMsg )
+
+        GotMediaUpdateResult (Err _) ->
+            ( model, Effect.none )
+
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
             , AccountsPanel.connectToServer (AccountsPanel.isSecure req) model.targetHost
@@ -596,6 +664,40 @@ update shared req msg model =
                     case subMsg of
                         Shared.AccountsPanelMsg _ ->
                             fetchIfReady shared model
+
+                        -- See `Pages.Post.PostId_`'s own identical branch --
+                        -- `mediaEditActive` (set by `MediaEditClicked`) gates
+                        -- this the same way `avatarEdit`/`mediaEditActive`
+                        -- gate their own panels elsewhere, so an unrelated
+                        -- Save from some other use of the panel can't be
+                        -- mistaken for this page's own Event Post edit.
+                        Shared.MyMediaPanelMsg (MyMediaPanel.SaveMediaClicked mediaRefs) ->
+                            if model.mediaEditActive then
+                                case ( model.eventStatus, serverAndAccount shared model ) of
+                                    ( EventLoaded event _, Just ( server, account ) ) ->
+                                        case event.post of
+                                            Just eventPost ->
+                                                ( { model | mediaEditActive = False }
+                                                , Posts.updatePost
+                                                    shared.accountsPanel
+                                                    ( Just account.userId, server.frontendHost )
+                                                    eventPost.id
+                                                    (\freshPost -> { freshPost | media = mediaRefs })
+                                                    |> Task.attempt GotMediaUpdateResult
+                                                    |> Effect.fromCmd
+                                                )
+
+                                            Nothing ->
+                                                ( { model | mediaEditActive = False }, Effect.none )
+
+                                    _ ->
+                                        ( { model | mediaEditActive = False }, Effect.none )
+
+                            else
+                                ( model, Effect.none )
+
+                        Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
+                            ( { model | mediaEditActive = False }, Effect.none )
 
                         _ ->
                             ( model, Effect.none )
@@ -710,7 +812,10 @@ eventDetailView shared model event instance =
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
             Just eventPost ->
-                postSection (MediaClicked eventPost) True instanceDetailAndStrip eventPost
+                div []
+                    [ postSection (MediaClicked eventPost) True instanceDetailAndStrip eventPost
+                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                    ]
 
             Nothing ->
                 text ""

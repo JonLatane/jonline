@@ -37,6 +37,7 @@ module Shared.AccountsPanel exposing
     , isKnownServer
     , isMainServer
     , isSecure
+    , knownConnectedServer
     , mainServerTheme
     , mediaBaseUrl
     , mediaUrl
@@ -2338,6 +2339,32 @@ account's `server` field.
 serverForHost : List Server -> String -> Maybe Server
 serverForHost servers frontendHost =
     servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
+
+
+{-| `serverForHost`, but only if that entry is both known *and* actually
+connected -- a known-but-disconnected entry (see `Server.connected`) is
+treated the same as not known at all. `init` seeds every persisted server
+disconnected before its own reconnect attempt resolves (see `init`'s own
+doc), so a route-driven fetch gated on plain `serverForHost` alone can fire
+against that placeholder the instant the app boots, before there's an actual
+connection to fetch from -- failing immediately, and (since these fetches are
+typically only attempted once) staying failed even after the real reconnect
+lands moments later. Callers that need to fetch from a specific route-named
+host (`Pages.Event.EventId_`, `Pages.Post.PostId_`,
+`Components.Users.Resolver`) should gate on this instead of `serverForHost`
+directly.
+-}
+knownConnectedServer : List Server -> String -> Maybe Server
+knownConnectedServer servers frontendHost =
+    serverForHost servers frontendHost
+        |> Maybe.andThen
+            (\server ->
+                if server.connected /= Nothing then
+                    Just server
+
+                else
+                    Nothing
+            )
 
 
 {-| The signed-in account to use for `frontendHost`, if there is one --

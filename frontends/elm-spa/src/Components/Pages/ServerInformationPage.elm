@@ -157,23 +157,15 @@ init shared pageIsSecure targetHost =
 
 
 {-| `Shared.AccountsPanel`'s cached entry for `targetHost`, if it's both known
-*and* actually connected -- a known-but-disconnected entry (see
-`AccountsPanel.Server.connected`) is treated the same as not known at all, so
-this page falls back to its own probe (just like a never-added host) rather
-than trying to show configuration/admins/version for a server it can't
-currently reach.
+*and* actually connected (see `AccountsPanel.knownConnectedServer`) -- a
+known-but-disconnected entry is treated the same as not known at all, so this
+page falls back to its own probe (just like a never-added host) rather than
+trying to show configuration/admins/version for a server it can't currently
+reach.
 -}
 knownConnectedServer : Shared.Model -> String -> Maybe AccountsPanel.Server
 knownConnectedServer shared targetHost =
-    AccountsPanel.serverForHost shared.accountsPanel.servers targetHost
-        |> Maybe.andThen
-            (\server ->
-                if server.connected /= Nothing then
-                    Just server
-
-                else
-                    Nothing
-            )
+    AccountsPanel.knownConnectedServer shared.accountsPanel.servers targetHost
 
 
 {-| The `Server` to actually show details for -- whichever the app already

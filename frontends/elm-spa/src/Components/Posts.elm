@@ -8,6 +8,7 @@ module Components.Posts exposing
     , fetchPosts
     , fetchReplies
     , isAuthor
+    , mediaEditButton
     , parsePostRouteId
     , postCard
     , postCommentCount
@@ -689,6 +690,29 @@ editButton maybeAccount onEditClicked post =
             text ""
 
 
+{-| `editButton`'s counterpart for `postDetail`'s media block -- shown below
+`MultiMediaRenderer.view` (see `postDetail`) to `post`'s own author (same
+`isAuthor` gate as `editButton`) _or_ an `ADMIN` account, mirroring
+`backend/src/rpcs/posts/update_post.rs`'s own `admin || self_update` check
+(that's what actually gates whether an `UpdatePost` carrying a changed
+`media` list is accepted at all). Opens the shared `Shared.MyMediaPanel`
+media chooser via `onMediaEditClicked` (`Pages.Post.PostId_`'s own
+`MediaEditClicked`), unlike `editButton`'s Markdown panel.
+-}
+mediaEditButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+mediaEditButton maybeAccount onMediaEditClicked post =
+    case maybeAccount of
+        Just account ->
+            if isAuthor account post || List.member ADMIN account.permissions then
+                button [ class "post-media-edit-button", Html.Events.onClick onMediaEditClicked ] [ text "Edit" ]
+
+            else
+                text ""
+
+        Nothing ->
+            text ""
+
+
 {-| Compact rendering for a list of posts from multiple servers at once (see
 the Home page's feed) -- shows which server a post is from, since that isn't
 otherwise obvious once posts from several are mixed together by recency. Tinted
@@ -1012,8 +1036,8 @@ whatever `Html` it's given in after the author link, in place of what used to
 be a bare `postVisibilityText post` text node.
 
 -}
-postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
-postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked onEditClicked visibilityView post =
+postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
+postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1041,7 +1065,10 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 text ""
         , case maybeServer of
             Just server ->
-                MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
+                div []
+                    [ MultiMediaRenderer.view server maybeAccount onMediaClicked post.media
+                    , div [ class "post-detail-media-edit-row" ] [ mediaEditButton maybeAccount onMediaEditClicked post ]
+                    ]
 
             Nothing ->
                 text ""

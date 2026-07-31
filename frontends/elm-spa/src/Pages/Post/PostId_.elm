@@ -20,6 +20,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPostsPanel as StarredPostsPanel
 import Task
 import Time
@@ -78,6 +79,16 @@ type alias Model =
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
     , visibilityEdit : Maybe VisibilityEdit
+
+    -- Set by `MediaEditClicked`, until the `Shared.MyMediaPanel` it opens
+    -- reports back a `SaveMediaClicked`/`CloseClicked` -- same "am I mid-edit"
+    -- gating `Components.Pages.UserProfilePage.avatarEdit` uses for its own
+    -- `MyMediaPanel.MediaItemClicked` pickup (see that module's doc), needed
+    -- here for the same reason: `MyMediaPanel`'s `Shared.Msg`s are forwarded
+    -- to whichever page is current regardless of who opened the panel, so
+    -- without this an unrelated Browse-mode/other-page save could be
+    -- mistaken for this page's own.
+    , mediaEditActive : Bool
     }
 
 
@@ -96,6 +107,7 @@ init shared params =
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
                 , visibilityEdit = Nothing
+                , mediaEditActive = False
                 }
     in
     ( fetchedModel
@@ -127,7 +139,7 @@ fetchIfReady shared model =
         ( model, Effect.none )
 
     else
-        case AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost of
+        case AccountsPanel.knownConnectedServer shared.accountsPanel.servers model.targetHost of
             Just _ ->
                 ( { model | fetchStarted = True }
                 , Posts.fetchPost shared.accountsPanel (maybeAccountServerFor shared model) model.postId
@@ -199,6 +211,8 @@ type Msg
     | EditClicked Post
     | ReplyClicked Post
     | MediaClicked Post String
+    | MediaEditClicked Post
+    | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
     | VisibilityEditClicked Post
     | VisibilityChanged String
     | VisibilityCancelClicked
@@ -371,6 +385,27 @@ update shared req msg model =
         MediaClicked post mediaId ->
             ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
 
+        MediaEditClicked post ->
+            ( { model | mediaEditActive = True }
+            , Effect.fromShared
+                (Shared.MyMediaPanelMsg
+                    (MyMediaPanel.Open
+                        (Just (MyMediaPanel.MultiSelect { initialSelection = post.media }))
+                        model.targetHost
+                    )
+                )
+            )
+
+        GotMediaUpdateResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            let
+                ( postUpdatedModel, postUpdatedEffect ) =
+                    applyUpdatedPost model updatedPost
+            in
+            ( postUpdatedModel, Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, postUpdatedEffect ] )
+
+        GotMediaUpdateResult (Err _) ->
+            ( model, Effect.none )
+
         VisibilityEditClicked post ->
             ( { model | visibilityEdit = Just { pending = post.visibility, status = Idle } }, Effect.none )
 
@@ -455,6 +490,35 @@ update shared req msg model =
 
                         Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
                             refetch shared model
+
+                        -- `Shared.MyMediaPanel`'s own module doc covers why
+                        -- this arrives as a forwarded `Shared.Msg` rather
+                        -- than a callback -- gated on `mediaEditActive` (set
+                        -- by `MediaEditClicked`) so a Save from some
+                        -- unrelated use of the panel elsewhere can't be
+                        -- mistaken for this page's own edit.
+                        Shared.MyMediaPanelMsg (MyMediaPanel.SaveMediaClicked mediaRefs) ->
+                            if model.mediaEditActive then
+                                case serverAndAccount shared model of
+                                    Just ( server, account ) ->
+                                        ( { model | mediaEditActive = False }
+                                        , Posts.updatePost
+                                            shared.accountsPanel
+                                            ( Just account.userId, server.frontendHost )
+                                            model.postId
+                                            (\freshPost -> { freshPost | media = mediaRefs })
+                                            |> Task.attempt GotMediaUpdateResult
+                                            |> Effect.fromCmd
+                                        )
+
+                                    Nothing ->
+                                        ( { model | mediaEditActive = False }, Effect.none )
+
+                            else
+                                ( model, Effect.none )
+
+                        Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
+                            ( { model | mediaEditActive = False }, Effect.none )
 
                         _ ->
                             ( model, Effect.none )
@@ -558,6 +622,7 @@ postDetailView shared model post =
         maybeServer
         maybeAccount
         onMediaClicked
+        (MediaEditClicked displayPost)
         starred
         onStarClicked
         (EditClicked post)
