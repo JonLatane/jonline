@@ -81,7 +81,8 @@ Commands:
                              (forks server + jobs, see below)
     server                   Run the Jonline server (jonline-server)
     jobs                     Run background jobs on a loop (@@JOBS_SCRIPT_PATH@@) --
-                             delete_expired_tokens every 2m, delete_unowned_media every 8h, ...
+                             delete_expired_tokens every 2m, delete_unowned_media every 8h,
+                             sync_event_sync_sources every 1m, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
@@ -106,6 +107,8 @@ Commands:
 
     delete_expired_tokens    Delete expired auth tokens from the database
     delete_unowned_media     Delete media no longer referenced by any post/user/etc.
+    sync_event_sync_sources  Sync any EventSyncSource (ICS subscription) that's due, per its
+                             sync_interval_seconds/last_synced_at
     generate_preview_images  Generate media preview images -- requires Brave Browser
                              installed at /usr/bin/brave-browser (e.g. `apt install
                              brave-browser`) plus ad/cookie-blocking Chrome extensions
@@ -267,6 +270,10 @@ delete_expired_tokens() {
 
 delete_unowned_media() {
   _jonline_exec_bin delete_unowned_media "$@"
+}
+
+sync_event_sync_sources() {
+  _jonline_exec_bin sync_event_sync_sources "$@"
 }
 
 # Renders media preview images headlessly. Requires Brave Browser at
@@ -474,7 +481,7 @@ case "$cmd" in
   help|-h|--help)
     jonline_help
     ;;
-  server_and_jobs|server|jobs|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl|install|show_latest|update|cleanup_updates|uninstall)
+  server_and_jobs|server|jobs|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|sync_event_sync_sources|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl|install|show_latest|update|cleanup_updates|uninstall)
     "$cmd" "$@"
     ;;
   *)

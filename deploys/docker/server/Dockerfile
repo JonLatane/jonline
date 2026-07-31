@@ -10,6 +10,7 @@ COPY backend/target/release/jonline__server_release /opt/jonline
 COPY backend/target/release/disable_cdn_grpc__server_release /opt/disable_cdn_grpc
 COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_expired_tokens
 COPY backend/target/release/delete_unowned_media__server_release /opt/delete_unowned_media
+COPY backend/target/release/sync_event_sync_sources__server_release /opt/sync_event_sync_sources
 
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images

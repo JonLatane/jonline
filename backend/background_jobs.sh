@@ -24,6 +24,7 @@ set -euo pipefail
 JOBS=(
   "delete_expired_tokens 0 120"
   "delete_unowned_media 10 28800"
+  "sync_event_sync_sources 5 60"
 )
 
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"
