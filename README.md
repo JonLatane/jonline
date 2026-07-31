@@ -3,13 +3,19 @@
 [![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)
 [![BullCity.social](https://bullcity.social/info_shield?b6713cbc)](https://bullcity.social)
 [![OakCity.social](https://oakcity.social/info_shield?b6713cbc)](https://oakcity.social)
+[![ATO.band](https://ato.band/info_shield?b6713cbc)](https://ato.band)
+
+[![Homebrew](https://img.shields.io/badge/macOS-Homebrew-purple?logo=homebrew&logoColor=white)](#macos-install-and-run-via-homebrew) [![Linux](https://img.shields.io/badge/Linux-Self%20Updating%20.tar.bz2-green?logo=linux&logoColor=white)](#linux-self-updateable-tarbz2-with-arm64-and-amd64-binaries-and-launcher)
 
 
-Jonline is an open-source, community-scale social network designed to be capable of "[dumfederating](#dumfederation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
+[![DockerHub Server Images](https://img.shields.io/docker/v/jonlatane/jonline?label=dockerhub:jonline)](https://hub.docker.com/r/jonlatane/jonline/tags) [![DockerHub Preview Generator Images](https://img.shields.io/docker/v/jonlatane/jonline_preview_generator?label=dockerhub:jonline_preview_generator)](https://hub.docker.com/r/jonlatane/jonline_preview_generator/tags)
+
+
+Jonline is an open-source, community-scale social network designed to be capable of "[dumfederating](#dumfederation)" with other Jonline instances/communities, making sharing between local-size instances easy. All web-facing features in Jonline - the Elm app, Tamagui/React app, the Flutter app, and Media endpoints - are written with easy-to-read AGPL code, `localStorage` (or system storage, for native Flutter apps), and neither set nor read cookies at all, ever. Thus, an unmodified Jonline server shouldn't need a cookie notice under the GDPR or CCPA. Moreover, any modified version of Jonline that *does* use cookies would violate the AGPL if the source weren't provided to users.
 
 Meanwhile, in support of media creators/providers who might want to self-host Jonline for themselves or in a consortium (whether in lieu of or in addition to monolithic social media presence like YouTube or Twitch), Jonline's CORS support does still afford private media holders a basic way to control who can see their content. Further, better Media permission/visibility controls could definitely be added, should, say, video creators or streamers want to migrate to self-hosting using a Jonline instance as their decentralized video platform to charge for premium content.
 
-The "dev" instance is up at [Jonline.io](https://jonline.io). Two "production" instances are also at [BullCity.Social](https://bullcity.social) and [OakCity.Social](https://oakcity.social). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind Cloudflare's free CDN.)
+The "dev" instance is up at [Jonline.io](https://jonline.io). Three "production" instances are also at [BullCity.Social](https://bullcity.social), [OakCity.Social](https://oakcity.social), and [ATO.Band](https://ato.band). Unless I'm doing some testing with Jonline.io, all three should be configured to be able to federate with one another (or, for clients to federate between them). For anyone curious, all three (along with their corresponding Postgres and MinIO) live on a single-box DigitalOcean K8s instance. Between the 3 Load Balancers, storage, and compute resources, [it costs about $60/mo to run the 3 domains, though that cost can be brought closer to $40/mo](#cost-of-operation). (All also keep their media and HTML/CSS/JS behind Cloudflare's free CDN.)
 
 [![Buy me a coffee!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20coffee%20☕️-venmo-information?labelColor={}&color={})](https://account.venmo.com/u/Jon-Latane)
 [![Buy me a beer!](https://img.shields.io/badge/🙏%20Buy%20me%20a%20beer%20🍺-paypal-information?labelColor={}&color={})](https://paypal.me/JLatane)
@@ -157,9 +163,10 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
 
 | Deployment                                                                                                    | Purpose                          | Federation Settings                                                                              | Links                                                                                                                                           | Deployment Version |
 | ------------------------------------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| [Jonline.io ![Favicon](https:/jonline.io/favicon.png) ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Elm UI](https://jonline.io/elm/), [Tamagui/React UI](https://jonline.io/tamagui/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development/Canary        |
-| [BullCity.Social ![Favicon](https:/BullCity.Social/favicon.png) ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Elm UI](https://BullCity.Social/elm/), [Tamagui/React UI](https://BullCity.Social/tamagui/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
-| [OakCity.Social ![Favicon](https:/OakCity.Social/favicon.png) ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
+| [Jonline.io ![Jonline.io](https://jonline.io/info_shield?b6713cbc)](https://jonline.io)                      | Flagship demo/informational site | [BullCity.Social (pinned), OakCity.Social (pinned)](https://jonline.io/about?section=federation) | [About](https://jonline.io/about), [Elm UI](https://jonline.io/elm/), [Tamagui/React UI](https://jonline.io/tamagui/), [Protocol Docs](https://jonline.io/docs/protocol/)                | Development/Canary        |
+| [BullCity.Social ![BullCity.Social](https://BullCity.Social/info_shield?b6713cbc)](https://BullCity.Social/) | Durham, NC Community Page        | [OakCity.Social (pinned)](https://bullcity.social/about?section=federation)                      | [About](https://BullCity.Social/about), [Elm UI](https://BullCity.Social/elm/), [Tamagui/React UI](https://BullCity.Social/tamagui/), [Protocol Docs](https://BullCity.Social/docs/protocol/) | Production         |
+| [OakCity.Social  ![OakCity.Social](https://OakCity.Social/info_shield?b6713cbc)](https://OakCity.Social/)     | Raleigh, NC Community Page       | [BullCity.Social (pinned)](https://OakCity.Social/about?section=federation)                      | [About](https://OakCity.Social/about), [Elm UI](https://OakCity.Social/elm/), [Tamagui/React UI](https://OakCity.Social/tamagui/), [Protocol Docs](https://OakCity.Social/docs/protocol/)    | Production         |
+| [ATO.Band ![ato.band](https://ato.band/info_shield?b6713cbc)](https://ato.band/)     | Site for my band, Against The Odds | [BullCity.Social (pinned)](https://ato.band/about?section=federation)                      | [About](https://ato.band/about), [Elm UI](https://ato.band/elm/), [Tamagui/React UI](https://ato.band/tamagui/), [Protocol Docs](https://ato.band/docs/protocol/)    | Production         |
 
 - [Jonline  ](#jonline--)
   - [Packages, Images \& Deployments](#packages-images--deployments)
@@ -191,12 +198,12 @@ To set up a deployment yourself, see: [Quick deploy to your own cluster](#quick-
       - [Architecture/Deployment Management](#architecturedeployment-management)
       - [Rust Backend](#rust-backend)
       - [Frontends](#frontends)
+        - [Elm Frontend](#elm-frontend)
         - [Web (Tamagui/React/Next.js) Frontend](#web-tamaguireactnextjs-frontend)
         - [Flutter Frontend (Deprecated/To Be Deleted Unless A Contributor Fixes It)](#flutter-frontend-deprecatedto-be-deleted-unless-a-contributor-fixes-it)
   - [Quick deploy to your own cluster](#quick-deploy-to-your-own-cluster)
-    - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and (yet-incomplete) integrated cross-namespace load balancing](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-yet-incomplete-integrated-cross-namespace-load-balancing)
+    - [Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and cross-namespace load balancing with Traefik](#deployment-management-domains-and-tls-certs-deploying-multiple-jonline-instances-to-different-k8s-namespaces-in-the-same-cluster-and-cross-namespace-load-balancing-with-traefik)
   - [Motivations](#motivations)
-    - [Scaling Social Software via Dumfederation](#scaling-social-software-via-dumfederation)
 
 ## What is Jonline?
 
@@ -220,7 +227,8 @@ One way to think of Jonline is as social media meets the email server model (I u
 
 Another way to think of Jonline is that it's like Slack or Discord, except instead of messages/channels/voice chats, it's just for Posts and Events. And your Jonline instance is code you can actually see running on equipment you own, not proprietary code running on a corporation's servers.
 
-A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [AGPL license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md). All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few minutes to get the [prebuilt image](https://hub.docker.com/repository/docker/jonlatane/jonline) up and running.
+A core goal is to make Jonline dogshit easy (🐕💩EZ) for anyone else to deploy to any Kubernetes provider of their choosing (and to fork and modify). It's also (optimistically) simple and straightforward enough to serve as a starter for many projects, so long as they retain the [AGPL license Jonline is released under](https://github.com/JonLatane/jonline/blob/main/LICENSE.md). All you need is a Kubernetes (k8s) cluster, `git`, `kubectl`, `make`, and a few minutes to get the [prebuilt image](https://hub.docker.com/repository/docker/jonlatane/jonline) up and running. This very document also has instructions for  a [2 minute startup with Homebrew](#2-minute-startup-with-homebrew) and [3 minute startup on Linux](#3-minute-startup-on-linux).
+
 
 In a perfect Jonline universe, every local business with a sip 'n' sketch, open mic, trivia night, run/bike club, etc.; every arts council, parks & rec department, library, etc. could run a Jonline instance on their own hardware or from any number of providers (because it's very cheap to host lots of Jonline instances on a cloud, by design) for a cost of $20-50/year from a provider, or for free on their own servers. Members of these communities could sign up only with the ones they want, and view events/posts where they want, when they want. Those community members don't need to share emails or phone numbers to do anything on these communities. Moderation is done by people working at the businesses/organizations. No one can become a billionaire running it, but also, users can participate in all these communities online without their data becoming the property of some billionaire.
 
@@ -376,8 +384,9 @@ Additionally, the following components are *themselves* documented in `README.md
 - [`README.md`](https://github.com/JonLatane/jonline/blob/main/README.md#documentation-1): README Documentation Root (*literally this file you're reading right now*)
   - [`protos/README.md`](https://github.com/JonLatane/jonline/blob/main/protos/README.md): gRPC APIs
   - [`backend/README.md`](https://github.com/JonLatane/jonline/blob/main/backend/README.md): Rust Backend
-  - [`frontends/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): General Frontend Information
-    - [`frontends/tamagui/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): Web (Tamagui/React/Next.js) Frontend
+  - [`frontends/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/README.md): General Frontend Information
+    - [`frontends/elm/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): Elm Frontend
+    - [`frontends/tamagui/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/tamagui/README.md): Tamagui/React/Next.js Frontend
     - [`frontends/flutter/README.md`](https://github.com/JonLatane/jonline/blob/main/frontends/flutter/README.md): Flutter Frontend
   - [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md): Deployment Management
     - [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md): TLS Certificate Generation
@@ -397,28 +406,19 @@ At its core, Jonline is a boring client-server app; the Browser/App, HTTP server
 
 Generally, Jonline is designed to be straightforward to deploy to Kubernetes clusters so long as you have `make`, `kubectl`, and `jq`. To this end, Jonline has a "simple" deployment structure, and a more scalable alternative using Traefik:
 
-| Simple (Current) Approach                                                                                                                                 | Scalable Approach                                                                                                                    |
+| Simple Approach                                                                                                                                 | Scalable Approach                                                                                                                    |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | ![K8s cluster with multiple Jonline Kubernetes LoadBalancers](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Kubernetes_Deployment.svg) | ![K8s with single Trafik LoadBalancer](https://github.com/JonLatane/jonline/blob/main/docs/architecture/Traefik_Kubernetes_Deployment.svg) |
-|                                                                                                                                                           | Yet to be implemented. See [Cost of Operation](#cost-of-operation) for motivations                                                   |
+|                                                                                                                                                           | See [`deploys/ingress/README.md`]([#cost-of-operation](https://github.com/JonLatane/jonline/blob/main/deploys/ingress/README.md)) for details.                                                   |
 
 [Jonline's architecture docs](https://github.com/JonLatane/jonline/tree/main/docs/architecture) also cover and link to such topics as:
 
 - [Deployment management, in `deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys)
-    - This handles Jonline as well as Postgres and MinIO
+    - This handles Jonline as well as Postgres and MinIO.
 - [TLS cert generation, in `deploys/generated_certs`](https://github.com/JonLatane/jonline/tree/main/deploys/generated_certs)
 - [Traefik ingress management, in `deploys/ingress`](https://github.com/JonLatane/jonline/tree/main/deploys/ingress)
 
-[CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), hooking into the Server
-
-For quick reference, here are *all* the relevant badges:
-
-[![Server CI/CD Badge](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/server_ci_cd.yml)
-[![Proto Consistency](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/proto_consistency.yml)
-[![Flutter iOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_ios.yml)
-[![Flutter Android Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_android.yml)
-[![Flutter macOS Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_macos.yml)
-[![Flutter Windows Build Badge](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml/badge.svg)](https://github.com/jonlatane/jonline/actions/workflows/flutter_windows.yml)
+[CI/CD logic is defined in `.github/workflows/`](https://github.com/JonLatane/jonline/tree/main/.github/workflows). If you can set up a Kubernetes deployment with the instructions in [`deploys/`](https://github.com/JonLatane/jonline/tree/main/deploys), it should be straightforward to integrate your own CI into 
 
 #### Rust Backend
 
@@ -428,9 +428,14 @@ The [Rust backend, in `backend/`](https://github.com/JonLatane/jonline/tree/main
 
 [Jonline Frontends are grouped together in `frontends/`.](https://github.com/JonLatane/jonline/tree/main/frontends) Specific iOS, Android, and/or desktop frontends would be welcome contributions!
 
+##### Elm Frontend
+
+The [Elm frontend, in `frontends/elm-spa`](https://github.com/JonLatane/jonline/tree/main/frontends/elm-spa), is the new "public Web face" of any Jonline instance. It's built with [Elm](https://elm-lang.org/) and [Elm-Spa](https://www.elm-spa.dev).
+
+
 ##### Web (Tamagui/React/Next.js) Frontend
 
-The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonline/tree/main/frontends/tamagui), is the "public Web face" of any Jonline instance. It's built with [Tamagui](https://tamagui.dev) (a somewhat Flutter-like UI toolkit and build system built atop [yarn](https://yarnpkg.com/), [React](https://react.dev), [React Native](https://reactnative.dev), and [Next.JS](https://nextjs.org)), along with [Redux](https://redux.js.org) among others.
+The [Tamagui frontend, in `frontends/tamagui`](https://github.com/JonLatane/jonline/tree/main/frontends/tamagui), was, until recently, the "public Web face" of any Jonline instance. It's the most "complete" UI, and some features can still only be edited in this UI. It's built with [Tamagui](https://tamagui.dev) (a somewhat Flutter-like UI toolkit and build system built atop [yarn](https://yarnpkg.com/), [React](https://react.dev), [React Native](https://reactnative.dev), and [Next.JS](https://nextjs.org)), along with [Redux](https://redux.js.org) among others.
 
 Notably, in the future, with Tamagui, it should be possible to build iOS/Android apps from the existing Jonline source (after some effort to port less-native-friendly third-party components).
 
@@ -474,28 +479,14 @@ That's it! You've created Minio and Postgres servers along with an *unsecured Jo
 
 Simply `kubectl delete namespace jonline` to delete your deployment (or see below for more detailed management instructions).
 
-### Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and (yet-incomplete) integrated cross-namespace load balancing
+### Deployment management: domains and TLS certs; deploying multiple `jonline` instances to different K8s namespaces in the same cluster; and cross-namespace load balancing with Traefik
 
 [`deploys/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/Makefile), [`deploys/generated_certs/Makefile`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/Makefile), and a few of Jonline's Rust binaries (mostly the main `jonline` server) provide the tools to update your deployment, point a domain at it, manage TLS certificates, and more.
 
-For details on these scenarios and more when deploying to your own cluster, see [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md) and [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md).
+For details on these scenarios and more when deploying to your own cluster, see [`deploys/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/README.md), [`deploys/generated_certs/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/generated_certs/README.md), and [`deploys/ingress/README.md`](https://github.com/JonLatane/jonline/blob/main/deploys/ingress/README.md).
 
 ## Motivations
 
-Current social media and messaging solutions all kind of suck. The early open source software (OSS) movement, dating to the 80s, was generally right about many of the problems that have arisen mixing a market(ing)-based economy with social computing. If we entrust our social interactions to applications with closed source run on private Alphabet, Meta, Apple, etc. servers, *of course we're going to see the disinformation and effective-advertising-driven consumerism that plague the world today*. These models are profitable.
+Signal is really good for private communication and group chats. However, we need something like this for public community organizing, and really alternative social media in general. In my opinion, ActivityPub and ATProto are at the same time limited in terms of actual social management features, outright bad at events management, and they're badly documented and unclear APIs. Jonline seeks to be a very pragmatic Reddit/Twitter/Usenet/Facebook Events hybrid that doesn't do algorithmic rankings at all.
 
-Meanwhile, email has existed for a *long time* even though it's not particularly profitable. Notably, email is a federated protocol. You can use any email provider to talk to anyone else on any other email provider. At any time, you can take all your message history to any other email provider. It's even easy to set up forwarding/notifying contacts of an address change *just because* the email protocol is so standardized. And while, yes, spam was a problem at one point, the consequences of social media meeting data-driven advertising have been demonstrably more problematic and harder to solve via legislation.
-
-There isn't an open federated protocol like email for a complete posts+events+messaging package, even though this is essentially how most people use a large amount of their screen time. Lots of non-open, privatized implementations exist, like Facebook, Google+, and so forth. Other federated protocols like XMPP and CalDAV have replicated many of the communication features we use social media for, but are really meant for decades-old problems rather than what social media apps "solve." XMPP and CalDAV have seen varying degrees of success, but like many protocols more than a decade old, they're a bit obscure and hard to use; most devs only use "high-level" libraries to do this kind of work. Fortunately, in the last decade or so, Google has built and refined a free way to [create a protocol ourselves](https://grpc.io) that works in virtually any language and is straightforward enough for most developers.
-
-So, Jonline is a shot at implementing federated, open social media, in a way that is easy for developers to modify and, perhaps most importantly, for *users to understand*.
-
-### Scaling Social Software via Dumfederation
-
-At the same time as the closed source/private server model has grown due to its profitability, software complexity has grown immensely to handle scaling these "modern" applications. We have ETLs, data lakes, statistics, and near-infinite ways of easily creating "trillions of points"-size data sets that require hundreds of thousands of dollars' worth of computing power, and leveraging them for any number of rarely-publicly-disclosed purposes (mostly "make money").
-
-But is scaling social media applications in this way *necessary for people to socially interact, sharing pictures and videos with friends and their favorite celebrities and arists*? Or is it *the best way to keep data available for marketing and other private use*? Or more simply: are we optimizing for profit, or for actual computer performance? There are many legitimate applications for, say, MapReduce across a huge privately-owned cluster, like making the entire Internet searchable. But for communicating with a network of friends you know in real life, and artists/actors/academics/poets/etc., it's not really necessary.
-
-Jonline is a federated social network. The general idea is that it should provide a functional network with a single server, but that you should be able to communicate with users on other servers from a single account. This is handled via sharing of OAuth2 auth tokens between servers.
-
-A next step in Jonline's [dumfederation](https://jonline.io/docs/protocol#Dumfederation) model *might* be credential management for external Jonline servers. I.E., letting users store a Refresh token for `bullcity.social` in their `oakcity.social` user data, so you they can directly comment on `bullcity.social` Posts and Events from `oakcity.social`. But is this *necessary*? Even with the existing protocols, with *no* server-to-server communication, it should be easy to integrate *viewing* federated servers, and letting me interact as a user on both `bullcity.social` and `oakcity.social`. And in fact, the web *already* defines CORS protocols which give the owners and users a great deal of control and security. So ultimately, being a client-server *only* federated network - or micro-federated network - makes more sense for Jonline.
+Most of all, though, I'd just really be happy if using Jonline for your community brought you some joy.
