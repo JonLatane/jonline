@@ -188,7 +188,8 @@ Supported environment variables (and examples):
     let mut rocket_handles: Vec<JoinHandle<()>> = vec![];
 
     let launch_http_as_redirect =
-        !cdn_grpc && external_cdn_config.is_none() && tls_configuration_successful;
+        // !cdn_grpc && external_cdn_config.is_none() && 
+        tls_configuration_successful;
 
     log::info!(
         "Insecure HTTP port 80 server is in {} mode.",
