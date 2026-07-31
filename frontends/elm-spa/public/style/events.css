@@ -473,10 +473,16 @@
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* Mirrors `.event-instance-grid` (above). */
+/* Mirrors `.event-instance-grid` (above), plus `justify-content: center` --
+   unlike `.event-instance-grid`/`.my-media-panel-grid` (the other two
+   `.flip-animated-grid` callers, left as `flex-start`), this one spans the
+   full `95vw` breakout width (see above), so a row that doesn't fill it
+   (few events, or the last/only row) would otherwise sit flush against the
+   left edge instead of centered under the page's own centered content. */
 .events-grid {
   align-items: flex-start;
   row-gap: 0.8rem;
+  justify-content: center;
 }
 
 /* `Grid`/`HorizontalList` cards are a fixed tile width; `VerticalList`'s own
