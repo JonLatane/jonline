@@ -910,7 +910,6 @@ jobs:
           set -euo pipefail
           PKG=jonline_pkg
           rm -rf "$PKG"
-          mkdir -p "$PKG/docs"
 
           for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
                      sync_event_sync_sources update_user_counts generate_preview_images delete_preview_images \
@@ -922,14 +921,20 @@ jobs:
           cp backend/background_jobs.sh "$PKG/background_jobs.sh"
           chmod +x "$PKG/background_jobs.sh"
 
-          cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
-          cp docs/protocol.html "$PKG/docs/protocol.html"
           mv "$PKG/jonline" "$PKG/jonline-server"
 
-          mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
-          cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
-          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/tamagui_web_tamagui/"
-          cp -R frontends/elm-spa/public/. "$PKG/elm_web/"
+          # backend/src/web/*.rs read frontend/doc assets via CWD-relative
+          # "opt/..." paths (mirroring deploys/docker/server/Dockerfile, which
+          # COPYs to /opt/... and runs with CWD "/") -- docs/homebrew_jonline.sh
+          # cd's into this package dir before exec'ing the server, so those
+          # assets need to live under an "opt/" subdir here too, not the
+          # package root.
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web"
+          cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
+          cp docs/protocol.html "$PKG/opt/docs/protocol.html"
+          cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
+          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
+          cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # osx_arm64 build, matching the version pinned there.
@@ -1078,7 +1083,7 @@ jobs:
           set -euo pipefail
           PKG=jonline_linux_pkg
           rm -rf "$PKG"
-          mkdir -p "$PKG/docs" "$PKG/bin"
+          mkdir -p "$PKG/bin"
 
           for arch in amd64 arm64; do
             src="backend/target/release-${arch}"
@@ -1095,13 +1100,19 @@ jobs:
           chmod +x "$PKG/background_jobs.sh"
 
           echo "${{ steps.vars.outputs.full_version }}" > "$PKG/version"
-          cp deploys/docker/continuous_delivery_hash "$PKG/continuous_delivery_hash"
-          cp docs/protocol.html "$PKG/docs/protocol.html"
 
-          mkdir -p "$PKG/tamagui_web" "$PKG/tamagui_web_tamagui" "$PKG/elm_web"
-          cp -R frontends/tamagui/apps/next/out/. "$PKG/tamagui_web/"
-          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/tamagui_web_tamagui/"
-          cp -R frontends/elm-spa/public/. "$PKG/elm_web/"
+          # backend/src/web/*.rs read frontend/doc assets via CWD-relative
+          # "opt/..." paths (mirroring deploys/docker/server/Dockerfile, which
+          # COPYs to /opt/... and runs with CWD "/") -- docs/linux_jonline.sh
+          # cd's into this package dir before exec'ing the server, so those
+          # assets need to live under an "opt/" subdir here too, not the
+          # package root.
+          mkdir -p "$PKG/opt/docs" "$PKG/opt/tamagui_web" "$PKG/opt/tamagui_web_tamagui" "$PKG/opt/elm_web"
+          cp deploys/docker/continuous_delivery_hash "$PKG/opt/continuous_delivery_hash"
+          cp docs/protocol.html "$PKG/opt/docs/protocol.html"
+          cp -R frontends/tamagui/apps/next/out/. "$PKG/opt/tamagui_web/"
+          cp -R frontends/tamagui/apps/next/out-tamagui/. "$PKG/opt/tamagui_web_tamagui/"
+          cp -R frontends/elm-spa/public/. "$PKG/opt/elm_web/"
 
           # grpcurl is useful to have on a jonline instance (see Dockerfile) --
           # one per architecture, matching the version pinned there.

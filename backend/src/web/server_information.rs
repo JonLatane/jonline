@@ -165,7 +165,7 @@ async fn favicon_ico<'a>(
             let media_type = ContentType(
                 MediaType::from_str("image/ico").map_err(|_| Status::ExpectationFailed)?,
             );
-            let favicon_file = match NamedFile::open("opt/web/favicon.ico").await {
+            let favicon_file = match NamedFile::open("opt/tamagui_web/favicon.ico").await {
                 Ok(file) => file,
                 Err(_) => {
                     match NamedFile::open("../frontends/tamagui/apps/next/out/favicon.ico").await {
@@ -241,8 +241,10 @@ async fn favicon_png<'a>(
         .square_media_id;
     match logo {
         None => {
-            let favicon_ico_path = if std::path::Path::new("opt/web/favicon.ico").exists() {
-                "opt/web/favicon.ico".to_string()
+            let favicon_ico_path = if std::path::Path::new("tamagui_web/favicon.ico").exists() {
+                "tamagui_web/favicon.ico".to_string()
+            } else if std::path::Path::new("opt/tamagui_web/favicon.ico").exists() {
+                "opt/tamagui_web/favicon.ico".to_string()
             } else if std::path::Path::new("../frontends/tamagui/apps/next/out/favicon.ico")
                 .exists()
             {
@@ -250,10 +252,7 @@ async fn favicon_png<'a>(
             } else {
                 return Err(Status::ExpectationFailed);
             };
-            let png_filename = format!(
-                "{}/default-favicon.png",
-                state.tempdir.path().display()
-            );
+            let png_filename = format!("{}/default-favicon.png", state.tempdir.path().display());
             convert_ico_to_png(&favicon_ico_path, &png_filename)?;
 
             Ok(CacheResponse::Public {
