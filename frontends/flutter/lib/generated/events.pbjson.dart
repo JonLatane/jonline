@@ -148,6 +148,13 @@ const GetEventsRequest$json = {
       '10': 'searchText',
       '17': true
     },
+    {
+      '1': 'event_instance_post_ids',
+      '3': 12,
+      '4': 3,
+      '5': 9,
+      '10': 'eventInstancePostIds'
+    },
   ],
   '8': [
     {'1': '_event_id'},
@@ -171,9 +178,10 @@ final $typed_data.Uint8List getEventsRequestDescriptor = $convert.base64Decode(
     'RlbmRhbmNlX3N0YXR1c2VzGAcgAygOMhkuam9ubGluZS5BdHRlbmRhbmNlU3RhdHVzUhJhdHRl'
     'bmRhbmNlU3RhdHVzZXMSHAoHcG9zdF9pZBgIIAEoCUgGUgZwb3N0SWSIAQESPAoMbGlzdGluZ1'
     '90eXBlGAogASgOMhkuam9ubGluZS5FdmVudExpc3RpbmdUeXBlUgtsaXN0aW5nVHlwZRIkCgtz'
-    'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBQgsKCV9ldmVudF9pZEIRCg9fYXV0aG'
-    '9yX3VzZXJfaWRCCwoJX2dyb3VwX2lkQhQKEl9ldmVudF9pbnN0YW5jZV9pZEIOCgxfdGltZV9m'
-    'aWx0ZXJCDgoMX2F0dGVuZGVlX2lkQgoKCF9wb3N0X2lkQg4KDF9zZWFyY2hfdGV4dA==');
+    'ZWFyY2hfdGV4dBgLIAEoCUgHUgpzZWFyY2hUZXh0iAEBEjUKF2V2ZW50X2luc3RhbmNlX3Bvc3'
+    'RfaWRzGAwgAygJUhRldmVudEluc3RhbmNlUG9zdElkc0ILCglfZXZlbnRfaWRCEQoPX2F1dGhv'
+    'cl91c2VyX2lkQgsKCV9ncm91cF9pZEIUChJfZXZlbnRfaW5zdGFuY2VfaWRCDgoMX3RpbWVfZm'
+    'lsdGVyQg4KDF9hdHRlbmRlZV9pZEIKCghfcG9zdF9pZEIOCgxfc2VhcmNoX3RleHQ=');
 
 @$core.Deprecated('Use timeFilterDescriptor instead')
 const TimeFilter$json = {

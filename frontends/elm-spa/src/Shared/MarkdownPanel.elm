@@ -6,7 +6,7 @@ live `Components.Markdown.view` preview of the same text, with "Save"/
 (a 3-position slider in the header lets the user pick -- see `modeSlider`),
 since a 50/50 split doesn't leave enough room for either half on a
 phone-width screen. Wired into `Shared.Model`/`UI.elm` the same way
-`Shared.AccountsPanel`/`Shared.StarredPostsPanel` are -- one shared instance,
+`Shared.AccountsPanel`/`Shared.StarredPanel` are -- one shared instance,
 opened from wherever it's needed (see `TargetType`) rather than each caller
 owning its own editor state.
 
@@ -120,7 +120,7 @@ that they're actually usable) and can itself surface an `AccountsPanel.Msg` it
 needs forwarded on its behalf -- an `AccessTokenResponseReceived`, if
 `saveTask` had to refresh the account's token, that `AccountsPanel.performWithAccountServer`
 already builds -- for `Shared.update` to actually dispatch, same convention as
-`Shared.StarredPostsPanel.update` -- paired, in that same third-tuple-slot
+`Shared.StarredPanel.update` -- paired, in that same third-tuple-slot
 convention, with a `Bool` that's `True` only right after a successful save:
 `Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
 Post's re-fetched content (see `saveTask`) can change its rendered height
@@ -421,7 +421,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
 -- VIEW
 
 
-{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred Posts
+{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
 panels, so opening/closing is a plain CSS transition -- see `openClosedClass`.
 Needs `AccountsPanel.Model` for the same reason `update` does -- resolving
 `targetHost` to show who's actually about to post/edit (`accountRow`), and any

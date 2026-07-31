@@ -2672,6 +2672,7 @@ fieldNumbersProto__Jonline__GetEventsRequest :
     , postId : Int
     , listingType : Int
     , searchText : Int
+    , eventInstancePostIds : Int
     }
 fieldNumbersProto__Jonline__GetEventsRequest =
     { eventId = 1
@@ -2684,6 +2685,7 @@ fieldNumbersProto__Jonline__GetEventsRequest =
     , postId = 8
     , listingType = 10
     , searchText = 11
+    , eventInstancePostIds = 12
     }
 
 
@@ -2702,6 +2704,7 @@ defaultProto__Jonline__GetEventsRequest =
     , postId = Nothing
     , listingType = Proto.Jonline.EventListingType.defaultEventListingType
     , searchText = Nothing
+    , eventInstancePostIds = []
     }
 
 
@@ -2738,6 +2741,11 @@ decodeProto__Jonline__GetEventsRequest =
             Proto.Jonline.EventListingType.decodeEventListingType
             (\a r -> { r | listingType = a })
         , Protobuf.Decode.optional 11 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | searchText = a })
+        , Protobuf.Decode.repeated
+            12
+            Protobuf.Decode.string
+            .eventInstancePostIds
+            (\a r -> { r | eventInstancePostIds = a })
         ]
 
 
@@ -2757,6 +2765,7 @@ encodeProto__Jonline__GetEventsRequest value =
         , ( 8, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.postId )
         , ( 10, Proto.Jonline.EventListingType.encodeEventListingType value.listingType )
         , ( 11, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.searchText )
+        , ( 12, (Protobuf.Encode.list Protobuf.Encode.string) value.eventInstancePostIds )
         ]
 
 
@@ -2774,6 +2783,7 @@ type alias Proto__Jonline__GetEventsRequest =
     , postId : Maybe String
     , listingType : Proto.Jonline.EventListingType.EventListingType
     , searchText : Maybe String
+    , eventInstancePostIds : List String
     }
 
 

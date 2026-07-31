@@ -62,7 +62,7 @@ import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
-by `federatedKey` -- mirrors `Shared.StarredPostsPanel.PostFetchStatus`, minus
+by `federatedKey` -- mirrors `Shared.StarredPanel.PostFetchStatus`, minus
 that module's `ServerUnavailable`/poll-retry distinction, since an unreachable
 federated server here just reads the same as any other failure (there's no
 polling loop kicking these fetches off again).
@@ -1106,7 +1106,7 @@ accountLabel account =
 
 {-| Kicks off a fetch for every entry in `user.federatedProfiles` that isn't
 already loading/loaded/failed -- grouping isn't needed the way
-`Shared.StarredPostsPanel.kickOffFetches` groups by host, since a `User`
+`Shared.StarredPanel.kickOffFetches` groups by host, since a `User`
 rarely lists more than a couple of federated accounts, and each is on its own
 (likely not-yet-connected) server anyway.
 -}
@@ -1166,7 +1166,7 @@ fetchFederatedUserEffect shared _ account =
 
 
 {-| The `model.federatedProfiles` key for one `User.federatedProfiles` entry --
-mirrors `Shared.StarredPostsPanel.starKey`.
+mirrors `Shared.StarredPanel.starKey`.
 -}
 federatedKey : FederatedAccount -> String
 federatedKey account =

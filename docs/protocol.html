@@ -3732,6 +3732,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>optional</td>
           <td>Search text for full-text search.</td>
         </tr>
+        <tr>
+          <td>event_instance_post_ids</td>
+          <td><a href="#string">string</a></td>
+          <td>repeated</td>
+          <td>Loads multiple events by their event instances' Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse's own doc), not the requested EventInstance's whole parent Event's full instance list.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetEventsResponse"></a></p>

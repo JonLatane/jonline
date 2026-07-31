@@ -338,6 +338,338 @@ mod get_by_post_id {
     }
 }
 
+/// Specs for `GetEventsRequest.event_instance_post_ids` (`get_events_by_instance_post_ids` in
+/// `get_events.rs`) -- the Starred panel's batch lookup, keyed on `EventInstance` Post ids
+/// specifically (unlike `post_id`/`get_by_post_id`, above, which also accepts the container
+/// `Event`'s own post id). Unlike every other branch of `get_events`, this one is a *batch*
+/// lookup -- an id that doesn't resolve (nonexistent or invisible) is silently dropped from the
+/// response rather than erroring the whole request, and a request with no ids at all doesn't
+/// enter this branch (see `get_events`'s own `if !request.event_instance_post_ids.is_empty()`
+/// guard) -- both mirror how a caller (e.g. `Shared.StarredPanel`) would resolve a mixed batch of
+/// starred post ids, some of which may not be `EventInstance` posts at all.
+mod get_by_instance_post_ids {
+    use super::*;
+
+    #[test]
+    fn resolves_via_instance_post_id() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "gbipi_author1");
+            let (event, _event_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (_instance, instance_post) = create_event_instance(
+                conn,
+                &event,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![instance_post.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(response.events[0].instances.len(), 1);
+            Ok(())
+        });
+    }
+
+    /// `post_id`/`get_by_post_id` resolves either the container `Event`'s own post id or an
+    /// `EventInstance`'s -- `event_instance_post_ids` only ever resolves the latter (see the
+    /// field's own doc comment in `events.proto`), so a container post id here should resolve to
+    /// nothing at all rather than falling back to it.
+    #[test]
+    fn ignores_container_post_id() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "gbipi_author2");
+            let (event, event_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            create_event_instance(
+                conn,
+                &event,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![event_post.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert!(response.events.is_empty());
+            Ok(())
+        });
+    }
+
+    /// A recurring `Event` (several `EventInstance`s) requested by just one of its instances'
+    /// post ids should come back scoped to that one instance -- not every sibling instance of the
+    /// same `Event`, unlike `get_by_event_id`/`get_by_instance_id` (which intentionally return the
+    /// whole parent `Event` for the single-event detail page's date-picker strip; see this
+    /// module's own doc comment and `get_events_by_instance_post_ids`'s doc in `get_events.rs`).
+    #[test]
+    fn scopes_to_only_the_requested_instance() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "gbipi_author3");
+            let (event, _event_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (_instance1, instance1_post) = create_event_instance(
+                conn,
+                &event,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    starts_at: from_now(3600),
+                    ends_at: from_now(7200),
+                    ..Default::default()
+                },
+            );
+            create_event_instance(
+                conn,
+                &event,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    starts_at: from_now(10_800),
+                    ends_at: from_now(14_400),
+                    ..Default::default()
+                },
+            );
+
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![instance1_post.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert_eq!(ids(&response), vec![event.id.to_proto_id()]);
+            assert_eq!(response.events[0].instances.len(), 1);
+            assert_eq!(
+                response.events[0].instances[0]
+                    .post
+                    .as_ref()
+                    .map(|p| p.id.clone()),
+                Some(instance1_post.id.to_proto_id())
+            );
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn resolves_multiple_ids_across_different_events() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "gbipi_author4");
+            let (event1, _event1_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (_instance1, instance1_post) = create_event_instance(
+                conn,
+                &event1,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (event2, _event2_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (_instance2, instance2_post) = create_event_instance(
+                conn,
+                &event2,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![
+                        instance1_post.id.to_proto_id(),
+                        instance2_post.id.to_proto_id(),
+                    ],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            let mut returned_ids = ids(&response);
+            returned_ids.sort();
+            let mut expected_ids = vec![event1.id.to_proto_id(), event2.id.to_proto_id()];
+            expected_ids.sort();
+            assert_eq!(returned_ids, expected_ids);
+            Ok(())
+        });
+    }
+
+    /// A batch lookup shouldn't error out just because one of the requested ids doesn't resolve
+    /// (nonexistent, or malformed/non-numeric) -- it's silently dropped from the response, unlike
+    /// every other single-id `get_events` branch (`get_by_event_id`/`get_by_instance_id`/
+    /// `get_by_post_id`, above), which each return `NotFound`/`InvalidArgument` for exactly that
+    /// case. A caller resolving a batch of starred post ids (some maybe already deleted server-side)
+    /// just wants back whichever of them still exist.
+    #[test]
+    fn silently_skips_ids_that_do_not_resolve() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![
+                        999_999_999i64.to_proto_id(),
+                        "not-valid-base58!!".to_string(),
+                    ],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert!(response.events.is_empty());
+            Ok(())
+        });
+    }
+
+    /// Mirrors `get_by_event_id`'s own `requires_both_container_and_instance_post_to_pass`:
+    /// `query_visible_events!` (which this branch reuses unmodified, just with an extra
+    /// `event_instances::post_id` filter -- see `get_events_by_instance_post_ids`'s doc) ANDs the
+    /// container `Event` post's visibility with the requested `EventInstance`'s own post
+    /// visibility, so either one being `Private` hides the event from a stranger even though the
+    /// other side is `GlobalPublic`.
+    #[test]
+    fn respects_visibility_of_both_container_and_instance_post() {
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let author = create_user(conn, "gbipi_author5");
+            let stranger = create_user(conn, "gbipi_stranger5");
+
+            let (_private_container_event, _) = create_simple_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::Private,
+                    ..Default::default()
+                },
+                EventInstanceOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (public_event, _public_event_post) = create_event(
+                conn,
+                &author,
+                EventOpts {
+                    visibility: Visibility::GlobalPublic,
+                    ..Default::default()
+                },
+            );
+            let (_private_instance, private_instance_post) = create_event_instance(
+                conn,
+                &public_event,
+                Some(&author),
+                EventInstanceOpts {
+                    visibility: Visibility::Private,
+                    ..Default::default()
+                },
+            );
+
+            let hidden = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![private_instance_post.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &Some(&stranger),
+                conn,
+            )?;
+            assert!(hidden.events.is_empty());
+
+            let visible_to_author = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![private_instance_post.id.to_proto_id()],
+                    ..Default::default()
+                },
+                &Some(&author),
+                conn,
+            )?;
+            assert_eq!(ids(&visible_to_author), vec![public_event.id.to_proto_id()]);
+            Ok(())
+        });
+    }
+
+    #[test]
+    fn empty_ids_do_not_enter_this_branch() {
+        // An empty `event_instance_post_ids` falls through to the default listing branch (see
+        // `get_events`'s own `if !request.event_instance_post_ids.is_empty()` guard) rather than
+        // this one -- asserted indirectly here: requesting with an explicit empty vec must not
+        // error, same as the default "list accessible events" behavior would for an
+        // unauthenticated caller with nothing to see.
+        let mut conn = test_conn();
+        conn.test_transaction::<_, Status, _>(|conn| {
+            let response = get_events(
+                GetEventsRequest {
+                    event_instance_post_ids: vec![],
+                    ..Default::default()
+                },
+                &None,
+                conn,
+            )?;
+
+            assert!(response.events.is_empty());
+            Ok(())
+        });
+    }
+}
+
 mod get_user_events {
     use super::*;
 

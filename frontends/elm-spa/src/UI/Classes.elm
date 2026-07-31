@@ -2,7 +2,7 @@ module UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClo
 
 {-| Just `UI.classes`, split into its own leaf module so `Components.Posts`
 can use it without importing `UI` itself -- `UI` imports
-`Shared.StarredPostsPanel` (for the nav's Starred Posts menu), which in turn
+`Shared.StarredPanel` (for the nav's Starred menu), which in turn
 needs `Components.Posts` (`postCard`) for its own panel view, and that would
 otherwise be a cycle.
 -}

@@ -273,8 +273,8 @@
   font-size: 0.65rem;
 }
 
-/* The Starred Posts panel entry for the Post currently being viewed (see
-   `Shared.StarredPostsPanel.view`/`UI.elm`'s `currentStarredPostKey`) --
+/* The Starred panel entry for the Post currently being viewed (see
+   `Shared.StarredPanel.view`/`UI.elm`'s `currentStarredPostKey`) --
    `.post-card`'s own `background-color-primary` utility class (added
    alongside this marker class, see `Components.Posts.postCard`) already
    fills the card with its server's primaryColor/primaryTextColor; this just
@@ -348,7 +348,7 @@
 
 /* Shown in `.post-detail-title`'s place instead (see
    `Components.PostCard.postDetail`) for a Post reached via a reply chain
-   (etc.) rather than directly -- mirrors `Shared.StarredPostsPanel`'s own
+   (etc.) rather than directly -- mirrors `Shared.StarredPanel`'s own
    `.starred-post-context`. */
 .post-detail-context {
   display: inline-block;

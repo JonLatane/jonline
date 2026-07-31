@@ -982,6 +982,13 @@ jobs:
           cat >> tap/Formula/jonline.rb <<'JONLINE_FORMULA_FOOTER_EOF'
               SCRIPT
               chmod 0755, bin/"jonline"
+
+              # bin/"jonline" implements `completion bash`/`completion zsh` (see
+              # docs/homebrew_jonline.sh); shell_parameter_format: :arg runs it as
+              # `jonline completion bash`/`jonline completion zsh` to capture the
+              # scripts, which Homebrew installs into the right completions dirs.
+              generate_completions_from_executable(bin/"jonline", "completion", shell_parameter_format: :arg,
+                                                                                 shells:                 [:bash, :zsh])
             end
 
             test do

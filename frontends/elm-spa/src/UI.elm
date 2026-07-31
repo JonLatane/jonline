@@ -26,7 +26,7 @@ import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import UI.Classes exposing (classes, hostnameToCSSClass, openClosedClass)
 import UI.EmittedStylesheet as EmittedStylesheet
 import UI.Flip
@@ -101,14 +101,14 @@ scrollPreserver shared =
     div [ classes [ "scroll-preserver", openClosedClass shared.scrollPreserverVisible ] ] []
 
 
-{-| Tapping the navbar anywhere outside the Home link, the Starred Posts
+{-| Tapping the navbar anywhere outside the Home link, the Starred
 toggle/panel, or the Accounts menu/panel scrolls the page to top -- same
 `Shared.ScrollToTop` that re-tapping Home while already on it fires (see
 `navLink`'s doc). Those three carve themselves out of this via
 `stopPropagationOn "click"` on their own root elements (`navLink`,
 `starredPostsToggle`, `accountsMenu`'s `.accounts-menu` div) rather than
 `onClick`, so a tap on any of them (or their own dropdowns/menus) never
-bubbles up to this handler; `starredPostsPanel` isn't itself one of those
+bubbles up to this handler; `starredPanel` isn't itself one of those
 three roots (it's rendered as its own `.navbar` child, not nested under
 `starredPostsToggle` -- see the comment below), so it gets its own wrapper
 here instead.
@@ -123,7 +123,7 @@ headerNav shared currentRoute =
             [ nav [ class "nav-links" ]
                 [ navLink shared currentRoute (homeLinkContent shared) Route.Home_
                 , div [ class "nav-links-scroll" ]
-                    [ if Set.isEmpty shared.starredPostsPanel.starredPostIds then
+                    [ if Set.isEmpty shared.starredPanel.starredPostIds then
                         text ""
 
                       else
@@ -142,10 +142,10 @@ headerNav shared currentRoute =
             ]
 
         -- A direct child of `.navbar` itself (a positioned ancestor spanning
-        -- the full viewport width), not of `.starred-posts-menu` (the toggle's own
-        -- narrow wrapper, off to one side) -- so `.starred-posts-panel`'s
-        -- `left: 0` in starred_posts_panel.css hugs the actual screen edge instead of just
-        -- the toggle's left edge. See `starredPostsPanel`.
+        -- the full viewport width), not of `.starred-menu` (the toggle's own
+        -- narrow wrapper, off to one side) -- so `.starred-panel`'s
+        -- `left: 0` in starred_panel.css hugs the actual screen edge instead of just
+        -- the toggle's left edge. See `starredPanel`.
         --
         -- Wrapped in its own `stopPropagationOn`-bearing `div` (a plain,
         -- unpositioned element, so it doesn't disturb the `left`/`top` math
@@ -153,19 +153,19 @@ headerNav shared currentRoute =
         -- *positioned* ancestor, not the immediate parent) so taps inside the
         -- open panel don't also bubble up to this `Shared.ScrollToTop`
         -- tap-anywhere handler.
-        , if Set.isEmpty shared.starredPostsPanel.starredPostIds then
+        , if Set.isEmpty shared.starredPanel.starredPostIds then
             text ""
 
           else
             div [ stopPropagationOn "click" (Decode.succeed ( Shared.NoOp, True )) ]
-                [ starredPostsPanel shared currentRoute ]
+                [ starredPanel shared currentRoute ]
 
         -- Sits below `.navbar-inner`, at the very bottom of `.navbar` itself
         -- -- see `breadcrumbsBar`.
         , breadcrumbsBar shared
 
         -- A direct child of `.navbar` too (not just `breadcrumbsBar`'s own
-        -- wrapper), same reasoning as `starredPostsPanel` above -- so it's
+        -- wrapper), same reasoning as `starredPanel` above -- so it's
         -- anchored to the full-width `.navbar`'s own bottom edge (which
         -- includes `breadcrumbsBar`'s row) rather than just some narrower
         -- element's. See `breadcrumbsReplyPanel`.
@@ -188,7 +188,7 @@ type alias BackdropPanel =
 
 {-| Covers everything except the top nav (which sits in its own, higher
 stacking context -- see `.navbar` in nav.css) for every panel that closes
-via a background tap -- currently the Starred Posts panel, the Accounts
+via a background tap -- currently the Starred panel, the Accounts
 Panel, the Breadcrumbs reply viewer, the Markdown panel and the New Post
 panel, with more expected to join this list later. Always rendered, like the panels
 themselves, so opening/closing (and the blur) is a plain CSS transition
@@ -216,15 +216,15 @@ reply viewer behind all five -- matching the actual paint order.
 markdown\_panel.css) and `.create-new-panel` (29, see create\_new\_panel.css)
 are all `.navbar` _siblings_ with a higher z-index than `.navbar`'s own (28),
 so all three render above the whole thing -- `.navbar` and every one of its
-descendants (`.breadcrumb-reply-panel`, the Accounts/Starred Posts panels)
+descendants (`.breadcrumb-reply-panel`, the Accounts/Starred panels)
 alike, regardless of their own individual z-indices -- in that relative order
 (31 > 30 > 29): both the Markdown and My Media panels can be opened _from_
 the New Post panel (`CreateNewPanel.EditContentClicked`/`EditMediaClicked`),
 and should win over it while open. _Within_ `.navbar`, `.breadcrumb-reply-panel`'s
-lower z-index (see nav.css) is what keeps it under the Accounts/Starred Posts
+lower z-index (see nav.css) is what keeps it under the Accounts/Starred
 panels specifically. Swap their order here to change any of this priority.
 Only blurs/tints the page while a panel with `blurs = True` is open (currently
-every one of these except the Starred Posts panel, which doesn't block
+every one of these except the Starred panel, which doesn't block
 interaction with the rest of the page since starring/unstarring posts while
 it's open is an expected, encouraged interaction rather than something to
 block).
@@ -254,8 +254,8 @@ sharedBackdrop shared =
               , closeMsg = Shared.CreateNewPanelMsg CreateNewPanel.CloseClicked
               , blurs = True
               }
-            , { isOpen = shared.starredPostsPanel.showStarredPostsPanel
-              , closeMsg = Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel
+            , { isOpen = shared.starredPanel.showStarredPanel
+              , closeMsg = Shared.StarredPanelMsg StarredPanel.ToggleStarredPanel
               , blurs = False
               }
             , { isOpen = shared.accountsPanel.showAccountsPanel
@@ -319,7 +319,7 @@ color by not overriding them. The Home link also gets its own `nav-link-home`
 class (regardless of `isCurrent`) so `nav.css` can give its bigger,
 stacked `RegularServerLogo` content (see `homeLinkContent`) the same
 negative-margin overflow treatment as the Accounts Panel toggle, and its own
-`onClick` (`Shared.HomeLinkClicked`) closing the Starred Posts panel and,
+`onClick` (`Shared.HomeLinkClicked`) closing the Starred panel and,
 when `isCurrent` (tapping Home while already on it), firing
 `Shared.ScrollToTop` -- unlike the Accounts Panel (see `UI.page`'s doc
 comment on why that one closes on a destination page's `init` instead),
@@ -387,7 +387,7 @@ homeLinkContent shared =
 
 
 {-| A circular icon nav link to the People page (`/people`), sitting between
-the Home link and the Starred Posts toggle -- same `.nav-menu-toggle.circular`
+the Home link and the Starred toggle -- same `.nav-menu-toggle.circular`
 button styling `starredPostsToggle` uses for its own ⭐, but a plain route
 link (highlighted via `background-color-nav` when `currentRoute` is already
 `Route.People`, mirroring `navLink`'s `isCurrent` handling) rather than a
@@ -1900,7 +1900,7 @@ to reuse) plus its description/privacy policy/media policy from `ServerInfo`
 exactly this per their proto doc comments -- so the user can see what
 they're signing up for before confirming.
 
-A centered dialog (unlike the edge-anchored Accounts/Starred Posts panels)
+A centered dialog (unlike the edge-anchored Accounts/Starred panels)
 since it interrupts a specific action rather than being an ambient panel.
 Always rendered (empty when closed) so the backdrop's fade isn't paired with
 the dialog itself just popping in/out.
@@ -2092,7 +2092,7 @@ policyMarkdown heading maybeText =
 {-| Opens `Shared.CreateNewPanel` -- only shown at all once at least one
 signed-in account is actually eligible to create a Post (see
 `CreateNewPanel.hasEligibleAccount`), same "no point showing chrome for
-something nobody here could use" reasoning as the Starred Posts toggle's own
+something nobody here could use" reasoning as the Starred toggle's own
 gate below. Styled exactly like that toggle (`.nav-menu-toggle.circular`,
 accounts\_panel.css) -- same fixed circular size, and the same
 `transition: border-radius` on `openClosedClass` squaring its bottom corners
@@ -2117,53 +2117,53 @@ newPostToggle shared =
 
 
 {-| Only shown at all once at least one Post has been starred (see
-`Shared.StarredPostsPanel.starKey`) -- only show the nav icon once there's
+`Shared.StarredPanel.starKey`) -- only show the nav icon once there's
 something behind it. Just the toggle button -- unlike `accountsMenu`, its
-panel (`starredPostsPanel`) is rendered separately, as a direct child of
-`.navbar` itself rather than of this button's own `.starred-posts-menu` wrapper, so it
-can hug the actual screen edge (see `.starred-posts-panel` in starred\_posts\_panel.css).
+panel (`starredPanel`) is rendered separately, as a direct child of
+`.navbar` itself rather than of this button's own `.starred-menu` wrapper, so it
+can hug the actual screen edge (see `.starred-panel` in starred\_posts\_panel.css).
 Uses `stopPropagationOn`, not plain `onClick`, so tapping it doesn't also
 trigger `headerNav`'s own tap-anywhere `Shared.ScrollToTop`.
 -}
 starredPostsToggle : Shared.Model -> Html Shared.Msg
 starredPostsToggle shared =
-    div [ class "starred-posts-menu" ]
+    div [ class "starred-menu" ]
         [ button
-            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPostsPanel.showStarredPostsPanel ]
-            , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPostsPanelMsg StarredPostsPanel.ToggleStarredPostsPanel, True ))
-            , title "Starred Posts"
+            [ classes [ "nav-menu-toggle", "circular", openClosedClass shared.starredPanel.showStarredPanel ]
+            , stopPropagationOn "click" (Decode.succeed ( Shared.StarredPanelMsg StarredPanel.ToggleStarredPanel, True ))
+            , title "Starred"
             ]
             [ text "⭐"
             , span
                 [ classes
-                    [ "starred-posts-count-badge"
+                    [ "starred-count-badge"
                     , hostnameToCSSClass shared.accountsPanel.mainFrontendHost
                     , "background-color-nav"
                     , "border-color-primary-text"
                     ]
                 ]
-                [ text (String.fromInt (Set.size shared.starredPostsPanel.starredPostIds)) ]
+                [ text (String.fromInt (Set.size shared.starredPanel.starredPostIds)) ]
             ]
         ]
 
 
-{-| The Starred Posts panel's content -- see `starredPostsToggle` for why this
+{-| The Starred panel's content -- see `starredPostsToggle` for why this
 is separate from (and rendered outside) the toggle button. Its own content is
-`StarredPostsPanel.view` -- it returns `Html StarredPostsPanel.Msg` rather
+`StarredPanel.view` -- it returns `Html StarredPanel.Msg` rather
 than `Html Shared.Msg` (unlike the rest of this module's panels), since
-`Shared.StarredPostsPanel` can't itself import `Shared` (that'd be a cycle --
-`Shared` already imports it for `Shared.Model`'s `starredPostsPanel` field),
+`Shared.StarredPanel` can't itself import `Shared` (that'd be a cycle --
+`Shared` already imports it for `Shared.Model`'s `starredPanel` field),
 so it's mapped into `Shared.Msg` here instead.
 -}
-starredPostsPanel : Shared.Model -> Route -> Html Shared.Msg
-starredPostsPanel shared currentRoute =
-    Html.map Shared.StarredPostsPanelMsg
-        (StarredPostsPanel.view shared.browserTimeZone shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPostsPanel)
+starredPanel : Shared.Model -> Route -> Html Shared.Msg
+starredPanel shared currentRoute =
+    Html.map Shared.StarredPanelMsg
+        (StarredPanel.view shared.browserTimeZone shared.basePath shared.accountsPanel (currentStarredPostKey shared currentRoute) shared.starredPanel)
 
 
 {-| The `starKey` of the Post currently being viewed (see
 `Pages.Post.PostId_`), if `currentRoute` is that page -- lets
-`Shared.StarredPostsPanel.view` highlight the matching entry, if any, with
+`Shared.StarredPanel.view` highlight the matching entry, if any, with
 its server's colors. `params.postId` is either a bare id (a post on
 `mainFrontendHost`) or `id@host` -- see `Components.Posts.parsePostRouteId`.
 -}
@@ -2175,7 +2175,7 @@ currentStarredPostKey shared currentRoute =
                 ( postId, host ) =
                     Posts.parsePostRouteId shared.accountsPanel.mainFrontendHost params.postId
             in
-            Just (StarredPostsPanel.rawKey postId host)
+            Just (StarredPanel.rawKey postId host)
 
         _ ->
             Nothing
@@ -2262,7 +2262,7 @@ adminAccountPanel shared account =
 
 
 {-| The "New Post" composer (see `Shared.CreateNewPanel`) -- toggled from its
-own nav icon (`newPostToggle`, below), like the Accounts/Starred Posts panels,
+own nav icon (`newPostToggle`, below), like the Accounts/Starred panels,
 rather than opened contextually. Mounted directly in `layout` (not inside
 `headerNav`) since -- unlike those two -- it opens from just under the top nav
 as a `.navbar` _sibling_ rather than one of its dropdowns (see
@@ -2277,12 +2277,12 @@ createNewPanel shared =
 
 
 {-| The app-wide Markdown editor (see `Shared.MarkdownPanel`) -- unlike the
-Accounts/Starred Posts panels, it isn't toggled from a nav icon of its own;
+Accounts/Starred panels, it isn't toggled from a nav icon of its own;
 it's opened contextually (e.g. `Pages.Post.PostId_`'s Edit/Reply buttons, or
 `CreateNewPanel`'s own Edit button) via
 `Shared.MarkdownPanelMsg (MarkdownPanel.Open ...)`, so it's mounted directly in
 `layout` rather than inside `headerNav`. Above `createNewPanel` and `.navbar`
-itself (and, with it, the Accounts/Starred Posts panels -- see
+itself (and, with it, the Accounts/Starred panels -- see
 `markdown_panel.css`'s own z-index comment) but below `myMediaPanel`/the
 Media Viewer panel -- if a post's Edit button is used while either of those
 also happens to be open, they still layer above it rather than being hidden
@@ -2297,7 +2297,7 @@ markdownPanel shared =
 signed-in Account chip's media button (`accountRow`, below), not a nav icon,
 so it's mounted directly in `layout` too, same as `markdownPanel`. Sits above
 the Markdown/New Post panels and `.navbar` itself -- and, with it, the
-Accounts/Starred Posts panels (see `my_media_panel.css`'s z-index) -- browsing
+Accounts/Starred panels (see `my_media_panel.css`'s z-index) -- browsing
 your own media reasonably wins over a stale editor/composer left open behind
 it, and should cover the very Accounts Panel it was opened from rather than
 getting buried behind it. Still below the Media Viewer panel and `.modal`,
@@ -2309,7 +2309,7 @@ myMediaPanel shared =
 
 
 {-| The breadcrumb trail (see `Shared.Breadcrumbs`) at the bottom of `.navbar`
--- unlike the Starred Posts toggle/panel, there's no nav icon of its own;
+-- unlike the Starred toggle/panel, there's no nav icon of its own;
 whichever page has a chain to show (currently just `Pages.Post.PostId_`) sets
 it directly via `Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot ...)`, so this just
 renders whatever's currently there (empty if nothing is).
@@ -2334,7 +2334,7 @@ breadcrumbsReplyPanel shared =
 -- opened contextually, same as `markdownPanel` above, by tapping a Post's
 media (`Components.PostCard`'s `onMediaClicked`), not from a nav icon, so it's
 mounted directly in `layout` too. Sits above the New Post/Markdown/My Media
-panels and the Accounts/Starred Posts panels alike (see
+panels and the Accounts/Starred panels alike (see
 `media_viewer_panel.css`'s z-index) -- a fullscreen image reasonably wins over
 a stale editor/composer left open behind it, and stays on top even if the
 nav's own dropdowns are then opened over it.

@@ -58,7 +58,7 @@
 /* Same as .media-renderer-compact above, just capped to half the height --
    for contexts even tighter on vertical space than an ordinary preview (see
    Components.MultiMediaRenderer's `previewExtraSmall`, used by
-   Shared.StarredPostsPanel's post rows). */
+   Shared.StarredPanel's post rows). */
 .media-renderer-extra-small.media-renderer-image,
 .media-renderer-extra-small.media-renderer-video {
   display: block;

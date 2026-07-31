@@ -1,4 +1,4 @@
-module Shared.StarredPostsPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, starKey, subscriptions, toggleStarMsg, update, view)
+module Shared.StarredPanel exposing (Model, Msg(..), freshestPost, init, isStarred, rawKey, refreshHosts, starKey, subscriptions, toggleStarMsg, update, view)
 
 {-| Tracks which Posts the user has starred, in this browser. `StarPost`/
 `UnstarPost` (see `protos/jonline.proto`) are auth-less, "friendly" counters
@@ -9,7 +9,7 @@ persisted to localStorage (see `Ports.persistStarredPosts`) keyed by
 from different servers apart.
 
 All `StarPost`/`UnstarPost` calls -- from `Pages.Home_`/`Pages.Post.PostId_`,
-via `Shared.StarredPostsPanelMsg` -- route through here so the persisted set
+via `Shared.StarredPanelMsg` -- route through here so the persisted set
 and the RPC can't drift apart. The starred count itself isn't optimistically
 adjusted client-side; instead, `GotStarResult`'s `Post` (the RPC's response,
 which already carries the server's fresh `unauthenticated_star_count`) is
@@ -22,7 +22,7 @@ passing back through a page's own `update` the way the initiating `ToggleStar`
 click did.
 
 This module also owns fetching+rendering the actual starred `Post`s for the
-nav's Starred Posts panel (`view`) -- `posts` is a cache of that fetched data,
+nav's Starred panel (`view`) -- `posts` is a cache of that fetched data,
 separate from `starredPostIds` itself so a re-star/unstar doesn't need a
 round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 
@@ -30,6 +30,7 @@ round-trip to redisplay a post we already have in hand (see `ToggleStar`).
 
 import Animation
 import Browser.Dom as Dom
+import Components.Events as Events
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Dict exposing (Dict)
@@ -41,8 +42,9 @@ import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (GetPostsResponse, Post)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.PostContext exposing (PostContext(..))
 import Set exposing (Set)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
@@ -67,6 +69,19 @@ type PostFetchStatus
     | ServerUnavailable
 
 
+{-| The fetch state of one starred post's owning `Event`/`EventInstance` --
+only ever populated for a starred post whose `PostFetchStatus` is
+`PostFetchLoaded` with `context == EVENTINSTANCE` (see `kickOffEventFetches`),
+keyed the same (`starKey`/`rawKey`) as `posts` itself. A plain `POST`/`REPLY`
+starred post never gets an entry here at all -- `starredPostView` only reads
+this dict once it already knows (from `posts`) that the entry needs it.
+-}
+type EventFetchStatus
+    = FetchingEvent
+    | EventFetchLoaded Event EventInstance
+    | EventFetchFailed
+
+
 type alias Model =
     { starredPostIds : Set String
 
@@ -76,8 +91,13 @@ type alias Model =
     -- can't drive display order itself. Kept in lockstep with
     -- `starredPostIds` by every mutation below.
     , starOrder : List String
-    , showStarredPostsPanel : Bool
+    , showStarredPanel : Bool
     , posts : Dict String PostFetchStatus
+
+    -- The owning `Event`/`EventInstance` for every starred post whose own
+    -- `Post` (in `posts`, above) turned out to be an `EventInstance`'s --
+    -- see `EventFetchStatus`'s own doc and `kickOffEventFetches`.
+    , events : Dict String EventFetchStatus
 
     -- In-flight/settling FLIP slide animations for starred posts just
     -- reordered via `MoveStarUpClicked`/`MoveStarDownClicked` (see
@@ -105,10 +125,17 @@ type alias Model =
 type Msg
     = ToggleStar AccountsPanel.Server Post
     | GotStarResult String Bool (Result Grpc.Error Post)
-    | ToggleStarredPostsPanel
-    | CloseStarredPostsPanel
+    | ToggleStarredPanel
+    | CloseStarredPanel
     | EnableServerClicked String
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
+      -- `kickOffEventFetches`'s batched `GetEvents` reply for one server's
+      -- worth of `EVENT_INSTANCE`-context starred posts -- `host`/the
+      -- requested post ids are carried on the `Msg` itself (rather than
+      -- looked up from `Model`) since a request that comes back empty still
+      -- needs to mark every one of them `EventFetchFailed` (see this
+      -- branch's own handling).
+    | GotStarredEvents String (List String) (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse ))
     | PollStarredPosts
     | MoveStarUpClicked String
     | MoveStarDownClicked String
@@ -135,8 +162,9 @@ init flags =
     in
     { starredPostIds = Set.fromList persistedOrder
     , starOrder = persistedOrder
-    , showStarredPostsPanel = False
+    , showStarredPanel = False
     , posts = Dict.empty
+    , events = Dict.empty
     , moveAnimations = Dict.empty
 
     -- Seeded with a *resting* (not `enter`) state for every persisted star,
@@ -393,12 +421,12 @@ updateHelp accountsPanelModel msg model =
             in
             ( { model | starAnimations = newStarAnimations }, Cmd.batch cmds, Nothing )
 
-        ToggleStarredPostsPanel ->
+        ToggleStarredPanel ->
             let
                 toggledModel =
-                    { model | showStarredPostsPanel = not model.showStarredPostsPanel }
+                    { model | showStarredPanel = not model.showStarredPanel }
             in
-            if toggledModel.showStarredPostsPanel then
+            if toggledModel.showStarredPanel then
                 let
                     ( fetchedModel, cmd ) =
                         kickOffFetches accountsPanelModel toggledModel
@@ -408,12 +436,12 @@ updateHelp accountsPanelModel msg model =
             else
                 ( toggledModel, Cmd.none, Nothing )
 
-        -- Unlike `ToggleStarredPostsPanel`, always closes rather than
+        -- Unlike `ToggleStarredPanel`, always closes rather than
         -- flipping -- dispatched by the Home link (`UI.navLink`) on every
         -- click, so navigating Home also dismisses this panel if it happened
         -- to be open, same as `AccountsPanel.CloseAccountsPanel`'s `i`-button.
-        CloseStarredPostsPanel ->
-            ( { model | showStarredPostsPanel = False }, Cmd.none, Nothing )
+        CloseStarredPanel ->
+            ( { model | showStarredPanel = False }, Cmd.none, Nothing )
 
         EnableServerClicked host ->
             -- Just forwards to `AccountsPanel.ToggleServerEnabled` -- once
@@ -438,11 +466,48 @@ updateHelp accountsPanelModel msg model =
 
                         _ ->
                             PostFetchFailed
+
+                ( eventModel, eventCmd ) =
+                    kickOffEventFetches accountsPanelModel { model | posts = Dict.insert key newStatus model.posts }
             in
-            ( { model | posts = Dict.insert key newStatus model.posts }, Cmd.none, maybeAccountsPanelMsg )
+            ( eventModel, eventCmd, maybeAccountsPanelMsg )
 
         GotStarredPost key (Err _) ->
             ( { model | posts = Dict.insert key PostFetchFailed model.posts }, Cmd.none, Nothing )
+
+        GotStarredEvents host postIds (Ok ( maybeAccountsPanelMsg, response )) ->
+            let
+                loadedByPostId : Dict String ( Event, EventInstance )
+                loadedByPostId =
+                    Events.eventInstancePairs response
+                        |> List.filterMap
+                            (\( event, instance ) ->
+                                instance.post |> Maybe.map (\instancePost -> ( instancePost.id, ( event, instance ) ))
+                            )
+                        |> Dict.fromList
+
+                newEvents =
+                    List.foldl
+                        (\postId events ->
+                            case Dict.get postId loadedByPostId of
+                                Just ( event, instance ) ->
+                                    Dict.insert (rawKey postId host) (EventFetchLoaded event instance) events
+
+                                Nothing ->
+                                    Dict.insert (rawKey postId host) EventFetchFailed events
+                        )
+                        model.events
+                        postIds
+            in
+            ( { model | events = newEvents }, Cmd.none, maybeAccountsPanelMsg )
+
+        GotStarredEvents host postIds (Err _) ->
+            ( { model
+                | events = List.foldl (\postId -> Dict.insert (rawKey postId host) EventFetchFailed) model.events postIds
+              }
+            , Cmd.none
+            , Nothing
+            )
 
         MoveStarUpClicked key ->
             ( model, UI.Flip.beginReorder identity starEntryDomId GotPreMoveStarPositions -1 key model.starOrder, Nothing )
@@ -561,7 +626,7 @@ own poll for this module.
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ if model.showStarredPostsPanel then
+        [ if model.showStarredPanel then
             UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
 
           else
@@ -598,17 +663,58 @@ kickOffFetches accountsPanelModel model =
             pending
                 |> groupByHost
                 |> List.foldl (fetchGroup accountsPanelModel) ( model.posts, [] )
+
+        ( eventModel, eventCmd ) =
+            kickOffEventFetches accountsPanelModel { model | posts = newPosts }
     in
-    ( { model | posts = newPosts }, Cmd.batch cmds )
+    ( eventModel, Cmd.batch (eventCmd :: cmds) )
 
 
-{-| Clears any cached fetched Posts (see `posts`) on `hosts` and kicks off
-fresh fetches for whichever of those are still starred -- for `Shared.update`
-to call when the signed-in account for a server changes (comparing
-`AccountsPanel.enabledAccountForServer` before/after an `AccountsPanelMsg`),
-since a starred post's visibility -- and its cached `freshestPost` snapshot --
-can depend on which account fetched it. A no-op if `hosts` is empty, the
-common case for most `AccountsPanel.Msg`s.
+{-| Fetches the owning `Event`/`EventInstance` (see `EventFetchStatus`'s own
+doc) for every starred post already `PostFetchLoaded` with `context ==
+EVENTINSTANCE` that doesn't have one yet -- always run right after `posts`
+changes (`kickOffFetches`, `GotStarredPost`), same "grouped by host, one
+request per server" batching `kickOffFetches` uses for the posts themselves
+(see `fetchEventGroup`), via `Components.Events.fetchEventsByInstancePostIds`'
+own `event_instance_post_ids` batch RPC. Doesn't need `fetchGroup`'s own
+`ServerDependentView.availableServer` check -- a post already loaded from
+`host` proves that server is currently reachable.
+-}
+kickOffEventFetches : AccountsPanel.Model -> Model -> ( Model, Cmd Msg )
+kickOffEventFetches accountsPanelModel model =
+    let
+        pending =
+            model.posts
+                |> Dict.toList
+                |> List.filterMap
+                    (\( key, status ) ->
+                        case status of
+                            PostFetchLoaded host post ->
+                                if post.context == EVENTINSTANCE && needsEventFetch model.events key then
+                                    Just ( post.id, host )
+
+                                else
+                                    Nothing
+
+                            _ ->
+                                Nothing
+                    )
+
+        ( newEvents, cmds ) =
+            pending
+                |> groupByHost
+                |> List.foldl (fetchEventGroup accountsPanelModel) ( model.events, [] )
+    in
+    ( { model | events = newEvents }, Cmd.batch cmds )
+
+
+{-| Clears any cached fetched Posts/Events (see `posts`/`events`) on `hosts`
+and kicks off fresh fetches for whichever of those are still starred -- for
+`Shared.update` to call when the signed-in account for a server changes
+(comparing `AccountsPanel.enabledAccountForServer` before/after an
+`AccountsPanelMsg`), since a starred post's visibility -- and its cached
+`freshestPost` snapshot -- can depend on which account fetched it. A no-op if
+`hosts` is empty, the common case for most `AccountsPanel.Msg`s.
 -}
 refreshHosts : AccountsPanel.Model -> List String -> Model -> ( Model, Cmd Msg )
 refreshHosts accountsPanelModel hosts model =
@@ -620,19 +726,21 @@ refreshHosts accountsPanelModel hosts model =
             hostSet =
                 Set.fromList hosts
 
-            clearedPosts =
-                Dict.filter
-                    (\key _ ->
-                        case parseStarKey key of
-                            Just ( _, host ) ->
-                                not (Set.member host hostSet)
+            notOnRefreshedHost key =
+                case parseStarKey key of
+                    Just ( _, host ) ->
+                        not (Set.member host hostSet)
 
-                            Nothing ->
-                                True
-                    )
-                    model.posts
+                    Nothing ->
+                        True
+
+            clearedPosts =
+                Dict.filter (\key _ -> notOnRefreshedHost key) model.posts
+
+            clearedEvents =
+                Dict.filter (\key _ -> notOnRefreshedHost key) model.events
         in
-        kickOffFetches accountsPanelModel { model | posts = clearedPosts }
+        kickOffFetches accountsPanelModel { model | posts = clearedPosts, events = clearedEvents }
 
 
 {-| `ServerDependentView.availableServer` -- not the raw
@@ -672,6 +780,33 @@ fetchGroup accountsPanelModel ( host, postIds ) ( posts, cmds ) =
             )
 
 
+{-| `fetchGroup`'s counterpart for `kickOffEventFetches` -- one batched
+`GetEvents` request per server (`Components.Events.fetchEventsByInstancePostIds`)
+covering every `postIds` entry needing one, rather than `fetchGroup`'s own
+one-`GetPosts`-per-post. No `ServerDependentView.availableServer` check here
+(unlike `fetchGroup`) -- see `kickOffEventFetches`'s own doc for why a
+starred post already `PostFetchLoaded` from `host` already proves that
+server's reachable.
+-}
+fetchEventGroup :
+    AccountsPanel.Model
+    -> ( String, List String )
+    -> ( Dict String EventFetchStatus, List (Cmd Msg) )
+    -> ( Dict String EventFetchStatus, List (Cmd Msg) )
+fetchEventGroup accountsPanelModel ( host, postIds ) ( events, cmds ) =
+    let
+        maybeAccountServer =
+            ( AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host |> Maybe.map .userId, host )
+
+        fetchCmd =
+            Events.fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer postIds
+                |> Task.attempt (GotStarredEvents host postIds)
+    in
+    ( List.foldl (\postId -> Dict.insert (rawKey postId host) FetchingEvent) events postIds
+    , fetchCmd :: cmds
+    )
+
+
 groupByHost : List ( String, String ) -> List ( String, List String )
 groupByHost pairs =
     pairs
@@ -695,6 +830,28 @@ needsFetch posts key =
 
         Just ServerUnavailable ->
             True
+
+        Nothing ->
+            True
+
+
+{-| `needsFetch`'s counterpart for `events` -- simpler than `needsFetch`
+itself since there's no `ServerUnavailable` state to retry here (see
+`kickOffEventFetches`'s own doc: a starred post already `PostFetchLoaded`
+already proves its server is reachable, so nothing here ever needs that
+retry path).
+-}
+needsEventFetch : Dict String EventFetchStatus -> String -> Bool
+needsEventFetch events key =
+    case Dict.get key events of
+        Just (EventFetchLoaded _ _) ->
+            False
+
+        Just FetchingEvent ->
+            False
+
+        Just EventFetchFailed ->
+            False
 
         Nothing ->
             True
@@ -734,34 +891,34 @@ toggleStarMsg accountsPanelModel host post =
 -- VIEW
 
 
-{-| The Starred Posts panel's content -- always rendered (even "closed"), same
+{-| The Starred panel's content -- always rendered (even "closed"), same
 as `UI.elm`'s Accounts/Admin panels, so opening/closing can be a plain CSS
 transition. Returns `Html Msg` (this module's own `Msg`, mapped into
 `Shared.Msg` by `UI.elm`'s `starredPostsMenu`) rather than `Html Shared.Msg`
 directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
-`Shared.StarredPostsPanel`, so the reverse import would be a cycle).
+`Shared.StarredPanel`, so the reverse import would be a cycle).
 -}
 view : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> Html Msg
 view browserTimeZone basePath accountsPanelModel currentPostKey model =
     let
         stateClass =
-            openClosedClass model.showStarredPostsPanel
+            openClosedClass model.showStarredPanel
 
         count =
             List.length model.starOrder
     in
-    div [ classes [ "starred-posts-panel", "nav-panel", stateClass ] ]
-        (div [ class "starred-posts-header" ] [ text "Starred Posts" ]
+    div [ classes [ "starred-panel", "nav-panel", stateClass ] ]
+        (div [ class "starred-panel-header" ] [ text "Starred" ]
             :: (if Set.isEmpty model.starredPostIds then
-                    [ div [ class "starred-posts-empty" ] [ text "No starred posts yet." ] ]
+                    [ div [ class "starred-panel-empty" ] [ text "No starred posts yet." ] ]
 
                 else
                     -- `starOrder` starts newest-star-first (see `Model`), but the user
                     -- can then drag it around from there via `MoveStarUpClicked`/
                     -- `MoveStarDownClicked`.
                     [ Html.Keyed.node "div"
-                        [ classes [ "starred-posts-list", "flip-animated-column" ] ]
+                        [ classes [ "starred-panel-list", "flip-animated-column" ] ]
                         (List.indexedMap
                             (\index key -> ( key, starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey model count index key ))
                             model.starOrder
@@ -828,34 +985,38 @@ starredPostView : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe Stri
 starredPostView browserTimeZone basePath accountsPanelModel currentPostKey model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
-            let
-                starred =
-                    isStarred host post model
+            if post.context == EVENTINSTANCE then
+                starredEventInstanceView browserTimeZone basePath accountsPanelModel model key host post
 
-                current =
-                    currentPostKey == Just key
+            else
+                let
+                    starred =
+                        isStarred host post model
 
-                onStarClicked =
-                    toggleStarMsg accountsPanelModel host post
+                    current =
+                        currentPostKey == Just key
 
-                maybeServer =
-                    AccountsPanel.serverForHost accountsPanelModel.servers host
+                    onStarClicked =
+                        toggleStarMsg accountsPanelModel host post
 
-                maybeAccount =
-                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+                    maybeServer =
+                        AccountsPanel.serverForHost accountsPanelModel.servers host
 
-                onMediaClicked mediaId =
-                    MediaClicked host post mediaId
-            in
-            div [ class "starred-post-entry" ]
-                [ case Posts.postContextLabel post.context of
-                    Just contextLabel ->
-                        div [ class "starred-post-context" ] [ text contextLabel ]
+                    maybeAccount =
+                        AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
 
-                    Nothing ->
-                        text ""
-                , Posts.postCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
-                ]
+                    onMediaClicked mediaId =
+                        MediaClicked host post mediaId
+                in
+                div [ class "starred-post-entry" ]
+                    [ case Posts.postContextLabel post.context of
+                        Just contextLabel ->
+                            div [ class "starred-post-context" ] [ text contextLabel ]
+
+                        Nothing ->
+                            text ""
+                    , Posts.postCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked True current starred onStarClicked post
+                    ]
 
         Just FetchingPost ->
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
@@ -895,3 +1056,64 @@ starredPostView browserTimeZone basePath accountsPanelModel currentPostKey model
 
         Nothing ->
             text ""
+
+
+{-| `starredPostView`'s branch for a starred post whose own `context` is
+`EVENTINSTANCE` -- renders `Components.Events.eventCard` (the same card
+`Components.Pages.EventsPage` uses for its own listing) instead of
+`Posts.postCard`, sourcing the `Event`/`EventInstance` data it needs from
+`model.events` (see `kickOffEventFetches`). `post` here is always the
+freshest known copy of the `EventInstance`'s own Post (`Dict.get key
+model.posts`, same as `starredPostView`'s own `PostFetchLoaded` branch) --
+overlaid onto the fetched `instance.post` (via `displayInstance`, below)
+before rendering, so a just-toggled star's fresh count (see `GotStarResult`,
+which updates `model.posts` directly) shows immediately without waiting on a
+whole fresh `GetEvents` round-trip, mirroring
+`Components.Pages.EventsPage.eventCardView`'s own `displayInstance` swap.
+-}
+starredEventInstanceView : BrowserTimeZone -> String -> AccountsPanel.Model -> Model -> String -> String -> Post -> Html Msg
+starredEventInstanceView browserTimeZone basePath accountsPanelModel model key host post =
+    case Dict.get key model.events of
+        Just (EventFetchLoaded event instance) ->
+            let
+                starred =
+                    isStarred host post model
+
+                onStarClicked =
+                    toggleStarMsg accountsPanelModel host post
+
+                maybeServer =
+                    AccountsPanel.serverForHost accountsPanelModel.servers host
+
+                maybeAccount =
+                    AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host
+
+                displayInstance =
+                    { instance | post = Just post }
+
+                onMediaClicked mediaId =
+                    case event.post of
+                        Just eventPost ->
+                            MediaClicked host eventPost mediaId
+
+                        Nothing ->
+                            MediaClicked host post mediaId
+            in
+            div [ class "starred-post-entry" ]
+                [ case Posts.postContextLabel post.context of
+                    Just contextLabel ->
+                        div [ class "starred-post-context" ] [ text contextLabel ]
+
+                    Nothing ->
+                        text ""
+                , Events.eventCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked starred onStarClicked event displayInstance
+                ]
+
+        Just FetchingEvent ->
+            div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
+
+        Just EventFetchFailed ->
+            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Event for Post " ++ key ++ ".") ]
+
+        Nothing ->
+            div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]

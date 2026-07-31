@@ -1,5 +1,5 @@
 /* The app-wide Markdown editor (see Shared/MarkdownPanel.elm) -- unlike the
-   Accounts/Starred Posts panels (small dropdowns anchored below their own nav
+   Accounts/Starred panels (small dropdowns anchored below their own nav
    toggle), this one is a large, centered overlay -- there's a real editor and
    live preview to fit side by side, not just a short list/form. Reuses the
    `.nav-panel` base rule (position/opacity/pointer-events transition, see
@@ -19,7 +19,7 @@
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 
-  /* Above `.navbar` (28, see nav.css) -- the Accounts/Starred Posts panels
+  /* Above `.navbar` (28, see nav.css) -- the Accounts/Starred panels
      (`.navbar`'s descendants, forming one stacking context at *its* z-index,
      not their own lower ones) shouldn't bury a glanced-at editor left open
      behind them. Also above plain page content and `.create-new-panel` (29,
@@ -49,7 +49,7 @@
     right: 0;
     width: 100vw;
     /* The shared `.nav-panel` base rule (accounts_panel.css) caps every
-       panel at `calc(100vw - 2rem)` -- fine for the Accounts/Starred Posts
+       panel at `calc(100vw - 2rem)` -- fine for the Accounts/Starred
        dropdowns, which want a margin either side, but it silently overrode
        `width: 100vw` above (a `max-width` still wins over a wider `width`),
        leaving a stray 2rem gap on the right. This one's meant to go fully

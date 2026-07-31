@@ -38,7 +38,7 @@ import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI.Responsive as Responsive
@@ -77,7 +77,7 @@ type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
     , federatedAuth : FederatedAuth.Model
-    , starredPostsPanel : StarredPostsPanel.Model
+    , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
@@ -112,8 +112,8 @@ type alias Model =
     -- The browser's current window size, kept live via `Browser.Events.onResize`
     -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
     -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
-    -- the Accounts Panel and Starred Posts Panel should close one another when
-    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPostsPanelMsg`
+    -- the Accounts Panel and Starred Panel should close one another when
+    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPanelMsg`
     -- branches), since both are full-width slide-out panels on narrow screens
     -- and CSS alone can't reach into another panel's state.
     , windowSize : Responsive.WindowSize
@@ -130,7 +130,7 @@ type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
     | FederatedAuthMsg FederatedAuth.Msg
-    | StarredPostsPanelMsg StarredPostsPanel.Msg
+    | StarredPanelMsg StarredPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
@@ -304,7 +304,7 @@ init basePath req flags =
             { accountsPanel = accountsPanelModel
             , adminPanel = AdminPanel.init
             , federatedAuth = federatedAuthModel
-            , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+            , starredPanel = StarredPanel.init starredPostsFlags
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
             , myMediaPanel = MyMediaPanel.init
@@ -404,13 +404,13 @@ updateImpl req msg model =
                 changedHosts =
                     starredPostsRefreshHosts model.accountsPanel subModel
 
-                ( refreshedStarredPostsPanel, refreshCmd ) =
-                    StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
+                ( refreshedStarredPanel, refreshCmd ) =
+                    StarredPanel.refreshHosts subModel changedHosts model.starredPanel
 
-                -- The Accounts Panel and Starred Posts Panel are both
+                -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
                 -- `UI.Responsive`), so opening one closes the other there.
-                shouldCloseStarredPostsPanel =
+                shouldCloseStarredPanel =
                     case subMsg of
                         AccountsPanel.ToggleAccountsPanel ->
                             subModel.showAccountsPanel && Responsive.isNarrow model.windowSize
@@ -418,22 +418,22 @@ updateImpl req msg model =
                         _ ->
                             False
 
-                ( closedStarredPostsPanel, closeCmd ) =
-                    if shouldCloseStarredPostsPanel then
+                ( closedStarredPanel, closeCmd ) =
+                    if shouldCloseStarredPanel then
                         let
                             ( closedModel, cmd, _ ) =
-                                StarredPostsPanel.update subModel StarredPostsPanel.CloseStarredPostsPanel refreshedStarredPostsPanel
+                                StarredPanel.update subModel StarredPanel.CloseStarredPanel refreshedStarredPanel
                         in
                         ( closedModel, cmd )
 
                     else
-                        ( refreshedStarredPostsPanel, Cmd.none )
+                        ( refreshedStarredPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPostsPanel = closedStarredPostsPanel }
+            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
-                , Cmd.map StarredPostsPanelMsg refreshCmd
-                , Cmd.map StarredPostsPanelMsg closeCmd
+                , Cmd.map StarredPanelMsg refreshCmd
+                , Cmd.map StarredPanelMsg closeCmd
                 ]
             )
 
@@ -447,10 +447,10 @@ updateImpl req msg model =
             in
             ( { model | federatedAuth = subModel }, Cmd.map FederatedAuthMsg subCmd )
 
-        StarredPostsPanelMsg subMsg ->
+        StarredPanelMsg subMsg ->
             let
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
-                    StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
+                    StarredPanel.update model.accountsPanel subMsg model.starredPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -472,8 +472,8 @@ updateImpl req msg model =
                 -- branch, above -- see `UI.Responsive`.
                 shouldCloseAccountsPanel =
                     case subMsg of
-                        StarredPostsPanel.ToggleStarredPostsPanel ->
-                            subModel.showStarredPostsPanel && Responsive.isNarrow model.windowSize
+                        StarredPanel.ToggleStarredPanel ->
+                            subModel.showStarredPanel && Responsive.isNarrow model.windowSize
 
                         _ ->
                             False
@@ -493,8 +493,8 @@ updateImpl req msg model =
                 -- collide at any width.
                 shouldCloseCreateNewPanel =
                     case subMsg of
-                        StarredPostsPanel.ToggleStarredPostsPanel ->
-                            subModel.showStarredPostsPanel
+                        StarredPanel.ToggleStarredPanel ->
+                            subModel.showStarredPanel
 
                         _ ->
                             False
@@ -511,13 +511,13 @@ updateImpl req msg model =
                         ( model.createNewPanel, Cmd.none )
             in
             ( { model
-                | starredPostsPanel = subModel
+                | starredPanel = subModel
                 , accountsPanel = closedAccountsPanelModel
                 , mediaViewerPanel = mediaViewerPanelModel
                 , createNewPanel = closedCreateNewPanelModel
               }
             , Cmd.batch
-                [ Cmd.map StarredPostsPanelMsg subCmd
+                [ Cmd.map StarredPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map AccountsPanelMsg closeCmd
                 , Cmd.map CreateNewPanelMsg closeCreateNewCmd
@@ -704,10 +704,10 @@ updateImpl req msg model =
                         Nothing ->
                             ( model.myMediaPanel, Cmd.none )
 
-                -- Mirrors `StarredPostsPanelMsg`'s own
+                -- Mirrors `StarredPanelMsg`'s own
                 -- `shouldCloseCreateNewPanel`, in the other direction --
                 -- unconditional (not narrow-screen-gated), same reasoning.
-                shouldCloseStarredPostsPanel =
+                shouldCloseStarredPanel =
                     case subMsg of
                         CreateNewPanel.ToggleOpen ->
                             subModel.open
@@ -715,30 +715,30 @@ updateImpl req msg model =
                         _ ->
                             False
 
-                ( closedStarredPostsPanelModel, closeStarredPostsCmd ) =
-                    if shouldCloseStarredPostsPanel then
+                ( closedStarredPanelModel, closeStarredPostsCmd ) =
+                    if shouldCloseStarredPanel then
                         let
                             ( m, cmd, _ ) =
-                                StarredPostsPanel.update accountsPanelModel StarredPostsPanel.CloseStarredPostsPanel model.starredPostsPanel
+                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel model.starredPanel
                         in
                         ( m, cmd )
 
                     else
-                        ( model.starredPostsPanel, Cmd.none )
+                        ( model.starredPanel, Cmd.none )
             in
             ( { model
                 | createNewPanel = subModel
                 , accountsPanel = accountsPanelModel
                 , markdownPanel = markdownPanelModel
                 , myMediaPanel = myMediaPanelModel
-                , starredPostsPanel = closedStarredPostsPanelModel
+                , starredPanel = closedStarredPanelModel
               }
             , Cmd.batch
                 [ Cmd.map CreateNewPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map MarkdownPanelMsg markdownPanelCmd
                 , Cmd.map MyMediaPanelMsg myMediaPanelCmd
-                , Cmd.map StarredPostsPanelMsg closeStarredPostsCmd
+                , Cmd.map StarredPanelMsg closeStarredPostsCmd
                 ]
             )
 
@@ -803,7 +803,7 @@ updateImpl req msg model =
                     updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
 
                 ( closedStarredModel, closeStarredCmd ) =
-                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) closedAccountsModel
+                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
 
                 ( closedCreateNewModel, closeCreateNewCmd ) =
                     updateImpl req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
@@ -913,7 +913,7 @@ updateImpl req msg model =
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
+                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -953,7 +953,7 @@ updateImpl req msg model =
 e.g. logging into/switching accounts on a server, signing out) or whether
 their `Server` itself is enabled (`ToggleServerEnabled` -- which also disables
 its accounts, but not for a server with none signed into it, so that flip
-needs checking on its own). Tells `Shared.StarredPostsPanel.refreshHosts`
+needs checking on its own). Tells `Shared.StarredPanel.refreshHosts`
 which servers' cached starred `Post`s might now be wrong -- a starred post's
 visibility can depend on which account fetched it, and an unavailable
 server's shouldn't be fetched/shown at all (see
@@ -993,7 +993,7 @@ starredPostsRefreshHosts before after =
     hosts |> List.filter (\host -> identity before host /= identity after host)
 
 
-{-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
+{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
 only while the panel's actually open -- there's nothing to show for it
 otherwise, so no reason to keep hitting servers in the background.
 -}
@@ -1004,11 +1004,11 @@ subscriptions _ model =
         , Browser.Events.onResize WindowResized
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
-        , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
+        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.starredPanel)
         , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
         , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
-        , if model.starredPostsPanel.showStarredPostsPanel then
-            Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
+        , if model.starredPanel.showStarredPanel then
+            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
 
           else
             Sub.none

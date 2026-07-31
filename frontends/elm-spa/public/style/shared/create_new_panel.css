@@ -1,7 +1,7 @@
 /* The app-wide "New Post" composer (see Shared/CreateNewPanel.elm) -- unlike
    the Markdown/My Media panels (large overlays centered against the bottom
    of the screen), this one opens from just under the top nav, matching the
-   Accounts/Starred Posts panels' own vertical position and general look
+   Accounts/Starred panels' own vertical position and general look
    (rounded on every corner, `--panel-bg`/border/shadow, the same subtle
    fade+shift closed state -- all inherited from the `.nav-panel` base rule,
    see accounts_panel.css) -- just centered, at this panel's own wider
@@ -10,8 +10,8 @@
 .create-new-panel.nav-panel {
   position: fixed;
 
-  /* Same vertical position as the Accounts/Starred Posts panels' own `top`
-     (see starred_posts_panel.css's `.starred-posts-panel` -- `12px` is the
+  /* Same vertical position as the Accounts/Starred panels' own `top`
+     (see starred_panel.css's `.starred-panel` -- `12px` is the
      nav toggle's own vertical centering inset, `var(--nav-toggle-height)` its
      height): those are positioned relative to `.navbar` itself (a `position:
      sticky` ancestor pinned to `env(safe-area-inset-top)` from the real
@@ -26,7 +26,7 @@
   max-height: calc(100vh - env(safe-area-inset-top) - 12px - var(--nav-toggle-height) + 1px - 16px);
 
   /* Above `.navbar` itself (28, see nav.css) -- since this panel sits at the
-     same vertical position as the Accounts/Starred Posts panels (see the
+     same vertical position as the Accounts/Starred panels (see the
      `top` comment above), it would otherwise visually overlap `.navbar`'s
      own lower edge and lose that overlap (`.navbar` painting over this
      panel's rounded top corners), the way a `.navbar` *descendant* like

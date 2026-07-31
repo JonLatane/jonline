@@ -21,7 +21,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI
@@ -247,7 +247,7 @@ accountsPanelEffect maybeAccountsPanelMsg =
 any save (or refetch) completion should route through so the page's own
 `postDetailView` reflects it immediately rather than only after a reload.
 Handles both halves of that: sets `model.postStatus` itself, _and_ pushes
-`post` into `Shared.StarredPostsPanel`'s cache (see its `PostUpdated`/
+`post` into `Shared.StarredPanel`'s cache (see its `PostUpdated`/
 `freshestPost`) so that cache -- which `postDetailView` prefers over
 whatever's passed to it whenever this Post has ever been starred -- can't go
 on serving a stale copy back out from under this update.
@@ -262,7 +262,7 @@ same two updates again.
 applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
 applyUpdatedPost model post =
     ( { model | postStatus = PostLoaded post }
-    , Effect.fromShared (Shared.StarredPostsPanelMsg (StarredPostsPanel.PostUpdated model.targetHost post))
+    , Effect.fromShared (Shared.StarredPanelMsg (StarredPanel.PostUpdated model.targetHost post))
     )
 
 
@@ -597,14 +597,14 @@ postDetailView : Shared.Model -> Model -> Post -> Html Msg
 postDetailView shared model post =
     let
         displayPost =
-            StarredPostsPanel.freshestPost model.targetHost post shared.starredPostsPanel
+            StarredPanel.freshestPost model.targetHost post shared.starredPanel
 
         starred =
-            StarredPostsPanel.isStarred model.targetHost displayPost shared.starredPostsPanel
+            StarredPanel.isStarred model.targetHost displayPost shared.starredPanel
 
         onStarClicked =
-            StarredPostsPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
-                |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
+            StarredPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
+                |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         maybeServer =
             AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost

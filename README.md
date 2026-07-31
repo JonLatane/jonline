@@ -111,6 +111,12 @@ export PATH=$PATH:$(pwd)/bin
     # If you choose to install, this to might be also useful to add to your .profile/.zshrc/etc.:
     export PATH=$PATH:$HOME/.jonline-linux/bin
 
+# Optional: tab-completion for jonline subcommands. Homebrew wires this up automatically;
+# on Linux there's no package manager to hook into, so add ONE of these to your shell
+# startup file yourself (works whether or not you ran `jonline install` above):
+echo 'eval "$(jonline completion bash)"' >> ~/.bashrc   # bash
+echo 'eval "$(jonline completion zsh)"' >> ~/.zshrc     # zsh
+
 ### The rest of setup is the same as for macOS:
 
 jonline help # show subcommands for the bash launcher

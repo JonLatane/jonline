@@ -49,7 +49,7 @@ preview server maybeAccount onImageClicked media =
 
 {-| Same as `preview`, just with `MediaRenderer.ExtraSmall` sizing (half the
 height of `preview`'s usual `Small`) -- for contexts even tighter on vertical
-space than an ordinary post card, e.g. `Shared.StarredPostsPanel`'s post rows.
+space than an ordinary post card, e.g. `Shared.StarredPanel`'s post rows.
 -}
 previewExtraSmall : AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> List MediaReference -> Html msg
 previewExtraSmall server maybeAccount onImageClicked media =

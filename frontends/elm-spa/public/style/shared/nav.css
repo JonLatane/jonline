@@ -19,12 +19,12 @@
   padding-top: env(safe-area-inset-top);
   border-bottom: 1px solid var(--border);
   /* Its own stacking context, above .shared-backdrop, so the nav (and its
-     descendant .nav-panel elements -- Accounts, Starred Posts) is never
+     descendant .nav-panel elements -- Accounts, Starred) is never
      blurred/covered/click-intercepted by the backdrop. Below
      .create-new-panel (29, see create_new_panel.css) -- a sibling of
      .navbar, not a descendant, so it's *this* z-index (not its own, lower
      one) that decides that. `.create-new-panel` sits at the same vertical
-     position as the Accounts/Starred Posts panels (see its own `top`
+     position as the Accounts/Starred panels (see its own `top`
      comment), so it needs to win this particular overlap the way those two
      never have to (they're .navbar descendants, not siblings). Below
      .markdown-panel (30, see markdown_panel.css), .my-media-panel (31, see
@@ -54,12 +54,12 @@
 }
 
 /* Covers everything below/behind the nav for every panel that closes via a
-   background tap (Starred Posts, Accounts -- see UI.elm's `sharedBackdrop`,
+   background tap (Starred, Accounts -- see UI.elm's `sharedBackdrop`,
    which lists them nearest-first and picks the frontmost open one to close on
    click, so they peel off one at a time rather than all closing together).
    Only blurred/tinted (`.blurred`, driven by `sharedBackdrop`'s per-panel
    `blurs` flag) while the Accounts Panel specifically is open -- unlike it,
-   the Starred Posts panel doesn't block interaction with the rest of the
+   the Starred panel doesn't block interaction with the rest of the
    page, since starring/unstarring posts while it's open is an expected,
    encouraged interaction rather than something to obscure. */
 .shared-backdrop {
@@ -93,7 +93,7 @@
   min-width: 0;
 }
 
-/* Everything in .nav-links except the Home link -- Starred Posts, Events,
+/* Everything in .nav-links except the Home link -- Starred, Events,
    Posts, People -- so on a narrow screen this row scrolls horizontally
    instead of wrapping/overflowing the Home link and .nav-right's Accounts
    menu, both of which stay put outside this wrapper. Zero margin of its
@@ -137,11 +137,11 @@
 }
 
 /* Events/Posts/People (everything in `.nav-links-scroll` except the
-   circular Starred Posts toggle, which sizes itself via
+   circular Starred toggle, which sizes itself via
    `.nav-menu-toggle.circular`) -- portrait-oriented rectangles, taller than
    they are wide, rather than the small horizontal pill this used to be:
    `--nav-toggle-height` (44px, main.css -- the same thumb-safe width the
-   Starred Posts/Accounts toggles use) keeps the tap target wide enough for
+   Starred/Accounts toggles use) keeps the tap target wide enough for
    a thumb, while the height leans on nearly the full row (set by
    `.nav-link-home`'s 64px logo) so they read as tall buttons rather than
    small icons. `:not(.nav-link-home)` rather than a dedicated class, since
@@ -152,8 +152,8 @@
    up with -- without it, the flex algorithm would rather shrink these
    buttons down than let the container's own box go narrower than its
    content, defeating the point of that container's `overflow-x: auto`
-   (nothing would ever actually overflow it to scroll). `.starred-posts-menu`
-   (starred_posts_panel.css), this row's other child, carries the same
+   (nothing would ever actually overflow it to scroll). `.starred-menu`
+   (starred_panel.css), this row's other child, carries the same
    `flex-shrink: 0` for the same reason. */
 .nav-link:not(.nav-link-home) {
   width: var(--nav-toggle-height);
@@ -387,7 +387,7 @@
    several replies are chained, and the avatar alone is still enough to tap
    through to that reply's own card (see Shared/Breadcrumbs.elm's `replyPanel`)
    for the name. Shares its 639px breakpoint with `.navbar-inner`/
-   `.starred-posts-panel`'s own narrow-screen overrides above. */
+   `.starred-panel`'s own narrow-screen overrides above. */
 @media (max-width: 639px) {
   .breadcrumb-reply-username {
     display: none;
@@ -402,7 +402,7 @@
    descendant (see UI.elm's `headerNav`), so it shares `.navbar`'s own
    stacking context (28) -- always above `.markdown-panel` (26, a `.navbar`
    *sibling*, so it's `.navbar`'s z-index, not this rule's own, that wins
-   there) -- and only needs a z-index lower than the Accounts/Starred Posts
+   there) -- and only needs a z-index lower than the Accounts/Starred
    panels' own (20/25) to sit underneath *them* specifically, per
    `Shared.Breadcrumbs`' own doc comment. */
 .breadcrumb-reply-panel.nav-panel {

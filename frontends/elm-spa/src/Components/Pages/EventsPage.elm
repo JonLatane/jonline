@@ -61,6 +61,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone as BrowserTimeZone
 import Shared.Conversions as Conversions
 import Shared.MediaViewerPanel as MediaViewerPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -252,7 +253,7 @@ init shared author navKey path query embeddedRow =
                 }
     in
     ( fetchedModel
-      -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally
+      -- Closes any open panel (Accounts, Starred, etc.) unconditionally
       -- on load -- mirrors `Components.Pages.PostsPage.init`'s own
       -- unconditional close, see its doc comment for why `setBreadcrumbsRoot`
       -- alone isn't enough here.
@@ -1473,6 +1474,15 @@ eventAnimationView shared axis ( key, anim ) =
     )
 
 
+{-| The instance's own comment/star count is based on `instance.post`, not
+`event.post` (see `Components.Events.eventCard`'s own doc) -- swaps in
+`StarredPanel.freshestPost`'s copy of it (same "the freshest known copy always
+wins" convention `Components.Pages.PostsPage.postCardView` uses for a plain
+`Post`) before handing `instance` to `eventCard`, so both the star button's
+`starred` state and the count it (and the comment count) displays come from
+the same post, rather than `starred` alone reflecting a just-toggled state
+the rendered count doesn't yet.
+-}
 eventCardView : Shared.Model -> ( String, Event, EventInstance ) -> Html Msg
 eventCardView shared ( host, event, instance ) =
     let
@@ -1489,6 +1499,27 @@ eventCardView shared ( host, event, instance ) =
 
                 Nothing ->
                     SharedMsg Shared.NoOp
+
+        displayInstance =
+            case instance.post of
+                Just instancePost ->
+                    { instance | post = Just (StarredPanel.freshestPost host instancePost shared.starredPanel) }
+
+                Nothing ->
+                    instance
+
+        starred =
+            case displayInstance.post of
+                Just instancePost ->
+                    StarredPanel.isStarred host instancePost shared.starredPanel
+
+                Nothing ->
+                    False
+
+        onStarClicked =
+            displayInstance.post
+                |> Maybe.andThen (StarredPanel.toggleStarMsg shared.accountsPanel host)
+                |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
     in
     Events.eventCard
         shared.browserTimeZone
@@ -1498,5 +1529,7 @@ eventCardView shared ( host, event, instance ) =
         maybeServer
         maybeAccount
         onMediaClicked
+        starred
+        onStarClicked
         event
-        instance
+        displayInstance

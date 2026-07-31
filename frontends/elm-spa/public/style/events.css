@@ -53,6 +53,15 @@
   margin-bottom: 0.6rem;
 }
 
+/* Star + comment count for the currently-viewed `EventInstance`'s own `Post`
+   -- bottom-right of the detail view (`Pages.Event.EventId_.instanceMetaView`),
+   below both `postSection`s. Just `.post-meta-right` (posts.css) -- its own
+   `margin-left: auto` pins it to the right edge without needing a
+   `.post-meta-left` counterpart here. */
+.event-detail-meta {
+  display: flex;
+}
+
 .event-post-content {
   display: block;
   line-height: 1.5;
@@ -576,14 +585,23 @@
   margin-top: 0.3rem;
 }
 
+/* Split into `.post-meta-left` (author/visibility) and `.post-meta-right`
+   (star + comment count, both keyed off the `EventInstance`'s own Post) --
+   same `posts.css` classes/layout `.post-card-meta` uses, see that file's own
+   doc comment on the split. */
 .event-card-meta {
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
   color: var(--muted);
   font-size: 0.85rem;
   margin-top: 0.4rem;
   pointer-events: none;
 }
 
-.event-card-meta a {
+.event-card-meta a,
+.event-card-meta .post-star {
   pointer-events: auto;
 }

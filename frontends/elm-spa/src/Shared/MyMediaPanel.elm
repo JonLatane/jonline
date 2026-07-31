@@ -337,7 +337,7 @@ account's token first -- see `AccountsPanel.performWithAccountServer`) for
 `Shared.MarkdownPanel.update`. The extra `Maybe Media` alongside it is
 `DeleteClicked`'s own request for `Shared.update` to open the shared delete
 confirmation dialog for -- same "second forwarded value" convention
-`Shared.StarredPostsPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`.
+`Shared.StarredPanel.update` uses for its own `Maybe MediaViewerPanel.Msg`.
 -}
 update : AccountsPanel.Model -> Msg -> Model -> ( Model, Cmd Msg, ( Maybe AccountsPanel.Msg, Maybe Media ) )
 update accountsPanelModel msg model =
@@ -760,7 +760,7 @@ syncMediaAnimations model =
 
 
 {-| The `Sub` driving every tile's enter/leave fade -- gated on `isOpen`
-(unlike e.g. `Shared.StarredPostsPanel.subscriptions`' own `AnimateItemFlip`
+(unlike e.g. `Shared.StarredPanel.subscriptions`' own `AnimateItemFlip`
 sub, this panel's tiles only ever render while it's open, so nothing outside
 `view` could still be mid-animation once it's closed).
 -}

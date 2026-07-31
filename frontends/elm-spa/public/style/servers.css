@@ -143,6 +143,20 @@
   font-family: monospace;
 }
 
+.server-details-color-row-edit {
+  flex-wrap: wrap;
+}
+
+.server-details-color-row-edit input[type="color"] {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: none;
+  cursor: pointer;
+}
+
 .server-details-logo {
   margin-top: 1rem;
 }
@@ -153,6 +167,12 @@
   object-fit: cover;
   border-radius: 0.5rem;
   border: 1px solid var(--border);
+}
+
+.server-details-logo-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 .server-details-setting,

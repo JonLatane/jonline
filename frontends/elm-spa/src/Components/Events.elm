@@ -4,6 +4,7 @@ module Components.Events exposing
     , eventInstancePairs
     , fetchEvent
     , fetchEvents
+    , fetchEventsByInstancePostIds
     , findInstance
     , instanceDateText
     , instanceMoment
@@ -127,6 +128,40 @@ fetchEvents accountsPanelModel maybeAccountServer authorUserId searchText endsAf
         maybeAccountServer
         (\server maybeToken ->
             Grpc.new Jonline.getEvents request
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken maybeToken
+                |> Grpc.toTask
+        )
+
+
+{-| Fetches the `Event`/`EventInstance` data for a batch of `EventInstance`
+Post ids on `maybeAccountServer`'s server, authenticated as its account if
+any -- for `Shared.StarredPanel`, which already has a flat list of starred
+`Post` ids (fetched individually via `Components.Posts.fetchPost`, see that
+module's own doc) and, for whichever of those turn out to be an
+`EventInstance`'s own Post (`PostContext.EVENT_INSTANCE`), wants back the
+`Event`/`EventInstance` data `Components.Events.eventCard` needs to render
+them -- one batched request per server rather than one per starred
+`EventInstance` post. Unlike `fetchEvent`'s single `event_instance_id`
+request (which returns the whole parent `Event` with *every* one of its
+instances, for the single-event detail page's date-picker strip), this
+mirrors `fetchEvents`' own "one `Event` entry per matching `EventInstance`"
+shape (see `eventInstancePairs`) -- each requested post id resolves to
+exactly one `(Event, EventInstance)` pair, not a whole recurring series (see
+`backend/src/rpcs/events/get_events.rs`'s `get_events_by_instance_post_ids`,
+which this calls into via `GetEventsRequest.event_instance_post_ids`).
+-}
+fetchEventsByInstancePostIds :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> List String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetEventsResponse )
+fetchEventsByInstancePostIds accountsPanelModel maybeAccountServer instancePostIds =
+    performWithOptionalAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server maybeToken ->
+            Grpc.new Jonline.getEvents { defaultGetEventsRequest | eventInstancePostIds = instancePostIds }
                 |> Grpc.setHost (AccountsPanel.serverUrl server)
                 |> withAccessToken maybeToken
                 |> Grpc.toTask
@@ -403,6 +438,15 @@ media -- the "primary" `Post`, same primacy `eventDetailView` gives it),
 mirroring `Components.Posts.postCard`'s stretched-link-overlay card shape.
 Renders nothing if `event.post` is unset (shouldn't happen in practice --
 every `Event` is created with one -- but the field is optional on the wire).
+
+`starred`/`onStarClicked` drive the bottom-right star button, same as
+`Components.Posts.postCard`'s own -- but keyed on `instance.post` (the
+`EventInstance`'s own `Post`), not `event.post`: an `Event`'s recurring
+instances each get their own independent star/comment count, the same way
+each one gets its own `Post` row in the database (see `events.proto`'s own
+doc). Renders neither the star button nor the comment count if
+`instance.post` is unset (shouldn't happen in practice, same as `event.post`
+above, but the field is optional on the wire).
 -}
 eventCard :
     BrowserTimeZone
@@ -412,10 +456,12 @@ eventCard :
     -> Maybe AccountsPanel.Server
     -> Maybe AccountsPanel.Account
     -> (String -> msg)
+    -> Bool
+    -> Maybe msg
     -> Event
     -> EventInstance
     -> Html msg
-eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked event instance =
+eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked event instance =
     case event.post of
         Nothing ->
             text ""
@@ -484,7 +530,18 @@ eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer
                     Nothing ->
                         text ""
                 , div [ class "event-card-meta" ]
-                    [ Authors.link basePath viewingServerHost eventServerHost maybeServer maybeAccount eventPost.author
-                    , text (" · " ++ Posts.postVisibilityText eventPost)
+                    [ span [ class "post-meta-left" ]
+                        [ Authors.link basePath viewingServerHost eventServerHost maybeServer maybeAccount eventPost.author
+                        , text (" · " ++ Posts.postVisibilityText eventPost)
+                        ]
+                    , case instance.post of
+                        Just instancePost ->
+                            span [ class "post-meta-right" ]
+                                [ Posts.starButton eventServerHost starred onStarClicked instancePost
+                                , text (Posts.commentCountText instancePost)
+                                ]
+
+                        Nothing ->
+                            text ""
                     ]
                 ]

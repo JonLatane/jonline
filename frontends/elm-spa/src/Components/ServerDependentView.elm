@@ -88,7 +88,7 @@ view config render =
 {-| `hostname` resolved to its `Server`, but only if it's both known and
 `enabled` -- `Nothing` either way otherwise. The same "is this content's
 server actually usable right now" condition `view` itself gates on above,
-exposed for callers (e.g. `Shared.StarredPostsPanel`'s fetching) that need to
+exposed for callers (e.g. `Shared.StarredPanel`'s fetching) that need to
 gate something other than rendering on it, without duplicating the `.enabled`
 check themselves.
 -}

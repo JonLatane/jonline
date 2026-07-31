@@ -40,6 +40,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI
@@ -825,8 +826,43 @@ eventDetailView shared model event instance =
 
             Nothing ->
                 text ""
+        , instanceMetaView shared model instance
         , syncedFromView event
         ]
+
+
+{-| The star button + comment count for `instance`'s own `Post` -- bottom
+right of the detail view, mirroring `eventCard`'s own bottom-right meta (see
+`Components.Events.eventCard`'s doc) rather than `event.post`'s: each
+`EventInstance` of a recurring `Event` gets its own independent star/comment
+count, the same way it gets its own `Post` row. Renders nothing if
+`instance.post` is unset (shouldn't happen in practice, but the field is
+optional on the wire).
+-}
+instanceMetaView : Shared.Model -> Model -> EventInstance -> Html Msg
+instanceMetaView shared model instance =
+    case instance.post of
+        Just instancePost ->
+            let
+                displayPost =
+                    StarredPanel.freshestPost model.targetHost instancePost shared.starredPanel
+
+                starred =
+                    StarredPanel.isStarred model.targetHost displayPost shared.starredPanel
+
+                onStarClicked =
+                    StarredPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
+                        |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
+            in
+            div [ class "event-detail-meta" ]
+                [ span [ class "post-meta-right" ]
+                    [ Posts.starButton model.targetHost starred onStarClicked displayPost
+                    , text (Posts.commentCountText displayPost)
+                    ]
+                ]
+
+        Nothing ->
+            text ""
 
 
 {-| One small-text, clipped-not-wrapped line at the bottom of the event

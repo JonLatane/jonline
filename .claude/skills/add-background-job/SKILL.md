@@ -49,7 +49,7 @@ Append one line to the `JOBS` array: `"<job_name> <startup_delay_seconds> <inter
 Both are standalone launcher scripts (one becomes the Linux tarball's `bin/jonline`, the other gets spliced into the Homebrew formula) with the same shape -- edit both, identically, in three places each:
 - The `Background jobs:` section of the `jonline_help` heredoc: add a one-line (or wrapped) description.
 - A new shell function using the shared exec helper: `<job_name>() { _jonline_exec_bin <job_name> "$@" }` (add it near `delete_expired_tokens`/`delete_unowned_media`, under the `# Background jobs` comment).
-- The final `case "$cmd" in ... )` dispatch line: add `<job_name>` to the big `|`-separated command list (it'll otherwise hit the `Unknown command` branch).
+- The `JONLINE_COMMANDS` array (near the top of the file, above `jonline_help`): add `<job_name>` to it -- it's the single source of truth for both dispatch (bottom of file) and `jonline --list-commands`/tab-completion, so this one edit covers both (it'll otherwise hit the `Unknown command` branch and won't tab-complete).
 
 ## 6. K8s CronJobs: `deploys/k8s/server_external.yaml`, `server_internal.yaml`, `server_internal_insecure.yaml`
 
@@ -88,6 +88,6 @@ Sanity check all three still parse (a stray copy/paste indent is the usual failu
 - [ ] `deploys/docker/server/Dockerfile` COPY line
 - [ ] `server_ci_cd.yml`: rename step (`push_jonline_image`), Homebrew `for bin`, Linux `for bin`
 - [ ] `backend/background_jobs.sh` JOBS entry
-- [ ] `docs/linux_jonline.sh`: help text, function, case dispatch
-- [ ] `docs/homebrew_jonline.sh`: help text, function, case dispatch
+- [ ] `docs/linux_jonline.sh`: help text, function, `JONLINE_COMMANDS` array
+- [ ] `docs/homebrew_jonline.sh`: help text, function, `JONLINE_COMMANDS` array
 - [ ] `deploys/k8s/server_external.yaml` + `server_internal.yaml` + `server_internal_insecure.yaml` CronJob (all three, identical)

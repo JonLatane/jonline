@@ -20,7 +20,7 @@ keeping live across the rare mid-session DST flip. `""` (never shown) if
 
 Lives in its own module (rather than `Shared` itself) so lower-level modules
 that only need the timezone pair -- not all of `Shared.Model` -- can depend on
-it without risking an import cycle (e.g. `Shared` -> `Shared.StarredPostsPanel`
+it without risking an import cycle (e.g. `Shared` -> `Shared.StarredPanel`
 -> `Components.PostCard`, which can't import `Shared` back).
 -}
 type alias BrowserTimeZone =

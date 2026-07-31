@@ -20,7 +20,7 @@ for display -- a caller wanting an actually-nested visual layout still gets it
 via each item's own `depth` (see `Components.Posts.replyCard`'s indentation)
 rather than nested HTML, which is what lets the whole thing render as one flat,
 FLIP-animated list (`UI.Flip`) the same way `Pages.Home_`'s recent-posts feed
-and the Starred Posts panel already do for their own (non-nested) post lists.
+and the Starred panel already do for their own (non-nested) post lists.
 
 -}
 

@@ -21,6 +21,7 @@ module Components.Posts exposing
     , postVisibilityText
     , repliesCountText
     , replyCard
+    , starButton
     , stripLinkScheme
     , timestampsText
     , updatePost
@@ -489,7 +490,7 @@ allowedVisibilities permissions context currentVisibility =
 a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
 plain `POST`, since that's the common case and doesn't need calling out
 wherever a Post is shown alongside its context (see
-`Shared.StarredPostsPanel`'s panel view).
+`Shared.StarredPanel`'s panel view).
 -}
 postContextLabel : PostContext -> Maybe String
 postContextLabel context =
@@ -533,7 +534,7 @@ postCommentCount post =
 
 {-| The "★ N" star button of a post's meta line -- clickable (unless
 `onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
-the post (see `Shared.StarredPostsPanel`), filling with `postServerHost`'s
+the post (see `Shared.StarredPanel`), filling with `postServerHost`'s
 `primaryAnchorColor` (`.post-star.starred`, see `UI.EmittedStylesheet`) and
 animating the fill via `transition` in `posts.css` when `starred` flips.
 `stopPropagation`/`preventDefault` keep a click here from also following
@@ -722,11 +723,11 @@ classes) -- faint normally, filling in on hover since the whole card is a link
 -- so that's obvious at a glance too.
 
 `current` marks this card as the one for the Post currently being viewed
-(see `Shared.StarredPostsPanel.view`, called from `UI.elm` with the current
+(see `Shared.StarredPanel.view`, called from `UI.elm` with the current
 route's post already resolved) -- filling the whole card with
 `postServerHost`'s `primaryColor`/`primaryTextColor` (the `background-color-primary`
 utility class) rather than just tinting its border, so it stands out from the
-rest of the (unopened) Starred Posts panel at a glance.
+rest of the (unopened) Starred panel at a glance.
 
 The card as a whole isn't a single enclosing `<a>` (despite looking/behaving
 like one) -- `authorLink` needs to be a _real_, independently-clickable link of
@@ -756,7 +757,7 @@ either way), this one navigates somewhere else entirely, so it needs to win
 the overlay's paint order itself.
 
 `extraSmallMedia` shrinks the media preview's height further still (see
-`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPostsPanel`'s
+`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPanel`'s
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
@@ -1022,7 +1023,7 @@ for contexts, like `postCard`'s feed entries, where _something_ short is
 needed regardless; here, with the full `content` rendered right below anyway,
 that fallback would just be a redundant near-duplicate of it). It gets
 `postContextLabel`'s small context chip in its place instead (mirroring
-`Shared.StarredPostsPanel`'s own `starred-post-context`) -- since a Post
+`Shared.StarredPanel`'s own `starred-post-context`) -- since a Post
 reached this way is, on `Pages.Post.PostId_`, already headed by
 `Shared.Breadcrumbs`' own trail showing exactly _which_ reply this is, this
 chip only needs to mark plainly _that_ it's one, not repeat any of that
