@@ -433,9 +433,9 @@
    filters row above (`.events-controls-row`) and, on `Pages.Home_`, the post
    listing below both stay at `.container`'s normal 800px/centered, only the
    actual card grid/strip goes wide, so more tiles fit per row without the
-   rest of the page's text-focused content stretching to match. `width: 95vw`
+   rest of the page's text-focused content stretching to match. `width: 98vw`
    sets the box's actual size (viewport-relative, so ancestor padding/max-width
-   doesn't factor in); `margin-left`'s `-47.5vw` (half of `95vw`) shifts that
+   doesn't factor in); `margin-left`'s `-49vw` (half of `98vw`) shifts that
    box left by a fixed viewport fraction while `+ 50%` (a *containing-block*-
    relative percentage, unlike `vw`) shifts it back right by half of whatever
    `.container`'s narrower box actually measures here -- together they land
@@ -448,9 +448,9 @@
    clipped this breakout right back down to 800px. */
 .events-grid,
 .events-strip {
-  width: 95vw;
-  max-width: 95vw;
-  margin-left: calc(-47.5vw + 50%);
+  width: 98vw;
+  max-width: 98vw;
+  margin-left: calc(-49vw + 50%);
 }
 
 /* Mirrors `.event-instance-strip` (above). */
@@ -483,7 +483,7 @@
 /* Mirrors `.event-instance-grid` (above), plus `justify-content: center` --
    unlike `.event-instance-grid`/`.my-media-panel-grid` (the other two
    `.flip-animated-grid` callers, left as `flex-start`), this one spans the
-   full `95vw` breakout width (see above), so a row that doesn't fill it
+   full `98vw` breakout width (see above), so a row that doesn't fill it
    (few events, or the last/only row) would otherwise sit flush against the
    left edge instead of centered under the page's own centered content. */
 .events-grid {

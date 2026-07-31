@@ -18,7 +18,7 @@ use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::*;
 use prost_wkt_types::Timestamp;
 
-const PAGE_SIZE: i64 = 1000;
+const PAGE_SIZE: i64 = 60;
 
 type EventLoadData = (
     models::EventInstance,
@@ -296,9 +296,7 @@ fn get_search_events(
         .inner_join(events::table.on(events::id.eq(event_instances::event_id)))
         .inner_join(posts::table.on(posts::id.eq(events::post_id)))
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
-        .inner_join(
-            instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))),
-        )
+        .inner_join(instance_posts.on(event_instances::post_id.eq(instance_posts.field(posts::id))))
         .left_join(
             instance_users.on(instance_posts
                 .field(posts::user_id)
