@@ -60,7 +60,7 @@ init shared req =
         )
 
     else
-        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username)
+        UserProfilePage.init shared (AccountsPanel.isSecure req) targetHost (Resolver.ByUsername username) req.key req.url.path req.query
             |> Tuple.mapFirst Profile
             |> Tuple.mapSecond (Effect.map ProfileMsg)
 

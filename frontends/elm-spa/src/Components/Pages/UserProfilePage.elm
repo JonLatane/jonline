@@ -3,11 +3,9 @@ module Components.Pages.UserProfilePage exposing
     , Msg
     , fromShared
     , init
-    , nameHeader
     , subscriptions
     , titleFor
     , update
-    , usernameHeading
     , view
     )
 
@@ -30,21 +28,25 @@ but none of this module's profile-editing machinery.
 
 -}
 
-import Components.Authors as Authors
+import Browser.Navigation
 import Components.Markdown as Markdown
+import Components.Pages.EventsPage as EventsPage
+import Components.Pages.PostsPage as PostsPage
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
 import Components.Users.FollowStatusAndButton as FollowStatusAndButton
+import Components.Users.ProfileHeading as ProfileHeading
 import Components.Users.Resolver as Resolver
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, a, button, div, h1, h2, input, option, p, select, span, text)
+import Html exposing (Html, a, button, div, h2, h3, input, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, href, placeholder, selected, title, value)
 import Html.Events exposing (onClick, onInput)
 import Proto.Google.Protobuf
 import Proto.Jonline exposing (FederatedAccount, User, defaultMediaReference)
 import Proto.Jonline.Permission exposing (Permission(..))
+import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
@@ -154,15 +156,34 @@ type alias Model =
     , permissionsEdit : Maybe PermissionsEdit
     , federatedProfilesEdit : Maybe FederatedProfilesEdit
     , followStatusAndButton : FollowStatusAndButton.Model
+
+    -- Embedded, row-laid-out `EventsPage`/search-box-less `PostsPage` copies of this
+    -- user's own events/posts, mirroring `Pages.Home_.Model`'s own `posts`/`events`
+    -- pair -- see `view`'s own doc. Both start `Nothing` (there's no resolved `User`
+    -- to filter by yet) and are only ever initialized once, the first time `resolver`
+    -- reports `Resolver.Loaded` (see `updateInner`'s `ResolverMsg` branch) -- a later
+    -- refetch (e.g. after a follow/unfollow) re-`Loaded`s `resolver` again, but must
+    -- *not* re-`init` either of these, which would wipe out their own in-progress
+    -- search text/scroll position for no reason.
+    , posts : Maybe PostsPage.Model
+    , events : Maybe EventsPage.Model
+    , navKey : Browser.Navigation.Key
+    , path : String
+    , query : Dict String String
     }
 
 
 {-| `pageIsSecure` is `Shared.AccountsPanel.isSecure req` from the calling
 page's own `Request` -- needed for `ConnectClicked` (see `AccountsPanel.connectToServer`),
-but not otherwise derivable from `Shared.Model` alone.
+but not otherwise derivable from `Shared.Model` alone. `navKey`/`path`/`query` are
+the calling page's own `Request.With Params`' `key`/`url.path`/`query` -- kept around
+(rather than threaded through some other way) so the embedded `PostsPage`/`EventsPage`
+copies (see `Model.posts`/`Model.events`) can be `init`ed later, once `resolver` actually
+resolves a `User` to filter them by -- mirrors `PostsPage.init`/`EventsPage.init`'s own
+`navKey`/`path`/`query` params exactly.
 -}
-init : Shared.Model -> Bool -> String -> Resolver.Lookup -> ( Model, Effect Msg )
-init shared pageIsSecure targetHost lookup =
+init : Shared.Model -> Bool -> String -> Resolver.Lookup -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
+init shared pageIsSecure targetHost lookup navKey path query =
     let
         ( resolverModel, resolverEffect ) =
             Resolver.init shared targetHost lookup
@@ -177,6 +198,11 @@ init shared pageIsSecure targetHost lookup =
             , permissionsEdit = Nothing
             , federatedProfilesEdit = Nothing
             , followStatusAndButton = FollowStatusAndButton.init
+            , posts = Nothing
+            , events = Nothing
+            , navKey = navKey
+            , path = path
+            , query = query
             }
     in
     ( model
@@ -239,6 +265,8 @@ applyAvatarChoice choice freshUser =
 
 type Msg
     = ResolverMsg Resolver.Msg
+    | PostsMsg PostsPage.Msg
+    | EventsMsg EventsPage.Msg
     | ConnectClicked
     | GotConnectResult (Result Grpc.Error AccountsPanel.Server)
     | EnableClicked
@@ -356,11 +384,105 @@ updateInner shared msg model =
 
                             else
                                 Effect.none
+
+                        -- Only ever `init`ed once -- see `Model.posts`/`Model.events`'
+                        -- own doc for why a later refetch (which re-fires this same
+                        -- `Loaded` case) must leave an already-`Just` copy alone.
+                        ( postsInitedModel, postsInitEffect ) =
+                            case federatedModel.posts of
+                                Just _ ->
+                                    ( federatedModel, Effect.none )
+
+                                Nothing ->
+                                    let
+                                        ( postsModel, postsEffect ) =
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) federatedModel.navKey federatedModel.path federatedModel.query
+                                    in
+                                    ( { federatedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
+
+                        ( eventsInitedModel, eventsInitEffect ) =
+                            case postsInitedModel.events of
+                                Just _ ->
+                                    ( postsInitedModel, Effect.none )
+
+                                Nothing ->
+                                    let
+                                        ( eventsModel, eventsEffect ) =
+                                            EventsPage.init shared (Just ( newResolver.targetHost, user )) postsInitedModel.navKey postsInitedModel.path postsInitedModel.query True
+                                    in
+                                    ( { postsInitedModel | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
                     in
-                    ( federatedModel, Effect.batch [ Effect.map ResolverMsg resolverEffect, federatedEffect, eventSyncSourcesEffect ] )
+                    ( eventsInitedModel
+                    , Effect.batch
+                        [ Effect.map ResolverMsg resolverEffect
+                        , federatedEffect
+                        , eventSyncSourcesEffect
+                        , postsInitEffect
+                        , eventsInitEffect
+                        ]
+                    )
 
                 _ ->
                     ( newModel, Effect.map ResolverMsg resolverEffect )
+
+        PostsMsg subMsg ->
+            case model.posts of
+                Just postsModel ->
+                    let
+                        ( newPosts, postsEffect ) =
+                            PostsPage.update shared subMsg postsModel
+
+                        -- Keeps `EventsPage`'s own search box (the only one actually
+                        -- shown, see `view`'s `showSearchRow = False`) in sync with
+                        -- this hidden copy's `searchText` -- mirrors
+                        -- `Pages.Home_.update`'s identical `PostsMsg`/`EventsMsg`
+                        -- cross-sync exactly, just over `Maybe`-wrapped models.
+                        ( syncedEvents, syncEffect ) =
+                            case model.events of
+                                Just eventsModel ->
+                                    if newPosts.searchText /= eventsModel.searchText then
+                                        EventsPage.update shared (EventsPage.searchTextChanged newPosts.searchText) eventsModel
+                                            |> Tuple.mapFirst Just
+
+                                    else
+                                        ( model.events, Effect.none )
+
+                                Nothing ->
+                                    ( model.events, Effect.none )
+                    in
+                    ( { model | posts = Just newPosts, events = syncedEvents }
+                    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg syncEffect ]
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        EventsMsg subMsg ->
+            case model.events of
+                Just eventsModel ->
+                    let
+                        ( newEvents, eventsEffect ) =
+                            EventsPage.update shared subMsg eventsModel
+
+                        ( syncedPosts, syncEffect ) =
+                            case model.posts of
+                                Just postsModel ->
+                                    if newEvents.searchText /= postsModel.searchText then
+                                        PostsPage.update shared (PostsPage.searchTextChanged newEvents.searchText) postsModel
+                                            |> Tuple.mapFirst Just
+
+                                    else
+                                        ( model.posts, Effect.none )
+
+                                Nothing ->
+                                    ( model.posts, Effect.none )
+                    in
+                    ( { model | events = Just newEvents, posts = syncedPosts }
+                    , Effect.batch [ Effect.map EventsMsg eventsEffect, Effect.map PostsMsg syncEffect ]
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
 
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
@@ -419,8 +541,50 @@ updateInner shared msg model =
 
                         _ ->
                             ( resolvedModel, Effect.none )
+
+                -- Forwarded on into the embedded `PostsPage`/`EventsPage` copies (if
+                -- already `init`ed) the same way `Pages.Home_.update`'s own `SharedMsg`
+                -- branch does -- e.g. an `AccountsPanelMsg` re-fetches both against the
+                -- newly (dis)connected/(dis)abled server. `Effect.partitionShared`
+                -- drops each one's own echoed re-broadcast of `subMsg` (see
+                -- `PostsPage.update`/`EventsPage.update`'s own `SharedMsg` branch,
+                -- which unconditionally re-emits it) -- `resolverEffect` above is
+                -- already the one canonical copy of that echo; keeping either of
+                -- these too would apply the same `Shared.Msg` several times over in
+                -- one pass, harmless for most but a net-zero no-op for a toggle (see
+                -- `Pages.Home_`'s own doc comment for the full "can't open the
+                -- Accounts Panel" story this mirrors).
+                ( postsSyncedModel, postsSyncEffect ) =
+                    case fetchedModel.posts of
+                        Just postsModel ->
+                            let
+                                ( newPosts, postsEffectRaw ) =
+                                    PostsPage.update shared (PostsPage.fromShared subMsg) postsModel
+
+                                ( _, postsEffect ) =
+                                    Effect.partitionShared postsEffectRaw
+                            in
+                            ( { fetchedModel | posts = Just newPosts }, Effect.map PostsMsg postsEffect )
+
+                        Nothing ->
+                            ( fetchedModel, Effect.none )
+
+                ( eventsSyncedModel, eventsSyncEffect ) =
+                    case postsSyncedModel.events of
+                        Just eventsModel ->
+                            let
+                                ( newEvents, eventsEffectRaw ) =
+                                    EventsPage.update shared (EventsPage.fromShared subMsg) eventsModel
+
+                                ( _, eventsEffect ) =
+                                    Effect.partitionShared eventsEffectRaw
+                            in
+                            ( { postsSyncedModel | events = Just newEvents }, Effect.map EventsMsg eventsEffect )
+
+                        Nothing ->
+                            ( postsSyncedModel, Effect.none )
             in
-            ( fetchedModel, Effect.batch [ resolverEffect, fetchEffect ] )
+            ( eventsSyncedModel, Effect.batch [ resolverEffect, fetchEffect, postsSyncEffect, eventsSyncEffect ] )
 
         RealNameEditClicked ->
             case model.resolver.status of
@@ -1011,7 +1175,11 @@ federatedKey account =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
+    Sub.batch
+        [ Sub.map ResolverMsg (Resolver.subscriptions model.resolver)
+        , model.posts |> Maybe.map (PostsPage.subscriptions >> Sub.map PostsMsg) |> Maybe.withDefault Sub.none
+        , model.events |> Maybe.map (EventsPage.subscriptions >> Sub.map EventsMsg) |> Maybe.withDefault Sub.none
+        ]
 
 
 
@@ -1101,13 +1269,16 @@ profileDetail shared model server maybeAccount user =
 
         followingHref =
             baseHref ++ "/following"
+
+        eventsHref =
+            baseHref ++ "/events"
     in
     div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header-row" ]
             [ div [ class "profile-header" ]
                 [ avatarView canEdit server maybeAccount model.avatarEdit user
                 , div [ class "profile-header-names" ]
-                    [ usernameHeading user
+                    [ ProfileHeading.usernameHeading user
                     , realNameView canEdit model.realNameEdit user
                     ]
 
@@ -1127,7 +1298,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts postsHref repliesHref followersHref followingHref user
+        , profileCounts postsHref repliesHref followersHref followingHref eventsHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         , Html.map EventSyncSourcesMsg
@@ -1136,7 +1307,36 @@ profileDetail shared model server maybeAccount user =
                 { canManage = canEdit, canAdd = isOwnProfile maybeAccount user }
                 shared.eventSyncSourcesPanel
             )
+        , case model.events of
+            Just eventsModel ->
+                Html.map EventsMsg (EventsPage.view shared True False eventsModel)
+
+            Nothing ->
+                text ""
+        , h3 [] [ text (postsHeading model.posts) ]
+        , case model.posts of
+            Just postsModel ->
+                Html.map PostsMsg (PostsPage.view shared False False postsModel)
+
+            Nothing ->
+                text ""
         ]
+
+
+{-| "Recent Posts"/"Recent Replies", matching `model.posts`' own `PostContext` --
+mirrors `Pages.Home_.heading` exactly, just over a `Maybe PostsPage.Model` (not yet
+`init`ed for the brief moment before `resolver` first resolves, see `Model.posts`'
+own doc) -- defaults to "Recent Posts" both then and for the ordinary `POST` case,
+same as `Pages.Home_.heading` does.
+-}
+postsHeading : Maybe PostsPage.Model -> String
+postsHeading maybePosts =
+    case maybePosts |> Maybe.map .context of
+        Just REPLY ->
+            "Recent Replies"
+
+        _ ->
+            "Recent Posts"
 
 
 {-| Whether the currently signed-in account on `user`'s own server (`maybeAccount`,
@@ -1170,21 +1370,6 @@ isAdminAccount maybeAccount =
             False
 
 
-{-| A user's username (plus Admin/Run Bots badges, if applicable -- see
-`Components.Authors.badges`) exactly as it appears atop their profile page --
-factored out of `profileDetail` since `nameHeader` (below) also needs it,
-unadorned by any edit affordance, so this itself stays `Html msg`-polymorphic.
-Also used directly by `Components.Pages.PostsPage` as a no-avatar fallback for
-its "Posts | &lt;name&gt;" heading when the author's server isn't currently
-known/enabled (so there's no `AccountsPanel.Server` to resolve an avatar
-against).
--}
-usernameHeading : User -> Html msg
-usernameHeading user =
-    h1 [ class "profile-username" ]
-        (text user.username :: Authors.badges user)
-
-
 {-| "@ &lt;server logo/name&gt;", shown to the right of the username/real
 name/badges whenever this profile's own server (`server`, i.e. the target
 host actually serving the profile) isn't `mainFrontendHost` -- lets a viewer
@@ -1204,40 +1389,6 @@ otherServerIndicator shared server =
             [ span [ class "profile-other-server-at" ] [ text "@" ]
             , AccountsPanel.serverNameAndLogo server AccountsPanel.RegularServerLogo
             ]
-
-
-{-| The read-only "name area" atop a profile page -- `usernameHeading` plus
-the Real Name, if set, with none of `realNameView`'s edit affordance (there's
-no viewer/edit state to check outside of `Components.Pages.UserProfilePage`
-itself). Used by `Components.Pages.PostsPage` for its "Posts | &lt;name&gt;"
-heading on a user's own posts page (`Pages.Username_.Posts`/
-`Pages.User.UserId_.Posts`).
--}
-nameHeader : AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg
-nameHeader server maybeAccount user =
-    div [ class "profile-header" ]
-        [ UI.imageOrInitial [ "profile-avatar" ] user.username (Users.avatarUrl server maybeAccount user)
-        , div [ class "profile-header-names" ]
-            [ usernameHeading user
-            , if String.isEmpty (String.trim user.realName) then
-                text ""
-
-              else
-                div [ class "profile-real-name-display" ]
-                    [ span [ class "profile-real-name" ] [ text user.realName ] ]
-            ]
-        ]
-
-
-
--- div [ class "profile-header-names" ]
---     [ usernameHeading user
---     , if String.isEmpty (String.trim user.realName) then
---         text ""
---       else
---         div [ class "profile-real-name-display" ]
---             [ span [ class "profile-real-name" ] [ text user.realName ] ]
---     ]
 
 
 {-| The avatar, plus (only for `canEdit`) its editing affordance below it: an
@@ -1371,16 +1522,16 @@ bioSection canEdit user =
 
     else
         div [ class "profile-bio-section" ]
-            [ if canEdit then
-                button [ class "profile-edit-button", onClick BioEditClicked ] [ text "Edit" ]
-
-              else
-                text ""
-            , if String.isEmpty (String.trim user.bio) then
+            [ if String.isEmpty (String.trim user.bio) then
                 text ""
 
               else
                 Markdown.view [ class "profile-bio" ] user.bio
+            , if canEdit then
+                button [ class "profile-edit-button", onClick BioEditClicked ] [ text "Edit" ]
+
+              else
+                text ""
             ]
 
 
@@ -1422,8 +1573,8 @@ editErrorView status =
 `Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
 own (yet) to link to.
 -}
-profileCounts : String -> String -> String -> String -> User -> Html Msg
-profileCounts postsHref repliesHref followersHref followingHref user =
+profileCounts : String -> String -> String -> String -> String -> User -> Html Msg
+profileCounts postsHref repliesHref followersHref followingHref eventsHref user =
     let
         counts =
             [ ( "Followers", user.followerCount, Just followersHref )
@@ -1432,8 +1583,7 @@ profileCounts postsHref repliesHref followersHref followingHref user =
             -- , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
             , ( "Replies", user.responseCount, Just repliesHref )
-
-            -- , ( "Events", user.eventCount, Nothing )
+            , ( "Events", user.eventCount, Just eventsHref )
             ]
                 |> List.filterMap (\( label, maybeCount, maybeHref ) -> maybeCount |> Maybe.map (\c -> ( label, c, maybeHref )))
     in

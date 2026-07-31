@@ -25,8 +25,8 @@ posts and adding this module's own "Posts | &lt;name&gt;" heading, via
 
 import Animation
 import Browser.Navigation
-import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Posts as Posts
+import Components.Users.ProfileHeading as ProfileHeading
 import Components.Users exposing (usernameHref)
 import Dict exposing (Dict)
 import Effect exposing (Effect)
@@ -133,7 +133,14 @@ init shared author navKey path query =
                 , searchGeneration = 0
                 }
     in
-    ( fetchedModel, Effect.batch [ fetchEffect, setBreadcrumbsRoot shared fetchedModel ] )
+    -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally on
+    -- load -- `setBreadcrumbsRoot` below only does this as a side effect of
+    -- actually changing `shared.breadcrumbs.root` (see `Shared.update`'s
+    -- `SetRoot` branch), which is a no-op for two pages that share a root,
+    -- e.g. landing here right after `/people` while both are still
+    -- `FromServerHost mainFrontendHost`. Mirrors
+    -- `Components.Pages.UserProfilePage.init`'s own unconditional close.
+    ( fetchedModel, Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsRoot shared fetchedModel ] )
 
 
 {-| The servers this page should ever fetch from: every enabled server for an
@@ -602,11 +609,21 @@ when `False` -- used by `Pages.Home_`, which shows its own `EventsPage`'s search
 keeps this module's `model.searchText` in sync with it behind the scenes (see
 `Pages.Home_.update`'s cross-sync) rather than showing two redundant boxes. Every other caller
 passes `True`, preserving the previous always-shown behavior.
+
+`showAuthorHeading` hides `authorHeadingView` (the "Posts | &lt;name&gt;" heading) when `False`
+-- used by `Components.Pages.UserProfilePage`, which embeds this module a level below its own
+already-shown username/avatar header (see `profileDetail`), so a second copy of the same name
+would be redundant. Every other caller passes `True`, preserving the previous always-shown
+(whenever `model.author` is `Just`) behavior.
 -}
-view : Shared.Model -> Bool -> Model -> Html Msg
-view shared showSearchRow model =
+view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
+view shared showSearchRow showAuthorHeading model =
     div []
-        [ authorHeadingView shared model.author model.context
+        [ if showAuthorHeading then
+            authorHeadingView shared model.author model.context
+
+          else
+            text ""
         , if showSearchRow then
             searchRowView model
 
@@ -693,9 +710,9 @@ onEscape msg =
 `searchRowView` renders just below this) alone once there's an `author` to
 filter by (even before that `User` -- already resolved by the caller, see
 `init` -- has actually rendered), upgraded to "Posts | &lt;name&gt;" via
-`Components.Pages.UserProfilePage.nameHeader` (with that author's avatar, via
+`Components.Users.ProfileHeading.nameHeader` (with that author's avatar, via
 its resolved-host `AccountsPanel.Server`/signed-in `Account`, if that host is
-still a known server -- falling back to `UserProfilePage.usernameHeading`,
+still a known server -- falling back to `ProfileHeading.usernameHeading`,
 avatar-less, if not) -- absent entirely for `Pages.Home_`'s unfiltered feed
 (`author == Nothing`), which supplies its own "Recent Posts"/"Recent Replies"
 heading instead (see `Pages.Home_.heading`).
@@ -724,10 +741,10 @@ authorHeadingView shared maybeAuthor context =
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
                     [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
                         Just server ->
-                            UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
 
                         Nothing ->
-                            UserProfilePage.usernameHeading author
+                            ProfileHeading.usernameHeading author
                     ]
                 ]
 

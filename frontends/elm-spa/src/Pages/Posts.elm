@@ -90,7 +90,7 @@ view shared req model =
             req.route
             fromShared
             [ h2 [] [ text (heading model.context) ]
-            , PostsPage.view shared True model
+            , PostsPage.view shared True True model
             ]
     }
 

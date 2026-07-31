@@ -41,8 +41,8 @@ import Animation
 import Browser.Dom as Dom
 import Browser.Navigation
 import Components.Events as Events
-import Components.Pages.UserProfilePage as UserProfilePage
 import Components.Users exposing (usernameHref)
+import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -252,8 +252,13 @@ init shared author navKey path query embeddedRow =
                 }
     in
     ( fetchedModel
+      -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally
+      -- on load -- mirrors `Components.Pages.PostsPage.init`'s own
+      -- unconditional close, see its doc comment for why `setBreadcrumbsRoot`
+      -- alone isn't enough here.
     , Effect.batch
         [ fetchEffect
+        , Effect.fromShared Shared.CloseAllPanels
         , setBreadcrumbsRoot shared fetchedModel
         , Task.perform GotNow Time.now |> Effect.fromCmd
         ]
@@ -1129,11 +1134,22 @@ pushUrl model =
 `shared.adminPanel.showAllEventLayouts`, decides which (if any) of
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
+
+`showAuthorHeading` hides `authorHeadingView` (the "Events | &lt;name&gt;" heading) when
+`False` -- used by `Components.Pages.UserProfilePage`, which (like `Pages.Home_`) embeds
+this module in its own `HorizontalList` row, a level below its own already-shown
+username/avatar header (see `profileDetail`), so a second copy of the same name would be
+redundant. Every other caller passes `True`, preserving the previous always-shown (whenever
+`model.author` is `Just`) behavior.
 -}
-view : Shared.Model -> Bool -> Model -> Html Msg
-view shared homeEmbedded model =
+view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
+view shared homeEmbedded showAuthorHeading model =
     div []
-        [ authorHeadingView shared model.author
+        [ if showAuthorHeading then
+            authorHeadingView shared model.author
+
+          else
+            text ""
         , div [ class "events-controls-row" ]
             [ tabsView shared model
             , searchRowView model
@@ -1144,7 +1160,7 @@ view shared homeEmbedded model =
 
 
 {-| "Events" alone once there's an `author` to filter by, upgraded to
-"Events | &lt;name&gt;"-style via `Components.Pages.UserProfilePage.nameHeader`
+"Events | &lt;name&gt;"-style via `Components.Users.ProfileHeading.nameHeader`
 -- absent entirely for `Pages.Events`' unfiltered feed (`author == Nothing`),
 which supplies its own heading instead. Mirrors
 `Components.Pages.PostsPage.authorHeadingView`, minus the POST/REPLY-style
@@ -1166,10 +1182,10 @@ authorHeadingView shared maybeAuthor =
                 , a [ href profileUrl, class <| hostnameToCSSClass host ]
                     [ case AccountsPanel.serverForHost shared.accountsPanel.servers host of
                         Just server ->
-                            UserProfilePage.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
+                            ProfileHeading.nameHeader server (AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts host) author
 
                         Nothing ->
-                            UserProfilePage.usernameHeading author
+                            ProfileHeading.usernameHeading author
                     ]
                 ]
 
