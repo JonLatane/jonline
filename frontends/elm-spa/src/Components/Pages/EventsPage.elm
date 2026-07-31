@@ -534,22 +534,31 @@ maxDisplayedEvents model =
         60
 
 
-{-| `model.eventAnimations`, soonest-first (mirrors `PostsPage.postsListView`'s
-own per-item sort key), truncated to `maxDisplayedEvents` -- both
+{-| `model.eventAnimations`, truncated to `maxDisplayedEvents` -- both
 `eventsListView`'s rendering and `DisplayModeChanged`'s FLIP measurement work
 from this exact same list, so a card excluded here is never measured or
 animated either.
+
+Only sorted soonest-first (mirrors `PostsPage.postsListView`'s own per-item
+sort key) when `model.searchText` is empty -- an active text search's results
+come back relevance-ranked, and re-sorting by start time here would throw
+that ranking away.
 -}
 visibleAnimations : Model -> List ( String, EventAnimation )
 visibleAnimations model =
     model.eventAnimations
         |> Dict.toList
-        |> List.sortBy
-            (\( _, anim ) ->
-                Events.instanceMoment anim.instance
-                    |> Maybe.withDefault (Time.millisToPosix 0)
-                    |> Time.posixToMillis
-            )
+        |> (if String.isEmpty (String.trim model.searchText) then
+                List.sortBy
+                    (\( _, anim ) ->
+                        Events.instanceMoment anim.instance
+                            |> Maybe.withDefault (Time.millisToPosix 0)
+                            |> Time.posixToMillis
+                    )
+
+            else
+                identity
+           )
         |> List.take (maxDisplayedEvents model)
 
 
