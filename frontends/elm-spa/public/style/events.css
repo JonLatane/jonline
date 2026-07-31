@@ -53,6 +53,15 @@
   margin-bottom: 0.6rem;
 }
 
+/* Star + comment count for the currently-viewed `EventInstance`'s own `Post`
+   -- bottom-right of the detail view (`Pages.Event.EventId_.instanceMetaView`),
+   below both `postSection`s. Just `.post-meta-right` (posts.css) -- its own
+   `margin-left: auto` pins it to the right edge without needing a
+   `.post-meta-left` counterpart here. */
+.event-detail-meta {
+  display: flex;
+}
+
 .event-post-content {
   display: block;
   line-height: 1.5;
@@ -255,11 +264,80 @@
   margin-right: 10px;
 }
 
+/* Groups `.events-mode-buttons` and `.events-export` as one unit pinned to
+   `.events-controls-row`'s right edge -- they're wrapped in this shared
+   container (see `EventsPage.view`) rather than each carrying its own
+   `margin-left: auto`, since two adjacent auto-margined flex items split
+   the row's free space *between* them (a visible gap), not just before the
+   first one. Wrapping the whole line (when `.events-mode-buttons` is empty/
+   absent too, e.g. `homeEmbedded` without the admin "show all layouts"
+   setting) still keeps `.events-export` correctly right-aligned on its own,
+   since it's this container -- not the button itself -- that's pushed. */
+.events-controls-trailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
 .events-mode-buttons {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-left: auto;
+}
+
+/* `EventsPage.exportButtonView` -- always shown at the end of
+   `.events-controls-trailing`, unlike `.events-mode-buttons` not gated by
+   `homeEmbedded`. Anchoring/backdrop/fade+slide-open transition is all
+   `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`
+   -- these rules are just this popover's own content sizing/spacing on top
+   of that. */
+.events-export-button {
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.events-export-popover {
+  width: max(16rem, 100%);
+  max-width: 22rem;
+}
+
+.events-export-popover p {
+  font-size: 0.8rem;
+  padding: 0;
+  margin: 4px;
+}
+
+.events-export-popover-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.events-export-popover-link {
+  overflow-wrap: break-word;
+  font-size: 0.85rem;
+}
+
+.events-export-popover-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  padding: 0.3rem 0.8rem;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.events-export-popover-copy-icon {
+  /* font-size: 1.4em;
+  line-height: 1; */
+  transform: translate(0, -1.5px) scale(2);
 }
 
 /* Mirrors `.event-instance-history-button` (above). */
@@ -350,6 +428,31 @@
   margin: 4px;
 }
 
+/* `.events-grid`/`.events-strip` (below) both deliberately "break out" past
+   `.container`'s own 800px max-width, up to 95% of the viewport -- the
+   filters row above (`.events-controls-row`) and, on `Pages.Home_`, the post
+   listing below both stay at `.container`'s normal 800px/centered, only the
+   actual card grid/strip goes wide, so more tiles fit per row without the
+   rest of the page's text-focused content stretching to match. `width: 95vw`
+   sets the box's actual size (viewport-relative, so ancestor padding/max-width
+   doesn't factor in); `margin-left`'s `-47.5vw` (half of `95vw`) shifts that
+   box left by a fixed viewport fraction while `+ 50%` (a *containing-block*-
+   relative percentage, unlike `vw`) shifts it back right by half of whatever
+   `.container`'s narrower box actually measures here -- together they land
+   this box's left edge at "2.5vw from the viewport's own left edge" no
+   matter how wide `.container` currently is, *as long as* every ancestor
+   between this element and `body` (`.container` itself, `main`'s `padding`)
+   stays horizontally centered/symmetric, which they are. This only works
+   because `.container` no longer clips horizontal overflow (see main.css's
+   own `.container`/`body` comments) -- `overflow-x: hidden` there would've
+   clipped this breakout right back down to 800px. */
+.events-grid,
+.events-strip {
+  width: 95vw;
+  max-width: 95vw;
+  margin-left: calc(-47.5vw + 50%);
+}
+
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;
@@ -371,10 +474,22 @@
   overflow: visible;
 }
 
-/* Mirrors `.event-instance-grid` (above). */
+.profile-detail .events-strip {
+  /* background-color: #42424288; */
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Mirrors `.event-instance-grid` (above), plus `justify-content: center` --
+   unlike `.event-instance-grid`/`.my-media-panel-grid` (the other two
+   `.flip-animated-grid` callers, left as `flex-start`), this one spans the
+   full `95vw` breakout width (see above), so a row that doesn't fill it
+   (few events, or the last/only row) would otherwise sit flush against the
+   left edge instead of centered under the page's own centered content. */
 .events-grid {
   align-items: flex-start;
   row-gap: 0.8rem;
+  justify-content: center;
 }
 
 /* `Grid`/`HorizontalList` cards are a fixed tile width; `VerticalList`'s own
@@ -436,8 +551,8 @@
    380px keeps it laid out exactly as it'll render at rest the whole time;
    `.flip-animated-item`'s own `overflow: hidden` (flip.css) clips it to the
    actually-animating width instead, like a blind drawn over static content. */
-.events-grid .flip-animated-item > *,
-.events-strip .flip-animated-item > * {
+.events-grid .flip-animated-item>*,
+.events-strip .flip-animated-item>* {
   width: 380px;
 }
 
@@ -464,16 +579,8 @@
   color: inherit;
   text-decoration: none;
   transition: border-color 0.2s ease;
-}
-
-/* `.flip-animated-item.flip-moving` (see `UI.Flip.itemAttributes`) is only
-   present on a card's outer wrapper for the real duration of its own
-   `DisplayModeChanged` slide -- not every card in a `.events-mode-transitioning`
-   container, just the ones actually still mid-flight -- so this blurs each
-   one only while it's actually moving/resizing, clearing on its own as soon
-   as that card settles. */
-.flip-moving .event-card {
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 }
 
 .event-card-link-overlay {
@@ -544,9 +651,9 @@
   pointer-events: none;
 }
 
-.events-strip.flip-animated-row {
+/* .events-strip.flip-animated-row {
   max-height: 300px;
-}
+} */
 
 /* .events-strip.flip-animated-row .event-card {
   max-height: 300px;
@@ -576,14 +683,42 @@
   margin-top: 0.3rem;
 }
 
+/* Split into `.post-meta-left` (author/visibility) and `.post-meta-right`
+   (star + comment count, both keyed off the `EventInstance`'s own Post) --
+   same `posts.css` classes/layout `.post-card-meta` uses, see that file's own
+   doc comment on the split. */
 .event-card-meta {
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 0.4rem;
   color: var(--muted);
   font-size: 0.85rem;
   margin-top: 0.4rem;
   pointer-events: none;
 }
 
-.event-card-meta a {
+.event-card-meta a,
+.event-card-meta .post-star {
   pointer-events: auto;
+}
+
+/* The Starred panel entry for the Event Instance currently being viewed (see
+   `Shared.StarredPanel.view`/`UI.elm`'s `currentStarredEventInstanceKey`) --
+   mirrors `posts.css`'s `.post-card-current .post-card-meta` exactly:
+   `.event-card`'s own `background-color-primary` utility class (added
+   alongside this marker class, see `Components.Events.eventCard`) already
+   fills the card with its server's primaryColor/primaryTextColor; this just
+   stops `.event-card-meta`/`.event-card-instance-note`'s `var(--muted)` from
+   fighting that fill. The star button's own contrast fix is
+   `UI.EmittedStylesheet`'s `.event-card-current .post-star` rule. */
+.event-card-current .event-card-meta,
+.event-card-current .event-card-instance-note {
+  color: inherit;
+}
+
+.event-card-current .post-star {
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
 }

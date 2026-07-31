@@ -81,29 +81,16 @@ pub fn default_server_configuration() -> NewServerConfiguration {
             name: Some("Jonline 🛠️ Unconfigured server".to_string()),
             short_name: None,
             description: Some("
-Jonline is a new, DIY federated social network. It's designed to be run by local businesses,
-community groups, and other organizations. It's open source (AGPLv3) and designed to be as easy
-and cheap to deploy as possible. It's built atop a [well-documented, performant, RESTful open-source protocol](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md)
-that operates over gRPC (with configurable TLS) on port 27707. Multi-server interaction is managed via CORS.
-
-***This is a demo server.*** Please create an account and post! But your account will be deleted at some point.
-If you're interested in me running an instance for you, get in touch with me at [jonlatane@gmail.com](mailto:jonlatane@gmail.com).
-If this is an instance you're running, feel free to replace this text with your own by logging in as an admin 🙃
+This is a description of your server and/or the community, business, group, etc. you're running it for.
             ".to_string()),
             privacy_policy: Some("
-***This is a demo server.*** Please create an account and post! But your account will be deleted at some point.
-The point of Jonline is transparency, including transparency in how privacy is offered. As such...
-*do not consider anything you post or upload to jonline.io to be private*.
-I will, however, not sell your data to advertisers nor deliberately expose any vulnerabilities.
+Jonline is configured to be very private, but is also open-source. The privacy policy should mention any ways you might use private user data.
             ".to_string()),
             media_policy: Some("
-***This is a demo server.*** No effort will be made to track your rights to uploaded media, so it is effectively public domain.
-The point of Jonline is transparency, including transparency in how privacy is offered. As such...
-*do not consider anything you post or upload to jonline.io to be private*.
-I will, however, not sell your data to advertisers nor deliberately expose any vulnerabilities.
+Your media policy should describe who has ownership of uploaded media, anything you may use it for, etc.
             ".to_string()),
             logo: None,
-            web_user_interface: Some(WebUserInterface::ReactTamagui as i32),
+            web_user_interface: Some(WebUserInterface::ElmSpa as i32),
             colors: Some(ServerColors {
                 primary: Some(0xFF2E86AB),
                 navigation: Some(0xFFA23B72),

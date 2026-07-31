@@ -62,7 +62,7 @@ import UI.HtmlEvents exposing (stopPropagationAndPreventDefaultOnClick)
 
 
 {-| The fetch state of one entry in a loaded `User.federatedProfiles`, keyed
-by `federatedKey` -- mirrors `Shared.StarredPostsPanel.PostFetchStatus`, minus
+by `federatedKey` -- mirrors `Shared.StarredPanel.PostFetchStatus`, minus
 that module's `ServerUnavailable`/poll-retry distinction, since an unreachable
 federated server here just reads the same as any other failure (there's no
 polling loop kicking these fetches off again).
@@ -227,6 +227,28 @@ refetch shared model =
     Resolver.refetch shared model.resolver
         |> Tuple.mapFirst (\newResolver -> { model | resolver = newResolver })
         |> Tuple.mapSecond (Effect.map ResolverMsg)
+
+
+{-| Re-`init`s the embedded `EventsPage` copy against `model.resolver`'s
+already-loaded user -- called after a successful Event Sync Source
+sync/update/delete (see `SharedMsg`'s `EventSyncSourcesPanelMsg` cases),
+since a source's sync can create, update, or remove Events/EventInstances
+that the already-`init`ed `EventsPage.Model` has no way to know about on its
+own. Mirrors the resolver-loaded `init` branch's own `EventsPage.init` call.
+A no-op if the profile's own user hasn't loaded yet.
+-}
+refetchEvents : Shared.Model -> Model -> ( Model, Effect Msg )
+refetchEvents shared model =
+    case model.resolver.status of
+        Resolver.Loaded user ->
+            let
+                ( eventsModel, eventsEffect ) =
+                    EventsPage.init shared (Just ( model.resolver.targetHost, user )) model.navKey model.path model.query True
+            in
+            ( { model | events = Just eventsModel }, Effect.map EventsMsg eventsEffect )
+
+        _ ->
+            ( model, Effect.none )
 
 
 {-| Optimistically applies a just-saved `User` (as returned by
@@ -538,6 +560,17 @@ updateInner shared msg model =
                               }
                             , Effect.none
                             )
+
+                        -- A successful sync/update ("Save"/"Refresh") or
+                        -- delete of an Event Sync Source can create, update,
+                        -- or remove Events/EventInstances behind the already-
+                        -- `init`ed `EventsPage` copy's back -- refresh it so
+                        -- the change shows up without a manual page reload.
+                        Shared.EventSyncSourcesPanelMsg (EventSyncSourcesPanel.GotRowSaveResult _ (Ok _)) ->
+                            refetchEvents shared resolvedModel
+
+                        Shared.EventSyncSourcesPanelMsg (EventSyncSourcesPanel.GotDeleteResult _ (Ok _)) ->
+                            refetchEvents shared resolvedModel
 
                         _ ->
                             ( resolvedModel, Effect.none )
@@ -1106,7 +1139,7 @@ accountLabel account =
 
 {-| Kicks off a fetch for every entry in `user.federatedProfiles` that isn't
 already loading/loaded/failed -- grouping isn't needed the way
-`Shared.StarredPostsPanel.kickOffFetches` groups by host, since a `User`
+`Shared.StarredPanel.kickOffFetches` groups by host, since a `User`
 rarely lists more than a couple of federated accounts, and each is on its own
 (likely not-yet-connected) server anyway.
 -}
@@ -1166,7 +1199,7 @@ fetchFederatedUserEffect shared _ account =
 
 
 {-| The `model.federatedProfiles` key for one `User.federatedProfiles` entry --
-mirrors `Shared.StarredPostsPanel.starKey`.
+mirrors `Shared.StarredPanel.starKey`.
 -}
 federatedKey : FederatedAccount -> String
 federatedKey account =
@@ -1270,6 +1303,9 @@ profileDetail shared model server maybeAccount user =
         followingHref =
             baseHref ++ "/following"
 
+        friendsHref =
+            baseHref ++ "/friends"
+
         eventsHref =
             baseHref ++ "/events"
     in
@@ -1298,7 +1334,7 @@ profileDetail shared model server maybeAccount user =
                        )
                 )
             ]
-        , profileCounts postsHref repliesHref followersHref followingHref eventsHref user
+        , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
         , permissionsSection isAdmin model.permissionsEdit user
         , Html.map EventSyncSourcesMsg
@@ -1567,23 +1603,24 @@ editErrorView status =
             text ""
 
 
-{-| `postsHref`/`followersHref`/`followingHref` (see `profileDetail`) link the
-"Posts"/"Followers"/"Following" counts to `Pages.Username_.Posts`/
-`Pages.Username_.Followers`/`Pages.Username_.Following` (or their
-`Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
+{-| `postsHref`/`followersHref`/`followingHref`/`friendsHref` (see `profileDetail`) link the
+"Posts"/"Followers"/"Following"/"Friends" counts to `Pages.Username_.Posts`/
+`Pages.Username_.Followers`/`Pages.Username_.Following`/`Pages.Username_.Friends`
+(or their `Pages.User.UserId_.*` equivalents) -- the other counts have no page of their
 own (yet) to link to.
 -}
-profileCounts : String -> String -> String -> String -> String -> User -> Html Msg
-profileCounts postsHref repliesHref followersHref followingHref eventsHref user =
+profileCounts : String -> String -> String -> String -> String -> String -> User -> Html Msg
+profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user =
     let
         counts =
             [ ( "Followers", user.followerCount, Just followersHref )
             , ( "Following", user.followingCount, Just followingHref )
+            , ( "Friends", user.friendCount, Just friendsHref )
 
             -- , ( "Groups", user.groupCount, Nothing )
             , ( "Posts", user.postCount, Just postsHref )
             , ( "Replies", user.responseCount, Just repliesHref )
-            , ( "Events", user.eventCount, Just eventsHref )
+            , ( "Events", user.eventInstanceCount, Just eventsHref )
             ]
                 |> List.filterMap (\( label, maybeCount, maybeHref ) -> maybeCount |> Maybe.map (\c -> ( label, c, maybeHref )))
     in

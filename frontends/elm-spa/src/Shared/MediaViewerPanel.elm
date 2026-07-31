@@ -5,7 +5,7 @@ module Shared.MediaViewerPanel exposing (Model, Msg(..), init, isOpen, subscript
 `Components.MultiMediaRenderer`'s compact card/detail previews), with a
 "current" item the user can page through, like a carousel. One shared
 instance, opened from wherever a `Post`'s media is tapped (`Pages.Home_`,
-`Pages.Post.PostId_`, `Shared.StarredPostsPanel`) rather than each caller
+`Pages.Post.PostId_`, `Shared.StarredPanel`) rather than each caller
 owning its own viewer state, same reasoning as `Shared.MarkdownPanel`.
 
 Doesn't need `AccountsPanel.Model` in `update` (no RPCs to make, nothing to
@@ -337,7 +337,7 @@ view accountsPanelModel model =
                     -- `<img>`/`<video>`'s attributes in place -- that fresh
                     -- insertion is what lets `directionClass`'s CSS animation
                     -- (media_viewer_panel.css) actually play on every page,
-                    -- the same trick `Shared.StarredPostsPanel`'s
+                    -- the same trick `Shared.StarredPanel`'s
                     -- `Html.Keyed` list uses for its own enter animation.
                     Html.Keyed.node "div"
                         [ class "media-viewer-panel-media-stage" ]

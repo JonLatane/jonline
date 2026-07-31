@@ -226,7 +226,15 @@ export interface GetEventsRequest {
   /** The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. */
   listingType: EventListingType;
   /** Search text for full-text search. */
-  searchText?: string | undefined;
+  searchText?:
+    | string
+    | undefined;
+  /**
+   * Loads multiple events by their event instances' Post IDs -- returns one
+   * Event per matching EventInstance (see GetEventsResponse's own doc), not
+   * the requested EventInstance's whole parent Event's full instance list.
+   */
+  eventInstancePostIds: string[];
 }
 
 /**
@@ -564,6 +572,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     postId: undefined,
     listingType: 0,
     searchText: undefined,
+    eventInstancePostIds: [],
   };
 }
 
@@ -600,6 +609,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     }
     if (message.searchText !== undefined) {
       writer.uint32(90).string(message.searchText);
+    }
+    for (const v of message.eventInstancePostIds) {
+      writer.uint32(98).string(v!);
     }
     return writer;
   },
@@ -701,6 +713,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           message.searchText = reader.string();
           continue;
         }
+        case 12: {
+          if (tag !== 98) {
+            break;
+          }
+
+          message.eventInstancePostIds.push(reader.string());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -724,6 +744,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
       postId: isSet(object.postId) ? globalThis.String(object.postId) : undefined,
       listingType: isSet(object.listingType) ? eventListingTypeFromJSON(object.listingType) : 0,
       searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
+      eventInstancePostIds: globalThis.Array.isArray(object?.eventInstancePostIds)
+        ? object.eventInstancePostIds.map((e: any) => globalThis.String(e))
+        : [],
     };
   },
 
@@ -759,6 +782,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.searchText !== undefined) {
       obj.searchText = message.searchText;
     }
+    if (message.eventInstancePostIds?.length) {
+      obj.eventInstancePostIds = message.eventInstancePostIds;
+    }
     return obj;
   },
 
@@ -779,6 +805,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.postId = object.postId ?? undefined;
     message.listingType = object.listingType ?? 0;
     message.searchText = object.searchText ?? undefined;
+    message.eventInstancePostIds = object.eventInstancePostIds?.map((e) => e) || [];
     return message;
   },
 };

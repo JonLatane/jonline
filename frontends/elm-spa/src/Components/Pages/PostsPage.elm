@@ -43,7 +43,7 @@ import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MediaViewerPanel as MediaViewerPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI.Classes exposing (hostnameToCSSClass)
@@ -133,7 +133,7 @@ init shared author navKey path query =
                 , searchGeneration = 0
                 }
     in
-    -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally on
+    -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
     -- load -- `setBreadcrumbsRoot` below only does this as a side effect of
     -- actually changing `shared.breadcrumbs.root` (see `Shared.update`'s
     -- `SetRoot` branch), which is a no-op for two pages that share a root,
@@ -810,14 +810,14 @@ postCardView : Shared.Model -> ( String, Post ) -> Html Msg
 postCardView shared ( host, post ) =
     let
         displayPost =
-            StarredPostsPanel.freshestPost host post shared.starredPostsPanel
+            StarredPanel.freshestPost host post shared.starredPanel
 
         starred =
-            StarredPostsPanel.isStarred host displayPost shared.starredPostsPanel
+            StarredPanel.isStarred host displayPost shared.starredPanel
 
         onStarClicked =
-            StarredPostsPanel.toggleStarMsg shared.accountsPanel host displayPost
-                |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
+            StarredPanel.toggleStarMsg shared.accountsPanel host displayPost
+                |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         maybeServer =
             AccountsPanel.serverForHost shared.accountsPanel.servers host

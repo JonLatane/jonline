@@ -17,7 +17,7 @@ ever stretches or crops it into a fixed box:
     its `preview`).
   - `ExtraSmall` is the same width cap as `Compact`, just half its height --
     for contexts even tighter on vertical space than an ordinary preview
-    (used by `Shared.StarredPostsPanel`'s post rows, see
+    (used by `Shared.StarredPanel`'s post rows, see
     `Components.MultiMediaRenderer.previewExtraSmall`).
 
 Mirrors the Tamagui app's `media_renderer.tsx`, minus its social embed

@@ -310,6 +310,8 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         search_text -> TsVector,
+        friend_count -> Int4,
+        event_instance_count -> Int4,
     }
 }
 

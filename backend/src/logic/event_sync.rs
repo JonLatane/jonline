@@ -200,6 +200,8 @@ pub fn sync_event_sync_source_text(
             ))
             .execute(conn)?;
 
+        crate::logic::update_event_counts(owner_user_id, conn)?;
+
         Ok(())
     });
 

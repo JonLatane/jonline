@@ -54,6 +54,8 @@ pub struct User {
     pub response_count: i32,
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
+    pub friend_count: i32,
+    pub event_instance_count: i32,
 }
 
 /// Explicit column list for `users`, excluding `search_text` (a generated tsvector used only for
@@ -80,6 +82,8 @@ pub const USER_COLUMNS: (
     users::response_count,
     users::created_at,
     users::updated_at,
+    users::friend_count,
+    users::event_instance_count,
 ) = (
     users::id,
     users::username,
@@ -101,6 +105,8 @@ pub const USER_COLUMNS: (
     users::response_count,
     users::created_at,
     users::updated_at,
+    users::friend_count,
+    users::event_instance_count,
 );
 
 pub const AUTHOR_COLUMNS: (

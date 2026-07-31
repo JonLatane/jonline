@@ -1,6 +1,7 @@
 module UI.ServerTheme exposing
     ( ColorMeta
     , ServerTheme
+    , argbFromHex
     , colorMetaFromArgb
     , fromColorMetas
     , neutralColorMeta
@@ -86,6 +87,24 @@ colorMetaFromArgb argb =
         , g = Bitwise.and 0xFF (Bitwise.shiftRightBy 8 argb)
         , b = Bitwise.and 0xFF argb
         }
+
+
+{-| The inverse of `colorMetaFromArgb`: turns a `#rrggbb` hex string (e.g. an
+`<input type="color">`'s value) into a `ServerColors`-style ARGB `uint32`,
+alpha forced to `0xFF` (opaque) -- this codebase never stores a translucent
+server color, matching the hardcoded `0xFF......` defaults in
+`server_configuration_models.rs`. Built with plain arithmetic rather than
+`Bitwise` so the result is always a non-negative Elm `Int` -- exactly what
+`Protobuf.Encode.uint32` expects for a `uint32` field (its own sign-fixup
+assumes an unsigned input in `[0, 2^32)`, not a pre-negated bit pattern).
+-}
+argbFromHex : String -> Int
+argbFromHex hex =
+    let
+        rgb =
+            rgbFromHex hex
+    in
+    0xFF000000 + (rgb.r * 0x00010000) + (rgb.g * 0x0100) + rgb.b
 
 
 colorMetaFromRgb : { r : Int, g : Int, b : Int } -> ColorMeta

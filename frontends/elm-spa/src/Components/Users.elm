@@ -2,6 +2,7 @@ module Components.Users exposing
     ( allPermissions
     , authorAvatarUrl
     , avatarUrl
+    , configurableServerPermissions
     , createFollow
     , defederateProfile
     , deleteFollow
@@ -788,6 +789,43 @@ allPermissions =
     , RUNBOTS
     , ADMIN
     , VIEWPRIVATECONTACTMETHODS
+    ]
+
+
+{-| The permissions grantable server-wide, i.e. what an admin can put in
+`ServerConfiguration`'s `anonymousUserPermissions`/`defaultUserPermissions`/
+`basicUserPermissions` -- unlike `allPermissions` (a single user's own grant
+list), this excludes anything that only makes sense granted to one person at
+a time (`ADMIN`, `MODERATE*`, `GRANT_BASIC_PERMISSIONS`, `FOLLOW_USERS`,
+`INVITE_GROUP_MEMBERS`, `REPLY_TO_POSTS`, `SYNCHRONIZE_EVENTS`, `BUSINESS`,
+`RUN_BOTS`, `VIEW_PRIVATE_CONTACT_METHODS`). Same list for all three sets --
+mirrors the Tamagui app's `server_details_screen.tsx` `configurableUserPermissions`,
+which likewise reuses one list across its Anonymous/Default/Basic editors
+(see `Components.Pages.ServerInformationPage.permissionsSection`).
+-}
+configurableServerPermissions : List Permission
+configurableServerPermissions =
+    [ VIEWUSERS
+    , PUBLISHUSERSLOCALLY
+    , PUBLISHUSERSGLOBALLY
+    , VIEWGROUPS
+    , CREATEGROUPS
+    , VIEWMEDIA
+    , CREATEMEDIA
+    , PUBLISHMEDIALOCALLY
+    , PUBLISHMEDIAGLOBALLY
+    , PUBLISHGROUPSLOCALLY
+    , PUBLISHGROUPSGLOBALLY
+    , JOINGROUPS
+    , VIEWPOSTS
+    , CREATEPOSTS
+    , PUBLISHPOSTSLOCALLY
+    , PUBLISHPOSTSGLOBALLY
+    , VIEWEVENTS
+    , CREATEEVENTS
+    , RSVPTOEVENTS
+    , PUBLISHEVENTSLOCALLY
+    , PUBLISHEVENTSGLOBALLY
     ]
 
 

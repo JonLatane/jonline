@@ -794,10 +794,12 @@ Model for a Jonline user. This user may have [`Media`](#jonline-Media), [`Group`
 | default_follow_moderation | [Moderation](#jonline-Moderation) |  | Only PENDING or UNMODERATED are valid. |
 | follower_count | [int32](#int32) | optional | The number of users following this user. |
 | following_count | [int32](#int32) | optional | The number of users this user is following. |
+| friend_count | [int32](#int32) | optional | The number of users this user mutually follows (and is followed by). |
 | group_count | [int32](#int32) | optional | The number of groups this user is a member of. |
 | post_count | [int32](#int32) | optional | The number of posts this user has made. |
 | response_count | [int32](#int32) | optional | The number of responses to `Post`s and `Event`s this user has made. |
 | event_count | [int32](#int32) | optional | The number of events this user has created. |
+| event_instance_count | [int32](#int32) | optional | The number of event instances this user has created (across all of their events). |
 | current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates the current user is following or has a pending follow request for this user. |
 | target_current_user_follow | [Follow](#jonline-Follow) | optional | Presence indicates this user is following or has a pending follow request for the current user. |
 | current_group_membership | [Membership](#jonline-Membership) | optional | Returned by `GetMembers` calls, for use when managing [`Group`](#jonline-Group) [`Membership`](#jonline-Membership)s. The `Membership` should match the `Group` from the originating [`GetMembersRequest`](#jonline-GetMembersRequest), providing whether the user is a member of that `Group`, has been invited, requested to join, etc.. |
@@ -1606,6 +1608,7 @@ Valid GetEventsRequest formats:
 | post_id | [string](#string) | optional | Finds Events for the Post with the given ID. The Post should have a `PostContext` of `EVENT` or `EVENT_INSTANCE`. |
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 | search_text | [string](#string) | optional | Search text for full-text search. |
+| event_instance_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse&#39;s own doc), not the requested EventInstance&#39;s whole parent Event&#39;s full instance list. |
 
 
 

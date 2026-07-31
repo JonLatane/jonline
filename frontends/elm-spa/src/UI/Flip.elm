@@ -136,7 +136,7 @@ silently cancels the CSS collapse transition in every browser tested
 (confirmed via a real delete, instrumented headless: no `transitionrun` event
 at all, the item's box just snaps straight to its collapsed size). Every
 caller in this codebase gets this for free already, via one of two patterns:
-`AccountsPanel`'s servers/accounts and `StarredPostsPanel`'s starred posts
+`AccountsPanel`'s servers/accounts and `StarredPanel`'s starred posts
 keep an item in their own locally-owned order at its original slot until
 `onRemoved` actually deletes it (nothing ever reorders a still-present item);
 `Components.Pages.PostsPage`/`UsersPage` instead re-sort their whole list
@@ -281,7 +281,7 @@ Doesn't derive render order -- see `remove`'s own doc for why a naive
 mentions, tacked onto the end" would relocate a removing item and silently
 cancel its CSS collapse transition; a stable per-item sort key (as
 `PostsPage`/`UsersPage`/`MyMediaPanel` all use) or a caller-owned order list
-(as `AccountsPanel`/`StarredPostsPanel` effectively do, by never moving a
+(as `AccountsPanel`/`StarredPanel` effectively do, by never moving a
 still-present item at all) is still the caller's own job.
 -}
 syncAnimations :
@@ -527,7 +527,7 @@ moveSubscription toMsg states =
 {-| Moves the item identified by `idOf`/`id` one slot earlier/later in
 `items` -- `offset` is always +-1 (adjacent swap, from a pair of move
 buttons) -- a no-op if that would walk off either end. Shared by every
-reorderable list (Accounts, Servers, Starred Posts, ...).
+reorderable list (Accounts, Servers, Starred, ...).
 -}
 moveListItemBy : (a -> String) -> Int -> String -> List a -> List a
 moveListItemBy idOf offset id items =
@@ -673,7 +673,7 @@ reorderButtonPair axis { moveBackward, moveForward, canMoveBackward, canMoveForw
     }
 
 
-{-| Stacked ▲/▼ pair for a `Vertical` list (Accounts, Starred Posts), just
+{-| Stacked ▲/▼ pair for a `Vertical` list (Accounts, Starred), just
 left of that row's own content.
 -}
 reorderButtons : { moveUp : msg, moveDown : msg, canMoveUp : Bool, canMoveDown : Bool } -> Html msg

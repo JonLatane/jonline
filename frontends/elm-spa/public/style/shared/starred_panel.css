@@ -1,18 +1,18 @@
-/* Wraps just the Starred Posts toggle button (`UI.elm`'s
+/* Wraps just the Starred toggle button (`UI.elm`'s
    `starredPostsToggle`) -- same bare `position: relative; display: flex;`
-   as `.accounts-menu` (accounts_panel.css), so `.starred-posts-count-badge`
+   as `.accounts-menu` (accounts_panel.css), so `.starred-count-badge`
    below has a positioned ancestor to anchor its own corner placement to.
    `flex-shrink: 0` keeps it (and the fixed-size toggle inside it) from
    being squeezed by `.nav-links-scroll` (nav.css) -- same reasoning as
    `.nav-link:not(.nav-link-home)`'s own `flex-shrink: 0` there. */
-.starred-posts-menu {
+.starred-menu {
   position: relative;
   display: flex;
   flex-shrink: 0;
 }
 
-.starred-posts-panel,
-.nav-panel.starred-posts-panel {
+.starred-panel,
+.nav-panel.starred-panel {
   /* Given a higher z-index than the Accounts Panel so it layers above it if
      both happen to be open at once. */
   z-index: 25;
@@ -20,8 +20,8 @@
   width: var(--panel-width);
 
   /* Unlike the Accounts Panel, this one is rendered by `UI.elm`'s
-     `starredPostsPanel` as a direct child of `.navbar` itself (see
-     `headerNav`) rather than of its toggle's own `.starred-posts-menu`
+     `starredPanel` as a direct child of `.navbar` itself (see
+     `headerNav`) rather than of its toggle's own `.starred-menu`
      wrapper, so `left` here is in `.navbar`'s own coordinates -- and since
      `.navbar` spans the full viewport width with no side margins, that's the
      same as the screen's coordinates too.
@@ -70,14 +70,14 @@
   top: calc(12px + var(--nav-toggle-height) - 1px);
 }
 
-/* Notification-style count bubble on the Starred Posts toggle's corner --
-   positioned relative to `.starred-posts-menu` (above), which wraps just the
+/* Notification-style count bubble on the Starred toggle's corner --
+   positioned relative to `.starred-menu` (above), which wraps just the
    toggle button with no extra layout box of its own, so this lines up with
    the button's own corner. Its background/text
    color come from the emitted `mainFrontendHost background-color-nav` rule
    (navColor/navTextColor -- see `UI.EmittedStylesheet`), same as e.g. the
    Login form's buttons, rather than a fixed color here. */
-.starred-posts-count-badge {
+.starred-count-badge {
   position: absolute;
   top: -4px;
   right: -4px;
@@ -94,15 +94,15 @@
   border-style: solid;
 }
 
-.starred-posts-header {
+.starred-panel-header {
   font-weight: 700;
 }
 
-.starred-posts-empty {
+.starred-panel-empty {
   color: var(--muted);
 }
 
-/* The reorderable list itself -- see Shared/StarredPostsPanel.elm's `view`.
+/* The reorderable list itself -- see Shared/StarredPanel.elm's `view`.
    Styled entirely by the `.flip-animated-column` class also on it (`display:
    flex; flex-direction: column;`, deliberately no `gap` -- same "let each
    `.flip-animated-item`'s own padding-bottom hold the spacing instead"
@@ -118,7 +118,7 @@
   gap: 0.4rem;
 }
 
-/* One entry per starred post -- see Shared/StarredPostsPanel.elm's
+/* One entry per starred post -- see Shared/StarredPanel.elm's
    `starredPostView`. Its `.post-card` (a plain `<a>`) is reused as-is. */
 
 .starred-post-entry {

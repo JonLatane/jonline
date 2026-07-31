@@ -34,34 +34,40 @@ pub fn get_events(
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetEventsResponse, Status> {
-    let result: Vec<MarshalableEvent> = match (
-        request.listing_type(),
-        request.to_owned().event_id,
-        request.to_owned().event_instance_id,
-        request.to_owned().author_user_id,
-        request.to_owned().post_id,
-    ) {
-        // TODO: implement the other listing types
-        (_, Some(event_id), _, _, _) => get_event_by_id(&user, &event_id, conn)?,
-        (_, _, Some(instance_id), _, _) => get_event_by_instance_id(&user, &instance_id, conn)?,
-        (EventListingType::EventTextSearch, _, _, _, _) => get_search_events(&request, &user, conn)?,
-        (EventListingType::GroupEvents, _, _, _, _) => match request.group_id {
-            Some(group_id) => get_group_events(
-                group_id.to_db_id_or_err("group_id")?,
-                &user,
+    let result: Vec<MarshalableEvent> = if !request.event_instance_post_ids.is_empty() {
+        get_events_by_instance_post_ids(&user, &request.event_instance_post_ids, conn)?
+    } else {
+        match (
+            request.listing_type(),
+            request.to_owned().event_id,
+            request.to_owned().event_instance_id,
+            request.to_owned().author_user_id,
+            request.to_owned().post_id,
+        ) {
+            // TODO: implement the other listing types
+            (_, Some(event_id), _, _, _) => get_event_by_id(&user, &event_id, conn)?,
+            (_, _, Some(instance_id), _, _) => get_event_by_instance_id(&user, &instance_id, conn)?,
+            (EventListingType::EventTextSearch, _, _, _, _) => {
+                get_search_events(&request, &user, conn)?
+            }
+            (EventListingType::GroupEvents, _, _, _, _) => match request.group_id {
+                Some(group_id) => get_group_events(
+                    group_id.to_db_id_or_err("group_id")?,
+                    &user,
+                    conn,
+                    request.time_filter,
+                )?,
+                _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
+            },
+            (_, _, _, Some(author_user_id), _) => get_user_events(
+                author_user_id.to_db_id_or_err("author_user_id")?,
+                user,
                 conn,
                 request.time_filter,
             )?,
-            _ => return Err(Status::new(Code::InvalidArgument, "group_id_invalid")),
-        },
-        (_, _, _, Some(author_user_id), _) => get_user_events(
-            author_user_id.to_db_id_or_err("author_user_id")?,
-            user,
-            conn,
-            request.time_filter,
-        )?,
-        (_, _, _, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
-        _ => get_public_and_following_events(&user, conn, request.time_filter)?,
+            (_, _, _, _, Some(post_id)) => get_event_by_post_id(&user, &post_id, conn)?,
+            _ => get_public_and_following_events(&user, conn, request.time_filter)?,
+        }
     };
     Ok(GetEventsResponse {
         events: convert_events(&result, conn),
@@ -315,6 +321,44 @@ fn get_search_events(
         .limit(PAGE_SIZE)
         .load::<EventLoadData>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_events"))?;
+    let event_data: Vec<&EventLoadData> = binding.iter().collect();
+
+    Ok(marshalable_event_data!(event_data))
+}
+
+// Batch lookup for `GetEventsRequest.event_instance_post_ids` -- e.g. the Elm
+// frontend's Starred panel (`Shared.StarredPanel`), which already has a flat
+// list of starred `Post` ids (some of which may turn out to be an
+// `EventInstance`'s own Post, per `PostContext.EVENT_INSTANCE`) and wants
+// their owning `Event`/`EventInstance` data in one request rather than one
+// `event_instance_id`-scoped `GetEvents` call per starred post. Unlike
+// `get_event_by_id` (which returns the *whole* `Event` with every one of its
+// instances, for the single-event detail page's date-picker strip), this
+// mirrors `get_public_and_following_events`'s "one `Event` entry per matching
+// `EventInstance`" shape (see `marshalable_event_data!`) -- each requested
+// post id maps to exactly one instance, so the response shouldn't bloat with
+// sibling instances the caller never asked about. `event_instances::post_id`
+// is a plain (unaliased) column on the base `event_instances::table` the
+// `query_visible_events!` macro already joins in, so -- same as
+// `get_group_events`'s own extra `.filter()`s -- this can filter on it
+// directly without needing the macro to expose its internal `instance_posts`
+// alias.
+fn get_events_by_instance_post_ids(
+    user: &Option<&models::User>,
+    post_ids: &[String],
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MarshalableEvent>, Status> {
+    let instance_post_db_ids: Vec<i64> = post_ids
+        .iter()
+        .filter_map(|post_id| post_id.to_string().to_db_id().ok())
+        .collect();
+    if instance_post_db_ids.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let query = query_visible_events!(user, None::<TimeFilter>)
+        .filter(event_instances::post_id.eq_any(instance_post_db_ids));
+    let binding = query.load::<EventLoadData>(conn).unwrap();
     let event_data: Vec<&EventLoadData> = binding.iter().collect();
 
     Ok(marshalable_event_data!(event_data))

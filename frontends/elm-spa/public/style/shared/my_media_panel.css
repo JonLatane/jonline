@@ -1,6 +1,6 @@
 /* The app-wide "My Media" panel (see Shared/MyMediaPanel.elm) -- a large,
    centered overlay like `.markdown-panel` (not a small dropdown anchored
-   below a nav toggle, like the Accounts/Starred Posts panels), since it's
+   below a nav toggle, like the Accounts/Starred panels), since it's
    showing a whole grid of media previews. Reuses the `.nav-panel` base rule
    (position/opacity/pointer-events transition, see accounts_panel.css) for
    the same "always rendered, open/closed is a plain CSS transition"
@@ -19,17 +19,20 @@
   border-bottom-left-radius: 0;
   border-bottom-right-radius: 0;
 
-  /* Above `.markdown-panel` (26, see markdown_panel.css) -- opened from an
+  /* Above `.markdown-panel` (30, see markdown_panel.css) -- opened from an
      Account chip, it should reasonably win over a stale editor left open
      behind it. Also above `.navbar` (28, see nav.css) and, with it, the
-     Accounts/Starred Posts panels (its own `.navbar` descendants, forming one
+     Accounts/Starred panels (its own `.navbar` descendants, forming one
      stacking context at *its* z-index regardless of their own individual
      ones) -- opening it from the Accounts Panel should cover that panel,
-     rather than getting buried behind it. Still below the Media Viewer panel
-     (30, see media_viewer_panel.css) and `.modal`'s own 31/32 -- a fullscreen
+     rather than getting buried behind it. Also above `.create-new-panel` (29,
+     see create_new_panel.css) -- opening this from `CreateNewPanel`'s own
+     Edit button should win over that composer, same reasoning as
+     `.markdown-panel` above it. Still below the Media Viewer panel
+     (32, see media_viewer_panel.css) and `.modal`'s own 33/34 -- a fullscreen
      lightbox, or a Cancel/Confirm dialog, should still win over a media
      browser left open behind it. */
-  z-index: 29;
+  z-index: 31;
 }
 
 .my-media-panel.nav-panel.is-closed {
@@ -189,7 +192,7 @@
    `contentView`) from `zoomSliderView`'s slider -- every rule below that
    reads it is scoped under `.my-media-panel-item`/`.my-media-panel-grid` so
    it only affects this panel's own previews, never `media.css`'s other
-   `.media-renderer-extra-small` callers (e.g. `Shared.StarredPostsPanel`). */
+   `.media-renderer-extra-small` callers (e.g. `Shared.StarredPanel`). */
 /* `.flip-animated-grid` (flip.css) already supplies `display: flex;
    flex-wrap: wrap`, plus every tile's own FLIP enter/leave collapse
    behavior -- this just adds the vertical space between wrapped rows. Deliberately

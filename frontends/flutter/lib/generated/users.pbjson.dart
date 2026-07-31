@@ -130,39 +130,57 @@ const User$json = {
       '17': true
     },
     {
-      '1': 'group_count',
+      '1': 'friend_count',
       '3': 33,
       '4': 1,
       '5': 5,
       '9': 5,
+      '10': 'friendCount',
+      '17': true
+    },
+    {
+      '1': 'group_count',
+      '3': 34,
+      '4': 1,
+      '5': 5,
+      '9': 6,
       '10': 'groupCount',
       '17': true
     },
     {
       '1': 'post_count',
-      '3': 34,
+      '3': 35,
       '4': 1,
       '5': 5,
-      '9': 6,
+      '9': 7,
       '10': 'postCount',
       '17': true
     },
     {
       '1': 'response_count',
-      '3': 35,
+      '3': 36,
       '4': 1,
       '5': 5,
-      '9': 7,
+      '9': 8,
       '10': 'responseCount',
       '17': true
     },
     {
       '1': 'event_count',
-      '3': 36,
+      '3': 37,
       '4': 1,
       '5': 5,
-      '9': 8,
+      '9': 9,
       '10': 'eventCount',
+      '17': true
+    },
+    {
+      '1': 'event_instance_count',
+      '3': 38,
+      '4': 1,
+      '5': 5,
+      '9': 10,
+      '10': 'eventInstanceCount',
       '17': true
     },
     {
@@ -171,7 +189,7 @@ const User$json = {
       '4': 1,
       '5': 11,
       '6': '.jonline.Follow',
-      '9': 9,
+      '9': 11,
       '10': 'currentUserFollow',
       '17': true
     },
@@ -181,7 +199,7 @@ const User$json = {
       '4': 1,
       '5': 11,
       '6': '.jonline.Follow',
-      '9': 10,
+      '9': 12,
       '10': 'targetCurrentUserFollow',
       '17': true
     },
@@ -191,7 +209,7 @@ const User$json = {
       '4': 1,
       '5': 11,
       '6': '.jonline.Membership',
-      '9': 11,
+      '9': 13,
       '10': 'currentGroupMembership',
       '17': true
     },
@@ -224,7 +242,7 @@ const User$json = {
       '4': 1,
       '5': 11,
       '6': '.google.protobuf.Timestamp',
-      '9': 12,
+      '9': 14,
       '10': 'updatedAt',
       '17': true
     },
@@ -235,10 +253,12 @@ const User$json = {
     {'1': '_avatar'},
     {'1': '_follower_count'},
     {'1': '_following_count'},
+    {'1': '_friend_count'},
     {'1': '_group_count'},
     {'1': '_post_count'},
     {'1': '_response_count'},
     {'1': '_event_count'},
+    {'1': '_event_instance_count'},
     {'1': '_current_user_follow'},
     {'1': '_target_current_user_follow'},
     {'1': '_current_group_membership'},
@@ -258,23 +278,25 @@ final $typed_data.Uint8List userDescriptor = $convert.base64Decode(
     'luZS5Nb2RlcmF0aW9uUgptb2RlcmF0aW9uEk8KGWRlZmF1bHRfZm9sbG93X21vZGVyYXRpb24Y'
     'HiABKA4yEy5qb25saW5lLk1vZGVyYXRpb25SF2RlZmF1bHRGb2xsb3dNb2RlcmF0aW9uEioKDm'
     'ZvbGxvd2VyX2NvdW50GB8gASgFSANSDWZvbGxvd2VyQ291bnSIAQESLAoPZm9sbG93aW5nX2Nv'
-    'dW50GCAgASgFSARSDmZvbGxvd2luZ0NvdW50iAEBEiQKC2dyb3VwX2NvdW50GCEgASgFSAVSCm'
-    'dyb3VwQ291bnSIAQESIgoKcG9zdF9jb3VudBgiIAEoBUgGUglwb3N0Q291bnSIAQESKgoOcmVz'
-    'cG9uc2VfY291bnQYIyABKAVIB1INcmVzcG9uc2VDb3VudIgBARIkCgtldmVudF9jb3VudBgkIA'
-    'EoBUgIUgpldmVudENvdW50iAEBEkQKE2N1cnJlbnRfdXNlcl9mb2xsb3cYMiABKAsyDy5qb25s'
-    'aW5lLkZvbGxvd0gJUhFjdXJyZW50VXNlckZvbGxvd4gBARJRChp0YXJnZXRfY3VycmVudF91c2'
-    'VyX2ZvbGxvdxgzIAEoCzIPLmpvbmxpbmUuRm9sbG93SApSF3RhcmdldEN1cnJlbnRVc2VyRm9s'
-    'bG93iAEBElIKGGN1cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcBg0IAEoCzITLmpvbmxpbmUuTWVtYm'
-    'Vyc2hpcEgLUhZjdXJyZW50R3JvdXBNZW1iZXJzaGlwiAEBEioKEWhhc19hZHZhbmNlZF9kYXRh'
-    'GFAgASgIUg9oYXNBZHZhbmNlZERhdGESSAoSZmVkZXJhdGVkX3Byb2ZpbGVzGFEgAygLMhkuam'
-    '9ubGluZS5GZWRlcmF0ZWRBY2NvdW50UhFmZWRlcmF0ZWRQcm9maWxlcxI5CgpjcmVhdGVkX2F0'
-    'GGQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcFIJY3JlYXRlZEF0Ej4KCnVwZGF0ZW'
-    'RfYXQYZSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wSAxSCXVwZGF0ZWRBdIgBAUII'
-    'CgZfZW1haWxCCAoGX3Bob25lQgkKB19hdmF0YXJCEQoPX2ZvbGxvd2VyX2NvdW50QhIKEF9mb2'
-    'xsb3dpbmdfY291bnRCDgoMX2dyb3VwX2NvdW50Qg0KC19wb3N0X2NvdW50QhEKD19yZXNwb25z'
-    'ZV9jb3VudEIOCgxfZXZlbnRfY291bnRCFgoUX2N1cnJlbnRfdXNlcl9mb2xsb3dCHQobX3Rhcm'
-    'dldF9jdXJyZW50X3VzZXJfZm9sbG93QhsKGV9jdXJyZW50X2dyb3VwX21lbWJlcnNoaXBCDQoL'
-    'X3VwZGF0ZWRfYXQ=');
+    'dW50GCAgASgFSARSDmZvbGxvd2luZ0NvdW50iAEBEiYKDGZyaWVuZF9jb3VudBghIAEoBUgFUg'
+    'tmcmllbmRDb3VudIgBARIkCgtncm91cF9jb3VudBgiIAEoBUgGUgpncm91cENvdW50iAEBEiIK'
+    'CnBvc3RfY291bnQYIyABKAVIB1IJcG9zdENvdW50iAEBEioKDnJlc3BvbnNlX2NvdW50GCQgAS'
+    'gFSAhSDXJlc3BvbnNlQ291bnSIAQESJAoLZXZlbnRfY291bnQYJSABKAVICVIKZXZlbnRDb3Vu'
+    'dIgBARI1ChRldmVudF9pbnN0YW5jZV9jb3VudBgmIAEoBUgKUhJldmVudEluc3RhbmNlQ291bn'
+    'SIAQESRAoTY3VycmVudF91c2VyX2ZvbGxvdxgyIAEoCzIPLmpvbmxpbmUuRm9sbG93SAtSEWN1'
+    'cnJlbnRVc2VyRm9sbG93iAEBElEKGnRhcmdldF9jdXJyZW50X3VzZXJfZm9sbG93GDMgASgLMg'
+    '8uam9ubGluZS5Gb2xsb3dIDFIXdGFyZ2V0Q3VycmVudFVzZXJGb2xsb3eIAQESUgoYY3VycmVu'
+    'dF9ncm91cF9tZW1iZXJzaGlwGDQgASgLMhMuam9ubGluZS5NZW1iZXJzaGlwSA1SFmN1cnJlbn'
+    'RHcm91cE1lbWJlcnNoaXCIAQESKgoRaGFzX2FkdmFuY2VkX2RhdGEYUCABKAhSD2hhc0FkdmFu'
+    'Y2VkRGF0YRJIChJmZWRlcmF0ZWRfcHJvZmlsZXMYUSADKAsyGS5qb25saW5lLkZlZGVyYXRlZE'
+    'FjY291bnRSEWZlZGVyYXRlZFByb2ZpbGVzEjkKCmNyZWF0ZWRfYXQYZCABKAsyGi5nb29nbGUu'
+    'cHJvdG9idWYuVGltZXN0YW1wUgljcmVhdGVkQXQSPgoKdXBkYXRlZF9hdBhlIAEoCzIaLmdvb2'
+    'dsZS5wcm90b2J1Zi5UaW1lc3RhbXBIDlIJdXBkYXRlZEF0iAEBQggKBl9lbWFpbEIICgZfcGhv'
+    'bmVCCQoHX2F2YXRhckIRCg9fZm9sbG93ZXJfY291bnRCEgoQX2ZvbGxvd2luZ19jb3VudEIPCg'
+    '1fZnJpZW5kX2NvdW50Qg4KDF9ncm91cF9jb3VudEINCgtfcG9zdF9jb3VudEIRCg9fcmVzcG9u'
+    'c2VfY291bnRCDgoMX2V2ZW50X2NvdW50QhcKFV9ldmVudF9pbnN0YW5jZV9jb3VudEIWChRfY3'
+    'VycmVudF91c2VyX2ZvbGxvd0IdChtfdGFyZ2V0X2N1cnJlbnRfdXNlcl9mb2xsb3dCGwoZX2N1'
+    'cnJlbnRfZ3JvdXBfbWVtYmVyc2hpcEINCgtfdXBkYXRlZF9hdA==');
 
 @$core.Deprecated('Use authorDescriptor instead')
 const Author$json = {

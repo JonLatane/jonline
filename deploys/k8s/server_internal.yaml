@@ -172,3 +172,26 @@ spec:
               command:
                 - /opt/delete_unowned_media
           restartPolicy: Never
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: update-user-counts
+spec:
+  schedule: "0 * * * *"
+  successfulJobsHistoryLimit: 3
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: update-user-counts
+              image: docker.io/jonlatane/jonline:0.5.548
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: DATABASE_URL
+                  value: postgres://admin:secure_password1@jonline-postgres/jonline
+              command:
+                - /opt/update_user_counts
+          restartPolicy: Never

@@ -141,7 +141,7 @@ update shared msg model =
                 -- branches each unconditionally re-emit `Effect.fromShared
                 -- subMsg` (see their own docs) -- that's what actually
                 -- applies an incoming `Shared.Msg` (e.g. toggling the
-                -- Accounts Panel or Starred Posts panel, both built with
+                -- Accounts Panel or Starred panel, both built with
                 -- `Shared.Msg` in `UI.layout`'s header and only reaching
                 -- either page via `fromShared`) back to `Shared.update`,
                 -- correct when only one feed is handling it. Both would fire
@@ -150,7 +150,7 @@ update shared msg model =
                 -- *twice* in the same pass. Harmless for an idempotent
                 -- message, but for a toggle that flips it on then right back
                 -- off again -- net zero, every time, which is exactly the
-                -- "can't open the Accounts/Starred Posts panel" bug this
+                -- "can't open the Accounts/Starred panel" bug this
                 -- fixes. `postsEffect` is kept as the one copy that actually
                 -- re-broadcasts `subMsg`; `eventsEffectRaw`'s own copy is
                 -- dropped via `Effect.partitionShared` (keeping its other

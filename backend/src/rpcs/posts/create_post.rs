@@ -5,7 +5,7 @@ use crate::db_connection::PgPooledConnection;
 use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
-use crate::schema::{posts, users};
+use crate::schema::posts;
 
 use crate::rpcs::validations::*;
 
@@ -148,31 +148,20 @@ pub fn create_post(
             inserted_post
         };
 
-        match parent_post_db_id.to_owned() {
-            Some(parent_id) => {
-                update(posts::table)
-                    .filter(posts::id.eq(parent_id))
-                    .set(posts::reply_count.eq(posts::reply_count + 1))
-                    .execute(conn)?;
-                update(posts::table)
-                    .filter(posts::id.eq_any(ancestor_post_ids))
-                    .set((
-                        posts::response_count.eq(posts::response_count + 1),
-                        posts::last_activity_at.eq(inserted_post.created_at),
-                    ))
-                    .execute(conn)?;
-                update(users::table)
-                    .filter(users::id.eq(user.id))
-                    .set(users::post_count.eq(users::post_count + 1))
-                    .execute(conn)?;
-            }
-            None => {
-                update(users::table)
-                    .filter(users::id.eq(user.id))
-                    .set(users::response_count.eq(users::response_count + 1))
-                    .execute(conn)?;
-            }
-        };
+        if let Some(parent_id) = parent_post_db_id.to_owned() {
+            update(posts::table)
+                .filter(posts::id.eq(parent_id))
+                .set(posts::reply_count.eq(posts::reply_count + 1))
+                .execute(conn)?;
+            update(posts::table)
+                .filter(posts::id.eq_any(ancestor_post_ids))
+                .set((
+                    posts::response_count.eq(posts::response_count + 1),
+                    posts::last_activity_at.eq(inserted_post.created_at),
+                ))
+                .execute(conn)?;
+        }
+        crate::logic::update_post_counts(user.id, conn)?;
         Ok(inserted_post)
     });
 

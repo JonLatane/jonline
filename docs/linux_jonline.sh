@@ -47,6 +47,23 @@ JONLINE_DB_NAME="${JONLINE_DB_NAME:-jonline_dev}"
 JONLINE_MINIO_CONTAINER="${JONLINE_MINIO_CONTAINER:-jonline-dev-minio}"
 JONLINE_MINIO_DATA_DIR="${JONLINE_MINIO_DATA_DIR:-$HOME/.jonline-minio-data}"
 
+# Single source of truth for valid subcommands -- used both to dispatch (see
+# bottom of file) and to answer `jonline --list-commands`, which the
+# completion scripts printed by `completion()` shell out to. Keep this in
+# sync with the functions defined below (nothing else auto-derives it).
+JONLINE_COMMANDS=(
+  help
+  server_and_jobs server jobs version local_instances_stop
+  environment edit_environment
+  local_db_create local_db_drop local_db_reset local_db_connect
+  local_minio_start local_minio_create local_minio_delete
+  delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts generate_preview_images
+  set_permission delete_preview_images disable_cdn_grpc
+  to_db_id to_proto_id grpcurl
+  completion
+  install show_latest update cleanup_updates uninstall
+)
+
 jonline_help() {
   # jobs' real path varies with wherever the tarball was extracted (see
   # _jonline_package_dir) -- unlike @@JONLINE_PACKAGE_BASE_DIR@@ below, which
@@ -82,7 +99,7 @@ Commands:
     server                   Run the Jonline server (jonline-server)
     jobs                     Run background jobs on a loop (@@JOBS_SCRIPT_PATH@@) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
-                             sync_event_sync_sources every 1m, ...
+                             sync_event_sync_sources every 1m, update_user_counts every 1h, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
@@ -109,6 +126,8 @@ Commands:
     delete_unowned_media     Delete media no longer referenced by any post/user/etc.
     sync_event_sync_sources  Sync any EventSyncSource (ICS subscription) that's due, per its
                              sync_interval_seconds/last_synced_at
+    update_user_counts       Recompute follower/following/friend/group/post/response/event/
+                             event_instance counts for every User, correcting any drift
     generate_preview_images  Generate media preview images -- requires Brave Browser
                              installed at /usr/bin/brave-browser (e.g. `apt install
                              brave-browser`) plus ad/cookie-blocking Chrome extensions
@@ -131,6 +150,17 @@ Commands:
     grpcurl                  Run the bundled grpcurl. "Like curl, but for gRPC."
                              (https://github.com/fullstorydev/grpcurl)
 
+  Shell completion:
+
+    completion <bash|zsh>    Print a tab-completion script for the given shell. Add ONE of
+                             these to your shell startup file (no package manager to hook
+                             into on Linux, so this is a one-time manual step). Use
+                             `eval "$(...)"`, not `source <(...)` -- the latter silently
+                             does nothing on some /bin/bash builds (e.g. macOS's stock 3.2,
+                             if you're testing this over there):
+                               echo 'eval "$(jonline completion bash)"' >> ~/.bashrc
+                               echo 'eval "$(jonline completion zsh)"' >> ~/.zshrc
+
   Linux self-updater subcommands (require `curl` and/or `jq`):
 
     install                  Move this jonline folder to its canonical location
@@ -145,6 +175,10 @@ Commands:
   Every command except `update`/`cleanup_updates` works from wherever you put
   the extracted `jonline` folder -- `install` is only needed to opt into `update`.
 JONLINE_HELP_EOF
+}
+
+help() {
+  jonline_help
 }
 
 local_db_create() {
@@ -274,6 +308,10 @@ delete_unowned_media() {
 
 sync_event_sync_sources() {
   _jonline_exec_bin sync_event_sync_sources "$@"
+}
+
+update_user_counts() {
+  _jonline_exec_bin update_user_counts "$@"
 }
 
 # Renders media preview images headlessly. Requires Brave Browser at
@@ -472,22 +510,70 @@ uninstall() {
   echo "Removed $base."
 }
 
+# Prints a tab-completion script for the given shell. Both scripts shell out
+# to `jonline --list-commands` (backed by JONLINE_COMMANDS above) rather than
+# embedding a static list, so completions stay in sync as commands are added
+# without needing to regenerate/re-source anything.
+completion() {
+  case "${1:-}" in
+    bash)
+      cat <<'JONLINE_BASH_COMPLETION_EOF'
+_jonline_complete() {
+  local cur
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  if [ "$COMP_CWORD" -eq 1 ]; then
+    COMPREPLY=( $(compgen -W "$(jonline --list-commands)" -- "$cur") )
+  fi
+}
+complete -F _jonline_complete jonline
+JONLINE_BASH_COMPLETION_EOF
+      ;;
+    zsh)
+      cat <<'JONLINE_ZSH_COMPLETION_EOF'
+#compdef jonline
+_jonline() {
+  local -a commands
+  commands=(${(f)"$(jonline --list-commands)"})
+  _describe 'command' commands
+}
+compdef _jonline jonline
+JONLINE_ZSH_COMPLETION_EOF
+      ;;
+    *)
+      echo "Usage: jonline completion <bash|zsh>" >&2
+      exit 1
+      ;;
+  esac
+}
+
+# Checks $1 against JONLINE_COMMANDS -- the single source of truth used both
+# here (dispatch) and by `jonline --list-commands` (completion scripts).
+_jonline_is_command() {
+  local c
+  for c in "${JONLINE_COMMANDS[@]}"; do
+    [ "$c" = "$1" ] && return 0
+  done
+  return 1
+}
+
 cmd="${1:-help}"
 if [ $# -gt 0 ]; then
   shift
 fi
 
 case "$cmd" in
-  help|-h|--help)
-    jonline_help
-    ;;
-  server_and_jobs|server|jobs|version|environment|edit_environment|local_db_create|local_db_drop|local_db_reset|local_db_connect|local_minio_start|local_minio_create|local_minio_delete|local_instances_stop|delete_expired_tokens|delete_unowned_media|sync_event_sync_sources|generate_preview_images|set_permission|delete_preview_images|disable_cdn_grpc|to_db_id|to_proto_id|grpcurl|install|show_latest|update|cleanup_updates|uninstall)
-    "$cmd" "$@"
-    ;;
-  *)
-    echo "Unknown command: $cmd" >&2
-    echo >&2
-    jonline_help >&2
-    exit 1
+  -h|--help)
+    cmd=help
     ;;
 esac
+
+if [ "$cmd" = "--list-commands" ]; then
+  printf '%s\n' "${JONLINE_COMMANDS[@]}"
+elif _jonline_is_command "$cmd"; then
+  "$cmd" "$@"
+else
+  echo "Unknown command: $cmd" >&2
+  echo >&2
+  jonline_help >&2
+  exit 1
+fi

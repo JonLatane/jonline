@@ -45,14 +45,18 @@ message User {
   optional int32 follower_count = 31;
   // The number of users this user is following.
   optional int32 following_count = 32;
+  // The number of users this user mutually follows (and is followed by).
+  optional int32 friend_count = 33;
   // The number of groups this user is a member of.
-  optional int32 group_count = 33;
+  optional int32 group_count = 34;
   // The number of posts this user has made.
-  optional int32 post_count = 34;
+  optional int32 post_count = 35;
   // The number of responses to `Post`s and `Event`s this user has made.
-  optional int32 response_count = 35;
+  optional int32 response_count = 36;
   // The number of events this user has created.
-  optional int32 event_count = 36;
+  optional int32 event_count = 37;
+  // The number of event instances this user has created (across all of their events).
+  optional int32 event_instance_count = 38;
 
   // Presence indicates the current user is following
   // or has a pending follow request for this user.

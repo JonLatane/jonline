@@ -54,6 +54,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     $core.String? postId,
     EventListingType? listingType,
     $core.String? searchText,
+    $core.Iterable<$core.String>? eventInstancePostIds,
   }) {
     final result = create();
     if (eventId != null) result.eventId = eventId;
@@ -67,6 +68,8 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     if (postId != null) result.postId = postId;
     if (listingType != null) result.listingType = listingType;
     if (searchText != null) result.searchText = searchText;
+    if (eventInstancePostIds != null)
+      result.eventInstancePostIds.addAll(eventInstancePostIds);
     return result;
   }
 
@@ -99,6 +102,7 @@ class GetEventsRequest extends $pb.GeneratedMessage {
     ..aE<EventListingType>(10, _omitFieldNames ? '' : 'listingType',
         enumValues: EventListingType.values)
     ..aOS(11, _omitFieldNames ? '' : 'searchText')
+    ..pPS(12, _omitFieldNames ? '' : 'eventInstancePostIds')
     ..hasRequiredFields = false;
 
   @$core.Deprecated('See https://github.com/google/protobuf.dart/issues/998.')
@@ -217,6 +221,12 @@ class GetEventsRequest extends $pb.GeneratedMessage {
   $core.bool hasSearchText() => $_has(9);
   @$pb.TagNumber(11)
   void clearSearchText() => $_clearField(11);
+
+  /// Loads multiple events by their event instances' Post IDs -- returns one
+  /// Event per matching EventInstance (see GetEventsResponse's own doc), not
+  /// the requested EventInstance's whole parent Event's full instance list.
+  @$pb.TagNumber(12)
+  $pb.PbList<$core.String> get eventInstancePostIds => $_getList(10);
 }
 
 /// Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.

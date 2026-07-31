@@ -78,13 +78,22 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
   background: var(--bg);
   color: var(--fg);
+
+  /* Guards against an accidental horizontal scrollbar -- moved here from
+     `.container` (below), which used to clip at its own 800px-max box
+     instead. That also clipped `.events-grid`/`.events-strip`'s own
+     intentional breakout past 800px (see events.css's own comment on those
+     classes), so it's a `body`-level backstop now: still catches anything
+     that genuinely overflows the viewport, but no longer clips a
+     `.container` descendant that's deliberately wider than `.container`
+     itself while still narrower than the viewport. */
+  overflow-x: hidden;
 }
 
 .container {
   max-width: 800px;
   margin: 0 auto;
   min-height: 80vh;
-  overflow-x: hidden;
 }
 
 main {

@@ -128,8 +128,8 @@ fn generate_preview(url: &str, browser: &Browser) -> Result<Vec<u8>, anyhow::Err
         url: url.to_string(),
         background: Some(true),
         new_window: Some(true),
-        width: Some(640),
-        height: Some(640),
+        width: Some(1080),
+        height: Some(1080),
         browser_context_id: None,
         enable_begin_frame_control: None,
     })?;

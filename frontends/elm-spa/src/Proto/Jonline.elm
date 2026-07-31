@@ -1912,6 +1912,7 @@ fieldNumbersGetEventsRequest :
     , postId : Int
     , listingType : Int
     , searchText : Int
+    , eventInstancePostIds : Int
     }
 fieldNumbersGetEventsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetEventsRequest
@@ -1967,6 +1968,13 @@ encodeGetEventsRequest =
 ### listingType
 
  The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`.
+
+
+### eventInstancePostIds
+
+ Loads multiple events by their event instances' Post IDs -- returns one
+ Event per matching EventInstance (see GetEventsResponse's own doc), not
+ the requested EventInstance's whole parent Event's full instance list.
 
 
 -}
@@ -3459,10 +3467,12 @@ fieldNumbersUser :
     , defaultFollowModeration : Int
     , followerCount : Int
     , followingCount : Int
+    , friendCount : Int
     , groupCount : Int
     , postCount : Int
     , responseCount : Int
     , eventCount : Int
+    , eventInstanceCount : Int
     , currentUserFollow : Int
     , targetCurrentUserFollow : Int
     , currentGroupMembership : Int

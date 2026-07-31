@@ -3,14 +3,17 @@ module Pages.Post.PostId_ exposing (Model, Msg, fromShared, page)
 import Components.PostReplies as PostReplies
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
+import Components.Users as Users
 import Effect exposing (Effect)
 import Gen.Params.Post.PostId_ exposing (Params)
+import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, option, p, select, span, text)
 import Html.Attributes exposing (class, disabled, href, selected, target, value)
 import Html.Events exposing (onClick, onInput)
 import Page
 import Proto.Jonline exposing (Post)
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
@@ -21,7 +24,7 @@ import Shared.Breadcrumbs as Breadcrumbs
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI
@@ -71,6 +74,16 @@ type alias VisibilityEdit =
     }
 
 
+{-| Live only while the moderation-status picker (see `Model.moderationEdit`)
+is being edited by an Admin/`MODERATEPOSTS` holder -- mirrors
+`VisibilityEdit` exactly, just for `Moderation` instead of `Visibility`.
+-}
+type alias ModerationEdit =
+    { pending : Moderation
+    , status : SubmitStatus
+    }
+
+
 type alias Model =
     { targetHost : String
     , postId : String
@@ -79,6 +92,7 @@ type alias Model =
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
     , visibilityEdit : Maybe VisibilityEdit
+    , moderationEdit : Maybe ModerationEdit
 
     -- Set by `MediaEditClicked`, until the `Shared.MyMediaPanel` it opens
     -- reports back a `SaveMediaClicked`/`CloseClicked` -- same "am I mid-edit"
@@ -107,6 +121,7 @@ init shared params =
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
                 , visibilityEdit = Nothing
+                , moderationEdit = Nothing
                 , mediaEditActive = False
                 }
     in
@@ -218,6 +233,21 @@ type Msg
     | VisibilityCancelClicked
     | VisibilitySaveClicked Post
     | GotVisibilitySaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- The moderation-status selector (see `moderationView`) -- mirrors
+      -- the `Visibility*` messages just above exactly, for an Admin/
+      -- `MODERATEPOSTS` holder instead of the post's own author. Its own
+      -- "Edit" button reads "Moderate" instead, per this feature's own
+      -- request.
+    | ModerationEditClicked Post
+    | ModerationChanged String
+    | ModerationCancelClicked
+    | ModerationSaveClicked Post
+    | GotModerationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- The Delete button (see `deleteButtonView`), shown to the post's own
+      -- owner -- opens the shared "are you sure?" dialog
+      -- (`Shared.ConfirmPostDelete`); its result (`Shared.GotPostDeleteResult`)
+      -- is picked up in `SharedMsg` below.
+    | DeleteClicked Post
     | Poll
     | SharedMsg Shared.Msg
 
@@ -247,7 +277,7 @@ accountsPanelEffect maybeAccountsPanelMsg =
 any save (or refetch) completion should route through so the page's own
 `postDetailView` reflects it immediately rather than only after a reload.
 Handles both halves of that: sets `model.postStatus` itself, _and_ pushes
-`post` into `Shared.StarredPostsPanel`'s cache (see its `PostUpdated`/
+`post` into `Shared.StarredPanel`'s cache (see its `PostUpdated`/
 `freshestPost`) so that cache -- which `postDetailView` prefers over
 whatever's passed to it whenever this Post has ever been starred -- can't go
 on serving a stale copy back out from under this update.
@@ -262,7 +292,7 @@ same two updates again.
 applyUpdatedPost : Model -> Post -> ( Model, Effect Msg )
 applyUpdatedPost model post =
     ( { model | postStatus = PostLoaded post }
-    , Effect.fromShared (Shared.StarredPostsPanelMsg (StarredPostsPanel.PostUpdated model.targetHost post))
+    , Effect.fromShared (Shared.StarredPanelMsg (StarredPanel.PostUpdated model.targetHost post))
     )
 
 
@@ -451,6 +481,57 @@ update shared req msg model =
             , Effect.none
             )
 
+        ModerationEditClicked post ->
+            ( { model | moderationEdit = Just { pending = post.moderation, status = Idle } }, Effect.none )
+
+        ModerationChanged text ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit
+                        |> Maybe.map (\edit -> { edit | pending = Posts.moderationFromText text |> Maybe.withDefault edit.pending })
+              }
+            , Effect.none
+            )
+
+        ModerationCancelClicked ->
+            ( { model | moderationEdit = Nothing }, Effect.none )
+
+        ModerationSaveClicked post ->
+            case ( model.moderationEdit, serverAndAccount shared model ) of
+                ( Just edit, Just ( server, account ) ) ->
+                    ( { model | moderationEdit = Just { edit | status = Submitting } }
+                    , Posts.updatePost
+                        shared.accountsPanel
+                        ( Just account.userId, server.frontendHost )
+                        post.id
+                        (\freshPost -> { freshPost | moderation = edit.pending })
+                        |> Task.attempt GotModerationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotModerationSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+            let
+                ( postUpdatedModel, postUpdatedEffect ) =
+                    applyUpdatedPost model updatedPost
+            in
+            ( { postUpdatedModel | moderationEdit = Nothing }
+            , Effect.batch [ accountsPanelEffect maybeAccountsPanelMsg, postUpdatedEffect ]
+            )
+
+        GotModerationSaveResult (Err err) ->
+            ( { model
+                | moderationEdit =
+                    model.moderationEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+              }
+            , Effect.none
+            )
+
+        DeleteClicked post ->
+            ( model, Effect.fromShared (Shared.RequestDelete (Shared.ConfirmPostDelete post model.targetHost)) )
+
         ConnectClicked ->
             ( { model | connectStatus = ServerDependentView.Connecting }
             , AccountsPanel.connectToServer (AccountsPanel.isSecure req) model.targetHost
@@ -519,6 +600,13 @@ update shared req msg model =
 
                         Shared.MyMediaPanelMsg MyMediaPanel.CloseClicked ->
                             ( { model | mediaEditActive = False }, Effect.none )
+
+                        -- This page's own `DeleteClicked` (via
+                        -- `Shared.RequestDelete`/`Shared.ConfirmDelete`)
+                        -- resolving successfully -- navigate away, since
+                        -- there's nothing left here to show.
+                        Shared.GotPostDeleteResult (Ok _) ->
+                            ( model, Request.pushRoute Gen.Route.Home_ req |> Effect.fromCmd )
 
                         _ ->
                             ( model, Effect.none )
@@ -597,14 +685,14 @@ postDetailView : Shared.Model -> Model -> Post -> Html Msg
 postDetailView shared model post =
     let
         displayPost =
-            StarredPostsPanel.freshestPost model.targetHost post shared.starredPostsPanel
+            StarredPanel.freshestPost model.targetHost post shared.starredPanel
 
         starred =
-            StarredPostsPanel.isStarred model.targetHost displayPost shared.starredPostsPanel
+            StarredPanel.isStarred model.targetHost displayPost shared.starredPanel
 
         onStarClicked =
-            StarredPostsPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
-                |> Maybe.map (Shared.StarredPostsPanelMsg >> SharedMsg)
+            StarredPanel.toggleStarMsg shared.accountsPanel model.targetHost displayPost
+                |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
 
         maybeServer =
             AccountsPanel.serverForHost shared.accountsPanel.servers model.targetHost
@@ -627,6 +715,7 @@ postDetailView shared model post =
         onStarClicked
         (EditClicked post)
         (visibilityView maybeAccount model.visibilityEdit displayPost)
+        (moderationView maybeAccount model.moderationEdit displayPost)
         displayPost
 
 
@@ -723,21 +812,96 @@ visibilityView maybeAccount maybeEdit post =
                 ]
 
 
-{-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS` --
-opens the shared Markdown editor panel (see `Shared.MarkdownPanel`), targeting
-this Post (`ReplyClicked`). The Edit button lives in `Posts.postDetail` itself
-now (see `postDetailView`), below its Markdown content.
+{-| The moderation-status segment of `postDetail`'s meta line (see
+`postDetail`'s own `moderationView` parameter) -- mirrors `visibilityView`
+exactly, just for `Moderation` instead of `Visibility`, shown only to an
+Admin or a `MODERATEPOSTS` holder (unlike `visibilityView`, not gated on
+authorship), and its own "Edit" button reads "Moderate" instead, per this
+feature's own request.
+-}
+moderationView : Maybe AccountsPanel.Account -> Maybe ModerationEdit -> Post -> Html Msg
+moderationView maybeAccount maybeEdit post =
+    case maybeAccount of
+        Nothing ->
+            text ""
+
+        Just account ->
+            if not (List.member ADMIN account.permissions || List.member MODERATEPOSTS account.permissions) then
+                text ""
+
+            else
+                case maybeEdit of
+                    Just edit ->
+                        span [ class "post-moderation-edit" ]
+                            [ text " · "
+                            , select [ onInput ModerationChanged ]
+                                (Posts.allModerations
+                                    |> List.map
+                                        (\moderation ->
+                                            option
+                                                [ value (Users.moderationText moderation)
+                                                , selected (edit.pending == moderation)
+                                                ]
+                                                [ text (Users.moderationText moderation) ]
+                                        )
+                                )
+                            , button
+                                [ classes [ "post-moderation-save", "background-color-primary" ]
+                                , onClick (ModerationSaveClicked post)
+                                , disabled (edit.status == Submitting)
+                                ]
+                                [ text
+                                    (if edit.status == Submitting then
+                                        "Saving…"
+
+                                     else
+                                        "Save"
+                                    )
+                                ]
+                            , button
+                                [ class "post-moderation-cancel"
+                                , onClick ModerationCancelClicked
+                                , disabled (edit.status == Submitting)
+                                ]
+                                [ text "Cancel" ]
+                            , case edit.status of
+                                SubmitFailed err ->
+                                    span [ class "post-moderation-error" ] [ text err ]
+
+                                _ ->
+                                    text ""
+                            ]
+
+                    Nothing ->
+                        span [ class "post-moderation-display" ]
+                            [ text (" · " ++ Users.moderationText post.moderation)
+                            , button [ class "post-moderation-edit-button", onClick (ModerationEditClicked post) ] [ text "Moderate" ]
+                            ]
+
+
+{-| A Reply button, shown to any signed-in account with `REPLYTOPOSTS`, and
+(for the post's own owner) a Delete button, using the shared "are you sure?"
+dialog via `DeleteClicked`/`Shared.ConfirmPostDelete` -- opens the shared
+Markdown editor panel (see `Shared.MarkdownPanel`), targeting this Post
+(`ReplyClicked`). The Edit button lives in `Posts.postDetail` itself now (see
+`postDetailView`), below its Markdown content.
 -}
 postActionsView : Shared.Model -> Model -> Post -> Html Msg
 postActionsView shared model post =
     case AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts model.targetHost of
         Just account ->
-            if List.member REPLYTOPOSTS account.permissions then
-                div [ class "post-actions" ]
-                    [ button [ class "post-reply-button", onClick (ReplyClicked post) ] [ text "Reply" ] ]
+            div [ class "post-actions" ]
+                [ if List.member REPLYTOPOSTS account.permissions then
+                    button [ class "post-reply-button", onClick (ReplyClicked post) ] [ text "Reply" ]
 
-            else
-                text ""
+                  else
+                    text ""
+                , if Posts.isAuthor account post then
+                    button [ class "post-delete-button", onClick (DeleteClicked post) ] [ text "Delete" ]
+
+                  else
+                    text ""
+                ]
 
         Nothing ->
             text ""

@@ -137,7 +137,7 @@ init shared target navKey path query =
                 , searchGeneration = 0
                 }
     in
-    -- Closes any open panel (Accounts, Starred Posts, etc.) unconditionally on
+    -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
     -- load -- mirrors `Components.Pages.PostsPage.init`'s own unconditional
     -- close, see its doc comment for why `setBreadcrumbsRoot` alone isn't
     -- enough here.

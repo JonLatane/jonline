@@ -1,5 +1,6 @@
 module Components.Posts exposing
-    ( allVisibilities
+    ( allModerations
+    , allVisibilities
     , allowedVisibilities
     , commentCountText
     , contentPreviewFadeThreshold
@@ -21,8 +22,11 @@ module Components.Posts exposing
     , postVisibilityText
     , repliesCountText
     , replyCard
+    , starButton
     , stripLinkScheme
     , timestampsText
+    , deletePost
+    , moderationFromText
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -40,13 +44,15 @@ route's `id` or `id@host` segment.
 import Components.Authors as Authors
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
+import Components.Users as Users
 import Gen.Route
 import Grpc
 import Html exposing (Html, a, button, div, h1, span, text)
 import Html.Attributes exposing (attribute, class, href, rel, style, target, title)
 import Html.Events
-import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest)
+import Proto.Jonline exposing (GetPostsResponse, Post, defaultGetPostsRequest, defaultPost)
 import Proto.Jonline.Jonline as Jonline
+import Proto.Jonline.Moderation exposing (Moderation(..))
 import Proto.Jonline.Permission exposing (Permission(..))
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Proto.Jonline.PostListingType exposing (PostListingType(..))
@@ -256,6 +262,29 @@ updatePost accountsPanelModel maybeAccountServer postId updateFn =
         )
 
 
+{-| Deletes `postId` outright (`DeletePost`, owner-or-Admin gated
+server-side, see `backend/src/rpcs/posts/delete_post.rs`) -- unlike
+`updatePost`, there's nothing to overlay onto a fresh copy first, so this
+just sends the id straight through. Used by `Pages.Post.PostId_`'s own
+Delete button, via `Shared.ConfirmPostDelete`.
+-}
+deletePost :
+    AccountsPanel.Model
+    -> AccountsPanel.MaybeAccountServer
+    -> String
+    -> Task Grpc.Error ( Maybe AccountsPanel.Msg, Post )
+deletePost accountsPanelModel maybeAccountServer postId =
+    performWithAccountServer
+        accountsPanelModel
+        maybeAccountServer
+        (\server token ->
+            Grpc.new Jonline.deletePost { defaultPost | id = postId }
+                |> Grpc.setHost (AccountsPanel.serverUrl server)
+                |> withAccessToken (Just token)
+                |> Grpc.toTask
+        )
+
+
 
 -- ROUTE / LINKS
 
@@ -431,6 +460,24 @@ visibilityFromText text =
     allVisibilities |> List.filter (\visibility -> visibilityText visibility == text) |> List.head
 
 
+{-| The moderation-status options offered by a moderation-editing `<select>`
+(see `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own moderation selectors)
+-- excludes `MODERATIONUNKNOWN`, never a valid value to _set_. Order matches
+the proto's own declaration order.
+-}
+allModerations : List Moderation
+allModerations =
+    [ UNMODERATED, PENDING, APPROVED, REJECTED ]
+
+
+{-| The reverse of `Components.Users.moderationText` -- same `<select>`-value
+round-trip `visibilityFromText` does for `Visibility`.
+-}
+moderationFromText : String -> Maybe Moderation
+moderationFromText text =
+    allModerations |> List.filter (\moderation -> Users.moderationText moderation == text) |> List.head
+
+
 {-| Which of `allVisibilities` `account` may pick for a Post/Event/etc. of
 `context` -- mirrors `backend/src/rpcs/posts/update_post.rs`'s own permission
 check: setting `SERVERPUBLIC`/`GLOBALPUBLIC` needs `PUBLISHPOSTSLOCALLY`/
@@ -489,7 +536,7 @@ allowedVisibilities permissions context currentVisibility =
 a plain `POST` (a `Reply`, `Event`, `Event Instance`, etc.) -- `Nothing` for a
 plain `POST`, since that's the common case and doesn't need calling out
 wherever a Post is shown alongside its context (see
-`Shared.StarredPostsPanel`'s panel view).
+`Shared.StarredPanel`'s panel view).
 -}
 postContextLabel : PostContext -> Maybe String
 postContextLabel context =
@@ -533,7 +580,7 @@ postCommentCount post =
 
 {-| The "★ N" star button of a post's meta line -- clickable (unless
 `onStarClicked` is `Nothing`, e.g. its server isn't resolvable) to star/unstar
-the post (see `Shared.StarredPostsPanel`), filling with `postServerHost`'s
+the post (see `Shared.StarredPanel`), filling with `postServerHost`'s
 `primaryAnchorColor` (`.post-star.starred`, see `UI.EmittedStylesheet`) and
 animating the fill via `transition` in `posts.css` when `starred` flips.
 `stopPropagation`/`preventDefault` keep a click here from also following
@@ -676,12 +723,12 @@ timestampsText browserTimeZone post =
 Markdown editor panel via `onEditClicked`, supplied by the caller
 (`Pages.Post.PostId_`).
 -}
-editButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
-editButton maybeAccount onEditClicked post =
+editContentButton : Maybe AccountsPanel.Account -> msg -> Post -> Html msg
+editContentButton maybeAccount onEditClicked post =
     case maybeAccount of
         Just account ->
             if isAuthor account post then
-                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit" ]
+                button [ class "post-edit-button", Html.Events.onClick onEditClicked ] [ text "Edit Content" ]
 
             else
                 text ""
@@ -704,7 +751,7 @@ mediaEditButton maybeAccount onMediaEditClicked post =
     case maybeAccount of
         Just account ->
             if isAuthor account post || List.member ADMIN account.permissions then
-                button [ class "post-media-edit-button", Html.Events.onClick onMediaEditClicked ] [ text "Edit" ]
+                button [ class "post-media-edit-button", Html.Events.onClick onMediaEditClicked ] [ text "Edit Media" ]
 
             else
                 text ""
@@ -722,11 +769,11 @@ classes) -- faint normally, filling in on hover since the whole card is a link
 -- so that's obvious at a glance too.
 
 `current` marks this card as the one for the Post currently being viewed
-(see `Shared.StarredPostsPanel.view`, called from `UI.elm` with the current
+(see `Shared.StarredPanel.view`, called from `UI.elm` with the current
 route's post already resolved) -- filling the whole card with
 `postServerHost`'s `primaryColor`/`primaryTextColor` (the `background-color-primary`
 utility class) rather than just tinting its border, so it stands out from the
-rest of the (unopened) Starred Posts panel at a glance.
+rest of the (unopened) Starred panel at a glance.
 
 The card as a whole isn't a single enclosing `<a>` (despite looking/behaving
 like one) -- `authorLink` needs to be a _real_, independently-clickable link of
@@ -756,7 +803,7 @@ either way), this one navigates somewhere else entirely, so it needs to win
 the overlay's paint order itself.
 
 `extraSmallMedia` shrinks the media preview's height further still (see
-`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPostsPanel`'s
+`MultiMediaRenderer.previewExtraSmall`) -- for `Shared.StarredPanel`'s
 post rows, tighter on vertical space than the Home page's own feed of these
 same cards.
 
@@ -1022,7 +1069,7 @@ for contexts, like `postCard`'s feed entries, where _something_ short is
 needed regardless; here, with the full `content` rendered right below anyway,
 that fallback would just be a redundant near-duplicate of it). It gets
 `postContextLabel`'s small context chip in its place instead (mirroring
-`Shared.StarredPostsPanel`'s own `starred-post-context`) -- since a Post
+`Shared.StarredPanel`'s own `starred-post-context`) -- since a Post
 reached this way is, on `Pages.Post.PostId_`, already headed by
 `Shared.Breadcrumbs`' own trail showing exactly _which_ reply this is, this
 chip only needs to mark plainly _that_ it's one, not repeat any of that
@@ -1033,11 +1080,13 @@ text (the common case) or an in-progress `<select>` editor, entirely up to
 the caller (`Pages.Post.PostId_`, which owns the editing state/permission
 gating for it, the same way it owns `onEditClicked`) -- this just slots
 whatever `Html` it's given in after the author link, in place of what used to
-be a bare `postVisibilityText post` text node.
+be a bare `postVisibilityText post` text node. `moderationView` is the same
+idea, slotted right after it, for the (Admin-/`MODERATEPOSTS`-only)
+moderation-status segment.
 
 -}
-postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Post -> Html msg
-postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView post =
+postDetail : BrowserTimeZone -> String -> String -> String -> Maybe AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> msg -> Bool -> Maybe msg -> msg -> Html msg -> Html msg -> Post -> Html msg
+postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked onMediaEditClicked starred onStarClicked onEditClicked visibilityView moderationView post =
     div [ classes [ "post-detail", hostnameToCSSClass postServerHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "post-detail-title-row" ]
             [ if post.context == POST then
@@ -1078,6 +1127,7 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
                 , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
                 , text " · "
                 , visibilityView
+                , moderationView
                 ]
             , span [ class "post-meta-right" ]
                 [ timestampsText browserTimeZone post
@@ -1091,5 +1141,5 @@ postDetail browserTimeZone basePath viewingServerHost postServerHost maybeServer
 
             Nothing ->
                 text ""
-        , div [ class "post-detail-edit-row" ] [ editButton maybeAccount onEditClicked post ]
+        , div [ class "post-detail-edit-row" ] [ editContentButton maybeAccount onEditClicked post ]
         ]

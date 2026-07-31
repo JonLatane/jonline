@@ -6,7 +6,7 @@ live `Components.Markdown.view` preview of the same text, with "Save"/
 (a 3-position slider in the header lets the user pick -- see `modeSlider`),
 since a 50/50 split doesn't leave enough room for either half on a
 phone-width screen. Wired into `Shared.Model`/`UI.elm` the same way
-`Shared.AccountsPanel`/`Shared.StarredPostsPanel` are -- one shared instance,
+`Shared.AccountsPanel`/`Shared.StarredPanel` are -- one shared instance,
 opened from wherever it's needed (see `TargetType`) rather than each caller
 owning its own editor state.
 
@@ -52,6 +52,7 @@ opened for a signed-in account with `ADMIN` on that server (see `resolve`).
 type TargetType
     = PostContent Post
     | NewReply Post
+    | NewPostContent String
     | UserBio User
     | ServerDescription AccountsPanel.Server
     | ServerPrivacyPolicy AccountsPanel.Server
@@ -119,7 +120,7 @@ that they're actually usable) and can itself surface an `AccountsPanel.Msg` it
 needs forwarded on its behalf -- an `AccessTokenResponseReceived`, if
 `saveTask` had to refresh the account's token, that `AccountsPanel.performWithAccountServer`
 already builds -- for `Shared.update` to actually dispatch, same convention as
-`Shared.StarredPostsPanel.update` -- paired, in that same third-tuple-slot
+`Shared.StarredPanel.update` -- paired, in that same third-tuple-slot
 convention, with a `Bool` that's `True` only right after a successful save:
 `Shared.update` fires `Shared.ShowScrollPreserver` on it, since the edited
 Post's re-fetched content (see `saveTask`) can change its rendered height
@@ -151,6 +152,15 @@ update accountsPanelModel msg model =
 
         SaveClicked ->
             case model.target of
+                -- No RPC to make -- there's no Post yet (see `TargetType`'s
+                -- own doc on `NewPostContent`). `Shared.update`'s own
+                -- `MarkdownPanelMsg` branch is what actually hands
+                -- `model.content` back to `Shared.NewPostPanel`, reading it
+                -- off this exact `SaveClicked` before `update` (here) resets
+                -- it back to `init` below.
+                Just (NewPostContent _) ->
+                    ( { init | viewMode = model.viewMode }, Cmd.none, ( Nothing, False ) )
+
                 Just target ->
                     case resolve accountsPanelModel target model.targetHost of
                         Ok resolved ->
@@ -181,6 +191,9 @@ initialContent target =
 
         NewReply _ ->
             ""
+
+        NewPostContent content ->
+            content
 
         UserBio user ->
             user.bio
@@ -243,6 +256,13 @@ resolve accountsPanelModel target host =
 
                                 else
                                     Err "You don't have permission to reply."
+
+                            NewPostContent _ ->
+                                if List.member CREATEPOSTS account.permissions || AccountsPanel.isAdmin account then
+                                    Ok { server = server, account = account }
+
+                                else
+                                    Err "You don't have permission to create posts."
 
                             UserBio user ->
                                 if account.userId == user.id || List.member ADMIN account.permissions then
@@ -332,6 +352,12 @@ saveTask accountsPanelModel maybeAccountServer target content =
                 )
                 |> Task.map Tuple.first
 
+        -- Unreachable in practice -- `SaveClicked` (see its own doc) never
+        -- calls `saveTask` at all for this target, short-circuiting straight
+        -- back to `init` instead. Still needs a branch here for exhaustiveness.
+        NewPostContent _ ->
+            Task.fail Grpc.NetworkError
+
         UserBio user ->
             Users.updateUser accountsPanelModel maybeAccountServer user.id (\freshUser -> { freshUser | bio = content })
                 |> Task.map Tuple.first
@@ -395,7 +421,7 @@ saveServerInfoField accountsPanelModel maybeAccountServer server updateInfo =
 -- VIEW
 
 
-{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred Posts
+{-| Always rendered (even "closed"), same as `UI.elm`'s Accounts/Starred
 panels, so opening/closing is a plain CSS transition -- see `openClosedClass`.
 Needs `AccountsPanel.Model` for the same reason `update` does -- resolving
 `targetHost` to show who's actually about to post/edit (`accountRow`), and any
@@ -563,6 +589,9 @@ verbFor target =
     case target of
         Just (NewReply _) ->
             "Posting as "
+
+        Just (NewPostContent _) ->
+            "Writing as "
 
         _ ->
             "Editing as "

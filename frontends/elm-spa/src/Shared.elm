@@ -22,22 +22,26 @@ appearance (dark/light/auto) setting that doesn't belong to either.
 import Browser.Dom as Dom
 import Browser.Events
 import Browser.Navigation as Nav
+import Components.Events as Events
+import Components.Posts as Posts
+import Grpc
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
 import Process
-import Proto.Jonline exposing (EventSyncSource, Media)
+import Proto.Jonline exposing (Event, EventSyncSource, Media, Post)
 import Request exposing (Request)
 import Shared.AccountsPanel as AccountsPanel
 import Shared.AdminPanel as AdminPanel
 import Shared.Breadcrumbs as Breadcrumbs
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
+import Shared.CreateNewPanel as CreateNewPanel
 import Shared.EventSyncSourcesPanel as EventSyncSourcesPanel
 import Shared.FederatedAuth as FederatedAuth
 import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
-import Shared.StarredPostsPanel as StarredPostsPanel
+import Shared.StarredPanel as StarredPanel
 import Task
 import Time
 import UI.Responsive as Responsive
@@ -69,17 +73,25 @@ type DeleteConfirmation
     = ConfirmServerDelete AccountsPanel.Server
     | ConfirmAccountDelete AccountsPanel.Account
     | ConfirmMediaDelete Media
-    | ConfirmEventSyncSourceDelete EventSyncSource
+    | ConfirmEventSyncSourceDelete EventSyncSource Bool
+      -- The trailing `String` is the acting `targetHost` (the Post/Event
+      -- isn't itself paired with one) -- resolved back to a signed-in
+      -- `Account` (if any) in `ConfirmDelete`'s own handling, the same way
+      -- `EventSyncSourcesPanel.performForOwner` resolves one from a bare
+      -- host.
+    | ConfirmPostDelete Post String
+    | ConfirmEventDelete Event String
 
 
 type alias Model =
     { accountsPanel : AccountsPanel.Model
     , adminPanel : AdminPanel.Model
     , federatedAuth : FederatedAuth.Model
-    , starredPostsPanel : StarredPostsPanel.Model
+    , starredPanel : StarredPanel.Model
     , markdownPanel : MarkdownPanel.Model
     , mediaViewerPanel : MediaViewerPanel.Model
     , myMediaPanel : MyMediaPanel.Model
+    , createNewPanel : CreateNewPanel.Model
     , eventSyncSourcesPanel : EventSyncSourcesPanel.Model
     , breadcrumbs : Breadcrumbs.Model
     , themePreference : ThemePreference
@@ -110,8 +122,8 @@ type alias Model =
     -- The browser's current window size, kept live via `Browser.Events.onResize`
     -- (see `subscriptions`) after an initial `Browser.Dom.getViewport` read in
     -- `init`. Only consulted for `UI.Responsive.isNarrow` -- deciding whether
-    -- the Accounts Panel and Starred Posts Panel should close one another when
-    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPostsPanelMsg`
+    -- the Accounts Panel and Starred Panel should close one another when
+    -- the other opens (see `update`'s `AccountsPanelMsg`/`StarredPanelMsg`
     -- branches), since both are full-width slide-out panels on narrow screens
     -- and CSS alone can't reach into another panel's state.
     , windowSize : Responsive.WindowSize
@@ -128,11 +140,12 @@ type Msg
     = AccountsPanelMsg AccountsPanel.Msg
     | AdminPanelMsg AdminPanel.Msg
     | FederatedAuthMsg FederatedAuth.Msg
-    | StarredPostsPanelMsg StarredPostsPanel.Msg
+    | StarredPanelMsg StarredPanel.Msg
     | MarkdownPanelMsg MarkdownPanel.Msg
     | MediaViewerPanelMsg MediaViewerPanel.Msg
     | MyMediaPanelMsg MyMediaPanel.Msg
     | MyMediaPanelOpenForAccount AccountsPanel.Account
+    | CreateNewPanelMsg CreateNewPanel.Msg
     | EventSyncSourcesPanelMsg EventSyncSourcesPanel.Msg
     | CloseAllPanels
     | BreadcrumbsMsg Breadcrumbs.Msg
@@ -141,6 +154,16 @@ type Msg
     | RequestDelete DeleteConfirmation
     | CancelDelete
     | ConfirmDelete
+      -- `ConfirmDelete`'s own handling of `ConfirmPostDelete`/
+      -- `ConfirmEventDelete` fires the `DeletePost`/`DeleteEvent` RPC
+      -- directly (unlike every other `DeleteConfirmation`, a Post/Event
+      -- delete isn't owned by any Shared-owned panel `Shared.update` could
+      -- delegate to) -- this is its result. Forwarded, like every
+      -- `Shared.Msg`, into whichever page is active (`Main.notifyPageOfSharedMsg`),
+      -- so `Pages.Post.PostId_`/`Pages.Event.EventId_`'s own `SharedMsg`
+      -- handling can navigate away on success.
+    | GotPostDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+    | GotEventDeleteResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Event ))
     | ShowScrollPreserver
     | HideScrollPreserver
     | HomeLinkClicked Bool
@@ -301,10 +324,11 @@ init basePath req flags =
             { accountsPanel = accountsPanelModel
             , adminPanel = AdminPanel.init
             , federatedAuth = federatedAuthModel
-            , starredPostsPanel = StarredPostsPanel.init starredPostsFlags
+            , starredPanel = StarredPanel.init starredPostsFlags
             , markdownPanel = MarkdownPanel.init
             , mediaViewerPanel = MediaViewerPanel.init
             , myMediaPanel = MyMediaPanel.init
+            , createNewPanel = CreateNewPanel.init
             , eventSyncSourcesPanel = EventSyncSourcesPanel.init
             , breadcrumbs = Breadcrumbs.init
             , themePreference = themePreference
@@ -400,13 +424,13 @@ updateImpl req msg model =
                 changedHosts =
                     starredPostsRefreshHosts model.accountsPanel subModel
 
-                ( refreshedStarredPostsPanel, refreshCmd ) =
-                    StarredPostsPanel.refreshHosts subModel changedHosts model.starredPostsPanel
+                ( refreshedStarredPanel, refreshCmd ) =
+                    StarredPanel.refreshHosts subModel changedHosts model.starredPanel
 
-                -- The Accounts Panel and Starred Posts Panel are both
+                -- The Accounts Panel and Starred Panel are both
                 -- full-width slide-out panels on narrow screens (see
                 -- `UI.Responsive`), so opening one closes the other there.
-                shouldCloseStarredPostsPanel =
+                shouldCloseStarredPanel =
                     case subMsg of
                         AccountsPanel.ToggleAccountsPanel ->
                             subModel.showAccountsPanel && Responsive.isNarrow model.windowSize
@@ -414,22 +438,49 @@ updateImpl req msg model =
                         _ ->
                             False
 
-                ( closedStarredPostsPanel, closeCmd ) =
-                    if shouldCloseStarredPostsPanel then
+                ( closedStarredPanel, closeCmd ) =
+                    if shouldCloseStarredPanel then
                         let
                             ( closedModel, cmd, _ ) =
-                                StarredPostsPanel.update subModel StarredPostsPanel.CloseStarredPostsPanel refreshedStarredPostsPanel
+                                StarredPanel.update subModel StarredPanel.CloseStarredPanel refreshedStarredPanel
                         in
                         ( closedModel, cmd )
 
                     else
-                        ( refreshedStarredPostsPanel, Cmd.none )
+                        ( refreshedStarredPanel, Cmd.none )
+
+                -- Unlike `shouldCloseStarredPanel` above, unconditional --
+                -- not just narrow screens -- since the New Post/Event panel
+                -- opens at this same vertical position (see
+                -- create_new_panel.css's own `top` comment) rather than as
+                -- one of `.navbar`'s own dropdowns, so the two would
+                -- visually collide at any width. Mirrors `CreateNewPanelMsg`'s
+                -- own `shouldCloseAccountsPanel`, in the other direction.
+                shouldCloseCreateNewPanel =
+                    case subMsg of
+                        AccountsPanel.ToggleAccountsPanel ->
+                            subModel.showAccountsPanel
+
+                        _ ->
+                            False
+
+                ( closedCreateNewPanel, closeCreateNewCmd ) =
+                    if shouldCloseCreateNewPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                CreateNewPanel.update model.browserTimeZone.zone subModel CreateNewPanel.CloseClicked model.createNewPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.createNewPanel, Cmd.none )
             in
-            ( { model | accountsPanel = subModel, starredPostsPanel = closedStarredPostsPanel }
+            ( { model | accountsPanel = subModel, starredPanel = closedStarredPanel, createNewPanel = closedCreateNewPanel }
             , Cmd.batch
                 [ Cmd.map AccountsPanelMsg subCmd
-                , Cmd.map StarredPostsPanelMsg refreshCmd
-                , Cmd.map StarredPostsPanelMsg closeCmd
+                , Cmd.map StarredPanelMsg refreshCmd
+                , Cmd.map StarredPanelMsg closeCmd
+                , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
 
@@ -443,10 +494,10 @@ updateImpl req msg model =
             in
             ( { model | federatedAuth = subModel }, Cmd.map FederatedAuthMsg subCmd )
 
-        StarredPostsPanelMsg subMsg ->
+        StarredPanelMsg subMsg ->
             let
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMediaViewerPanelMsg ) ) =
-                    StarredPostsPanel.update model.accountsPanel subMsg model.starredPostsPanel
+                    StarredPanel.update model.accountsPanel subMsg model.starredPanel
 
                 ( accountsPanelModel, accountsPanelCmd ) =
                     case maybeAccountsPanelMsg of
@@ -468,8 +519,8 @@ updateImpl req msg model =
                 -- branch, above -- see `UI.Responsive`.
                 shouldCloseAccountsPanel =
                     case subMsg of
-                        StarredPostsPanel.ToggleStarredPostsPanel ->
-                            subModel.showStarredPostsPanel && Responsive.isNarrow model.windowSize
+                        StarredPanel.ToggleStarredPanel ->
+                            subModel.showStarredPanel && Responsive.isNarrow model.windowSize
 
                         _ ->
                             False
@@ -480,12 +531,43 @@ updateImpl req msg model =
 
                     else
                         ( accountsPanelModel, Cmd.none )
+
+                -- Unlike `shouldCloseAccountsPanel` above, unconditional --
+                -- not just narrow screens -- since the New Post panel opens
+                -- at this same vertical position (see
+                -- create_new_panel.css's own `top` comment) rather than as
+                -- one of `.navbar`'s own dropdowns, so the two would visually
+                -- collide at any width.
+                shouldCloseCreateNewPanel =
+                    case subMsg of
+                        StarredPanel.ToggleStarredPanel ->
+                            subModel.showStarredPanel
+
+                        _ ->
+                            False
+
+                ( closedCreateNewPanelModel, closeCreateNewCmd ) =
+                    if shouldCloseCreateNewPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                CreateNewPanel.update model.browserTimeZone.zone closedAccountsPanelModel CreateNewPanel.CloseClicked model.createNewPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.createNewPanel, Cmd.none )
             in
-            ( { model | starredPostsPanel = subModel, accountsPanel = closedAccountsPanelModel, mediaViewerPanel = mediaViewerPanelModel }
+            ( { model
+                | starredPanel = subModel
+                , accountsPanel = closedAccountsPanelModel
+                , mediaViewerPanel = mediaViewerPanelModel
+                , createNewPanel = closedCreateNewPanelModel
+              }
             , Cmd.batch
-                [ Cmd.map StarredPostsPanelMsg subCmd
+                [ Cmd.map StarredPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , Cmd.map AccountsPanelMsg closeCmd
+                , Cmd.map CreateNewPanelMsg closeCreateNewCmd
                 ]
             )
 
@@ -506,6 +588,22 @@ updateImpl req msg model =
 
         MarkdownPanelMsg subMsg ->
             let
+                -- `Shared.CreateNewPanel`'s own draft content, if this exact
+                -- `SaveClicked` is the one closing out its
+                -- `MarkdownPanel.NewPostContent` edit -- read off
+                -- `model.markdownPanel.content` *before* `MarkdownPanel.update`
+                -- (below) resets it back to `init`, since `MarkdownPanel`
+                -- itself has no Post to save this to (see `TargetType`'s own
+                -- doc on `NewPostContent`) and so never hands it back on its
+                -- own `Msg`.
+                savedNewPostContent =
+                    case ( subMsg, model.markdownPanel.target ) of
+                        ( MarkdownPanel.SaveClicked, Just (MarkdownPanel.NewPostContent _) ) ->
+                            Just model.markdownPanel.content
+
+                        _ ->
+                            Nothing
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, showScrollPreserver ) ) =
                     MarkdownPanel.update model.accountsPanel subMsg model.markdownPanel
 
@@ -523,17 +621,49 @@ updateImpl req msg model =
 
                     else
                         Cmd.none
+
+                ( createNewPanelModel, createNewPanelCmd ) =
+                    case savedNewPostContent of
+                        Just content ->
+                            let
+                                ( m, cmd, _ ) =
+                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.ContentSaved content) model.createNewPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.createNewPanel, Cmd.none )
             in
-            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel }
+            ( { model | markdownPanel = subModel, accountsPanel = accountsPanelModel, createNewPanel = createNewPanelModel }
             , Cmd.batch
                 [ Cmd.map MarkdownPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
                 , scrollPreserverCmd
+                , Cmd.map CreateNewPanelMsg createNewPanelCmd
                 ]
             )
 
         MyMediaPanelMsg subMsg ->
             let
+                -- `Shared.CreateNewPanel`'s own picked media, if this exact
+                -- `SaveMediaClicked` is the one closing out the `MultiSelect`
+                -- it opened (`EditMediaClicked`) -- gated on it currently
+                -- being open, same "am I mid-edit" reasoning
+                -- `Pages.Post.PostId_.mediaEditActive` uses for its own,
+                -- page-level `MultiSelect` consumer (see `MyMediaPanel`'s own
+                -- module doc).
+                savedMedia =
+                    case subMsg of
+                        MyMediaPanel.SaveMediaClicked media ->
+                            if CreateNewPanel.isOpen model.createNewPanel then
+                                Just media
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
                 ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeDeleteRequest ) ) =
                     MyMediaPanel.update model.accountsPanel subMsg model.myMediaPanel
 
@@ -558,11 +688,122 @@ updateImpl req msg model =
 
                         Nothing ->
                             model.confirmingDeleteFor
+
+                ( createNewPanelModel, createNewPanelCmd ) =
+                    case savedMedia of
+                        Just media ->
+                            let
+                                ( m, cmd, _ ) =
+                                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel (CreateNewPanel.MediaSaved media) model.createNewPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.createNewPanel, Cmd.none )
             in
-            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor }
+            ( { model | myMediaPanel = subModel, accountsPanel = accountsPanelModel, confirmingDeleteFor = confirmingDeleteFor, createNewPanel = createNewPanelModel }
             , Cmd.batch
                 [ Cmd.map MyMediaPanelMsg subCmd
                 , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map CreateNewPanelMsg createNewPanelCmd
+                ]
+            )
+
+        CreateNewPanelMsg subMsg ->
+            let
+                ( subModel, subCmd, ( maybeAccountsPanelMsg, maybeMarkdownPanelMsg, maybeMyMediaPanelMsg ) ) =
+                    CreateNewPanel.update model.browserTimeZone.zone model.accountsPanel subMsg model.createNewPanel
+
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+
+                -- `CreateNewPanel.EditContentClicked`/`EditMediaClicked`'s own
+                -- request (see its module doc) to actually open
+                -- `MarkdownPanel`/`MyMediaPanel` on its behalf -- it can't
+                -- dispatch either directly without importing `Shared`, which
+                -- would cycle.
+                ( markdownPanelModel, markdownPanelCmd ) =
+                    case maybeMarkdownPanelMsg of
+                        Just markdownPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MarkdownPanel.update accountsPanelModel markdownPanelMsg model.markdownPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.markdownPanel, Cmd.none )
+
+                ( myMediaPanelModel, myMediaPanelCmd ) =
+                    case maybeMyMediaPanelMsg of
+                        Just myMediaPanelMsg ->
+                            let
+                                ( m, cmd, _ ) =
+                                    MyMediaPanel.update accountsPanelModel myMediaPanelMsg model.myMediaPanel
+                            in
+                            ( m, cmd )
+
+                        Nothing ->
+                            ( model.myMediaPanel, Cmd.none )
+
+                -- Mirrors `StarredPanelMsg`'s own
+                -- `shouldCloseCreateNewPanel`, in the other direction --
+                -- unconditional (not narrow-screen-gated), same reasoning.
+                shouldCloseStarredPanel =
+                    case subMsg of
+                        CreateNewPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedStarredPanelModel, closeStarredPostsCmd ) =
+                    if shouldCloseStarredPanel then
+                        let
+                            ( m, cmd, _ ) =
+                                StarredPanel.update accountsPanelModel StarredPanel.CloseStarredPanel model.starredPanel
+                        in
+                        ( m, cmd )
+
+                    else
+                        ( model.starredPanel, Cmd.none )
+
+                -- Mirrors `AccountsPanelMsg`'s own `shouldCloseCreateNewPanel`,
+                -- in the other direction -- see its own doc.
+                shouldCloseAccountsPanel =
+                    case subMsg of
+                        CreateNewPanel.ToggleOpen ->
+                            subModel.open
+
+                        _ ->
+                            False
+
+                ( closedAccountsPanelModel, closeAccountsCmd ) =
+                    if shouldCloseAccountsPanel then
+                        AccountsPanel.update req AccountsPanel.CloseAccountsPanel accountsPanelModel
+
+                    else
+                        ( accountsPanelModel, Cmd.none )
+            in
+            ( { model
+                | createNewPanel = subModel
+                , accountsPanel = closedAccountsPanelModel
+                , markdownPanel = markdownPanelModel
+                , myMediaPanel = myMediaPanelModel
+                , starredPanel = closedStarredPanelModel
+              }
+            , Cmd.batch
+                [ Cmd.map CreateNewPanelMsg subCmd
+                , Cmd.map AccountsPanelMsg accountsPanelCmd
+                , Cmd.map AccountsPanelMsg closeAccountsCmd
+                , Cmd.map MarkdownPanelMsg markdownPanelCmd
+                , Cmd.map MyMediaPanelMsg myMediaPanelCmd
+                , Cmd.map StarredPanelMsg closeStarredPostsCmd
                 ]
             )
 
@@ -584,8 +825,8 @@ updateImpl req msg model =
                 -- `MyMediaPanelMsg`'s own `confirmingDeleteFor` above.
                 confirmingDeleteFor =
                     case maybeDeleteRequest of
-                        Just source ->
-                            Just (ConfirmEventSyncSourceDelete source)
+                        Just ( source, deleteSyncedEvents ) ->
+                            Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents)
 
                         Nothing ->
                             model.confirmingDeleteFor
@@ -627,9 +868,12 @@ updateImpl req msg model =
                     updateImpl req (AccountsPanelMsg AccountsPanel.CloseAccountsPanel) model
 
                 ( closedStarredModel, closeStarredCmd ) =
-                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) closedAccountsModel
+                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) closedAccountsModel
+
+                ( closedCreateNewModel, closeCreateNewCmd ) =
+                    updateImpl req (CreateNewPanelMsg CreateNewPanel.CloseClicked) closedStarredModel
             in
-            ( closedStarredModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd ] )
+            ( closedCreateNewModel, Cmd.batch [ closeAccountsCmd, closeStarredCmd, closeCreateNewCmd ] )
 
         ThemePreferenceClicked ->
             let
@@ -700,10 +944,10 @@ updateImpl req msg model =
                     )
 
                 -- Same shape as `ConfirmMediaDelete` just above.
-                Just (ConfirmEventSyncSourceDelete source) ->
+                Just (ConfirmEventSyncSourceDelete source deleteSyncedEvents) ->
                     let
                         ( subModel, subCmd, ( maybeAccountsPanelMsg, _ ) ) =
-                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source) model.eventSyncSourcesPanel
+                            EventSyncSourcesPanel.update model.accountsPanel (EventSyncSourcesPanel.DeleteConfirmed source deleteSyncedEvents) model.eventSyncSourcesPanel
 
                         ( accountsPanelModel, accountsPanelCmd ) =
                             case maybeAccountsPanelMsg of
@@ -720,8 +964,63 @@ updateImpl req msg model =
                         ]
                     )
 
+                -- Unlike every branch above, a Post/Event delete isn't owned
+                -- by any Shared-owned panel to delegate a `DeleteConfirmed`
+                -- into -- fires the RPC directly instead, resolving the
+                -- acting account from the carried `targetHost` the same way
+                -- `EventSyncSourcesPanel.performForOwner` does from a bare
+                -- host. Its result (`GotPostDeleteResult`) is picked up by
+                -- whichever page is active, same as any other `Shared.Msg`.
+                Just (ConfirmPostDelete post host) ->
+                    ( { model | confirmingDeleteFor = Nothing }
+                    , Posts.deletePost
+                        model.accountsPanel
+                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        post.id
+                        |> Task.attempt GotPostDeleteResult
+                    )
+
+                Just (ConfirmEventDelete event host) ->
+                    ( { model | confirmingDeleteFor = Nothing }
+                    , Events.deleteEvent
+                        model.accountsPanel
+                        ( AccountsPanel.enabledAccountForServer model.accountsPanel.accounts host |> Maybe.map .userId, host )
+                        event.id
+                        |> Task.attempt GotEventDeleteResult
+                    )
+
                 Nothing ->
                     ( model, Cmd.none )
+
+        GotPostDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotPostDeleteResult (Err _) ->
+            ( model, Cmd.none )
+
+        GotEventDeleteResult (Ok ( maybeAccountsPanelMsg, _ )) ->
+            let
+                ( accountsPanelModel, accountsPanelCmd ) =
+                    case maybeAccountsPanelMsg of
+                        Just accountsPanelMsg ->
+                            AccountsPanel.update req accountsPanelMsg model.accountsPanel
+
+                        Nothing ->
+                            ( model.accountsPanel, Cmd.none )
+            in
+            ( { model | accountsPanel = accountsPanelModel }, Cmd.map AccountsPanelMsg accountsPanelCmd )
+
+        GotEventDeleteResult (Err _) ->
+            ( model, Cmd.none )
 
         ShowScrollPreserver ->
             ( { model | scrollPreserverVisible = True }
@@ -734,7 +1033,7 @@ updateImpl req msg model =
         HomeLinkClicked alreadyHome ->
             let
                 ( closedModel, closeCmd ) =
-                    updateImpl req (StarredPostsPanelMsg StarredPostsPanel.CloseStarredPostsPanel) model
+                    updateImpl req (StarredPanelMsg StarredPanel.CloseStarredPanel) model
 
                 -- Re-clicking Home while already on it doesn't rerun
                 -- `Pages.Home_.init` (same route), so `Main.elm`'s `ChangedUrl`
@@ -774,7 +1073,7 @@ updateImpl req msg model =
 e.g. logging into/switching accounts on a server, signing out) or whether
 their `Server` itself is enabled (`ToggleServerEnabled` -- which also disables
 its accounts, but not for a server with none signed into it, so that flip
-needs checking on its own). Tells `Shared.StarredPostsPanel.refreshHosts`
+needs checking on its own). Tells `Shared.StarredPanel.refreshHosts`
 which servers' cached starred `Post`s might now be wrong -- a starred post's
 visibility can depend on which account fetched it, and an unavailable
 server's shouldn't be fetched/shown at all (see
@@ -814,7 +1113,7 @@ starredPostsRefreshHosts before after =
     hosts |> List.filter (\host -> identity before host /= identity after host)
 
 
-{-| Polls for still-missing starred posts (see `Shared.StarredPostsPanel.kickOffFetches`)
+{-| Polls for still-missing starred posts (see `Shared.StarredPanel.kickOffFetches`)
 only while the panel's actually open -- there's nothing to show for it
 otherwise, so no reason to keep hitting servers in the background.
 -}
@@ -825,11 +1124,11 @@ subscriptions _ model =
         , Browser.Events.onResize WindowResized
         , Sub.map AccountsPanelMsg (AccountsPanel.subscriptions model.accountsPanel)
         , Sub.map FederatedAuthMsg FederatedAuth.subscriptions
-        , Sub.map StarredPostsPanelMsg (StarredPostsPanel.subscriptions model.starredPostsPanel)
+        , Sub.map StarredPanelMsg (StarredPanel.subscriptions model.starredPanel)
         , Sub.map MediaViewerPanelMsg (MediaViewerPanel.subscriptions model.mediaViewerPanel)
         , Sub.map MyMediaPanelMsg (MyMediaPanel.subscriptions model.myMediaPanel)
-        , if model.starredPostsPanel.showStarredPostsPanel then
-            Time.every 1500 (\_ -> StarredPostsPanelMsg StarredPostsPanel.PollStarredPosts)
+        , if model.starredPanel.showStarredPanel then
+            Time.every 1500 (\_ -> StarredPanelMsg StarredPanel.PollStarredPosts)
 
           else
             Sub.none

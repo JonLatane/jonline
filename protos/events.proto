@@ -46,6 +46,10 @@ message GetEventsRequest {
   EventListingType listing_type = 10;
   // Search text for full-text search.
   optional string search_text = 11;
+  // Loads multiple events by their event instances' Post IDs -- returns one
+  // Event per matching EventInstance (see GetEventsResponse's own doc), not
+  // the requested EventInstance's whole parent Event's full instance list.
+  repeated string event_instance_post_ids = 12;
 }
 
 // Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
