@@ -52,7 +52,7 @@ jobs:
           rm "$PROTOC_ZIP"
           protoc --version
       - uses: ts-graphviz/setup-graphviz@v2
-      - uses: subosito/flutter-action@v2
+      # - uses: subosito/flutter-action@v2
       - uses: actions/setup-node@v4
         with:
           node-version: 22.x

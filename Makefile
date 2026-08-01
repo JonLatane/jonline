@@ -107,7 +107,7 @@ local_minio_delete:
 
 # Update frontend protos and docs
 protos:
-	cd frontends/flutter && $(MAKE) protos
+# 	cd frontends/flutter && $(MAKE) protos
 	cd frontends/tamagui && yarn protos
 	cd frontends/elm-spa && $(MAKE) protos
 
