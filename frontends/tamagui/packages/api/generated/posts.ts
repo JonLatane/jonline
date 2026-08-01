@@ -238,7 +238,11 @@ export interface GetPostsRequest {
    * Full-text search query, matched against the author's username/real name and the post's
    * title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
    */
-  searchText?: string | undefined;
+  searchText?:
+    | string
+    | undefined;
+  /** Request to only return posts that were published or created before the given timestamp. */
+  publishedOrCreatedBefore?: string | undefined;
 }
 
 /** Used for getting posts. */
@@ -403,6 +407,7 @@ function createBaseGetPostsRequest(): GetPostsRequest {
     listingType: 0,
     page: 0,
     searchText: undefined,
+    publishedOrCreatedBefore: undefined,
   };
 }
 
@@ -434,6 +439,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     }
     if (message.searchText !== undefined) {
       writer.uint32(58).string(message.searchText);
+    }
+    if (message.publishedOrCreatedBefore !== undefined) {
+      Timestamp.encode(toTimestamp(message.publishedOrCreatedBefore), writer.uint32(66).fork()).join();
     }
     return writer;
   },
@@ -517,6 +525,14 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
           message.searchText = reader.string();
           continue;
         }
+        case 8: {
+          if (tag !== 66) {
+            break;
+          }
+
+          message.publishedOrCreatedBefore = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -537,6 +553,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
       listingType: isSet(object.listingType) ? postListingTypeFromJSON(object.listingType) : 0,
       page: isSet(object.page) ? globalThis.Number(object.page) : 0,
       searchText: isSet(object.searchText) ? globalThis.String(object.searchText) : undefined,
+      publishedOrCreatedBefore: isSet(object.publishedOrCreatedBefore)
+        ? globalThis.String(object.publishedOrCreatedBefore)
+        : undefined,
     };
   },
 
@@ -569,6 +588,9 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     if (message.searchText !== undefined) {
       obj.searchText = message.searchText;
     }
+    if (message.publishedOrCreatedBefore !== undefined) {
+      obj.publishedOrCreatedBefore = message.publishedOrCreatedBefore;
+    }
     return obj;
   },
 
@@ -586,6 +608,7 @@ export const GetPostsRequest: MessageFns<GetPostsRequest> = {
     message.listingType = object.listingType ?? 0;
     message.page = object.page ?? 0;
     message.searchText = object.searchText ?? undefined;
+    message.publishedOrCreatedBefore = object.publishedOrCreatedBefore ?? undefined;
     return message;
   },
 };

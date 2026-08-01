@@ -48,6 +48,9 @@ message GetPostsRequest {
   // Full-text search query, matched against the author's username/real name and the post's
   // title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`.
   optional string search_text = 7;
+
+  // Request to only return posts that were published or created before the given timestamp.
+  optional google.protobuf.Timestamp published_or_created_before = 8;
 }
 
 // Used for getting posts.

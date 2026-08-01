@@ -2058,9 +2058,23 @@ fieldNumbersProto__Jonline__EventInstance :
     , endsAt : Int
     , location : Int
     , eventSyncSourceInstanceId : Int
+    , syncMissingSince : Int
+    , attendances : Int
+    , currentUserAttendance : Int
     }
 fieldNumbersProto__Jonline__EventInstance =
-    { id = 1, eventId = 2, post = 3, info = 4, startsAt = 5, endsAt = 6, location = 7, eventSyncSourceInstanceId = 8 }
+    { id = 1
+    , eventId = 2
+    , post = 3
+    , info = 4
+    , startsAt = 5
+    , endsAt = 6
+    , location = 7
+    , eventSyncSourceInstanceId = 8
+    , syncMissingSince = 9
+    , attendances = 10
+    , currentUserAttendance = 11
+    }
 
 
 {-| Default for Proto__Jonline__EventInstance. Should only be used for 'required' decoders as an initial value.
@@ -2076,6 +2090,9 @@ defaultProto__Jonline__EventInstance =
     , endsAt = Nothing
     , location = Nothing
     , eventSyncSourceInstanceId = Nothing
+    , syncMissingSince = Nothing
+    , attendances = Nothing
+    , currentUserAttendance = Nothing
     }
 
 
@@ -2109,6 +2126,18 @@ decodeProto__Jonline__EventInstance =
             8
             (Protobuf.Decode.map Just Protobuf.Decode.string)
             (\a r -> { r | eventSyncSourceInstanceId = a })
+        , Protobuf.Decode.optional
+            9
+            (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
+            (\a r -> { r | syncMissingSince = a })
+        , Protobuf.Decode.optional
+            10
+            (Protobuf.Decode.map Just decodeProto__Jonline__EventAttendances)
+            (\a r -> { r | attendances = a })
+        , Protobuf.Decode.optional
+            11
+            (Protobuf.Decode.map Just decodeProto__Jonline__EventAttendance)
+            (\a r -> { r | currentUserAttendance = a })
         ]
 
 
@@ -2140,6 +2169,20 @@ encodeProto__Jonline__EventInstance value =
         , ( 8
           , (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.eventSyncSourceInstanceId
           )
+        , ( 9
+          , (Maybe.map Proto.Google.Protobuf.Internals_.encodeProto__Google__Protobuf__Timestamp
+                >> Maybe.withDefault Protobuf.Encode.none
+            )
+                value.syncMissingSince
+          )
+        , ( 10
+          , (Maybe.map encodeProto__Jonline__EventAttendances >> Maybe.withDefault Protobuf.Encode.none)
+                value.attendances
+          )
+        , ( 11
+          , (Maybe.map encodeProto__Jonline__EventAttendance >> Maybe.withDefault Protobuf.Encode.none)
+                value.currentUserAttendance
+          )
         ]
 
 
@@ -2155,6 +2198,9 @@ type alias Proto__Jonline__EventInstance =
     , endsAt : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     , location : Maybe Proto__Jonline__Location
     , eventSyncSourceInstanceId : Maybe String
+    , syncMissingSince : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
+    , attendances : Maybe Proto__Jonline__EventAttendances
+    , currentUserAttendance : Maybe Proto__Jonline__EventAttendance
     }
 
 
@@ -3358,6 +3404,7 @@ fieldNumbersProto__Jonline__GetPostsRequest :
     , listingType : Int
     , page : Int
     , searchText : Int
+    , publishedOrCreatedBefore : Int
     }
 fieldNumbersProto__Jonline__GetPostsRequest =
     { postId = 1
@@ -3369,6 +3416,7 @@ fieldNumbersProto__Jonline__GetPostsRequest =
     , listingType = 10
     , page = 15
     , searchText = 7
+    , publishedOrCreatedBefore = 8
     }
 
 
@@ -3386,6 +3434,7 @@ defaultProto__Jonline__GetPostsRequest =
     , listingType = Proto.Jonline.PostListingType.defaultPostListingType
     , page = 0
     , searchText = Nothing
+    , publishedOrCreatedBefore = Nothing
     }
 
 
@@ -3414,6 +3463,10 @@ decodeProto__Jonline__GetPostsRequest =
             (\a r -> { r | listingType = a })
         , Protobuf.Decode.optional 15 Protobuf.Decode.uint32 (\a r -> { r | page = a })
         , Protobuf.Decode.optional 7 (Protobuf.Decode.map Just Protobuf.Decode.string) (\a r -> { r | searchText = a })
+        , Protobuf.Decode.optional
+            8
+            (Protobuf.Decode.map Just Proto.Google.Protobuf.Internals_.decodeProto__Google__Protobuf__Timestamp)
+            (\a r -> { r | publishedOrCreatedBefore = a })
         ]
 
 
@@ -3435,6 +3488,12 @@ encodeProto__Jonline__GetPostsRequest value =
         , ( 10, Proto.Jonline.PostListingType.encodePostListingType value.listingType )
         , ( 15, Protobuf.Encode.uint32 value.page )
         , ( 7, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.searchText )
+        , ( 8
+          , (Maybe.map Proto.Google.Protobuf.Internals_.encodeProto__Google__Protobuf__Timestamp
+                >> Maybe.withDefault Protobuf.Encode.none
+            )
+                value.publishedOrCreatedBefore
+          )
         ]
 
 
@@ -3451,6 +3510,7 @@ type alias Proto__Jonline__GetPostsRequest =
     , listingType : Proto.Jonline.PostListingType.PostListingType
     , page : Int
     , searchText : Maybe String
+    , publishedOrCreatedBefore : Maybe Proto.Google.Protobuf.Internals_.Proto__Google__Protobuf__Timestamp
     }
 
 
