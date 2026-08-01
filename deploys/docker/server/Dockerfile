@@ -12,6 +12,7 @@ COPY backend/target/release/delete_expired_tokens__server_release /opt/delete_ex
 COPY backend/target/release/delete_unowned_media__server_release /opt/delete_unowned_media
 COPY backend/target/release/sync_event_sync_sources__server_release /opt/sync_event_sync_sources
 COPY backend/target/release/update_user_counts__server_release /opt/update_user_counts
+COPY backend/target/release/convert_media_sizes__server_release /opt/convert_media_sizes
 
 # Admin utility binaries
 COPY backend/target/release/delete_preview_images__server_release /opt/delete_preview_images
@@ -41,7 +42,9 @@ COPY frontends/elm-spa/public/ /opt/elm_web
 COPY docs/protocol.html /opt/docs/protocol.html
 
 # Setup the environment for the server.
-RUN apt-get update && apt-get -y install libpq5 curl postgresql-client libc6
+# imagemagick is used by /opt/convert_media_sizes (bin/convert_media_sizes.rs) to generate
+# small/medium/large resized copies of PNG/JPEG Media.
+RUN apt-get update && apt-get -y install libpq5 curl postgresql-client libc6 imagemagick
 
 # Old Ubuntu OpenSSL thing
 # RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb > libssl1.1.deb

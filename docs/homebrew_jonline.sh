@@ -60,7 +60,7 @@ JONLINE_COMMANDS=(
   environment edit_environment
   local_db_create local_db_drop local_db_reset local_db_connect
   local_minio_start local_minio_create local_minio_delete
-  delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts generate_preview_images
+  delete_expired_tokens delete_unowned_media sync_event_sync_sources update_user_counts convert_media_sizes generate_preview_images
   set_permission delete_preview_images disable_cdn_grpc
   to_db_id to_proto_id grpcurl
   completion
@@ -93,7 +93,8 @@ Commands:
     server                   Run the Jonline server (jonline-server)
     jobs                     Run background jobs on a loop (@@JONLINE_ETC@@/jonline/background_jobs.sh) --
                              delete_expired_tokens every 2m, delete_unowned_media every 8h,
-                             sync_event_sync_sources every 1m, update_user_counts every 1h, ...
+                             sync_event_sync_sources every 1m, update_user_counts every 1h,
+                             convert_media_sizes every 10m, ...
     version                  Print the Jonline server version (jonline-server --version)
     local_instances_stop     Stop any running jonline-server processes
     help                     Show this help text
@@ -122,6 +123,9 @@ Commands:
                              sync_interval_seconds/last_synced_at
     update_user_counts       Recompute follower/following/friend/group/post/response/event/
                              event_instance counts for every User, correcting any drift
+    convert_media_sizes      Generate small/medium/large resized copies of unprocessed PNG/JPEG
+                             Media via ImageMagick (`magick`, or `convert`+`identify`), which
+                             must be on your $PATH -- skips (logging an error) if it's missing
     generate_preview_images  Generate media preview images -- NOT currently supported on
                              macOS: it launches a browser hardcoded to /usr/bin/brave-browser,
                              a Linux path that Homebrew's Brave cask doesn't populate (and
@@ -247,6 +251,13 @@ sync_event_sync_sources() {
 
 update_user_counts() {
   _jonline_exec_bin update_user_counts "$@"
+}
+
+# Requires ImageMagick (`magick`, or the legacy `convert`+`identify` pair) on $PATH -- e.g.
+# `brew install imagemagick`. Logs an error and exits nonzero (which `jobs`'/background_jobs.sh's
+# loop tolerates, just retrying next interval) if it's not found.
+convert_media_sizes() {
+  _jonline_exec_bin convert_media_sizes "$@"
 }
 
 # Renders media preview images headlessly via a browser hardcoded to
