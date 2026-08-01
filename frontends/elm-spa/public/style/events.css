@@ -456,6 +456,7 @@
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;
+  justify-content: center;
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;
