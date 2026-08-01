@@ -63,6 +63,7 @@ import Pages.Events
 import Pages.Home_
 import Pages.People
 import Pages.Post.PostId_
+import Pages.Posts
 import Pages.Server.ServerIdentifier_
 import Pages.User.UserId_
 import Pages.User.UserId_.Events
@@ -278,6 +279,9 @@ sharedMsgForPage sharedMsg page =
 
         Gen.Model.Home_ _ _ ->
             Just (Gen.Msg.Home_ (Pages.Home_.fromShared sharedMsg))
+
+        Gen.Model.Posts _ _ ->
+            Just (Gen.Msg.Posts (Pages.Posts.fromShared sharedMsg))
 
         Gen.Model.Events _ _ ->
             Just (Gen.Msg.Events (Pages.Events.fromShared sharedMsg))

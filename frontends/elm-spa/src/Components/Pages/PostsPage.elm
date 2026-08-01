@@ -205,7 +205,26 @@ init shared author navKey path query embeddedPage =
     -- e.g. landing here right after `/people` while both are still
     -- `FromServerHost mainFrontendHost`. Mirrors
     -- `Components.Pages.UserProfilePage.init`'s own unconditional close.
-    ( fetchedModel, Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsRoot shared fetchedModel ] )
+    --
+    -- Also unconditionally kicks off `Task.perform GotNow Time.now` (even
+    -- while `tab == RecentPosts`, and even when a `?published_before=` query
+    -- param already resolved one) so `model.publishedBefore` is seeded with
+    -- the page's own load time before the user ever switches to
+    -- `PostsBeforeDate` -- otherwise `recentPostsTabsView`'s date input
+    -- would flash its `Time.millisToPosix 0` fallback (the Unix epoch, so
+    -- 1969/1970 depending on the viewer's own time zone) for the brief
+    -- window between that switch and `GotNow` resolving. `GotNow`'s own
+    -- `model.publishedBefore == Nothing` guard is what makes this a no-op
+    -- once a query-param cutoff (or a still-in-flight earlier `GotNow`) has
+    -- already claimed it.
+    ( fetchedModel
+    , Effect.batch
+        [ fetchEffect
+        , Effect.fromShared Shared.CloseAllPanels
+        , setBreadcrumbsRoot shared fetchedModel
+        , Task.perform GotNow Time.now |> Effect.fromCmd
+        ]
+    )
 
 
 {-| The servers this page should ever fetch from: every enabled server for an
@@ -754,15 +773,30 @@ updateInner shared msg model =
                         ( { model | tab = PostsBeforeDate }, Task.perform GotNow Time.now |> Effect.fromCmd )
 
         GotNow now ->
-            if model.tab == PostsBeforeDate && model.publishedBefore == Nothing then
-                let
-                    ( refetchedModel, refetchEffect ) =
-                        refetchServers shared { model | publishedBefore = Just now } (relevantServers shared model)
-                in
-                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+            case model.publishedBefore of
+                Just _ ->
+                    -- Already seeded (a `?published_before=` query param on
+                    -- load, or an earlier `GotNow`) -- this one's redundant.
+                    ( model, Effect.none )
 
-            else
-                ( model, Effect.none )
+                Nothing ->
+                    let
+                        newModel =
+                            { model | publishedBefore = Just now }
+                    in
+                    if newModel.tab == PostsBeforeDate then
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared newModel (relevantServers shared newModel)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    else
+                        -- `RecentPosts` doesn't use `publishedBefore` at all
+                        -- (see `refetchServers`'s own `cutoff`) -- just seed
+                        -- it quietly so it's ready the moment the user does
+                        -- switch tabs, no fetch/URL change needed yet.
+                        ( newModel, Effect.none )
 
         PublishedBeforeInputChanged raw ->
             case BrowserTimeZone.posixFromDateTimeLocalInput shared.browserTimeZone.zone raw of
