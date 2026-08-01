@@ -186,6 +186,15 @@ type alias Model =
     -- showing for 5s yet.
     , copyLinkCopied : Bool
     , copyLinkGeneration : Int
+
+    -- Whether `syncAnimations` should hide `UpcomingEvents`-tab instances
+    -- that have already started (see `hiddenAsStarted`) -- defaults to `True`
+    -- (`init`), and has no effect on `EventsAfterDate`. The button that
+    -- toggles it (`hideStartedButtonView`) is only ever shown while
+    -- `UpcomingEvents` is active *and* at least one loaded instance has
+    -- actually started (see `anyStartedEvents`/`view`) -- nothing to filter,
+    -- nothing to show a toggle for.
+    , hideStartedUpcomingEvents : Bool
     }
 
 
@@ -271,6 +280,7 @@ init shared author navKey path query embeddedRow =
                 , exportPopoverOpen = False
                 , copyLinkCopied = False
                 , copyLinkGeneration = 0
+                , hideStartedUpcomingEvents = True
                 }
     in
     ( fetchedModel
@@ -475,12 +485,75 @@ eventCardDomId key =
     "event-card-" ++ key
 
 
+{-| Whether `instance` has already started as of `model.endsAfter` -- only
+ever `True` while `UpcomingEvents` is the active tab, since that's the only
+tab whose `endsAfter` _is_ the live "now" (kept fresh by `GotNow`/`Poll`, see
+their own docs); `EventsAfterDate`'s fixed cutoff isn't "now" in that sense,
+so this is unconditionally `False` there regardless of `instance`'s own
+timing. Compares `instance`'s own start time via `Events.instanceStartsOrEndsAt`
+(the same field `visibleAnimations` already sorts by). Independent of
+`Model.hideStartedUpcomingEvents` itself -- see `hiddenAsStarted` (the actual
+filter predicate) and `anyStartedEvents` (whether `hideStartedButtonView` has
+anything to offer at all) for the two things that flag/count actually feed.
+-}
+instanceHasStarted : Model -> EventInstance -> Bool
+instanceHasStarted model instance =
+    case ( model.tab, model.endsAfter, Events.instanceStartsOrEndsAt instance ) of
+        ( UpcomingEvents, Just now, Just startsAt ) ->
+            Time.posixToMillis startsAt <= Time.posixToMillis now
+
+        _ ->
+            False
+
+
+{-| Whether `instance` should be treated as absent from `syncAnimations`' own
+`currentEvents` by the "hide started events" filter (see
+`Model.hideStartedUpcomingEvents`/`hideStartedButtonView`) -- `instanceHasStarted`,
+gated on the filter actually being on, so an event crossing its own start
+time mid-session fades out on the very next poll (`refetchServers` already
+calls `syncAnimations`), same as `HideStartedUpcomingEventsToggled` fades the
+whole already-started set out/in on toggle.
+-}
+hiddenAsStarted : Model -> EventInstance -> Bool
+hiddenAsStarted model instance =
+    model.hideStartedUpcomingEvents && instanceHasStarted model instance
+
+
+{-| Whether any currently `Loaded` instance `instanceHasStarted` -- `view`
+only renders `hideStartedButtonView` when this is `True` (on top of its own
+`UpcomingEvents`-only gate), so the button itself never appears with nothing
+for it to actually hide. Deliberately reads straight off `model.eventsByServer`
+rather than `model.eventAnimations`/`visibleAnimations` -- once the filter is
+on, a started instance is exactly what `syncAnimations` excludes from (or
+fades out of) that dict, so checking there instead would make the button
+disappear the moment it successfully hid everything, rather than staying
+available to toggle back.
+-}
+anyStartedEvents : Model -> Bool
+anyStartedEvents model =
+    model.eventsByServer
+        |> Dict.values
+        |> List.any
+            (\feed ->
+                case feed.status of
+                    Loaded pairs ->
+                        List.any (\( _, instance ) -> instanceHasStarted model instance) pairs
+
+                    _ ->
+                        False
+            )
+
+
 {-| Reconciles `eventAnimations` with the `(Event, EventInstance)` pairs
 currently `Loaded` in `eventsByServer` -- mirrors
 `Components.Pages.PostsPage.syncAnimations` exactly (starts a fade-in for
 newly-seen instances, a fade-out for ones that dropped out, leaves `move`
 alone either way -- a content refresh never needs a position slide, only
-`DisplayModeChanged` does).
+`DisplayModeChanged` does), with one addition: an instance `hiddenAsStarted`
+is treated the same as one the server stopped returning -- excluded from
+`currentEvents`, so it fades out (or, symmetrically, fades back in via
+`reappear` if `hiddenAsStarted` stops being true for it before its fade-out
+finishes) exactly like any other add/remove this function already handles.
 -}
 syncAnimations : Model -> Model
 syncAnimations model =
@@ -493,7 +566,9 @@ syncAnimations model =
                     (\( host, feed ) ->
                         case feed.status of
                             Loaded pairs ->
-                                List.map (\( event, instance ) -> ( eventAnimationKey host instance, ( host, event, instance ) )) pairs
+                                pairs
+                                    |> List.filter (\( _, instance ) -> not (hiddenAsStarted model instance))
+                                    |> List.map (\( event, instance ) -> ( eventAnimationKey host instance, ( host, event, instance ) ))
 
                             _ ->
                                 []
@@ -690,6 +765,11 @@ type Msg
     | SearchTextChanged String
     | SearchDebounceElapsed Int
     | ClearSearchClicked
+      -- The "hide started events" filter button (see `hideStartedButtonView`)
+      -- toggling `model.hideStartedUpcomingEvents` -- purely a local
+      -- filter over already-fetched data (see `hiddenAsStarted`/
+      -- `syncAnimations`), so there's nothing to fetch here.
+    | HideStartedUpcomingEventsToggled
       -- Opens/closes the "Export" button's ICS-subscription-link popover
       -- (see `exportButtonView`).
     | ExportClicked
@@ -982,6 +1062,9 @@ updateInner shared msg model =
         ClearSearchClicked ->
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
+        HideStartedUpcomingEventsToggled ->
+            ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
+
         ExportClicked ->
             ( { model | exportPopoverOpen = not model.exportPopoverOpen }, Effect.none )
 
@@ -1266,6 +1349,51 @@ authorHeadingView shared maybeAuthor =
                 ]
 
 
+{-| The "hide started events" filter icon button -- self-gating rather than
+gated by its `tabsView` callers: renders `text ""` unless `UpcomingEvents` is
+the active tab *and* `anyStartedEvents` (`EventsAfterDate`'s fixed cutoff has
+no "already started" notion to filter by, and there's nothing to toggle when
+nothing's started yet). Toggles `model.hideStartedUpcomingEvents` (see
+`HideStartedUpcomingEventsToggled`), which `hiddenAsStarted`/`syncAnimations`
+read to fade already-started instances out of the listing. Styled as a
+circular icon button (`.events-hide-started-button`, `events.css`) mirroring
+`exportButtonView`'s own; `background-color-primary` (matching `tabsView`'s
+own active-tab convention) is added while the filter is on.
+-}
+hideStartedButtonView : Model -> Html Msg
+hideStartedButtonView model =
+    case model.tab of
+        UpcomingEvents ->
+            if anyStartedEvents model then
+                button
+                    [ classes
+                        ("events-hide-started-button"
+                            :: (if model.hideStartedUpcomingEvents then
+                                    [ "background-color-primary" ]
+
+                                else
+                                    []
+                               )
+                        )
+                    , onClick HideStartedUpcomingEventsToggled
+                    , title
+                        (if model.hideStartedUpcomingEvents then
+                            "Showing only events that haven't started"
+
+                         else
+                            "Hide events that have already started"
+                        )
+                    , type_ "button"
+                    ]
+                    [ text "▽" ]
+
+            else
+                text ""
+
+        _ ->
+            text ""
+
+
 {-| The 2 tabs (see `EventsTab`) -- "Upcoming Events" (a plain pill button,
 mirrors `modeButtonView`'s own styling) and "Events After <date>",
 which -- since it has to contain a real `<input type="datetime-local">`,
@@ -1285,24 +1413,30 @@ rather than raw UTC.
 tabsView : Shared.Model -> Model -> Html Msg
 tabsView shared model =
     if model.embeddedRow then
-        h3 [] [ text "Upcoming Events" ]
+        span [ class "upcoming-events-tab-controls" ]
+            [ hideStartedButtonView model
+            , h3 [] [ text "Upcoming Events" ]
+            ]
 
     else
         div [ class "events-tabs" ]
-            [ button
-                [ classes
-                    ("events-tab"
-                        :: "events-tab-primary"
-                        :: (if model.tab == UpcomingEvents then
-                                [ "background-color-primary" ]
+            [ span [ class "upcoming-events-tab-controls" ]
+                [ hideStartedButtonView model
+                , button
+                    [ classes
+                        ("events-tab"
+                            :: "events-tab-primary"
+                            :: (if model.tab == UpcomingEvents then
+                                    [ "background-color-primary" ]
 
-                            else
-                                []
-                           )
-                    )
-                , onClick (TabChanged UpcomingEvents)
+                                else
+                                    []
+                               )
+                        )
+                    , onClick (TabChanged UpcomingEvents)
+                    ]
+                    [ text "Upcoming Events" ]
                 ]
-                [ text "Upcoming Events" ]
             , div
                 [ classes
                     ("events-tab"

@@ -18,7 +18,7 @@ use crate::rpcs::validations::PASSING_MODERATIONS;
 use crate::schema::*;
 use prost_wkt_types::Timestamp;
 
-const PAGE_SIZE: i64 = 60;
+const PAGE_SIZE: i64 = 80;
 
 type EventLoadData = (
     models::EventInstance,

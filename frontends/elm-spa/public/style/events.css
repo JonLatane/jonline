@@ -320,16 +320,29 @@
   gap: 0.4rem;
 }
 
-/* `EventsPage.exportButtonView` -- always shown at the end of
-   `.events-controls-trailing`, unlike `.events-mode-buttons` not gated by
-   `homeEmbedded`. Anchoring/backdrop/fade+slide-open transition is all
-   `ui/popover.css`'s generic `.popover-anchor`/`.popover-toggle`/`.popover`
-   -- these rules are just this popover's own content sizing/spacing on top
-   of that. */
+/* `EventsPage.hideStartedButtonView`/`EventsPage.exportButtonView` -- circular
+   icon buttons (fixed square box, `border-radius: 50%`, flex-centered glyph)
+   sharing this one sizing rule. `.events-hide-started-button` is only shown
+   while `UpcomingEvents` is the active tab, at the start of
+   `.events-controls-row`; `background-color-primary` is added (see
+   `hideStartedButtonView`) on top of the permanent `background-color-nav`
+   while the filter is on, same "extra highlight layered on the base pill"
+   convention `.events-tab`'s own active state uses. `.events-export-button`
+   sits at the end of `.events-controls-trailing`, unlike `.events-mode-buttons`
+   not gated by `homeEmbedded` -- its anchoring/backdrop/fade+slide-open
+   transition is all `ui/popover.css`'s generic
+   `.popover-anchor`/`.popover-toggle`/`.popover`, this rule is just its own
+   button sizing on top of that. */
+.events-hide-started-button,
 .events-export-button {
-  padding: 0.15rem 0.6rem 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 50%;
   font-size: 1rem;
   line-height: 1.2;
   cursor: pointer;
@@ -417,6 +430,16 @@
 .events-tab-primary {
   font-size: 1.1rem;
   font-weight: 700;
+}
+
+.upcoming-events-tab-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.upcoming-events-tab-controls>h3 {
+  margin: 0;
 }
 
 /* Sized/inset to sit comfortably inline with its own tab's label text
