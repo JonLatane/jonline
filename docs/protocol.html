@@ -3774,6 +3774,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>repeated</td>
           <td>Loads multiple events by their event instances' Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse's own doc), not the requested EventInstance's whole parent Event's full instance list.</td>
         </tr>
+        <tr>
+          <td>anonymous_attendee_auth_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Auth token proving ownership of an anonymous RSVP, mirroring <code>GetEventAttendancesRequest.anonymous_attendee_auth_token</code>. Lets an anonymous attendee's own (possibly still-<code>PENDING</code>) <code>EventAttendance</code> and its <code>EventInstance.location</code> (when <code>EventInfo.hide_location_until_rsvp_approved</code> is set) surface via each returned <code>EventInstance.attendances</code>/<code>current_user_attendance</code>, same as a logged-in user's own RSVP does automatically.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetEventsResponse"></a></p>

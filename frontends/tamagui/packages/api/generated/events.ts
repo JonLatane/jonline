@@ -235,6 +235,15 @@ export interface GetEventsRequest {
    * the requested EventInstance's whole parent Event's full instance list.
    */
   eventInstancePostIds: string[];
+  /**
+   * Auth token proving ownership of an anonymous RSVP, mirroring
+   * `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
+   * (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when
+   * `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
+   * `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
+   * does automatically.
+   */
+  anonymousAttendeeAuthToken?: string | undefined;
 }
 
 /**
@@ -591,6 +600,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     listingType: 0,
     searchText: undefined,
     eventInstancePostIds: [],
+    anonymousAttendeeAuthToken: undefined,
   };
 }
 
@@ -630,6 +640,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     }
     for (const v of message.eventInstancePostIds) {
       writer.uint32(98).string(v!);
+    }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      writer.uint32(106).string(message.anonymousAttendeeAuthToken);
     }
     return writer;
   },
@@ -739,6 +752,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           message.eventInstancePostIds.push(reader.string());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.anonymousAttendeeAuthToken = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -765,6 +786,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
       eventInstancePostIds: globalThis.Array.isArray(object?.eventInstancePostIds)
         ? object.eventInstancePostIds.map((e: any) => globalThis.String(e))
         : [],
+      anonymousAttendeeAuthToken: isSet(object.anonymousAttendeeAuthToken)
+        ? globalThis.String(object.anonymousAttendeeAuthToken)
+        : undefined,
     };
   },
 
@@ -803,6 +827,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.eventInstancePostIds?.length) {
       obj.eventInstancePostIds = message.eventInstancePostIds;
     }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      obj.anonymousAttendeeAuthToken = message.anonymousAttendeeAuthToken;
+    }
     return obj;
   },
 
@@ -824,6 +851,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.listingType = object.listingType ?? 0;
     message.searchText = object.searchText ?? undefined;
     message.eventInstancePostIds = object.eventInstancePostIds?.map((e) => e) || [];
+    message.anonymousAttendeeAuthToken = object.anonymousAttendeeAuthToken ?? undefined;
     return message;
   },
 };

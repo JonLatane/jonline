@@ -1916,6 +1916,7 @@ fieldNumbersGetEventsRequest :
     , listingType : Int
     , searchText : Int
     , eventInstancePostIds : Int
+    , anonymousAttendeeAuthToken : Int
     }
 fieldNumbersGetEventsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetEventsRequest

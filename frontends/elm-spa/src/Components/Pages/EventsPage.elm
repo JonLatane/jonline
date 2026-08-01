@@ -508,8 +508,8 @@ anything to offer at all) for the two things that flag/count actually feed.
 -}
 instanceHasStarted : Model -> EventInstance -> Bool
 instanceHasStarted model instance =
-    case ( model.tab, model.endsAfter, Events.instanceStartsOrEndsAt instance ) of
-        ( UpcomingEvents, Just now, Just startsAt ) ->
+    case ( model.endsAfter, Events.instanceStartsOrEndsAt instance ) of
+        ( Just now, Just startsAt ) ->
             Time.posixToMillis startsAt <= Time.posixToMillis now
 
         _ ->
@@ -1361,7 +1361,7 @@ authorHeadingView shared maybeAuthor =
 
 {-| The "hide started events" filter icon button -- self-gating rather than
 gated by its `tabsView` callers: renders `text ""` unless `UpcomingEvents` is
-the active tab *and* `anyStartedEvents` (`EventsAfterDate`'s fixed cutoff has
+the active tab _and_ `anyStartedEvents` (`EventsAfterDate`'s fixed cutoff has
 no "already started" notion to filter by, and there's nothing to toggle when
 nothing's started yet). Toggles `model.hideStartedUpcomingEvents` (see
 `HideStartedUpcomingEventsToggled`), which `hiddenAsStarted`/`syncAnimations`
@@ -1372,36 +1372,31 @@ own active-tab convention) is added while the filter is on.
 -}
 hideStartedButtonView : Model -> Html Msg
 hideStartedButtonView model =
-    case model.tab of
-        UpcomingEvents ->
-            if anyStartedEvents model then
-                button
-                    [ classes
-                        ("events-hide-started-button"
-                            :: (if model.hideStartedUpcomingEvents then
-                                    [ "background-color-primary" ]
+    if anyStartedEvents model then
+        button
+            [ classes
+                ("events-hide-started-button"
+                    :: (if model.hideStartedUpcomingEvents then
+                            [ "background-color-primary" ]
 
-                                else
-                                    []
-                               )
-                        )
-                    , onClick HideStartedUpcomingEventsToggled
-                    , title
-                        (if model.hideStartedUpcomingEvents then
-                            "Showing only events that haven't started"
+                        else
+                            []
+                       )
+                )
+            , onClick HideStartedUpcomingEventsToggled
+            , title
+                (if model.hideStartedUpcomingEvents then
+                    "Showing only events that haven't started"
 
-                         else
-                            "Hide events that have already started"
-                        )
-                    , type_ "button"
-                    ]
-                    [ text "▽" ]
+                 else
+                    "Hide events that have already started"
+                )
+            , type_ "button"
+            ]
+            [ text "▽" ]
 
-            else
-                text ""
-
-        _ ->
-            text ""
+    else
+        text ""
 
 
 {-| The 2 tabs (see `EventsTab`) -- "Upcoming Events" (a plain pill button,

@@ -2719,6 +2719,7 @@ fieldNumbersProto__Jonline__GetEventsRequest :
     , listingType : Int
     , searchText : Int
     , eventInstancePostIds : Int
+    , anonymousAttendeeAuthToken : Int
     }
 fieldNumbersProto__Jonline__GetEventsRequest =
     { eventId = 1
@@ -2732,6 +2733,7 @@ fieldNumbersProto__Jonline__GetEventsRequest =
     , listingType = 10
     , searchText = 11
     , eventInstancePostIds = 12
+    , anonymousAttendeeAuthToken = 13
     }
 
 
@@ -2751,6 +2753,7 @@ defaultProto__Jonline__GetEventsRequest =
     , listingType = Proto.Jonline.EventListingType.defaultEventListingType
     , searchText = Nothing
     , eventInstancePostIds = []
+    , anonymousAttendeeAuthToken = Nothing
     }
 
 
@@ -2792,6 +2795,10 @@ decodeProto__Jonline__GetEventsRequest =
             Protobuf.Decode.string
             .eventInstancePostIds
             (\a r -> { r | eventInstancePostIds = a })
+        , Protobuf.Decode.optional
+            13
+            (Protobuf.Decode.map Just Protobuf.Decode.string)
+            (\a r -> { r | anonymousAttendeeAuthToken = a })
         ]
 
 
@@ -2812,6 +2819,10 @@ encodeProto__Jonline__GetEventsRequest value =
         , ( 10, Proto.Jonline.EventListingType.encodeEventListingType value.listingType )
         , ( 11, (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none) value.searchText )
         , ( 12, (Protobuf.Encode.list Protobuf.Encode.string) value.eventInstancePostIds )
+        , ( 13
+          , (Maybe.map Protobuf.Encode.string >> Maybe.withDefault Protobuf.Encode.none)
+                value.anonymousAttendeeAuthToken
+          )
         ]
 
 
@@ -2830,6 +2841,7 @@ type alias Proto__Jonline__GetEventsRequest =
     , listingType : Proto.Jonline.EventListingType.EventListingType
     , searchText : Maybe String
     , eventInstancePostIds : List String
+    , anonymousAttendeeAuthToken : Maybe String
     }
 
 
