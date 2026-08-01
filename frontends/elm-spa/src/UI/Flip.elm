@@ -1,6 +1,7 @@
 module UI.Flip exposing
     ( Axis(..)
     , MoveState
+    , Rect
     , State
     , animate
     , applyReorder
@@ -9,11 +10,13 @@ module UI.Flip exposing
     , beginReorder
     , enter
     , itemAttributes
+    , measureElementsCmd
     , moveAnimate
     , moveAttributes
     , moveListItemBy
     , moveSubscription
     , reappear
+    , rectsDecoder
     , remove
     , reorderButtonPair
     , reorderButtons
@@ -56,6 +59,9 @@ import Dict exposing (Dict)
 import Html exposing (Attribute, Html, button, div, text)
 import Html.Attributes exposing (class, classList, disabled, title)
 import Html.Events exposing (onClick)
+import Json.Decode as Decode
+import Json.Encode as Encode
+import Ports
 import Task
 
 
@@ -636,6 +642,82 @@ applyReorder axis onSettled id neighborId movedEl neighborEl animations =
     animations
         |> startOrRestart id movedDelta
         |> startOrRestart neighborId neighborDelta
+
+
+{-| A measured element's position/size (page coordinates, matching
+`Browser.Dom.Element.element`'s own convention) -- the "First"/"Last"
+measurement step of FLIP for an arbitrary (non-adjacent-swap) reorder, e.g.
+`Shared.StarredPanel`'s "Group" button. Deliberately not `Browser.Dom.Element`
+itself, same reasoning as `measureElementsCmd`'s own doc: this is what
+`Ports.measureElements` returns instead.
+-}
+type alias Rect =
+    { x : Float
+    , y : Float
+    , width : Float
+    , height : Float
+    }
+
+
+{-| Decodes `Ports.elementsMeasured`'s payload -- keyed by each entry's own
+`key` field (see that port's own doc comment), for `measureElementsCmd`
+callers to run in their `elementsMeasured` subscription handler.
+-}
+rectsDecoder : Decode.Decoder (Dict String Rect)
+rectsDecoder =
+    Decode.map2 Tuple.pair
+        (Decode.field "key" Decode.string)
+        (Decode.map4 Rect
+            (Decode.field "x" Decode.float)
+            (Decode.field "y" Decode.float)
+            (Decode.field "width" Decode.float)
+            (Decode.field "height" Decode.float)
+        )
+        |> Decode.list
+        |> Decode.map Dict.fromList
+
+
+{-| Fires `Ports.measureElements` for every one of `keys`, sending each as a
+`{ key, id }` pair (`id` via caller-supplied `domId`) so `rectsDecoder`'s
+result comes back keyed the same way `keys` itself already is.
+
+A single measured `Browser.Dom.getElement` call (as `beginReorder` above
+uses) is enough for an adjacent two-item swap, since the post-swap position
+of each is derivable analytically from just their pre-swap rects
+(`swapDeltas`) -- no second DOM read needed. An arbitrary reorder (e.g. more
+than two items changing position at once) has no such shortcut: it needs a
+real "measure before, apply the reorder, measure after" round trip. And that
+round trip can't go through `Browser.Dom.getElement` either -- elm/browser's
+kernel wraps *every single call* in its own `requestAnimationFrame`, and
+`Task`s compose strictly sequentially, so measuring N elements via
+`Task.sequence` over N separate `Dom.getElement` calls costs N whole
+animation frames (a highly visible multi-hundred-millisecond gap, confirmed
+by instrumenting a real transition in `Components.Pages.EventsPage`, the
+first caller that needed this). A single port round-trip measures every
+requested id in one JS turn instead, costing the same one turn regardless of
+how many ids are given.
+
+Callers still owe one deliberate `requestAnimationFrame` wait (e.g. a
+throwaway `Task.attempt (\\_ -> ...) Browser.Dom.getViewport`) between
+applying the reorder and firing the second `measureElementsCmd` -- Elm's own
+`Browser.application` runtime defers painting a model change to the *next*
+rAF rather than doing it synchronously when `update` returns, so measuring
+immediately would race ahead of the DOM actually reflecting the new order
+yet, silently measuring the *old* layout twice and animating a zero delta.
+See `Components.Pages.EventsPage`'s `DisplayModeChanged`/`GotMeasuredRects`/
+`ReadyToMeasureNew` for the full recipe this mirrors.
+-}
+measureElementsCmd : (String -> String) -> List String -> Cmd msg
+measureElementsCmd domId keys =
+    keys
+        |> Encode.list
+            (\key ->
+                Encode.object
+                    [ ( "key", Encode.string key )
+                    , ( "id", Encode.string (domId key) )
+                    ]
+            )
+        |> Ports.measureElements
 
 
 

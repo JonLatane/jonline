@@ -42,7 +42,7 @@ import Html.Keyed
 import Json.Decode as Decode
 import Json.Encode as Encode
 import Ports
-import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post)
+import Proto.Jonline exposing (Event, EventInstance, GetEventsResponse, GetPostsResponse, Post, defaultPost)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Set exposing (Set)
@@ -50,7 +50,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
-import UI.Classes exposing (classes, escapeCSSClass, openClosedClass)
+import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 
 
@@ -119,7 +119,26 @@ type alias Model =
     -- every persisted star, so reloading the app doesn't replay their
     -- entrances.
     , starAnimations : Dict String (UI.Flip.State Msg)
+
+    -- Which half (if any) of `OrganizeStarred`'s FLIP measure-reorder-measure
+    -- round trip is in flight -- see `GroupMeasurementPhase`'s own doc.
+    , groupMeasurementPhase : GroupMeasurementPhase
     }
+
+
+{-| Which half of `OrganizeStarred`'s FLIP measurement round-trip (if any)
+`GotMeasuredGroupRects` is currently waiting on -- a port's incoming `Sub` is
+a single, untargeted `Msg`, so there's nothing to pattern match on except
+state carried in the `Model`, same reasoning as
+`Components.Pages.EventsPage.MeasurementPhase` (which this mirrors).
+`AwaitingOldGroupRects` carries the reorder to apply once those rects are in
+hand; `AwaitingNewGroupRects` carries the old rects to diff the eventual new
+ones against.
+-}
+type GroupMeasurementPhase
+    = NotMeasuringGroup
+    | AwaitingOldGroupRects (List String)
+    | AwaitingNewGroupRects (Dict String UI.Flip.Rect)
 
 
 type Msg
@@ -128,6 +147,28 @@ type Msg
     | ToggleStarredPanel
     | CloseStarredPanel
     | EnableServerClicked String
+      -- Unstars a starred post whose own fetch (`PostFetchStatus`) already
+      -- permanently failed -- see `starredPostView`'s `PostFetchFailed`
+      -- branch. Unlike `ToggleStar`, there's no fetched `Post` in hand to
+      -- pass the RPC (that's exactly why this exists), so this carries just
+      -- the failed entry's `key` and rebuilds a minimal `Post` (only `id`
+      -- matters -- `unstar_post.rs` looks up everything else server-side)
+      -- to hand off to the same `ToggleStar` flow.
+    | UnstarFailedPost String
+      -- Reorders `starOrder` so starred Events and Posts are grouped
+      -- together -- see `groupStarredOrder`. Only ever dispatched when both
+      -- are present in the list (`starredPanelHasBothGroups`). Kicks off the
+      -- "measure old positions" half of the FLIP round trip -- see
+      -- `GroupMeasurementPhase`.
+    | OrganizeStarred
+      -- `Ports.elementsMeasured` firing -- which half of `OrganizeStarred`'s
+      -- FLIP round trip this is (if any) is read off `model.groupMeasurementPhase`,
+      -- not this `Msg`'s own (untargeted, port-delivered) payload.
+    | GotMeasuredGroupRects Decode.Value
+      -- One deliberate `requestAnimationFrame` wait between the reorder
+      -- actually landing in the model and firing the *second*
+      -- `UI.Flip.measureElementsCmd` -- see that function's own doc for why.
+    | ReadyToMeasureNewGroupPositions
     | GotStarredPost String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse ))
       -- `kickOffEventFetches`'s batched `GetEvents` reply for one server's
       -- worth of `EVENT_INSTANCE`-context starred posts -- `host`/the
@@ -172,6 +213,7 @@ init flags =
     -- entry as "just appeared" -- doesn't replay every star's entrance on
     -- every reload.
     , starAnimations = persistedOrder |> List.map (\key -> ( key, UI.Flip.restingState )) |> Dict.fromList
+    , groupMeasurementPhase = NotMeasuringGroup
     }
 
 
@@ -212,6 +254,7 @@ page that edits and re-saves a `Post` (e.g. `Pages.Post.PostId_`'s visibility/
 content editors) must also feed its freshly-saved copy back in here (see
 `PostUpdated`), or this cache entry goes stale and `freshestPost` keeps
 serving the old one right back to it.
+
 -}
 freshestPost : String -> Post -> Model -> Post
 freshestPost frontendHost post model =
@@ -450,6 +493,91 @@ updateHelp accountsPanelModel msg model =
             -- other reconnect (see `Shared.starredPostsRefreshHosts`).
             ( model, Cmd.none, Just (AccountsPanel.ToggleServerEnabled host) )
 
+        UnstarFailedPost key ->
+            -- Rebuilds just enough of a `Post` (only `id` matters -- see this
+            -- constructor's own doc) to hand off to `ToggleStar`'s existing
+            -- unstar path (RPC + fade-out), same as clicking "unstar" on a
+            -- post we actually managed to load.
+            case
+                parseStarKey key
+                    |> Maybe.andThen (\( postId, host ) -> toggleStarMsg accountsPanelModel host { defaultPost | id = postId })
+            of
+                Just toggleMsg ->
+                    updateHelp accountsPanelModel toggleMsg model
+
+                Nothing ->
+                    ( model, Cmd.none, Nothing )
+
+        OrganizeStarred ->
+            ( { model | groupMeasurementPhase = AwaitingOldGroupRects (groupStarredOrder model) }
+            , UI.Flip.measureElementsCmd starEntryDomId model.starOrder
+            , Nothing
+            )
+
+        GotMeasuredGroupRects value ->
+            case Decode.decodeValue UI.Flip.rectsDecoder value of
+                Err _ ->
+                    let
+                        ( newModel, cmd ) =
+                            applyGroupMeasurementFailure model
+                    in
+                    ( newModel, cmd, Nothing )
+
+                Ok rects ->
+                    case model.groupMeasurementPhase of
+                        NotMeasuringGroup ->
+                            -- A stray/late result with nothing pending (e.g.
+                            -- from some other `UI.Flip.measureElementsCmd`
+                            -- caller elsewhere in the app, since
+                            -- `Ports.elementsMeasured` is a single shared
+                            -- port) -- ignore.
+                            ( model, Cmd.none, Nothing )
+
+                        AwaitingOldGroupRects newOrder ->
+                            let
+                                newModel =
+                                    { model | starOrder = newOrder, groupMeasurementPhase = AwaitingNewGroupRects rects }
+                            in
+                            ( newModel
+                            , Cmd.batch
+                                [ persistCmd newOrder
+                                , Task.attempt (\_ -> ReadyToMeasureNewGroupPositions) Dom.getViewport
+                                ]
+                            , Nothing
+                            )
+
+                        AwaitingNewGroupRects oldRects ->
+                            let
+                                startMoveFor key oldRect anims =
+                                    case Dict.get key rects of
+                                        Just newRect ->
+                                            Dict.insert key
+                                                (UI.Flip.startMove (MoveSettled key)
+                                                    ( oldRect.x - newRect.x, oldRect.y - newRect.y )
+                                                    (Dict.get key anims |> Maybe.withDefault UI.Flip.atRest)
+                                                )
+                                                anims
+
+                                        Nothing ->
+                                            anims
+                            in
+                            ( { model
+                                | moveAnimations = Dict.foldl startMoveFor model.moveAnimations oldRects
+                                , groupMeasurementPhase = NotMeasuringGroup
+                              }
+                            , Cmd.none
+                            , Nothing
+                            )
+
+        ReadyToMeasureNewGroupPositions ->
+            case model.groupMeasurementPhase of
+                AwaitingNewGroupRects oldRects ->
+                    ( model, UI.Flip.measureElementsCmd starEntryDomId (Dict.keys oldRects), Nothing )
+
+                _ ->
+                    -- Nothing pending anymore -- ignore.
+                    ( model, Cmd.none, Nothing )
+
         PollStarredPosts ->
             let
                 ( fetchedModel, cmd ) =
@@ -628,6 +756,16 @@ subscriptions model =
     Sub.batch
         [ if model.showStarredPanel then
             UI.Flip.moveSubscription AnimateMove (Dict.values model.moveAnimations)
+
+          else
+            Sub.none
+
+        -- `OrganizeStarred`'s own FLIP round trip (see `GroupMeasurementPhase`)
+        -- -- like `AnimateMove` above, only dispatchable from the open panel
+        -- (`OrganizeStarred`'s button only renders there), so gated the same
+        -- way.
+        , if model.showStarredPanel then
+            Ports.elementsMeasured GotMeasuredGroupRects
 
           else
             Sub.none
@@ -887,6 +1025,78 @@ toggleStarMsg accountsPanelModel host post =
         |> Maybe.map (\server -> ToggleStar server post)
 
 
+{-| Whether the starred entry `key` is a starred Event (i.e. its fetched
+`Post`'s `context` is `EVENTINSTANCE` -- see `starredEventInstanceView`).
+An entry that's still loading, failed, or unavailable is treated as not an
+Event -- its actual context isn't known yet, and `groupStarredOrder` needs
+_some_ answer for every key in `starOrder`.
+-}
+isEventKey : Model -> String -> Bool
+isEventKey model key =
+    case Dict.get key model.posts of
+        Just (PostFetchLoaded _ post) ->
+            post.context == EVENTINSTANCE
+
+        _ ->
+            False
+
+
+{-| Whether the "Organize" button (`OrganizeStarred`) should show at all -- only
+worth offering when `starOrder` actually mixes both kinds, per `isEventKey`.
+-}
+starredPanelHasBothGroups : Model -> Bool
+starredPanelHasBothGroups model =
+    List.any (isEventKey model) model.starOrder && List.any (not << isEventKey model) model.starOrder
+
+
+{-| `OrganizeStarred`'s reorder: partitions `starOrder` into Events and Posts,
+each keeping its original relative order (`List.partition` is stable) --
+then, if `starOrder` isn't already exactly "all Events, then all Posts",
+returns that arrangement. If it already is (i.e. this is a second click),
+flips to "all Posts, then all Events" instead, so the button toggles between
+the two groupings rather than being a no-op once already grouped.
+-}
+groupStarredOrder : Model -> List String
+groupStarredOrder model =
+    let
+        ( events, posts ) =
+            List.partition (isEventKey model) model.starOrder
+
+        eventsFirst =
+            events ++ posts
+    in
+    if model.starOrder == eventsFirst then
+        posts ++ events
+
+    else
+        eventsFirst
+
+
+{-| `GotMeasuredGroupRects`'s fallback for a payload that failed to decode
+(should never actually happen -- `Ports.measureElements`'s JS side always
+sends a well-formed array -- but mirrors
+`Components.Pages.EventsPage.applyMeasurementFailure`'s "give up silently"
+convention regardless): still applies a pending reorder if
+`model.groupMeasurementPhase` had one in flight, just with no slide
+animation, rather than leaving the click seemingly do nothing.
+-}
+applyGroupMeasurementFailure : Model -> ( Model, Cmd Msg )
+applyGroupMeasurementFailure model =
+    case model.groupMeasurementPhase of
+        NotMeasuringGroup ->
+            ( model, Cmd.none )
+
+        AwaitingOldGroupRects newOrder ->
+            let
+                newModel =
+                    { model | starOrder = newOrder, groupMeasurementPhase = NotMeasuringGroup }
+            in
+            ( newModel, persistCmd newOrder )
+
+        AwaitingNewGroupRects _ ->
+            ( { model | groupMeasurementPhase = NotMeasuringGroup }, Cmd.none )
+
+
 
 -- VIEW
 
@@ -909,7 +1119,20 @@ view browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceI
             List.length model.starOrder
     in
     div [ classes [ "starred-panel", "nav-panel", stateClass ] ]
-        (div [ class "starred-panel-header" ] [ text "Starred" ]
+        (div [ class "starred-panel-header" ]
+            (text "Starred"
+                :: (if starredPanelHasBothGroups model then
+                        [ button
+                            [ classes [ "starred-panel-organize-button", "background-color-nav" ]
+                            , onClick OrganizeStarred
+                            ]
+                            [ text "Organize" ]
+                        ]
+
+                    else
+                        []
+                   )
+            )
             :: (if Set.isEmpty model.starredPostIds then
                     [ div [ class "starred-panel-empty" ] [ text "No starred posts yet." ] ]
 
@@ -1022,7 +1245,17 @@ starredPostView browserTimeZone basePath accountsPanelModel currentPostKey curre
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
 
         Just PostFetchFailed ->
-            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Post " ++ key ++ ". Maybe it doesn't exist, or maybe you need to be logged in?") ]
+            let
+                host =
+                    String.split "@" key
+                        |> List.reverse
+                        |> List.head
+                        |> Maybe.withDefault ""
+            in
+            div [ classes [ hostnameToCSSClass host, "starred-post-entry", "post-error" ] ]
+                [ text ("Couldn't load Post " ++ key ++ ". Maybe it doesn't exist, or maybe you need to be logged in?")
+                , button [ onClick (UnstarFailedPost key), class "background-color-primary" ] [ text "Unstar" ]
+                ]
 
         Just ServerUnavailable ->
             let

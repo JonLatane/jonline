@@ -388,7 +388,7 @@ instanceMatchesHistoryDisplay now mode instance =
 
 instanceAtOrAfter : Time.Posix -> EventInstance -> Bool
 instanceAtOrAfter threshold instance =
-    case Events.instanceMoment instance of
+    case Events.instanceEndsOrStartsAt instance of
         Just moment ->
             Time.posixToMillis moment >= Time.posixToMillis threshold
 

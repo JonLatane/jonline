@@ -8,7 +8,8 @@ module Components.Events exposing
     , fetchEventsByInstancePostIds
     , findInstance
     , instanceDateText
-    , instanceMoment
+    , instanceEndsOrStartsAt
+    , instanceStartsOrEndsAt
     , instanceTimeRangeText
     , locationText
     , meaningfulPost
@@ -119,6 +120,7 @@ way -- `get_search_events` (the `EVENT_TEXT_SEARCH` branch of
 `backend/src/rpcs/events/get_events.rs`) still filters on it, so a search
 made while on the "Upcoming Events" tab only searches upcoming events, not
 every event ever.
+
 -}
 fetchEvents :
     AccountsPanel.Model
@@ -168,7 +170,7 @@ module's own doc) and, for whichever of those turn out to be an
 `Event`/`EventInstance` data `Components.Events.eventCard` needs to render
 them -- one batched request per server rather than one per starred
 `EventInstance` post. Unlike `fetchEvent`'s single `event_instance_id`
-request (which returns the whole parent `Event` with *every* one of its
+request (which returns the whole parent `Event` with _every_ one of its
 instances, for the single-event detail page's date-picker strip), this
 mirrors `fetchEvents`' own "one `Event` entry per matching `EventInstance`"
 shape (see `eventInstancePairs`) -- each requested post id resolves to
@@ -269,14 +271,31 @@ neither is. Used both for filtering/sorting an `Event`'s instances by
 recency (see `Pages.Event.EventId_`'s `InstanceHistoryDisplay`) and, via
 `instanceDateText`, for display.
 -}
-instanceMoment : EventInstance -> Maybe Time.Posix
-instanceMoment instance =
+instanceEndsOrStartsAt : EventInstance -> Maybe Time.Posix
+instanceEndsOrStartsAt instance =
     case instance.endsAt of
         Just ts ->
             Just (timestampToPosix ts)
 
         Nothing ->
             instance.startsAt |> Maybe.map timestampToPosix
+
+
+{-| The instant `instance` begins -- `startsAt` if set, falling back to
+`endsAt` (at least one of the two should always be set), `Nothing` only if
+neither is. Unlike `instanceMoment` (which prefers `endsAt`, so an ongoing
+event still counts as "current"), this is for chronological sorting -- e.g.
+`Components.Pages.EventsPage.visibleAnimations`, which lists soonest-to-start
+first.
+-}
+instanceStartsOrEndsAt : EventInstance -> Maybe Time.Posix
+instanceStartsOrEndsAt instance =
+    case instance.startsAt of
+        Just ts ->
+            Just (timestampToPosix ts)
+
+        Nothing ->
+            instance.endsAt |> Maybe.map timestampToPosix
 
 
 {-| A compact, date-only label for `instance` (in `browserTimeZone`) -- e.g.
@@ -490,6 +509,7 @@ class, mirroring `post-card-current`) instead of the default
 `EventInstance` the viewer is already on. `Shared.StarredPanel` is the only
 caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 `Components.Pages.EventsPage`'s own listing always passes `False`.
+
 -}
 eventCard :
     BrowserTimeZone

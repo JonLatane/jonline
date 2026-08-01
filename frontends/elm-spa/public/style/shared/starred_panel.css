@@ -96,6 +96,24 @@
 
 .starred-panel-header {
   font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+/* Only rendered when both starred Events and starred Posts are present
+   (`starredPanelHasBothGroups`) -- toggles `OrganizeStarred`'s reorder. Not
+   bold like the rest of the header, and sized down to fit inline with it.
+   Its background/text color come from the emitted `mainFrontendHost
+   background-color-nav` rule (see `UI.EmittedStylesheet`), same as
+   `.starred-count-badge` above -- picked up from the `.navbar` ancestor's own
+   hostname class (`UI.elm`'s `headerNav`), since `.starred-panel` renders as
+   a direct child of `.navbar` (see that class's own doc above). */
+.starred-panel-organize-button {
+  font-weight: 400;
+  font-size: 0.8rem;
+  padding: 0.2rem 0.5rem;
 }
 
 .starred-panel-empty {
@@ -131,6 +149,12 @@
      the row instead of filling the space next to the reorder buttons. */
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.starred-post-entry .multi-media-single,
+.starred-post-entry .multi-media-preview,
+.starred-post-entry jonline-markdown {
+  display: none;
 }
 
 .flip-animated-item.flip-moving .starred-post-entry .post-card,

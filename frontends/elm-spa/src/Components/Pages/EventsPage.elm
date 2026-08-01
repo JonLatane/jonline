@@ -539,10 +539,13 @@ maxDisplayedEvents model =
 from this exact same list, so a card excluded here is never measured or
 animated either.
 
-Only sorted soonest-first (mirrors `PostsPage.postsListView`'s own per-item
+Only sorted soonest-to-start (mirrors `PostsPage.postsListView`'s own per-item
 sort key) when `model.searchText` is empty -- an active text search's results
 come back relevance-ranked, and re-sorting by start time here would throw
-that ranking away.
+that ranking away. Sorts by `Events.instanceStartsAtOrEndsAt`, not `instanceMoment`
+-- the latter prefers `endsAt` (its own "is this still current" reasoning),
+which would order this list by end time instead.
+
 -}
 visibleAnimations : Model -> List ( String, EventAnimation )
 visibleAnimations model =
@@ -551,7 +554,7 @@ visibleAnimations model =
         |> (if String.isEmpty (String.trim model.searchText) then
                 List.sortBy
                     (\( _, anim ) ->
-                        Events.instanceMoment anim.instance
+                        Events.instanceStartsOrEndsAt anim.instance
                             |> Maybe.withDefault (Time.millisToPosix 0)
                             |> Time.posixToMillis
                     )

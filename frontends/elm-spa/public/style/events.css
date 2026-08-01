@@ -456,7 +456,7 @@
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;
-  justify-content: center;
+  /* justify-content: center; */
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;
@@ -490,7 +490,7 @@
 .events-grid {
   align-items: center;
   row-gap: 0.8rem;
-  justify-content: center;
+  /* justify-content: center; */
 }
 
 /* `Grid`/`HorizontalList` cards are a fixed tile width; `VerticalList`'s own

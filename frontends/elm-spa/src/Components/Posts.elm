@@ -4,12 +4,14 @@ module Components.Posts exposing
     , allowedVisibilities
     , commentCountText
     , contentPreviewFadeThreshold
+    , deletePost
     , fetchAncestors
     , fetchPost
     , fetchPosts
     , fetchReplies
     , isAuthor
     , mediaEditButton
+    , moderationFromText
     , parsePostRouteId
     , postCard
     , postCommentCount
@@ -25,8 +27,6 @@ module Components.Posts exposing
     , starButton
     , stripLinkScheme
     , timestampsText
-    , deletePost
-    , moderationFromText
     , updatePost
     , visibilityFromText
     , visibilityText
@@ -551,7 +551,7 @@ postContextLabel context =
             Just "Event"
 
         EVENTINSTANCE ->
-            Just "Event Instance"
+            Nothing
 
         FEDERATEDREPLY ->
             Just "Federated Reply"
