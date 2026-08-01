@@ -1232,7 +1232,7 @@ with `serversStrip` for a first-time visitor's attention. Its own
 `panel-divider` sits above it, packaged into this same `Bool`-gated block so
 it only shows up alongside the section itself -- `accountsAndServersTab`'s
 own (unconditional) divider right after this one already serves as this
-section's *bottom* divider, whether or not this one renders anything above
+section's _bottom_ divider, whether or not this one renders anything above
 it. Renders nothing at all once there's nothing left to recommend.
 -}
 recommendedServersStrip : Shared.Model -> Html Shared.Msg
@@ -2479,9 +2479,9 @@ and not meant to be chosen going forward.
 webUiToggleRow : String -> String -> WebUserInterface -> Html Shared.Msg
 webUiToggleRow id serverHost currentUi =
     div [ class "web-ui-toggle-row" ]
-        [ webUiButton "Flutter" True (currentUi == FLUTTERWEB) serverHost (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
+        [ webUiButton "Elm" False (currentUi == ELMSPA) serverHost (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
         , webUiButton "React" False (currentUi == REACTTAMAGUI) serverHost (AccountsPanel.SetWebUserInterfaceClicked id REACTTAMAGUI)
-        , webUiButton "Elm" False (currentUi == ELMSPA) serverHost (AccountsPanel.SetWebUserInterfaceClicked id ELMSPA)
+        , webUiButton "Flutter" True (currentUi == FLUTTERWEB) serverHost (AccountsPanel.SetWebUserInterfaceClicked id FLUTTERWEB)
         ]
 
 
