@@ -374,10 +374,17 @@ there's no title-vs-context-chip branching here: both an `Event`'s and an
 doc on `EventInstance.post`), not a generic reply/thread entry, so both
 always get a real heading. Deliberately lighter than `postDetail` otherwise
 too -- no star/edit/reply affordances baked in here, since this was
-originally a read-only invitation-style view -- `moderationView` is the one
-exception (see its own doc just below), everything else `Pages.Event.EventId_`
-needs to edit (title/link/content, delete) is composed around this function
-rather than plumbed through it.
+originally a read-only invitation-style view -- `moderationView` and the
+three `*Override`s are the exceptions (see their own docs just below).
+
+`titleOverride`/`linkOverride`/`contentOverride` each replace that one
+field's normal display when `Just`, so `Pages.Event.EventId_` can inline its
+own per-field display (plain text/link/Markdown plus its own "Edit X"
+button) or, while that field's being edited, its edit form -- right in
+place, without hiding the rest of the section the way swapping out this
+whole function's result would. `Nothing` (always, for the secondary
+`EventInstance` section, which isn't editable this way) falls back to the
+plain-text/link/Markdown rendering below.
 
 `moderationView` sits right after the visibility text in the byline --
 `Pages.Event.EventId_`'s moderation selector for the primary (`Event`)
@@ -400,11 +407,14 @@ postSection :
     -> Maybe AccountsPanel.Account
     -> (String -> msg)
     -> Bool
+    -> Maybe (Html msg)
+    -> Maybe (Html msg)
+    -> Maybe (Html msg)
     -> Html msg
     -> Html msg
     -> Post
     -> Html msg
-postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary moderationView extraContent post =
+postSection browserTimeZone basePath viewingServerHost postServerHost maybeServer maybeAccount onMediaClicked primary titleOverride linkOverride contentOverride moderationView extraContent post =
     div
         [ classes
             [ "event-post-section"
@@ -416,23 +426,32 @@ postSection browserTimeZone basePath viewingServerHost postServerHost maybeServe
                 "event-post-secondary"
             ]
         ]
-        [ if primary then
-            h1 [ class "event-post-title" ] [ text (Posts.postTitleText post) ]
+        [ let
+            titleContent =
+                Maybe.withDefault (text (Posts.postTitleText post)) titleOverride
+          in
+          if primary then
+            h1 [ class "event-post-title" ] [ titleContent ]
 
           else
-            h2 [ class "event-post-title" ] [ text (Posts.postTitleText post) ]
-        , case Posts.postLinkText post of
-            Just link ->
-                a
-                    [ href link
-                    , target "_blank"
-                    , rel "noopener noreferrer"
-                    , classes [ hostnameToCSSClass postServerHost, "event-post-link" ]
-                    ]
-                    [ text link ]
+            h2 [ class "event-post-title" ] [ titleContent ]
+        , case linkOverride of
+            Just override ->
+                override
 
             Nothing ->
-                text ""
+                case Posts.postLinkText post of
+                    Just link ->
+                        a
+                            [ href link
+                            , target "_blank"
+                            , rel "noopener noreferrer"
+                            , classes [ hostnameToCSSClass postServerHost, "event-post-link" ]
+                            ]
+                            [ text link ]
+
+                    Nothing ->
+                        text ""
         , div [ class "event-post-meta" ]
             [ text "by "
             , Authors.link basePath viewingServerHost postServerHost maybeServer maybeAccount post.author
@@ -446,12 +465,17 @@ postSection browserTimeZone basePath viewingServerHost postServerHost maybeServe
 
             Nothing ->
                 text ""
-        , case post.content of
-            Just content ->
-                Markdown.view [ class "event-post-content" ] content
+        , case contentOverride of
+            Just override ->
+                override
 
             Nothing ->
-                text ""
+                case post.content of
+                    Just content ->
+                        Markdown.view [ class "event-post-content" ] content
+
+                    Nothing ->
+                        text ""
         ]
 
 

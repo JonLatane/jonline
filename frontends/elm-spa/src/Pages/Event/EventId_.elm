@@ -19,6 +19,7 @@ exactly what makes the date-picker strip possible without a second request.
 import Animation
 import Browser.Dom as Dom
 import Components.Events as Events
+import Components.Markdown as Markdown
 import Components.Posts as Posts
 import Components.ServerDependentView as ServerDependentView
 import Components.Users as Users
@@ -27,8 +28,8 @@ import Effect exposing (Effect)
 import Gen.Params.Event.EventId_ exposing (Params)
 import Gen.Route
 import Grpc
-import Html exposing (Html, a, button, div, option, p, select, span, text, textarea)
-import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, selected, title, type_, value)
+import Html exposing (Html, a, button, div, option, p, select, span, text)
+import Html.Attributes exposing (attribute, class, disabled, href, id, placeholder, rel, selected, target, title, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Json.Encode as Encode
 import Page
@@ -42,6 +43,7 @@ import Request
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Shared.StarredPanel as StarredPanel
@@ -120,22 +122,34 @@ type SubmitStatus
     | SubmitFailed String
 
 
-{-| Live only while `postFieldsEditView` is open, editing the `Event`'s own
-primary `Post` -- `pending*` are the in-progress `<input>`/`<textarea>`
-values, independent of the loaded `Post`'s own fields until
-`PostFieldsSaveClicked` succeeds. Mirrors `Pages.Post.PostId_.VisibilityEdit`,
-just over 3 fields instead of one.
+{-| Which one of the `Event`'s own primary `Post`'s title/link fields
+`postFieldEditFormView` is currently editing -- each gets its own "Edit X"
+button (see `postFieldEditButtonView`), so only one of the two is ever live
+at a time. Content isn't a `PostField` -- its own "Edit Content" button
+(`EditContentClicked`) opens the shared `Shared.MarkdownPanel` instead,
+mirroring `Pages.Post.PostId_`'s own content-editing UX exactly rather than
+this plain-`<input>` form, which wouldn't suit Markdown well.
 -}
-type alias PostFieldsEdit =
-    { pendingTitle : String
-    , pendingLink : String
-    , pendingContent : String
+type PostField
+    = TitleField
+    | LinkField
+
+
+{-| Live only while `postFieldEditFormView` is open for `field`, editing the
+`Event`'s own primary `Post` -- `pending` is the in-progress `<input>`
+value, independent of the loaded `Post`'s own field until
+`PostFieldSaveClicked` succeeds. Mirrors `Pages.Post.PostId_.VisibilityEdit`,
+just parameterized over which field it's editing.
+-}
+type alias PostFieldEdit =
+    { field : PostField
+    , pending : String
     , status : SubmitStatus
     }
 
 
 {-| Live only while the moderation-status selector is open -- mirrors
-`PostFieldsEdit` in shape, `Pages.Post.PostId_.VisibilityEdit` in spirit.
+`PostFieldEdit` in shape, `Pages.Post.PostId_.VisibilityEdit` in spirit.
 -}
 type alias ModerationEdit =
     { pending : Moderation
@@ -165,14 +179,15 @@ type alias Model =
     -- why this gating is needed at all.
     , mediaEditActive : Bool
 
-    -- Live only while the title/link/content editor (see `postFieldsEditView`)
-    -- is open, for the `Event`'s own primary `Post` -- mirrors
-    -- `Pages.Post.PostId_.Model.visibilityEdit` (a `pending`-vs-loaded split,
-    -- independent until save succeeds), just over 3 fields instead of one.
-    , postFieldsEdit : Maybe PostFieldsEdit
+    -- Live only while one of the title/link/content editors (see
+    -- `postFieldEditFormView`) is open, for the `Event`'s own primary `Post`
+    -- -- mirrors `Pages.Post.PostId_.Model.visibilityEdit` (a
+    -- `pending`-vs-loaded split, independent until save succeeds), just over
+    -- 3 possible fields instead of one, only one live at a time.
+    , postFieldEdit : Maybe PostFieldEdit
 
     -- Live only while the moderation-status selector (see `moderationView`)
-    -- is open -- mirrors `postFieldsEdit` in shape.
+    -- is open -- mirrors `postFieldEdit` in shape.
     , moderationEdit : Maybe ModerationEdit
     }
 
@@ -195,7 +210,7 @@ init shared params =
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
                 , mediaEditActive = False
-                , postFieldsEdit = Nothing
+                , postFieldEdit = Nothing
                 , moderationEdit = Nothing
                 }
     in
@@ -229,6 +244,22 @@ fetchIfReady shared model =
 
             Nothing ->
                 ( model, Effect.none )
+
+
+{-| Mirrors `Pages.Post.PostId_.refetch` exactly -- re-fetches the Event
+unconditionally (unlike `fetchIfReady`, not gated on `fetchStarted`, which is
+already `True` by the time this is ever called) -- for `update`'s `SharedMsg`
+branch to call once the Markdown panel (see `Shared.MarkdownPanel`) reports a
+successful save to the Event's own primary `Post`'s content
+(`EditContentClicked`/`MarkdownPanel.PostContent`).
+-}
+refetch : Shared.Model -> Model -> ( Model, Effect Msg )
+refetch shared model =
+    ( model
+    , Events.fetchEvent shared.accountsPanel (maybeAccountServerFor shared model) model.eventId
+        |> Task.attempt GotEvent
+        |> Effect.fromCmd
+    )
 
 
 maybeAccountServerFor : Shared.Model -> Model -> AccountsPanel.MaybeAccountServer
@@ -270,9 +301,9 @@ applyUpdatedEventPost model updatedPost =
 
 
 {-| `Just text` unless `text` is blank, `Nothing` otherwise -- used by
-`PostFieldsSaveClicked` to translate an edit form's plain `String` inputs
-into `Post.title`/`Post.link`/`Post.content`'s own `Maybe String`, matching
-how an empty field means "unset" everywhere else these fields are read (e.g.
+`PostFieldSaveClicked` to translate an edit form's plain `String` input into
+`Post.title`/`Post.link`/`Post.content`'s own `Maybe String`, matching how an
+empty field means "unset" everywhere else these fields are read (e.g.
 `Components.Posts.postLinkText`).
 -}
 nonBlank : String -> Maybe String
@@ -302,19 +333,24 @@ type Msg
       -- is needed just to change which media this Post carries.
     | MediaEditClicked Post
     | GotMediaUpdateResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
-      -- The Event's own `Post`'s title/link/content editor (see
-      -- `postFieldsEditView`) -- shown to the post's own author or an Admin
-      -- (see `postFieldsEditButtonView`), submitted via plain `UpdatePost`
-      -- (`Posts.updatePost`) the same way `MediaEditClicked`'s save is,
-      -- rather than the heavier `UpdateEvent` (see that `Msg`'s own doc for
-      -- why).
-    | PostFieldsEditClicked Post
-    | PostFieldsTitleChanged String
-    | PostFieldsLinkChanged String
-    | PostFieldsContentChanged String
-    | PostFieldsCancelClicked
-    | PostFieldsSaveClicked Post
-    | GotPostFieldsSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- One of the Event's own `Post`'s title/link editors (see
+      -- `postFieldEditFormView`) -- each shown to the post's own author or
+      -- an Admin via its own "Edit X" button (see `postFieldEditButtonView`),
+      -- submitted via plain `UpdatePost` (`Posts.updatePost`) the same way
+      -- `MediaEditClicked`'s save is, rather than the heavier `UpdateEvent`
+      -- (see that `Msg`'s own doc for why).
+    | PostFieldEditClicked PostField Post
+    | PostFieldChanged String
+    | PostFieldCancelClicked
+    | PostFieldSaveClicked Post
+    | GotPostFieldSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, Post ))
+      -- The Event's own `Post`'s "Edit Content" button (see
+      -- `contentDisplayView`) -- opens the shared Markdown editor panel,
+      -- mirroring `Pages.Post.PostId_.EditClicked` exactly (down to reusing
+      -- `MarkdownPanel.PostContent`); its result
+      -- (`Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _))`) is
+      -- picked up in `SharedMsg` below, the same way `EditClicked`'s is there.
+    | EditContentClicked Post
       -- The Event's own `Post`'s moderation-status selector (see
       -- `moderationView`) -- shown to an Admin or a `MODERATEEVENTS` holder,
       -- also submitted via plain `UpdatePost`.
@@ -670,69 +706,72 @@ update shared req msg model =
         GotMediaUpdateResult (Err _) ->
             ( model, Effect.none )
 
-        PostFieldsEditClicked post ->
+        PostFieldEditClicked field post ->
             ( { model
-                | postFieldsEdit =
+                | postFieldEdit =
                     Just
-                        { pendingTitle = Maybe.withDefault "" post.title
-                        , pendingLink = Maybe.withDefault "" post.link
-                        , pendingContent = Maybe.withDefault "" post.content
+                        { field = field
+                        , pending =
+                            case field of
+                                TitleField ->
+                                    Maybe.withDefault "" post.title
+
+                                LinkField ->
+                                    Maybe.withDefault "" post.link
                         , status = Idle
                         }
               }
             , Effect.none
             )
 
-        PostFieldsTitleChanged text ->
-            ( { model | postFieldsEdit = model.postFieldsEdit |> Maybe.map (\edit -> { edit | pendingTitle = text }) }, Effect.none )
+        PostFieldChanged text ->
+            ( { model | postFieldEdit = model.postFieldEdit |> Maybe.map (\edit -> { edit | pending = text }) }, Effect.none )
 
-        PostFieldsLinkChanged text ->
-            ( { model | postFieldsEdit = model.postFieldsEdit |> Maybe.map (\edit -> { edit | pendingLink = text }) }, Effect.none )
+        PostFieldCancelClicked ->
+            ( { model | postFieldEdit = Nothing }, Effect.none )
 
-        PostFieldsContentChanged text ->
-            ( { model | postFieldsEdit = model.postFieldsEdit |> Maybe.map (\edit -> { edit | pendingContent = text }) }, Effect.none )
-
-        PostFieldsCancelClicked ->
-            ( { model | postFieldsEdit = Nothing }, Effect.none )
-
-        PostFieldsSaveClicked post ->
-            case ( model.postFieldsEdit, serverAndAccount shared model ) of
+        PostFieldSaveClicked post ->
+            case ( model.postFieldEdit, serverAndAccount shared model ) of
                 ( Just edit, Just ( server, account ) ) ->
-                    ( { model | postFieldsEdit = Just { edit | status = Submitting } }
+                    ( { model | postFieldEdit = Just { edit | status = Submitting } }
                     , Posts.updatePost
                         shared.accountsPanel
                         ( Just account.userId, server.frontendHost )
                         post.id
                         (\freshPost ->
-                            { freshPost
-                                | title = nonBlank edit.pendingTitle
-                                , link = nonBlank edit.pendingLink
-                                , content = nonBlank edit.pendingContent
-                            }
+                            case edit.field of
+                                TitleField ->
+                                    { freshPost | title = nonBlank edit.pending }
+
+                                LinkField ->
+                                    { freshPost | link = nonBlank edit.pending }
                         )
-                        |> Task.attempt GotPostFieldsSaveResult
+                        |> Task.attempt GotPostFieldSaveResult
                         |> Effect.fromCmd
                     )
 
                 _ ->
                     ( model, Effect.none )
 
-        GotPostFieldsSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
+        GotPostFieldSaveResult (Ok ( maybeAccountsPanelMsg, updatedPost )) ->
             let
                 updatedModel =
                     applyUpdatedEventPost model updatedPost
             in
-            ( { updatedModel | postFieldsEdit = Nothing }
+            ( { updatedModel | postFieldEdit = Nothing }
             , accountsPanelEffect maybeAccountsPanelMsg
             )
 
-        GotPostFieldsSaveResult (Err err) ->
+        GotPostFieldSaveResult (Err err) ->
             ( { model
-                | postFieldsEdit =
-                    model.postFieldsEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
+                | postFieldEdit =
+                    model.postFieldEdit |> Maybe.map (\edit -> { edit | status = SubmitFailed (AccountsPanel.grpcErrorToString err) })
               }
             , Effect.none
             )
+
+        EditContentClicked post ->
+            ( model, Effect.fromShared (Shared.MarkdownPanelMsg (MarkdownPanel.Open (MarkdownPanel.PostContent post) model.targetHost)) )
 
         ModerationEditClicked event ->
             case event.post of
@@ -873,6 +912,15 @@ update shared req msg model =
                     case subMsg of
                         Shared.AccountsPanelMsg _ ->
                             fetchIfReady shared model
+
+                        -- `EditContentClicked`'s own Markdown panel save
+                        -- succeeding -- mirrors `Pages.Post.PostId_`'s
+                        -- identical branch, re-fetching the whole Event
+                        -- (`refetch`) rather than re-fetching just the Post,
+                        -- since there's no lighter-weight fetch for a single
+                        -- Post already scoped to this page.
+                        Shared.MarkdownPanelMsg (MarkdownPanel.GotSaveResult (Ok _)) ->
+                            refetch shared model
 
                         -- See `Pages.Post.PostId_`'s own identical branch --
                         -- `mediaEditActive` (set by `MediaEditClicked`) gates
@@ -1028,30 +1076,25 @@ eventDetailView shared model event instance =
     div [ classes [ "event-detail", hostnameToCSSClass model.targetHost, "border-color-primary-anchor-50" ] ]
         [ case event.post of
             Just eventPost ->
-                case model.postFieldsEdit of
-                    Just edit ->
-                        postFieldsEditView edit eventPost
-
-                    Nothing ->
-                        div []
-                            [ postSection
-                                (MediaClicked eventPost)
-                                True
-                                (moderationView maybeAccount model.moderationEdit event eventPost)
-                                instanceDetailAndStrip
-                                eventPost
-                            , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
-                            , div [ class "event-post-edit-row" ]
-                                [ postFieldsEditButtonView maybeAccount eventPost
-                                , deleteButtonView maybeAccount event eventPost
-                                ]
-                            ]
+                div []
+                    [ postSection
+                        (MediaClicked eventPost)
+                        True
+                        (Just (titleView model.postFieldEdit maybeAccount eventPost))
+                        (Just (linkView model.postFieldEdit maybeAccount eventPost))
+                        (Just (contentDisplayView maybeAccount eventPost))
+                        (moderationView maybeAccount model.moderationEdit event eventPost)
+                        instanceDetailAndStrip
+                        eventPost
+                    , div [ class "event-post-media-edit-row" ] [ Posts.mediaEditButton maybeAccount (MediaEditClicked eventPost) eventPost ]
+                    , div [ class "post-detail-edit-row" ] [ deleteButtonView maybeAccount event eventPost ]
+                    ]
 
             Nothing ->
                 text ""
         , case instance.post |> Maybe.andThen Events.meaningfulPost of
             Just instancePost ->
-                postSection (MediaClicked instancePost) False (text "") (text "") instancePost
+                postSection (MediaClicked instancePost) False Nothing Nothing Nothing (text "") (text "") instancePost
 
             Nothing ->
                 text ""
@@ -1060,79 +1103,199 @@ eventDetailView shared model event instance =
         ]
 
 
-{-| The Event's own `Post`'s title/link/content edit form -- replaces
-`postSection` entirely while open (see `eventDetailView`), rather than
-overlaying it, so there's no confusing duplicate display of the same fields
-being edited. Mirrors `Pages.Post.PostId_.visibilityView`'s edit half in
-spirit (a `pending`-vs-loaded split via `Model.postFieldsEdit`), just with
-plain `<input>`/`<textarea>` fields instead of a `<select>`.
+{-| The title heading's own content, slotted into `postSection`'s
+`titleOverride` (see `eventDetailView`) -- always `Just`, even when nothing's
+being edited, since (per this feature's own request) there's no shared
+"edit row" collecting every field's edit button in one place; each field's
+own "Edit X" button (`postFieldEditButtonView`) sits right next to that
+field instead, so `postSection`'s own plain-title fallback (for a `Nothing`
+override) is never actually used here. Mirrors `linkView` exactly, just for
+the title (`contentDisplayView` is the odd one out among the three -- see
+its own doc for why it needs no analogous `contentView` wrapper).
 -}
-postFieldsEditView : PostFieldsEdit -> Post -> Html Msg
-postFieldsEditView edit post =
-    div [ class "event-post-fields-edit" ]
-        [ Html.input
-            [ type_ "text"
-            , class "event-post-fields-edit-title"
-            , placeholder "Title"
-            , value edit.pendingTitle
-            , onInput PostFieldsTitleChanged
-            ]
-            []
-        , Html.input
-            [ type_ "text"
-            , class "event-post-fields-edit-link"
-            , placeholder "Link (optional)"
-            , value edit.pendingLink
-            , onInput PostFieldsLinkChanged
-            ]
-            []
-        , textarea
-            [ class "event-post-fields-edit-content"
-            , placeholder "Content (optional, Markdown)"
-            , value edit.pendingContent
-            , onInput PostFieldsContentChanged
-            ]
-            []
-        , div [ class "event-post-fields-edit-actions" ]
-            [ button
-                [ classes [ "event-post-fields-save", "background-color-primary" ]
-                , onClick (PostFieldsSaveClicked post)
-                , disabled (edit.status == Submitting)
-                ]
-                [ text
-                    (if edit.status == Submitting then
-                        "Saving…"
+titleView : Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+titleView maybeEdit maybeAccount post =
+    case maybeEdit of
+        Just edit ->
+            if edit.field == TitleField then
+                postFieldEditFormView edit post
 
-                     else
-                        "Save"
-                    )
-                ]
-            , button
-                [ class "event-post-fields-cancel"
-                , onClick PostFieldsCancelClicked
-                , disabled (edit.status == Submitting)
-                ]
-                [ text "Cancel" ]
-            , case edit.status of
-                SubmitFailed err ->
-                    span [ class "event-post-fields-error" ] [ text err ]
+            else
+                titleDisplayView maybeAccount post
 
-                _ ->
-                    text ""
-            ]
+        Nothing ->
+            titleDisplayView maybeAccount post
+
+
+{-| The title text plus its own "Edit Title" button, shown whenever the
+title itself isn't the field currently being edited (see `titleView`).
+-}
+titleDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
+titleDisplayView maybeAccount post =
+    span [ class "event-post-title-display" ]
+        [ text (Posts.postTitleText post)
+        , postFieldEditButtonView TitleField "Edit Title" maybeAccount post
         ]
 
 
-{-| Opens `postFieldsEditView` -- shown to `post`'s own author or an Admin,
-mirroring `Pages.Post.PostId_`'s own `isAuthor account post`-gated edit
-affordances (media edit, visibility edit).
+{-| The link line's own content, slotted into `postSection`'s `linkOverride`
+(see `eventDetailView`) -- mirrors `titleView` exactly, just for the link:
+its own "Edit Link" button sits right after the link (or, if `post` has none
+set, right where the link would otherwise sit -- see `linkDisplayView`).
 -}
-postFieldsEditButtonView : Maybe AccountsPanel.Account -> Post -> Html Msg
-postFieldsEditButtonView maybeAccount post =
+linkView : Maybe PostFieldEdit -> Maybe AccountsPanel.Account -> Post -> Html Msg
+linkView maybeEdit maybeAccount post =
+    case maybeEdit of
+        Just edit ->
+            if edit.field == LinkField then
+                postFieldEditFormView edit post
+
+            else
+                linkDisplayView maybeAccount post
+
+        Nothing ->
+            linkDisplayView maybeAccount post
+
+
+{-| The link (if `post` has one) plus its own "Edit Link" button, shown
+whenever the link itself isn't the field currently being edited (see
+`linkView`) -- the button renders regardless of whether `post` actually has
+a link set, so there's still something to click to add one.
+-}
+linkDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
+linkDisplayView maybeAccount post =
+    span [ class "event-post-link-display" ]
+        [ case Posts.postLinkText post of
+            Just link ->
+                a
+                    [ href link
+                    , target "_blank"
+                    , rel "noopener noreferrer"
+                    , class "event-post-link"
+                    ]
+                    [ text link ]
+
+            Nothing ->
+                text ""
+        , postFieldEditButtonView LinkField "Edit Link" maybeAccount post
+        ]
+
+
+{-| The rendered Markdown content (if `post` has any) plus its own
+"Edit Content" button, slotted into `postSection`'s `contentOverride` (see
+`eventDetailView`) -- unlike `titleView`/`linkView`, there's no in-progress
+`PostFieldEdit` case to branch on here: the button opens the shared
+`Shared.MarkdownPanel` (`EditContentClicked`) rather than an inline form, so
+this is always just the display half. The button renders regardless of
+whether `post` actually has content set, so there's still something to click
+to add some.
+-}
+contentDisplayView : Maybe AccountsPanel.Account -> Post -> Html Msg
+contentDisplayView maybeAccount post =
+    div [ class "event-post-content-display" ]
+        [ case post.content of
+            Just content ->
+                Markdown.view [ class "event-post-content" ] content
+
+            Nothing ->
+                text ""
+        , editButtonView "Edit Content" (EditContentClicked post) maybeAccount post
+        ]
+
+
+{-| The actual `<input>` + Save/Cancel controls for whichever of `TitleField`/
+`LinkField` `edit.field` names -- mirrors `Pages.Post.PostId_.visibilityView`'s
+edit half in spirit (a `pending`-vs-loaded split via `Model.postFieldEdit`),
+just with a plain `<input>` instead of a `<select>`. Wraps in a `span`, valid
+content for the `<h1>`/plain-link slot each replaces (see
+`titleView`/`linkView`).
+-}
+postFieldEditFormView : PostFieldEdit -> Post -> Html Msg
+postFieldEditFormView edit post =
+    let
+        ( fieldClass, placeholderText ) =
+            case edit.field of
+                TitleField ->
+                    ( "event-post-field-edit-title", "Title" )
+
+                LinkField ->
+                    ( "event-post-field-edit-link", "Link (optional)" )
+    in
+    span [ class "event-post-field-edit" ]
+        (Html.input
+            [ type_ "text"
+            , class fieldClass
+            , placeholder placeholderText
+            , value edit.pending
+            , onInput PostFieldChanged
+            ]
+            []
+            :: postFieldEditActionsView edit post
+        )
+
+
+{-| The Save/Cancel buttons (plus any `SubmitFailed` error) shared by every
+`postFieldEditFormView` case -- reuses `Pages.Post.PostId_.visibilityView`'s
+own `.post-visibility-save`/`.post-visibility-cancel`/`.post-visibility-error`
+classes (posts.css) rather than `event-*` ones of its own.
+-}
+postFieldEditActionsView : PostFieldEdit -> Post -> List (Html Msg)
+postFieldEditActionsView edit post =
+    [ button
+        [ classes [ "post-visibility-save", "background-color-primary" ]
+        , onClick (PostFieldSaveClicked post)
+        , disabled (edit.status == Submitting)
+        ]
+        [ text
+            (if edit.status == Submitting then
+                "Saving…"
+
+             else
+                "Save"
+            )
+        ]
+    , button
+        [ class "post-visibility-cancel"
+        , onClick PostFieldCancelClicked
+        , disabled (edit.status == Submitting)
+        ]
+        [ text "Cancel" ]
+    , case edit.status of
+        SubmitFailed err ->
+            span [ class "post-visibility-error" ] [ text err ]
+
+        _ ->
+            text ""
+    ]
+
+
+{-| `field`'s own "Edit X" button, opening `postFieldEditFormView` for just
+that field -- thin wrapper around `editButtonView` for `titleDisplayView`/
+`linkDisplayView`'s own `PostFieldEditClicked` buttons.
+-}
+postFieldEditButtonView : PostField -> String -> Maybe AccountsPanel.Account -> Post -> Html Msg
+postFieldEditButtonView field label maybeAccount post =
+    editButtonView label (PostFieldEditClicked field post) maybeAccount post
+
+
+{-| A single "Edit X" button, slotted right next to the field it edits (see
+`titleDisplayView`/`linkDisplayView`/`contentDisplayView`) rather than
+collected into a shared row -- `onClickMsg` is whatever opening that field's
+own editor takes (`PostFieldEditClicked` for title/link, via
+`postFieldEditButtonView`; `EditContentClicked` directly for content, since
+it has no `PostField` of its own -- see that type's doc). Shown to `post`'s
+own author or an Admin, mirroring `Pages.Post.PostId_`'s own
+`isAuthor account post`-gated edit affordances (media edit, visibility
+edit). Reuses `Components.Posts`' `.post-edit-button` class (posts.css)
+rather than an `event-*` one of its own, so it looks identical to
+`postDetail`'s own "Edit Content" button.
+-}
+editButtonView : String -> Msg -> Maybe AccountsPanel.Account -> Post -> Html Msg
+editButtonView label onClickMsg maybeAccount post =
     case maybeAccount of
         Just account ->
             if Posts.isAuthor account post || List.member ADMIN account.permissions then
-                button [ class "event-post-edit-button", onClick (PostFieldsEditClicked post) ] [ text "Edit" ]
+                button [ class "post-edit-button", onClick onClickMsg ] [ text label ]
 
             else
                 text ""
@@ -1142,16 +1305,22 @@ postFieldsEditButtonView maybeAccount post =
 
 
 {-| The delete button for the Event's own `Post`, shown only to its own
-owner (per this feature's own scope -- unlike `postFieldsEditButtonView`,
+owner (per this feature's own scope -- unlike `postFieldEditButtonView`,
 not extended to Admins here) -- opens the shared "are you sure?" dialog via
-`DeleteClicked`/`Shared.ConfirmEventDelete`.
+`DeleteClicked`/`Shared.ConfirmEventDelete`. Not tied to any one field (unlike
+title/link/content's own edit buttons), so it keeps its own
+`.post-detail-edit-row` below `postSection` (see `eventDetailView`) rather
+than sitting next to a field -- reuses that row's `.post-edit-button` class
+rather than `postActionsView`'s `.post-delete-button` (which only resolves
+its own styling via the `.post-actions` parent postDetail wraps it in, and
+would look inconsistent here).
 -}
 deleteButtonView : Maybe AccountsPanel.Account -> Event -> Post -> Html Msg
 deleteButtonView maybeAccount event post =
     case maybeAccount of
         Just account ->
             if Posts.isAuthor account post then
-                button [ class "event-delete-button", onClick (DeleteClicked event) ] [ text "Delete" ]
+                button [ class "post-edit-button", onClick (DeleteClicked event) ] [ text "Delete" ]
 
             else
                 text ""
@@ -1165,7 +1334,10 @@ its own `moderationView` param) -- shown only to an Admin or a
 `MODERATEEVENTS` holder, mirroring `Pages.Post.PostId_.visibilityView`'s
 display-vs-editing split, just for `Moderation` instead of `Visibility`, and
 its own "Edit" button reading "Moderate" instead (per this feature's own
-request, to read distinctly from `postFieldsEditButtonView`'s "Edit").
+request, to read distinctly from `postFieldEditButtonView`'s "Edit X"). Reuses
+`Pages.Post.PostId_.moderationView`'s own `.post-moderation-*` classes
+(posts.css) rather than `event-*` ones of its own, so it looks identical to
+`postDetail`'s own moderation controls.
 -}
 moderationView : Maybe AccountsPanel.Account -> Maybe ModerationEdit -> Event -> Post -> Html Msg
 moderationView maybeAccount maybeEdit event post =
@@ -1180,7 +1352,7 @@ moderationView maybeAccount maybeEdit event post =
             else
                 case maybeEdit of
                     Just edit ->
-                        span [ class "event-post-moderation-edit" ]
+                        span [ class "post-moderation-edit" ]
                             [ text " · "
                             , select [ onInput ModerationChanged ]
                                 (Posts.allModerations
@@ -1194,7 +1366,7 @@ moderationView maybeAccount maybeEdit event post =
                                         )
                                 )
                             , button
-                                [ classes [ "event-post-moderation-save", "background-color-primary" ]
+                                [ classes [ "post-moderation-save", "background-color-primary" ]
                                 , onClick (ModerationSaveClicked event)
                                 , disabled (edit.status == Submitting)
                                 ]
@@ -1207,23 +1379,23 @@ moderationView maybeAccount maybeEdit event post =
                                     )
                                 ]
                             , button
-                                [ class "event-post-moderation-cancel"
+                                [ class "post-moderation-cancel"
                                 , onClick ModerationCancelClicked
                                 , disabled (edit.status == Submitting)
                                 ]
                                 [ text "Cancel" ]
                             , case edit.status of
                                 SubmitFailed err ->
-                                    span [ class "event-post-moderation-error" ] [ text err ]
+                                    span [ class "post-moderation-error" ] [ text err ]
 
                                 _ ->
                                     text ""
                             ]
 
                     Nothing ->
-                        span [ class "event-post-moderation-display" ]
+                        span [ class "post-moderation-display" ]
                             [ text (" · " ++ Users.moderationText post.moderation)
-                            , button [ class "event-post-moderation-edit-button", onClick (ModerationEditClicked event) ] [ text "Moderate" ]
+                            , button [ class "post-moderation-edit-button", onClick (ModerationEditClicked event) ] [ text "Moderate" ]
                             ]
 
 

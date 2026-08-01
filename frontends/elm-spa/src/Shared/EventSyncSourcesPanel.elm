@@ -99,7 +99,7 @@ init =
 
 type Msg
     = Fetch String String
-    | GotFetchResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventSyncSourcesResponse ))
+    | GotFetchResult String (Result Grpc.Error ( Maybe AccountsPanel.Msg, GetEventSyncSourcesResponse ))
     | RowUrlChanged EventSyncSource String
     | RowIntervalChanged EventSyncSource Int
     | RowSaveClicked EventSyncSource
@@ -136,23 +136,32 @@ update accountsPanelModel msg model =
         Fetch host userId ->
             case AccountsPanel.enabledAccountForServer accountsPanelModel.accounts host of
                 Just account ->
-                    ( { model | targetHost = host, viewedUserId = userId, status = Fetching, rowEdits = Dict.empty }
+                    ( { model | targetHost = host, viewedUserId = userId, status = Fetching, sources = [], rowEdits = Dict.empty }
                     , EventSyncSources.getEventSyncSources accountsPanelModel ( Just account.userId, host ) userId
-                        |> Task.attempt GotFetchResult
+                        |> Task.attempt (GotFetchResult userId)
                     , ( Nothing, Nothing )
                     )
 
                 Nothing ->
-                    ( { model | targetHost = host, viewedUserId = userId, status = FetchFailed "You're not signed in on that server.", rowEdits = Dict.empty }
+                    ( { model | targetHost = host, viewedUserId = userId, status = FetchFailed "You're not signed in on that server.", sources = [], rowEdits = Dict.empty }
                     , Cmd.none
                     , ( Nothing, Nothing )
                     )
 
-        GotFetchResult (Ok ( maybeAccountsPanelMsg, response )) ->
-            ( { model | status = Fetched, sources = response.sources }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+        GotFetchResult forUserId result ->
+            if forUserId /= model.viewedUserId then
+                -- A response for a profile we've since navigated away from --
+                -- `Fetch` has already moved `viewedUserId` on, so applying
+                -- this would clobber the newer fetch's state with stale data.
+                ( model, Cmd.none, ( Nothing, Nothing ) )
 
-        GotFetchResult (Err err) ->
-            ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
+            else
+                case result of
+                    Ok ( maybeAccountsPanelMsg, response ) ->
+                        ( { model | status = Fetched, sources = response.sources }, Cmd.none, ( maybeAccountsPanelMsg, Nothing ) )
+
+                    Err err ->
+                        ( { model | status = FetchFailed (AccountsPanel.grpcErrorToString err) }, Cmd.none, ( Nothing, Nothing ) )
 
         RowUrlChanged source url ->
             let

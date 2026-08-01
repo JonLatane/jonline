@@ -31,20 +31,53 @@
   color: var(--muted);
 }
 
-.event-post-link {
+/* `Pages.Event.EventId_.linkDisplayView`'s own wrapper -- `display: block`
+   (overriding the `<span>` it actually is) keeps the link + its "Edit Link"
+   button on their own line, same spot `.event-post-link` held this margin
+   itself before it started sharing that line with a button (see below). */
+.event-post-link-display {
   display: block;
+  margin: 0 0 0.4rem;
+}
+
+/* `inline-block` (not the old `block`) so `.event-post-link-display`'s own
+   "Edit Link" button (`Pages.Event.EventId_.linkDisplayView`) can sit right
+   after it on the same line -- `overflow`/`text-overflow` ellipsis still
+   needs a non-plain-`inline` box to apply at all, so `inline-block` is the
+   narrowest change that keeps both. */
+.event-post-link {
+  display: inline-block;
   max-width: 80%;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
   color: var(--muted);
   font-size: 0.85rem;
-  margin: 0 0 0.4rem;
   text-decoration: none;
+  vertical-align: bottom;
 }
 
 .event-post-link:hover {
   text-decoration: underline;
+}
+
+/* `Pages.Event.EventId_.titleDisplayView`/`linkDisplayView`'s own "Edit
+   Title"/"Edit Link" buttons -- small gap from the text they follow on the
+   same line. */
+.event-post-title-display .post-edit-button,
+.event-post-link-display .post-edit-button {
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+/* `Pages.Event.EventId_.contentDisplayView`'s own "Edit Content" button --
+   `display: block` drops it to its own line below the Markdown content
+   (mirrors `.event-post-media-edit-row`'s own placement below the media),
+   rather than crowding onto the last line of a paragraph like the
+   title/link buttons above do. */
+.event-post-content-display .post-edit-button {
+  display: block;
+  margin-top: 0.3rem;
 }
 
 .event-post-meta {
