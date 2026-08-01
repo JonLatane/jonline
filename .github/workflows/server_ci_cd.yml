@@ -240,6 +240,9 @@ jobs:
   build_rust_binaries:
     name: Build Rust Binaries
     runs-on: ubuntu-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
 
     steps:
       - uses: actions/checkout@v4
@@ -261,12 +264,7 @@ jobs:
           rm "$PROTOC_ZIP"
           protoc --version
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./backend -> target
-          # default key
-          key: jonline-build-${{ runner.OS }}-github-build
-          shared-key: jonline-build-${{ runner.OS }}-github-build
+      - uses: mozilla-actions/sccache-action@v0.0.11
 
       - working-directory: backend
         run: cargo build --release
@@ -280,6 +278,9 @@ jobs:
   build_rust_binaries_macos:
     name: Build Rust Binaries (macOS arm64)
     runs-on: macos-14
+    env:
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
 
     steps:
       - uses: actions/checkout@v4
@@ -310,11 +311,7 @@ jobs:
           echo "PQ_LIB_DIR=$(brew --prefix libpq)/lib" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=$(brew --prefix libpq)/lib/pkgconfig" >> $GITHUB_ENV
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-arm64-github-build
-          shared-key: jonline-build-${{ runner.OS }}-arm64-github-build
+      - uses: mozilla-actions/sccache-action@v0.0.11
 
       - working-directory: backend
         run: cargo build --release
@@ -328,6 +325,9 @@ jobs:
   build_rust_binaries_linux_amd64_static:
     name: Build Rust Binaries (Linux amd64, static libpq)
     runs-on: ubuntu-latest
+    env:
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
 
     steps:
       - uses: actions/checkout@v4
@@ -350,11 +350,7 @@ jobs:
           rm "$PROTOC_ZIP"
           protoc --version
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-amd64-static-github-build
-          shared-key: jonline-build-${{ runner.OS }}-amd64-static-github-build
+      - uses: mozilla-actions/sccache-action@v0.0.11
 
       # `static_pq` vendors & statically compiles libpq (via pq-sys's "bundled"
       # feature -> pq-src), so the resulting binary doesn't depend on a system
@@ -373,6 +369,9 @@ jobs:
   build_rust_binaries_linux_arm64_static:
     name: Build Rust Binaries (Linux arm64, static libpq)
     runs-on: ubuntu-24.04-arm
+    env:
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
 
     steps:
       - uses: actions/checkout@v4
@@ -395,11 +394,7 @@ jobs:
           rm "$PROTOC_ZIP"
           protoc --version
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./backend -> target
-          key: jonline-build-${{ runner.OS }}-arm64-static-github-build
-          shared-key: jonline-build-${{ runner.OS }}-arm64-static-github-build
+      - uses: mozilla-actions/sccache-action@v0.0.11
 
       - working-directory: backend
         run: cargo build --release --features static_pq
@@ -432,6 +427,8 @@ jobs:
           --health-retries 5
     env:
       TEST_DATABASE_URL: postgres://postgres@localhost:5432/jonline_test
+      RUSTC_WRAPPER: sccache
+      CARGO_INCREMENTAL: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -444,16 +441,11 @@ jobs:
           rm "$PROTOC_ZIP"
           protoc --version
 
-      - uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: ./backend -> target
-          # default key
-          key: jonline-test-${{ runner.OS }}-github-test
-          shared-key: jonline-test-${{ runner.OS }}-github-test
+      - uses: mozilla-actions/sccache-action@v0.0.11
       - working-directory: backend
-        run: cargo test --all-features
+        run: cargo test
       - working-directory: backend
-        run: cargo build --all-features
+        run: cargo build
 
   test_tamagui_ui:
     name: Test Tamagui Web UI
