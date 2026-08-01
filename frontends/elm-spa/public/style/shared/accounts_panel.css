@@ -379,6 +379,12 @@
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
+@media (min-width: 640px) {
+  .nav-panel {
+    width: 400px;
+  }
+}
+
 .nav-panel.is-closed {
   opacity: 0;
   transform: translateY(-8px);
