@@ -910,6 +910,7 @@ jobs:
           set -euo pipefail
           PKG=jonline_pkg
           rm -rf "$PKG"
+          mkdir -p "$PKG"
 
           for bin in jonline disable_cdn_grpc delete_expired_tokens delete_unowned_media \
                      sync_event_sync_sources update_user_counts generate_preview_images delete_preview_images \
