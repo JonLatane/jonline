@@ -92,18 +92,19 @@ pub async fn media_file_options(id: &str) -> &'static str {
     return "";
 }
 
-#[rocket::get("/media/<id>?<authorization>")]
+#[rocket::get("/media/<id>?<authorization>&<size>")]
 pub async fn media_file<'a>(
     id: &str,
     authorization: Option<String>,
+    size: Option<String>,
     cookies: &CookieJar<'_>,
     state: &State<RocketState>,
     auth_header: Option<AuthHeader<'_>>,
 ) -> Result<CacheResponse<(ContentType, NamedFile)>, Status> {
-    log::info!("media_file: {:?}", id);
+    log::info!("media_file: {:?}, size: {:?}", id, size);
     let _user = get_media_user(authorization, auth_header, cookies, state).ok();
 
-    let data = load_media_file_data(id, state).await?;
+    let data = load_media_file_data(id, size.as_deref(), state).await?;
 
     Ok(CacheResponse::Public {
         responder: data,
@@ -112,12 +113,39 @@ pub async fn media_file<'a>(
     })
 }
 
-// #[rocket::get("/media/<id>?<authorization>")]
+/// Picks the (minio_path, content_type) to serve for a given size request.
+///
+/// `size` of `Some("original")` always forces the unconverted original. Otherwise the requested
+/// size (defaulting to `Large` when `size` is `None`/unrecognized) is looked up, falling through
+/// to the next *larger* converted size, and finally to the original if no converted size (at or
+/// above the request) is available -- which also covers media that hasn't been converted at all.
+fn resolve_media_size(media: &models::Media, size: Option<&str>) -> (String, String) {
+    if size == Some("original") {
+        return (media.minio_path.clone(), media.content_type.clone());
+    }
+
+    let requested = match size {
+        Some("small") => models::ConvertedSizeSpec::Small,
+        Some("medium") => models::ConvertedSizeSpec::Medium,
+        _ => models::ConvertedSizeSpec::Large,
+    };
+    let converted_sizes = media.converted_sizes();
+
+    models::ConvertedSizeSpec::ALL
+        .into_iter()
+        .skip_while(|spec| *spec != requested)
+        .find_map(|spec| converted_sizes.get(spec))
+        .map(|converted| (converted.minio_path.clone(), converted.content_type.clone()))
+        .unwrap_or_else(|| (media.minio_path.clone(), media.content_type.clone()))
+}
+
+// #[rocket::get("/media/<id>?<authorization>&<size>")]
 pub async fn load_media_file_data<'a>(
     id: &str,
+    size: Option<&str>,
     state: &State<RocketState>,
 ) -> Result<(ContentType, NamedFile), Status> {
-    log::info!("media_file: {:?}", id);
+    log::info!("media_file: {:?}, size: {:?}", id, size);
 
     let media = schema::media::table
         .filter(
@@ -131,10 +159,12 @@ pub async fn load_media_file_data<'a>(
 
     // TODO: Validate moderation/visiblity/permissions etc.
 
+    let (minio_path, content_type) = resolve_media_size(&media, size);
+
     let local_filename = format!(
         "{}/{}.mediafile",
         state.tempdir.path().display(),
-        media.minio_path
+        minio_path
     );
     if !std::path::Path::new(&local_filename).exists() {
         // Ensure local directory exists.
@@ -151,7 +181,7 @@ pub async fn load_media_file_data<'a>(
             .map_err(|_| Status::InternalServerError)?;
         let _status_code = state
             .bucket
-            .get_object_to_writer(media.minio_path, &mut async_output_file)
+            .get_object_to_writer(minio_path, &mut async_output_file)
             .await
             .map_err(|_| Status::InternalServerError)?;
 
@@ -160,7 +190,7 @@ pub async fn load_media_file_data<'a>(
     }
 
     let media_type = ContentType(
-        MediaType::from_str(&media.content_type).map_err(|_| Status::ExpectationFailed)?,
+        MediaType::from_str(&content_type).map_err(|_| Status::ExpectationFailed)?,
     );
     info!("media_type: {:?}", media_type);
     let result = open_named_file(&local_filename).await?;

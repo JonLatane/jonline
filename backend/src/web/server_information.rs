@@ -61,7 +61,7 @@ async fn info_shield(state: &State<RocketState>) -> Result<CacheResponse<Redirec
         .flatten();
     let logo_media_data_url = match logo_media_id {
         Some(ref logo_media_id) => {
-            let logo_data = load_media_file_data(logo_media_id, state).await?;
+            let logo_data = load_media_file_data(logo_media_id, None, state).await?;
             let content_type = logo_data.0;
             match content_type.to_string().as_str() {
                 "image/svg+xml" => {
@@ -181,7 +181,7 @@ async fn favicon_ico<'a>(
             })
         }
         Some(square_media_id) => {
-            let data = load_media_file_data(&square_media_id, state).await?;
+            let data = load_media_file_data(&square_media_id, None, state).await?;
             let mut content_type = &data.0;
             let mut named_filename = &data.1.path().as_os_str().to_str().unwrap().to_string();
             let ico_filename = format!(
@@ -262,7 +262,7 @@ async fn favicon_png<'a>(
             })
         }
         Some(square_media_id) => {
-            let data = load_media_file_data(&square_media_id, state).await?;
+            let data = load_media_file_data(&square_media_id, None, state).await?;
             let mut content_type = data.0;
             let mut named_filename = data.1.path().as_os_str().to_str().unwrap().to_string();
 
