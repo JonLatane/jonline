@@ -1349,7 +1349,10 @@ starredEventInstanceView browserTimeZone basePath accountsPanelModel currentInst
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]
 
         Just EventFetchFailed ->
-            div [ class "starred-post-entry post-error" ] [ text ("Couldn't load Event for Post " ++ key ++ ".") ]
+            div [ class "starred-post-entry post-error" ]
+                [ text ("Couldn't load Event for Post " ++ key ++ ".")
+                , button [ onClick (UnstarFailedPost key), class "background-color-primary" ] [ text "Unstar" ]
+                ]
 
         Nothing ->
             div [ class "starred-post-entry post-loading" ] [ text "Loading…" ]

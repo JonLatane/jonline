@@ -35,6 +35,12 @@ pub struct EventInstance {
     pub created_at: SystemTime,
     pub updated_at: Option<SystemTime>,
     pub event_sync_source_instance_id: Option<String>,
+    /// When this synced instance first stopped appearing in its `EventSyncSource`'s feed --
+    /// `None` while it's present (or for instances never touched by sync). Gives it a grace
+    /// period before `event_sync::reconcile_instances` actually deletes it, so a transient/partial
+    /// upstream response can't permanently orphan the Post backing the instance's comment
+    /// thread/media.
+    pub sync_missing_since: Option<SystemTime>,
 }
 
 /// Explicit column list for `event_instances`, excluding:
@@ -56,6 +62,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::created_at,
     event_instances::updated_at,
     event_instances::event_sync_source_instance_id,
+    event_instances::sync_missing_since,
 ) = (
     event_instances::id,
     event_instances::event_id,
@@ -67,6 +74,7 @@ pub const EVENT_INSTANCE_COLUMNS: (
     event_instances::created_at,
     event_instances::updated_at,
     event_instances::event_sync_source_instance_id,
+    event_instances::sync_missing_since,
 );
 
 #[derive(Debug, Insertable)]

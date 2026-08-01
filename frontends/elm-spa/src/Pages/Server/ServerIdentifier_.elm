@@ -29,7 +29,7 @@ import View exposing (View)
 page : Shared.Model -> Request.With Params -> Page.With Model Msg
 page shared req =
     Page.advanced
-        { init = init shared req.params
+        { init = init shared req
         , update = update shared
         , view = view shared req
         , subscriptions = subscriptions
@@ -67,16 +67,16 @@ parseServerIdentifier identifier =
             Nothing
 
 
-init : Shared.Model -> Params -> ( Model, Effect Msg )
-init shared params =
-    case parseServerIdentifier params.serverIdentifier of
+init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
+init shared req =
+    case parseServerIdentifier req.params.serverIdentifier of
         Nothing ->
-            ( Invalid params.serverIdentifier
+            ( Invalid req.params.serverIdentifier
             , Effect.none
             )
 
         Just parsed ->
-            ServerInformationPage.init shared parsed.isSecure parsed.host
+            ServerInformationPage.init shared parsed.isSecure parsed.host req.key req.url.path req.query
                 |> Tuple.mapFirst Info
                 |> Tuple.mapSecond (Effect.map InfoMsg)
 

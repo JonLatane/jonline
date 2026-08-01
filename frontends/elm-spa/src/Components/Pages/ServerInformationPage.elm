@@ -45,8 +45,10 @@ the change.
 
 -}
 
+import Browser.Navigation
 import Components.Markdown as Markdown
 import Components.Users as Users
+import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
 import Html exposing (Html, button, div, h2, h3, img, input, label, li, option, p, select, span, text, ul)
@@ -65,6 +67,7 @@ import Task
 import UI
 import UI.Classes exposing (classes)
 import UI.ServerTheme as ServerTheme
+import Url.Builder
 
 
 
@@ -77,6 +80,57 @@ type Tab
     | SettingsTab
     | FederationTab
     | CdnTab
+
+
+{-| `Tab`'s URL-facing form for the `tab` query param (see `pushTabUrl`) --
+lowercase, mirroring `Components.Pages.PostsPage.postContextParam`.
+`AboutTab` is the default and is never written out (see `pushTabUrl`), but is
+included here for `tabFromParam`'s sake.
+-}
+tabParam : Tab -> String
+tabParam tab =
+    case tab of
+        AboutTab ->
+            "about"
+
+        ThemeTab ->
+            "theme"
+
+        SettingsTab ->
+            "settings"
+
+        FederationTab ->
+            "federation"
+
+        CdnTab ->
+            "cdn"
+
+
+{-| Case-insensitive inverse of `tabParam`, mirroring
+`Components.Pages.PostsPage.postContextFromParam`. Any unrecognized value
+(e.g. a hand-edited link) round-trips back to `Nothing`, falling back to
+`AboutTab` in `init`.
+-}
+tabFromParam : String -> Maybe Tab
+tabFromParam param =
+    case String.toLower param of
+        "about" ->
+            Just AboutTab
+
+        "theme" ->
+            Just ThemeTab
+
+        "settings" ->
+            Just SettingsTab
+
+        "federation" ->
+            Just FederationTab
+
+        "cdn" ->
+            Just CdnTab
+
+        _ ->
+            Nothing
 
 
 {-| This page's own probe of the server, kept entirely separate from
@@ -189,6 +243,8 @@ type alias ColorEdit =
 type alias Model =
     { targetHost : String
     , isSecure : Bool
+    , navKey : Browser.Navigation.Key
+    , path : String
     , ownServerStatus : OwnServerStatus
     , activeTab : Tab
     , adminsStatus : AdminsStatus
@@ -207,16 +263,25 @@ type alias Model =
 parsed straight out of the route (`Pages.Server.ServerIdentifier_`'s
 `[http|https]:hostname` segment) -- needed for the own-probe fallback (see
 `AccountsPanel.connectToServer`), but not otherwise derivable from
-`Shared.Model` alone.
+`Shared.Model` alone. `navKey`/`path`, from the calling page's own `Request`,
+are what let `TabSelected` persist the active tab as a `tab` URL query param
+(see `pushTabUrl`), mirroring `Components.Pages.PostsPage.init`'s own
+`navKey`/`path` (there, for `search_text`/`context`) -- exactly, since every
+caller's `Request.key`/`Request.url.path` fit this regardless of which
+page-specific `Gen.Params.*` type they're parameterized over. `query`, that
+same `Request`'s already-parsed `.query`, seeds `activeTab` back out of the
+URL on load, so a shared/reloaded link reopens on the same tab.
 -}
-init : Shared.Model -> Bool -> String -> ( Model, Effect Msg )
-init shared pageIsSecure targetHost =
+init : Shared.Model -> Bool -> String -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
+init shared pageIsSecure targetHost navKey path query =
     let
         model0 =
             { targetHost = targetHost
             , isSecure = pageIsSecure
+            , navKey = navKey
+            , path = path
             , ownServerStatus = LoadingOwnServer
-            , activeTab = AboutTab
+            , activeTab = Dict.get "tab" query |> Maybe.andThen tabFromParam |> Maybe.withDefault AboutTab
             , adminsStatus = AdminsNotLoaded
             , versionStatus = VersionNotLoaded
             , renameStatus = NotRenaming
@@ -318,6 +383,27 @@ setBreadcrumbsHost shared model =
 
     else
         Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost model.targetHost) model.targetHost []))
+
+
+{-| Persists `model.activeTab` to the URL as a `tab` query param, via
+`replaceUrl` (not `pushUrl` -- switching tabs shouldn't spam browser history
+with one entry per click). Omitted entirely at the default (`AboutTab`), so
+the common case keeps a clean URL. Mirrors
+`Components.Pages.PostsPage.pushSearchUrl` exactly, just over a single `Tab`
+param instead of `search_text`/`context`.
+-}
+pushTabUrl : Model -> Effect Msg
+pushTabUrl model =
+    let
+        tabParams =
+            if model.activeTab == AboutTab then
+                []
+
+            else
+                [ Url.Builder.string "tab" (tabParam model.activeTab) ]
+    in
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery tabParams)
+        |> Effect.fromCmd
 
 
 fetchAdmins : AccountsPanel.Server -> Effect Msg
@@ -620,7 +706,11 @@ updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 updateInner shared msg model =
     case msg of
         TabSelected tab ->
-            ( { model | activeTab = tab }, Effect.none )
+            let
+                newModel =
+                    { model | activeTab = tab }
+            in
+            ( newModel, pushTabUrl newModel )
 
         GotOwnServerResult (Ok server) ->
             ( { model | ownServerStatus = OwnServerLoaded server, adminsStatus = LoadingAdmins, versionStatus = LoadingVersion }

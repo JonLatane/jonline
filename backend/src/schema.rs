@@ -34,6 +34,7 @@ diesel::table! {
         event_sync_source_instance_id -> Nullable<Varchar>,
         search_text -> TsVector,
         user_id -> Nullable<Int8>,
+        sync_missing_since -> Nullable<Timestamp>,
     }
 }
 

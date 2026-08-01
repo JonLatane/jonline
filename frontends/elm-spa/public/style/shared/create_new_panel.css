@@ -46,10 +46,25 @@
   transform: translateX(-50%) translateY(-8px);
 }
 
+/* The mode tabs (`modeTabsView`) and the posting-as/visibility pickers
+   (`.create-new-panel-header-meta`) can outgrow one row once both the
+   account `<select>` and the visibility `<select>` are showing, with nowhere
+   left to shrink into -- `flex-wrap` lets them drop to a second line rather
+   than overflowing/squeezing on a narrow panel, with no breakpoint needed:
+   both items simply stay on one line whenever they fit. `row-reverse` +
+   `wrap-reverse` (rather than plain `row`/`wrap`) puts the *first* DOM child
+   (the tabs) on the *last* flex line -- flex assigns items to lines in
+   DOM/`order` sequence regardless of direction, so plain `wrap` would
+   instead leave the tabs on line one and wrap the pickers underneath them;
+   `wrap-reverse` flips which line renders on top, stacking the pickers above
+   the tabs, each right-aligned via `row-reverse`'s main-start now being the
+   right edge. */
 .create-new-panel-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-direction: row-reverse;
+  flex-wrap: wrap-reverse;
   gap: 0.5rem;
   flex: 0 0 auto;
 }
@@ -84,7 +99,22 @@
   border-color: var(--fg);
 }
 
-.create-new-panel-account {
+/* Groups `postingAsSelector`/`visibilityField` together on the header's
+   right side, so `.create-new-panel-header`'s own `justify-content:
+   space-between` still just splits left (mode tabs) from right (this group)
+   rather than spreading three items across the whole header. Wraps rather
+   than overflowing since both children can grow (a long account list's
+   `<select>`, a long visibility list's `<select>`) on a narrow panel. */
+.create-new-panel-header-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+.create-new-panel-account,
+.create-new-panel-visibility {
   display: flex;
   align-items: center;
   gap: 0.35rem;
@@ -109,7 +139,8 @@
   font-weight: 700;
 }
 
-.create-new-panel-account-select {
+.create-new-panel-account-select,
+.create-new-panel-visibility-select {
   max-width: 220px;
   font-size: 0.8rem;
   background: var(--chip-bg);

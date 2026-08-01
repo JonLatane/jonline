@@ -46,6 +46,7 @@ panel's state directly.
 
 import Components.Markdown as Markdown
 import Components.MultiMediaRenderer as MultiMediaRenderer
+import Components.Posts as Posts
 import Grpc
 import Html exposing (Html, button, div, img, input, label, option, select, span, text)
 import Html.Attributes exposing (alt, attribute, class, disabled, placeholder, selected, src, type_, value)
@@ -88,6 +89,11 @@ type alias Model =
     -- means "whichever eligible account `resolvedAccount` picks by default",
     -- so a lone eligible account never needs an explicit selection at all.
     , postingAs : Maybe String
+
+    -- `Just visibility` once the user's explicitly picked one (see
+    -- `visibilityField`) -- `Nothing` means "whichever `defaultVisibilityFor`
+    -- picks for the resolved account/mode", mirroring `postingAs`.
+    , visibility : Maybe Visibility
     , title : String
     , link : String
     , media : List MediaReference
@@ -105,6 +111,7 @@ init =
     { open = False
     , mode = PostMode
     , postingAs = Nothing
+    , visibility = Nothing
     , title = ""
     , link = ""
     , media = []
@@ -130,6 +137,7 @@ type Msg
     | StartsAtChanged String
     | EndsAtChanged String
     | PostingAsSelected String
+    | VisibilityChanged String
     | EditContentClicked
     | EditMediaClicked
       -- Fed back in by `Shared.update` once `Shared.MarkdownPanel`/
@@ -225,6 +233,9 @@ update zone accountsPanelModel msg model =
 
         PostingAsSelected accountId ->
             ( { model | postingAs = Just accountId }, Cmd.none, noForward )
+
+        VisibilityChanged text ->
+            ( { model | visibility = Posts.visibilityFromText text }, Cmd.none, noForward )
 
         EditContentClicked ->
             ( model
@@ -406,8 +417,10 @@ permission, `PUBLISHPOSTSGLOBALLY`/`PUBLISHPOSTSLOCALLY` in `PostMode` or
 (`backend/src/rpcs/posts/create_post.rs`/`backend/src/rpcs/events/create_event.rs`),
 same `ADMIN`-bypasses-everything reasoning as `eligibleAccounts` -- mirrors
 `frontends/tamagui`'s `base_create_post_sheet.tsx` picking the most-public
-default visibility `account` can actually publish at, since this panel (unlike
-that one) has no visibility picker of its own to ask the user instead.
+default visibility `account` can actually publish at. What `visibilityField`
+seeds its `<select>` with before the user's made an explicit choice of their
+own (`model.visibility == Nothing`), and what `resolvedVisibility` falls back
+to.
 -}
 defaultVisibilityFor : Mode -> AccountsPanel.Account -> Visibility
 defaultVisibilityFor mode account =
@@ -428,6 +441,51 @@ defaultVisibilityFor mode account =
 
     else
         LIMITED
+
+
+{-| `mode`'s `PostContext`, for `Posts.allowedVisibilities` -- an `EventMode`
+draft submits its Post as the `Event`'s own underlying Post (see module doc),
+so its context is `EVENT` rather than `POST`, same as `saveTask`'s own
+`{ post | context = EVENT }`.
+-}
+visibilityContext : Mode -> PostContext
+visibilityContext mode =
+    case mode of
+        PostMode ->
+            POST
+
+        EventMode ->
+            EVENT
+
+
+{-| Which `Visibility` values `visibilityField` offers `account` for `mode` --
+`Posts.allowedVisibilities` gated on `account`'s publish permissions, always
+including `defaultVisibilityFor` itself so there's at least one option even
+for an account with neither publish permission.
+-}
+allowedVisibilitiesFor : Mode -> AccountsPanel.Account -> List Visibility
+allowedVisibilitiesFor mode account =
+    Posts.allowedVisibilities account.permissions (visibilityContext mode) (defaultVisibilityFor mode account)
+
+
+{-| `model.visibility`, resolved against `account`/`mode`'s current
+`allowedVisibilitiesFor` -- falls back to `defaultVisibilityFor` whenever
+`visibility` is unset, or no longer allowed (e.g. `mode` was switched to one
+`account` can't publish as widely for), mirroring `resolvedAccount`'s own
+fallback. What `visibilityField` shows as selected and what `saveTask` submits.
+-}
+resolvedVisibility : Mode -> AccountsPanel.Account -> Model -> Visibility
+resolvedVisibility mode account model =
+    case model.visibility of
+        Just visibility ->
+            if List.member visibility (allowedVisibilitiesFor mode account) then
+                visibility
+
+            else
+                defaultVisibilityFor mode account
+
+        Nothing ->
+            defaultVisibilityFor mode account
 
 
 nonEmptyTrimmed : String -> Maybe String
@@ -466,7 +524,7 @@ saveTask accountsPanelModel resolved model =
                         , link = nonEmptyTrimmed model.link
                         , content = nonEmptyTrimmed model.content
                         , media = model.media
-                        , visibility = defaultVisibilityFor model.mode resolved.account
+                        , visibility = resolvedVisibility model.mode resolved.account model
                     }
             in
             case model.mode of
@@ -539,7 +597,10 @@ view zone accountsPanelModel model =
     div [ classes [ "create-new-panel", "nav-panel", openClosedClass model.open, hostnameToCSSClass host ] ]
         [ div [ class "create-new-panel-header" ]
             [ modeTabsView model
-            , postingAsSelector accountsPanelModel model
+            , div [ class "create-new-panel-header-meta" ]
+                [ postingAsSelector accountsPanelModel model
+                , visibilityField accountsPanelModel model
+                ]
             ]
         , div [ class "create-new-panel-body" ]
             (List.concat
@@ -794,6 +855,41 @@ postingAsSelector accountsPanelModel model =
                                 [ text (AccountsPanel.displayName account ++ " on " ++ account.server) ]
                         )
                         eligible
+                    )
+                ]
+
+
+{-| A `<select>` of `allowedVisibilitiesFor` (`resolvedAccount`/`model.mode`),
+same `<select>`/`option`/`selected` shape and `visibilityText`/
+`visibilityFromText` round-trip `Pages.Post.PostId_`'s own visibility editor
+uses -- but always shown (no separate Edit/Save/Cancel step) since this
+panel's Cancel/Save already govern the whole draft. Blank if there's no
+resolved account yet (`resolvedAccount`'s own "no eligible account" case,
+already covered elsewhere).
+-}
+visibilityField : AccountsPanel.Model -> Model -> Html Msg
+visibilityField accountsPanelModel model =
+    case resolvedAccount accountsPanelModel model of
+        Nothing ->
+            text ""
+
+        Just account ->
+            let
+                selectedVisibility =
+                    resolvedVisibility model.mode account model
+            in
+            div [ class "create-new-panel-visibility" ]
+                [ text "Visible to "
+                , select [ class "create-new-panel-visibility-select", onInput VisibilityChanged ]
+                    (List.map
+                        (\visibility ->
+                            option
+                                [ value (Posts.visibilityText visibility)
+                                , selected (visibility == selectedVisibility)
+                                ]
+                                [ text (Posts.visibilityText visibility) ]
+                        )
+                        (allowedVisibilitiesFor model.mode account)
                     )
                 ]
 

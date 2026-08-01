@@ -10,6 +10,14 @@
 //! Only occurrences ending within the last year through ~1 year out are created/updated.
 //! Existing rows older than that are never touched, even if they'd otherwise be pruned for no
 //! longer appearing in the feed.
+//!
+//! An in-window instance that stops appearing in the feed isn't deleted right away: it's marked
+//! `sync_missing_since` and only actually deleted once it's stayed missing for
+//! `MISSING_GRACE_PERIOD_DAYS`. This protects against a transient or partial upstream response
+//! (rate limiting, a mid-edit feed, a truncated fetch) being mistaken for a real deletion --
+//! re-creating a dropped instance always makes a brand new `Post`, so a same-sync round-trip
+//! delete+recreate would silently orphan whatever comment thread/media the user had attached to
+//! the original one. An `Event` itself is only deleted once none of its instances remain.
 
 use std::collections::{HashMap, HashSet};
 use std::time::SystemTime;
@@ -30,6 +38,9 @@ use crate::schema::{event_instances, event_sync_sources, events, posts};
 const SYNC_PAST_WINDOW_DAYS: i64 = 365;
 const SYNC_FUTURE_WINDOW_DAYS: i64 = 365;
 const MAX_RRULE_OCCURRENCES: u16 = 2000;
+/// How long an in-window instance can stay absent from the feed before `reconcile_instances`
+/// actually deletes it. See the module doc comment.
+const MISSING_GRACE_PERIOD_DAYS: i64 = 3;
 
 /// Fetches `source`'s ICS URL over HTTP, then delegates to [`sync_event_sync_source_text`].
 /// Split out so specs can exercise the parsing/upserting logic against a fixed ICS string
@@ -150,12 +161,13 @@ pub fn sync_event_sync_source_text(
                 None => create_event_for_group(conn, source.id, owner_user_id, &moderation, group)?,
             };
 
-            reconcile_instances(conn, db_event.id, owner_user_id, &moderation, group, window_start_db)?;
+            reconcile_instances(conn, db_event.id, owner_user_id, &moderation, group, window_start_db, now)?;
         }
 
         // Events whose UID no longer appears in the feed at all: prune their in-window
-        // instances the same way `reconcile_instances` does for a group with zero occurrences,
-        // then delete the event itself (cascades its instances/attendances) if nothing's left.
+        // instances the same way `reconcile_instances` does for a group with zero occurrences
+        // (subject to the same missing-grace-period before an instance is actually deleted),
+        // then delete the event itself (cascades its instances/attendances) once nothing's left.
         for (_, stale_event) in existing_by_uid {
             let empty_group = EventGroup {
                 uid: String::new(),
@@ -171,6 +183,7 @@ pub fn sync_event_sync_source_text(
                 &moderation,
                 &empty_group,
                 window_start_db,
+                now,
             )?;
 
             let remaining: i64 = event_instances::table
@@ -288,9 +301,13 @@ fn location_json(location: &Option<String>) -> Option<serde_json::Value> {
 }
 
 /// Creates/updates `EventInstance`s (+ their `Post`s) for `group`'s occurrences under
-/// `event_id`, then deletes any existing instance under `event_id` that's no longer present in
-/// `group.occurrences` -- but only if that instance's `ends_at` is still within the sync window
-/// (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
+/// `event_id`, then reconciles any existing instance under `event_id` that's no longer present
+/// in `group.occurrences` -- but only if that instance's `ends_at` is still within the sync
+/// window (`>= window_start_db`); older ones are left untouched no matter what the feed says now.
+/// An in-window instance that's missing isn't deleted immediately: the first sync that misses it
+/// stamps `sync_missing_since` and leaves it alone, and only a sync that *still* misses it after
+/// `MISSING_GRACE_PERIOD_DAYS` have passed since that stamp actually deletes it. An instance that
+/// reappears (matched by `event_sync_source_instance_id`) has its `sync_missing_since` cleared.
 fn reconcile_instances(
     conn: &mut PgPooledConnection,
     event_id: i64,
@@ -298,6 +315,7 @@ fn reconcile_instances(
     moderation: &str,
     group: &EventGroup,
     window_start_db: SystemTime,
+    now: DateTime<Utc>,
 ) -> Result<(), diesel::result::Error> {
     let existing_instances: Vec<models::EventInstance> = event_instances::table
         .select(models::EVENT_INSTANCE_COLUMNS)
@@ -322,12 +340,14 @@ fn reconcile_instances(
                 if existing_instance.starts_at != starts_at_db
                     || existing_instance.ends_at != ends_at_db
                     || existing_instance.location != loc_json
+                    || existing_instance.sync_missing_since.is_some()
                 {
                     diesel::update(event_instances::table.filter(event_instances::id.eq(existing_instance.id)))
                         .set((
                             event_instances::starts_at.eq(starts_at_db),
                             event_instances::ends_at.eq(ends_at_db),
                             event_instances::location.eq(&loc_json),
+                            event_instances::sync_missing_since.eq(None::<SystemTime>),
                         ))
                         .execute(conn)?;
                 }
@@ -366,13 +386,27 @@ fn reconcile_instances(
         }
     }
 
-    let stale_instance_ids: Vec<i64> = existing_by_instance_id
-        .values()
-        .filter(|i| i.ends_at >= window_start_db)
-        .map(|i| i.id)
-        .collect();
-    if !stale_instance_ids.is_empty() {
-        diesel::delete(event_instances::table.filter(event_instances::id.eq_any(stale_instance_ids)))
+    let now_db: SystemTime = now.into();
+    let mut newly_missing_ids: Vec<i64> = vec![];
+    let mut expired_ids: Vec<i64> = vec![];
+    for missing in existing_by_instance_id.values().filter(|i| i.ends_at >= window_start_db) {
+        match missing.sync_missing_since {
+            None => newly_missing_ids.push(missing.id),
+            Some(missing_since) => {
+                let missing_since: DateTime<Utc> = missing_since.into();
+                if now - missing_since >= Duration::days(MISSING_GRACE_PERIOD_DAYS) {
+                    expired_ids.push(missing.id);
+                }
+            }
+        }
+    }
+    if !newly_missing_ids.is_empty() {
+        diesel::update(event_instances::table.filter(event_instances::id.eq_any(newly_missing_ids)))
+            .set(event_instances::sync_missing_since.eq(now_db))
+            .execute(conn)?;
+    }
+    if !expired_ids.is_empty() {
+        diesel::delete(event_instances::table.filter(event_instances::id.eq_any(expired_ids)))
             .execute(conn)?;
     }
 

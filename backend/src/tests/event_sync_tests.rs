@@ -219,8 +219,11 @@ fn resync_removes_instances_no_longer_in_feed_but_leaves_old_ones_alone() {
     });
 }
 
+/// A single missing sync shouldn't nuke the event: the instance (and its Post, which may be
+/// carrying a comment thread/media the user attached) is only marked missing, not deleted, and
+/// the event survives right along with it.
 #[test]
-fn resync_prunes_recent_instance_dropped_from_feed_and_deletes_emptied_event() {
+fn resync_marks_recent_instance_missing_instead_of_deleting_it_immediately() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_prune2_owner");
@@ -235,10 +238,94 @@ fn resync_prunes_recent_instance_dropped_from_feed_and_deletes_emptied_event() {
         );
         sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
         let event = synced_event(conn, source.id, "prune-2").expect("event should exist after first sync");
+        let original_instance_id = instances_for(conn, event.id)[0].id;
 
         let ics_v2 = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
         sync_event_sync_source_text(&source, ics_v2, conn).expect("second sync should succeed");
 
+        assert!(
+            events::table.filter(events::id.eq(event.id)).first::<models::Event>(conn).optional().unwrap().is_some(),
+            "an event whose only instance just went missing this sync should not be deleted yet"
+        );
+        let instances = instances_for(conn, event.id);
+        assert_eq!(instances.len(), 1, "the instance should still exist, just marked missing");
+        assert_eq!(instances[0].id, original_instance_id);
+        assert!(instances[0].sync_missing_since.is_some());
+
+        Ok(())
+    });
+}
+
+/// If the feed goes back to reporting the occurrence before the grace period elapses, the exact
+/// same EventInstance row (and its Post, i.e. any comment thread/media on it) is reused rather
+/// than deleted-then-recreated.
+#[test]
+fn instance_reappearing_before_grace_period_elapses_reuses_the_same_row() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_reappear_owner");
+        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = Utc::now() + Duration::days(1);
+        let end = start + Duration::hours(1);
+        let ics_v1 = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:reappear-1\r\nDTSTART:{}\r\nDTEND:{}\r\nSUMMARY:Flaky\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format(ICS_FORMAT),
+            end.format(ICS_FORMAT)
+        );
+        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        let event = synced_event(conn, source.id, "reappear-1").expect("event should exist after first sync");
+        let original_instance = instances_for(conn, event.id).into_iter().next().unwrap();
+
+        // Simulates a transient/partial upstream response that momentarily drops the occurrence.
+        let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
+        sync_event_sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
+        assert!(instances_for(conn, event.id)[0].sync_missing_since.is_some());
+
+        // The feed recovers before the grace period elapses.
+        sync_event_sync_source_text(&source, &ics_v1, conn).expect("third sync should succeed");
+        let instances = instances_for(conn, event.id);
+        assert_eq!(instances.len(), 1);
+        assert_eq!(instances[0].id, original_instance.id, "should reuse the same instance/Post, not recreate it");
+        assert_eq!(instances[0].post_id, original_instance.post_id);
+        assert!(instances[0].sync_missing_since.is_none(), "reappearing should clear the missing marker");
+
+        Ok(())
+    });
+}
+
+/// Once an instance has genuinely been missing for longer than the grace period, it (and the
+/// emptied event) are pruned for real.
+#[test]
+fn instance_missing_past_grace_period_is_deleted_and_emptied_event_is_removed() {
+    let mut conn = test_conn();
+    conn.test_transaction::<_, tonic::Status, _>(|conn| {
+        let user = create_user(conn, "est_expire_owner");
+        let source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+
+        let start = Utc::now() + Duration::days(1);
+        let end = start + Duration::hours(1);
+        let ics_v1 = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nBEGIN:VEVENT\r\nUID:expire-1\r\nDTSTART:{}\r\nDTEND:{}\r\nSUMMARY:Will vanish\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            start.format(ICS_FORMAT),
+            end.format(ICS_FORMAT)
+        );
+        sync_event_sync_source_text(&source, &ics_v1, conn).expect("initial sync should succeed");
+        let event = synced_event(conn, source.id, "expire-1").expect("event should exist after first sync");
+
+        let ics_empty = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//test//\r\nEND:VCALENDAR\r\n";
+        sync_event_sync_source_text(&source, ics_empty, conn).expect("second sync should succeed");
+
+        // Simulate the grace period having elapsed by backdating the missing-since stamp.
+        let long_ago: std::time::SystemTime = (Utc::now() - Duration::days(4)).into();
+        diesel::update(event_instances::table.filter(event_instances::event_id.eq(event.id)))
+            .set(event_instances::sync_missing_since.eq(long_ago))
+            .execute(conn)
+            .unwrap();
+
+        sync_event_sync_source_text(&source, ics_empty, conn).expect("third sync should succeed");
+
+        assert_eq!(instances_for(conn, event.id).len(), 0);
         assert!(
             events::table
                 .filter(events::id.eq(event.id))
@@ -246,7 +333,7 @@ fn resync_prunes_recent_instance_dropped_from_feed_and_deletes_emptied_event() {
                 .optional()
                 .unwrap()
                 .is_none(),
-            "an event whose only (in-window) instance disappeared from the feed should be deleted"
+            "an event whose only instance stayed missing past the grace period should be deleted"
         );
 
         Ok(())

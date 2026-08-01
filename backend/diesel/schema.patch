@@ -2,7 +2,7 @@
 +++ b/schema.rs
 @@ -1,11 +1,5 @@
  // @generated automatically by Diesel CLI.
- 
+
 -pub mod sql_types {
 -    #[derive(diesel::sql_types::SqlType)]
 -    #[diesel(postgres_type(name = "tsvector", schema = "pg_catalog"))]
@@ -13,12 +13,12 @@
      event_attendances (id) {
          id -> Int8,
 @@ -25,7 +19,7 @@
- 
+
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
- 
+
      event_instances (id) {
          id -> Int8,
 @@ -38,7 +32,7 @@
@@ -28,18 +28,18 @@
 -        search_text -> Tsvector,
 +        search_text -> TsVector,
          user_id -> Nullable<Int8>,
+         sync_missing_since -> Nullable<Timestamp>,
      }
- }
-@@ -179,7 +173,7 @@
- 
+@@ -182,7 +176,7 @@
+
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
- 
+
      posts (id) {
          id -> Int8,
-@@ -203,7 +197,7 @@
+@@ -206,7 +200,7 @@
          published_at -> Nullable<Timestamp>,
          last_activity_at -> Timestamp,
          unauthenticated_star_count -> Int8,
@@ -48,21 +48,21 @@
          sort_published_at -> Timestamp,
      }
  }
-@@ -290,7 +284,7 @@
- 
+@@ -293,7 +287,7 @@
+
  diesel::table! {
      use diesel::sql_types::*;
 -    use super::sql_types::Tsvector;
 +    use diesel_full_text_search::TsVector;
- 
+
      users (id) {
          id -> Int8,
-@@ -313,7 +307,7 @@
+@@ -316,7 +310,7 @@
          response_count -> Int4,
          created_at -> Timestamp,
          updated_at -> Timestamp,
 -        search_text -> Nullable<Tsvector>,
 +        search_text -> TsVector,
+         friend_count -> Int4,
+         event_instance_count -> Int4,
      }
- }
- 
