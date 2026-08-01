@@ -1,9 +1,12 @@
+use std::collections::HashMap;
+
 use diesel::*;
 use diesel_full_text_search::{
     configuration::TsConfigurationByName, to_tsquery_with_search_config, ts_rank_cd,
     TsVectorExtensions,
 };
 use log::info;
+use serde_json::json;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
@@ -50,7 +53,7 @@ pub fn get_events(
             (EventListingType::EventTextSearch, _, _, _, _) => {
                 get_search_events(&request, &user, conn)?
             }
-            (EventListingType::GroupEvents, _, _, _, _) => match request.group_id {
+            (EventListingType::GroupEvents, _, _, _, _) => match &request.group_id {
                 Some(group_id) => get_group_events(
                     group_id.to_db_id_or_err("group_id")?,
                     &user,
@@ -69,9 +72,174 @@ pub fn get_events(
             _ => get_public_and_following_events(&user, conn, request.time_filter)?,
         }
     };
-    Ok(GetEventsResponse {
-        events: convert_events(&result, conn),
-    })
+    let mut events = convert_events(&result, conn);
+    attach_event_instance_attendances(&result, &mut events, &request, &user, conn);
+    Ok(GetEventsResponse { events })
+}
+
+// Per-instance context `attach_event_instance_attendances` needs but that isn't already sitting
+// on `models::EventAttendance` -- both come from the *parent Event*, not the instance itself
+// (`event_post.0.user_id`/`event.info` are shared across every instance of that Event), so this
+// is computed once per Event up front rather than re-derived per instance.
+struct EventInstanceAttendanceContext {
+    owner_user_id: Option<i64>,
+    hide_location_until_rsvp_approved: bool,
+}
+
+fn attendance_matches_anonymous_token(
+    attendance: &models::EventAttendance,
+    token: Option<&str>,
+) -> bool {
+    token.is_some()
+        && attendance
+            .anonymous_attendee
+            .as_ref()
+            .and_then(|a| a.get("auth_token"))
+            .and_then(|t| t.as_str())
+            == token
+}
+
+// Loads attendance info for every `EventInstance` about to be returned, in one query keyed by
+// `event_instance_id IN (...)`, and attaches it as `EventInstance.attendances`/
+// `current_user_attendance` -- sparing callers (e.g. the Elm SPA's Posts page) a separate
+// `GetEventAttendances` round trip per instance just to show RSVP info. Also resolves
+// `EventInstance.location` (and mirrors it into `EventAttendances.hidden_location`) the same way,
+// since whether it's visible depends on the very attendance data being loaded here.
+//
+// Deliberately mirrors `get_event_attendances`'s own visibility rules field-for-field (see that
+// RPC's doc comments for the reasoning behind each): moderation-passing attendances are visible to
+// everyone, an Event's owner sees every attendance (regardless of moderation) for their own
+// instances, a viewer always sees their own attendance regardless of moderation, and
+// `request.anonymous_attendee_auth_token` (mirroring
+// `GetEventAttendancesRequest.anonymous_attendee_auth_token`) unlocks an anonymous attendee's own
+// record the same way. `private_note` and the real `location` (once
+// `EventInfo.hide_location_until_rsvp_approved` is set) are likewise only revealed to the
+// attendance's own owner/attendee or the Event owner. Keeping these two RPCs' rules in sync by
+// hand is exactly the kind of thing `get_event_attendances_parity_tests` guards against drifting.
+fn attach_event_instance_attendances(
+    result: &[MarshalableEvent],
+    events: &mut [Event],
+    request: &GetEventsRequest,
+    user: &Option<&models::User>,
+    conn: &mut PgPooledConnection,
+) {
+    let current_user_id = user.map(|u| u.id);
+    let anonymous_auth_token = request.anonymous_attendee_auth_token.as_deref();
+
+    let mut context_by_instance: HashMap<i64, EventInstanceAttendanceContext> = HashMap::new();
+    for MarshalableEvent(event, event_post, instances) in result {
+        let hide_location_until_rsvp_approved = event.info["hide_location_until_rsvp_approved"]
+            .as_bool()
+            .unwrap_or(false);
+        for MarshalableEventInstance(instance, _) in instances {
+            context_by_instance.insert(
+                instance.id,
+                EventInstanceAttendanceContext {
+                    owner_user_id: event_post.0.user_id,
+                    hide_location_until_rsvp_approved,
+                },
+            );
+        }
+    }
+
+    let instance_ids: Vec<i64> = context_by_instance.keys().cloned().collect();
+    if instance_ids.is_empty() {
+        return;
+    }
+
+    let owned_instance_ids: Vec<i64> = context_by_instance
+        .iter()
+        .filter(|(_, context)| {
+            current_user_id.is_some() && context.owner_user_id == current_user_id
+        })
+        .map(|(instance_id, _)| *instance_id)
+        .collect();
+
+    let attendances: Vec<(models::EventAttendance, Option<models::Author>)> =
+        event_attendances::table
+            .left_join(users::table.on(event_attendances::user_id.eq(users::id.nullable())))
+            .select((event_attendances::all_columns, AUTHOR_COLUMNS.nullable()))
+            .filter(event_attendances::event_instance_id.eq_any(&instance_ids))
+            .filter(
+                event_attendances::event_instance_id
+                    .eq_any(&owned_instance_ids)
+                    .or(event_attendances::moderation.eq_any(PASSING_MODERATIONS))
+                    .or(event_attendances::user_id.eq(current_user_id.unwrap_or(0)))
+                    .or(event_attendances::anonymous_attendee
+                        .contains(json!({"auth_token": anonymous_auth_token}))),
+            )
+            .load::<(models::EventAttendance, Option<models::Author>)>(conn)
+            .unwrap_or_default();
+
+    let media_ids = attendances
+        .iter()
+        .filter_map(|(_, author)| author.as_ref().and_then(|a| a.avatar_media_id))
+        .collect();
+    let media_lookup = load_media_lookup(media_ids, conn);
+
+    let mut attendances_by_instance: HashMap<
+        i64,
+        Vec<(models::EventAttendance, Option<models::Author>)>,
+    > = HashMap::new();
+    for entry in attendances {
+        attendances_by_instance
+            .entry(entry.0.event_instance_id)
+            .or_default()
+            .push(entry);
+    }
+
+    for (marshalable_event, event) in result.iter().zip(events.iter_mut()) {
+        for (MarshalableEventInstance(instance, _), instance_proto) in
+            marshalable_event.2.iter().zip(event.instances.iter_mut())
+        {
+            let context = &context_by_instance[&instance.id];
+            let is_owner = current_user_id.is_some() && context.owner_user_id == current_user_id;
+            let instance_attendances = attendances_by_instance
+                .get(&instance.id)
+                .cloned()
+                .unwrap_or_default();
+
+            let is_viewers_own = |a: &models::EventAttendance| {
+                (current_user_id.is_some() && a.user_id == current_user_id)
+                    || attendance_matches_anonymous_token(a, anonymous_auth_token)
+            };
+
+            let is_approved_attendee = is_owner
+                || instance_attendances.iter().any(|(a, _)| {
+                    a.moderation == Moderation::Approved.to_string_moderation()
+                        && is_viewers_own(a)
+                });
+
+            let visible_location = if is_approved_attendee
+                || !context.hide_location_until_rsvp_approved
+            {
+                instance.location.clone().map(|l| l.to_proto_location())
+            } else {
+                None
+            };
+            instance_proto.location = visible_location.clone();
+
+            instance_proto.current_user_attendance = instance_attendances
+                .iter()
+                .find(|(a, _)| is_viewers_own(a))
+                .map(|entry| entry.to_proto(true, true, media_lookup.as_ref()));
+
+            instance_proto.attendances = Some(EventAttendances {
+                attendances: instance_attendances
+                    .iter()
+                    .map(|entry| {
+                        let include_private_note = is_owner || is_viewers_own(&entry.0);
+                        entry.to_proto(
+                            include_private_note,
+                            include_private_note,
+                            media_lookup.as_ref(),
+                        )
+                    })
+                    .collect(),
+                hidden_location: visible_location,
+            });
+        }
+    }
 }
 
 macro_rules! query_visible_events {

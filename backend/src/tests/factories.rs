@@ -12,8 +12,8 @@ use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::{
-    event_instances, event_sync_sources, events, follows, group_posts, groups, memberships, posts,
-    users,
+    event_attendances, event_instances, event_sync_sources, events, follows, group_posts, groups,
+    memberships, posts, users,
 };
 
 /// Returns a pooled connection to `TEST_DATABASE_URL`, migrating it on first use (once per test
@@ -321,6 +321,9 @@ pub struct EventOpts {
     pub visibility: Visibility,
     pub moderation: Moderation,
     pub title: Option<String>,
+    /// `EventInfo` JSON, e.g. `json!({"hide_location_until_rsvp_approved": true})` -- see
+    /// `EventInfo`'s proto doc for the full set of recognized keys.
+    pub info: serde_json::Value,
 }
 
 impl Default for EventOpts {
@@ -329,6 +332,7 @@ impl Default for EventOpts {
             visibility: Visibility::ServerPublic,
             moderation: Moderation::Unmoderated,
             title: Some("Test Post".to_string()),
+            info: serde_json::json!({}),
         }
     }
 }
@@ -355,7 +359,7 @@ pub fn create_event(
     let event = insert_into(events::table)
         .values(&models::NewEvent {
             post_id: post.id,
-            info: serde_json::json!({}),
+            info: opts.info,
             event_sync_source_id: None,
         })
         .get_result::<models::Event>(conn)
@@ -371,6 +375,10 @@ pub struct EventInstanceOpts {
     pub starts_at: SystemTime,
     pub ends_at: SystemTime,
     pub title: Option<String>,
+    /// `Location` JSON (e.g. `serde_json::to_value(Location { .. }).unwrap()`) -- defaults to
+    /// `None` (no location set), same as `create_event_instance` always inserted before this
+    /// field existed.
+    pub location: Option<serde_json::Value>,
 }
 
 impl Default for EventInstanceOpts {
@@ -382,6 +390,7 @@ impl Default for EventInstanceOpts {
             starts_at,
             ends_at: starts_at + std::time::Duration::from_secs(3600),
             title: Some("Test Post".to_string()),
+            location: None,
         }
     }
 }
@@ -415,13 +424,62 @@ pub fn create_event_instance(
             info: serde_json::json!({}),
             starts_at: opts.starts_at,
             ends_at: opts.ends_at,
-            location: None,
+            location: opts.location,
             event_sync_source_instance_id: None,
         })
         .returning(models::EVENT_INSTANCE_COLUMNS)
         .get_result::<models::EventInstance>(conn)
         .expect("failed to create test event instance");
     (instance, post)
+}
+
+/// Options for `create_event_attendance`. Defaults to an unmoderated, logged-in-user-less
+/// (i.e. this needs a `user_id` or `anonymous_attendee` set explicitly, same as
+/// `upsert_event_attendance` requires exactly one of the two) `INTERESTED` RSVP.
+pub struct EventAttendanceOpts {
+    pub user_id: Option<i64>,
+    pub anonymous_attendee: Option<serde_json::Value>,
+    pub status: AttendanceStatus,
+    pub moderation: Moderation,
+    pub public_note: String,
+    pub private_note: String,
+}
+
+impl Default for EventAttendanceOpts {
+    fn default() -> Self {
+        EventAttendanceOpts {
+            user_id: None,
+            anonymous_attendee: None,
+            status: AttendanceStatus::Interested,
+            moderation: Moderation::Unmoderated,
+            public_note: "".to_string(),
+            private_note: "".to_string(),
+        }
+    }
+}
+
+/// Inserts an `event_attendances` row directly (bypassing `rpcs::upsert_event_attendance`), for
+/// specs that need precise control over `moderation`/`user_id`/`anonymous_attendee` to exercise
+/// `get_event_attendances`/`get_events`' visibility rules.
+pub fn create_event_attendance(
+    conn: &mut PgPooledConnection,
+    instance: &models::EventInstance,
+    opts: EventAttendanceOpts,
+) -> models::EventAttendance {
+    insert_into(event_attendances::table)
+        .values(&models::NewEventAttendance {
+            event_instance_id: instance.id,
+            user_id: opts.user_id,
+            anonymous_attendee: opts.anonymous_attendee,
+            number_of_guests: 0,
+            status: opts.status.to_string_attendance_status(),
+            inviting_user_id: None,
+            public_note: opts.public_note,
+            private_note: opts.private_note,
+            moderation: opts.moderation.to_string_moderation(),
+        })
+        .get_result::<models::EventAttendance>(conn)
+        .expect("failed to create test event attendance")
 }
 
 /// Starts a background thread serving `ics_text` as `text/calendar` for every HTTP request it
