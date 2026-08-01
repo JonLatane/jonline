@@ -18,7 +18,7 @@ enabled server, mirroring `Components.Pages.PostsPage`'s own aggregation for
 already-resolved profile `User` paired with the host it was resolved from and
 the relevant `UserListingType`, restricting the listing to that user's own
 relationship, fetched from just that one host -- see `candidateServers` --
-and adding a "Following | &lt;name&gt;"-style heading), mirroring
+and adding a "Following | <name>"-style heading), mirroring
 `Components.Pages.PostsPage`'s own `author` parameter and reuse by
 `Pages.Username_.Posts`/`Pages.User.UserId_.Posts`.
 
@@ -615,7 +615,7 @@ onEscape msg =
 
 {-| "Following"/"Followers"/"Friends" alone once there's a `target` to filter
 by (even before that `User` -- already resolved by the caller, see `init` --
-has actually rendered), upgraded to e.g. "Following | &lt;name&gt;" via
+has actually rendered), upgraded to e.g. "Following | <name>" via
 `Components.Users.ProfileHeading.nameHeader` -- absent entirely for
 `Pages.People`'s unfiltered listing (`target == Nothing`), which supplies its
 own "People" heading instead. Mirrors

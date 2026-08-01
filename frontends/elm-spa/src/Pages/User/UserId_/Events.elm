@@ -4,7 +4,7 @@ module Pages.User.UserId_.Events exposing (Model, Msg, fromShared, page)
 (permanent) id. Resolves the `User` first via `Components.Users.Resolver`
 (same as `Pages.Username_.Events`, just with `Resolver.ById` instead of
 `Resolver.ByUsername`) so `Components.Pages.EventsPage` can filter the feed by
-that id and show its "Events | &lt;name&gt;" heading -- mirrors
+that id and show its "Events | <name>" heading -- mirrors
 `Pages.User.UserId_.Posts`'s own use of `Components.Pages.PostsPage`.
 -}
 

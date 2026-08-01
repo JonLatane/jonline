@@ -17,7 +17,7 @@ the fetch to `TEXT_SEARCH` (debounced 311ms after typing stops) and persists
 adds its own "Recent Posts" heading and passes `author = Nothing`) and
 `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` (which pass the
 already-resolved profile `User`, restricting the feed to that user's own
-posts and adding this module's own "Posts | &lt;name&gt;" heading, via
+posts and adding this module's own "Posts | <name>" heading, via
 `Components.Pages.UserProfilePage.nameHeader`), mirroring how
 `Components.Pages.UserProfilePage` is reused by `Pages.Username_` and
 `Pages.User.UserId_` themselves.
@@ -26,8 +26,8 @@ posts and adding this module's own "Posts | &lt;name&gt;" heading, via
 import Animation
 import Browser.Navigation
 import Components.Posts as Posts
-import Components.Users.ProfileHeading as ProfileHeading
 import Components.Users exposing (usernameHref)
+import Components.Users.ProfileHeading as ProfileHeading
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
@@ -99,7 +99,7 @@ type alias Model =
 
 
 {-| `author`, if given, restricts the feed to that user's own posts (see
-`Components.PostCard.fetchRecentPosts`) and adds a "Posts | &lt;name&gt;"
+`Components.PostCard.fetchRecentPosts`) and adds a "Posts | <name>"
 heading (see `view`) -- `Pages.Home_` passes `Nothing`,
 `Pages.Username_.Posts`/`Pages.User.UserId_.Posts` pass their
 already-resolved profile `User` paired with the host it was resolved from
@@ -175,7 +175,7 @@ servers that actually need it, see its own doc comment) and
 changed search must re-fetch everything regardless of whether that server's
 acting account also happens to have changed).
 
-A server already `Loaded` under the *same* acting account keeps showing its
+A server already `Loaded` under the _same_ acting account keeps showing its
 last-known posts (`status` left untouched) while the re-fetch is in flight,
 rather than being reset to `Loading` first -- `Loading` isn't rendered as its
 own state anywhere in this module, so the only thing resetting it did was
@@ -188,6 +188,7 @@ genuinely new server, or one whose acting account just changed (sign-in/out),
 still resets to `Loading` -- its previous posts (fetched under a different or
 no account) are stale/invalid, not just "not yet refreshed," so they should
 disappear rather than linger.
+
 -}
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
@@ -610,11 +611,12 @@ keeps this module's `model.searchText` in sync with it behind the scenes (see
 `Pages.Home_.update`'s cross-sync) rather than showing two redundant boxes. Every other caller
 passes `True`, preserving the previous always-shown behavior.
 
-`showAuthorHeading` hides `authorHeadingView` (the "Posts | &lt;name&gt;" heading) when `False`
+`showAuthorHeading` hides `authorHeadingView` (the "Posts | <name>" heading) when `False`
 -- used by `Components.Pages.UserProfilePage`, which embeds this module a level below its own
 already-shown username/avatar header (see `profileDetail`), so a second copy of the same name
 would be redundant. Every other caller passes `True`, preserving the previous always-shown
 (whenever `model.author` is `Just`) behavior.
+
 -}
 view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
 view shared showSearchRow showAuthorHeading model =
@@ -709,7 +711,7 @@ onEscape msg =
 {-| "Posts"/"Replies" (matching `context` -- the same POST/REPLY chooser
 `searchRowView` renders just below this) alone once there's an `author` to
 filter by (even before that `User` -- already resolved by the caller, see
-`init` -- has actually rendered), upgraded to "Posts | &lt;name&gt;" via
+`init` -- has actually rendered), upgraded to "Posts | <name>" via
 `Components.Users.ProfileHeading.nameHeader` (with that author's avatar, via
 its resolved-host `AccountsPanel.Server`/signed-in `Account`, if that host is
 still a known server -- falling back to `ProfileHeading.usernameHeading`,

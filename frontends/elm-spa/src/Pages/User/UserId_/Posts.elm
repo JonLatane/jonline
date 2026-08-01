@@ -4,7 +4,7 @@ module Pages.User.UserId_.Posts exposing (Model, Msg, fromShared, page)
 id. Resolves the `User` first via `Components.Users.Resolver` (same as
 `Pages.Username_.Posts`, just with `Resolver.ById` instead of
 `Resolver.ByUsername`) so `Components.Pages.PostsPage` can both filter the
-feed by that id and show its "Posts | &lt;name&gt;" heading -- mirrors
+feed by that id and show its "Posts | <name>" heading -- mirrors
 `Pages.User.UserId_`'s own use of `Components.Pages.UserProfilePage`.
 -}
 

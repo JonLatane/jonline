@@ -5,7 +5,7 @@ around `Components.Pages.EventsPage`, which does all the actual work --
 mirrors `Pages.Home_`'s own use of `Components.Pages.PostsPage`, except this
 page passes `author = Nothing` (an unfiltered feed, rather than one user's
 own events) and needs no heading of its own -- `EventsPage.view`'s own
-"Upcoming Events"/"Events After &lt;date&gt;" tabs (see `tabsView`) already
+"Upcoming Events"/"Events After <date>" tabs (see `tabsView`) already
 say what this listing is.
 -}
 

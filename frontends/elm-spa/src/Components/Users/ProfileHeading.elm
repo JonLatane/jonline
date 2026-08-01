@@ -10,15 +10,14 @@ headings) can depend on just this, rather than the whole of `UserProfilePage`
 -- which itself now embeds a `PostsPage`/`EventsPage` pair of its own (see
 `UserProfilePage.Model`'s `posts`/`events` fields), so `PostsPage`/`EventsPage`
 importing `UserProfilePage` directly would be a module cycle.
-
 -}
 
 import Components.Authors as Authors
+import Components.Users as Users
 import Html exposing (Html, div, h1, span, text)
 import Html.Attributes exposing (class)
 import Proto.Jonline exposing (User)
 import Shared.AccountsPanel as AccountsPanel
-import Components.Users as Users
 import UI
 
 
@@ -27,7 +26,7 @@ import UI
 factored out of `profileDetail` since `nameHeader` (below) also needs it,
 unadorned by any edit affordance, so this itself stays `Html msg`-polymorphic.
 Also used directly by `Components.Pages.PostsPage`/`Components.Pages.EventsPage`
-as a no-avatar fallback for their "Posts | &lt;name&gt;"/"Events | &lt;name&gt;"
+as a no-avatar fallback for their "Posts | <name>"/"Events | <name>"
 headings when the author's server isn't currently known/enabled (so there's no
 `AccountsPanel.Server` to resolve an avatar against).
 -}
@@ -41,7 +40,7 @@ usernameHeading user =
 the Real Name, if set, with none of `Components.Pages.UserProfilePage.realNameView`'s
 edit affordance (there's no viewer/edit state to check outside of that
 module). Used by `Components.Pages.PostsPage`/`Components.Pages.EventsPage` for
-their "Posts | &lt;name&gt;"/"Events | &lt;name&gt;" heading on a user's own
+their "Posts | <name>"/"Events | <name>" heading on a user's own
 posts/events page.
 -}
 nameHeader : AccountsPanel.Server -> Maybe AccountsPanel.Account -> User -> Html msg

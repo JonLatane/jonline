@@ -218,7 +218,7 @@ type MeasurementPhase
 
 
 {-| `author`, if given, restricts the feed to that user's own events (see
-`Components.Events.fetchEvents`) and adds an "Events | &lt;name&gt;" heading
+`Components.Events.fetchEvents`) and adds an "Events | <name>" heading
 (see `authorHeadingView`) -- `Pages.Events` passes `Nothing`,
 `Pages.Username_.Events`/`Pages.User.UserId_.Events` pass their
 already-resolved profile `User` paired with the host it was resolved from --
@@ -1207,7 +1207,7 @@ pushUrl model =
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
 
-`showAuthorHeading` hides `authorHeadingView` (the "Events | &lt;name&gt;" heading) when
+`showAuthorHeading` hides `authorHeadingView` (the "Events | <name>" heading) when
 `False` -- used by `Components.Pages.UserProfilePage`, which (like `Pages.Home_`) embeds
 this module in its own `HorizontalList` row, a level below its own already-shown
 username/avatar header (see `profileDetail`), so a second copy of the same name would be
@@ -1236,7 +1236,7 @@ view shared homeEmbedded showAuthorHeading model =
 
 
 {-| "Events" alone once there's an `author` to filter by, upgraded to
-"Events | &lt;name&gt;"-style via `Components.Users.ProfileHeading.nameHeader`
+"Events | <name>"-style via `Components.Users.ProfileHeading.nameHeader`
 -- absent entirely for `Pages.Events`' unfiltered feed (`author == Nothing`),
 which supplies its own heading instead. Mirrors
 `Components.Pages.PostsPage.authorHeadingView`, minus the POST/REPLY-style
@@ -1267,7 +1267,7 @@ authorHeadingView shared maybeAuthor =
 
 
 {-| The 2 tabs (see `EventsTab`) -- "Upcoming Events" (a plain pill button,
-mirrors `modeButtonView`'s own styling) and "Events After &lt;date&gt;",
+mirrors `modeButtonView`'s own styling) and "Events After <date>",
 which -- since it has to contain a real `<input type="datetime-local">`,
 and nesting interactive content inside a `<button>` is invalid HTML -- is a
 plain `div` with its own `onClick` instead. Clicking anywhere in that

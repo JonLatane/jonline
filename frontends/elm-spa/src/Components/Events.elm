@@ -107,7 +107,7 @@ that user's own events (mirrors `Components.Posts.fetchPosts`' own
 `query_visible_events!` macro), excluding any `EventInstance` that's already
 ended as of `endsAfter` -- `EventsPage` passes the live current time for its
 default "Upcoming Events" tab, or a user-picked cutoff for its "Events After
-&lt;date&gt;" one, so this is deliberately not called `now` (it isn't,
+<date>" one, so this is deliberately not called `now` (it isn't,
 always). This time filter is sent -- and still enforced -- regardless of
 `searchText`; see below. `GetEventsResponse` isn't itself flattened
 per-`EventInstance` -- see `eventInstancePairs`.

@@ -1406,7 +1406,7 @@ isAdminAccount maybeAccount =
             False
 
 
-{-| "@ &lt;server logo/name&gt;", shown to the right of the username/real
+{-| "@ <server logo/name>", shown to the right of the username/real
 name/badges whenever this profile's own server (`server`, i.e. the target
 host actually serving the profile) isn't `mainFrontendHost` -- lets a viewer
 browsing a federated/other-server profile tell at a glance which server it

@@ -22,6 +22,7 @@ Lives in its own module (rather than `Shared` itself) so lower-level modules
 that only need the timezone pair -- not all of `Shared.Model` -- can depend on
 it without risking an import cycle (e.g. `Shared` -> `Shared.StarredPanel`
 -> `Components.PostCard`, which can't import `Shared` back).
+
 -}
 type alias BrowserTimeZone =
     { zone : Time.Zone
@@ -117,7 +118,7 @@ monthNumber month =
 
 {-| `YYYY-MM-DDTHH:mm` in `zone` -- the exact format an `<input
 type="datetime-local">` element's `value` attribute expects, so a date/time
-picker (e.g. `Components.Pages.EventsPage`'s "Events After &lt;date&gt;" tab)
+picker (e.g. `Components.Pages.EventsPage`'s "Events After <date>" tab)
 can be a plain controlled input: this formats a `Time.Posix` to populate it,
 and `posixFromDateTimeLocalInput` parses back whatever the user (or the
 browser's own native picker widget) sets it to.
@@ -151,6 +152,7 @@ instead of converging) so a guess landing right on a DST boundary still
 converges (this app's own use, picking a cutoff date for an events filter,
 doesn't need sub-minute precision across a boundary, but there's no reason
 not to get it right).
+
 -}
 posixFromDateTimeLocalInput : Time.Zone -> String -> Maybe Time.Posix
 posixFromDateTimeLocalInput zone raw =
