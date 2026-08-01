@@ -7,19 +7,24 @@ which do all the actual work -- mirrors `Pages.User.UserId_`/
 this page adds its own "Recent Posts"/"Recent Replies" heading (see
 `heading`, which tracks `PostsPage`'s own POST/REPLY context chooser),
 renders an `EventsPage` above that (defaulted to `HorizontalList` mode --
-via `EventsPage.init`'s own `embeddedRow = True` argument, passed below --
+via `EventsPage.init`'s own `embeddedPage = True` argument, passed below --
 rather than `EventsPage.init`'s ordinary `VerticalList` default, so the
 home page's events read as a single row rather than competing with the
-posts feed below for vertical space, and passed `homeEmbedded = True` in
-`view`, which hides its List/Grid/Row mode buttons entirely -- see
-`EventsPage.modeButtonsView`'s own doc for the full visibility rules,
-including the "Show all event layouts" admin override),
-and passes `authorUserId = Nothing`/`author = Nothing` to both (an
-unfiltered feed, rather than one user's own posts/events) -- plus, unlike
-those other `PostsPage` callers, keeps `Shared.Breadcrumbs` pointed at
-`mainFrontendHost` (see `setBreadcrumbsHost`), since this feed isn't scoped
-to any one server for a breadcrumb trail to identify the way a Post's own
-reply chain is.
+posts feed below for vertical space; `model.embeddedPage` also hides its
+List/Grid/Row mode buttons entirely -- see `EventsPage.modeButtonsView`'s own
+doc for the full visibility rules, including the "Show all event layouts"
+admin override), and passes `authorUserId = Nothing`/`author = Nothing` to
+both (an unfiltered feed, rather than one user's own posts/events).
+
+Both `PostsPage.init`/`EventsPage.init` are also passed `embeddedPage = True`
+above, which keeps each from independently asserting its own
+`Shared.Breadcrumbs` root on every `update` (see their own
+`setBreadcrumbsRoot` docs) -- this page owns that instead, unlike the other
+`PostsPage`/`EventsPage` callers, which each own their own page's root
+directly. See `setBreadcrumbsHost` for why: two embedded copies each
+asserting a root of their own turned out to fight a third, actually-different
+root on `Components.Pages.UserProfilePage` (which embeds the same two
+modules), a continuous flicker during animation.
 
 There's only one visible search box here -- `EventsPage`'s (`PostsPage.view`
 is called with `showSearchRow = False`, hiding its own box and POST/REPLY
@@ -46,6 +51,7 @@ import Page
 import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
 import Shared
+import Shared.Breadcrumbs as Breadcrumbs
 import UI
 import View exposing (View)
 
@@ -74,14 +80,41 @@ init : Shared.Model -> Request.With Params -> ( Model, Effect Msg )
 init shared req =
     let
         ( postsModel, postsEffect ) =
-            PostsPage.init shared Nothing req.key req.url.path req.query
+            PostsPage.init shared Nothing req.key req.url.path req.query True
 
         ( eventsModel, eventsEffect ) =
             EventsPage.init shared Nothing req.key req.url.path req.query True
     in
     ( { posts = postsModel, events = eventsModel }
-    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect ]
+    , Effect.batch [ Effect.map PostsMsg postsEffect, Effect.map EventsMsg eventsEffect, setBreadcrumbsHost shared ]
     )
+
+
+{-| Keeps `Shared.Breadcrumbs` pointed at `mainFrontendHost` -- this feed
+isn't scoped to any one server for a breadcrumb trail to identify the way a
+Post's own reply chain is. The one owner of `Shared.Breadcrumbs` for this
+page: the embedded `PostsPage`/`EventsPage` copies above both leave
+breadcrumbs alone entirely (`model.embeddedPage`, see their own
+`setBreadcrumbsRoot` docs) rather than each independently asserting a root of
+its own -- `Components.Pages.UserProfilePage` embeds the same two modules the
+same way, and used to let each of them (plus its own `setBreadcrumbsHost`)
+independently assert a root on every `update`, including every animation
+tick; whichever root won only lasted until the next tick reasserted the
+other, a continuous flicker between them. Mirrors
+`Components.Pages.UserProfilePage.setBreadcrumbsHost` exactly, reissued after
+every `update`, a no-op once already in sync via the same equality check.
+-}
+setBreadcrumbsHost : Shared.Model -> Effect Msg
+setBreadcrumbsHost shared =
+    let
+        host =
+            shared.accountsPanel.mainFrontendHost
+    in
+    if shared.breadcrumbs.root == Just (Breadcrumbs.FromServerHost host) then
+        Effect.none
+
+    else
+        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot (Breadcrumbs.FromServerHost host) host []))
 
 
 
@@ -94,8 +127,20 @@ type Msg
     | SharedMsg Shared.Msg
 
 
+{-| `updateInner`, plus reissuing `setBreadcrumbsHost` after every `update` --
+mirrors `Components.Pages.UserProfilePage.update`'s identical wrapper.
+-}
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
+    let
+        ( newModel, effect ) =
+            updateInner shared msg model
+    in
+    ( newModel, Effect.batch [ effect, setBreadcrumbsHost shared ] )
+
+
+updateInner : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
+updateInner shared msg model =
     case msg of
         PostsMsg subMsg ->
             let
@@ -191,7 +236,7 @@ view shared req model =
         UI.layout shared
             req.route
             fromShared
-            [ Html.map EventsMsg (EventsPage.view shared True True model.events)
+            [ Html.map EventsMsg (EventsPage.view shared True model.events)
             , h3 [] [ text (heading model.posts.context) ]
             , Html.map PostsMsg (PostsPage.view shared False True model.posts)
             ]

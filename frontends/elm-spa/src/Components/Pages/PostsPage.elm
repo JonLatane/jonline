@@ -90,6 +90,16 @@ type alias Model =
     { postsByServer : Dict String ServerFeed
     , postAnimations : Dict String PostAnimation
     , author : Maybe ( String, User )
+
+    -- `True` for embedded copies of this model (`Pages.Home_`,
+    -- `Components.Pages.UserProfilePage`, passed via `init`'s own
+    -- `embeddedPage` argument) -- gates `setBreadcrumbsRoot` off entirely
+    -- (see its own doc): an embedding page already owns `Shared.Breadcrumbs`
+    -- itself, so this copy asserting a root of its own on every `update`
+    -- (including every animation tick, e.g. from `postAnimations`) would
+    -- otherwise fight the real owner for it. Mirrors
+    -- `Components.Pages.EventsPage.Model.embeddedPage` exactly.
+    , embeddedPage : Bool
     , navKey : Browser.Navigation.Key
     , path : String
     , searchText : String
@@ -117,15 +127,20 @@ over -- every caller's `Request.key`/`Request.url.path` fit this regardless.
 `context` back out of the URL on load, so a shared/reloaded link reproduces
 the same search.
 
+`embeddedPage` is `True` only for `Pages.Home_`'s and
+`Components.Pages.UserProfilePage`'s own embedded copies -- see
+`Model.embeddedPage`'s own doc.
+
 -}
-init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> ( Model, Effect Msg )
-init shared author navKey path query =
+init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
+init shared author navKey path query embeddedPage =
     let
         ( fetchedModel, fetchEffect ) =
             fetchNewServers shared
                 { postsByServer = Dict.empty
                 , postAnimations = Dict.empty
                 , author = author
+                , embeddedPage = embeddedPage
                 , navKey = navKey
                 , path = path
                 , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
@@ -299,29 +314,42 @@ applySearchChange shared model =
 
 {-| Keeps `Shared.Breadcrumbs` pointed at this feed's own root: `FromServerHost
 mainFrontendHost` for an unfiltered feed (`model.author == Nothing`, e.g.
-`Pages.Home_`), or `FromUser` the already-resolved author once one's known
+`Pages.Posts`), or `FromUser` the already-resolved author once one's known
 (`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`, which only ever call
 `init` once their own `Resolver` has actually loaded the `User` -- see
 `Pages.Username_.Posts.update`) -- mirrors
 `Components.Pages.UserProfilePage.setBreadcrumbsHost`, reissued after every
 `update`, a no-op once already in sync via the same equality check.
+
+Always `Effect.none` for an embedded copy (`model.embeddedPage`, e.g.
+`Pages.Home_`'s or `Components.Pages.UserProfilePage`'s own) -- the embedding
+page already owns `Shared.Breadcrumbs` itself, so this copy asserting a root
+of its own on every `update` (including every animation tick, e.g. from
+`postAnimations`) would otherwise fight the real owner for it, flickering
+between the two roots whenever this page's `update` fires more often than the
+embedding page's own (previously the actual cause of a breadcrumb flicker
+during `Components.Pages.UserProfilePage`'s `EventsPage` animations).
 -}
 setBreadcrumbsRoot : Shared.Model -> Model -> Effect Msg
 setBreadcrumbsRoot shared model =
-    let
-        ( root, host ) =
-            case model.author of
-                Just ( authorHost, user ) ->
-                    ( Breadcrumbs.FromUser user, authorHost )
-
-                Nothing ->
-                    ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
-    in
-    if shared.breadcrumbs.root == Just root then
+    if model.embeddedPage then
         Effect.none
 
     else
-        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
+        let
+            ( root, host ) =
+                case model.author of
+                    Just ( authorHost, user ) ->
+                        ( Breadcrumbs.FromUser user, authorHost )
+
+                    Nothing ->
+                        ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+        in
+        if shared.breadcrumbs.root == Just root then
+            Effect.none
+
+        else
+            Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
 
 
 {-| Persists `model.searchText`/`model.context` to the URL as `search_text`/

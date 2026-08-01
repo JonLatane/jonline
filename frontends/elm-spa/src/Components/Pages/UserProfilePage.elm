@@ -352,6 +352,16 @@ belongs to one specific server. `targetHost` is already known from the route
 by `init` (see `Pages.User.UserId_.init`/`Pages.Username_.init`), so this
 covers both the very first paint and any later host change (e.g.
 `ConnectClicked` connecting a not-yet-connected `targetHost`).
+
+This is the *only* thing here allowed to touch `Shared.Breadcrumbs` --
+`model.posts`/`model.events` are embedded `PostsPage`/`EventsPage` copies
+(both `init`ed with `embeddedPage = True`), which leaves their own
+`setBreadcrumbsRoot` a permanent no-op (see those docs).
+Before that, both copies independently asserted their own root (`FromUser
+user`) on every `update`, including every animation tick from
+`model.events.eventAnimations` -- fighting this function's own
+`FromServerHost` assertion right back on the very next tick, a continuous
+flicker between the two roots.
 -}
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
@@ -418,7 +428,7 @@ updateInner shared msg model =
                                 Nothing ->
                                     let
                                         ( postsModel, postsEffect ) =
-                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) federatedModel.navKey federatedModel.path federatedModel.query
+                                            PostsPage.init shared (Just ( newResolver.targetHost, user )) federatedModel.navKey federatedModel.path federatedModel.query True
                                     in
                                     ( { federatedModel | posts = Just postsModel }, Effect.map PostsMsg postsEffect )
 
@@ -1309,7 +1319,7 @@ profileDetail shared model server maybeAccount user =
         eventsHref =
             baseHref ++ "/events"
     in
-    div [ classes [ "profile-detail", server.frontendHost, "border-color-primary-anchor-50" ] ]
+    div [ classes [ "profile-detail", hostnameToCSSClass server.frontendHost, "border-color-primary-anchor-50" ] ]
         [ div [ class "profile-header-row" ]
             [ div [ class "profile-header" ]
                 [ avatarView canEdit server maybeAccount model.avatarEdit user
@@ -1345,7 +1355,7 @@ profileDetail shared model server maybeAccount user =
             )
         , case model.events of
             Just eventsModel ->
-                Html.map EventsMsg (EventsPage.view shared True False eventsModel)
+                Html.map EventsMsg (EventsPage.view shared False eventsModel)
 
             Nothing ->
                 text ""

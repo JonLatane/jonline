@@ -132,12 +132,16 @@ type alias Model =
 
     -- `True` for embedded copies of this model whose own default `mode` is
     -- `HorizontalList`/"row" rather than `VerticalList`/"list" (currently
-    -- just `Pages.Home_`'s, passed via `init`'s own `embeddedRow` argument,
-    -- but meant to cover other embedded-row copies later, e.g. on user
-    -- profiles) -- changes `queryParams`' notion of `mode`'s default (see
-    -- `defaultMode`) so an embedded copy's own default doesn't round-trip
-    -- to an explicit `?display=row`.
-    , embeddedRow : Bool
+    -- `Pages.Home_`'s and `Components.Pages.UserProfilePage`'s, passed via
+    -- `init`'s own `embeddedPage` argument) -- changes `queryParams`' notion
+    -- of `mode`'s default (see `defaultMode`) so an embedded copy's own
+    -- default doesn't round-trip to an explicit `?display=row`. Also gates
+    -- `setBreadcrumbsRoot` off entirely (see its own doc) -- an embedded
+    -- copy's embedding page (`Pages.Home_`, `Components.Pages.UserProfilePage`)
+    -- owns `Shared.Breadcrumbs` itself, so this copy asserting a root of its
+    -- own on every `update` (including every animation tick, e.g. from
+    -- `eventAnimations`) would otherwise fight the real owner for it.
+    , embeddedPage : Bool
     , measurementPhase : MeasurementPhase
     , author : Maybe ( String, User )
     , navKey : Browser.Navigation.Key
@@ -245,14 +249,15 @@ wait on anything. Without one, this starts on `UpcomingEvents` with
 below resolves and supplies a real cutoff; see `Model.endsAfter`'s own doc
 for why that matters.
 
-`embeddedRow` is `True` only for `Pages.Home_`'s own embedded copy of this
-model (see `Model.embeddedRow`'s own doc for why it's tracked at all) --
-`True` also flips `mode`'s own default to `HorizontalList` here (absent an
-explicit `?display=`), matching the layout that copy is fixed to.
+`embeddedPage` is `True` only for `Pages.Home_`'s and
+`Components.Pages.UserProfilePage`'s own embedded copies of this model (see
+`Model.embeddedPage`'s own doc for why it's tracked at all) -- `True` also
+flips `mode`'s own default to `HorizontalList` here (absent an explicit
+`?display=`), matching the layout those copies are fixed to.
 
 -}
 init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
-init shared author navKey path query embeddedRow =
+init shared author navKey path query embeddedPage =
     let
         ( tab, endsAfter ) =
             case Dict.get "ends_after" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
@@ -266,8 +271,8 @@ init shared author navKey path query embeddedRow =
             fetchNewServers shared
                 { eventsByServer = Dict.empty
                 , eventAnimations = Dict.empty
-                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedRow)
-                , embeddedRow = embeddedRow
+                , mode = Dict.get "display" query |> Maybe.andThen displayModeFromParam |> Maybe.withDefault (defaultMode embeddedPage)
+                , embeddedPage = embeddedPage
                 , measurementPhase = NotMeasuring
                 , author = author
                 , navKey = navKey
@@ -444,24 +449,29 @@ fetchNewServers shared model =
 
 
 {-| Mirrors `Components.Pages.PostsPage.setBreadcrumbsRoot` exactly, keyed
-off this feed's own `author`.
+off this feed's own `author` -- including always being `Effect.none` for an
+embedded copy (`model.embeddedPage`), see that doc for why.
 -}
 setBreadcrumbsRoot : Shared.Model -> Model -> Effect Msg
 setBreadcrumbsRoot shared model =
-    let
-        ( root, host ) =
-            case model.author of
-                Just ( authorHost, user ) ->
-                    ( Breadcrumbs.FromUser user, authorHost )
-
-                Nothing ->
-                    ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
-    in
-    if shared.breadcrumbs.root == Just root then
+    if model.embeddedPage then
         Effect.none
 
     else
-        Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
+        let
+            ( root, host ) =
+                case model.author of
+                    Just ( authorHost, user ) ->
+                        ( Breadcrumbs.FromUser user, authorHost )
+
+                    Nothing ->
+                        ( Breadcrumbs.FromServerHost shared.accountsPanel.mainFrontendHost, shared.accountsPanel.mainFrontendHost )
+        in
+        if shared.breadcrumbs.root == Just root then
+            Effect.none
+
+        else
+            Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
 
 
 
@@ -602,7 +612,7 @@ being less to measure/animate.
 -}
 maxDisplayedEvents : Model -> Int
 maxDisplayedEvents model =
-    if model.embeddedRow then
+    if model.embeddedPage then
         20
 
     else
@@ -1183,15 +1193,15 @@ displayModeFromParam param =
             Nothing
 
 
-{-| The `EventsDisplayMode` an `embeddedRow` copy of this model defaults to
+{-| The `EventsDisplayMode` an `embeddedPage` copy of this model defaults to
 absent an explicit `?display=` -- `HorizontalList` for `Pages.Home_`'s own
-embedded copy (`embeddedRow = True`), `VerticalList` everywhere else. Shared
+embedded copy (`embeddedPage = True`), `VerticalList` everywhere else. Shared
 by `init` (seeding `Model.mode`) and `queryParams` (deciding when `display`
 round-trips to/from absence entirely) so the two never drift apart.
 -}
 defaultMode : Bool -> EventsDisplayMode
-defaultMode embeddedRow =
-    if embeddedRow then
+defaultMode embeddedPage =
+    if embeddedPage then
         HorizontalList
 
     else
@@ -1200,7 +1210,7 @@ defaultMode embeddedRow =
 
 {-| Every query param this page persists, read fresh off `model` -- `display`
 (see `displayModeParam`; omitted while `model.mode` is whichever
-`EventsDisplayMode` `model.embeddedRow` makes _this_ copy's own default --
+`EventsDisplayMode` `model.embeddedPage` makes _this_ copy's own default --
 `HorizontalList` for `Pages.Home_`'s embedded copy, `VerticalList`
 everywhere else -- mirroring `init`'s own `defaultMode`), `search_text`
 (mirrors `PostsPage.pushSearchUrl`'s own omit-when-blank convention), and
@@ -1216,7 +1226,7 @@ out whatever the others had just set.
 -}
 queryParams : Model -> List Url.Builder.QueryParameter
 queryParams model =
-    (if model.mode == defaultMode model.embeddedRow then
+    (if model.mode == defaultMode model.embeddedPage then
         []
 
      else
@@ -1283,10 +1293,10 @@ pushUrl model =
 -- VIEW
 
 
-{-| `homeEmbedded` is `True` only for `Pages.Home_`'s own copy of this view
-(rendered above its posts feed, fixed to `HorizontalList`/"Row" -- see
-`Model.embeddedRow`, passed as `init`'s own `embeddedRow` argument) -- it, together with
-`shared.adminPanel.showAllEventLayouts`, decides which (if any) of
+{-| `model.embeddedPage` (`True` only for `Pages.Home_`'s and
+`Components.Pages.UserProfilePage`'s own copies of this view, fixed to
+`HorizontalList`/"Row" -- see `Model.embeddedPage`) together with
+`shared.adminPanel.showAllEventLayouts` decides which (if any) of
 `modeButtonsView`'s layout buttons show; see that function's own doc for the
 full visibility rules.
 
@@ -1298,8 +1308,8 @@ redundant. Every other caller passes `True`, preserving the previous always-show
 `model.author` is `Just`) behavior.
 
 -}
-view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
-view shared homeEmbedded showAuthorHeading model =
+view : Shared.Model -> Bool -> Model -> Html Msg
+view shared showAuthorHeading model =
     div []
         [ if showAuthorHeading then
             authorHeadingView shared model.author
@@ -1310,7 +1320,7 @@ view shared homeEmbedded showAuthorHeading model =
             [ tabsView shared model
             , searchRowView model
             , div [ class "events-controls-trailing" ]
-                [ modeButtonsView shared homeEmbedded model.mode
+                [ modeButtonsView shared model.embeddedPage model.mode
                 , exportButtonView shared model
                 ]
             ]
@@ -1412,7 +1422,7 @@ rather than raw UTC.
 -}
 tabsView : Shared.Model -> Model -> Html Msg
 tabsView shared model =
-    if model.embeddedRow then
+    if model.embeddedPage then
         span [ class "upcoming-events-tab-controls" ]
             [ hideStartedButtonView model
             , h3 [] [ text "Upcoming Events" ]
@@ -1531,28 +1541,29 @@ of control sharing one row) for `current`, and pushed to the row's right edge
 (see `events.css`'s `.events-controls-row`/`.events-mode-buttons`) -- mirrors
 `Pages.Event.EventId_.historyButtonView`'s pill styling.
 
-Which buttons show (if any) depends on `homeEmbedded` (see `view`'s own doc)
-and the "Show all event layouts" admin setting
+Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
+see `view`'s own doc) and the "Show all event layouts" admin setting
 (`shared.adminPanel.showAllEventLayouts`, see `Shared.AdminPanel`):
 
   - The setting on: all 3, everywhere -- the same as this used to always
-    render, before `homeEmbedded`/the setting existed.
-  - `Pages.Home_`'s embedded copy, setting off: none at all -- that copy is
-    fixed to `HorizontalList`/"Row" (see `Pages.Home_.init`), so there's
-    nothing useful to switch between.
+    render, before `embeddedPage`/the setting existed.
+  - An embedded copy (`Pages.Home_`, `Components.Pages.UserProfilePage`),
+    setting off: none at all -- those copies are fixed to
+    `HorizontalList`/"Row" (see `init`'s own `embeddedPage` argument), so
+    there's nothing useful to switch between.
   - Every other (standalone) page, setting off: `VerticalList`/`Grid` only --
-    "Row" is `Pages.Home_`'s own look; hidden elsewhere so it doesn't read as
-    an equally-supported standalone layout.
+    "Row" is the embedded copies' own look; hidden elsewhere so it doesn't
+    read as an equally-supported standalone layout.
 
 -}
 modeButtonsView : Shared.Model -> Bool -> EventsDisplayMode -> Html Msg
-modeButtonsView shared homeEmbedded current =
+modeButtonsView shared embeddedPage current =
     let
         visibleModes =
             if shared.adminPanel.showAllEventLayouts then
                 [ VerticalList, Grid, HorizontalList ]
 
-            else if homeEmbedded then
+            else if embeddedPage then
                 []
 
             else
@@ -1615,7 +1626,7 @@ icsUrl shared model =
 
 
 {-| The "Export" icon button always shown at the end of `events-controls-row`
-(next to `modeButtonsView`, unlike that one not gated by `homeEmbedded` -- it
+(next to `modeButtonsView`, unlike that one not gated by `embeddedPage` -- it
 belongs on every copy of this listing, embedded or not, per its own request).
 Toggles a small popover (`ExportClicked`/`ExportPopoverClosed`) anchored
 under the button showing `icsUrl`'s link and a "Copy Link" button
