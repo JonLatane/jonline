@@ -45,15 +45,19 @@ the change.
 
 -}
 
+import Animation
+import Browser.Dom as Dom
 import Browser.Navigation
 import Components.Markdown as Markdown
 import Components.Users as Users
 import Dict exposing (Dict)
 import Effect exposing (Effect)
 import Grpc
-import Html exposing (Html, button, div, h2, h3, img, input, label, li, option, p, select, span, text, ul)
-import Html.Attributes exposing (checked, class, disabled, selected, src, style, title, type_, value)
-import Html.Events exposing (onClick, onInput)
+import Html exposing (Html, button, div, h2, h3, img, input, label, option, p, select, span, text)
+import Html.Attributes exposing (checked, class, classList, disabled, id, placeholder, selected, src, style, title, type_, value)
+import Html.Events exposing (onClick, onInput, stopPropagationOn)
+import Html.Keyed
+import Json.Decode as Decode
 import Proto.Jonline exposing (FederatedServer, GetServiceVersionResponse, GetUsersResponse, ServerConfiguration, User, defaultGetUsersRequest, defaultMediaReference, defaultServerColors, defaultServerInfo, defaultServerLogo)
 import Proto.Jonline.Jonline as Jonline
 import Proto.Jonline.Permission exposing (Permission(..))
@@ -65,7 +69,8 @@ import Shared.MarkdownPanel as MarkdownPanel
 import Shared.MyMediaPanel as MyMediaPanel
 import Task
 import UI
-import UI.Classes exposing (classes)
+import UI.Classes exposing (classes, hostnameToCSSClass)
+import UI.Flip
 import UI.ServerTheme as ServerTheme
 import Url.Builder
 
@@ -240,6 +245,31 @@ type alias ColorEdit =
     }
 
 
+{-| Live only while the Federation tab's `FederatedServer` list is being
+edited by an admin -- `pending` is the in-progress ordered list (its order is
+this editor's own, never rederived from a fetch -- see `UI.Flip.remove`'s own
+doc on why a removing-but-not-yet-removed entry has to keep its slot rather
+than being relocated), independent of the actual saved list until
+`FederationSaveClicked` succeeds. `hostInput`/`addStatus` back the "type a
+host, validate it, add it" row (`FederatedServerAddClicked`, validated via
+`AccountsPanel.connectToServer` the same way this page's own `init` probes an
+unknown server); a freshly-added entry always starts with both flags off (see
+`GotFederatedServerAddResult`). `itemAnimations`/`moveAnimations` are this
+editor's own `UI.Flip` state for the chip strip's add/remove fade and
+left/right reorder-slide -- mirrors `Shared.AccountsPanel`'s
+`serverAnimations`/`serverMoveAnimations` for its Servers strip, just scoped
+to this one in-progress edit instead of the app-wide server list.
+-}
+type alias FederationEdit =
+    { pending : List FederatedServer
+    , hostInput : String
+    , addStatus : AccountsPanel.FormStatus
+    , status : AccountsPanel.FormStatus
+    , itemAnimations : Dict String (UI.Flip.State Msg)
+    , moveAnimations : Dict String (UI.Flip.MoveState Msg)
+    }
+
+
 type alias Model =
     { targetHost : String
     , isSecure : Bool
@@ -256,6 +286,7 @@ type alias Model =
     , logoEdit : Maybe LogoEdit
     , primaryColorEdit : Maybe ColorEdit
     , navigationColorEdit : Maybe ColorEdit
+    , federationEdit : Maybe FederationEdit
     }
 
 
@@ -291,6 +322,7 @@ init shared pageIsSecure targetHost navKey path query =
             , logoEdit = Nothing
             , primaryColorEdit = Nothing
             , navigationColorEdit = Nothing
+            , federationEdit = Nothing
             }
 
         ( fetchedModel, fetchEffect ) =
@@ -572,6 +604,37 @@ applyColorFor field argb config =
     { config | serverInfo = Just { info | colors = Just newColors } }
 
 
+{-| `FederationSaveClicked`'s transform, passed to `AccountsPanel.updateServerConfig`
+the same way `applyPermissionsFor`'s/`applyColorFor`'s results are -- overlays
+`servers` (the edit's `pending` list, in its edit's own order) onto a freshly
+re-fetched `ServerConfiguration`'s `federationInfo`, leaving every other field
+untouched.
+-}
+applyFederatedServers : List FederatedServer -> ServerConfiguration -> ServerConfiguration
+applyFederatedServers servers config =
+    { config | federationInfo = Just { servers = servers } }
+
+
+{-| Updates the one entry of `edit.pending` matching `host`, if any --
+`FederatedServerConfiguredByDefaultToggled`/`FederatedServerPinnedByDefaultToggled`'s
+shared plumbing.
+-}
+mapPendingHost : String -> (FederatedServer -> FederatedServer) -> FederationEdit -> FederationEdit
+mapPendingHost host fn edit =
+    { edit
+        | pending =
+            edit.pending
+                |> List.map
+                    (\federatedServer ->
+                        if federatedServer.host == host then
+                            fn federatedServer
+
+                        else
+                            federatedServer
+                    )
+    }
+
+
 {-| `model`'s in-progress `ColorEdit` for one `ServerColorField`, alongside its
 setter `setColorEditFor` just below -- mirrors `permissionsEditFor`/
 `setPermissionsEditFor`.
@@ -682,6 +745,23 @@ type Msg
     | ColorCancelClicked ServerColorField
     | ColorSaveClicked ServerColorField
     | GotColorSaveResult ServerColorField (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FederationEditClicked
+    | FederationCancelClicked
+    | FederationSaveClicked
+    | GotFederationSaveResult (Result Grpc.Error ( Maybe AccountsPanel.Msg, ServerConfiguration ))
+    | FederatedServerHostInputChanged String
+    | FederatedServerAddClicked
+    | GotFederatedServerAddResult String (Result Grpc.Error AccountsPanel.Server)
+    | FederatedServerRemoveClicked String
+    | FederatedServerRemoved String
+    | FederatedServerConfiguredByDefaultToggled String
+    | FederatedServerPinnedByDefaultToggled String
+    | MoveFederatedServerLeftClicked String
+    | MoveFederatedServerRightClicked String
+    | GotPreMoveFederatedServerPositions String String Int (Result Dom.Error ( Dom.Element, Dom.Element ))
+    | FederatedServerMoveSettled String
+    | AnimateFederatedServerFlip Animation.Msg
+    | AnimateFederatedServerMove Animation.Msg
     | SharedMsg Shared.Msg
 
 
@@ -975,6 +1055,238 @@ updateInner shared msg model =
             , Effect.none
             )
 
+        FederationEditClicked ->
+            case effectiveServer shared model of
+                Just server ->
+                    let
+                        savedServers =
+                            (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
+                    in
+                    ( { model
+                        | federationEdit =
+                            Just
+                                { pending = savedServers
+                                , hostInput = ""
+                                , addStatus = AccountsPanel.Idle
+                                , status = AccountsPanel.Idle
+                                , itemAnimations = savedServers |> List.map (\federatedServer -> ( federatedServer.host, UI.Flip.restingState )) |> Dict.fromList
+                                , moveAnimations = Dict.empty
+                                }
+                      }
+                    , Effect.none
+                    )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        FederationCancelClicked ->
+            ( { model | federationEdit = Nothing }, Effect.none )
+
+        FederationSaveClicked ->
+            case ( model.federationEdit, adminAccountFor shared model ) of
+                ( Just edit, Just account ) ->
+                    ( { model | federationEdit = Just { edit | status = AccountsPanel.Submitting } }
+                    , AccountsPanel.updateServerConfig shared.accountsPanel ( Just account.userId, model.targetHost ) (applyFederatedServers edit.pending)
+                        |> Task.attempt GotFederationSaveResult
+                        |> Effect.fromCmd
+                    )
+
+                _ ->
+                    ( model, Effect.none )
+
+        GotFederationSaveResult (Ok ( maybeAccountsPanelMsg, newConfig )) ->
+            ( { model | federationEdit = Nothing }
+            , Effect.batch
+                [ accountsPanelEffect maybeAccountsPanelMsg
+                , Effect.fromShared (Shared.AccountsPanelMsg (AccountsPanel.GotServerConfigSaveResult model.targetHost newConfig))
+                ]
+            )
+
+        GotFederationSaveResult (Err err) ->
+            ( { model | federationEdit = model.federationEdit |> Maybe.map (\edit -> { edit | status = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        FederatedServerHostInputChanged text ->
+            ( { model | federationEdit = model.federationEdit |> Maybe.map (\edit -> { edit | hostInput = text }) }, Effect.none )
+
+        FederatedServerAddClicked ->
+            case model.federationEdit of
+                Just edit ->
+                    let
+                        host =
+                            String.trim edit.hostInput
+                    in
+                    if String.isEmpty host || List.any (\federatedServer -> federatedServer.host == host) edit.pending then
+                        ( model, Effect.none )
+
+                    else
+                        ( { model | federationEdit = Just { edit | addStatus = AccountsPanel.Submitting } }
+                        , AccountsPanel.connectToServer model.isSecure host
+                            |> Task.attempt (GotFederatedServerAddResult host)
+                            |> Effect.fromCmd
+                        )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        GotFederatedServerAddResult host (Ok _) ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = { host = host, configuredByDefault = Just False, pinnedByDefault = Just False } :: edit.pending
+                                    , hostInput = ""
+                                    , addStatus = AccountsPanel.Idle
+                                    , itemAnimations = Dict.insert host UI.Flip.enter edit.itemAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        GotFederatedServerAddResult _ (Err err) ->
+            ( { model | federationEdit = model.federationEdit |> Maybe.map (\edit -> { edit | addStatus = AccountsPanel.Errored (AccountsPanel.grpcErrorToString err) }) }
+            , Effect.none
+            )
+
+        FederatedServerRemoveClicked host ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map
+                            (\edit ->
+                                let
+                                    currentState =
+                                        Dict.get host edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+                                in
+                                { edit | itemAnimations = Dict.insert host (UI.Flip.remove (FederatedServerRemoved host) currentState) edit.itemAnimations }
+                            )
+              }
+            , Effect.none
+            )
+
+        FederatedServerRemoved host ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = List.filter (\federatedServer -> federatedServer.host /= host) edit.pending
+                                    , itemAnimations = Dict.remove host edit.itemAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        FederatedServerConfiguredByDefaultToggled host ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map (mapPendingHost host (\federatedServer -> { federatedServer | configuredByDefault = Just (not (Maybe.withDefault False federatedServer.configuredByDefault)) }))
+              }
+            , Effect.none
+            )
+
+        FederatedServerPinnedByDefaultToggled host ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map (mapPendingHost host (\federatedServer -> { federatedServer | pinnedByDefault = Just (not (Maybe.withDefault False federatedServer.pinnedByDefault)) }))
+              }
+            , Effect.none
+            )
+
+        MoveFederatedServerLeftClicked host ->
+            ( model
+            , model.federationEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder .host federatedServerChipDomId GotPreMoveFederatedServerPositions -1 host edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        MoveFederatedServerRightClicked host ->
+            ( model
+            , model.federationEdit
+                |> Maybe.map (\edit -> UI.Flip.beginReorder .host federatedServerChipDomId GotPreMoveFederatedServerPositions 1 host edit.pending)
+                |> Maybe.withDefault Cmd.none
+                |> Effect.fromCmd
+            )
+
+        GotPreMoveFederatedServerPositions host _ offset (Err _) ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit |> Maybe.map (\edit -> { edit | pending = UI.Flip.moveListItemBy .host offset host edit.pending })
+              }
+            , Effect.none
+            )
+
+        GotPreMoveFederatedServerPositions host neighborHost offset (Ok ( chipEl, neighborEl )) ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map
+                            (\edit ->
+                                { edit
+                                    | pending = UI.Flip.moveListItemBy .host offset host edit.pending
+                                    , moveAnimations = UI.Flip.applyReorder UI.Flip.Horizontal FederatedServerMoveSettled host neighborHost chipEl neighborEl edit.moveAnimations
+                                }
+                            )
+              }
+            , Effect.none
+            )
+
+        FederatedServerMoveSettled host ->
+            ( { model
+                | federationEdit =
+                    model.federationEdit
+                        |> Maybe.map (\edit -> { edit | moveAnimations = Dict.update host (Maybe.map (\state -> { state | moving = False })) edit.moveAnimations })
+              }
+            , Effect.none
+            )
+
+        AnimateFederatedServerFlip animMsg ->
+            case model.federationEdit of
+                Just edit ->
+                    let
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.animate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.itemAnimations
+                    in
+                    ( { model | federationEdit = Just { edit | itemAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
+
+        AnimateFederatedServerMove animMsg ->
+            case model.federationEdit of
+                Just edit ->
+                    let
+                        step key state ( states, stepCmds ) =
+                            let
+                                ( newState, cmd ) =
+                                    UI.Flip.moveAnimate animMsg state
+                            in
+                            ( Dict.insert key newState states, cmd :: stepCmds )
+
+                        ( newAnimations, cmds ) =
+                            Dict.foldl step ( Dict.empty, [] ) edit.moveAnimations
+                    in
+                    ( { model | federationEdit = Just { edit | moveAnimations = newAnimations } }, Effect.fromCmd (Cmd.batch cmds) )
+
+                Nothing ->
+                    ( model, Effect.none )
+
         SharedMsg subMsg ->
             let
                 renameStatus =
@@ -1014,8 +1326,16 @@ updateInner shared msg model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    case model.federationEdit of
+        Just edit ->
+            Sub.batch
+                [ UI.Flip.subscription AnimateFederatedServerFlip (Dict.values edit.itemAnimations)
+                , UI.Flip.moveSubscription AnimateFederatedServerMove (Dict.values edit.moveAnimations)
+                ]
+
+        Nothing ->
+            Sub.none
 
 
 
@@ -1115,7 +1435,7 @@ tabContent shared model server =
             settingsTab shared model server
 
         FederationTab ->
-            federationTab server
+            federationTab shared model server
 
         CdnTab ->
             cdnTab server
@@ -1306,12 +1626,46 @@ themeTab shared model server =
 
         maybeAdminAccount =
             adminAccountFor shared model
+
+        config =
+            AccountsPanel.configurationOf server
+
+        webUi =
+            config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
     in
     div [ class "server-details-tab-content server-details-theme" ]
         [ colorEditorRow PrimaryColor "Primary Color" maybeAdminAccount model.primaryColorEdit (info.colors |> Maybe.andThen .primary)
         , colorEditorRow NavigationColor "Navigation Color" maybeAdminAccount model.navigationColorEdit (info.colors |> Maybe.andThen .navigation)
         , logoEditorView maybeAdminAccount model.logoEdit server (info.logo |> Maybe.andThen .squareMediaId)
+        , div [ class "server-details-setting" ]
+            [ h3 [] [ text "Default Web UI" ]
+            , case maybeAdminAccount of
+                Just account ->
+                    Html.map SharedMsg (UI.webUiToggleRow (AccountsPanel.accountId account) server.frontendHost webUi)
+
+                Nothing ->
+                    p [] [ text (webUserInterfaceText webUi) ]
+            ]
         ]
+
+
+webUserInterfaceText : WebUserInterface -> String
+webUserInterfaceText ui =
+    case ui of
+        FLUTTERWEB ->
+            "Flutter (legacy)"
+
+        HANDLEBARSTEMPLATES ->
+            "Handlebars Templates (deprecated)"
+
+        REACTTAMAGUI ->
+            "React (Tamagui)"
+
+        ELMSPA ->
+            "Elm"
+
+        WebUserInterfaceUnrecognized_ _ ->
+            "Unknown"
 
 
 {-| One `ServerColorField`'s row: the plain swatch/hex (plus an Edit button,
@@ -1442,45 +1796,14 @@ settingsTab shared model server =
         config =
             AccountsPanel.configurationOf server
 
-        webUi =
-            config.serverInfo |> Maybe.andThen .webUserInterface |> Maybe.withDefault FLUTTERWEB
-
         maybeAdminAccount =
             adminAccountFor shared model
     in
     div [ class "server-details-tab-content server-details-settings" ]
-        [ div [ class "server-details-setting" ]
-            [ h3 [] [ text "Default Web UI" ]
-            , case maybeAdminAccount of
-                Just account ->
-                    Html.map SharedMsg (UI.webUiToggleRow (AccountsPanel.accountId account) server.frontendHost webUi)
-
-                Nothing ->
-                    p [] [ text (webUserInterfaceText webUi) ]
-            ]
-        , permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
+        [ permissionsSection AnonymousPermissions "Anonymous User Permissions" maybeAdminAccount model.anonymousPermissionsEdit config.anonymousUserPermissions
         , permissionsSection DefaultPermissions "Default User Permissions" maybeAdminAccount model.defaultPermissionsEdit config.defaultUserPermissions
         , permissionsSection BasicPermissions "Basic User Permissions" maybeAdminAccount model.basicPermissionsEdit config.basicUserPermissions
         ]
-
-
-webUserInterfaceText : WebUserInterface -> String
-webUserInterfaceText ui =
-    case ui of
-        FLUTTERWEB ->
-            "Flutter (legacy)"
-
-        HANDLEBARSTEMPLATES ->
-            "Handlebars Templates (deprecated)"
-
-        REACTTAMAGUI ->
-            "React (Tamagui)"
-
-        ELMSPA ->
-            "Elm"
-
-        WebUserInterfaceUnrecognized_ _ ->
-            "Unknown"
 
 
 {-| One of the three server-wide permission sections (Anonymous/Default/Basic,
@@ -1590,37 +1913,263 @@ editErrorView status =
 -- FEDERATION TAB
 
 
-federationTab : AccountsPanel.Server -> Html Msg
-federationTab server =
+{-| The DOM `id` a federated-server chip is rendered with while `federationEdit`
+is active -- the `UI.Flip.Horizontal` counterpart of `AccountsPanel.serverChipDomId`,
+for `MoveFederatedServerLeftClicked`/`MoveFederatedServerRightClicked` to
+measure. Deliberately its own id scheme (not `AccountsPanel.serverChipDomId`)
+even though a federated host can coincide with an already-added server's own
+`frontendHost` -- that server's own chip (in the Accounts Panel, via
+`UI.serversStrip`) can be on-screen at the very same time this tab is, and DOM
+ids must be unique.
+-}
+federatedServerChipDomId : String -> String
+federatedServerChipDomId host =
+    "federated-server-chip-" ++ host
+
+
+{-| The `AccountsPanel.Server` to show a federated host's name/logo off of --
+the real, already-known one if `host` happens to also be a known `Server`
+(e.g. also added to Accounts & Servers), otherwise a synthetic unconnected
+record whose `AccountsPanel.brandingOf` falls back to the bare host string (no
+logo, no separate name) -- same "synthesize an unconnected `Server`" fallback
+`UI.recommendedServerChip` uses for a host it hasn't background-connected to
+yet.
+-}
+federatedServerFor : Shared.Model -> String -> AccountsPanel.Server
+federatedServerFor shared host =
+    AccountsPanel.serverForHost shared.accountsPanel.servers host
+        |> Maybe.withDefault { frontendHost = host, enabled = False, connected = Nothing }
+
+
+{-| Only an admin sees the Edit button (and, once clicked, the editor -- see
+`federationEditorView`); anyone else just sees the read-only chip strip
+(`federationDisplayView`), same split as `permissionsSection`/`colorEditorRow`.
+-}
+federationTab : Shared.Model -> Model -> AccountsPanel.Server -> Html Msg
+federationTab shared model server =
     let
-        federatedServers =
+        maybeAdminAccount =
+            adminAccountFor shared model
+
+        savedServers =
             (AccountsPanel.configurationOf server).federationInfo |> Maybe.map .servers |> Maybe.withDefault []
     in
     div [ class "server-details-tab-content server-details-federation" ]
-        [ h3 [] [ text "Federated Servers" ]
-        , if List.isEmpty federatedServers then
-            p [] [ text "This server doesn't federate with any other servers." ]
+        [ h3 [ class "section-title" ] [ text "Federated Servers" ]
+        , case model.federationEdit of
+            Just edit ->
+                federationEditorView shared edit
 
-          else
-            ul [ class "server-details-federated-servers" ]
-                (List.map federatedServerRow federatedServers)
+            Nothing ->
+                federationDisplayView shared savedServers
+        , case ( model.federationEdit, maybeAdminAccount ) of
+            ( Nothing, Just _ ) ->
+                button [ class "server-details-rename-button", onClick FederationEditClicked ] [ text "Edit" ]
+
+            _ ->
+                text ""
         ]
 
 
-federatedServerRow : FederatedServer -> Html Msg
-federatedServerRow federatedServer =
-    li [ class "server-details-federated-server" ]
-        [ span [ class "server-details-federated-server-host" ] [ text federatedServer.host ]
-        , if Maybe.withDefault False federatedServer.configuredByDefault then
-            span [ class "server-details-federated-server-badge" ] [ text "configured by default" ]
+federationDisplayView : Shared.Model -> List FederatedServer -> Html Msg
+federationDisplayView shared servers =
+    if List.isEmpty servers then
+        p [] [ text "This server doesn't federate with any other servers." ]
 
-          else
-            text ""
-        , if Maybe.withDefault False federatedServer.pinnedByDefault then
-            span [ class "server-details-federated-server-badge" ] [ text "pinned by default" ]
+    else
+        div [ class "federated-servers-strip" ] (List.map (federatedServerDisplayChip shared) servers)
 
-          else
-            text ""
+
+{-| One federated server, read-only -- host plus (only when set) its two
+default-federation flags, renamed for this UI per the module's own convention
+(`configuredByDefault`/`pinnedByDefault` are how `AccountsPanel.recommendedFederatedServers`'
+auto-connect/auto-pin behavior reads them, see that function's own doc).
+Styled as one of `UI.serverChip`'s chips (`.server-chip`, `.servers-strip`'s
+horizontal-scroll treatment, `.background-color-primary`/`-nav`) rather than
+introducing a whole new chip look.
+-}
+federatedServerDisplayChip : Shared.Model -> FederatedServer -> Html Msg
+federatedServerDisplayChip shared federatedServer =
+    let
+        configuredByDefault =
+            Maybe.withDefault False federatedServer.configuredByDefault
+
+        pinnedByDefault =
+            Maybe.withDefault False federatedServer.pinnedByDefault
+    in
+    div [ classes [ "server-chip", "federated-server-chip", hostnameToCSSClass federatedServer.host ] ]
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ AccountsPanel.serverNameAndLogo (federatedServerFor shared federatedServer.host) AccountsPanel.RegularServerLogo
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text federatedServer.host ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", "federated-server-flags", "background-color-nav" ] ]
+            [ if configuredByDefault then
+                span [ class "federated-server-flag-badge" ] [ text "Added by Default" ]
+
+              else
+                text ""
+            , if pinnedByDefault then
+                span [ class "federated-server-flag-badge" ] [ text "Enabled by Default" ]
+
+              else
+                text ""
+            , if not configuredByDefault && not pinnedByDefault then
+                span [ class "federated-server-flag-none" ] [ text "—" ]
+
+              else
+                text ""
+            ]
+        ]
+
+
+{-| The chip strip (add/remove/reorder-animated via `UI.Flip`, see `FederationEdit`'s
+own doc), the "type a host, validate it, add it" row, and the Save/Cancel
+actions -- everything shown once `FederationEditClicked` has started an edit.
+-}
+federationEditorView : Shared.Model -> FederationEdit -> Html Msg
+federationEditorView shared edit =
+    div [ class "server-details-federation-edit" ]
+        [ Html.Keyed.node "div"
+            [ classes [ "federated-servers-strip", "flip-animated-row" ] ]
+            (List.indexedMap
+                (\index federatedServer -> ( federatedServer.host, federatedServerEditChipFlip shared edit (List.length edit.pending) index federatedServer ))
+                edit.pending
+            )
+        , div [ class "server-details-federation-add" ]
+            [ input
+                [ class "server-details-federation-add-input"
+                , value edit.hostInput
+                , onInput FederatedServerHostInputChanged
+                , placeholder "example.com"
+                , disabled (edit.addStatus == AccountsPanel.Submitting)
+                ]
+                []
+            , button
+                [ class "server-details-rename-button"
+                , onClick FederatedServerAddClicked
+                , disabled (String.isEmpty (String.trim edit.hostInput) || edit.addStatus == AccountsPanel.Submitting)
+                ]
+                [ text
+                    (if edit.addStatus == AccountsPanel.Submitting then
+                        "Checking…"
+
+                     else
+                        "Add Server"
+                    )
+                ]
+            , editErrorView edit.addStatus
+            ]
+        , div [ class "server-details-permissions-actions" ]
+            [ editSaveButton FederationSaveClicked edit.status
+            , editCancelButton FederationCancelClicked edit.status
+            ]
+        , editErrorView edit.status
+        ]
+
+
+{-| Wraps `federatedServerEditChip` in a fading/scaling/collapsing animated
+outer `div` (entering when freshly added via `FederatedServerAddClicked`,
+removing when `FederatedServerRemoveClicked`) -- the edit-mode counterpart of
+`UI.serverChipFlip`, whose doc covers the two-layer reasoning (fade/collapse
+here vs. the chip's own, independent reorder-slide) in full.
+-}
+federatedServerEditChipFlip : Shared.Model -> FederationEdit -> Int -> Int -> FederatedServer -> Html Msg
+federatedServerEditChipFlip shared edit count index federatedServer =
+    let
+        flipState =
+            Dict.get federatedServer.host edit.itemAnimations |> Maybe.withDefault UI.Flip.restingState
+
+        isMoving =
+            Dict.get federatedServer.host edit.moveAnimations |> Maybe.map .moving |> Maybe.withDefault False
+
+        pointerEventsAttr =
+            if flipState.removing then
+                [ style "pointer-events" "none" ]
+
+            else
+                []
+    in
+    div (UI.Flip.itemAttributes UI.Flip.Horizontal flipState isMoving)
+        [ div pointerEventsAttr [ federatedServerEditChip shared edit count index federatedServer ] ]
+
+
+{-| One federated server's editor chip: left/right reorder arrows flanking
+the host (mirrors `UI.serverChip`'s own, `stopPropagationOn` for the same
+reason -- see `UI.Flip.reorderButtonPair`'s doc), the two default-federation
+flags as toggle switches (always starting off for a freshly-added server, see
+`GotFederatedServerAddResult`), and a remove button.
+-}
+federatedServerEditChip : Shared.Model -> FederationEdit -> Int -> Int -> FederatedServer -> Html Msg
+federatedServerEditChip shared edit count index federatedServer =
+    let
+        host =
+            federatedServer.host
+
+        moveAttrs =
+            edit.moveAnimations |> Dict.get host |> Maybe.map UI.Flip.moveAttributes |> Maybe.withDefault []
+
+        stopClick msg =
+            stopPropagationOn "click" (Decode.succeed ( msg, True ))
+
+        showBackward =
+            index > 0
+
+        showForward =
+            index < count - 1
+
+        reorderPair =
+            UI.Flip.reorderButtonPair UI.Flip.Horizontal
+                { moveBackward = stopClick (MoveFederatedServerLeftClicked host)
+                , moveForward = stopClick (MoveFederatedServerRightClicked host)
+                , canMoveBackward = showBackward
+                , canMoveForward = showForward
+                }
+    in
+    div
+        (id (federatedServerChipDomId host)
+            :: classes [ "server-chip", "federated-server-chip", "federated-server-chip-edit", hostnameToCSSClass host ]
+            :: moveAttrs
+        )
+        [ div [ classes [ "server-chip-top", "background-color-primary" ] ]
+            [ div [ class "server-chip-logo-row" ]
+                [ div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showBackward ) ] ] [ reorderPair.backward ]
+                , AccountsPanel.serverNameAndLogo (federatedServerFor shared host) AccountsPanel.RegularServerLogo
+                , div [ classList [ ( "reorder-arrow", True ), ( "reorder-arrow-hidden", not showForward ) ] ] [ reorderPair.forward ]
+                ]
+            , div [ class "server-chip-host-row" ] [ div [ class "server-chip-host" ] [ text host ] ]
+            ]
+        , div [ classes [ "server-chip-bottom", "federated-server-flags-edit", "background-color-nav" ] ]
+            [ federatedServerFlagToggle "Added by Default" (Maybe.withDefault False federatedServer.configuredByDefault) (FederatedServerConfiguredByDefaultToggled host)
+            , federatedServerFlagToggle "Enabled by Default" (Maybe.withDefault False federatedServer.pinnedByDefault) (FederatedServerPinnedByDefaultToggled host)
+            , div [ class "federated-server-chip-remove" ]
+                [ button
+                    [ class "remove-btn"
+                    , onClick (FederatedServerRemoveClicked host)
+                    , title ("Remove " ++ host)
+                    ]
+                    [ text "╳" ]
+                ]
+            ]
+        ]
+
+
+federatedServerFlagToggle : String -> Bool -> Msg -> Html Msg
+federatedServerFlagToggle label_ isChecked toggleMsg =
+    div [ class "federated-server-flag-toggle" ]
+        [ span [ class "federated-server-flag-toggle-label" ] [ text label_ ]
+        , flagSwitch isChecked toggleMsg
+        ]
+
+
+{-| A checkbox styled as a toggle switch, same `.switch`/`.slider` classes as
+`UI.switchInput` -- not reused directly since that function's `toggleMsg` is
+hard-coded to `Shared.Msg`, and these flags are this page's own local `Msg`.
+-}
+flagSwitch : Bool -> Msg -> Html Msg
+flagSwitch isChecked toggleMsg =
+    label [ class "switch" ]
+        [ input [ type_ "checkbox", checked isChecked, onClick toggleMsg ] []
+        , span [ class "slider" ] []
         ]
 
 

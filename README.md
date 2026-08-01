@@ -50,6 +50,7 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 * Installation: `brew`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
+* `convert_media_sizes` background job: ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips (logging an error) if it's missing.
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -93,6 +94,7 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 * Installation/Updates: `jq`, `curl`, `xargs`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
+* `convert_media_sizes` background job: ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips (logging an error) if it's missing.
 
 ```bash
 # Get the package with curl/jq, and extract it. This is actually also what updater script does.
@@ -323,7 +325,7 @@ Jonline supports Groups, which are much like Usenet groups, Facebook groups, or 
 
 ### Media
 
-Jonline `Media` is straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
+Jonline `Media` is something like ActiveStorage, but with Rust and Diesel. It's straightforwardly built on content-types and blob storage. It's the reason Jonline requires S3/MinIO. Unlike `Post`s and `Event`s, `Media` is generally not shared directly. It is instead associated with `Post`s and `Event`s (for media listings) as well as Users and Groups (for their avatars).
 
 Media is the *only* part of Jonline's APIs offered over HTTP as well as gRPC/gRPC-over-HTTP. (Hopefully the reasons for this are obvious: easy browser streaming and cache utilization for things like images.) Details on the HTTP Media APIs are in the ["Media" section](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md#media) of the [protocol documentation](https://github.com/JonLatane/jonline/blob/main/docs/protocol.md).
 

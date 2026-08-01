@@ -20,11 +20,28 @@ use crate::schema::{follows, group_posts, memberships, posts, users};
 use crate::rpcs::validations::PASSING_MODERATIONS;
 
 const PAGE_SIZE: i64 = 200;
+
+// The cutoff every listing branch (other than a single `post_id`/its replies) filters
+// `posts::sort_published_at` against, per `GetPostsRequest.published_or_created_before`'s own
+// doc comment -- `None` when unset, applying no cutoff. Cheap everywhere except
+// `get_search_posts`: every other branch already orders by (and, per
+// `2026-07-27-215959_add_sort_published_at_to_posts`, is indexed on) this exact column, so the
+// filter rides the same index scan the ordering already needs; search instead resolves matches
+// via its own GIN index on `search_text` first, so this filter there is a plain (still
+// correct, just not index-assisted) predicate over that already-narrow candidate set.
+fn published_or_created_before(request: &GetPostsRequest) -> Option<std::time::SystemTime> {
+    request
+        .published_or_created_before
+        .as_ref()
+        .map(|ts| ts.to_db())
+}
+
 pub fn get_posts(
     request: GetPostsRequest,
     user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetPostsResponse, Status> {
+    let cutoff = published_or_created_before(&request);
     let result = match (
         request.listing_type(),
         request.to_owned().post_id,
@@ -38,10 +55,12 @@ pub fn get_posts(
         (_, _, Some(_author_user_id)) => get_user_posts(request, &user.clone(), conn)?,
         (PostListingType::MyGroupsPosts, _, _) => get_my_group_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
+            cutoff,
             conn,
         )?,
         (PostListingType::FollowingPosts, _, _) => get_following_posts(
             user.ok_or(Status::new(Code::Unauthenticated, "must_be_logged_in"))?,
+            cutoff,
             conn,
         )?,
         (PostListingType::GroupPosts, _, _) => get_group_posts(
@@ -52,6 +71,7 @@ pub fn get_posts(
                 .to_db_id_or_err("group_id")?,
             &user.clone(),
             vec![Moderation::Unmoderated, Moderation::Approved],
+            cutoff,
             conn,
         )?,
         (PostListingType::GroupPostsPendingModeration, _, _) => {
@@ -67,6 +87,7 @@ pub fn get_posts(
                     .to_db_id_or_err("group_id")?,
                 &binding,
                 vec![Moderation::Pending],
+                cutoff,
                 conn,
             )?
         }
@@ -170,6 +191,10 @@ fn get_public_and_following_posts(
         query = query.filter(posts::parent_post_id.is_null());
     }
 
+    if let Some(cutoff) = published_or_created_before(request) {
+        query = query.filter(posts::sort_published_at.lt(cutoff));
+    }
+
     query
         .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .unwrap()
@@ -232,6 +257,10 @@ fn get_search_posts(
         matching_post_ids = matching_post_ids.filter(posts::user_id.eq(author_user_id));
     }
 
+    if let Some(cutoff) = published_or_created_before(request) {
+        matching_post_ids = matching_post_ids.filter(posts::sort_published_at.lt(cutoff));
+    }
+
     let result: Vec<MarshalablePost> = posts::table
         .left_join(users::table.on(posts::user_id.eq(users::id.nullable())))
         .filter(posts::id.eq_any(matching_post_ids))
@@ -254,6 +283,7 @@ fn get_search_posts(
 
 fn get_my_group_posts(
     user: &models::User,
+    cutoff: Option<std::time::SystemTime>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
     // let is_admin = user
@@ -261,7 +291,7 @@ fn get_my_group_posts(
     //     .to_proto_permissions()
     //     .contains(&Permission::Admin);
 
-    let result: Vec<MarshalablePost> = query_visible_posts!(&Some(user))
+    let mut query = query_visible_posts!(&Some(user))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(memberships::user_id.eq(user.id))
         .filter(group_posts::group_moderation.eq_any(PASSING_MODERATIONS))
@@ -271,6 +301,13 @@ fn get_my_group_posts(
             models::AUTHOR_COLUMNS.nullable(),
             posts::sort_published_at,
         ))
+        .into_boxed();
+
+    if let Some(cutoff) = cutoff {
+        query = query.filter(posts::sort_published_at.lt(cutoff));
+    }
+
+    let result: Vec<MarshalablePost> = query
         .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -284,6 +321,7 @@ fn get_group_posts(
     group_id: i64,
     user: &Option<&models::User>,
     moderations: Vec<Moderation>,
+    cutoff: Option<std::time::SystemTime>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
     let group = get_group(group_id, conn);
@@ -294,7 +332,7 @@ fn get_group_posts(
                 .flatten();
             validate_group_permission(&group, &membership.as_ref(), user, Permission::ViewPosts)?;
             let group_post_users = alias!(users as group_post_users);
-            let result: Vec<MarshalablePost> = query_visible_posts!(user)
+            let mut query = query_visible_posts!(user)
                 .left_join(
                     group_post_users.on(group_posts::user_id.eq(group_post_users.field(users::id))),
                 )
@@ -309,6 +347,13 @@ fn get_group_posts(
                     group_post_users.fields(models::AUTHOR_COLUMNS.nullable()),
                     posts::sort_published_at,
                 ))
+                .into_boxed();
+
+            if let Some(cutoff) = cutoff {
+                query = query.filter(posts::sort_published_at.lt(cutoff));
+            }
+
+            let result: Vec<MarshalablePost> = query
                 .load::<(
                     models::Post,
                     Option<models::Author>,
@@ -348,7 +393,7 @@ fn get_user_posts(
         .to_string()
         .to_db_id_or_err("user_id")?;
 
-    let result: Vec<MarshalablePost> = query_visible_posts!(current_user)
+    let mut query = query_visible_posts!(current_user)
         .filter(posts::context.eq(request.context().as_str_name()))
         .filter(posts::user_id.eq(user_id))
         .select((
@@ -357,6 +402,13 @@ fn get_user_posts(
             posts::sort_published_at,
         ))
         .order(posts::sort_published_at.desc())
+        .into_boxed();
+
+    if let Some(cutoff) = published_or_created_before(&request) {
+        query = query.filter(posts::sort_published_at.lt(cutoff));
+    }
+
+    let result: Vec<MarshalablePost> = query
         .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()
@@ -368,9 +420,10 @@ fn get_user_posts(
 
 fn get_following_posts(
     user: &models::User,
+    cutoff: Option<std::time::SystemTime>,
     conn: &mut PgPooledConnection,
 ) -> Result<Vec<MarshalablePost>, Status> {
-    let result: Vec<MarshalablePost> = query_visible_posts!(&Some(user))
+    let mut query = query_visible_posts!(&Some(user))
         .filter(posts::context.eq(PostContext::Post.as_str_name()))
         .filter(follows::user_id.eq(user.id))
         .select((
@@ -379,6 +432,13 @@ fn get_following_posts(
             posts::sort_published_at,
         ))
         .order(posts::sort_published_at.desc())
+        .into_boxed();
+
+    if let Some(cutoff) = cutoff {
+        query = query.filter(posts::sort_published_at.lt(cutoff));
+    }
+
+    let result: Vec<MarshalablePost> = query
         .load::<(models::Post, Option<models::Author>, std::time::SystemTime)>(conn)
         .map_err(|_| Status::new(Code::Internal, "error_loading_posts"))?
         .iter()

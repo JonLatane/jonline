@@ -50,6 +50,13 @@ message GetEventsRequest {
   // Event per matching EventInstance (see GetEventsResponse's own doc), not
   // the requested EventInstance's whole parent Event's full instance list.
   repeated string event_instance_post_ids = 12;
+  // Auth token proving ownership of an anonymous RSVP, mirroring
+  // `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
+  // (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when
+  // `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
+  // `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
+  // does automatically.
+  optional string anonymous_attendee_auth_token = 13;
 }
 
 // Time filter that works on the `starts_at` and `ends_at` fields of `EventInstance`.
@@ -123,7 +130,8 @@ message Event {
   // A list of instances for the Event. *Events will only include all instances if the request is for a single event.*
   repeated EventInstance instances = 4;
 
-  // If the event was synced from a source (meaning it should not be editable)
+  // If the event was synced from a source (meaning only its media should not be editable),
+  // this is the source it was synced from.
   optional EventSyncSource event_sync_source = 5;
 }
 
@@ -205,9 +213,15 @@ message EventInstance {
   google.protobuf.Timestamp ends_at = 6;
   // The location of the event.
   optional Location location = 7;
-  
-  // If this instance's `Event` was synced from an
+  // The "iCal ID" (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`.
   optional string event_sync_source_instance_id = 8;
+  // The time since this event "disappeared" from the sync source.
+  // It is up to the owner whether this means it should be deleted.
+  optional google.protobuf.Timestamp sync_missing_since = 9;
+  // RSVP + invite data for this instance.
+  optional EventAttendances attendances = 10;
+  // If the request was made by a logged-in user, this is the current user's attendance for this instance.
+  optional EventAttendance current_user_attendance = 11;
 }
 
 // To be used for ticketing, RSVPs, etc.

@@ -235,6 +235,15 @@ export interface GetEventsRequest {
    * the requested EventInstance's whole parent Event's full instance list.
    */
   eventInstancePostIds: string[];
+  /**
+   * Auth token proving ownership of an anonymous RSVP, mirroring
+   * `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee's own
+   * (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when
+   * `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned
+   * `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user's own RSVP
+   * does automatically.
+   */
+  anonymousAttendeeAuthToken?: string | undefined;
 }
 
 /**
@@ -294,7 +303,10 @@ export interface Event {
     | undefined;
   /** A list of instances for the Event. *Events will only include all instances if the request is for a single event.* */
   instances: EventInstance[];
-  /** If the event was synced from a source (meaning it should not be editable) */
+  /**
+   * If the event was synced from a source (meaning only its media should not be editable),
+   * this is the source it was synced from.
+   */
   eventSyncSource?: EventSyncSource | undefined;
 }
 
@@ -411,8 +423,23 @@ export interface EventInstance {
   location?:
     | Location
     | undefined;
-  /** If this instance's `Event` was synced from an */
-  eventSyncSourceInstanceId?: string | undefined;
+  /** The "iCal ID" (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`. */
+  eventSyncSourceInstanceId?:
+    | string
+    | undefined;
+  /**
+   * The time since this event "disappeared" from the sync source.
+   * It is up to the owner whether this means it should be deleted.
+   */
+  syncMissingSince?:
+    | string
+    | undefined;
+  /** RSVP + invite data for this instance. */
+  attendances?:
+    | EventAttendances
+    | undefined;
+  /** If the request was made by a logged-in user, this is the current user's attendance for this instance. */
+  currentUserAttendance?: EventAttendance | undefined;
 }
 
 /**
@@ -573,6 +600,7 @@ function createBaseGetEventsRequest(): GetEventsRequest {
     listingType: 0,
     searchText: undefined,
     eventInstancePostIds: [],
+    anonymousAttendeeAuthToken: undefined,
   };
 }
 
@@ -612,6 +640,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     }
     for (const v of message.eventInstancePostIds) {
       writer.uint32(98).string(v!);
+    }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      writer.uint32(106).string(message.anonymousAttendeeAuthToken);
     }
     return writer;
   },
@@ -721,6 +752,14 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
           message.eventInstancePostIds.push(reader.string());
           continue;
         }
+        case 13: {
+          if (tag !== 106) {
+            break;
+          }
+
+          message.anonymousAttendeeAuthToken = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -747,6 +786,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
       eventInstancePostIds: globalThis.Array.isArray(object?.eventInstancePostIds)
         ? object.eventInstancePostIds.map((e: any) => globalThis.String(e))
         : [],
+      anonymousAttendeeAuthToken: isSet(object.anonymousAttendeeAuthToken)
+        ? globalThis.String(object.anonymousAttendeeAuthToken)
+        : undefined,
     };
   },
 
@@ -785,6 +827,9 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     if (message.eventInstancePostIds?.length) {
       obj.eventInstancePostIds = message.eventInstancePostIds;
     }
+    if (message.anonymousAttendeeAuthToken !== undefined) {
+      obj.anonymousAttendeeAuthToken = message.anonymousAttendeeAuthToken;
+    }
     return obj;
   },
 
@@ -806,6 +851,7 @@ export const GetEventsRequest: MessageFns<GetEventsRequest> = {
     message.listingType = object.listingType ?? 0;
     message.searchText = object.searchText ?? undefined;
     message.eventInstancePostIds = object.eventInstancePostIds?.map((e) => e) || [];
+    message.anonymousAttendeeAuthToken = object.anonymousAttendeeAuthToken ?? undefined;
     return message;
   },
 };
@@ -1590,6 +1636,9 @@ function createBaseEventInstance(): EventInstance {
     endsAt: undefined,
     location: undefined,
     eventSyncSourceInstanceId: undefined,
+    syncMissingSince: undefined,
+    attendances: undefined,
+    currentUserAttendance: undefined,
   };
 }
 
@@ -1618,6 +1667,15 @@ export const EventInstance: MessageFns<EventInstance> = {
     }
     if (message.eventSyncSourceInstanceId !== undefined) {
       writer.uint32(66).string(message.eventSyncSourceInstanceId);
+    }
+    if (message.syncMissingSince !== undefined) {
+      Timestamp.encode(toTimestamp(message.syncMissingSince), writer.uint32(74).fork()).join();
+    }
+    if (message.attendances !== undefined) {
+      EventAttendances.encode(message.attendances, writer.uint32(82).fork()).join();
+    }
+    if (message.currentUserAttendance !== undefined) {
+      EventAttendance.encode(message.currentUserAttendance, writer.uint32(90).fork()).join();
     }
     return writer;
   },
@@ -1693,6 +1751,30 @@ export const EventInstance: MessageFns<EventInstance> = {
           message.eventSyncSourceInstanceId = reader.string();
           continue;
         }
+        case 9: {
+          if (tag !== 74) {
+            break;
+          }
+
+          message.syncMissingSince = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          continue;
+        }
+        case 10: {
+          if (tag !== 82) {
+            break;
+          }
+
+          message.attendances = EventAttendances.decode(reader, reader.uint32());
+          continue;
+        }
+        case 11: {
+          if (tag !== 90) {
+            break;
+          }
+
+          message.currentUserAttendance = EventAttendance.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1713,6 +1795,11 @@ export const EventInstance: MessageFns<EventInstance> = {
       location: isSet(object.location) ? Location.fromJSON(object.location) : undefined,
       eventSyncSourceInstanceId: isSet(object.eventSyncSourceInstanceId)
         ? globalThis.String(object.eventSyncSourceInstanceId)
+        : undefined,
+      syncMissingSince: isSet(object.syncMissingSince) ? globalThis.String(object.syncMissingSince) : undefined,
+      attendances: isSet(object.attendances) ? EventAttendances.fromJSON(object.attendances) : undefined,
+      currentUserAttendance: isSet(object.currentUserAttendance)
+        ? EventAttendance.fromJSON(object.currentUserAttendance)
         : undefined,
     };
   },
@@ -1743,6 +1830,15 @@ export const EventInstance: MessageFns<EventInstance> = {
     if (message.eventSyncSourceInstanceId !== undefined) {
       obj.eventSyncSourceInstanceId = message.eventSyncSourceInstanceId;
     }
+    if (message.syncMissingSince !== undefined) {
+      obj.syncMissingSince = message.syncMissingSince;
+    }
+    if (message.attendances !== undefined) {
+      obj.attendances = EventAttendances.toJSON(message.attendances);
+    }
+    if (message.currentUserAttendance !== undefined) {
+      obj.currentUserAttendance = EventAttendance.toJSON(message.currentUserAttendance);
+    }
     return obj;
   },
 
@@ -1763,6 +1859,14 @@ export const EventInstance: MessageFns<EventInstance> = {
       ? Location.fromPartial(object.location)
       : undefined;
     message.eventSyncSourceInstanceId = object.eventSyncSourceInstanceId ?? undefined;
+    message.syncMissingSince = object.syncMissingSince ?? undefined;
+    message.attendances = (object.attendances !== undefined && object.attendances !== null)
+      ? EventAttendances.fromPartial(object.attendances)
+      : undefined;
+    message.currentUserAttendance =
+      (object.currentUserAttendance !== undefined && object.currentUserAttendance !== null)
+        ? EventAttendance.fromPartial(object.currentUserAttendance)
+        : undefined;
     return message;
   },
 };

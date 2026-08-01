@@ -1184,6 +1184,7 @@ Valid GetPostsRequest formats:
 | listing_type | [PostListingType](#jonline-PostListingType) |  | The listing type of the request. See `PostListingType` for more info. |
 | page | [uint32](#uint32) |  | The page of results to return. Defaults to 0. |
 | search_text | [string](#string) | optional | Full-text search query, matched against the author&#39;s username/real name and the post&#39;s title/link/content. Required (and only used) when `listing_type` is `TEXT_SEARCH`. |
+| published_or_created_before | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | Request to only return posts that were published or created before the given timestamp. |
 
 
 
@@ -1388,7 +1389,7 @@ about the `Event`. Actual time data lies in its `EventInstances`.
 | post | [Post](#jonline-Post) |  | The Post containing the underlying data for the event (names). Its `PostContext` should be `EVENT`. |
 | info | [EventInfo](#jonline-EventInfo) |  | Event configuration like whether to allow (anonymous) RSVPs, etc. |
 | instances | [EventInstance](#jonline-EventInstance) | repeated | A list of instances for the Event. *Events will only include all instances if the request is for a single event.* |
-| event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning it should not be editable) |
+| event_sync_source | [EventSyncSource](#jonline-EventSyncSource) | optional | If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from. |
 
 
 
@@ -1477,7 +1478,10 @@ a `Location`, and an optional `Post` (and discussion thread) specific to this pa
 | starts_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event starts (UTC/Timestamp format). |
 | ends_at | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time the event ends (UTC/Timestamp format). |
 | location | [Location](#jonline-Location) | optional | The location of the event. |
-| event_sync_source_instance_id | [string](#string) | optional | If this instance&#39;s `Event` was synced from an |
+| event_sync_source_instance_id | [string](#string) | optional | The &#34;iCal ID&#34; (or external ID) of this instance, if its `Event` was synced from an `EventSyncSource`. |
+| sync_missing_since | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The time since this event &#34;disappeared&#34; from the sync source. It is up to the owner whether this means it should be deleted. |
+| attendances | [EventAttendances](#jonline-EventAttendances) | optional | RSVP &#43; invite data for this instance. |
+| current_user_attendance | [EventAttendance](#jonline-EventAttendance) | optional | If the request was made by a logged-in user, this is the current user&#39;s attendance for this instance. |
 
 
 
@@ -1609,6 +1613,7 @@ Valid GetEventsRequest formats:
 | listing_type | [EventListingType](#jonline-EventListingType) |  | The listing type, e.g. `ALL_ACCESSIBLE_EVENTS`, `FOLLOWING_EVENTS`, `MY_GROUPS_EVENTS`, `DIRECT_EVENTS`, `GROUP_EVENTS`, `GROUP_EVENTS_PENDING_MODERATION`. |
 | search_text | [string](#string) | optional | Search text for full-text search. |
 | event_instance_post_ids | [string](#string) | repeated | Loads multiple events by their event instances&#39; Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse&#39;s own doc), not the requested EventInstance&#39;s whole parent Event&#39;s full instance list. |
+| anonymous_attendee_auth_token | [string](#string) | optional | Auth token proving ownership of an anonymous RSVP, mirroring `GetEventAttendancesRequest.anonymous_attendee_auth_token`. Lets an anonymous attendee&#39;s own (possibly still-`PENDING`) `EventAttendance` and its `EventInstance.location` (when `EventInfo.hide_location_until_rsvp_approved` is set) surface via each returned `EventInstance.attendances`/`current_user_attendance`, same as a logged-in user&#39;s own RSVP does automatically. |
 
 
 

@@ -105,12 +105,6 @@
   margin-top: 1.5rem;
 }
 
-.server-details-federated-servers {
-  list-style: none;
-  padding: 0;
-  margin: 0.5rem 0 0;
-}
-
 /* Admins are now `Users.userCard`s (see `ServerInformationPage.adminCardView`)
    inside a plain `.users-list` -- see users.css for that class's own rules. */
 .server-details-admins .users-list {
@@ -217,19 +211,101 @@
   margin-top: 0.4rem;
 }
 
-.server-details-federated-server {
+/* Federated Servers tab (Components/Pages/ServerInformationPage.elm's
+   `federationTab`) -- a horizontally-scrolling strip of chips, reusing
+   accounts_panel.css's own `.server-chip`/`.server-chip-top`/`-bottom` look
+   (see `.servers-strip`'s own doc there for why there's no `gap` here in the
+   editable, `.flip-animated-row` variant -- inter-chip spacing instead lives
+   as `flip.css`'s `.flip-animated-item.horizontal` `padding-right`) rather
+   than introducing a whole new chip style. `federationDisplayView`'s
+   read-only strip isn't FLIP-animated (nothing ever adds/removes/reorders
+   it), so it sets its own `gap` directly instead. */
+.federated-servers-strip {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 0.35rem;
+  flex-shrink: 0;
 }
 
-.server-details-federated-server-badge {
-  font-size: 0.75rem;
-  color: var(--muted);
+.federated-servers-strip.flip-animated-row {
+  gap: 0;
+}
+
+.federated-server-chip {
+  width: 132px;
+}
+
+/* Overrides `.server-chip-bottom`'s own `justify-content: space-between`
+   (meant for exactly two/three items spread across the row) -- the flags
+   here stack instead, so `federationDisplayView`'s badges (0-3 of them) and
+   `federationEditorView`'s two toggles + remove button read as one tidy
+   column regardless of how many are actually shown. */
+.federated-server-flags,
+.federated-server-flags-edit {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.3rem;
+}
+
+.federated-server-flag-badge {
+  font-size: 0.7rem;
+  opacity: 0.5;
   border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.1rem 0.5rem;
+  border-radius: 0.6rem;
+  padding: 0.2rem 0.4rem;
+  text-align: center;
+}
+
+.federated-server-flag-none {
+  font-size: 0.7rem;
+  opacity: 0.5;
+  text-align: center;
+}
+
+.federated-server-flag-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.federated-server-flag-toggle-label {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  text-align: center;
+}
+
+.federated-server-chip-remove {
+  display: flex;
+  justify-content: center;
+  padding-top: 0.15rem;
+}
+
+.server-details-federation-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.server-details-federation-add {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.server-details-federation-add-input {
+  flex: 1 1 auto;
+  min-width: 10rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--border);
+  background: var(--panel-bg);
+  color: var(--fg);
 }
 
 .server-details-cdn-row {

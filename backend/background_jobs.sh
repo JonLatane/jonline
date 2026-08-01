@@ -34,6 +34,7 @@ JOBS=(
   "delete_unowned_media 10 28800"
   "sync_event_sync_sources 5 60"
   "update_user_counts 15 3600"
+  "convert_media_sizes 20 600"
 )
 
 cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")"

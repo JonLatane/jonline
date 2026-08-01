@@ -42,11 +42,13 @@ import Proto.Jonline.PostContext exposing (PostContext(..))
 import Shared
 import Shared.AccountsPanel as AccountsPanel
 import Shared.Breadcrumbs as Breadcrumbs
+import Shared.BrowserTimeZone as BrowserTimeZone
+import Shared.Conversions as Conversions
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Shared.StarredPanel as StarredPanel
 import Task
 import Time
-import UI.Classes exposing (hostnameToCSSClass)
+import UI.Classes exposing (classes, hostnameToCSSClass)
 import UI.Flip
 import Url.Builder
 
@@ -105,7 +107,43 @@ type alias Model =
     , searchText : String
     , context : PostContext
     , searchGeneration : Int
+
+    -- Which of `recentPostsTabsView`'s two tabs is active -- see `PostsTab`'s own doc.
+    , tab : PostsTab
+
+    -- The cutoff actually sent as `Components.Posts.fetchPosts`' own
+    -- `publishedOrCreatedBefore` whenever `tab == PostsBeforeDate` (ignored
+    -- entirely on `RecentPosts` -- see `refetchServers`'s own `fetchEffect`).
+    -- `Nothing` until either a `?published_before=` query param resolves it
+    -- on load, or `PostsBeforeDate` is selected for the first time (see
+    -- `GotNow`) -- mirrors `Components.Pages.EventsPage.Model.endsAfter`'s
+    -- own "don't fetch before a real cutoff exists" doc, just seeded once
+    -- rather than kept live.
+    , publishedBefore : Maybe Time.Posix
+
+    -- Debounces `PublishedBeforeInputChanged` (500ms) -- mirrors
+    -- `Components.Pages.EventsPage.Model.endsAfterInputGeneration` exactly,
+    -- just for this page's own date input.
+    , publishedBeforeInputGeneration : Int
     }
+
+
+{-| Which of `recentPostsTabsView`'s two tabs is active -- `RecentPosts` (the
+default) is this page's original, unfiltered-by-time feed; `PostsBeforeDate`
+filters by a fixed, user-picked `model.publishedBefore` cutoff, sent as
+`GetPostsRequest.published_or_created_before` (see
+`backend/src/rpcs/posts/get_posts.rs`) -- editable via its own
+`<input type="datetime-local">`. Persisted to the URL as a `published_before`
+query param (see `pushUrl`) -- its mere presence/absence on load is what
+`init` uses to decide which tab to start on, mirroring
+`Components.Pages.EventsPage.EventsTab`/`?ends_after=` exactly. Only ever
+shown (via `recentPostsTabsView`) on the standalone, unfiltered Posts page
+(`model.author == Nothing`, `not model.embeddedPage`) -- see that view's own
+doc for why.
+-}
+type PostsTab
+    = RecentPosts
+    | PostsBeforeDate
 
 
 {-| `author`, if given, restricts the feed to that user's own posts (see
@@ -119,13 +157,14 @@ the host alongside it to look up that server's `AccountsPanel.Server`/signed-in
 `Account` for `authorHeadingView`'s avatar).
 
 `navKey`/`path`, from the calling page's own `Request`, are what let
-`searchRowView`'s search box/context chooser persist `search_text`/`context`
-as URL query params (see `pushSearchUrl`) without this module needing to know
-which page-specific `Gen.Params.*` type that `Request` is actually parameterized
-over -- every caller's `Request.key`/`Request.url.path` fit this regardless.
-`query`, that same `Request`'s already-parsed `.query`, seeds `searchText`/
-`context` back out of the URL on load, so a shared/reloaded link reproduces
-the same search.
+`searchRowView`'s search box/context chooser and `recentPostsTabsView`'s date
+input persist `search_text`/`context`/`published_before` as URL query params
+(see `pushUrl`) without this module needing to know which page-specific
+`Gen.Params.*` type that `Request` is actually parameterized over -- every
+caller's `Request.key`/`Request.url.path` fit this regardless. `query`, that
+same `Request`'s already-parsed `.query`, seeds `searchText`/`context`/`tab`/
+`publishedBefore` back out of the URL on load, so a shared/reloaded link
+reproduces the same search/cutoff.
 
 `embeddedPage` is `True` only for `Pages.Home_`'s and
 `Components.Pages.UserProfilePage`'s own embedded copies -- see
@@ -135,6 +174,14 @@ the same search.
 init : Shared.Model -> Maybe ( String, User ) -> Browser.Navigation.Key -> String -> Dict String String -> Bool -> ( Model, Effect Msg )
 init shared author navKey path query embeddedPage =
     let
+        ( tab, publishedBefore ) =
+            case Dict.get "published_before" query |> Maybe.andThen Conversions.posixFromIsoUtcString of
+                Just cutoff ->
+                    ( PostsBeforeDate, Just cutoff )
+
+                Nothing ->
+                    ( RecentPosts, Nothing )
+
         ( fetchedModel, fetchEffect ) =
             fetchNewServers shared
                 { postsByServer = Dict.empty
@@ -146,6 +193,9 @@ init shared author navKey path query embeddedPage =
                 , searchText = Dict.get "search_text" query |> Maybe.withDefault ""
                 , context = Dict.get "context" query |> Maybe.andThen postContextFromParam |> Maybe.withDefault POST
                 , searchGeneration = 0
+                , tab = tab
+                , publishedBefore = publishedBefore
+                , publishedBeforeInputGeneration = 0
                 }
     in
     -- Closes any open panel (Accounts, Starred, etc.) unconditionally on
@@ -155,7 +205,26 @@ init shared author navKey path query embeddedPage =
     -- e.g. landing here right after `/people` while both are still
     -- `FromServerHost mainFrontendHost`. Mirrors
     -- `Components.Pages.UserProfilePage.init`'s own unconditional close.
-    ( fetchedModel, Effect.batch [ fetchEffect, Effect.fromShared Shared.CloseAllPanels, setBreadcrumbsRoot shared fetchedModel ] )
+    --
+    -- Also unconditionally kicks off `Task.perform GotNow Time.now` (even
+    -- while `tab == RecentPosts`, and even when a `?published_before=` query
+    -- param already resolved one) so `model.publishedBefore` is seeded with
+    -- the page's own load time before the user ever switches to
+    -- `PostsBeforeDate` -- otherwise `recentPostsTabsView`'s date input
+    -- would flash its `Time.millisToPosix 0` fallback (the Unix epoch, so
+    -- 1969/1970 depending on the viewer's own time zone) for the brief
+    -- window between that switch and `GotNow` resolving. `GotNow`'s own
+    -- `model.publishedBefore == Nothing` guard is what makes this a no-op
+    -- once a query-param cutoff (or a still-in-flight earlier `GotNow`) has
+    -- already claimed it.
+    ( fetchedModel
+    , Effect.batch
+        [ fetchEffect
+        , Effect.fromShared Shared.CloseAllPanels
+        , setBreadcrumbsRoot shared fetchedModel
+        , Task.perform GotNow Time.now |> Effect.fromCmd
+        ]
+    )
 
 
 {-| The servers this page should ever fetch from: every enabled server for an
@@ -204,59 +273,78 @@ still resets to `Loading` -- its previous posts (fetched under a different or
 no account) are stale/invalid, not just "not yet refreshed," so they should
 disappear rather than linger.
 
+A no-op (nothing touched, no fetch fired) while `model.tab == PostsBeforeDate`
+and `model.publishedBefore` is still `Nothing` -- mirrors
+`Components.Pages.EventsPage.refetchServers`'s own guard on `model.endsAfter`:
+fetching with no real cutoff yet in hand would ask for `RecentPosts`' full
+feed for the brief instant before `GotNow` resolves one, rather than just
+waiting.
+
 -}
 refetchServers : Shared.Model -> Model -> List AccountsPanel.Server -> ( Model, Effect Msg )
 refetchServers shared model serversToFetch =
-    let
-        enabledServers =
-            relevantServers shared model
+    if model.tab == PostsBeforeDate && model.publishedBefore == Nothing then
+        ( model, Effect.none )
 
-        currentAccountId server =
-            AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
-                |> Maybe.map AccountsPanel.accountId
+    else
+        let
+            enabledServers =
+                relevantServers shared model
 
-        fetchEffect server =
-            Posts.fetchPosts
-                shared.accountsPanel
-                ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
-                , server.frontendHost
-                )
-                (model.author |> Maybe.map (Tuple.second >> .id))
-                model.searchText
-                model.context
-                |> Task.attempt (GotServerPosts server.frontendHost)
-                |> Effect.fromCmd
+            currentAccountId server =
+                AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost
+                    |> Maybe.map AccountsPanel.accountId
 
-        prunedPostsByServer =
-            Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
+            cutoff =
+                if model.tab == PostsBeforeDate then
+                    model.publishedBefore
 
-        markServer server dict =
-            let
-                accountId =
-                    currentAccountId server
+                else
+                    Nothing
 
-                statusIfSameAccount =
-                    Dict.get server.frontendHost dict
-                        |> Maybe.andThen
-                            (\feed ->
-                                if feed.accountId == accountId then
-                                    Just feed.status
+            fetchEffect server =
+                Posts.fetchPosts
+                    shared.accountsPanel
+                    ( AccountsPanel.enabledAccountForServer shared.accountsPanel.accounts server.frontendHost |> Maybe.map .userId
+                    , server.frontendHost
+                    )
+                    (model.author |> Maybe.map (Tuple.second >> .id))
+                    model.searchText
+                    model.context
+                    cutoff
+                    |> Task.attempt (GotServerPosts server.frontendHost)
+                    |> Effect.fromCmd
 
-                                else
-                                    Nothing
-                            )
-            in
-            Dict.insert server.frontendHost
-                { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
-                dict
-    in
-    ( { model
-        | postsByServer =
-            List.foldl markServer prunedPostsByServer serversToFetch
-      }
-    , Effect.batch (List.map fetchEffect serversToFetch)
-    )
-        |> Tuple.mapFirst syncAnimations
+            prunedPostsByServer =
+                Dict.filter (\host _ -> List.member host (List.map .frontendHost enabledServers)) model.postsByServer
+
+            markServer server dict =
+                let
+                    accountId =
+                        currentAccountId server
+
+                    statusIfSameAccount =
+                        Dict.get server.frontendHost dict
+                            |> Maybe.andThen
+                                (\feed ->
+                                    if feed.accountId == accountId then
+                                        Just feed.status
+
+                                    else
+                                        Nothing
+                                )
+                in
+                Dict.insert server.frontendHost
+                    { status = Maybe.withDefault Loading statusIfSameAccount, accountId = accountId }
+                    dict
+        in
+        ( { model
+            | postsByServer =
+                List.foldl markServer prunedPostsByServer serversToFetch
+          }
+        , Effect.batch (List.map fetchEffect serversToFetch)
+        )
+            |> Tuple.mapFirst syncAnimations
 
 
 {-| Drops posts for servers that are no longer enabled (so disabling a server
@@ -309,7 +397,7 @@ applySearchChange shared model =
         ( refetchedModel, refetchEffect ) =
             refetchServers shared model (relevantServers shared model)
     in
-    ( refetchedModel, Effect.batch [ refetchEffect, pushSearchUrl refetchedModel ] )
+    ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
 
 
 {-| Keeps `Shared.Breadcrumbs` pointed at this feed's own root: `FromServerHost
@@ -329,6 +417,7 @@ of its own on every `update` (including every animation tick, e.g. from
 between the two roots whenever this page's `update` fires more often than the
 embedding page's own (previously the actual cause of a breadcrumb flicker
 during `Components.Pages.UserProfilePage`'s `EventsPage` animations).
+
 -}
 setBreadcrumbsRoot : Shared.Model -> Model -> Effect Msg
 setBreadcrumbsRoot shared model =
@@ -352,16 +441,23 @@ setBreadcrumbsRoot shared model =
             Effect.fromShared (Shared.BreadcrumbsMsg (Breadcrumbs.SetRoot root host []))
 
 
-{-| Persists `model.searchText`/`model.context` to the URL as `search_text`/
-`context` query params, via `replaceUrl` (not `pushUrl` -- editing the search
-box shouldn't spam browser history with one entry per debounce fire).
-Omitted entirely when at their defaults (blank search, `POST` context), so
+{-| Persists `model.searchText`/`model.context`/`model.tab`'s own
+`publishedBefore` cutoff to the URL as `search_text`/`context`/
+`published_before` query params, via `replaceUrl` (not the navigation
+function `pushUrl` -- editing the search box/date input shouldn't spam
+browser history with one entry per debounce fire). Each omitted entirely
+while at its default (blank search, `POST` context, `RecentPosts` tab), so
 the common case keeps a clean URL. Query-string-only navigation like this
 doesn't re-trigger this page's `init` -- see `Main.elm`'s `ChangedUrl`
-handler, which only does that when `url.path` itself changes.
+handler, which only does that when `url.path` itself changes. Built as one
+combined list (rather than each concern pushing its own `replaceUrl`
+independently) because `Browser.Navigation.replaceUrl`/`Url.Builder.toQuery`
+replace the _whole_ query string -- independent single-param pushes would
+each silently wipe out whatever the others had just set. Mirrors
+`Components.Pages.EventsPage.pushUrl`/`queryParams`.
 -}
-pushSearchUrl : Model -> Effect Msg
-pushSearchUrl model =
+pushUrl : Model -> Effect Msg
+pushUrl model =
     let
         searchTextParam =
             if String.isEmpty (String.trim model.searchText) then
@@ -376,8 +472,16 @@ pushSearchUrl model =
 
             else
                 [ Url.Builder.string "context" (postContextParam model.context) ]
+
+        publishedBeforeParam =
+            case ( model.tab, model.publishedBefore ) of
+                ( PostsBeforeDate, Just cutoff ) ->
+                    [ Url.Builder.string "published_before" (Conversions.isoUtcString cutoff) ]
+
+                _ ->
+                    []
     in
-    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (searchTextParam ++ contextParam))
+    Browser.Navigation.replaceUrl model.navKey (model.path ++ Url.Builder.toQuery (searchTextParam ++ contextParam ++ publishedBeforeParam))
         |> Effect.fromCmd
 
 
@@ -494,6 +598,27 @@ type Msg
     | SearchDebounceElapsed Int
     | ContextChanged String
     | ClearSearchClicked
+      -- Switches `model.tab` -- a no-op if already active. Mirrors
+      -- `Components.Pages.EventsPage.TabChanged` in spirit: no shared
+      -- layout/animation to slide between, just a different fetch cutoff, so
+      -- this just updates `model.tab`/refetches/persists the URL directly --
+      -- except switching to `PostsBeforeDate` for the very first time (no
+      -- `model.publishedBefore` yet) instead seeds one via `GotNow` first.
+      -- See `recentPostsTabsView`.
+    | TabChanged PostsTab
+      -- `Task.perform GotNow Time.now`'s result, fired only when
+      -- `PostsBeforeDate` is selected with no `model.publishedBefore` yet
+      -- (see `TabChanged`) -- seeds it with the current time (a sensible
+      -- starting cutoff the user can then dial back) and fetches.
+    | GotNow Time.Posix
+      -- The `PostsBeforeDate` tab's `<input type="datetime-local">` firing --
+      -- mirrors `Components.Pages.EventsPage.EndsAfterInputChanged` exactly,
+      -- just against this page's own `publishedBefore`/`publishedBeforeInputGeneration`.
+    | PublishedBeforeInputChanged String
+      -- `PublishedBeforeInputChanged`'s debounce timer elapsing -- mirrors
+      -- `Components.Pages.EventsPage.EndsAfterDebounceElapsed`'s own stale-
+      -- generation guard.
+    | PublishedBeforeDebounceElapsed Int
 
 
 {-| Lets `Main` forward a `Shared.Msg` that didn't originate from this page
@@ -620,6 +745,88 @@ updateInner shared msg model =
         ClearSearchClicked ->
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
+        TabChanged RecentPosts ->
+            if model.tab == RecentPosts then
+                ( model, Effect.none )
+
+            else
+                let
+                    ( refetchedModel, refetchEffect ) =
+                        refetchServers shared { model | tab = RecentPosts } (relevantServers shared model)
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+        TabChanged PostsBeforeDate ->
+            if model.tab == PostsBeforeDate then
+                ( model, Effect.none )
+
+            else
+                case model.publishedBefore of
+                    Just _ ->
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared { model | tab = PostsBeforeDate } (relevantServers shared model)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    Nothing ->
+                        ( { model | tab = PostsBeforeDate }, Task.perform GotNow Time.now |> Effect.fromCmd )
+
+        GotNow now ->
+            case model.publishedBefore of
+                Just _ ->
+                    -- Already seeded (a `?published_before=` query param on
+                    -- load, or an earlier `GotNow`) -- this one's redundant.
+                    ( model, Effect.none )
+
+                Nothing ->
+                    let
+                        newModel =
+                            { model | publishedBefore = Just now }
+                    in
+                    if newModel.tab == PostsBeforeDate then
+                        let
+                            ( refetchedModel, refetchEffect ) =
+                                refetchServers shared newModel (relevantServers shared newModel)
+                        in
+                        ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+                    else
+                        -- `RecentPosts` doesn't use `publishedBefore` at all
+                        -- (see `refetchServers`'s own `cutoff`) -- just seed
+                        -- it quietly so it's ready the moment the user does
+                        -- switch tabs, no fetch/URL change needed yet.
+                        ( newModel, Effect.none )
+
+        PublishedBeforeInputChanged raw ->
+            case BrowserTimeZone.posixFromDateTimeLocalInput shared.browserTimeZone.zone raw of
+                Nothing ->
+                    ( model, Effect.none )
+
+                Just newPublishedBefore ->
+                    let
+                        generation =
+                            model.publishedBeforeInputGeneration + 1
+                    in
+                    ( { model | tab = PostsBeforeDate, publishedBefore = Just newPublishedBefore, publishedBeforeInputGeneration = generation }
+                    , Process.sleep 500
+                        |> Task.perform (\_ -> PublishedBeforeDebounceElapsed generation)
+                        |> Effect.fromCmd
+                    )
+
+        PublishedBeforeDebounceElapsed generation ->
+            if generation == model.publishedBeforeInputGeneration then
+                let
+                    ( refetchedModel, refetchEffect ) =
+                        refetchServers shared model (relevantServers shared model)
+                in
+                ( refetchedModel, Effect.batch [ refetchEffect, pushUrl refetchedModel ] )
+
+            else
+                -- A later edit already bumped `publishedBeforeInputGeneration`
+                -- past this timer's -- it's stale, ignore it.
+                ( model, Effect.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -649,7 +856,8 @@ would be redundant. Every other caller passes `True`, preserving the previous al
 view : Shared.Model -> Bool -> Bool -> Model -> Html Msg
 view shared showSearchRow showAuthorHeading model =
     div []
-        [ if showAuthorHeading then
+        [ recentPostsTabsView shared model
+        , if showAuthorHeading then
             authorHeadingView shared model.author model.context
 
           else
@@ -661,6 +869,100 @@ view shared showSearchRow showAuthorHeading model =
             text ""
         , postsListView shared model
         ]
+
+
+{-| The "Recent Posts"/"Recent Replies" heading's replacement on the
+standalone, unfiltered Posts page (`model.author == Nothing`, `not
+model.embeddedPage` -- `text ""` otherwise, so every other caller of `view`
+is unaffected): two tabs (mirrors
+`Components.Pages.EventsPage.tabsView`'s own look/structure), `RecentPosts`
+(a plain pill button, carrying the same "Recent Posts"/"Recent Replies" label
+`Pages.Posts`' own heading used to) and `PostsBeforeDate` (a `div` rather than
+a `button`, since it nests a real `<input type="datetime-local">` and nesting
+interactive content inside a `<button>` is invalid HTML) -- clicking either
+(including anywhere in the second tab, to open the date input's native
+picker, since the click still bubbles up to the wrapping `div`) or actually
+changing the date both switch to it, per `TabChanged`'s own doc. Absent
+entirely for `Pages.Home_`'s embedded copy (still gets its own static
+"Recent Posts"/"Recent Replies" heading, see `Pages.Home_.heading`) and for
+any author-scoped copy (`Pages.Username_.Posts`/`Pages.User.UserId_.Posts`/
+`Components.Pages.UserProfilePage`, which show `authorHeadingView` instead).
+-}
+recentPostsTabsView : Shared.Model -> Model -> Html Msg
+recentPostsTabsView shared model =
+    if model.author /= Nothing || model.embeddedPage then
+        text ""
+
+    else
+        div [ class "posts-tabs" ]
+            [ button
+                [ classes
+                    ("posts-tab"
+                        :: "posts-tab-primary"
+                        :: (if model.tab == RecentPosts then
+                                [ "background-color-primary" ]
+
+                            else
+                                []
+                           )
+                    )
+                , onClick (TabChanged RecentPosts)
+                ]
+                [ text (recentPostsLabel model.context) ]
+            , div
+                [ classes
+                    ("posts-tab"
+                        :: (if model.tab == PostsBeforeDate then
+                                [ "background-color-primary" ]
+
+                            else
+                                []
+                           )
+                    )
+                , onClick (TabChanged PostsBeforeDate)
+                ]
+                [ text (postsBeforeLabel model.context ++ " ")
+                , input
+                    [ type_ "datetime-local"
+                    , class "posts-tab-date-input"
+                    , value
+                        (BrowserTimeZone.formatDateTimeLocalInput
+                            shared.browserTimeZone.zone
+                            (Maybe.withDefault (Time.millisToPosix 0) model.publishedBefore)
+                        )
+                    , onInput PublishedBeforeInputChanged
+                    ]
+                    []
+                ]
+            ]
+
+
+{-| "Recent Posts"/"Recent Replies", matching `context` -- mirrors
+`Pages.Posts.heading`'s old label exactly (this view replaces that page's own
+static heading, see `recentPostsTabsView`'s own doc).
+-}
+recentPostsLabel : PostContext -> String
+recentPostsLabel context =
+    case context of
+        REPLY ->
+            "Recent Replies"
+
+        _ ->
+            "Recent Posts"
+
+
+{-| "Posts Before"/"Replies Before", matching `context` -- `recentPostsTabsView`'s
+own `PostsBeforeDate` tab label, immediately followed by its `<input
+type="datetime-local">`.
+-}
+postsBeforeLabel : PostContext -> String
+postsBeforeLabel context =
+    case context of
+        REPLY ->
+            "Replies Before"
+
+        _ ->
+            "Posts Before"
 
 
 {-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`)
@@ -779,13 +1081,25 @@ authorHeadingView shared maybeAuthor context =
                 ]
 
 
+{-| `model.postAnimations`, sorted most-recent-first by `Posts.postTimestamp`'s
+own "published\_at || created\_at" logic -- but only while `model.searchText`
+is blank: an active text search's results come back relevance-ranked (see
+`backend/src/rpcs/posts/get_posts.rs`'s `get_search_posts`), and re-sorting by
+recency here would throw that ranking away. Mirrors
+`Components.Pages.EventsPage.visibleAnimations`'s own identical search gate.
+-}
 postsListView : Shared.Model -> Model -> Html Msg
 postsListView shared model =
     let
         sortedAnimations =
             model.postAnimations
                 |> Dict.toList
-                |> List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+                |> (if String.isEmpty (String.trim model.searchText) then
+                        List.sortBy (\( _, anim ) -> -(Time.posixToMillis (Posts.postTimestamp anim.post)))
+
+                    else
+                        identity
+                   )
 
         postsWord =
             case model.context of

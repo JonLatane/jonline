@@ -2724,6 +2724,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>optional</td>
           <td>Full-text search query, matched against the author's username/real name and the post's title/link/content. Required (and only used) when <code>listing_type</code> is <code>TEXT_SEARCH</code>.</td>
         </tr>
+        <tr>
+          <td>published_or_created_before</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>Request to only return posts that were published or created before the given timestamp.</td>
+        </tr>
       </tbody>
     </table>
     <p><a name="jonline-GetPostsResponse"></a></p>
@@ -3205,7 +3211,7 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>event_sync_source</td>
           <td><a href="#jonline-EventSyncSource">EventSyncSource</a></td>
           <td>optional</td>
-          <td>If the event was synced from a source (meaning it should not be editable)</td>
+          <td>If the event was synced from a source (meaning only its media should not be editable), this is the source it was synced from.</td>
         </tr>
       </tbody>
     </table>
@@ -3439,7 +3445,25 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td>event_sync_source_instance_id</td>
           <td><a href="#string">string</a></td>
           <td>optional</td>
-          <td>If this instance's <code>Event</code> was synced from an</td>
+          <td>The "iCal ID" (or external ID) of this instance, if its <code>Event</code> was synced from an <code>EventSyncSource</code>.</td>
+        </tr>
+        <tr>
+          <td>sync_missing_since</td>
+          <td><a href="#google-protobuf-Timestamp">google.protobuf.Timestamp</a></td>
+          <td>optional</td>
+          <td>The time since this event "disappeared" from the sync source. It is up to the owner whether this means it should be deleted.</td>
+        </tr>
+        <tr>
+          <td>attendances</td>
+          <td><a href="#jonline-EventAttendances">EventAttendances</a></td>
+          <td>optional</td>
+          <td>RSVP + invite data for this instance.</td>
+        </tr>
+        <tr>
+          <td>current_user_attendance</td>
+          <td><a href="#jonline-EventAttendance">EventAttendance</a></td>
+          <td>optional</td>
+          <td>If the request was made by a logged-in user, this is the current user's attendance for this instance.</td>
         </tr>
       </tbody>
     </table>
@@ -3749,6 +3773,12 @@ svg { z-index: 99; position: fixed; border: 0px; top: 0px; right: 0; }
           <td><a href="#string">string</a></td>
           <td>repeated</td>
           <td>Loads multiple events by their event instances' Post IDs -- returns one Event per matching EventInstance (see GetEventsResponse's own doc), not the requested EventInstance's whole parent Event's full instance list.</td>
+        </tr>
+        <tr>
+          <td>anonymous_attendee_auth_token</td>
+          <td><a href="#string">string</a></td>
+          <td>optional</td>
+          <td>Auth token proving ownership of an anonymous RSVP, mirroring <code>GetEventAttendancesRequest.anonymous_attendee_auth_token</code>. Lets an anonymous attendee's own (possibly still-<code>PENDING</code>) <code>EventAttendance</code> and its <code>EventInstance.location</code> (when <code>EventInfo.hide_location_until_rsvp_approved</code> is set) surface via each returned <code>EventInstance.attendances</code>/<code>current_user_attendance</code>, same as a logged-in user's own RSVP does automatically.</td>
         </tr>
       </tbody>
     </table>

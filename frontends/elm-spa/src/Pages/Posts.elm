@@ -3,22 +3,21 @@ module Pages.Posts exposing (Model, Msg, fromShared, page)
 {-| `/posts` -- recent posts from every enabled server. Thin wrapper around
 `Components.Pages.PostsPage`, which does all the actual work -- mirrors
 `Pages.Home_`'s own use of that module (deliberately duplicated rather than
-shared, so future changes to `Pages.Home_` don't affect this route) -- adds
-its own "Recent Posts"/"Recent Replies" heading (see `heading`, which tracks
-`PostsPage`'s own POST/REPLY context chooser) and passes
-`authorUserId = Nothing` (an unfiltered feed, rather than one user's own
-posts) -- plus, like `Pages.Home_`, keeps `Shared.Breadcrumbs` pointed at
-`mainFrontendHost` (see `setBreadcrumbsHost`), since this feed isn't scoped to
-any one server for a breadcrumb trail to identify the way a Post's own reply
-chain is.
+shared, so future changes to `Pages.Home_` don't affect this route). Unlike
+`Pages.Home_`, this route passes `embeddedPage = False`, so `PostsPage.view`
+renders its own "Recent Posts"/"Posts Before <date>" tabs heading directly
+(see `Components.Pages.PostsPage.recentPostsTabsView`) rather than this page
+supplying a static one -- and passes `authorUserId = Nothing` (an unfiltered
+feed, rather than one user's own posts) -- plus, like `Pages.Home_`, keeps
+`Shared.Breadcrumbs` pointed at `mainFrontendHost` (see `setBreadcrumbsHost`),
+since this feed isn't scoped to any one server for a breadcrumb trail to
+identify the way a Post's own reply chain is.
 -}
 
 import Components.Pages.PostsPage as PostsPage
 import Effect exposing (Effect)
 import Gen.Params.Posts exposing (Params)
-import Html exposing (h2, text)
 import Page
-import Proto.Jonline.PostContext exposing (PostContext(..))
 import Request
 import Shared
 import Shared.Breadcrumbs as Breadcrumbs
@@ -89,20 +88,6 @@ view shared req model =
         UI.layout shared
             req.route
             fromShared
-            [ h2 [] [ text (heading model.context) ]
-            , PostsPage.view shared True True model
+            [ PostsPage.view shared True True model
             ]
     }
-
-
-{-| "Recent Posts"/"Recent Replies", matching `model.context` -- the same
-POST/REPLY chooser `PostsPage.searchRowView` renders just below this heading.
--}
-heading : PostContext -> String
-heading context =
-    case context of
-        REPLY ->
-            "Recent Replies"
-
-        _ ->
-            "Recent Posts"

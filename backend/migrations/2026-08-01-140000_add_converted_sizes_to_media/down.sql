@@ -1,0 +1,3 @@
+ALTER TABLE media DROP COLUMN converted_sizes;
+ALTER TABLE media ADD COLUMN thumbnail_minio_path VARCHAR NULL DEFAULT NULL;
+ALTER TABLE media ADD COLUMN thumbnail_content_type VARCHAR NULL DEFAULT NULL;

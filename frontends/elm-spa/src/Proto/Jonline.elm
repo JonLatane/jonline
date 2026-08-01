@@ -1449,6 +1449,9 @@ fieldNumbersEventInstance :
     , endsAt : Int
     , location : Int
     , eventSyncSourceInstanceId : Int
+    , syncMissingSince : Int
+    , attendances : Int
+    , currentUserAttendance : Int
     }
 fieldNumbersEventInstance =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__EventInstance
@@ -1913,6 +1916,7 @@ fieldNumbersGetEventsRequest :
     , listingType : Int
     , searchText : Int
     , eventInstancePostIds : Int
+    , anonymousAttendeeAuthToken : Int
     }
 fieldNumbersGetEventsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetEventsRequest
@@ -2505,6 +2509,7 @@ fieldNumbersGetPostsRequest :
     , listingType : Int
     , page : Int
     , searchText : Int
+    , publishedOrCreatedBefore : Int
     }
 fieldNumbersGetPostsRequest =
     Proto.Jonline.Internals_.fieldNumbersProto__Jonline__GetPostsRequest

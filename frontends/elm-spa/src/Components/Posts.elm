@@ -59,7 +59,7 @@ import Proto.Jonline.PostListingType exposing (PostListingType(..))
 import Proto.Jonline.Visibility exposing (Visibility(..))
 import Shared.AccountsPanel as AccountsPanel exposing (performWithAccountServer, performWithOptionalAccountServer, withAccessToken)
 import Shared.BrowserTimeZone as BrowserTimeZone exposing (BrowserTimeZone)
-import Shared.Conversions exposing (int64ToInt, timestampToPosix)
+import Shared.Conversions exposing (int64ToInt, posixToTimestamp, timestampToPosix)
 import Task exposing (Task)
 import Time
 import UI.Classes exposing (classes, hostnameToCSSClass)
@@ -106,6 +106,13 @@ read it -- see `backend/src/rpcs/posts/get_posts.rs`), so
 `Components.Pages.PostsPage`'s POST/REPLY chooser works whether or not
 there's search text entered.
 
+`publishedOrCreatedBefore`, if given, is sent as `GetPostsRequest`'s own
+field of the same name -- `Components.Pages.PostsPage`'s "Posts Before
+<date>" tab's cutoff (see that module's `PostsBeforeDate` tab), restricting
+results to posts published (or, absent that, created) before it. `Nothing`
+for the default "Recent Posts" tab, same as every other unset-filter
+convention here.
+
 -}
 fetchPosts :
     AccountsPanel.Model
@@ -113,13 +120,14 @@ fetchPosts :
     -> Maybe String
     -> String
     -> PostContext
+    -> Maybe Time.Posix
     -> Task Grpc.Error ( Maybe AccountsPanel.Msg, GetPostsResponse )
-fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context =
+fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context publishedOrCreatedBefore =
     let
         trimmedSearchText =
             String.trim searchText
 
-        request =
+        baseRequest =
             if String.isEmpty trimmedSearchText then
                 { defaultGetPostsRequest | authorUserId = authorUserId, context = Just context }
 
@@ -130,6 +138,11 @@ fetchPosts accountsPanelModel maybeAccountServer authorUserId searchText context
                     , searchText = Just trimmedSearchText
                     , context = Just context
                 }
+
+        request =
+            { baseRequest
+                | publishedOrCreatedBefore = Maybe.map posixToTimestamp publishedOrCreatedBefore
+            }
     in
     performWithOptionalAccountServer
         accountsPanelModel

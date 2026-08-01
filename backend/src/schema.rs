@@ -148,8 +148,6 @@ diesel::table! {
         user_id -> Nullable<Int8>,
         minio_path -> Varchar,
         content_type -> Varchar,
-        thumbnail_minio_path -> Nullable<Varchar>,
-        thumbnail_content_type -> Nullable<Varchar>,
         name -> Nullable<Varchar>,
         description -> Nullable<Text>,
         generated -> Bool,
@@ -158,6 +156,7 @@ diesel::table! {
         moderation -> Varchar,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        converted_sizes -> Jsonb,
     }
 }
 
