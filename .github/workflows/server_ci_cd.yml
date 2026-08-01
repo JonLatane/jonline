@@ -266,6 +266,12 @@ jobs:
 
       - uses: mozilla-actions/sccache-action@v0.0.11
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-github-build
+          shared-key: jonline-build-${{ runner.OS }}-github-build
+
       - working-directory: backend
         run: cargo build --release
 
@@ -313,6 +319,12 @@ jobs:
 
       - uses: mozilla-actions/sccache-action@v0.0.11
 
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-arm64-github-build
+          shared-key: jonline-build-${{ runner.OS }}-arm64-github-build
+
       - working-directory: backend
         run: cargo build --release
 
@@ -351,6 +363,12 @@ jobs:
           protoc --version
 
       - uses: mozilla-actions/sccache-action@v0.0.11
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-amd64-static-github-build
+          shared-key: jonline-build-${{ runner.OS }}-amd64-static-github-build
 
       # `static_pq` vendors & statically compiles libpq (via pq-sys's "bundled"
       # feature -> pq-src), so the resulting binary doesn't depend on a system
@@ -395,6 +413,12 @@ jobs:
           protoc --version
 
       - uses: mozilla-actions/sccache-action@v0.0.11
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-build-${{ runner.OS }}-arm64-static-github-build
+          shared-key: jonline-build-${{ runner.OS }}-arm64-static-github-build
 
       - working-directory: backend
         run: cargo build --release --features static_pq
@@ -442,6 +466,11 @@ jobs:
           protoc --version
 
       - uses: mozilla-actions/sccache-action@v0.0.11
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./backend -> target
+          key: jonline-test-${{ runner.OS }}-github-test
+          shared-key: jonline-test-${{ runner.OS }}-github-test
       - working-directory: backend
         run: cargo test
       - working-directory: backend
