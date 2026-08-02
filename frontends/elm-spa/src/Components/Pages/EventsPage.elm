@@ -1838,6 +1838,7 @@ eventCardView shared ( host, event, instance ) =
                 |> Maybe.map (Shared.StarredPanelMsg >> SharedMsg)
     in
     Events.eventCard
+        shared.now
         shared.browserTimeZone
         shared.basePath
         shared.accountsPanel.mainFrontendHost
