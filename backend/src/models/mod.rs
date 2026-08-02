@@ -7,6 +7,9 @@ pub use user_models::*;
 mod media_models;
 pub use media_models::*;
 
+mod email_models;
+pub use email_models::*;
+
 mod group_models;
 pub use group_models::*;
 

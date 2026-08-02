@@ -77,6 +77,41 @@ pub fn start_rocket_unsecured(
     })
 }
 
+/// Starts the internal-only Rocket instance used by the Stalwart mail server (see
+/// `deploys/email`) to deliver accepted inbound mail -- see `web::email::create_email_message`.
+/// Deliberately separate from `create_rocket`'s public 80/443/8000 instances: this port has no
+/// authentication of its own (it trusts whatever calls it completely), so it must stay off the
+/// public ingress and be restricted at the network layer (e.g. a K8s NetworkPolicy) to Stalwart's
+/// pod alone -- see `deploys/email/README.md`.
+pub fn start_rocket_internal(
+    port: i32,
+    pool: Arc<PgPool>,
+    bucket: Arc<s3::Bucket>,
+    tempdir: Arc<tempfile::TempDir>,
+) -> JoinHandle<()> {
+    let figment = rocket::Config::figment()
+        .merge(("port", port))
+        .merge(("address", "0.0.0.0"));
+    let server = rocket::custom(figment)
+        .manage(web::RocketState {
+            pool,
+            bucket,
+            tempdir,
+        })
+        .mount("/", (*web::EMAIL_ENDPOINTS).clone());
+
+    rocket::tokio::spawn(async move {
+        match server.launch().await {
+            Ok(_) => (),
+            Err(e) => {
+                warn!("Unable to start internal Rocket server on port {}", port);
+                report_error(e);
+            }
+        };
+        ()
+    })
+}
+
 fn create_rocket<T: rocket::figment::Provider>(
     figment: T,
     pool: Arc<PgPool>,

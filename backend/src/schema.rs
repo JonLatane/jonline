@@ -64,6 +64,26 @@ diesel::table! {
 }
 
 diesel::table! {
+    email_message_recipients (id) {
+        id -> Int8,
+        email_message_id -> Int8,
+        user_id -> Int8,
+        recipient_type -> Varchar,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
+    email_messages (id) {
+        id -> Int8,
+        message_id -> Varchar,
+        minio_path -> Varchar,
+        headers -> Jsonb,
+        created_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     federated_accounts (id) {
         id -> Int8,
         federated_server_id -> Nullable<Int8>,
@@ -322,6 +342,8 @@ diesel::joinable!(event_instances -> posts (post_id));
 diesel::joinable!(event_sync_sources -> users (user_id));
 diesel::joinable!(events -> event_sync_sources (event_sync_source_id));
 diesel::joinable!(events -> posts (post_id));
+diesel::joinable!(email_message_recipients -> email_messages (email_message_id));
+diesel::joinable!(email_message_recipients -> users (user_id));
 diesel::joinable!(federated_accounts -> federated_servers (federated_server_id));
 diesel::joinable!(federated_accounts -> users (user_id));
 diesel::joinable!(federated_profiles -> federated_users (federated_user_id));
@@ -343,6 +365,8 @@ diesel::joinable!(user_posts -> users (user_id));
 diesel::joinable!(user_refresh_tokens -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    email_message_recipients,
+    email_messages,
     event_attendances,
     event_instances,
     event_sync_sources,

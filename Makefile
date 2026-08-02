@@ -48,6 +48,23 @@ remove_ingress_domain:
 list_ingress_domains:
 	cd deploys/ingress && $(MAKE) list_ingress_domains
 
+# Manage the shared Stalwart mail server (lets Jonline instances receive mail at
+# <username>@yourdomain without each one speaking SMTP itself). See deploys/email/README.md.
+create_email:
+	cd deploys/email && $(MAKE) create_email
+remove_email:
+	cd deploys/email && $(MAKE) remove_email
+deploy_email_get_ip:
+	cd deploys/email && $(MAKE) deploy_email_get_ip
+deploy_email_restart:
+	cd deploys/email && $(MAKE) deploy_email_restart
+deploy_email_admin_port_forward:
+	cd deploys/email && $(MAKE) deploy_email_admin_port_forward
+add_email_domain:
+	cd deploys/email && $(MAKE) add_email_domain
+list_email_domains:
+	cd deploys/email && $(MAKE) list_email_domains
+
 # Targets for deploying Jonline to your K8s cluster.
 # Internal or external refers to whether the service is exposed to the internet.
 # External is the default, but internal is useful for testing, and could

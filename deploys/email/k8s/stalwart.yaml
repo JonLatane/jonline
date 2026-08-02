@@ -1,0 +1,128 @@
+# The shared Stalwart mail server -- see ../README.md. One of these per cluster, regardless of
+# how many domains you onboard for mail (mirrors deploys/ingress's shared Traefik controller).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: jonline-email
+---
+# Stalwart's OWN operational state (accepted domains, MTA hook definitions, DKIM keys, TLS
+# material it manages, and its queue of in-flight messages) lives in its embedded RocksDB store at
+# /var/lib/stalwart, backed by this PVC -- NOT user mailboxes. No Jonline mail content is ever
+# persisted here: the whole point of the MTA hook wired up in the admin UI (see ../README.md) is
+# that an accepted message is hashed off to the right namespace's `jonline` Service immediately
+# and never stored as a mailbox. Losing this PVC loses Stalwart's *configuration* (a few minutes
+# of admin-UI clicks to redo), not any user's mail.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: stalwart-data
+  namespace: jonline-email
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stalwart
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  # Stateless per-connection (no local mailboxes), so this *could* scale horizontally -- but
+  # stalwart-data above is ReadWriteOnce, so start at 1 until you've moved that PVC to something
+  # that supports concurrent writers (or split config/queue storage from a shared backend).
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: stalwart
+  template:
+    metadata:
+      labels:
+        app: stalwart
+    spec:
+      containers:
+        - name: stalwart
+          # Pin to a specific v<major>.<minor> tag in production -- check
+          # https://hub.docker.com/r/stalwartlabs/stalwart/tags for the current stable release.
+          image: docker.io/stalwartlabs/stalwart:v0.16
+          env:
+            # On a totally empty stalwart-etc volume, Stalwart boots into a setup wizard at
+            # /admin and logs a random one-time admin password to stderr (`kubectl logs`) --
+            # fine for a first pass. Set this (e.g. from a Secret) if you'd rather pin fixed
+            # initial credentials than go hunting through logs:
+            # - name: STALWART_RECOVERY_ADMIN
+            #   value: "admin:some-secure-password"
+            - name: STALWART_RECOVERY_ADMIN
+              valueFrom:
+                secretKeyRef:
+                  name: stalwart-admin
+                  key: credentials
+                  optional: true
+          ports:
+            - containerPort: 25
+              protocol: TCP
+              name: smtp
+            - containerPort: 8080
+              protocol: TCP
+              name: admin
+          volumeMounts:
+            # Two mounts of the *same* PVC, split via subPath into separate subdirectories --
+            # config (accepted domains, MTA hook definitions, DKIM keys, TLS state) and data (the
+            # in-flight message queue) don't need separate volumes for a first pass. See the
+            # PVC's comment above for why losing either is safe (no user mail lives here).
+            - name: stalwart-data
+              mountPath: /etc/stalwart
+              subPath: etc
+            - name: stalwart-data
+              mountPath: /var/lib/stalwart
+              subPath: data
+      volumes:
+        - name: stalwart-data
+          persistentVolumeClaim:
+            claimName: stalwart-data
+---
+# Publishes port 25 to the internet. This is the ONE new external IP/LoadBalancer this component
+# creates (same principle as deploys/ingress) -- your MX records point here (see ../README.md).
+# Deliberately does NOT publish 8080 (the admin UI) -- reach that with
+# `make deploy_email_admin_port_forward` instead, never over the open internet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stalwart
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  type: LoadBalancer
+  selector:
+    app: stalwart
+  ports:
+    - name: smtp
+      protocol: TCP
+      port: 25
+      targetPort: 25
+---
+# ClusterIP-only -- never a LoadBalancer -- so the setup wizard/admin UI is reachable solely via
+# `make deploy_email_admin_port_forward`, not the open internet.
+apiVersion: v1
+kind: Service
+metadata:
+  name: stalwart-admin
+  namespace: jonline-email
+  labels:
+    app: stalwart
+spec:
+  type: ClusterIP
+  selector:
+    app: stalwart
+  ports:
+    - name: admin
+      protocol: TCP
+      port: 8080
+      targetPort: 8080

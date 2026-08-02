@@ -25,6 +25,13 @@ spec:
       protocol: TCP
       port: 8000
       targetPort: 8000
+    # No "mail-delivery"/27705 entry here on purpose: this Service is a LoadBalancer, so
+    # any port listed here is reachable from the public internet. The internal-only mail
+    # delivery endpoint (see deploys/email) must never be exposed that way -- it has no
+    # authentication of its own. If you need Stalwart to reach it, deploy behind
+    # server_internal.yaml/server_internal_insecure.yaml instead (their Services are
+    # ClusterIP, and do expose it) -- see deploys/ingress for moving public traffic off a
+    # per-namespace LoadBalancer.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -91,6 +98,9 @@ spec:
             - containerPort: 8000
               protocol: TCP
               name: jonline-web-i2
+            - containerPort: 27705
+              protocol: TCP
+              name: jonline-mail
 ---
 apiVersion: batch/v1
 kind: CronJob
