@@ -88,6 +88,7 @@ impl ToProtoMedia for models::Media {
             processed: self.processed,
             created_at: Some(self.created_at.to_proto()),
             updated_at: Some(self.updated_at.to_proto()),
+            metadata: Some(self.metadata().to_proto()),
         }
     }
 }
@@ -103,6 +104,19 @@ impl ToProtoMediaReference for models::MediaReference {
             content_type: self.content_type.to_owned(),
             name: self.name.to_owned(),
             generated: self.generated,
+            metadata: Some(self.metadata().to_proto()),
+        }
+    }
+}
+
+pub trait ToProtoMediaMetadata {
+    fn to_proto(&self) -> MediaMetadata;
+}
+
+impl ToProtoMediaMetadata for models::MediaMetadata {
+    fn to_proto(&self) -> MediaMetadata {
+        MediaMetadata {
+            video_preview_time_ms: self.video_preview_time_ms.map(|ms| ms as u32),
         }
     }
 }

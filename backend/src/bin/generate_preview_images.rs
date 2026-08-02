@@ -103,6 +103,8 @@ async fn update_post(
                             description: None,
                             generated: true,
                             visibility: Visibility::GlobalPublic.to_string_visibility(),
+                            metadata: serde_json::to_value(models::MediaMetadata::default())
+                                .unwrap(),
                         })
                         .get_result::<models::Media>(conn)
                         .unwrap();
