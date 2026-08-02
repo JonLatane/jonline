@@ -133,6 +133,24 @@ type alias Model =
     -- so those render in the viewer's own local time rather than the
     -- server's UTC.
     , browserTimeZone : BrowserTimeZone
+
+    -- Captured once via `Time.now` in `init` (mirrors `browserTimeZone.zone`'s
+    -- own `Time.here` capture exactly, including the `Time.millisToPosix 0`
+    -- placeholder until it resolves) -- the single app-wide "now" every page
+    -- that used to capture its own (`Pages.Event.EventId_`'s date-picker
+    -- strip categorizing `EventInstance`s as upcoming/past, `Components.Events.eventCard`/
+    -- `instanceWhenText`'s "is this date in the viewer's current year"
+    -- check) reads instead, rather than each independently re-running
+    -- `Task.perform ... Time.now`. Deliberately *not* kept live via a
+    -- `Time.every` tick -- every current use only needs "roughly what day/year
+    -- is it" for the length of a single page view, not a ticking clock, the
+    -- same tolerance `Pages.Event.EventId_.Model.now`'s own doc already
+    -- accepted before this moved here. `Components.Pages.EventsPage.Model.endsAfter`/
+    -- `Components.Pages.PostsPage.Model.publishedBefore` are deliberately
+    -- untouched by this -- those are live request cursors (polled and
+    -- user-editable), not a display "what time is it", and already document
+    -- why they're their own thing.
+    , now : Time.Posix
     }
 
 
@@ -171,6 +189,7 @@ type Msg
     | NavigateExternal String
     | WindowResized Int Int
     | GotTimeZone Time.Zone
+    | GotNow Time.Posix
     | NoOp
 
 
@@ -277,7 +296,7 @@ normalizeUrl basePath url =
         url
 
 
-{-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation }`
+{-| `flags` is `{ state, systemPrefersDark, themePreference, timeZoneAbbreviation, uses24HourTime }`
 -- see `index.html`. `state` (the persisted accounts/servers blob) is handed
 to `AccountsPanel.init` un-decoded; appearance has its own, separate
 persisted key (`themePreference`) so changing it doesn't need to know
@@ -314,6 +333,10 @@ init basePath req flags =
             Decode.decodeValue (Decode.field "timeZoneAbbreviation" Decode.string) flags
                 |> Result.withDefault ""
 
+        uses24HourTime =
+            Decode.decodeValue (Decode.field "uses24HourTime" Decode.bool) flags
+                |> Result.withDefault False
+
         ( accountsPanelModel, accountsPanelCmd ) =
             AccountsPanel.init req accountsPanelFlags
 
@@ -343,7 +366,11 @@ init basePath req flags =
             , windowSize = { width = 0, height = 0 }
 
             -- `zone` is corrected as soon as `Time.here`, below, resolves.
-            , browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation }
+            , browserTimeZone = { zone = Time.utc, abbreviation = timeZoneAbbreviation, uses24Hour = uses24HourTime }
+
+            -- Corrected as soon as `Task.perform GotNow Time.now`, below,
+            -- resolves -- see `Model.now`'s own doc.
+            , now = Time.millisToPosix 0
             }
     in
     ( model
@@ -361,6 +388,7 @@ init basePath req flags =
         , Ports.setNavBarColor (AccountsPanel.mainServerTheme (effectiveDarkMode model) model.accountsPanel).primaryColor
         , getInitialWindowSizeCmd
         , Task.perform GotTimeZone Time.here
+        , Task.perform GotNow Time.now
         ]
     )
 
@@ -1063,6 +1091,9 @@ updateImpl req msg model =
                     model.browserTimeZone
             in
             ( { model | browserTimeZone = { browserTimeZone | zone = zone } }, Cmd.none )
+
+        GotNow now ->
+            ( { model | now = now }, Cmd.none )
 
         NoOp ->
             ( model, Cmd.none )

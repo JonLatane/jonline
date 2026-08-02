@@ -50,6 +50,7 @@ import Shared.AccountsPanel as AccountsPanel
 import Shared.BrowserTimeZone exposing (BrowserTimeZone)
 import Shared.MediaViewerPanel as MediaViewerPanel
 import Task
+import Time
 import UI.Classes exposing (classes, escapeCSSClass, hostnameToCSSClass, openClosedClass)
 import UI.Flip
 
@@ -1109,8 +1110,8 @@ directly -- unlike those other panels' view code, which lives in `UI.elm`
 itself and so can reach `Shared.Msg` freely, this one can't (`Shared` imports
 `Shared.StarredPanel`, so the reverse import would be a cycle).
 -}
-view : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
-view browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model =
+view : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Html Msg
+view now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model =
     let
         stateClass =
             openClosedClass model.showStarredPanel
@@ -1143,7 +1144,7 @@ view browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceI
                     [ Html.Keyed.node "div"
                         [ classes [ "starred-panel-list", "flip-animated-column" ] ]
                         (List.indexedMap
-                            (\index key -> ( key, starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ))
+                            (\index key -> ( key, starredPostRowFlip now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ))
                             model.starOrder
                         )
                     ]
@@ -1156,8 +1157,8 @@ view browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceI
 `starAnimations`/`UI.Flip`), same two-layer reasoning as `UI.accountRowFlip`
 (fade/collapse here vs. `starredPostRow`'s own, independent reorder-slide).
 -}
-starredPostRowFlip : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRowFlip : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRowFlip now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
         flipState =
             Dict.get key model.starAnimations |> Maybe.withDefault UI.Flip.restingState
@@ -1173,15 +1174,15 @@ starredPostRowFlip browserTimeZone basePath accountsPanelModel currentPostKey cu
                 []
     in
     div (UI.Flip.itemAttributes UI.Flip.Vertical flipState isMoving)
-        [ div pointerEventsAttr [ starredPostRow browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ] ]
+        [ div pointerEventsAttr [ starredPostRow now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key ] ]
 
 
 {-| Wraps `starredPostView`'s content with `UI.Flip`'s slide-on-reorder
 transform and the up/down reorder buttons -- mirrors `UI.accountRow`'s
 equivalent for Accounts.
 -}
-starredPostRow : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
-starredPostRow browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
+starredPostRow : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> Int -> Int -> String -> Html Msg
+starredPostRow now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model count index key =
     let
         moveAttrs =
             model.moveAnimations
@@ -1200,16 +1201,16 @@ starredPostRow browserTimeZone basePath accountsPanelModel currentPostKey curren
             , canMoveUp = index > 0
             , canMoveDown = index < count - 1
             }
-        , starredPostView browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key
+        , starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key
         ]
 
 
-starredPostView : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> String -> Html Msg
-starredPostView browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key =
+starredPostView : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Maybe String -> Model -> String -> Html Msg
+starredPostView now browserTimeZone basePath accountsPanelModel currentPostKey currentInstanceId model key =
     case Dict.get key model.posts of
         Just (PostFetchLoaded host post) ->
             if post.context == EVENTINSTANCE then
-                starredEventInstanceView browserTimeZone basePath accountsPanelModel currentInstanceId model key host post
+                starredEventInstanceView now browserTimeZone basePath accountsPanelModel currentInstanceId model key host post
 
             else
                 let
@@ -1304,8 +1305,8 @@ which updates `model.posts` directly) shows immediately without waiting on a
 whole fresh `GetEvents` round-trip, mirroring
 `Components.Pages.EventsPage.eventCardView`'s own `displayInstance` swap.
 -}
-starredEventInstanceView : BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
-starredEventInstanceView browserTimeZone basePath accountsPanelModel currentInstanceId model key host post =
+starredEventInstanceView : Time.Posix -> BrowserTimeZone -> String -> AccountsPanel.Model -> Maybe String -> Model -> String -> String -> Post -> Html Msg
+starredEventInstanceView now browserTimeZone basePath accountsPanelModel currentInstanceId model key host post =
     case Dict.get key model.events of
         Just (EventFetchLoaded event instance) ->
             let
@@ -1342,7 +1343,7 @@ starredEventInstanceView browserTimeZone basePath accountsPanelModel currentInst
 
                     Nothing ->
                         text ""
-                , Events.eventCard browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked starred onStarClicked current event displayInstance
+                , Events.eventCard now browserTimeZone basePath accountsPanelModel.mainFrontendHost host maybeServer maybeAccount onMediaClicked starred onStarClicked current event displayInstance
                 ]
 
         Just FetchingEvent ->
