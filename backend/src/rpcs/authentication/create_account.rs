@@ -3,13 +3,13 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::auth;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
-use crate::protos::{RefreshTokenResponse, CreateAccountRequest};
+use crate::protos::{CreateAccountRequest, RefreshTokenResponse};
 use crate::schema::users::dsl::*;
 
-use crate::rpcs::{validations::*, get_server_configuration_proto};
+use crate::rpcs::{get_server_configuration_proto, validations::*};
 
 pub fn create_account(
     request: CreateAccountRequest,
@@ -28,16 +28,18 @@ pub fn create_account(
 
     let hashed_password = hash(request.password, DEFAULT_COST).unwrap();
 
-    let req_email: Option<serde_json::Value> = match request.email.as_ref().map(|v| serde_json::to_value(v)) {
-        None => None,
-        Some(Err(_)) => None,
-        Some(Ok(v)) => Some(v),
-    };
-    let req_phone: Option<serde_json::Value> = match request.phone.as_ref().map(|v| serde_json::to_value(v)) {
-        None => None,
-        Some(Err(_)) => None,
-        Some(Ok(v)) => Some(v),
-    };
+    let req_email: Option<serde_json::Value> =
+        match request.email.as_ref().map(|v| serde_json::to_value(v)) {
+            None => None,
+            Some(Err(_)) => None,
+            Some(Ok(v)) => Some(v),
+        };
+    let req_phone: Option<serde_json::Value> =
+        match request.phone.as_ref().map(|v| serde_json::to_value(v)) {
+            None => None,
+            Some(Err(_)) => None,
+            Some(Ok(v)) => Some(v),
+        };
     let server_configuration = get_server_configuration_proto(conn)?;
     let insert_result: Result<models::User, _> = insert_into(users)
         .values((
@@ -45,9 +47,20 @@ pub fn create_account(
             password_salted_hash.eq(hashed_password),
             email.eq(req_email),
             phone.eq(req_phone),
-            permissions.eq(server_configuration.default_user_permissions.to_json_permissions()),
-            moderation.eq(server_configuration.people_settings.as_ref().unwrap().default_moderation.to_string_moderation()),
-            visibility.eq(server_configuration.people_settings.unwrap().default_visibility.to_string_visibility()),
+            permissions.eq(server_configuration
+                .default_user_permissions
+                .to_json_permissions()),
+            moderation.eq(server_configuration
+                .people_settings
+                .as_ref()
+                .unwrap()
+                .default_moderation
+                .to_string_moderation()),
+            visibility.eq(server_configuration
+                .people_settings
+                .unwrap()
+                .default_visibility
+                .to_string_visibility()),
         ))
         .returning(models::USER_COLUMNS)
         .get_result::<models::User>(conn);
@@ -56,15 +69,16 @@ pub fn create_account(
         Err(e) => {
             print!("Username already exists {:?}", e);
             Err(Status::new(Code::AlreadyExists, "username_already_exists"))
-        },
+        }
         Ok(user) => {
-            let tokens = auth::generate_refresh_and_access_token(user.id, conn, &request.expires_at);
+            let tokens =
+                auth::generate_refresh_and_access_token(user.id, conn, &request.expires_at);
             Ok(RefreshTokenResponse {
                 refresh_token: tokens.refresh_token,
                 access_token: tokens.access_token,
                 user: Some(user.to_proto(&None, &None, None, None)),
             })
-        },
+        }
     };
 
     log::info!(

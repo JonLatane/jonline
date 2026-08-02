@@ -48,7 +48,9 @@ pub trait ToStringVisibilities {
 }
 impl ToStringVisibilities for Vec<Visibility> {
     fn to_string_visibilities(&self) -> Vec<String> {
-        self.iter().map(|v| v.to_string_visibility()).collect::<Vec<String>>()
+        self.iter()
+            .map(|v| v.to_string_visibility())
+            .collect::<Vec<String>>()
     }
 }
 
@@ -88,7 +90,6 @@ impl ToProtoModeration for i32 {
     }
 }
 
-
 pub trait ToStringModeration {
     fn to_string_moderation(&self) -> String;
 }
@@ -108,7 +109,7 @@ pub trait ToI32Moderation {
 }
 impl ToI32Moderation for String {
     fn to_i32_moderation(&self) -> i32 {
-        self.to_proto_moderation().unwrap().to_i32_moderation()//unwrap() as i32
+        self.to_proto_moderation().unwrap().to_i32_moderation() //unwrap() as i32
     }
 }
 impl ToI32Moderation for Moderation {
@@ -122,6 +123,8 @@ pub trait ToStringModerations {
 }
 impl ToStringModerations for Vec<Moderation> {
     fn to_string_moderations(&self) -> Vec<String> {
-        self.iter().map(|v| v.to_string_moderation()).collect::<Vec<String>>()
+        self.iter()
+            .map(|v| v.to_string_moderation())
+            .collect::<Vec<String>>()
     }
 }

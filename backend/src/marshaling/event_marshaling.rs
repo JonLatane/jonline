@@ -126,7 +126,9 @@ pub fn convert_events(data: &Vec<MarshalableEvent>, conn: &mut PgPooledConnectio
     let sync_source_lookup = load_event_sync_source_lookup(event_sync_source_ids, conn);
 
     data.iter()
-        .map(|marshalable_event| marshalable_event.to_proto(lookup.as_ref(), sync_source_lookup.as_ref()))
+        .map(|marshalable_event| {
+            marshalable_event.to_proto(lookup.as_ref(), sync_source_lookup.as_ref())
+        })
         .collect()
 }
 pub trait ToProtoMarshalableEvent {

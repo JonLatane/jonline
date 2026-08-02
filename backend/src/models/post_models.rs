@@ -62,7 +62,7 @@ pub struct Post {
     pub published_at: Option<SystemTime>,
     pub last_activity_at: SystemTime,
 
-    pub unauthenticated_star_count: i64
+    pub unauthenticated_star_count: i64,
 }
 
 /// Explicit column list for `posts`, excluding:

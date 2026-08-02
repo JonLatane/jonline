@@ -124,8 +124,10 @@ Commands:
     update_user_counts       Recompute follower/following/friend/group/post/response/event/
                              event_instance counts for every User, correcting any drift
     convert_media_sizes      Generate small/medium/large resized copies of unprocessed PNG/JPEG
-                             Media via ImageMagick (`magick`, or `convert`+`identify`), which
-                             must be on your $PATH -- skips (logging an error) if it's missing
+                             Media via ImageMagick (`magick`, or `convert`+`identify`) and
+                             MP4/QuickTime/WebM Media via `ffmpeg`+`ffprobe`; each must be on
+                             your $PATH to convert its media types -- skips those media types
+                             (logging an error) if missing
     generate_preview_images  Generate media preview images -- NOT currently supported on
                              macOS: it launches a browser hardcoded to /usr/bin/brave-browser,
                              a Linux path that Homebrew's Brave cask doesn't populate (and
@@ -253,9 +255,11 @@ update_user_counts() {
   _jonline_exec_bin update_user_counts "$@"
 }
 
-# Requires ImageMagick (`magick`, or the legacy `convert`+`identify` pair) on $PATH -- e.g.
-# `brew install imagemagick`. Logs an error and exits nonzero (which `jobs`'/background_jobs.sh's
-# loop tolerates, just retrying next interval) if it's not found.
+# Resizes images via ImageMagick (`magick`, or the legacy `convert`+`identify` pair) -- e.g.
+# `brew install imagemagick` -- and video via `ffmpeg`+`ffprobe` -- e.g. `brew install ffmpeg`.
+# Either is optional: logs an error and skips that media type's conversion (retrying next
+# interval, via `jobs`'/background_jobs.sh's loop) if its tool isn't found. Exits nonzero only
+# if neither tool is found.
 convert_media_sizes() {
   _jonline_exec_bin convert_media_sizes "$@"
 }

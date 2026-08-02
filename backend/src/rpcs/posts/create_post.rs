@@ -138,7 +138,10 @@ pub fn create_post(
         // and is immutable thereafter (see UpdatePost). Matching `inserted_post.created_at`
         // exactly, rather than a separately-captured `SystemTime::now()`, avoids any clock skew
         // between the two columns.
-        let inserted_post = if matches!(visibility, Visibility::ServerPublic | Visibility::GlobalPublic) {
+        let inserted_post = if matches!(
+            visibility,
+            Visibility::ServerPublic | Visibility::GlobalPublic
+        ) {
             update(posts::table)
                 .filter(posts::id.eq(inserted_post.id))
                 .set(posts::published_at.eq(inserted_post.created_at))

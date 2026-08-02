@@ -6,10 +6,7 @@ use crate::models;
 use crate::protos::*;
 use crate::schema::{federated_profiles, federated_users};
 
-pub fn get_federated_users(
-    user_id: i64,
-    conn: &mut PgPooledConnection,
-) -> Vec<FederatedAccount> {
+pub fn get_federated_users(user_id: i64, conn: &mut PgPooledConnection) -> Vec<FederatedAccount> {
     federated_users::table
         .inner_join(
             federated_profiles::table

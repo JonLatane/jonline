@@ -108,7 +108,12 @@ pub fn create_group(
             ))
         }
         Err(DatabaseError(UniqueViolation, details)) => {
-            log::error!("Error creating group! {:?}, {} {:?}", details, derived_shortname, request);
+            log::error!(
+                "Error creating group! {:?}, {} {:?}",
+                details,
+                derived_shortname,
+                request
+            );
             Err(Status::new(Code::NotFound, "duplicate_group_name"))
         }
         Err(e) => {

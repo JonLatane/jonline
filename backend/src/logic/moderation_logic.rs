@@ -1,8 +1,8 @@
-use crate::{models, protos::*, marshaling::*};
+use crate::{marshaling::*, models, protos::*};
 
 pub trait Moderated {
-  fn passes(&self) -> bool;
-  fn pending(&self) -> bool;
+    fn passes(&self) -> bool;
+    fn pending(&self) -> bool;
 }
 impl Moderated for Moderation {
     fn passes(&self) -> bool {
@@ -13,38 +13,38 @@ impl Moderated for Moderation {
     }
 
     fn pending(&self) -> bool {
-      match self {
-          Moderation::Pending => true,
-          _ => false,
-      }
+        match self {
+            Moderation::Pending => true,
+            _ => false,
+        }
     }
 }
 
 impl Moderated for models::Membership {
-  fn passes(&self) -> bool {
-      self.to_proto().passes()
-  }
+    fn passes(&self) -> bool {
+        self.to_proto().passes()
+    }
 
-  fn pending(&self) -> bool {
-    self.to_proto().pending()
-  }
+    fn pending(&self) -> bool {
+        self.to_proto().pending()
+    }
 }
 impl Moderated for Membership {
-  fn passes(&self) -> bool {
-      self.group_moderation().passes() && self.user_moderation().passes()
-  }
+    fn passes(&self) -> bool {
+        self.group_moderation().passes() && self.user_moderation().passes()
+    }
 
-  fn pending(&self) -> bool {
-    self.group_moderation().pending() || self.user_moderation().pending()
-  }
+    fn pending(&self) -> bool {
+        self.group_moderation().pending() || self.user_moderation().pending()
+    }
 }
 
 impl Moderated for Follow {
-  fn passes(&self) -> bool {
-      self.target_user_moderation().passes()
-  }
+    fn passes(&self) -> bool {
+        self.target_user_moderation().passes()
+    }
 
-  fn pending(&self) -> bool {
-    self.target_user_moderation().pending()
-  }
+    fn pending(&self) -> bool {
+        self.target_user_moderation().pending()
+    }
 }

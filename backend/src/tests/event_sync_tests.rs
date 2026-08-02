@@ -15,7 +15,10 @@ use diesel::prelude::*;
 
 const ICS_FORMAT: &str = "%Y%m%dT%H%M%SZ";
 
-fn instances_for(conn: &mut crate::db_connection::PgPooledConnection, event_id: i64) -> Vec<models::EventInstance> {
+fn instances_for(
+    conn: &mut crate::db_connection::PgPooledConnection,
+    event_id: i64,
+) -> Vec<models::EventInstance> {
     event_instances::table
         .select(models::EVENT_INSTANCE_COLUMNS)
         .filter(event_instances::event_id.eq(event_id))
@@ -389,7 +392,8 @@ fn missing_ics_url_fails_with_precondition_error() {
     let mut conn = test_conn();
     conn.test_transaction::<_, tonic::Status, _>(|conn| {
         let user = create_user(conn, "est_nourl_owner");
-        let mut source = create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
+        let mut source =
+            create_event_sync_source_row(conn, &user, "http://example.invalid/cal.ics");
         source.configuration = serde_json::json!({});
 
         let err = sync_event_sync_source(&source, conn).unwrap_err();

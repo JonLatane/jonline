@@ -241,7 +241,9 @@ pub fn create_event(
             //     username: user.username,
             //     avatar_media_id: user.avatar_media_id,
             // };
-            Ok(marshalable_event.clone().to_proto(Some(&media_lookup), None))
+            Ok(marshalable_event
+                .clone()
+                .to_proto(Some(&media_lookup), None))
         }
         Err(e) => {
             log::error!("Error creating event! {:?}", e);

@@ -10,18 +10,9 @@ fn main() {
         .type_attribute(".", "#[derive(serde::Serialize, serde::Deserialize)]")
         // This is specifically for rust-analyzer in VSCode
         // .client_attribute(".", "#![allow(non_snake_case)]")
-        .extern_path(
-            ".google.protobuf.Any",
-            "::prost_wkt_types::Any"
-        )
-        .extern_path(
-            ".google.protobuf.Timestamp",
-            "::prost_wkt_types::Timestamp"
-        )
-        .extern_path(
-            ".google.protobuf.Value",
-            "::prost_wkt_types::Value"
-        )
+        .extern_path(".google.protobuf.Any", "::prost_wkt_types::Any")
+        .extern_path(".google.protobuf.Timestamp", "::prost_wkt_types::Timestamp")
+        .extern_path(".google.protobuf.Value", "::prost_wkt_types::Value")
         .file_descriptor_set_path(out_dir.join("greeter_descriptor.bin"))
         .out_dir("./src/protos")
         .compile(&[proto_file], &["../protos"])

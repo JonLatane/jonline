@@ -99,7 +99,7 @@ Your media policy should describe who has ownership of uploaded media, anything 
             ..Default::default()
         })
         .unwrap(),
-        federation_info: serde_json::to_value(FederationInfo { 
+        federation_info: serde_json::to_value(FederationInfo {
             servers: vec![
                 FederatedServer {
                     host: "jonline.io".to_string(),

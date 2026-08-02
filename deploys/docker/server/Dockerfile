@@ -42,9 +42,9 @@ COPY frontends/elm-spa/public/ /opt/elm_web
 COPY docs/protocol.html /opt/docs/protocol.html
 
 # Setup the environment for the server.
-# imagemagick is used by /opt/convert_media_sizes (bin/convert_media_sizes.rs) to generate
-# small/medium/large resized copies of PNG/JPEG Media.
-RUN apt-get update && apt-get -y install libpq5 curl postgresql-client libc6 imagemagick
+# imagemagick and ffmpeg are used by /opt/convert_media_sizes (bin/convert_media_sizes.rs) to
+# generate small/medium/large resized copies of PNG/JPEG and MP4/QuickTime/WebM Media, respectively.
+RUN apt-get update && apt-get -y install libpq5 curl postgresql-client libc6 imagemagick ffmpeg
 
 # Old Ubuntu OpenSSL thing
 # RUN curl http://nz2.archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.20_amd64.deb > libssl1.1.deb

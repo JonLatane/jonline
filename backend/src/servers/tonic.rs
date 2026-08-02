@@ -63,7 +63,7 @@ pub fn start_tonic_server(
             Ok(_) => {
                 ::log::warn!("Tonic server stopped unexpectedly. Sending a panic! to stop the Jonline server...");
                 panic!("Tonic server stopped on {}", tonic_addr)
-            },
+            }
             Err(e) => {
                 ::log::warn!("Unable to start Tonic server on port {}", port);
                 report_error(e);

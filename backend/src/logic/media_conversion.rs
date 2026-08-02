@@ -1,10 +1,11 @@
 //! Generates `small`/`medium`/`large` resized copies of a `Media` item's original upload via the
-//! system `ImageMagick` install (`magick`, or the legacy `convert`+`identify` pair), storing them
-//! in MinIO alongside the original and recording their paths in `Media.converted_sizes`. Used by
-//! `bin/convert_media_sizes.rs`.
+//! system `ImageMagick` install (`magick`, or the legacy `convert`+`identify` pair) for images, or
+//! `ffmpeg`/`ffprobe` for video, storing them in MinIO alongside the original and recording their
+//! paths in `Media.converted_sizes`. Used by `bin/convert_media_sizes.rs`.
 //!
-//! Only PNG/JPEG are converted for now (`CONVERTIBLE_CONTENT_TYPES`) -- both tools handle other
-//! common formats fine, but we don't have callers needing them yet.
+//! Only PNG/JPEG are converted for images (`CONVERTIBLE_CONTENT_TYPES`) and MP4/QuickTime/WebM for
+//! video (`VIDEO_CONVERTIBLE_CONTENT_TYPES`) for now -- both tools handle other common formats
+//! fine, but we don't have callers needing them yet.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -18,17 +19,29 @@ use crate::models::{ConvertedSize, ConvertedSizeSpec, ConvertedSizes, Media};
 use crate::schema::media;
 
 pub const CONVERTIBLE_CONTENT_TYPES: [&str; 3] = ["image/png", "image/jpeg", "image/jpg"];
+pub const VIDEO_CONVERTIBLE_CONTENT_TYPES: [&str; 3] =
+    ["video/mp4", "video/quicktime", "video/webm"];
+
+fn is_video_content_type(content_type: &str) -> bool {
+    VIDEO_CONVERTIBLE_CONTENT_TYPES.contains(&content_type)
+}
 
 /// `Media` rows still needing conversion: not yet `processed`, and a content type we know how to
 /// convert. `processed` is only ever set once conversion (successfully) completes, so this
-/// naturally retries anything a prior run errored out on.
+/// naturally retries anything a prior run errored out on (including runs where the relevant tool,
+/// `ImageMagick` or `ffmpeg`, was missing).
 pub fn media_pending_conversion(
     conn: &mut PgPooledConnection,
     limit: i64,
 ) -> QueryResult<Vec<Media>> {
+    let content_types: Vec<&str> = CONVERTIBLE_CONTENT_TYPES
+        .iter()
+        .chain(VIDEO_CONVERTIBLE_CONTENT_TYPES.iter())
+        .copied()
+        .collect();
     media::table
         .filter(media::processed.eq(false))
-        .filter(media::content_type.eq_any(CONVERTIBLE_CONTENT_TYPES))
+        .filter(media::content_type.eq_any(content_types))
         .order(media::id.asc())
         .limit(limit)
         .load::<Media>(conn)
@@ -116,6 +129,105 @@ impl ImageMagick {
     }
 }
 
+/// Resizes video `Media` via a system `ffmpeg`/`ffprobe` install.
+pub struct FFmpeg;
+
+impl FFmpeg {
+    /// Returns `None` if `ffmpeg` or `ffprobe` aren't both on `$PATH` -- callers should log and
+    /// skip video conversion entirely rather than fail hard, since ffmpeg is an optional
+    /// dependency (see docs/README's "Prerequisites for your $PATH"), same as `ImageMagick`.
+    pub fn detect() -> Option<Self> {
+        if command_exists("ffmpeg") && command_exists("ffprobe") {
+            Some(Self)
+        } else {
+            None
+        }
+    }
+
+    fn dimensions(&self, path: &Path) -> Result<(u32, u32)> {
+        let output = Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-select_streams")
+            .arg("v:0")
+            .arg("-show_entries")
+            .arg("stream=width,height")
+            .arg("-of")
+            .arg("csv=s=x:p=0")
+            .arg(path)
+            .output()
+            .context("failed to run ffprobe")?;
+        if !output.status.success() {
+            bail!(
+                "ffprobe exited with {}: {}",
+                output.status,
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let mut parts = stdout.trim().split('x');
+        let width: u32 = parts.next().context("missing width")?.parse()?;
+        let height: u32 = parts.next().context("missing height")?.parse()?;
+        Ok((width, height))
+    }
+
+    /// Resizes `input` to fit within `max_dimension`x`max_dimension`, preserving aspect ratio and
+    /// never upscaling (the `min(N,iw/ih)` scale filter, mirroring `ImageMagick::resize`'s `>`
+    /// geometry flag), re-encoding with a codec appropriate to `content_type`'s container.
+    fn resize(
+        &self,
+        input: &Path,
+        output: &Path,
+        max_dimension: u32,
+        content_type: &str,
+    ) -> Result<()> {
+        let mut command = Command::new("ffmpeg");
+        command
+            .arg("-y")
+            .arg("-nostdin")
+            .arg("-i")
+            .arg(input)
+            .arg("-vf")
+            .arg(format!(
+                "scale='min({0},iw)':'min({0},ih)':force_original_aspect_ratio=decrease:force_divisible_by=2",
+                max_dimension
+            ));
+        if content_type == "video/webm" {
+            command.args([
+                "-c:v",
+                "libvpx-vp9",
+                "-b:v",
+                "0",
+                "-crf",
+                "32",
+                "-c:a",
+                "libopus",
+            ]);
+        } else {
+            command.args([
+                "-c:v",
+                "libx264",
+                "-preset",
+                "veryfast",
+                "-crf",
+                "23",
+                "-c:a",
+                "aac",
+                "-movflags",
+                "+faststart",
+            ]);
+        }
+        let status = command
+            .arg(output)
+            .status()
+            .context("failed to run ffmpeg")?;
+        if !status.success() {
+            bail!("ffmpeg exited with {}", status);
+        }
+        Ok(())
+    }
+}
+
 fn command_exists(program: &str) -> bool {
     Command::new(program)
         .arg("-version")
@@ -128,20 +240,64 @@ fn extension_for_content_type(content_type: &str) -> Result<&'static str> {
     match content_type {
         "image/png" => Ok("png"),
         "image/jpeg" | "image/jpg" => Ok("jpg"),
+        "video/mp4" => Ok("mp4"),
+        "video/quicktime" => Ok("mov"),
+        "video/webm" => Ok("webm"),
         other => bail!("unsupported content type: {other}"),
+    }
+}
+
+/// Which tool converts a given `Media` item, chosen by its content type.
+enum Converter<'a> {
+    Image(&'a ImageMagick),
+    Video(&'a FFmpeg),
+}
+
+impl Converter<'_> {
+    fn dimensions(&self, path: &Path) -> Result<(u32, u32)> {
+        match self {
+            Converter::Image(imagemagick) => imagemagick.dimensions(path),
+            Converter::Video(ffmpeg) => ffmpeg.dimensions(path),
+        }
+    }
+
+    fn resize(
+        &self,
+        input: &Path,
+        output: &Path,
+        max_dimension: u32,
+        content_type: &str,
+    ) -> Result<()> {
+        match self {
+            Converter::Image(imagemagick) => imagemagick.resize(input, output, max_dimension),
+            Converter::Video(ffmpeg) => ffmpeg.resize(input, output, max_dimension, content_type),
+        }
     }
 }
 
 /// Downloads `item`'s original from MinIO, generates any `ConvertedSizeSpec` it's larger than
 /// (skipping sizes it already fits within -- those fall back to the original), uploads the
 /// results back to MinIO next to the original, and marks `item` `processed`.
+///
+/// `imagemagick`/`ffmpeg` are `None` when the respective tool wasn't found on `$PATH` at startup;
+/// converting a `Media` item that needs the missing one fails (and is retried next run) without
+/// affecting items convertible by the other.
 pub async fn convert_media(
     item: &Media,
-    imagemagick: &ImageMagick,
+    imagemagick: Option<&ImageMagick>,
+    ffmpeg: Option<&FFmpeg>,
     bucket: &Bucket,
     tmp_dir: &Path,
     conn: &mut PgPooledConnection,
 ) -> Result<()> {
+    let converter = if is_video_content_type(&item.content_type) {
+        Converter::Video(ffmpeg.context("ffmpeg not found on $PATH; cannot convert video Media")?)
+    } else {
+        Converter::Image(
+            imagemagick.context("ImageMagick not found on $PATH; cannot convert image Media")?,
+        )
+    };
+
     let extension = extension_for_content_type(&item.content_type)?;
     let input_path: PathBuf = tmp_dir.join(format!("{}-original.{}", item.id, extension));
 
@@ -151,7 +307,7 @@ pub async fn convert_media(
         .context("failed to download original from MinIO")?;
     std::fs::write(&input_path, original.as_slice())?;
 
-    let (width, height) = imagemagick.dimensions(&input_path)?;
+    let (width, height) = converter.dimensions(&input_path)?;
     let mut sizes = ConvertedSizes::default();
 
     for spec in ConvertedSizeSpec::ALL {
@@ -168,7 +324,12 @@ pub async fn convert_media(
         }
 
         let output_path = tmp_dir.join(format!("{}-{}.{}", item.id, spec.key(), extension));
-        imagemagick.resize(&input_path, &output_path, spec.max_dimension())?;
+        converter.resize(
+            &input_path,
+            &output_path,
+            spec.max_dimension(),
+            &item.content_type,
+        )?;
         let output_bytes = std::fs::read(&output_path)?;
         let _ = std::fs::remove_file(&output_path);
 

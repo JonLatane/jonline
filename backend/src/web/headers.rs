@@ -16,7 +16,6 @@ impl<'r> FromRequest<'r> for AuthHeader<'r> {
     }
 }
 
-
 pub struct ContentTypeHeader<'a>(pub &'a str);
 
 #[rocket::async_trait]
@@ -58,7 +57,6 @@ impl<'r> FromRequest<'r> for MediaTitleHeader<'r> {
         }
     }
 }
-
 
 pub struct MediaDescriptionHeader<'a>(pub &'a str);
 

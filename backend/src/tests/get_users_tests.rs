@@ -234,8 +234,12 @@ mod followers_text_search {
             let matching_follower =
                 create_user_with_profile(conn, "followerstx_match1", "Bramblewick Match", "");
             let other_follower = create_user(conn, "followerstx_other1");
-            let non_follower_match =
-                create_user_with_profile(conn, "followerstx_nonfollow1", "Bramblewick NoFollow", "");
+            let non_follower_match = create_user_with_profile(
+                conn,
+                "followerstx_nonfollow1",
+                "Bramblewick NoFollow",
+                "",
+            );
             create_follow(conn, &matching_follower, &target);
             create_follow(conn, &other_follower, &target);
 
@@ -404,8 +408,18 @@ mod follow_requests_text_search {
                 &current_user,
                 Moderation::Pending,
             );
-            create_follow_with_moderation(conn, &other_requester, &current_user, Moderation::Pending);
-            create_follow_with_moderation(conn, &approved_match, &current_user, Moderation::Approved);
+            create_follow_with_moderation(
+                conn,
+                &other_requester,
+                &current_user,
+                Moderation::Pending,
+            );
+            create_follow_with_moderation(
+                conn,
+                &approved_match,
+                &current_user,
+                Moderation::Approved,
+            );
 
             let response = search(conn, Some("Puddlejump"), &Some(&current_user))?;
             assert_eq!(ids(&response), vec![matching_requester.id.to_proto_id()]);

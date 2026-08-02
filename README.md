@@ -50,7 +50,8 @@ Additional docs for the Jonline thin launcher can be found in [`docs/homebrew_jo
 * Installation: `brew`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
-* `convert_media_sizes` background job: ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips (logging an error) if it's missing.
+* `convert_media_sizes` background job (images): ImageMagick (`brew install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
+* `convert_media_sizes` background job (video): `ffmpeg` (`brew install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
 
 ```bash
 brew install jonlatane/jonline/jonline
@@ -94,7 +95,8 @@ Unlike the Homebrew distro, this is *straight up untested by me*. So please, sub
 * Installation/Updates: `jq`, `curl`, `xargs`
 * Postgres autoconfiguration: `createdb`, `dropdb`
 * Docker/MinIO autoconfiguration: `docker`
-* `convert_media_sizes` background job: ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips (logging an error) if it's missing.
+* `convert_media_sizes` background job (images): ImageMagick (`apt install imagemagick`), providing either `magick` or the legacy `convert`+`identify` pair. Optional -- the job just skips images (logging an error) if it's missing.
+* `convert_media_sizes` background job (video): `ffmpeg` (`apt install ffmpeg`), providing both `ffmpeg` and `ffprobe`. Optional -- the job just skips videos (logging an error) if it's missing.
 
 ```bash
 # Get the package with curl/jq, and extract it. This is actually also what updater script does.

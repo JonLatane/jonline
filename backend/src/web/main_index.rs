@@ -17,7 +17,9 @@ use std::str::FromStr;
 /// `index_summary`. Flutter is handled separately: it isn't part of the
 /// `SPA_PAGES`/`spa_web_path` system since it has no per-route SEO pages.
 #[rocket::get("/")]
-pub async fn main_index(state: &State<RocketState>) -> CacheResponse<Result<JonlineResponder, Status>> {
+pub async fn main_index(
+    state: &State<RocketState>,
+) -> CacheResponse<Result<JonlineResponder, Status>> {
     let mut conn = state.pool.get().unwrap();
     let configuration = get_server_configuration_proto(&mut conn).unwrap();
     let server_info = configuration.server_info.unwrap_or_default();
@@ -52,5 +54,11 @@ pub async fn main_index(state: &State<RocketState>) -> CacheResponse<Result<Jonl
         .square_media_id
         .map(|id| format!("/media/{}", id));
     let app = root_app(&server_info);
-    spa_web_path(app, "index.html", index_summary(&server_name, server_logo), false).await
+    spa_web_path(
+        app,
+        "index.html",
+        index_summary(&server_name, server_logo),
+        false,
+    )
+    .await
 }

@@ -12,7 +12,9 @@ use tonic::{Code, Status};
 use crate::{
     db_connection::PgPooledConnection,
     // protos::Author,
-    schema::{event_attendances, event_instances, event_sync_sources, events, follows, posts, users},
+    schema::{
+        event_attendances, event_instances, event_sync_sources, events, follows, posts, users,
+    },
 };
 
 pub fn get_event_sync_source(

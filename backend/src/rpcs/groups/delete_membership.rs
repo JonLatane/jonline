@@ -1,11 +1,11 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::memberships;
 
 pub fn delete_membership(
@@ -29,7 +29,10 @@ pub fn delete_membership(
         match membership.as_ref() {
             Some(m) => {
                 if m.group_moderation == Moderation::Rejected.to_string_moderation() {
-                    return Err(Status::new(Code::FailedPrecondition, "cannot_delete_rejected_membership"));
+                    return Err(Status::new(
+                        Code::FailedPrecondition,
+                        "cannot_delete_rejected_membership",
+                    ));
                 }
             }
             None => return Err(Status::new(Code::Internal, "data_error")),

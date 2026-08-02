@@ -4,7 +4,7 @@ use diesel::*;
 use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::schema::{push_tokens, push_token_posts};
+use crate::schema::{push_token_posts, push_tokens};
 
 // pub fn get_push_token_and_push_token_post(
 //     push_token_id: i64,
@@ -23,7 +23,10 @@ use crate::schema::{push_tokens, push_token_posts};
 //         .map_err(|_| Status::new(Code::NotFound, "push_token_push_token_post_data_not_found"))
 // }
 
-pub fn get_push_token(push_token_id: i64, conn: &mut PgPooledConnection) -> Result<PushToken, Status> {
+pub fn get_push_token(
+    push_token_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<PushToken, Status> {
     push_tokens::table
         .select(push_tokens::all_columns)
         .filter(push_tokens::id.eq(push_token_id))
@@ -31,7 +34,10 @@ pub fn get_push_token(push_token_id: i64, conn: &mut PgPooledConnection) -> Resu
         .map_err(|_| Status::new(Code::NotFound, "push_token_not_found"))
 }
 
-pub fn get_push_tokens(post_id: i64, conn: &mut PgPooledConnection) -> Result<Vec<PushToken>, Status> {
+pub fn get_push_tokens(
+    post_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<PushToken>, Status> {
     push_tokens::table
         .inner_join(push_token_posts::table.on(push_tokens::id.eq(push_token_posts::push_token_id)))
         .select(push_tokens::all_columns)

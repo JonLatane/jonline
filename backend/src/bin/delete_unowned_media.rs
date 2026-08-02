@@ -1,8 +1,8 @@
 extern crate diesel;
 extern crate jonline;
 use diesel::*;
-use jonline::{db_connection, minio_connection, init_bin_logging, init_crypto};
 use jonline::schema::{media, posts};
+use jonline::{db_connection, init_bin_logging, init_crypto, minio_connection};
 
 #[tokio::main]
 async fn main() {
@@ -11,10 +11,13 @@ async fn main() {
     log::info!("Deleting Unowned Media...");
     log::info!("Connecting to DB and MinIO...");
     let mut conn = db_connection::establish_connection();
-    let bucket = minio_connection::get_and_test_bucket().await.expect("Failed to connect to MinIO");
+    let bucket = minio_connection::get_and_test_bucket()
+        .await
+        .expect("Failed to connect to MinIO");
 
     let mut unowned_media = media::table
-        .filter(media::user_id.is_null()).load::<jonline::models::Media>(&mut conn)
+        .filter(media::user_id.is_null())
+        .load::<jonline::models::Media>(&mut conn)
         .expect("Failed to load Unowned Media");
 
     for media in unowned_media.iter_mut() {
@@ -35,7 +38,7 @@ async fn main() {
         }
 
         match bucket.delete_object(&media.minio_path).await {
-            Ok(_) => { 
+            Ok(_) => {
                 delete(media::table.find(media.id)).execute(&mut conn)
                     .expect("Failed to delete Media");
                 log::info!("Deleted Media: {:?}", media);

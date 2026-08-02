@@ -15,7 +15,10 @@ pub fn validate_user(user: &User) -> Result<(), Status> {
         Some(e) => validate_phone(&e.value)?,
         None => {}
     }
-    user.avatar.as_ref().map(|a| &a.id).to_db_opt_id_or_err("avatar_media_id")?;
+    user.avatar
+        .as_ref()
+        .map(|a| &a.id)
+        .to_db_opt_id_or_err("avatar_media_id")?;
     match user.visibility.to_proto_visibility().unwrap() {
         Visibility::Unknown => return Err(Status::new(Code::NotFound, "invalid_visibility")),
         _ => (),
@@ -60,10 +63,15 @@ pub fn validate_follow(follow: &Follow, validation_type: OperationType) -> Resul
         OperationType::Update => {
             match follow.target_user_moderation.to_proto_moderation().unwrap() {
                 Moderation::Approved | Moderation::Rejected => {}
-                _ => return Err(Status::new(Code::Internal, "invalid_target_user_moderation")),
+                _ => {
+                    return Err(Status::new(
+                        Code::Internal,
+                        "invalid_target_user_moderation",
+                    ))
+                }
             };
         }
-        _ => ()
+        _ => (),
     }
     Ok(())
 }

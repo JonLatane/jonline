@@ -68,7 +68,8 @@ pub async fn spa_file_or_username(
             Ok(body) => Ok(create_responder(&cache_key, body).await),
             Err(_) => {
                 match fs::read_to_string(
-                    Path::new(&format!("../frontends/tamagui/apps/next/{}/", repo_dir)).join(&relative_file),
+                    Path::new(&format!("../frontends/tamagui/apps/next/{}/", repo_dir))
+                        .join(&relative_file),
                 ) {
                     Ok(body) => Ok(create_responder(&cache_key, body).await),
                     Err(_) => {
@@ -93,8 +94,7 @@ pub async fn spa_file_or_username(
                             .await;
                         }
 
-                        let username =
-                            Some(path.split('/').last().unwrap().to_string());
+                        let username = Some(path.split('/').last().unwrap().to_string());
                         let user = rpcs::get_users(
                             GetUsersRequest {
                                 username,
@@ -118,7 +118,11 @@ pub async fn spa_file_or_username(
                                         _ => user.username.clone(),
                                     },
                                     // user.username.clone(),
-                                    if is_business { "Business Profile" } else { "Profile" }
+                                    if is_business {
+                                        "Business Profile"
+                                    } else {
+                                        "Profile"
+                                    }
                                 );
                                 let description = user.bio.clone();
                                 let avatar =

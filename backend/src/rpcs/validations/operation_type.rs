@@ -1,5 +1,5 @@
 pub enum OperationType {
-  Create,
-  Update,
-  Delete,
+    Create,
+    Update,
+    Delete,
 }

@@ -30,11 +30,17 @@ pub fn test_conn() -> PgPooledConnection {
             pool
         };
     }
-    POOL.get().expect("failed to check out a pooled test connection")
+    POOL.get()
+        .expect("failed to check out a pooled test connection")
 }
 
 pub fn create_user(conn: &mut PgPooledConnection, username: &str) -> models::User {
-    create_user_with(conn, username, Visibility::ServerPublic, Moderation::Unmoderated)
+    create_user_with(
+        conn,
+        username,
+        Visibility::ServerPublic,
+        Moderation::Unmoderated,
+    )
 }
 
 pub fn create_user_with(
@@ -212,7 +218,11 @@ impl Default for GroupOpts {
     }
 }
 
-pub fn create_group(conn: &mut PgPooledConnection, shortname: &str, opts: GroupOpts) -> models::Group {
+pub fn create_group(
+    conn: &mut PgPooledConnection,
+    shortname: &str,
+    opts: GroupOpts,
+) -> models::Group {
     insert_into(groups::table)
         .values(&models::NewGroup {
             name: shortname.to_string(),
@@ -493,7 +503,10 @@ pub fn serve_ics(ics_text: &str) -> String {
     use std::net::TcpListener;
 
     let listener = TcpListener::bind("127.0.0.1:0").expect("failed to bind test ICS server");
-    let port = listener.local_addr().expect("failed to read test ICS server port").port();
+    let port = listener
+        .local_addr()
+        .expect("failed to read test ICS server port")
+        .port();
     let body = ics_text.to_string();
     std::thread::spawn(move || {
         for stream in listener.incoming() {

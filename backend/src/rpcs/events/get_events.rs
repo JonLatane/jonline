@@ -206,17 +206,15 @@ fn attach_event_instance_attendances(
 
             let is_approved_attendee = is_owner
                 || instance_attendances.iter().any(|(a, _)| {
-                    a.moderation == Moderation::Approved.to_string_moderation()
-                        && is_viewers_own(a)
+                    a.moderation == Moderation::Approved.to_string_moderation() && is_viewers_own(a)
                 });
 
-            let visible_location = if is_approved_attendee
-                || !context.hide_location_until_rsvp_approved
-            {
-                instance.location.clone().map(|l| l.to_proto_location())
-            } else {
-                None
-            };
+            let visible_location =
+                if is_approved_attendee || !context.hide_location_until_rsvp_approved {
+                    instance.location.clone().map(|l| l.to_proto_location())
+                } else {
+                    None
+                };
             instance_proto.location = visible_location.clone();
 
             instance_proto.current_user_attendance = instance_attendances

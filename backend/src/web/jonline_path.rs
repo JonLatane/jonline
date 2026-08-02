@@ -43,7 +43,6 @@ pub async fn jonline_path(
     }
 }
 
-
 pub async fn jonline_path_responder(
     path: &str,
     server_location: &str,

@@ -6,8 +6,8 @@ pub use jonline_path::*;
 
 // This module contains Rocket routes and handlers for the web interface.
 
-pub mod headers;
 pub mod cors;
+pub mod headers;
 
 pub mod catchers;
 pub use catchers::*;

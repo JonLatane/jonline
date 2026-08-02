@@ -20,10 +20,12 @@ pub fn delete_user(
     let self_delete = request.id == current_user.id.to_proto_id();
     let admin = match validate_permission(&Some(current_user), Permission::Admin) {
         Ok(_) => true,
-        Err(e) => if !self_delete {
-            return Err(e);
-        } else {
-            false
+        Err(e) => {
+            if !self_delete {
+                return Err(e);
+            } else {
+                false
+            }
         }
     };
     log::info!("self_delete: {}, admin: {}", self_delete, admin);
