@@ -5,9 +5,11 @@
 # ../ingress/Makefile's INGRESS_NAMESPACE).
 EMAIL_NAMESPACE ?= jonline-email
 
-# create_email: boots the shared Stalwart controller (Namespace, PVC, Deployment, two Services --
-# see k8s/stalwart.yaml's comments for why 8080/admin is ClusterIP-only while 25/smtp is a
-# LoadBalancer). Run once per cluster.
+# create_email: boots the shared Stalwart controller (Namespace, PVC, Deployment, two ClusterIP
+# Services, and an IngressRouteTCP on the shared Traefik ingress's `smtp` entrypoint -- see
+# k8s/stalwart.yaml's comments). Requires deploys/ingress's shared controller to already be
+# installed (`make create_ingress`) -- Stalwart has no external IP of its own; port 25 reaches
+# it through Traefik, same LoadBalancer your other domains already share. Run once per cluster.
 create_email:
 	kubectl create -f k8s/stalwart.yaml --save-config
 remove_email:
@@ -15,8 +17,9 @@ remove_email:
 
 deploy_email_get_ip:
 # Suppress echoing this so `make deploy_email_get_ip` is easily composable -- this is what your
-# domains' MX records should point at (see ../README.md).
-	@kubectl get service stalwart -n $(EMAIL_NAMESPACE) | sed -n 2p | awk '{print $$4}'
+# domains' MX records should point at (see ../README.md). Stalwart has no Service IP of its own
+# any more -- this is just the shared ingress's IP, from ../ingress/Makefile.
+	@cd ../ingress && $(MAKE) deploy_ingress_get_ip
 
 deploy_email_restart:
 	kubectl rollout restart deployment stalwart -n $(EMAIL_NAMESPACE)

@@ -10,6 +10,8 @@ Your `jonline` backend already terminates its own TLS (see `deploy_be_internal_c
 
 Plain HTTP (ports 80 and 8000) is routed the normal way, by `Host` header.
 
+This controller also carries a plain TCP passthrough entrypoint on port 25 for the shared Stalwart mail server (see [`../email/README.md`](../email/README.md)) -- unlike the ports above, there's nothing to route *between* there (Stalwart is cluster-wide, not per-namespace), so its `IngressRouteTCP` just catches everything with ``HostSNI(`*`)`` and forwards it straight through.
+
 Because of this, a domain's routing config is a handful of small `IngressRoute`/`IngressRouteTCP` objects that live in *that domain's own namespace* (see `k8s/jonline-routes.template.yaml`), right next to its `jonline` Service -- not in some central config. Traefik discovers them across every namespace automatically.
 
 ## One-time setup: install the shared controller

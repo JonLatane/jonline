@@ -5,7 +5,14 @@ A single shared [Stalwart](https://stalw.art) mail server that lets your `jonlin
 ## How it works
 
 ```
-sender's MTA -> DNS MX lookup for yourdomain.com -> Stalwart (:25, LoadBalancer)
+sender's MTA -> DNS MX lookup for yourdomain.com -> Traefik (:25, shared LoadBalancer)
+                                                        |
+                                     plain TCP passthrough, HostSNI(`*`) catch-all --
+                                     Stalwart is the only possible destination, so
+                                     there's nothing to route *between* (see below)
+                                                        |
+                                                        v
+                                                  Stalwart (ClusterIP)
                                                         |
                                               accepts mail for onboarded domains,
                                               fires an MTA Hook at the DATA stage
@@ -20,7 +27,9 @@ sender's MTA -> DNS MX lookup for yourdomain.com -> Stalwart (:25, LoadBalancer)
                               message in MinIO, and indexes it in Postgres per recipient
 ```
 
-Because Stalwart is the one thing that has to be a well-behaved, spam-resistant internet-facing SMTP server, this is a **single shared component per cluster** -- like `deploys/ingress`'s Traefik, not like each namespace's own `jonline` Deployment. It never sits behind that Traefik ingress, though: MX records point straight at Stalwart's own LoadBalancer IP (see "DNS" below), because SMTP has no equivalent of the SNI-based routing trick `deploys/ingress` uses for HTTPS/gRPC (STARTTLS is negotiated *after* the plaintext handshake, so there's no hostname to route on at connect time).
+Because Stalwart is the one thing that has to be a well-behaved, spam-resistant internet-facing SMTP server, this is a **single shared component per cluster** -- like `deploys/ingress`'s Traefik, not like each namespace's own `jonline` Deployment. Unlike `jonline`, though, it sits *behind* that same shared Traefik ingress rather than getting its own LoadBalancer: `deploys/ingress` has to peek at the TLS SNI on 443/27707 to decide which of several namespaces to forward to, but there's no such decision for SMTP -- Stalwart is the only possible destination cluster-wide (it does its own per-domain acceptance internally, after Traefik hands it the connection). So it's wired up as a plain TCP passthrough on a dedicated `smtp` entrypoint (port 25) with a catch-all ``HostSNI(`*`)`` route, requiring nothing from Traefik beyond "forward every byte" -- see `../ingress/k8s/traefik.yaml` and `k8s/stalwart.yaml`'s `IngressRouteTCP`. STARTTLS is transparent to this: it just upgrades the same already-routed connection in place, it doesn't open a new one Traefik would need to re-route.
+
+This means **`deploys/ingress`'s shared controller must already be installed** (`make create_ingress`) before `create_email` below is useful -- Stalwart has no external IP of its own.
 
 Port 27705 on each `jonline` Deployment is **internal-only** -- it has no authentication of its own and trusts whatever calls it completely. It's deliberately absent from `server_external.yaml`'s (LoadBalancer) Service; only `server_internal.yaml`/`server_internal_insecure.yaml` (ClusterIP) expose it, and only inside the cluster. If your threat model wants more than "not internet-routable," add a `NetworkPolicy` in each domain's namespace restricting port 27705 to pods in the `jonline-email` namespace.
 
@@ -30,7 +39,7 @@ Port 27705 on each `jonline` Deployment is **internal-only** -- it has no authen
 make create_email
 ```
 
-This installs Stalwart (`Deployment`/`Service`s/`PersistentVolumeClaim`) into its own `jonline-email` namespace -- see `k8s/stalwart.yaml`'s comments for what each piece is for, in particular:
+This installs Stalwart (`Deployment`, two `ClusterIP` Services, a `PersistentVolumeClaim`, and an `IngressRouteTCP` onto the shared Traefik controller) into its own `jonline-email` namespace -- see `k8s/stalwart.yaml`'s comments for what each piece is for, in particular:
 
 * The `stalwart-data` PVC holds **Stalwart's own configuration** (accepted domains, MTA Hook definitions, DKIM keys, TLS state) and its in-flight message queue -- not user mailboxes. Losing it means redoing a few minutes of admin-UI setup, not losing anyone's mail, since accepted messages are handed off immediately and never stored here.
 * Port 8080 (the admin UI / setup wizard) is deliberately `ClusterIP`-only, never a `LoadBalancer`. Reach it with:
@@ -41,7 +50,7 @@ This installs Stalwart (`Deployment`/`Service`s/`PersistentVolumeClaim`) into it
   ```
 * On a fresh volume, Stalwart boots into a setup wizard and logs a one-time random admin password to `kubectl logs -n jonline-email deployment/stalwart`. Walk through hostname/storage/directory choices there. (If you'd rather set a fixed initial password than go hunting through logs, uncomment the `STALWART_RECOVERY_ADMIN` env var in `k8s/stalwart.yaml`, ideally sourced from a `Secret` rather than a literal.)
 
-Get Stalwart's external IP (what your MX records will point at) with:
+Get the shared ingress's external IP (what your MX records will point at -- Stalwart no longer has an IP of its own) with:
 
 ```bash
 make deploy_email_get_ip
@@ -65,12 +74,12 @@ Per domain, still in Cloudflare (or wherever it's hosted):
 
 | Record | Example | Notes |
 |---|---|---|
-| MX | `my.domain.example.com. MX 10 <target>.` | `<target>` resolves to Stalwart's IP from `make deploy_email_get_ip`. |
-| A/AAAA (`<target>`) | `<target> A <stalwart-ip>` | **Must be DNS-only ("grey cloud")** if you're on Cloudflare -- the proxy doesn't handle SMTP at all, only HTTP(S). |
+| MX | `my.domain.example.com. MX 10 <target>.` | `<target>` resolves to the shared ingress's IP from `make deploy_email_get_ip` -- the same IP your other domains' 443/27707 records may already point at. |
+| A/AAAA (`<target>`) | `<target> A <ingress-ip>` | **Must be DNS-only ("grey cloud")** if you're on Cloudflare -- the proxy doesn't handle SMTP at all, only HTTP(S). |
 | SPF | `my.domain.example.com. TXT "v=spf1 mx ~all"` | Helps other servers trust anything you bounce, even before you're sending real outbound mail. |
 | DMARC | `_dmarc.my.domain.example.com TXT "v=DMARC1; p=none; rua=mailto:you@..."` | Start at `p=none` (report-only). |
 
-Before touching DNS, validate mail actually reaches your namespace by watching `kubectl logs -f deployment/jonline -n mynamespace` while sending a test message with `swaks --to test@<target> --server <stalwart-ip>`.
+Before touching DNS, validate mail actually reaches your namespace by watching `kubectl logs -f deployment/jonline -n mynamespace` while sending a test message with `swaks --to test@<target> --server <ingress-ip>`.
 
 Also confirm your hosting/cloud provider allows inbound traffic on port 25 -- some block it by default even for receive-only use, and require a support ticket to lift it.
 
