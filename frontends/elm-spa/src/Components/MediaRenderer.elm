@@ -82,7 +82,12 @@ view sizing server maybeAccount onImageClicked media =
                 []
 
         "video" ->
-            video [ class ("media-renderer-video " ++ sizeClass), controls True, src mediaUrl ]
+            video
+                [ class ("media-renderer-video " ++ sizeClass)
+                , controls True
+                , attribute "preload" "metadata"
+                , src (mediaUrl ++ previewTimeFragment media)
+                ]
                 [ text "Your browser doesn't support embedded video." ]
 
         _ ->
@@ -92,6 +97,20 @@ view sizing server maybeAccount onImageClicked media =
                     , a [ href mediaUrl, target "_blank" ] [ text "Download it instead." ]
                     ]
                 ]
+
+
+{-| A Media Fragments URI (`#t=<seconds>`) selecting the timestamp a `<video>` should show as its
+preview/poster frame, per `media.metadata.videoPreviewTimeMs` -- empty (no fragment) if unset,
+which leaves the browser's default first-frame preview in place. `npt-sec` (the fragment's time
+format) is specified in whole-or-decimal seconds, so milliseconds are rendered as a fraction of a
+second (1456ms -> "#t=1.456") rather than truncated to whole seconds.
+-}
+previewTimeFragment : MediaReference -> String
+previewTimeFragment media =
+    media.metadata
+        |> Maybe.andThen .videoPreviewTimeMs
+        |> Maybe.map (\ms -> "#t=" ++ String.fromFloat (toFloat ms / 1000))
+        |> Maybe.withDefault ""
 
 
 {-| Authorized URL for `media`, mirroring `Components.Users.mediaReferenceUrl`

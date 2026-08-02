@@ -70,15 +70,25 @@ pub async fn create_media(
 
     log::info!("create_media status_code: {:?}", status_code);
 
+    let content_type = content_type_header.0.to_string();
+    let metadata = if content_type.starts_with("video/") {
+        models::MediaMetadata {
+            video_preview_time_ms: Some(1000),
+        }
+    } else {
+        models::MediaMetadata::default()
+    };
+
     let media = insert_into(media::table)
         .values(&models::NewMedia {
             user_id: Some(user.id),
             minio_path: minio_path,
-            content_type: content_type_header.0.to_string(),
+            content_type: content_type,
             name: Some(filename_header.0.to_string()),
             description: None,
             generated: false,
             visibility: Visibility::GlobalPublic.to_string_visibility(),
+            metadata: serde_json::to_value(metadata).unwrap(),
         })
         .get_result::<models::Media>(&mut state.pool.get().unwrap());
 

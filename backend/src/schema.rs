@@ -157,6 +157,7 @@ diesel::table! {
         created_at -> Timestamp,
         updated_at -> Timestamp,
         converted_sizes -> Jsonb,
+        metadata -> Jsonb,
     }
 }
 

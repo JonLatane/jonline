@@ -52,6 +52,7 @@ pub struct Media {
     pub created_at: SystemTime,
     pub updated_at: SystemTime,
     pub converted_sizes: serde_json::Value,
+    pub metadata: serde_json::Value,
 }
 
 impl Media {
@@ -61,6 +62,21 @@ impl Media {
     pub fn converted_sizes(&self) -> ConvertedSizes {
         serde_json::from_value(self.converted_sizes.clone()).unwrap_or_default()
     }
+
+    /// Typed view of `metadata`. Falls back to an empty (all-`None`) `MediaMetadata` if the
+    /// column somehow holds something that doesn't parse.
+    pub fn metadata(&self) -> MediaMetadata {
+        serde_json::from_value(self.metadata.clone()).unwrap_or_default()
+    }
+}
+
+/// `Media.metadata`'s typed shape: `{ video_preview_time_ms: 1000 }`. Currently just the
+/// timestamp `MediaRenderer.elm` seeks video previews to (via a `#t=` Media Fragments URI);
+/// absence means "use the browser's default first-frame preview".
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct MediaMetadata {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub video_preview_time_ms: Option<i64>,
 }
 
 /// Selects one of the auto-generated resized copies of a `Media` item's original upload. See
@@ -149,6 +165,7 @@ pub struct NewMedia {
     pub description: Option<String>,
     pub generated: bool,
     pub visibility: String,
+    pub metadata: serde_json::Value,
 }
 
 pub const MEDIA_REFERENCE_COLUMNS: (
@@ -156,11 +173,13 @@ pub const MEDIA_REFERENCE_COLUMNS: (
     media::content_type,
     media::name,
     media::generated,
+    media::metadata,
 ) = (
     media::id,
     media::content_type,
     media::name,
     media::generated,
+    media::metadata,
 );
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
@@ -170,4 +189,12 @@ pub struct MediaReference {
     pub content_type: String,
     pub name: Option<String>,
     pub generated: bool,
+    pub metadata: serde_json::Value,
+}
+
+impl MediaReference {
+    /// Typed view of `metadata`. See [`Media::metadata`].
+    pub fn metadata(&self) -> MediaMetadata {
+        serde_json::from_value(self.metadata.clone()).unwrap_or_default()
+    }
 }
