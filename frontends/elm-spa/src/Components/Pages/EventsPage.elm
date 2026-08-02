@@ -521,7 +521,7 @@ instanceHasStarted model instance =
 `Model.hideStartedUpcomingEvents`/`hideStartedButtonView`) -- `instanceHasStarted`,
 gated on the filter actually being on, so an event crossing its own start
 time mid-session fades out on the very next poll (`refetchServers` already
-calls `syncAnimations`), same as `HideStartedUpcomingEventsToggled` fades the
+calls `syncAnimations`), same as `HideStartedEventsToggled` fades the
 whole already-started set out/in on toggle.
 -}
 hiddenAsStarted : Model -> EventInstance -> Bool
@@ -779,7 +779,7 @@ type Msg
       -- toggling `model.hideStartedUpcomingEvents` -- purely a local
       -- filter over already-fetched data (see `hiddenAsStarted`/
       -- `syncAnimations`), so there's nothing to fetch here.
-    | HideStartedUpcomingEventsToggled
+    | HideStartedEventsToggled
       -- Opens/closes the "Export" button's ICS-subscription-link popover
       -- (see `exportButtonView`).
     | ExportClicked
@@ -1072,7 +1072,7 @@ updateInner shared msg model =
         ClearSearchClicked ->
             applySearchChange shared { model | searchText = "", searchGeneration = model.searchGeneration + 1 }
 
-        HideStartedUpcomingEventsToggled ->
+        HideStartedEventsToggled ->
             ( { model | hideStartedUpcomingEvents = not model.hideStartedUpcomingEvents } |> syncAnimations, Effect.none )
 
         ExportClicked ->
@@ -1307,6 +1307,15 @@ username/avatar header (see `profileDetail`), so a second copy of the same name 
 redundant. Every other caller passes `True`, preserving the previous always-shown (whenever
 `model.author` is `Just`) behavior.
 
+An embedded copy (`model.embeddedPage`) keeps its own bespoke
+`.events-controls-row`/`.events-controls-trailing` layout (`events.css`) --
+its own `tabsView` is just a heading + `hideStartedButtonView`, not a real
+tab strip, so it has nothing to gain from `.filter-tabs-bar`'s scrolling.
+Every other (standalone) copy instead assembles the generic two-row "filter
+area" `PostsPage.view`/`UsersPage.view` also use (`ui/filter_bar.css`): row 1
+is `tabsView`'s own `.filter-tabs-bar`, row 2 is `.filter-controls-row`
+holding `searchRowView` plus `.filter-controls-trailing` (the layout-switch
+and export buttons).
 -}
 view : Shared.Model -> Bool -> Model -> Html Msg
 view shared showAuthorHeading model =
@@ -1316,14 +1325,29 @@ view shared showAuthorHeading model =
 
           else
             text ""
-        , div [ class "events-controls-row" ]
-            [ tabsView shared model
-            , searchRowView model
-            , div [ class "events-controls-trailing" ]
-                [ modeButtonsView shared model.embeddedPage model.mode
-                , exportButtonView shared model
+        , if model.embeddedPage then
+            div []
+                [ searchRowView model
+                , div [ class "events-controls-row" ]
+                    [ tabsView shared model
+                    , div [ class "events-controls-trailing" ]
+                        [ modeButtonsView shared model.embeddedPage model.mode
+                        , exportButtonView shared model
+                        ]
+                    ]
                 ]
-            ]
+
+          else
+            div []
+                [ tabsView shared model
+                , div [ class "filter-controls-row" ]
+                    [ searchRowView model
+                    , div [ class "filter-controls-trailing" ]
+                        [ modeButtonsView shared model.embeddedPage model.mode
+                        , exportButtonView shared model
+                        ]
+                    ]
+                ]
         , eventsListView shared model
         ]
 
@@ -1364,9 +1388,9 @@ gated by its `tabsView` callers: renders `text ""` unless `UpcomingEvents` is
 the active tab _and_ `anyStartedEvents` (`EventsAfterDate`'s fixed cutoff has
 no "already started" notion to filter by, and there's nothing to toggle when
 nothing's started yet). Toggles `model.hideStartedUpcomingEvents` (see
-`HideStartedUpcomingEventsToggled`), which `hiddenAsStarted`/`syncAnimations`
+`HideStartedEventsToggled`), which `hiddenAsStarted`/`syncAnimations`
 read to fade already-started instances out of the listing. Styled as a
-circular icon button (`.events-hide-started-button`, `events.css`) mirroring
+circular icon button (`.filter-icon-button`, `ui/filter_bar.css`) mirroring
 `exportButtonView`'s own; `background-color-primary` (matching `tabsView`'s
 own active-tab convention) is added while the filter is on.
 -}
@@ -1375,7 +1399,7 @@ hideStartedButtonView model =
     if anyStartedEvents model then
         button
             [ classes
-                ("events-hide-started-button"
+                ("filter-icon-button"
                     :: (if model.hideStartedUpcomingEvents then
                             [ "background-color-primary" ]
 
@@ -1383,7 +1407,7 @@ hideStartedButtonView model =
                             []
                        )
                 )
-            , onClick HideStartedUpcomingEventsToggled
+            , onClick HideStartedEventsToggled
             , title
                 (if model.hideStartedUpcomingEvents then
                     "Showing only events that haven't started"
@@ -1413,7 +1437,11 @@ already active, so the two never conflict). The input's own `value` reflects
 before the very first `GotNow`/`?ends_after=` resolves one -- see
 `Model.endsAfter`'s own doc) formatted in the viewer's own local time zone,
 so the picker shows/accepts wall-clock time the viewer actually recognizes
-rather than raw UTC.
+rather than raw UTC. The standalone (non-embedded) branch sits its tabs (plus
+`hideStartedButtonView`) directly in the generic, horizontally-scrolling
+`.filter-tabs-bar` (`ui/filter_bar.css`, shared with `PostsPage`'s own tabs)
+-- the embedded branch keeps its own bespoke `.upcoming-events-tab-controls`
+heading instead, see `view`'s own doc for why.
 -}
 tabsView : Shared.Model -> Model -> Html Msg
 tabsView shared model =
@@ -1424,27 +1452,25 @@ tabsView shared model =
             ]
 
     else
-        div [ class "events-tabs" ]
-            [ span [ class "upcoming-events-tab-controls" ]
-                [ hideStartedButtonView model
-                , button
-                    [ classes
-                        ("events-tab"
-                            :: "events-tab-primary"
-                            :: (if model.tab == UpcomingEvents then
-                                    [ "background-color-primary" ]
+        div [ class "filter-tabs-bar" ]
+            [ hideStartedButtonView model
+            , button
+                [ classes
+                    ("filter-tab"
+                        :: "filter-tab-primary"
+                        :: (if model.tab == UpcomingEvents then
+                                [ "background-color-primary" ]
 
-                                else
-                                    []
-                               )
-                        )
-                    , onClick (TabChanged UpcomingEvents)
-                    ]
-                    [ text "Upcoming Events" ]
+                            else
+                                []
+                           )
+                    )
+                , onClick (TabChanged UpcomingEvents)
                 ]
+                [ text "Upcoming Events" ]
             , div
                 [ classes
-                    ("events-tab"
+                    ("filter-tab"
                         :: (if model.tab == EventsAfterDate then
                                 [ "background-color-primary" ]
 
@@ -1457,7 +1483,7 @@ tabsView shared model =
                 [ text "Events After "
                 , input
                     [ type_ "datetime-local"
-                    , class "events-tab-date-input"
+                    , class "filter-tab-date-input"
                     , value
                         (BrowserTimeZone.formatDateTimeLocalInput
                             shared.browserTimeZone.zone
@@ -1470,44 +1496,45 @@ tabsView shared model =
             ]
 
 
-{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) -- sits between
-`tabsView` and `modeButtonsView` in `view`'s `events-controls-row`, so search still visibly
-respects whichever time-filter tab is active (see `Components.Events.fetchEvents`'s own doc for
-why the request itself still enforces that too, not just the UI placement). Mirrors
-`Components.Pages.PostsPage.searchRowView` closely, minus that module's POST/REPLY context
-chooser -- this listing has no equivalent.
+{-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) --
+sits alongside `modeButtonsView`/`exportButtonView` (`view`'s own
+`.filter-controls-trailing`) in the generic `.filter-controls-row`
+(`ui/filter_bar.css`), row 2 of the standalone "filter area" below `tabsView`'s
+own `.filter-tabs-bar`, so search still visibly respects whichever time-filter
+tab is active (see `Components.Events.fetchEvents`'s own doc for why the
+request itself still enforces that too, not just the UI placement). Mirrors
+`Components.Pages.PostsPage.searchRowView`/`Components.Pages.UsersPage.searchRowView`
+closely, minus a context chooser -- this listing has no equivalent.
 -}
 searchRowView : Model -> Html Msg
 searchRowView model =
-    div [ class "events-search-row" ]
-        [ div [ class "events-search-field" ]
-            [ input
-                [ type_ "text"
-                , class "events-search-input"
-                , placeholder <|
-                    case model.mode of
-                        HorizontalList ->
-                            "Search posts and events..."
+    div [ class "filter-search-field" ]
+        [ input
+            [ type_ "text"
+            , class "filter-search-input"
+            , placeholder <|
+                case model.mode of
+                    HorizontalList ->
+                        "Search posts and events..."
 
-                        _ ->
-                            "Search events..."
-                , value model.searchText
-                , onInput SearchTextChanged
-                , onEscape ClearSearchClicked
-                ]
-                []
-            , if String.isEmpty model.searchText then
-                text ""
-
-              else
-                button
-                    [ type_ "button"
-                    , class "field-clear-button"
-                    , onClick ClearSearchClicked
-                    , title "Clear search"
-                    ]
-                    [ text "╳" ]
+                    _ ->
+                        "Search events..."
+            , value model.searchText
+            , onInput SearchTextChanged
+            , onEscape ClearSearchClicked
             ]
+            []
+        , if String.isEmpty model.searchText then
+            text ""
+
+          else
+            button
+                [ type_ "button"
+                , class "field-clear-button"
+                , onClick ClearSearchClicked
+                , title "Clear search"
+                ]
+                [ text "╳" ]
         ]
 
 
@@ -1533,7 +1560,8 @@ onEscape msg =
 (`background-color-nav` -- unlike `tabsView`'s own tabs, which use
 `background-color-primary`, so the two rows read as visually distinct kinds
 of control sharing one row) for `current`, and pushed to the row's right edge
-(see `events.css`'s `.events-controls-row`/`.events-mode-buttons`) -- mirrors
+(see `view`'s `.filter-controls-trailing`/`.events-controls-trailing`, plus
+`.events-mode-buttons` here in `events.css`) -- mirrors
 `Pages.Event.EventId_.historyButtonView`'s pill styling.
 
 Which buttons show (if any) depends on `embeddedPage` (`model.embeddedPage`,
@@ -1620,7 +1648,7 @@ icsUrl shared model =
             "https://" ++ shared.accountsPanel.mainFrontendHost ++ "/calendar.ics"
 
 
-{-| The "Export" icon button always shown at the end of `events-controls-row`
+{-| The "Export" icon button always shown at the end of `.filter-controls-trailing`
 (next to `modeButtonsView`, unlike that one not gated by `embeddedPage` -- it
 belongs on every copy of this listing, embedded or not, per its own request).
 Toggles a small popover (`ExportClicked`/`ExportPopoverClosed`) anchored
@@ -1633,13 +1661,14 @@ corners squaring off to meet the popover -- see that stylesheet's own doc),
 so any later button that wants a small anchored popover under itself can
 reuse the same pieces. The backdrop `div` behind it closes it on click, same
 "backdrop closes an open panel" idea `UI.Modal` uses for full-screen dialogs,
-just anchored instead of centered.
+just anchored instead of centered. The button itself is `.filter-icon-button`
+(`ui/filter_bar.css`), same circular sizing `hideStartedButtonView` uses.
 -}
 exportButtonView : Shared.Model -> Model -> Html Msg
 exportButtonView shared model =
     div [ classes [ "events-export", "popover-anchor" ] ]
         [ button
-            [ classes [ "events-export-button", "popover-toggle", "background-color-nav", openClosedClass model.exportPopoverOpen ]
+            [ classes [ "filter-icon-button", "popover-toggle", "background-color-nav", openClosedClass model.exportPopoverOpen ]
             , onClick ExportClicked
             , title "Export calendar (ICS)"
             , type_ "button"

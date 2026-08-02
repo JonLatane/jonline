@@ -1,0 +1,143 @@
+/* Generic "filter area" layout shared by every standalone listing page's own
+   top controls -- currently `Components.Pages.PostsPage` (`recentPostsTabsView`/
+   `searchRowView`), `Components.Pages.EventsPage` (`tabsView`/`searchRowView`,
+   non-embedded only -- its embedded copies keep their own bespoke
+   `.events-controls-row`/`.events-controls-trailing` layout, see that
+   module's `view`), and `Components.Pages.UsersPage` (`searchRowView`).
+   Deliberately named without a `posts-`/`events-`/`users-` prefix so a
+   future `Components.Pages.GroupsPage` (or any other filterable listing) can
+   reuse these same classes rather than growing its own near-identical copy.
+
+   The shape every caller assembles:
+
+     .filter-tabs-bar          (row 1 -- the tab/date-cutoff strip, scrollable
+                                 rather than wrapping so it never grows past
+                                 one line)
+     .filter-controls-row      (row 2 -- search box + whatever else the page
+                                 wants right-aligned alongside it)
+       .filter-search-field
+       .filter-controls-trailing (optional -- omitted entirely by callers,
+                                   e.g. `UsersPage`, with nothing to put here)
+*/
+
+/* The tabs/date-cutoff strip -- `PostsPage.recentPostsTabsView`'s "Recent
+   Posts"/"Posts Before <date>", `EventsPage.tabsView`'s "Upcoming Events"/
+   "Events After <date>" (plus that one's own leading hide-started-events
+   icon button, see `.filter-icon-button` below). `overflow-x: auto` +
+   `flex-wrap: nowrap` (rather than the wrapping row this used to be, back
+   when it was `.events-tabs`/`.posts-tabs`) keeps this to one line at any
+   width -- a horizontal scrollbar on narrow screens instead of a second row,
+   so row 2 below always starts at the same place regardless of how many tabs
+   a given page ends up with. */
+.filter-tabs-bar {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin-bottom: 0.5rem;
+}
+
+/* Tab pills never shrink/wrap their own label -- `.filter-tabs-bar`'s
+   scrollbar is what handles overflow, not letting an individual tab
+   collapse. */
+.filter-tab {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 0.15rem 0.6rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--chip-bg);
+  color: var(--fg);
+  font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The default/primary tab -- set off from `.filter-tab`'s own smaller
+   pill-label size (mirrors `.events-mode-button`'s look, one size down). */
+.filter-tab-primary {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* Sized/inset to sit comfortably inline with its own tab's label text rather
+   than at the browser's own default `<input>` size. */
+.filter-tab-date-input {
+  font: inherit;
+  color: inherit;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin-left: 0.2rem;
+}
+
+/* Circular icon button -- `EventsPage.hideStartedButtonView` (leads
+   `.filter-tabs-bar`) and `EventsPage.exportButtonView` (trails
+   `.filter-controls-trailing`). `flex-shrink: 0` keeps it from being
+   squashed by a long search field/tab strip next to it. */
+.filter-icon-button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+/* Row 2 -- the search box plus whatever else a page wants right-aligned
+   alongside it (`.filter-controls-trailing`). `flex-wrap: wrap` lets that
+   trailing group drop to its own line on narrow screens rather than
+   squeezing `.filter-search-field` down past readability. */
+.filter-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+/* `position: relative` plus the input's own right padding (`.filter-search-input`)
+   is what lets `.field-clear-button` (accounts_panel.css) overlay the field's
+   right edge instead of shifting layout when it appears/disappears. `flex: 1
+   1 12rem` grows to fill `.filter-controls-row`'s free space while staying
+   free to wrap to its own line on narrow screens. */
+.filter-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 12rem;
+  min-width: 8rem;
+}
+
+.filter-search-field .field-clear-button {
+  margin-right: 4px;
+}
+
+.filter-search-input {
+  width: 100%;
+  padding-right: 2rem;
+  margin: 4px;
+}
+
+/* Groups whatever a page puts to the right of the search box (`EventsPage`'s
+   layout-switch + export buttons, `PostsPage`'s POST/REPLY chooser) as one
+   unit pinned to `.filter-controls-row`'s right edge via `margin-left: auto`
+   -- a single auto-margined wrapper rather than letting each child carry its
+   own, since two adjacent auto-margined flex items would split the row's
+   free space *between* them instead of pinning as one group. */
+.filter-controls-trailing {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-left: auto;
+}

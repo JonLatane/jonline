@@ -74,9 +74,9 @@
 }
 
 /* "New Post"/"New Event" -- see `CreateNewPanel.modeTabsView`. Mirrors
-   `.events-tabs`/`.events-tab` (events.css)'s own pill-tab look, kept as its
-   own copy rather than shared since this panel's stylesheet otherwise has no
-   dependency on events.css. */
+   `.filter-tab`/`.filter-tab-primary` (ui/filter_bar.css)'s own pill-tab
+   look, kept as its own copy rather than shared since this panel's
+   stylesheet otherwise has no dependency on filter_bar.css. */
 .create-new-panel-tabs {
   display: flex;
   gap: 0.4rem;

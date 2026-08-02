@@ -561,19 +561,20 @@ view shared model =
 
 {-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`) --
 mirrors `Components.Pages.PostsPage.searchRowView`, just without a context
-chooser (there's no `Users` equivalent of `PostContext` to pick between), and
-reusing that same module's `.posts-search-row`/`.posts-search-field`/
-`.posts-search-input`/`.field-clear-button` CSS classes -- already shared
-across Posts/Users pages (see `targetHeadingView`'s own reuse of
-`.posts-page-heading` below), so no new CSS is needed here.
+chooser (there's no `Users` equivalent of `PostContext` to pick between, so
+no `.filter-controls-trailing` here), reusing the generic
+`.filter-search-field`/`.filter-search-input`/`.field-clear-button` CSS
+classes (`ui/filter_bar.css`) -- already shared across Posts/Events/Users
+pages (see `targetHeadingView`'s own reuse of `.posts-page-heading` below),
+so no new CSS is needed here.
 -}
 searchRowView : Model -> Html Msg
 searchRowView model =
-    div [ class "posts-search-row" ]
-        [ div [ class "posts-search-field" ]
+    div [ class "filter-controls-row" ]
+        [ div [ class "filter-search-field" ]
             [ input
                 [ type_ "text"
-                , class "posts-search-input"
+                , class "filter-search-input"
                 , placeholder "Search people..."
                 , value model.searchText
                 , onInput SearchTextChanged

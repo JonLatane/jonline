@@ -133,9 +133,9 @@
   transition: background-color 0.3s ease, color 0.3s ease, opacity 0.3s ease;
 }
 
-.nav-link:hover {
+/* .nav-link:hover {
   opacity: 0.85;
-}
+} */
 
 /* Events/Posts/People (everything in `.nav-links-scroll` except the
    circular Starred toggle, which sizes itself via

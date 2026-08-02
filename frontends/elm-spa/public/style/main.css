@@ -102,7 +102,7 @@ main {
 
 @media (max-width: 639px) {
   main {
-    padding: 0 4px;
+    padding: 4px;
   }
 }
 

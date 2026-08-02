@@ -40,71 +40,16 @@
 
 /* The "Recent Posts"/"Posts Before <date>" tabs (see
    Components/Pages/PostsPage.elm's `recentPostsTabsView`), replacing the
-   standalone Posts page's old static heading -- mirrors events.css's
-   `.events-tabs`/`.events-tab`/`.events-tab-primary`/`.events-tab-date-input`
-   exactly (see that file's own doc comments for the full rationale, e.g. why
-   the second tab is a `div` rather than a `button`). */
-.posts-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
-}
-
-.posts-tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.6rem 0.3rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--chip-bg);
-  color: var(--fg);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.posts-tab-primary {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.posts-tab-date-input {
-  font: inherit;
-  color: inherit;
-  border: none;
-  background: transparent;
-  padding: 0;
-  margin-left: 0.2rem;
-}
-
-/* Search box + POST/REPLY context chooser (see
-   Components/Pages/PostsPage.elm's `searchRowView`), sitting between the
-   heading and the post list. `.posts-search-field` mirrors
-   `.account-form-field` (accounts_panel.css) -- `position: relative` plus
-   right padding on the input is what lets `.field-clear-button` overlay the
-   field's right edge instead of shifting layout when it appears/disappears. */
-.posts-search-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: nowrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.posts-search-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.posts-search-input {
-  width: 100%;
-  padding-right: 2rem;
-}
-
+   standalone Posts page's old static heading, and the search box (see
+   `searchRowView`) below them -- both reuse the generic
+   `.filter-tabs-bar`/`.filter-tab`/`.filter-tab-primary`/
+   `.filter-tab-date-input`/`.filter-controls-row`/`.filter-search-field`/
+   `.filter-search-input`/`.filter-controls-trailing` (`ui/filter_bar.css`,
+   see that file's own doc comments for the full rationale, e.g. why the
+   second tab is a `div` rather than a `button`) directly rather than their
+   own copies. Only the POST/REPLY context `<select>` itself
+   (`.posts-search-context`, sitting in `.filter-controls-trailing`) is still
+   Posts-specific. */
 .posts-search-context {
   flex-shrink: 0;
 }

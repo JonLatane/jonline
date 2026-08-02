@@ -894,11 +894,11 @@ recentPostsTabsView shared model =
         text ""
 
     else
-        div [ class "posts-tabs" ]
+        div [ class "filter-tabs-bar" ]
             [ button
                 [ classes
-                    ("posts-tab"
-                        :: "posts-tab-primary"
+                    ("filter-tab"
+                        :: "filter-tab-primary"
                         :: (if model.tab == RecentPosts then
                                 [ "background-color-primary" ]
 
@@ -911,7 +911,7 @@ recentPostsTabsView shared model =
                 [ text (recentPostsLabel model.context) ]
             , div
                 [ classes
-                    ("posts-tab"
+                    ("filter-tab"
                         :: (if model.tab == PostsBeforeDate then
                                 [ "background-color-primary" ]
 
@@ -924,7 +924,7 @@ recentPostsTabsView shared model =
                 [ text (postsBeforeLabel model.context ++ " ")
                 , input
                     [ type_ "datetime-local"
-                    , class "posts-tab-date-input"
+                    , class "filter-tab-date-input"
                     , value
                         (BrowserTimeZone.formatDateTimeLocalInput
                             shared.browserTimeZone.zone
@@ -966,20 +966,22 @@ postsBeforeLabel context =
 
 
 {-| Search box (debounced, see `SearchTextChanged`/`SearchDebounceElapsed`)
-plus a POST/REPLY context chooser, side by side -- only those two contexts
-are offered for now (`Proto.Jonline.PostContext` has others, e.g. `EVENT`,
-that don't apply to a plain posts feed). The clear ("╳") button, styled like
-`UI.elm`'s `fieldClearButton`/`.field-clear-button` (can't reuse that
-directly -- it's hardcoded to `Shared.Msg`/`AccountsPanel.Msg`, not this
-module's own `Msg`), only appears once there's search text to clear.
+plus a POST/REPLY context chooser, side by side in the generic
+`.filter-controls-row`/`.filter-search-field`/`.filter-controls-trailing`
+(`ui/filter_bar.css`) -- only those two contexts are offered for now
+(`Proto.Jonline.PostContext` has others, e.g. `EVENT`, that don't apply to a
+plain posts feed). The clear ("╳") button, styled like `UI.elm`'s
+`fieldClearButton`/`.field-clear-button` (can't reuse that directly -- it's
+hardcoded to `Shared.Msg`/`AccountsPanel.Msg`, not this module's own `Msg`),
+only appears once there's search text to clear.
 -}
 searchRowView : Model -> Html Msg
 searchRowView model =
-    div [ class "posts-search-row" ]
-        [ div [ class "posts-search-field" ]
+    div [ class "filter-controls-row" ]
+        [ div [ class "filter-search-field" ]
             [ input
                 [ type_ "text"
-                , class "posts-search-input"
+                , class "filter-search-input"
                 , placeholder <|
                     case model.context of
                         REPLY ->
@@ -1004,17 +1006,19 @@ searchRowView model =
                     ]
                     [ text "╳" ]
             ]
-        , select [ class "posts-search-context", onInput ContextChanged ]
-            (List.map
-                (\context ->
-                    option
-                        [ value (postContextParam context)
-                        , selected (model.context == context)
-                        ]
-                        [ text (postContextLabel context) ]
+        , div [ class "filter-controls-trailing" ]
+            [ select [ class "posts-search-context", onInput ContextChanged ]
+                (List.map
+                    (\context ->
+                        option
+                            [ value (postContextParam context)
+                            , selected (model.context == context)
+                            ]
+                            [ text (postContextLabel context) ]
+                    )
+                    [ POST, REPLY ]
                 )
-                [ POST, REPLY ]
-            )
+            ]
         ]
 
 

@@ -280,12 +280,13 @@
    (`.flip-animated-column`/`.flip-animated-grid`/`.flip-animated-row`), so
    these only need mode-specific extras. */
 
-/* Holds `.events-tabs` and `.events-mode-buttons` on one row -- `.events-mode-buttons`'
-   own `margin-left: auto` (below) pins it to this row's right edge
-   regardless of how wide `.events-tabs` ends up, and `flex-wrap: wrap` here
-   (on top of each child's own) lets `.events-mode-buttons` drop to its own
-   second line on narrow screens rather than forcing itself to overlap/
-   squeeze `.events-tabs`. */
+/* Embedded copies only (`Pages.Home_`/`Components.Pages.UserProfilePage`,
+   `model.embeddedPage == True`) -- standalone pages use the generic
+   `.filter-tabs-bar`/`.filter-controls-row`/`.filter-controls-trailing`
+   (`ui/filter_bar.css`) instead, see `EventsPage.view`. Holds embedded
+   `tabsView`'s "Upcoming Events" heading and `.events-mode-buttons`/
+   `.events-export` on one row -- `.events-controls-trailing`'s own
+   `margin-left: auto` (below) pins it to this row's right edge. */
 .events-controls-row {
   display: flex;
   flex-wrap: wrap;
@@ -318,34 +319,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-}
-
-/* `EventsPage.hideStartedButtonView`/`EventsPage.exportButtonView` -- circular
-   icon buttons (fixed square box, `border-radius: 50%`, flex-centered glyph)
-   sharing this one sizing rule. `.events-hide-started-button` is only shown
-   while `UpcomingEvents` is the active tab, at the start of
-   `.events-controls-row`; `background-color-primary` is added (see
-   `hideStartedButtonView`) on top of the permanent `background-color-nav`
-   while the filter is on, same "extra highlight layered on the base pill"
-   convention `.events-tab`'s own active state uses. `.events-export-button`
-   sits at the end of `.events-controls-trailing`, unlike `.events-mode-buttons`
-   not gated by `homeEmbedded` -- its anchoring/backdrop/fade+slide-open
-   transition is all `ui/popover.css`'s generic
-   `.popover-anchor`/`.popover-toggle`/`.popover`, this rule is just its own
-   button sizing on top of that. */
-.events-hide-started-button,
-.events-export-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  font-size: 1rem;
-  line-height: 1.2;
-  cursor: pointer;
 }
 
 .events-export-popover {
@@ -396,42 +369,13 @@
   font-size: 0.85rem;
 }
 
-/* `EventsPage.tabsView`'s "Upcoming Events"/"Events After <date>" tabs --
-   same row/pill conventions as `.events-mode-buttons`/`.events-mode-button`
-   above, just its own class since the two are conceptually distinct (this
-   picks the fetch's own time cutoff; `.events-mode-buttons` picks the
-   layout) even while sharing one `.events-controls-row`. The "Events After"
-   tab is a `div`, not a `button` (it nests a real
-   `<input type="datetime-local">`, and nesting interactive content inside a
-   `<button>` is invalid HTML), so this includes what `<button>` gives for
-   free elsewhere: `cursor: pointer` and inline-flex layout for its label +
-   input to sit on one line. */
-.events-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.events-tab {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.15rem 0.6rem 0.3rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--chip-bg);
-  color: var(--fg);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-/* The default tab -- set off from `.events-tab`'s own (and
-   `.events-mode-button`'s) smaller pill-label size. */
-.events-tab-primary {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
+/* `EventsPage.tabsView`'s non-embedded "Upcoming Events"/"Events After
+   <date>" tabs -- these reuse the generic `.filter-tabs-bar`/`.filter-tab`/
+   `.filter-tab-primary`/`.filter-tab-date-input` (`ui/filter_bar.css`)
+   directly rather than their own copies (see that file's own doc). Only the
+   embedded copy's own heading (`upcoming-events-tab-controls`, below) is
+   still Events-specific -- it has no `PostsPage`/`UsersPage` equivalent to
+   share a class with. */
 .upcoming-events-tab-controls {
   display: flex;
   align-items: center;
@@ -442,51 +386,10 @@
   margin: 0;
 }
 
-/* Sized/inset to sit comfortably inline with its own tab's label text
-   rather than at the browser's own default `<input>` size. */
-.events-tab-date-input {
-  font: inherit;
-  color: inherit;
-  border: none;
-  background: transparent;
-  padding: 0;
-  margin-left: 0.2rem;
-}
-
-/* `EventsPage.searchRowView`'s search box, sitting between `.events-tabs` and
-   `.events-mode-buttons` in `.events-controls-row` -- `flex: 1 1 12rem` lets it grow to fill the
-   row's remaining space beside the tabs while still being free to wrap to its own line on narrow
-   screens (matching `.events-controls-row`'s own `flex-wrap: wrap`). `.events-search-field`
-   mirrors `.posts-search-field` (posts.css) -- `position: relative` plus right padding on the
-   input is what lets `.field-clear-button` overlay the field's right edge instead of shifting
-   layout when it appears/disappears. */
-.events-search-row {
-  display: flex;
-  flex: 1 1 12rem;
-  min-width: 8rem;
-}
-
-.events-search-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  flex: 1;
-  min-width: 0;
-}
-
-.events-search-field .field-clear-button {
-  margin-right: 4px;
-}
-
-.events-search-input {
-  width: 100%;
-  padding-right: 2rem;
-  margin: 4px;
-}
-
 /* `.events-grid`/`.events-strip` (below) both deliberately "break out" past
    `.container`'s own 800px max-width, up to 95% of the viewport -- the
-   filters row above (`.events-controls-row`) and, on `Pages.Home_`, the post
+   filters rows above (`.filter-tabs-bar`/`.filter-controls-row`, or embedded
+   copies' own `.events-controls-row`) and, on `Pages.Home_`, the post
    listing below both stay at `.container`'s normal 800px/centered, only the
    actual card grid/strip goes wide, so more tiles fit per row without the
    rest of the page's text-focused content stretching to match. `width: 98vw`
@@ -512,11 +415,14 @@
 /* Mirrors `.event-instance-strip` (above). */
 .events-strip {
   align-items: center;
-  /* justify-content: center; */
   overflow-x: auto;
   overflow-y: hidden;
   padding-bottom: 0.35rem;
 }
+
+/* .events-strip:not(:has(>:nth-child(3))) {
+  justify-content: center;
+} */
 
 /* Lifts `.events-strip`'s own vertical clip while `EventsPage.eventsListView`
    reports a card still mid `DisplayModeChanged` slide -- a card's FLIP
@@ -546,7 +452,7 @@
 .events-grid {
   align-items: center;
   row-gap: 0.8rem;
-  /* justify-content: center; */
+  justify-content: center;
 }
 
 /* `Grid`/`HorizontalList` cards are a fixed tile width; `VerticalList`'s own
