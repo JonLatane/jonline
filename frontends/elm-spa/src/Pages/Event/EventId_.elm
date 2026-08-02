@@ -163,12 +163,6 @@ type alias Model =
     , eventStatus : EventStatus
     , connectStatus : ServerDependentView.ConnectStatus
     , fetchStarted : Bool
-
-    -- Captured once via `Time.now` in `init` -- good enough to categorize
-    -- `EventInstance`s as upcoming/recent/past for the length of a single
-    -- page view; this page never needs to notice a date instance crossing
-    -- that boundary while it's open.
-    , now : Time.Posix
     , instanceHistoryDisplay : InstanceHistoryDisplay
     , instanceLayout : InstanceLayout
     , instanceAnimations : Dict String InstanceAnimation
@@ -205,7 +199,6 @@ init shared params =
                 , eventStatus = LoadingEvent
                 , connectStatus = ServerDependentView.NotConnected
                 , fetchStarted = False
-                , now = Time.millisToPosix 0
                 , instanceHistoryDisplay = OnlyFuture
                 , instanceLayout = StripLayout
                 , instanceAnimations = Dict.empty
@@ -218,7 +211,6 @@ init shared params =
     , Effect.batch
         [ fetchEffect
         , Effect.fromShared (Shared.BreadcrumbsMsg Breadcrumbs.Clear)
-        , Task.perform GotNow Time.now |> Effect.fromCmd
         ]
     )
 
@@ -321,7 +313,6 @@ nonBlank text =
 
 type Msg
     = GotEvent (Result Grpc.Error ( Maybe AccountsPanel.Msg, Proto.Jonline.GetEventsResponse ))
-    | GotNow Time.Posix
     | MediaClicked Post String
       -- The Event's own `Post`'s media-edit button (see `eventDetailView`) --
       -- opens the shared `Shared.MyMediaPanel` chooser in `MultiSelect` mode,
@@ -478,23 +469,23 @@ minimumHistoryDisplayFor now instance =
 
 
 {-| Raises `model.instanceHistoryDisplay` up to `minimumHistoryDisplayFor
-model.now instance` if it's currently more restrictive than that -- never
-lowers it, so this is safe to call every time `model.now`/the loaded `Event`
-change (`GotEvent`, `GotNow`) without ever undoing a broader mode the user
-already switched to via `historyButtonView`, whose button for any mode below
-that same `minimumHistoryDisplayFor` floor is `disabled` rather than
-removed, so there's no way to have reached one of those in the first place.
-In practice this is what actually picks this page's initial mode: `init`
-always starts `model.instanceHistoryDisplay` at
-`OnlyFuture` (the most restrictive possible value) before either the `Event`
-or a real `now` are known, so the first call after both land is the one that
-raises it to wherever the currently-viewed `instance` actually needs.
+now instance` if it's currently more restrictive than that -- never lowers
+it, so this is safe to call every time the loaded `Event` changes
+(`GotEvent`) without ever undoing a broader mode the user already switched
+to via `historyButtonView`, whose button for any mode below that same
+`minimumHistoryDisplayFor` floor is `disabled` rather than removed, so
+there's no way to have reached one of those in the first place. In practice
+this is what actually picks this page's initial mode: `init` always starts
+`model.instanceHistoryDisplay` at `OnlyFuture` (the most restrictive
+possible value) before the `Event` is known, so the first call once it
+lands is the one that raises it to wherever the currently-viewed `instance`
+actually needs. `now` is `Shared.Model.now` -- see its own doc.
 -}
-clampHistoryDisplay : EventInstance -> Model -> Model
-clampHistoryDisplay instance model =
+clampHistoryDisplay : Time.Posix -> EventInstance -> Model -> Model
+clampHistoryDisplay now instance model =
     let
         minimum =
-            minimumHistoryDisplayFor model.now instance
+            minimumHistoryDisplayFor now instance
     in
     if historyDisplayRank model.instanceHistoryDisplay < historyDisplayRank minimum then
         { model | instanceHistoryDisplay = minimum }
@@ -510,19 +501,18 @@ in, newly-hidden ones (the reverse) fade/collapse out rather than just
 vanishing, and the ones staying visible are left alone. A no-op while the
 `Event` itself hasn't loaded yet. Mirrors
 `Shared.MyMediaPanel.syncMediaAnimations` -- see its own doc; called from
-every `update` branch that can change either input: `GotEvent`, `GotNow`
-(the very first real `now` can flip an instance's category), and
-`HistoryDisplayChanged`.
+every `update` branch that can change either input: `GotEvent` and
+`HistoryDisplayChanged`. `now` is `Shared.Model.now` -- see its own doc.
 -}
-syncInstanceAnimations : Model -> Model
-syncInstanceAnimations model =
+syncInstanceAnimations : Time.Posix -> Model -> Model
+syncInstanceAnimations now model =
     case model.eventStatus of
         EventLoaded event _ ->
             let
                 currentInstances : Dict String EventInstance
                 currentInstances =
                     event.instances
-                        |> List.filter (instanceMatchesHistoryDisplay model.now model.instanceHistoryDisplay)
+                        |> List.filter (instanceMatchesHistoryDisplay now model.instanceHistoryDisplay)
                         |> List.map (\instance -> ( instance.id, instance ))
                         |> Dict.fromList
             in
@@ -659,32 +649,17 @@ update shared req msg model =
                 clampedModel =
                     case newStatus of
                         EventLoaded _ loadedInstance ->
-                            clampHistoryDisplay loadedInstance modelWithNewStatus
+                            clampHistoryDisplay shared.now loadedInstance modelWithNewStatus
 
                         _ ->
                             modelWithNewStatus
             in
-            ( clampedModel |> syncInstanceAnimations
+            ( clampedModel |> syncInstanceAnimations shared.now
             , Effect.batch [ accountEffect, breadcrumbsEffect, scrollEffect ]
             )
 
         GotEvent (Err _) ->
             ( { model | eventStatus = EventFailed }, Effect.none )
-
-        GotNow now ->
-            let
-                modelWithNow =
-                    { model | now = now }
-
-                clampedModel =
-                    case model.eventStatus of
-                        EventLoaded _ instance ->
-                            clampHistoryDisplay instance modelWithNow
-
-                        _ ->
-                            modelWithNow
-            in
-            ( clampedModel |> syncInstanceAnimations, Effect.none )
 
         MediaClicked post mediaId ->
             ( model, Effect.fromShared (Shared.MediaViewerPanelMsg (MediaViewerPanel.Open post mediaId model.targetHost)) )
@@ -865,7 +840,7 @@ update shared req msg model =
                 ( model, scrollToInstance 0 model.eventId |> Effect.fromCmd )
 
             else
-                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations
+                ( { model | instanceHistoryDisplay = mode } |> syncInstanceAnimations shared.now
                 , scrollToInstance 1000 model.eventId |> Effect.fromCmd
                 )
 
@@ -1062,7 +1037,7 @@ eventDetailView shared model event instance =
         instanceDetailAndStrip =
             div [ class "event-instance-detail-and-strip" ]
                 [ div [ class "event-instance-detail" ]
-                    [ div [ class "event-instance-when" ] [ text "📅 ", Events.instanceTimeRangeText shared.browserTimeZone instance ]
+                    [ div [ class "event-instance-when" ] [ text "📅 ", text (Events.instanceWhenText shared.now shared.browserTimeZone instance) ]
                     , case instance.location |> Maybe.andThen Events.locationText of
                         Just locationLine ->
                             div [ class "event-instance-where" ] [ text "📍 ", text locationLine ]
@@ -1467,14 +1442,14 @@ instanceHistoryView shared model event instance =
     else
         let
             minimumRank =
-                historyDisplayRank (minimumHistoryDisplayFor model.now instance)
+                historyDisplayRank (minimumHistoryDisplayFor shared.now instance)
 
             showLayoutToggle =
                 List.length event.instances > 3
         in
         div [ class "event-instance-history" ]
             [ div [ class "event-instance-history-buttons" ]
-                (List.map (historyButtonView model minimumRank) (historyButtons model event)
+                (List.map (historyButtonView model minimumRank) (historyButtons shared.now event)
                     ++ (if showLayoutToggle then
                             [ instanceLayoutButtonView model.instanceLayout ]
 
@@ -1601,15 +1576,16 @@ historyButtonLabel mode count =
 
 {-| The 3 "switch scope" buttons to show above the strip, always all 3 (see
 `historyButtonView` for how the current one is highlighted instead of
-omitted, and how one more restrictive than `minimumHistoryDisplayFor
-model.now instance` -- which would hide `instance`, the very one this page
-is showing -- is disabled instead of hidden).
+omitted, and how one more restrictive than `minimumHistoryDisplayFor now
+instance` -- which would hide `instance`, the very one this page is showing
+-- is disabled instead of hidden). `now` is `Shared.Model.now` -- see its
+own doc.
 -}
-historyButtons : Model -> Event -> List ( InstanceHistoryDisplay, Int )
-historyButtons model event =
+historyButtons : Time.Posix -> Event -> List ( InstanceHistoryDisplay, Int )
+historyButtons now event =
     let
         countFor mode =
-            event.instances |> List.filter (instanceMatchesHistoryDisplay model.now mode) |> List.length
+            event.instances |> List.filter (instanceMatchesHistoryDisplay now mode) |> List.length
     in
     [ ShowAllInstances, SinceTwoWeeksAgo, OnlyFuture ]
         |> List.map (\mode -> ( mode, countFor mode ))
@@ -1644,5 +1620,5 @@ instanceChipView shared model anim =
                        )
                 )
             ]
-            [ text (Events.instanceDateText shared.browserTimeZone instance) ]
+            [ text (Events.instanceWhenText shared.now shared.browserTimeZone instance) ]
         ]

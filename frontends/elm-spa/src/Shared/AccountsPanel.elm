@@ -45,7 +45,6 @@ module Shared.AccountsPanel exposing
     , performWithOptionalAccountServer
     , recommendedFederatedServers
     , serverChipDomId
-    , updateServerConfig
     , serverForHost
     , serverHasAccounts
     , serverInfoOf
@@ -57,6 +56,7 @@ module Shared.AccountsPanel exposing
     , subscriptions
     , unreachableAccountHosts
     , update
+    , updateServerConfig
     , withAccessToken
     )
 
@@ -2486,7 +2486,7 @@ serverForHost servers frontendHost =
     servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
 
 
-{-| `serverForHost`, but only if that entry is both known *and* actually
+{-| `serverForHost`, but only if that entry is both known _and_ actually
 connected -- a known-but-disconnected entry (see `Server.connected`) is
 treated the same as not known at all. `init` seeds every persisted server
 disconnected before its own reconnect attempt resolves (see `init`'s own
@@ -2748,13 +2748,14 @@ for this host at all (a genuinely new server) -- see `upsertServerAppend` for
 the append-at-end variant used for servers discovered via federation at
 first-setup time.
 
-Deliberately keeps the *existing* entry's `enabled` over `server`'s own --
+Deliberately keeps the _existing_ entry's `enabled` over `server`'s own --
 `enabled` is a persisted user preference, independent of whether we're
 currently connected, so a fresh reconnect (whose caller may only know the
-`enabled` its host had at the *start* of `init`'s startup sweep, see
+`enabled` its host had at the _start_ of `init`'s startup sweep, see
 `reconnectCmds`) should never clobber a more recent in-session toggle
 (`ToggleServerEnabled`/`ToggleAccountEnabled`) applied to the same host's
 placeholder while that reconnect was still in flight.
+
 -}
 upsertServer : Server -> List Server -> List Server
 upsertServer =
@@ -2762,7 +2763,7 @@ upsertServer =
 
 
 {-| Same as `upsertServer`, but for a genuinely new host appends it to the
-*end* of `servers` instead of prepending it. Used only for servers
+_end_ of `servers` instead of prepending it. Used only for servers
 discovered via `GotMainServerResult`'s `federatedServerCmds` at first-setup
 time, so the base host's own federation recommendations land after any
 servers the user already knew about, rather than jumping ahead of them.

@@ -2259,6 +2259,7 @@ starredPanel : Shared.Model -> Route -> Html Shared.Msg
 starredPanel shared currentRoute =
     Html.map Shared.StarredPanelMsg
         (StarredPanel.view
+            shared.now
             shared.browserTimeZone
             shared.basePath
             shared.accountsPanel

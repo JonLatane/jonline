@@ -118,6 +118,21 @@
       console.error("Failed to resolve local timezone abbreviation", e);
     }
 
+    // Whether the browser's own locale renders a time of day in 24-hour
+    // form (e.g. "18:00") rather than 12-hour ("6:00 PM") -- same
+    // read-once-via-Intl-flag convention as `timeZoneAbbreviation` just
+    // above (see `Shared.BrowserTimeZone`'s own doc on why this is a flag,
+    // not a port). `resolvedOptions().hour12` is `Intl`'s own answer to
+    // this for the browser's default locale; defaults to `false` (24-hour)
+    // only if the lookup itself throws, same fail-safe direction
+    // `timeZoneAbbreviation` takes (an empty/default value, not a crash).
+    var uses24HourTime = false;
+    try {
+      uses24HourTime = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hour12 === false;
+    } catch (e) {
+      console.error("Failed to resolve whether the locale uses 24-hour time", e);
+    }
+
     var storedStarredPosts = [];
     try {
       var rawStarredPosts = localStorage.getItem("jonlineStarredPosts");
@@ -140,6 +155,7 @@
         systemPrefersDark: darkMediaQuery.matches,
         themePreference: storedThemePreference,
         timeZoneAbbreviation: timeZoneAbbreviation,
+        uses24HourTime: uses24HourTime,
         starredPosts: storedStarredPosts,
         federatedAuthKeyPair: storedFederatedAuthKeyPair
       }

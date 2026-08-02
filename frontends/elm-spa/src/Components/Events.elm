@@ -7,10 +7,9 @@ module Components.Events exposing
     , fetchEvents
     , fetchEventsByInstancePostIds
     , findInstance
-    , instanceDateText
     , instanceEndsOrStartsAt
     , instanceStartsOrEndsAt
-    , instanceTimeRangeText
+    , instanceWhenText
     , locationText
     , meaningfulPost
     , parseEventRouteId
@@ -298,54 +297,37 @@ instanceStartsOrEndsAt instance =
             instance.endsAt |> Maybe.map timestampToPosix
 
 
-{-| A compact, date-only label for `instance` (in `browserTimeZone`) -- e.g.
-for `Pages.Event.EventId_`'s date-picker strip, where a full
-`instanceTimeRangeText` would be too wide for a chip. Prefers `startsAt`
-(the date someone would actually plan around), falling back to `endsAt`.
+{-| A human-friendly "when" label for `instance`, e.g. "August 1, 6-7PM",
+"June 1, 10PM - June 8, 3AM", or "December 31, 2025, 9PM - January 1, 2AM" --
+used identically by `eventCard`'s own "when" line, `Pages.Event.EventId_`'s
+detail view (the currently-viewed instance's own when line), and that same
+page's date-picker strip chips (see `instanceHistoryView`), so every place an
+`EventInstance`'s date/time shows reads the same way. `now` supplies "the
+viewer's own current year" (see `Shared.Model.now`), which
+`BrowserTimeZone.formatRange`/`formatMoment` use to drop a redundant year --
+see their own docs for the full set of examples this is designed against
+(same-day ranges, cross-day ranges, and ranges crossing into a different
+year on either side).
+
+Both `startsAt` and `endsAt` are normally set (a merged range, via
+`BrowserTimeZone.formatRange`); this falls back to just whichever one is set
+(via `BrowserTimeZone.formatMoment`, prefixed "Until " if only `endsAt` is,
+since that's the unusual case) or a placeholder if somehow neither is.
 -}
-instanceDateText : BrowserTimeZone -> EventInstance -> String
-instanceDateText browserTimeZone instance =
-    case instance.startsAt of
-        Just ts ->
-            BrowserTimeZone.formatDate browserTimeZone.zone (timestampToPosix ts)
+instanceWhenText : Time.Posix -> BrowserTimeZone -> EventInstance -> String
+instanceWhenText now browserTimeZone instance =
+    case ( instance.startsAt, instance.endsAt ) of
+        ( Just startTs, Just endTs ) ->
+            BrowserTimeZone.formatRange now browserTimeZone (timestampToPosix startTs) (timestampToPosix endTs)
 
-        Nothing ->
-            case instance.endsAt of
-                Just ts ->
-                    BrowserTimeZone.formatDate browserTimeZone.zone (timestampToPosix ts)
+        ( Just startTs, Nothing ) ->
+            BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix startTs)
 
-                Nothing ->
-                    "Date TBD"
+        ( Nothing, Just endTs ) ->
+            "Until " ++ BrowserTimeZone.formatMoment now browserTimeZone (timestampToPosix endTs)
 
-
-{-| An `EventInstance`'s start/end time, both in `browserTimeZone` -- just the
-start if there's no end time, "Until `end`" if (unusually) there's an end but
-no start, or a placeholder if somehow neither is set.
--}
-instanceTimeRangeText : BrowserTimeZone -> EventInstance -> Html msg
-instanceTimeRangeText browserTimeZone instance =
-    let
-        startText =
-            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) instance.startsAt
-
-        endText =
-            Maybe.map (timestampToPosix >> BrowserTimeZone.formatDateTime browserTimeZone) instance.endsAt
-
-        rangeText =
-            case ( startText, endText ) of
-                ( Just start, Just end ) ->
-                    start ++ " – " ++ end
-
-                ( Just start, Nothing ) ->
-                    start
-
-                ( Nothing, Just end ) ->
-                    "Until " ++ end
-
-                ( Nothing, Nothing ) ->
-                    "Time TBD"
-    in
-    span [ class "event-instance-time" ] [ text rangeText ]
+        ( Nothing, Nothing ) ->
+            "Time TBD"
 
 
 {-| `location.uniformlyFormattedAddress`, trimmed -- `Nothing` if blank, same
@@ -536,7 +518,8 @@ caller that ever passes `True` (see `UI.currentStarredEventInstanceKey`);
 
 -}
 eventCard :
-    BrowserTimeZone
+    Time.Posix
+    -> BrowserTimeZone
     -> String
     -> String
     -> String
@@ -549,7 +532,7 @@ eventCard :
     -> Event
     -> EventInstance
     -> Html msg
-eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked current event instance =
+eventCard now browserTimeZone basePath viewingServerHost eventServerHost maybeServer maybeAccount onMediaClicked starred onStarClicked current event instance =
     case event.post of
         Nothing ->
             text ""
@@ -589,7 +572,7 @@ eventCard browserTimeZone basePath viewingServerHost eventServerHost maybeServer
 
                     Nothing ->
                         text ""
-                , div [ class "event-card-when" ] [ text "📅 ", instanceTimeRangeText browserTimeZone instance ]
+                , div [ class "event-card-when" ] [ text "📅 ", span [ class "event-instance-time" ] [ text (instanceWhenText now browserTimeZone instance) ] ]
                 , case instance.location |> Maybe.andThen locationText of
                     Just locationLine ->
                         div [ class "event-card-where" ] [ text "📍 ", text locationLine ]
