@@ -13,8 +13,8 @@ use crate::web::headers::{AuthHeader, ContentTypeHeader, FilenameHeader};
 use crate::web::RocketState;
 use log::info;
 use rocket::fs::NamedFile;
-use rocket::http::ContentType;
 use rocket::http::uri::Host;
+use rocket::http::ContentType;
 
 use diesel::*;
 use rocket::http::MediaType;
@@ -189,9 +189,8 @@ pub async fn load_media_file_data<'a>(
         std::fs::rename(temp_filename, &local_filename).map_err(|_| Status::InternalServerError)?;
     }
 
-    let media_type = ContentType(
-        MediaType::from_str(&content_type).map_err(|_| Status::ExpectationFailed)?,
-    );
+    let media_type =
+        ContentType(MediaType::from_str(&content_type).map_err(|_| Status::ExpectationFailed)?);
     info!("media_type: {:?}", media_type);
     let result = open_named_file(&local_filename).await?;
     // let result = NamedFile::open(local_filename)

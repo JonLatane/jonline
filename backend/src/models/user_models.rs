@@ -1,19 +1,19 @@
 use std::time::SystemTime;
 
-use tonic::{Code, Status};
 use diesel::*;
+use tonic::{Code, Status};
 
 use crate::db_connection::PgPooledConnection;
-use crate::schema::{users, follows};
+use crate::schema::{follows, users};
 
-pub fn get_user(user_id: i64, conn: &mut PgPooledConnection,) -> Result<User, Status> {
+pub fn get_user(user_id: i64, conn: &mut PgPooledConnection) -> Result<User, Status> {
     users::table
         .select(USER_COLUMNS)
         .filter(users::id.eq(user_id))
         .first::<User>(conn)
         .map_err(|_| Status::new(Code::NotFound, "user_not_found"))
 }
-pub fn get_author(user_id: i64, conn: &mut PgPooledConnection,) -> Result<Author, Status> {
+pub fn get_author(user_id: i64, conn: &mut PgPooledConnection) -> Result<Author, Status> {
     users::table
         .select(AUTHOR_COLUMNS)
         .filter(users::id.eq(user_id))

@@ -177,8 +177,7 @@ async fn elm_asset(relative: &Path) -> Result<NamedFile, Status> {
     match NamedFile::open(Path::new("opt/elm_web/").join(relative)).await {
         Ok(file) => Ok(file),
         Err(_) => {
-            match NamedFile::open(Path::new("../frontends/elm-spa/public/").join(relative)).await
-            {
+            match NamedFile::open(Path::new("../frontends/elm-spa/public/").join(relative)).await {
                 Ok(file) => Ok(file),
                 Err(_) => Err(Status::NotFound),
             }

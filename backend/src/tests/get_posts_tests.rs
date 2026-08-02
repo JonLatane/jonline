@@ -282,7 +282,11 @@ mod replies {
                 ..Default::default()
             },
         );
-        Tree { root, reply1, reply2 }
+        Tree {
+            root,
+            reply1,
+            reply2,
+        }
     }
 
     #[test]
@@ -719,13 +723,8 @@ mod text_search {
                 search_with_context(conn, Some("wombats"), None, Some(PostContext::Post), &None)?;
             assert_eq!(ids(&post_response), vec![root.id.to_proto_id()]);
 
-            let reply_response = search_with_context(
-                conn,
-                Some("wombats"),
-                None,
-                Some(PostContext::Reply),
-                &None,
-            )?;
+            let reply_response =
+                search_with_context(conn, Some("wombats"), None, Some(PostContext::Reply), &None)?;
             assert_eq!(ids(&reply_response), vec![reply.id.to_proto_id()]);
             Ok(())
         });
@@ -1284,7 +1283,13 @@ mod group_posts {
                     ..Default::default()
                 },
             );
-            create_group_post(conn, &unmoderated_post, &group, &author, Moderation::Unmoderated);
+            create_group_post(
+                conn,
+                &unmoderated_post,
+                &group,
+                &author,
+                Moderation::Unmoderated,
+            );
             let approved_post = create_post(
                 conn,
                 Some(&author),

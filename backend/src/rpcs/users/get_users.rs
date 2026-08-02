@@ -412,7 +412,11 @@ fn get_following(
     search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
-    let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
+    let target_user_id = request
+        .to_owned()
+        .user_id
+        .to_db_opt_id_or_err("user_id")?
+        .unwrap();
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
         None => vec![Visibility::GlobalPublic],
@@ -507,7 +511,11 @@ fn get_followers(
     search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
-    let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
+    let target_user_id = request
+        .to_owned()
+        .user_id
+        .to_db_opt_id_or_err("user_id")?
+        .unwrap();
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
         None => vec![Visibility::GlobalPublic],
@@ -603,7 +611,11 @@ fn get_friends(
     search_text: Option<&str>,
     conn: &mut PgPooledConnection,
 ) -> Result<GetUsersResponse, Status> {
-    let target_user_id = request.to_owned().user_id.to_db_opt_id_or_err("user_id")?.unwrap();
+    let target_user_id = request
+        .to_owned()
+        .user_id
+        .to_db_opt_id_or_err("user_id")?
+        .unwrap();
     let visibilities = match user {
         Some(_) => vec![Visibility::ServerPublic, Visibility::GlobalPublic],
         None => vec![Visibility::GlobalPublic],
@@ -624,8 +636,7 @@ fn get_friends(
         following_relationship.field(follows::target_user_moderation);
 
     let follower_relationship_user_id = follower_relationship.field(follows::user_id);
-    let follower_relationship_target_user_id =
-        follower_relationship.field(follows::target_user_id);
+    let follower_relationship_target_user_id = follower_relationship.field(follows::target_user_id);
     let follower_relationship_target_user_moderation =
         follower_relationship.field(follows::target_user_moderation);
 

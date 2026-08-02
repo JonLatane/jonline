@@ -41,13 +41,14 @@ pub fn update_event_sync_source(
     }
     existing.updated_at = Some(SystemTime::now());
 
-    let mut existing = diesel::update(event_sync_sources::table.filter(event_sync_sources::id.eq(existing.id)))
-        .set(&existing)
-        .get_result::<models::EventSyncSource>(conn)
-        .map_err(|e| {
-            log::error!("Failed to update event sync source: {:?}", e);
-            tonic::Status::new(tonic::Code::Internal, "failed_to_update_event_sync_source")
-        })?;
+    let mut existing =
+        diesel::update(event_sync_sources::table.filter(event_sync_sources::id.eq(existing.id)))
+            .set(&existing)
+            .get_result::<models::EventSyncSource>(conn)
+            .map_err(|e| {
+                log::error!("Failed to update event sync source: {:?}", e);
+                tonic::Status::new(tonic::Code::Internal, "failed_to_update_event_sync_source")
+            })?;
 
     let owner = models::get_author(existing.user_id, conn)?;
 

@@ -16,7 +16,10 @@ pub trait ToProtoPrivateUserStrategy {
 impl ToProtoPrivateUserStrategy for String {
     fn to_proto_private_user_strategy(&self) -> Option<PrivateUserStrategy> {
         for private_user_strategy in ALL_PRIVATE_USER_STRATEGIES {
-            if private_user_strategy.as_str_name().eq_ignore_ascii_case(self) {
+            if private_user_strategy
+                .as_str_name()
+                .eq_ignore_ascii_case(self)
+            {
                 return Some(private_user_strategy);
             }
         }
@@ -38,7 +41,9 @@ impl ToStringPrivateUserStrategy for PrivateUserStrategy {
 }
 impl ToStringPrivateUserStrategy for i32 {
     fn to_string_private_user_strategy(&self) -> String {
-        self.to_proto_private_user_strategy().unwrap().to_string_private_user_strategy()
+        self.to_proto_private_user_strategy()
+            .unwrap()
+            .to_string_private_user_strategy()
     }
 }
 
@@ -63,7 +68,10 @@ pub trait ToProtoAuthenticationFeature {
 impl ToProtoAuthenticationFeature for String {
     fn to_proto_authentication_feature(&self) -> Option<AuthenticationFeature> {
         for authentication_feature in ALL_AUTHENTICATION_FEATURES {
-            if authentication_feature.as_str_name().eq_ignore_ascii_case(self) {
+            if authentication_feature
+                .as_str_name()
+                .eq_ignore_ascii_case(self)
+            {
                 return Some(authentication_feature);
             }
         }
@@ -76,7 +84,6 @@ impl ToProtoAuthenticationFeature for i32 {
     }
 }
 
-
 pub trait ToStringAuthenticationFeature {
     fn to_string_authentication_feature(&self) -> String;
 }
@@ -87,7 +94,9 @@ impl ToStringAuthenticationFeature for AuthenticationFeature {
 }
 impl ToStringAuthenticationFeature for i32 {
     fn to_string_authentication_feature(&self) -> String {
-        self.to_proto_authentication_feature().unwrap().to_string_authentication_feature()
+        self.to_proto_authentication_feature()
+            .unwrap()
+            .to_string_authentication_feature()
     }
 }
 
@@ -100,7 +109,6 @@ impl ToI32AuthenticationFeature for String {
     }
 }
 
-
 pub trait ToProtoAuthenticationFeatures {
     fn to_proto_authentication_features(&self) -> Vec<AuthenticationFeature>;
 }
@@ -111,7 +119,10 @@ impl ToProtoAuthenticationFeatures for serde_json::Value {
                 let mut mapped_authentication_features: Vec<AuthenticationFeature> = Vec::new();
                 // log::info!("Converting authentication_features: {:?}", authentication_features);
                 for feature in authentication_features {
-                    let mapped_feature = feature.as_str().map(|s| s.to_string().to_proto_authentication_feature()).flatten();
+                    let mapped_feature = feature
+                        .as_str()
+                        .map(|s| s.to_string().to_proto_authentication_feature())
+                        .flatten();
 
                     // log::info!("Mapped feature {:?} to {:?}", feature, mapped_feature);
                     if mapped_feature.is_some() {
@@ -126,7 +137,10 @@ impl ToProtoAuthenticationFeatures for serde_json::Value {
 }
 impl ToProtoAuthenticationFeatures for Vec<i32> {
     fn to_proto_authentication_features(&self) -> Vec<AuthenticationFeature> {
-        self.iter().unique().map(|p| p.to_proto_authentication_feature().unwrap()).collect()
+        self.iter()
+            .unique()
+            .map(|p| p.to_proto_authentication_feature().unwrap())
+            .collect()
     }
 }
 pub trait ToJsonAuthenticationFeatures {
@@ -134,12 +148,21 @@ pub trait ToJsonAuthenticationFeatures {
 }
 impl ToJsonAuthenticationFeatures for Vec<AuthenticationFeature> {
     fn to_json_authentication_features(&self) -> serde_json::Value {
-        serde_json::Value::Array(self.iter().unique().map(|p| serde_json::Value::String(p.as_str_name().to_string())).collect())
+        serde_json::Value::Array(
+            self.iter()
+                .unique()
+                .map(|p| serde_json::Value::String(p.as_str_name().to_string()))
+                .collect(),
+        )
     }
 }
 impl ToJsonAuthenticationFeatures for Vec<i32> {
     fn to_json_authentication_features(&self) -> serde_json::Value {
-        self.iter().unique().map(|p| p.to_proto_authentication_feature().unwrap()).collect::<Vec<AuthenticationFeature>>().to_json_authentication_features()
+        self.iter()
+            .unique()
+            .map(|p| p.to_proto_authentication_feature().unwrap())
+            .collect::<Vec<AuthenticationFeature>>()
+            .to_json_authentication_features()
     }
 }
 
@@ -153,6 +176,7 @@ impl ToI32AuthenticationFeatures for Vec<AuthenticationFeature> {
 }
 impl ToI32AuthenticationFeatures for serde_json::Value {
     fn to_i32_authentication_features(&self) -> Vec<i32> {
-        self.to_proto_authentication_features().to_i32_authentication_features()
+        self.to_proto_authentication_features()
+            .to_i32_authentication_features()
     }
 }

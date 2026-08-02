@@ -341,10 +341,16 @@ impl Jonline for JonlineService {
         unauthenticated_rpc!(self, rpcs::get_event_attendances, request)
     }
 
-    async fn federate_profile(&self, request: Request<FederatedAccount>) -> Result<Response<FederatedAccount>, Status> {
+    async fn federate_profile(
+        &self,
+        request: Request<FederatedAccount>,
+    ) -> Result<Response<FederatedAccount>, Status> {
         authenticated_rpc!(self, rpcs::federate_profile, request)
     }
-    async fn defederate_profile(&self, request: Request<FederatedAccount>) -> Result<Response<()>, Status> {
+    async fn defederate_profile(
+        &self,
+        request: Request<FederatedAccount>,
+    ) -> Result<Response<()>, Status> {
         authenticated_rpc!(self, rpcs::defederate_profile, request)
     }
 

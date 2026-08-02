@@ -53,7 +53,7 @@ pub fn validate_any_group_permission(
             let mut result = m.permissions.to_proto_permissions();
             result.append(&mut group.non_member_permissions.to_proto_permissions());
             result
-        },
+        }
         _ => group.non_member_permissions.to_proto_permissions(),
     };
 

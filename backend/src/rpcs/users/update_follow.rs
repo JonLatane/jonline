@@ -3,11 +3,11 @@ use std::time::SystemTime;
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::rpcs::validations::*;
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
+use crate::rpcs::validations::*;
 use crate::schema::follows;
 
 pub fn update_follow(

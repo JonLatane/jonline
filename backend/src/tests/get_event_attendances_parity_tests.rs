@@ -245,7 +245,10 @@ fn own_pending_attendee_sees_their_own_row_but_location_stays_hidden() {
         assert_eq!(
             notes_by_id(&attendances),
             BTreeMap::from([
-                (scenario.approved_attendance.id.to_proto_id(), "".to_string()),
+                (
+                    scenario.approved_attendance.id.to_proto_id(),
+                    "".to_string()
+                ),
                 (
                     scenario.pending_attendance.id.to_proto_id(),
                     "pending user's private note".to_string()
@@ -312,7 +315,10 @@ fn anonymous_attendee_sees_their_own_pending_row_via_auth_token() {
         assert_eq!(
             notes_by_id(&attendances),
             BTreeMap::from([
-                (scenario.approved_attendance.id.to_proto_id(), "".to_string()),
+                (
+                    scenario.approved_attendance.id.to_proto_id(),
+                    "".to_string()
+                ),
                 (
                     scenario.anonymous_attendance.id.to_proto_id(),
                     "anonymous guest's private note".to_string()
@@ -350,7 +356,10 @@ fn wrong_auth_token_is_treated_like_no_token() {
 
         assert_eq!(
             notes_by_id(&attendances),
-            BTreeMap::from([(scenario.approved_attendance.id.to_proto_id(), "".to_string())]),
+            BTreeMap::from([(
+                scenario.approved_attendance.id.to_proto_id(),
+                "".to_string()
+            )]),
         );
         assert!(events_instance.location.is_none());
         assert!(events_instance.current_user_attendance.is_none());

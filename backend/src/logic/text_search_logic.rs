@@ -15,7 +15,11 @@
 pub fn prefix_tsquery_text(search_text: &str) -> String {
     search_text
         .split_whitespace()
-        .map(|word| word.chars().filter(|c| c.is_alphanumeric()).collect::<String>())
+        .map(|word| {
+            word.chars()
+                .filter(|c| c.is_alphanumeric())
+                .collect::<String>()
+        })
         .filter(|word| !word.is_empty())
         .map(|word| format!("{}:*", word))
         .collect::<Vec<_>>()

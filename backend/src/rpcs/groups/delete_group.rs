@@ -1,8 +1,8 @@
 use diesel::*;
 use tonic::{Code, Status};
 
-use crate::marshaling::*;
 use crate::db_connection::PgPooledConnection;
+use crate::marshaling::*;
 use crate::models;
 use crate::protos::*;
 use crate::schema::groups;
@@ -15,11 +15,8 @@ pub fn delete_group(
     conn: &mut PgPooledConnection,
 ) -> Result<(), Status> {
     validate_group(&request)?;
-    let (group, membership) = models::get_group_and_membership(
-        request.id.to_db_id_or_err("id")?,
-        Some(user.id),
-        conn,
-    )?;
+    let (group, membership) =
+        models::get_group_and_membership(request.id.to_db_id_or_err("id")?, Some(user.id), conn)?;
     validate_group_admin(&Some(user), &group, &membership.as_ref())?;
 
     let group = groups::table

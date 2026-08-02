@@ -29,13 +29,19 @@ pub fn create_event_sync_source(
         .map(|s| s.trim().is_empty())
         .unwrap_or(true)
     {
-        return Err(Status::new(Code::InvalidArgument, "ics_subscription_url_required"));
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "ics_subscription_url_required",
+        ));
     }
 
     let sync_interval_seconds = if request.sync_interval_seconds == 0 {
         DEFAULT_SYNC_INTERVAL_SECONDS
     } else if (request.sync_interval_seconds as i64) < MIN_SYNC_INTERVAL_SECONDS {
-        return Err(Status::new(Code::InvalidArgument, "sync_interval_seconds_too_short"));
+        return Err(Status::new(
+            Code::InvalidArgument,
+            "sync_interval_seconds_too_short",
+        ));
     } else {
         request.sync_interval_seconds as i64
     };
@@ -61,8 +67,9 @@ pub fn create_event_sync_source(
             inserted.id,
             sync_err
         );
-        if let Err(e) = diesel::delete(event_sync_sources::table.filter(event_sync_sources::id.eq(inserted.id)))
-            .execute(conn)
+        if let Err(e) =
+            diesel::delete(event_sync_sources::table.filter(event_sync_sources::id.eq(inserted.id)))
+                .execute(conn)
         {
             log::error!(
                 "Failed to delete EventSyncSource {} after failed initial sync: {:?}",

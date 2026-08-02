@@ -4,7 +4,7 @@ use std::time::SystemTime;
 use diesel::*;
 
 // use crate::db_connection::PgPooledConnection;
-use crate::schema::{federated_users, federated_profiles};
+use crate::schema::{federated_profiles, federated_users};
 
 #[derive(Debug, Queryable, Identifiable, AsChangeset, Clone)]
 pub struct FederatedUser {

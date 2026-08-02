@@ -3,7 +3,9 @@ extern crate jonline;
 use std::sync::Arc;
 
 use diesel::*;
-use jonline::{db_connection, init_bin_logging, init_crypto, marshaling::*, models, protos, rpcs, schema};
+use jonline::{
+    db_connection, init_bin_logging, init_crypto, marshaling::*, models, protos, rpcs, schema,
+};
 
 pub fn main() {
     init_crypto();

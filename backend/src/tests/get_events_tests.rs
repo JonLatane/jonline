@@ -43,7 +43,8 @@ fn create_simple_event(
     instance_opts: EventInstanceOpts,
 ) -> (crate::models::Event, crate::models::EventInstance) {
     let (event, _event_post) = create_event(conn, author, event_opts);
-    let (instance, _instance_post) = create_event_instance(conn, &event, Some(author), instance_opts);
+    let (instance, _instance_post) =
+        create_event_instance(conn, &event, Some(author), instance_opts);
     (event, instance)
 }
 
@@ -927,7 +928,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(7200),
                     ends_at: from_now(10800),
-                
+
                     ..Default::default()
                 },
             );
@@ -942,7 +943,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(60),
                     ends_at: from_now(120),
-                
+
                     ..Default::default()
                 },
             );
@@ -977,7 +978,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     starts_at: ago(7200),
                     ends_at: ago(3600),
-                
+
                     ..Default::default()
                 },
             );
@@ -992,7 +993,7 @@ mod default_listing {
                     visibility: Visibility::GlobalPublic,
                     starts_at: from_now(3600),
                     ends_at: from_now(7200),
-                
+
                     ..Default::default()
                 },
             );

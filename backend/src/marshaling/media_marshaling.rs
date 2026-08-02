@@ -35,20 +35,23 @@ impl ToMediaLookup for Option<models::MediaReference> {
 }
 
 // impl ToMediaLookup for (Vec<i64>, &mut PgPooledConnection) {
-    pub fn load_media_lookup(media_ids: Vec<i64>, conn: &mut PgPooledConnection) -> Option<MediaLookup> {
-        // let (media_ids, conn) = self;
-        Some(
-            models::get_all_media(media_ids.to_owned(), conn)
-                .unwrap_or_else(|e| {
-                    log::error!("Error loading media references: {:?}", e);
-                    vec![]
-                })
-                .iter()
-                .map(|media| (media.id, media.to_owned()))
-                .collect::<MediaLookup>()
-                .to_owned(),
-        )
-    }
+pub fn load_media_lookup(
+    media_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Option<MediaLookup> {
+    // let (media_ids, conn) = self;
+    Some(
+        models::get_all_media(media_ids.to_owned(), conn)
+            .unwrap_or_else(|e| {
+                log::error!("Error loading media references: {:?}", e);
+                vec![]
+            })
+            .iter()
+            .map(|media| (media.id, media.to_owned()))
+            .collect::<MediaLookup>()
+            .to_owned(),
+    )
+}
 // }
 
 pub trait FindMedia {

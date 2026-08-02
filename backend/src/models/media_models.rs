@@ -1,27 +1,33 @@
 use std::time::SystemTime;
 
-use serde::{Deserialize, Serialize};
-use tonic::{Status, Code};
 use diesel::*;
+use serde::{Deserialize, Serialize};
+use tonic::{Code, Status};
 
-use crate::{schema::media, db_connection::PgPooledConnection};
 use super::User;
+use crate::{db_connection::PgPooledConnection, schema::media};
 
-pub fn get_media(media_id: i64, conn: &mut PgPooledConnection,) -> Result<Media, Status> {
+pub fn get_media(media_id: i64, conn: &mut PgPooledConnection) -> Result<Media, Status> {
     media::table
         .select(media::all_columns)
         .filter(media::id.eq(media_id))
         .first::<Media>(conn)
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
 }
-pub fn get_media_reference(media_id: i64, conn: &mut PgPooledConnection,) -> Result<MediaReference, Status> {
+pub fn get_media_reference(
+    media_id: i64,
+    conn: &mut PgPooledConnection,
+) -> Result<MediaReference, Status> {
     media::table
         .select(MEDIA_REFERENCE_COLUMNS)
         .filter(media::id.eq(media_id))
         .first::<MediaReference>(conn)
         .map_err(|_| Status::new(Code::NotFound, "media_not_found"))
 }
-pub fn get_all_media(media_ids: Vec<i64>, conn: &mut PgPooledConnection,) -> Result<Vec<MediaReference>, Status> {
+pub fn get_all_media(
+    media_ids: Vec<i64>,
+    conn: &mut PgPooledConnection,
+) -> Result<Vec<MediaReference>, Status> {
     media::table
         .select(MEDIA_REFERENCE_COLUMNS)
         .filter(media::id.eq_any(media_ids))

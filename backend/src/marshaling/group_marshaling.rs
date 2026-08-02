@@ -57,9 +57,7 @@ impl ToProtoGroup for models::Group {
             default_membership_permissions: self
                 .default_membership_permissions
                 .to_i32_permissions(),
-            non_member_permissions: self
-                .non_member_permissions
-                .to_i32_permissions(),
+            non_member_permissions: self.non_member_permissions.to_i32_permissions(),
             default_membership_moderation: self.default_membership_moderation.to_i32_moderation(),
             default_post_moderation: self.default_post_moderation.to_i32_moderation(),
             default_event_moderation: self.default_event_moderation.to_i32_moderation(),

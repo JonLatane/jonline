@@ -2,8 +2,8 @@ use std::env;
 
 use awscreds::Credentials;
 // use awsregion::Region;
-use s3::Region;
 use s3::error::S3Error;
+use s3::Region;
 use s3::{Bucket, BucketConfiguration};
 
 pub async fn get_and_test_bucket() -> Result<Box<Bucket>, S3Error> {

@@ -8,7 +8,7 @@ use crate::marshaling::ToProtoServerConfiguration;
 use crate::{models, protos};
 
 pub fn get_server_configuration(
-    _request: (), 
+    _request: (),
     _user: &Option<&models::User>,
     conn: &mut PgPooledConnection,
 ) -> Result<protos::ServerConfiguration, Status> {

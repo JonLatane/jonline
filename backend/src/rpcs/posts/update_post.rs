@@ -41,7 +41,8 @@ pub fn update_post(
     // `PublishEvents*`/`PublishPosts*` split just below, for the same reason
     // (this Post's `context` decides which permission family governs it).
     let moderator = validate_permission(&Some(user), Permission::ModeratePosts).is_ok()
-        || (is_event_context && validate_permission(&Some(user), Permission::ModerateEvents).is_ok());
+        || (is_event_context
+            && validate_permission(&Some(user), Permission::ModerateEvents).is_ok());
 
     let moderator_accessible_moderations = [
         Moderation::Approved,

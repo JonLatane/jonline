@@ -27,7 +27,11 @@ pub fn delete_event_sync_source(
         diesel::delete(events::table.filter(events::event_sync_source_id.eq(existing.id)))
             .execute(conn)
             .map_err(|e| {
-                log::error!("Failed to delete events synced from source {}: {:?}", existing.id, e);
+                log::error!(
+                    "Failed to delete events synced from source {}: {:?}",
+                    existing.id,
+                    e
+                );
                 Status::new(Code::Internal, "failed_to_delete_synced_events")
             })?;
     } else {
@@ -35,7 +39,11 @@ pub fn delete_event_sync_source(
             .set(events::event_sync_source_id.eq(None::<i64>))
             .execute(conn)
             .map_err(|e| {
-                log::error!("Failed to detach events synced from source {}: {:?}", existing.id, e);
+                log::error!(
+                    "Failed to detach events synced from source {}: {:?}",
+                    existing.id,
+                    e
+                );
                 Status::new(Code::Internal, "failed_to_detach_synced_events")
             })?;
     }
@@ -43,7 +51,11 @@ pub fn delete_event_sync_source(
     diesel::delete(event_sync_sources::table.filter(event_sync_sources::id.eq(existing.id)))
         .execute(conn)
         .map_err(|e| {
-            log::error!("Failed to delete event sync source {}: {:?}", existing.id, e);
+            log::error!(
+                "Failed to delete event sync source {}: {:?}",
+                existing.id,
+                e
+            );
             Status::new(Code::Internal, "failed_to_delete_event_sync_source")
         })?;
 

@@ -624,7 +624,13 @@ fn username_or_real_name(path: &str, connection: &mut PgPooledConnection) -> Str
         )
         .ok()
         .and_then(|r| r.users.into_iter().next())
-        .map(|u| if u.real_name.is_empty() { u.username } else { u.real_name })
+        .map(|u| {
+            if u.real_name.is_empty() {
+                u.username
+            } else {
+                u.real_name
+            }
+        })
         .unwrap_or(username),
         Some(FederatedId::Federated(ref username, _)) => username.clone(),
         None => "User".to_string(),
@@ -643,7 +649,13 @@ fn username_or_real_name_from_user_id(path: &str, connection: &mut PgPooledConne
         )
         .ok()
         .and_then(|r| r.users.into_iter().next())
-        .map(|u| if u.real_name.is_empty() { u.username } else { u.real_name })
+        .map(|u| {
+            if u.real_name.is_empty() {
+                u.username
+            } else {
+                u.real_name
+            }
+        })
         .unwrap_or(user_id),
         Some(FederatedId::Federated(ref user_id, _)) => user_id.clone(),
         None => "User".to_string(),

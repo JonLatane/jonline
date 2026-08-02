@@ -1,5 +1,5 @@
-use tonic::Status;
 use std::fs::read_to_string;
+use tonic::Status;
 
 use crate::protos::*;
 
@@ -8,7 +8,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 lazy_static! {
     static ref SHA_HASH: Option<String> = match read_to_string("opt/continuous_delivery_hash") {
         Ok(hash) if hash.trim().len() > 0 => Some(hash.trim().to_string()),
-        _ => None
+        _ => None,
     };
 }
 
@@ -18,5 +18,5 @@ pub fn get_service_version() -> Result<GetServiceVersionResponse, Status> {
         None => VERSION.to_string(),
     };
     log::info!("GetServiceVersion called, returning {}", version);
-    Ok(GetServiceVersionResponse {version: version })
+    Ok(GetServiceVersionResponse { version: version })
 }

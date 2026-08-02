@@ -155,13 +155,27 @@ pub fn sync_event_sync_source_text(
         for group in &event_groups {
             let db_event = match existing_by_uid.remove(&group.uid) {
                 Some(existing) => {
-                    sync_post_text(conn, existing.post_id, &group.title, &group.content, &group.link)?;
+                    sync_post_text(
+                        conn,
+                        existing.post_id,
+                        &group.title,
+                        &group.content,
+                        &group.link,
+                    )?;
                     existing
                 }
                 None => create_event_for_group(conn, source.id, owner_user_id, &moderation, group)?,
             };
 
-            reconcile_instances(conn, db_event.id, owner_user_id, &moderation, group, window_start_db, now)?;
+            reconcile_instances(
+                conn,
+                db_event.id,
+                owner_user_id,
+                &moderation,
+                group,
+                window_start_db,
+                now,
+            )?;
         }
 
         // Events whose UID no longer appears in the feed at all: prune their in-window
@@ -191,7 +205,8 @@ pub fn sync_event_sync_source_text(
                 .count()
                 .get_result(conn)?;
             if remaining == 0 {
-                diesel::delete(events::table.filter(events::id.eq(stale_event.id))).execute(conn)?;
+                diesel::delete(events::table.filter(events::id.eq(stale_event.id)))
+                    .execute(conn)?;
             }
         }
 
@@ -226,10 +241,12 @@ pub fn sync_event_sync_source_text(
 
 fn default_event_moderation(conn: &mut PgPooledConnection) -> String {
     crate::rpcs::get_server_configuration_proto(conn)
-        .map(|c| match c.event_settings.unwrap_or_default().default_moderation() {
-            Moderation::Pending => Moderation::Pending.as_str_name(),
-            _ => Moderation::Unmoderated.as_str_name(),
-        })
+        .map(
+            |c| match c.event_settings.unwrap_or_default().default_moderation() {
+                Moderation::Pending => Moderation::Pending.as_str_name(),
+                _ => Moderation::Unmoderated.as_str_name(),
+            },
+        )
         .unwrap_or_else(|_| Moderation::Unmoderated.as_str_name())
         .to_string()
 }
@@ -323,11 +340,7 @@ fn reconcile_instances(
         .load::<models::EventInstance>(conn)?;
     let mut existing_by_instance_id: HashMap<String, models::EventInstance> = existing_instances
         .into_iter()
-        .filter_map(|i| {
-            i.event_sync_source_instance_id
-                .clone()
-                .map(|id| (id, i))
-        })
+        .filter_map(|i| i.event_sync_source_instance_id.clone().map(|id| (id, i)))
         .collect();
 
     for occ in &group.occurrences {
@@ -342,17 +355,25 @@ fn reconcile_instances(
                     || existing_instance.location != loc_json
                     || existing_instance.sync_missing_since.is_some()
                 {
-                    diesel::update(event_instances::table.filter(event_instances::id.eq(existing_instance.id)))
-                        .set((
-                            event_instances::starts_at.eq(starts_at_db),
-                            event_instances::ends_at.eq(ends_at_db),
-                            event_instances::location.eq(&loc_json),
-                            event_instances::sync_missing_since.eq(None::<SystemTime>),
-                        ))
-                        .execute(conn)?;
+                    diesel::update(
+                        event_instances::table.filter(event_instances::id.eq(existing_instance.id)),
+                    )
+                    .set((
+                        event_instances::starts_at.eq(starts_at_db),
+                        event_instances::ends_at.eq(ends_at_db),
+                        event_instances::location.eq(&loc_json),
+                        event_instances::sync_missing_since.eq(None::<SystemTime>),
+                    ))
+                    .execute(conn)?;
                 }
                 if occ.is_override {
-                    sync_post_text(conn, existing_instance.post_id, &occ.title, &occ.content, &None)?;
+                    sync_post_text(
+                        conn,
+                        existing_instance.post_id,
+                        &occ.title,
+                        &occ.content,
+                        &None,
+                    )?;
                 }
             }
             None => {
@@ -360,9 +381,17 @@ fn reconcile_instances(
                     .values(&models::NewPost {
                         user_id: Some(owner_user_id),
                         parent_post_id: None,
-                        title: if occ.is_override { occ.title.clone() } else { None },
+                        title: if occ.is_override {
+                            occ.title.clone()
+                        } else {
+                            None
+                        },
                         link: None,
-                        content: if occ.is_override { occ.content.clone() } else { None },
+                        content: if occ.is_override {
+                            occ.content.clone()
+                        } else {
+                            None
+                        },
                         visibility: Visibility::GlobalPublic.to_string_visibility(),
                         embed_link: false,
                         context: PostContext::EventInstance.as_str_name().to_string(),
@@ -389,7 +418,10 @@ fn reconcile_instances(
     let now_db: SystemTime = now.into();
     let mut newly_missing_ids: Vec<i64> = vec![];
     let mut expired_ids: Vec<i64> = vec![];
-    for missing in existing_by_instance_id.values().filter(|i| i.ends_at >= window_start_db) {
+    for missing in existing_by_instance_id
+        .values()
+        .filter(|i| i.ends_at >= window_start_db)
+    {
         match missing.sync_missing_since {
             None => newly_missing_ids.push(missing.id),
             Some(missing_since) => {
@@ -401,9 +433,11 @@ fn reconcile_instances(
         }
     }
     if !newly_missing_ids.is_empty() {
-        diesel::update(event_instances::table.filter(event_instances::id.eq_any(newly_missing_ids)))
-            .set(event_instances::sync_missing_since.eq(now_db))
-            .execute(conn)?;
+        diesel::update(
+            event_instances::table.filter(event_instances::id.eq_any(newly_missing_ids)),
+        )
+        .set(event_instances::sync_missing_since.eq(now_db))
+        .execute(conn)?;
     }
     if !expired_ids.is_empty() {
         diesel::delete(event_instances::table.filter(event_instances::id.eq_any(expired_ids)))
@@ -426,9 +460,9 @@ fn date_perhaps_time_to_utc(d: &DatePerhapsTime) -> Option<DateTime<Utc>> {
             Some(DateTime::<Utc>::from_naive_utc_and_offset(*ndt, Utc))
         }
         DatePerhapsTime::DateTime(with_tz @ CalendarDateTime::WithTimezone { date_time, .. }) => {
-            with_tz.try_into_utc().or_else(|| {
-                Some(DateTime::<Utc>::from_naive_utc_and_offset(*date_time, Utc))
-            })
+            with_tz
+                .try_into_utc()
+                .or_else(|| Some(DateTime::<Utc>::from_naive_utc_and_offset(*date_time, Utc)))
         }
     }
 }
@@ -487,7 +521,8 @@ fn group_vevents(
             .filter_map(|e| get_date_property(e, "RECURRENCE-ID").map(|dt| (dt, *e)))
             .collect();
 
-        let occurrence_starts = expand_occurrence_starts(master, master_start, window_start, window_end);
+        let occurrence_starts =
+            expand_occurrence_starts(master, master_start, window_start, window_end);
 
         let mut occurrences = vec![];
         let mut seen_starts: HashSet<DateTime<Utc>> = HashSet::new();
@@ -498,7 +533,14 @@ fn group_vevents(
                 continue;
             }
             let override_event = overrides.get(&occ_start).copied();
-            occurrences.push(build_occurrence(&uid, occ_start, occ_end, master, override_event, duration));
+            occurrences.push(build_occurrence(
+                &uid,
+                occ_start,
+                occ_end,
+                master,
+                override_event,
+                duration,
+            ));
         }
 
         // Override VEVENTs whose RECURRENCE-ID falls outside the plain RRULE expansion (e.g. an
@@ -508,11 +550,22 @@ fn group_vevents(
                 continue;
             }
             let starts_at = get_date_property(override_event, "DTSTART").unwrap_or(*recurrence_id);
-            let ends_at = get_date_property(override_event, "DTEND").unwrap_or(starts_at + duration);
+            let ends_at =
+                get_date_property(override_event, "DTEND").unwrap_or(starts_at + duration);
             if ends_at < window_start {
                 continue;
             }
-            occurrences.push(build_occurrence(&uid, *recurrence_id, ends_at, master, Some(override_event), duration).with_start(starts_at));
+            occurrences.push(
+                build_occurrence(
+                    &uid,
+                    *recurrence_id,
+                    ends_at,
+                    master,
+                    Some(override_event),
+                    duration,
+                )
+                .with_start(starts_at),
+            );
         }
 
         if occurrences.is_empty() {
@@ -544,8 +597,12 @@ fn build_occurrence(
         starts_at: instance_key,
         ends_at,
         location: source_event.property_value("LOCATION").map(str::to_string),
-        title: override_event.and_then(|e| e.property_value("SUMMARY")).map(str::to_string),
-        content: override_event.and_then(|e| e.property_value("DESCRIPTION")).map(str::to_string),
+        title: override_event
+            .and_then(|e| e.property_value("SUMMARY"))
+            .map(str::to_string),
+        content: override_event
+            .and_then(|e| e.property_value("DESCRIPTION"))
+            .map(str::to_string),
         is_override: override_event.is_some(),
     }
 }
