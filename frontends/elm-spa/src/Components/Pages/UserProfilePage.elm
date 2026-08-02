@@ -353,7 +353,7 @@ by `init` (see `Pages.User.UserId_.init`/`Pages.Username_.init`), so this
 covers both the very first paint and any later host change (e.g.
 `ConnectClicked` connecting a not-yet-connected `targetHost`).
 
-This is the *only* thing here allowed to touch `Shared.Breadcrumbs` --
+This is the _only_ thing here allowed to touch `Shared.Breadcrumbs` --
 `model.posts`/`model.events` are embedded `PostsPage`/`EventsPage` copies
 (both `init`ed with `embeddedPage = True`), which leaves their own
 `setBreadcrumbsRoot` a permanent no-op (see those docs).
@@ -362,6 +362,7 @@ user`) on every `update`, including every animation tick from
 `model.events.eventAnimations` -- fighting this function's own
 `FromServerHost` assertion right back on the very next tick, a continuous
 flicker between the two roots.
+
 -}
 update : Shared.Model -> Msg -> Model -> ( Model, Effect Msg )
 update shared msg model =
@@ -1346,7 +1347,6 @@ profileDetail shared model server maybeAccount user =
             ]
         , profileCounts postsHref repliesHref followersHref followingHref friendsHref eventsHref user
         , bioSection canEdit user
-        , permissionsSection isAdmin model.permissionsEdit user
         , Html.map EventSyncSourcesMsg
             (EventSyncSourcesPanel.view
                 shared.browserTimeZone
@@ -1366,6 +1366,7 @@ profileDetail shared model server maybeAccount user =
 
             Nothing ->
                 text ""
+        , permissionsSection isAdmin model.permissionsEdit user
         ]
 
 
