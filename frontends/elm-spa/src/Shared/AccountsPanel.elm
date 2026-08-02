@@ -45,7 +45,6 @@ module Shared.AccountsPanel exposing
     , performWithOptionalAccountServer
     , recommendedFederatedServers
     , serverChipDomId
-    , updateServerConfig
     , serverForHost
     , serverHasAccounts
     , serverInfoOf
@@ -57,6 +56,7 @@ module Shared.AccountsPanel exposing
     , subscriptions
     , unreachableAccountHosts
     , update
+    , updateServerConfig
     , withAccessToken
     )
 
@@ -409,7 +409,7 @@ type Msg
     | CancelCreateAccountClicked
     | GotAuthResult (Result Grpc.Error ( Connection, ServerConfiguration, RefreshTokenResponse ))
     | FederatedAccountReceived Account
-    | GotReconnectResult String Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
+    | GotReconnectResult String Bool Bool (Result Grpc.Error ( Connection, ServerConfiguration ))
     | GotMainServerResult (Result Grpc.Error ( Connection, ServerConfiguration ))
     | AccountsAndServersBroadcastReceived Decode.Value
     | ToggleAccountEnabled String
@@ -1090,7 +1090,7 @@ init req flags =
             List.map
                 (\ps ->
                     negotiateServerConfig pageIsSecure ps.frontendHost
-                        |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled)
+                        |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled False)
                 )
                 persisted.servers
 
@@ -1113,7 +1113,7 @@ init req flags =
             List.map
                 (\host ->
                     negotiateServerConfig pageIsSecure host
-                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts) False)
                 )
                 missingServerHosts
 
@@ -1466,7 +1466,7 @@ updateHelp req msg model =
 
                     else
                         negotiateServerConfig (isSecure req) enabledAccount.server
-                            |> Task.attempt (GotReconnectResult enabledAccount.server True)
+                            |> Task.attempt (GotReconnectResult enabledAccount.server True False)
             in
             ( newModel, Cmd.batch [ persist newModel, reconnectCmd ] )
 
@@ -1502,7 +1502,15 @@ updateHelp req msg model =
             in
             ( newModel, persist newModel )
 
-        GotReconnectResult frontendHost enabled result ->
+        GotReconnectResult frontendHost enabled appendToEnd result ->
+            let
+                insert =
+                    if appendToEnd then
+                        upsertServerAppend
+
+                    else
+                        upsertServer
+            in
             case result of
                 Ok ( connection, config ) ->
                     let
@@ -1510,7 +1518,7 @@ updateHelp req msg model =
                             serverFrom connection enabled config
 
                         newModel =
-                            { model | servers = upsertServer server model.servers }
+                            { model | servers = insert server model.servers }
                     in
                     -- Replaces (rather than just skipping) any existing entry for this host,
                     -- keeping its place in the list (see `upsertServer`) -- this fires on
@@ -1542,7 +1550,7 @@ updateHelp req msg model =
                                 model
 
                             else
-                                { model | servers = upsertServer (disconnectedServer { frontendHost = frontendHost, enabled = enabled }) model.servers }
+                                { model | servers = insert (disconnectedServer { frontendHost = frontendHost, enabled = enabled }) model.servers }
                     in
                     settleStartupUnit newModel
 
@@ -1574,9 +1582,13 @@ updateHelp req msg model =
                         -- `federation.proto`'s `FederatedServer`). At this first-setup moment
                         -- (this whole branch only runs the first time we've ever seen this
                         -- browsing host -- see `init`'s `browsingHostAlreadyKnown`), connect to
-                        -- each one that's `configuredByDefault`, appending it after the base
-                        -- host once negotiated; `pinnedByDefault` ones are enabled immediately,
-                        -- the rest added disabled for the user to opt into.
+                        -- each one that's `configuredByDefault`, appending it to the *end* of
+                        -- the server list once negotiated (see `upsertServerAppend`) -- unlike
+                        -- a server added later (which lands right after the current server, see
+                        -- `upsertServer`), these are recommendations the user didn't ask for, so
+                        -- they shouldn't jump ahead of any server already in the list.
+                        -- `pinnedByDefault` ones are enabled immediately, the rest added
+                        -- disabled for the user to opt into.
                         federatedServerCmds =
                             config.federationInfo
                                 |> Maybe.map .servers
@@ -1588,7 +1600,7 @@ updateHelp req msg model =
                                 |> List.map
                                     (\fs ->
                                         negotiateServerConfig (isSecure req) fs.host
-                                            |> Task.attempt (GotReconnectResult fs.host (Maybe.withDefault False fs.pinnedByDefault))
+                                            |> Task.attempt (GotReconnectResult fs.host (Maybe.withDefault False fs.pinnedByDefault) True)
                                     )
                     in
                     -- `refreshPermissionsForServer` persists (this server's own addition/
@@ -1639,7 +1651,7 @@ updateHelp req msg model =
                                 |> List.map
                                     (\ps ->
                                         negotiateServerConfig (isSecure req) ps.frontendHost
-                                            |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled)
+                                            |> Task.attempt (GotReconnectResult ps.frontendHost ps.enabled False)
                                     )
 
                         -- Same as `init`'s `missingServerHosts`/`missingServerCmds`: accounts
@@ -1657,7 +1669,7 @@ updateHelp req msg model =
                             List.map
                                 (\host ->
                                     negotiateServerConfig (isSecure req) host
-                                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts))
+                                        |> Task.attempt (GotReconnectResult host (List.any (\a -> a.server == host && a.enabled) persisted.accounts) False)
                                 )
                                 missingServerHosts
 
@@ -1942,7 +1954,7 @@ updateHelp req msg model =
             in
             ( model
             , negotiateServerConfig (isSecure req) frontendHost
-                |> Task.attempt (GotReconnectResult frontendHost enabled)
+                |> Task.attempt (GotReconnectResult frontendHost enabled False)
             )
 
         AddServerClicked ->
@@ -2474,7 +2486,7 @@ serverForHost servers frontendHost =
     servers |> List.filter (\s -> s.frontendHost == frontendHost) |> List.head
 
 
-{-| `serverForHost`, but only if that entry is both known *and* actually
+{-| `serverForHost`, but only if that entry is both known _and_ actually
 connected -- a known-but-disconnected entry (see `Server.connected`) is
 treated the same as not known at all. `init` seeds every persisted server
 disconnected before its own reconnect attempt resolves (see `init`'s own
@@ -2732,18 +2744,37 @@ moving it to the front/back -- the reordering (`MoveServerLeftClicked`/
 `RightClicked`) or disconnection (`GotReconnectResult`'s `Err` branch)
 already applied to that slot shouldn't be undone just because a fresh
 connection/login/rename came in for it. Prepends if there's no existing entry
-for this host at all (a genuinely new server).
+for this host at all (a genuinely new server) -- see `upsertServerAppend` for
+the append-at-end variant used for servers discovered via federation at
+first-setup time.
 
-Deliberately keeps the *existing* entry's `enabled` over `server`'s own --
+Deliberately keeps the _existing_ entry's `enabled` over `server`'s own --
 `enabled` is a persisted user preference, independent of whether we're
 currently connected, so a fresh reconnect (whose caller may only know the
-`enabled` its host had at the *start* of `init`'s startup sweep, see
+`enabled` its host had at the _start_ of `init`'s startup sweep, see
 `reconnectCmds`) should never clobber a more recent in-session toggle
 (`ToggleServerEnabled`/`ToggleAccountEnabled`) applied to the same host's
 placeholder while that reconnect was still in flight.
+
 -}
 upsertServer : Server -> List Server -> List Server
-upsertServer server servers =
+upsertServer =
+    upsertServerWith (::)
+
+
+{-| Same as `upsertServer`, but for a genuinely new host appends it to the
+_end_ of `servers` instead of prepending it. Used only for servers
+discovered via `GotMainServerResult`'s `federatedServerCmds` at first-setup
+time, so the base host's own federation recommendations land after any
+servers the user already knew about, rather than jumping ahead of them.
+-}
+upsertServerAppend : Server -> List Server -> List Server
+upsertServerAppend =
+    upsertServerWith (\server servers -> servers ++ [ server ])
+
+
+upsertServerWith : (Server -> List Server -> List Server) -> Server -> List Server -> List Server
+upsertServerWith insertNew server servers =
     case List.filter (\s -> s.frontendHost == server.frontendHost) servers |> List.head of
         Just existing ->
             List.map
@@ -2757,7 +2788,7 @@ upsertServer server servers =
                 servers
 
         Nothing ->
-            server :: servers
+            insertNew server servers
 
 
 {-| Patches a server's cached `configuration` (and re-derives `branding` from
