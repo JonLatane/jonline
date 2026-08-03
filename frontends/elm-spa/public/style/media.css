@@ -14,23 +14,19 @@
   object-fit: contain;
 }
 
-/* Lets an image/video keep its own aspect ratio (portrait, landscape,
-   square, 4:3, whatever) instead of being stretched/cropped into a
-   fixed-size box -- used for a post's single "focus" media item. Only one
-   of width/height ends up constrained by the ratio itself; the other is
-   capped by max-width/max-height so it never overflows a reasonably-sized
-   viewport. */
+/* Each `Sizing` just sets the bound(s) an image/video gets scaled to, as
+   custom properties -- which of those bounds actually applies (one, the
+   other, or both) is decided below by `SizingType`, independent of `Sizing`
+   itself. */
 .media-renderer-natural.media-renderer-image,
 .media-renderer-natural.media-renderer-video {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 70vh;
+  --media-renderer-width: 100%;
+  --media-renderer-height: 70vh;
 }
 
 /* `<object>` embeds (PDFs, etc.) have no intrinsic size to preserve, so
-   "natural" sizing just falls back to a roomy fixed-height box. */
+   "natural" sizing just falls back to a roomy fixed-height box regardless of
+   `SizingType`. */
 .media-renderer-natural.media-renderer-object {
   width: 100%;
   height: 60vh;
@@ -43,11 +39,8 @@
    Components.MultiMediaRenderer's scrolling strip and its `preview`). */
 .media-renderer-small.media-renderer-image,
 .media-renderer-small.media-renderer-video {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 238px;
-  max-height: 238px;
+  --media-renderer-width: 238px;
+  --media-renderer-height: 238px;
 }
 
 .media-renderer-small.media-renderer-object {
@@ -61,16 +54,49 @@
    Shared.StarredPanel's post rows). */
 .media-renderer-extra-small.media-renderer-image,
 .media-renderer-extra-small.media-renderer-video {
-  display: block;
-  width: auto;
-  height: auto;
-  max-width: 238px;
-  max-height: 88px;
+  --media-renderer-width: 238px;
+  --media-renderer-height: 88px;
 }
 
 .media-renderer-extra-small.media-renderer-object {
   width: 238px;
   height: 88px;
+}
+
+/* `SizingType` -- which of `Sizing`'s two bounds above actually constrains
+   the image/video. `ToWidthAndHeight` (the default everywhere except
+   `Components.MultiMediaRenderer`'s scrolling strip) caps both, letting the
+   image/video end up smaller than either bound if its own aspect ratio calls
+   for it -- never stretched/cropped to fill a fixed box. `ToWidth`/
+   `ToHeight` instead force that one dimension exactly to its bound and leave
+   the other unconstrained (`none`), for layouts (like the strip) that want a
+   consistent width/height across items of differing aspect ratios rather
+   than each capped independently. */
+.media-renderer-to-width-and-height.media-renderer-image,
+.media-renderer-to-width-and-height.media-renderer-video {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: var(--media-renderer-width);
+  max-height: var(--media-renderer-height);
+}
+
+.media-renderer-to-width.media-renderer-image,
+.media-renderer-to-width.media-renderer-video {
+  display: block;
+  width: var(--media-renderer-width);
+  height: auto;
+  max-width: none;
+  max-height: none;
+}
+
+.media-renderer-to-height.media-renderer-image,
+.media-renderer-to-height.media-renderer-video {
+  display: block;
+  width: auto;
+  height: var(--media-renderer-height);
+  max-width: none;
+  max-height: none;
 }
 
 .media-renderer-fallback {

@@ -1,4 +1,4 @@
-module Components.MediaRenderer exposing (Sizing(..), view)
+module Components.MediaRenderer exposing (Sizing(..), SizingType(..), view)
 
 {-| Renders a single `Proto.Jonline.MediaReference` -- an image, a video, or
 (for anything else, e.g. a PDF) a browser-native `<object>` embed with a
@@ -61,14 +61,39 @@ sizingClass sizing =
             "media-renderer-extra-small"
 
 
-view : Sizing -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
-view sizing server maybeAccount onImageClicked media =
+{-| Which of an image/video's two dimensions (see `.media-renderer-to-*` in
+`media.css`) gets scaled to its `Sizing`'s bound, with the other left free to
+whatever its own aspect ratio calls for -- `ToWidthAndHeight` (the default
+everywhere except `Components.MultiMediaRenderer`'s scrolling strip) instead
+bounds both, same as before this type existed.
+-}
+type SizingType
+    = ToHeight
+    | ToWidth
+    | ToWidthAndHeight
+
+
+sizingTypeClass : SizingType -> String
+sizingTypeClass sizingType =
+    case sizingType of
+        ToHeight ->
+            "media-renderer-to-height"
+
+        ToWidth ->
+            "media-renderer-to-width"
+
+        ToWidthAndHeight ->
+            "media-renderer-to-width-and-height"
+
+
+view : Sizing -> SizingType -> AccountsPanel.Server -> Maybe AccountsPanel.Account -> (String -> msg) -> MediaReference -> Html msg
+view sizing sizingType server maybeAccount onImageClicked media =
     let
         mediaUrl =
             url server maybeAccount media
 
         sizeClass =
-            sizingClass sizing
+            sizingClass sizing ++ " " ++ sizingTypeClass sizingType
     in
     case String.split "/" media.contentType |> List.head |> Maybe.withDefault "" of
         "image" ->
